@@ -51,8 +51,8 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.Pair;
 
 
@@ -103,7 +103,7 @@ abstract class DruidJsonFilter implements DruidJson {
             // can not translate literal better bail out
             return null;
         }
-        final boolean isNumeric = refNode.getType().getFamily() == SqlTypeFamily.NUMERIC || rexLiteral.getType().getFamily() == SqlTypeFamily.NUMERIC;
+        final boolean isNumeric = refNode.getType().getFamily() == PolyTypeFamily.NUMERIC || rexLiteral.getType().getFamily() == PolyTypeFamily.NUMERIC;
         final Pair<String, ExtractionFunction> druidColumn = DruidQuery.toDruidColumn( refNode, rowType, druidQuery );
         final String columnName = druidColumn.left;
         final ExtractionFunction extractionFunction = druidColumn.right;
@@ -165,7 +165,7 @@ abstract class DruidJsonFilter implements DruidJson {
             // can not translate literal better bail out
             return null;
         }
-        final boolean isNumeric = refNode.getType().getFamily() == SqlTypeFamily.NUMERIC || rexLiteral.getType().getFamily() == SqlTypeFamily.NUMERIC;
+        final boolean isNumeric = refNode.getType().getFamily() == PolyTypeFamily.NUMERIC || rexLiteral.getType().getFamily() == PolyTypeFamily.NUMERIC;
         final Pair<String, ExtractionFunction> druidColumn = DruidQuery.toDruidColumn( refNode, rowType, druidQuery );
         final String columnName = druidColumn.left;
         final ExtractionFunction extractionFunction = druidColumn.right;
@@ -205,11 +205,11 @@ abstract class DruidJsonFilter implements DruidJson {
     private static String toDruidLiteral( RexNode rexNode, RelDataType rowType, DruidQuery druidQuery ) {
         final String val;
         final RexLiteral rhsLiteral = (RexLiteral) rexNode;
-        if ( SqlTypeName.NUMERIC_TYPES.contains( rhsLiteral.getTypeName() ) ) {
+        if ( PolyType.NUMERIC_TYPES.contains( rhsLiteral.getTypeName() ) ) {
             val = String.valueOf( RexLiteral.value( rhsLiteral ) );
-        } else if ( SqlTypeName.CHAR_TYPES.contains( rhsLiteral.getTypeName() ) ) {
+        } else if ( PolyType.CHAR_TYPES.contains( rhsLiteral.getTypeName() ) ) {
             val = String.valueOf( RexLiteral.stringValue( rhsLiteral ) );
-        } else if ( SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE == rhsLiteral.getTypeName() || SqlTypeName.TIMESTAMP == rhsLiteral.getTypeName() || SqlTypeName.DATE == rhsLiteral.getTypeName() ) {
+        } else if ( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE == rhsLiteral.getTypeName() || PolyType.TIMESTAMP == rhsLiteral.getTypeName() || PolyType.DATE == rhsLiteral.getTypeName() ) {
             Long millisSinceEpoch = DruidDateTimeUtils.literalValue( rexNode );
             if ( millisSinceEpoch == null ) {
                 throw new AssertionError( "Cannot translate Literal" + rexNode + " of type " + rhsLiteral.getTypeName() + " to TimestampString" );
@@ -300,7 +300,7 @@ abstract class DruidJsonFilter implements DruidJson {
         if ( lhsLiteralValue == null || rhsLiteralValue == null ) {
             return null;
         }
-        final boolean isNumeric = lhs.getType().getFamily() == SqlTypeFamily.NUMERIC || lhs.getType().getFamily() == SqlTypeFamily.NUMERIC;
+        final boolean isNumeric = lhs.getType().getFamily() == PolyTypeFamily.NUMERIC || lhs.getType().getFamily() == PolyTypeFamily.NUMERIC;
         final Pair<String, ExtractionFunction> druidColumn = DruidQuery.toDruidColumn( refNode, rowType, query );
         final String columnName = druidColumn.left;
         final ExtractionFunction extractionFunction = druidColumn.right;

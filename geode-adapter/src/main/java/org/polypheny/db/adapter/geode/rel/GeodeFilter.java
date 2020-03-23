@@ -56,7 +56,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -386,7 +386,7 @@ public class GeodeFilter extends Filter implements GeodeRel {
 
         private String quoteCharLiteral( RexLiteral literal ) {
             String value = literalValue( literal );
-            if ( literal.getTypeName() == SqlTypeName.CHAR ) {
+            if ( literal.getTypeName() == PolyType.CHAR ) {
                 value = "'" + value + "'";
             }
             return value;

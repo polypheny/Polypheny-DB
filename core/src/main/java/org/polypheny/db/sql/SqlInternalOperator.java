@@ -35,13 +35,13 @@ package org.polypheny.db.sql;
 
 
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -64,7 +64,7 @@ public class SqlInternalOperator extends SqlSpecialOperator {
     }
 
 
-    public SqlInternalOperator( String name, SqlKind kind, int prec, boolean isLeftAssoc, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker ) {
+    public SqlInternalOperator( String name, SqlKind kind, int prec, boolean isLeftAssoc, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 name,
                 kind,

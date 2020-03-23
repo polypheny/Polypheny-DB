@@ -63,8 +63,8 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -222,7 +222,7 @@ public class MongoRules {
             }
             if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
                 final RexNode op1 = call.operands.get( 1 );
-                if ( op1 instanceof RexLiteral && op1.getType().getSqlTypeName() == SqlTypeName.INTEGER ) {
+                if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                     if ( !Bug.CALCITE_194_FIXED ) {
                         return "'" + stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]'";
                     }

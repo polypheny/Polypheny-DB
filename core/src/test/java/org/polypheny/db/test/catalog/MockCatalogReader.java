@@ -83,7 +83,6 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlModality;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlNameMatcher;
@@ -93,6 +92,7 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
 import org.polypheny.db.test.JdbcTest;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
@@ -991,8 +991,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public SqlTypeName getSqlTypeName() {
-            return delegate.getSqlTypeName();
+        public PolyType getPolyType() {
+            return delegate.getPolyType();
         }
 
 

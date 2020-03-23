@@ -45,11 +45,11 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -85,7 +85,7 @@ public class SqlDatePartFunction extends SqlFunction {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.of( 1 );
+        return PolyOperandCountRanges.of( 1 );
     }
 
 

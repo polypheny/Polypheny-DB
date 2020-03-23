@@ -26,7 +26,6 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -51,6 +50,7 @@ import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
@@ -219,7 +219,7 @@ public class StatisticQueryProcessor {
     }
 
 
-    public PolySqlType getColumnType( String schemaTableColumn ) {
+    public PolyType getColumnType( String schemaTableColumn ) {
         String[] splits = schemaTableColumn.split( "\\." );
         if ( splits.length != 3 ) {
             return null;
@@ -231,10 +231,10 @@ public class StatisticQueryProcessor {
     /**
      * Method to get the type of a specific column
      */
-    public PolySqlType getColumnType( String schema, String table, String column ) {
+    public PolyType getColumnType( String schema, String table, String column ) {
         Transaction transaction = getTransaction();
         // TODO: fix possible NullPointer
-        PolySqlType type = null;
+        PolyType type = null;
 
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
@@ -320,11 +320,11 @@ public class StatisticQueryProcessor {
         }
 
         try {
-            List<PolySqlType> types = new ArrayList<>();
+            List<PolyType> types = new ArrayList<>();
             List<String> names = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
 
-                types.add( PolySqlType.getPolySqlTypeFromSting( metaData.type.name ) );
+                types.add( PolyType.get( metaData.type.name ) );
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             }
 

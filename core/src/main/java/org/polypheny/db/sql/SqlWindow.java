@@ -41,14 +41,14 @@ import org.polypheny.db.rel.core.Window.Group;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeFamily;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Litmus;
@@ -634,7 +634,7 @@ public class SqlWindow extends SqlCall {
             if ( windowCall != null && !windowCall.getOperator().allowsFraming() ) {
                 throw validator.newValidationError( isRows, Static.RESOURCE.rankWithFrame() );
             }
-            SqlTypeFamily orderTypeFam = null;
+            PolyTypeFamily orderTypeFam = null;
 
             // SQL03 7.10 Rule 11a
             if ( orderList.size() > 0 ) {
@@ -645,7 +645,7 @@ public class SqlWindow extends SqlCall {
 
                 // get the type family for the sort key for Frame Boundary Val.
                 RelDataType orderType = validator.deriveType( operandScope, orderList.get( 0 ) );
-                orderTypeFam = orderType.getSqlTypeName().getFamily();
+                orderTypeFam = orderType.getPolyType().getFamily();
             } else {
                 // requires an ORDER BY clause if frame is logical(RANGE)
                 // We relax this requirement if the table appears to be sorted already
@@ -673,7 +673,7 @@ public class SqlWindow extends SqlCall {
     }
 
 
-    private void validateFrameBoundary( SqlNode bound, boolean isRows, SqlTypeFamily orderTypeFam, SqlValidator validator, SqlValidatorScope scope ) {
+    private void validateFrameBoundary( SqlNode bound, boolean isRows, PolyTypeFamily orderTypeFam, SqlValidator validator, SqlValidatorScope scope ) {
         if ( null == bound ) {
             return;
         }
@@ -708,17 +708,17 @@ public class SqlWindow extends SqlCall {
                 // If this is a range spec check and make sure the boundary type and order by type are compatible
                 if ( orderTypeFam != null && !isRows ) {
                     RelDataType bndType = validator.deriveType( scope, boundVal );
-                    SqlTypeFamily bndTypeFam = bndType.getSqlTypeName().getFamily();
+                    PolyTypeFamily bndTypeFam = bndType.getPolyType().getFamily();
                     switch ( orderTypeFam ) {
                         case NUMERIC:
-                            if ( SqlTypeFamily.NUMERIC != bndTypeFam ) {
+                            if ( PolyTypeFamily.NUMERIC != bndTypeFam ) {
                                 throw validator.newValidationError( boundVal, Static.RESOURCE.orderByRangeMismatch() );
                             }
                             break;
                         case DATE:
                         case TIME:
                         case TIMESTAMP:
-                            if ( SqlTypeFamily.INTERVAL_DAY_TIME != bndTypeFam && SqlTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
+                            if ( PolyTypeFamily.INTERVAL_DAY_TIME != bndTypeFam && PolyTypeFamily.INTERVAL_YEAR_MONTH != bndTypeFam ) {
                                 throw validator.newValidationError( boundVal, Static.RESOURCE.orderByRangeMismatch() );
                             }
                             break;

@@ -76,8 +76,8 @@ import org.polypheny.db.runtime.SqlFunctions;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -277,7 +277,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final RelDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
         dateTimeArgs.add( Expressions.constant( i + 1 ) );
-        SqlTypeName sqlTypeName = fieldType.getSqlTypeName();
+        PolyType polyType = fieldType.getPolyType();
         boolean offset = false;
         switch ( calendarPolicy ) {
             case LOCAL:
@@ -288,10 +288,10 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 // the getXXX that doesn't take a Calendar
                 break;
             case DIRECT:
-                sqlTypeName = SqlTypeName.ANY;
+                polyType = PolyType.ANY;
                 break;
             case SHIFT:
-                switch ( sqlTypeName ) {
+                switch ( polyType ) {
                     case TIMESTAMP:
                     case DATE:
                         offset = true;
@@ -299,14 +299,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 break;
         }
         final Expression source;
-        switch ( sqlTypeName ) {
+        switch ( polyType ) {
             case DATE:
             case TIME:
             case TIMESTAMP:
                 source = Expressions.call(
-                        getMethod( sqlTypeName, fieldType.isNullable(), offset ),
+                        getMethod( polyType, fieldType.isNullable(), offset ),
                         Expressions.<Expression>list()
-                                .append( Expressions.call( resultSet_, getMethod2( sqlTypeName ), dateTimeArgs ) )
+                                .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
                                 .appendIf( offset, getTimeZoneExpression( implementor ) ) );
                 break;
             case ARRAY:
@@ -330,8 +330,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    private Method getMethod( SqlTypeName sqlTypeName, boolean nullable, boolean offset ) {
-        switch ( sqlTypeName ) {
+    private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
+        switch ( polyType ) {
             case DATE:
                 return (nullable
                         ? BuiltInMethod.DATE_TO_INT_OPTIONAL
@@ -349,13 +349,13 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                                 ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
                                 : BuiltInMethod.TIMESTAMP_TO_LONG)).method;
             default:
-                throw new AssertionError( sqlTypeName + ":" + nullable );
+                throw new AssertionError( polyType + ":" + nullable );
         }
     }
 
 
-    private Method getMethod2( SqlTypeName sqlTypeName ) {
-        switch ( sqlTypeName ) {
+    private Method getMethod2( PolyType polyType ) {
+        switch ( polyType ) {
             case DATE:
                 return BuiltInMethod.RESULT_SET_GET_DATE2.method;
             case TIME:
@@ -363,7 +363,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             case TIMESTAMP:
                 return BuiltInMethod.RESULT_SET_GET_TIMESTAMP2.method;
             default:
-                throw new AssertionError( sqlTypeName );
+                throw new AssertionError( polyType );
         }
     }
 

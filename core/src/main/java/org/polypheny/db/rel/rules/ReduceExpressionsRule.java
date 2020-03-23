@@ -86,9 +86,9 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlRowOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -544,7 +544,7 @@ public abstract class ReduceExpressionsRule extends RelOptRule {
      * We have a loose definition of 'predicate': any boolean expression will do, except CASE. For example '(CASE ...) = 5' or '(CASE ...) IS NULL'.
      */
     public static RexCall pushPredicateIntoCase( RexCall call ) {
-        if ( call.getType().getSqlTypeName() != SqlTypeName.BOOLEAN ) {
+        if ( call.getType().getPolyType() != PolyType.BOOLEAN ) {
             return call;
         }
         switch ( call.getKind() ) {

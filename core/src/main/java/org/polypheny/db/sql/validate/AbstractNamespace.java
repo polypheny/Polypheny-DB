@@ -230,7 +230,7 @@ abstract class AbstractNamespace implements SqlValidatorNamespace {
         final RelDataTypeFactory typeFactory = validator.getTypeFactory();
         final RelDataType structType = toStruct( componentType, getNode() );
         final RelDataType collectionType;
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case ARRAY:
                 collectionType = typeFactory.createArrayType( structType, -1 );
                 break;

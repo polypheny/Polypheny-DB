@@ -297,7 +297,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
      * We assume that the proportion of nulls is negligible, even if the type is nullable.
      */
     public Double averageTypeValueSize( RelDataType type ) {
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case BOOLEAN:
             case TINYINT:
                 return 1d;
@@ -359,7 +359,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
         if ( value == null ) {
             return 1d;
         }
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case BOOLEAN:
             case TINYINT:
                 return 1d;
@@ -413,7 +413,7 @@ public class RelMdSize implements MetadataHandler<BuiltInMetadata.Size> {
                     RexCall call = (RexCall) node;
                     for ( RexNode operand : call.getOperands() ) {
                         // It's a reasonable assumption that a function's result will have similar size to its argument of a similar type. For example, UPPER(c) has the same average size as c.
-                        if ( operand.getType().getSqlTypeName() == node.getType().getSqlTypeName() ) {
+                        if ( operand.getType().getPolyType() == node.getType().getPolyType() ) {
                             return averageRexSize( operand, inputColumnSizes );
                         }
                     }

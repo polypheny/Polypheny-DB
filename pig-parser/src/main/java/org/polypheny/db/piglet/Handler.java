@@ -48,9 +48,9 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.PigRelBuilder;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
@@ -108,7 +108,7 @@ public class Handler {
                 builder.push( input );
                 System.out.println( input.getRowType() );
                 for ( RelDataTypeField field : input.getRowType().getFieldList() ) {
-                    switch ( field.getType().getSqlTypeName() ) {
+                    switch ( field.getType().getPolyType() ) {
                         case ARRAY:
                             System.out.println( field );
                     }
@@ -294,13 +294,13 @@ public class Handler {
         final RelDataTypeFactory typeFactory = builder.getTypeFactory();
         switch ( type.name ) {
             case "boolean":
-                return typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+                return typeFactory.createPolyType( PolyType.BOOLEAN );
             case "int":
-                return typeFactory.createSqlType( SqlTypeName.INTEGER );
+                return typeFactory.createPolyType( PolyType.INTEGER );
             case "float":
-                return typeFactory.createSqlType( SqlTypeName.REAL );
+                return typeFactory.createPolyType( PolyType.REAL );
             default:
-                return typeFactory.createSqlType( SqlTypeName.VARCHAR );
+                return typeFactory.createPolyType( PolyType.VARCHAR );
         }
     }
 

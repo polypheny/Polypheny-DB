@@ -67,10 +67,10 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -168,7 +168,7 @@ public class RexUtil {
     public static boolean isNullLiteral( RexNode node, boolean allowCast ) {
         if ( node instanceof RexLiteral ) {
             RexLiteral literal = (RexLiteral) node;
-            if ( literal.getTypeName() == SqlTypeName.NULL ) {
+            if ( literal.getTypeName() == PolyType.NULL ) {
                 assert null == literal.getValue();
                 return true;
             } else {
@@ -284,7 +284,7 @@ public class RexUtil {
             case CAST:
                 final RexCall call = (RexCall) node;
                 final RexNode arg0 = call.getOperands().get( 0 );
-                return SqlTypeUtil.equalSansNullability( typeFactory, arg0.getType(), call.getType() );
+                return PolyTypeUtil.equalSansNullability( typeFactory, arg0.getType(), call.getType() );
         }
         return false;
     }
@@ -437,8 +437,8 @@ public class RexUtil {
      * </ul>
      */
     private static boolean canAssignFrom( RelDataType type1, RelDataType type2 ) {
-        final SqlTypeName name1 = type1.getSqlTypeName();
-        final SqlTypeName name2 = type2.getSqlTypeName();
+        final PolyType name1 = type1.getPolyType();
+        final PolyType name2 = type2.getPolyType();
         if ( name1.getFamily() == name2.getFamily() ) {
             switch ( name1.getFamily() ) {
                 case NUMERIC:
@@ -691,12 +691,12 @@ public class RexUtil {
             case CAST:
                 RelDataType lhsType = call.getType();
                 RelDataType rhsType = call.operands.get( 0 ).getType();
-                if ( rhsType.getSqlTypeName() == SqlTypeName.NULL ) {
+                if ( rhsType.getPolyType() == PolyType.NULL ) {
                     return false;
                 }
-                if ( SqlTypeUtil.inCharFamily( lhsType ) || SqlTypeUtil.inCharFamily( rhsType ) ) {
+                if ( PolyTypeUtil.inCharFamily( lhsType ) || PolyTypeUtil.inCharFamily( rhsType ) ) {
                     localCheck = false;
-                } else if ( SqlTypeUtil.isDecimal( lhsType ) && (lhsType != rhsType) ) {
+                } else if ( PolyTypeUtil.isDecimal( lhsType ) && (lhsType != rhsType) ) {
                     return true;
                 }
                 break;
@@ -705,12 +705,12 @@ public class RexUtil {
         }
 
         if ( localCheck ) {
-            if ( SqlTypeUtil.isDecimal( call.getType() ) ) {
+            if ( PolyTypeUtil.isDecimal( call.getType() ) ) {
                 // NOTE jvs 27-Mar-2007: Depending on the type factory, the result of a division may be decimal, even though both inputs are integer.
                 return true;
             }
             for ( int i = 0; i < call.operands.size(); i++ ) {
-                if ( SqlTypeUtil.isDecimal( call.operands.get( i ).getType() ) ) {
+                if ( PolyTypeUtil.isDecimal( call.operands.get( i ).getType() ) ) {
                     return true;
                 }
             }
@@ -1367,19 +1367,19 @@ public class RexUtil {
             return false;
         }
         final RelDataType source = ((RexCall) node).getOperands().get( 0 ).getType();
-        final SqlTypeName sourceSqlTypeName = source.getSqlTypeName();
+        final PolyType sourcePolyType = source.getPolyType();
         final RelDataType target = node.getType();
-        final SqlTypeName targetSqlTypeName = target.getSqlTypeName();
+        final PolyType targetPolyType = target.getPolyType();
         // 1) Both INT numeric types
-        if ( SqlTypeFamily.INTEGER.getTypeNames().contains( sourceSqlTypeName ) && SqlTypeFamily.INTEGER.getTypeNames().contains( targetSqlTypeName ) ) {
-            return targetSqlTypeName.compareTo( sourceSqlTypeName ) >= 0;
+        if ( PolyTypeFamily.INTEGER.getTypeNames().contains( sourcePolyType ) && PolyTypeFamily.INTEGER.getTypeNames().contains( targetPolyType ) ) {
+            return targetPolyType.compareTo( sourcePolyType ) >= 0;
         }
         // 2) Both CHARACTER types: it depends on the precision (length)
-        if ( SqlTypeFamily.CHARACTER.getTypeNames().contains( sourceSqlTypeName ) && SqlTypeFamily.CHARACTER.getTypeNames().contains( targetSqlTypeName ) ) {
-            return targetSqlTypeName.compareTo( sourceSqlTypeName ) >= 0 && source.getPrecision() <= target.getPrecision();
+        if ( PolyTypeFamily.CHARACTER.getTypeNames().contains( sourcePolyType ) && PolyTypeFamily.CHARACTER.getTypeNames().contains( targetPolyType ) ) {
+            return targetPolyType.compareTo( sourcePolyType ) >= 0 && source.getPrecision() <= target.getPrecision();
         }
         // 3) From NUMERIC family to CHARACTER family: it depends on the precision/scale
-        if ( sourceSqlTypeName.getFamily() == SqlTypeFamily.NUMERIC && targetSqlTypeName.getFamily() == SqlTypeFamily.CHARACTER ) {
+        if ( sourcePolyType.getFamily() == PolyTypeFamily.NUMERIC && targetPolyType.getFamily() == PolyTypeFamily.CHARACTER ) {
             int sourceLength = source.getPrecision() + 1; // include sign
             if ( source.getScale() != -1 && source.getScale() != 0 ) {
                 sourceLength += source.getScale() + 1; // include decimal mark

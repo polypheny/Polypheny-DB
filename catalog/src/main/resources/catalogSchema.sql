@@ -42,7 +42,7 @@ CREATE TABLE "column" (
     "table"     BIGINT          NOT NULL REFERENCES "table" ("id"),
     "name"      VARCHAR(100)    NOT NULL,
     "position"  INTEGER         NOT NULL,
-    "type"      INTEGER         NOT NULL,
+    "type"      VARCHAR(50)     NOT NULL,
     "length"    INTEGER         NULL,
     "scale"     INTEGER         NULL,
     "nullable"  BOOLEAN         NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE "column" (
 
 CREATE TABLE "default_value" (
     "column"        BIGINT        NOT NULL REFERENCES "column" ("id"),
-    "type"          INTEGER       NOT NULL,
+    "type"          VARCHAR(50)   NOT NULL,
     "value"         VARCHAR(1000) NULL,
     "function_name" VARCHAR(100)  NULL,
     PRIMARY KEY ("column")
@@ -339,13 +339,13 @@ ALTER TABLE "table"
 -- column
 --
 INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "scale", "nullable", "collation" )
-VALUES ( 0, 0, 'deptno', 1, 3, NULL, NULL, FALSE, NULL ),
-       ( 1, 0, 'name', 2, 9, 20, NULL, FALSE, 2 ),
-       ( 2, 1, 'empid', 1, 3, NULL, NULL, FALSE, NULL ),
-       ( 3, 1, 'deptno', 2, 3, NULL, NULL, FALSE, NULL ),
-       ( 4, 1, 'name', 3, 9, 20, NULL, FALSE, 2 ),
-       ( 5, 1, 'salary', 4, 3, NULL, NULL, FALSE, NULL ),
-       ( 6, 1, 'commission', 5, 3, NULL, NULL, FALSE, NULL );
+VALUES ( 0, 0, 'deptno', 1, 'INTEGER', NULL, NULL, FALSE, NULL ),
+       ( 1, 0, 'name', 2, 'VARCHAR', 20, NULL, FALSE, 2 ),
+       ( 2, 1, 'empid', 1, 'INTEGER', NULL, NULL, FALSE, NULL ),
+       ( 3, 1, 'deptno', 2, 'INTEGER', NULL, NULL, FALSE, NULL ),
+       ( 4, 1, 'name', 3, 'VARCHAR', 20, NULL, FALSE, 2 ),
+       ( 5, 1, 'salary', 4, 'INTEGER', NULL, NULL, FALSE, NULL ),
+       ( 6, 1, 'commission', 5, 'INTEGER', NULL, NULL, FALSE, NULL );
 
 ALTER TABLE "column"
     ALTER COLUMN "id"

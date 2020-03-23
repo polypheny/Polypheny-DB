@@ -50,7 +50,7 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 /**
@@ -80,7 +80,7 @@ class PlannerTests {
 
 
     static RelOptCluster newCluster( VolcanoPlanner planner ) {
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( org.polypheny.db.rel.type.RelDataTypeSystem.DEFAULT );
+        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( org.polypheny.db.rel.type.RelDataTypeSystem.DEFAULT );
         return RelOptCluster.create( planner, new RexBuilder( typeFactory ) );
     }
 

@@ -57,7 +57,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -138,11 +138,11 @@ public class RelToSqlConverterStructsTest {
     private static final Table TABLE = new Table() {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            final RelDataType aType = typeFactory.createSqlType( SqlTypeName.BIGINT );
-            final RelDataType bType = typeFactory.createSqlType( SqlTypeName.BIGINT );
-            final RelDataType cType = typeFactory.createSqlType( SqlTypeName.BIGINT );
-            final RelDataType dType = typeFactory.createSqlType( SqlTypeName.BIGINT );
-            final RelDataType eType = typeFactory.createSqlType( SqlTypeName.BIGINT );
+            final RelDataType aType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType bType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType cType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType dType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType eType = typeFactory.createPolyType( PolyType.BIGINT );
             final RelDataType n11Type = typeFactory.createStructType( ImmutableList.of( bType ), ImmutableList.of( "b" ) );
             final RelDataType n12Type = typeFactory.createStructType( ImmutableList.of( cType ), ImmutableList.of( "c" ) );
             final RelDataType n1Type = typeFactory.createStructType( ImmutableList.of( n11Type, n12Type ), ImmutableList.of( "n11", "n12" ) );

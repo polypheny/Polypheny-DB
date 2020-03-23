@@ -35,7 +35,7 @@ package org.polypheny.db.rel.type;
 
 
 import java.io.Serializable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -145,7 +145,7 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
 
     @Override
     public boolean isDynamicStar() {
-        return type.getSqlTypeName() == SqlTypeName.DYNAMIC_STAR;
+        return type.getPolyType() == PolyType.DYNAMIC_STAR;
     }
 
 }

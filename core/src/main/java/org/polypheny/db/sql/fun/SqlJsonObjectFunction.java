@@ -47,11 +47,11 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Static;
 
 
@@ -73,12 +73,12 @@ public class SqlJsonObjectFunction extends SqlFunction {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.from( 1 );
+        return PolyOperandCountRanges.from( 1 );
     }
 
 
     @Override
-    protected void checkOperandCount( SqlValidator validator, SqlOperandTypeChecker argType, SqlCall call ) {
+    protected void checkOperandCount( SqlValidator validator, PolyOperandTypeChecker argType, SqlCall call ) {
         assert call.operandCount() % 2 == 1;
     }
 
@@ -88,7 +88,7 @@ public class SqlJsonObjectFunction extends SqlFunction {
         final int count = callBinding.getOperandCount();
         for ( int i = 1; i < count; i += 2 ) {
             RelDataType nameType = callBinding.getOperandType( i );
-            if ( !SqlTypeUtil.inCharFamily( nameType ) ) {
+            if ( !PolyTypeUtil.inCharFamily( nameType ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newError( Static.RESOURCE.expectedCharacter() );
                 }

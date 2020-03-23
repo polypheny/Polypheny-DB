@@ -60,7 +60,6 @@ import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.FrameworkConfig;
@@ -71,6 +70,7 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -3378,7 +3378,7 @@ public class RelToSqlConverterTest {
                             .withIdentifierQuoteString( "\"" )
                             .withDataTypeSystem( new RelDataTypeSystemImpl() {
                                 @Override
-                                public int getMaxPrecision( SqlTypeName typeName ) {
+                                public int getMaxPrecision( PolyType typeName ) {
                                     switch ( typeName ) {
                                         case VARCHAR:
                                             return 256;

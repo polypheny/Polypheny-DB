@@ -69,13 +69,13 @@ import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlMonotonicBinaryOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Util;
@@ -130,8 +130,8 @@ public class RexExecutorTest {
             Object[] values = new Object[1];
             final DataContext testContext = new TestDataContext( values );
             final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-            final RelDataType varchar = typeFactory.createSqlType( SqlTypeName.VARCHAR );
-            final RelDataType integer = typeFactory.createSqlType( SqlTypeName.INTEGER );
+            final RelDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
+            final RelDataType integer = typeFactory.createPolyType( PolyType.INTEGER );
             // Polypheny-DB is internally creating the input ref via a RexRangeRef
             // which eventually leads to a RexInputRef. So we are good.
             final RexInputRef input = rexBuilder.makeInputRef( varchar, 0 );

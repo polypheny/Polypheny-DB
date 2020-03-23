@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import java.util.List;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -44,7 +44,7 @@ import org.polypheny.db.sql.type.SqlTypeName;
  */
 abstract class SqlAbstractStringLiteral extends SqlLiteral {
 
-    protected SqlAbstractStringLiteral( Object value, SqlTypeName typeName, SqlParserPos pos ) {
+    protected SqlAbstractStringLiteral( Object value, PolyType typeName, SqlParserPos pos ) {
         super( value, typeName, pos );
     }
 

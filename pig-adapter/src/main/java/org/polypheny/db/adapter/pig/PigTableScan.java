@@ -89,7 +89,7 @@ public class PigTableScan extends TableScan implements PigRel {
 
 
     private String getConcatenatedFieldNameAndTypeForPigSchema( Implementor implementor, RelDataTypeField field ) {
-        final PigDataType pigDataType = PigDataType.valueOf( field.getType().getSqlTypeName() );
+        final PigDataType pigDataType = PigDataType.valueOf( field.getType().getPolyType() );
         final String fieldName = implementor.getFieldName( this, field.getIndex() );
         return fieldName + ':' + DataType.findTypeName( pigDataType.getPigType() );
     }

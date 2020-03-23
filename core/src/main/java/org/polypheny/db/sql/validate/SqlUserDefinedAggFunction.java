@@ -48,10 +48,10 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
 
@@ -77,9 +77,9 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction {
      */
     public SqlUserDefinedAggFunction(
             SqlIdentifier opName,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker,
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker,
             AggregateFunction function,
             boolean requiresOrder,
             boolean requiresOver,
@@ -119,7 +119,7 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction {
 
     private RelDataType toSql( RelDataType type ) {
         if ( type instanceof JavaType && ((JavaType) type).getJavaClass() == Object.class ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
         return JavaTypeFactoryImpl.toSql( typeFactory, type );
     }

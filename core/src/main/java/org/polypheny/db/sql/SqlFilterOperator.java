@@ -35,12 +35,12 @@ package org.polypheny.db.sql;
 
 
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Static;
 
 
@@ -100,7 +100,7 @@ public class SqlFilterOperator extends SqlBinaryOperator {
         validator.validateAggregateParams( aggCall, condition, orderList, scope );
 
         final RelDataType type = validator.deriveType( scope, condition );
-        if ( !SqlTypeUtil.inBooleanFamily( type ) ) {
+        if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
             throw validator.newValidationError( condition, Static.RESOURCE.condMustBeBoolean( "FILTER" ) );
         }
     }

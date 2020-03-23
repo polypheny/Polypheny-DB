@@ -43,12 +43,12 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlSingleOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -96,7 +96,7 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.of( 2 );
+        return PolyOperandCountRanges.of( 2 );
     }
 
 
@@ -127,7 +127,7 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
         if ( !OperandTypes.PERIOD.checkSingleOperandType( callBinding, callBinding.operand( 0 ), 0, throwOnFailure ) ) {
             return false;
         }
-        final SqlSingleOperandTypeChecker rightChecker;
+        final PolySingleOperandTypeChecker rightChecker;
         switch ( kind ) {
             case CONTAINS:
                 rightChecker = OperandTypes.PERIOD_OR_DATETIME;
@@ -141,10 +141,10 @@ public class SqlOverlapsOperator extends SqlBinaryOperator {
         }
         final RelDataType t0 = callBinding.getOperandType( 0 );
         final RelDataType t1 = callBinding.getOperandType( 1 );
-        if ( !SqlTypeUtil.isDatetime( t1 ) ) {
+        if ( !PolyTypeUtil.isDatetime( t1 ) ) {
             final RelDataType t00 = t0.getFieldList().get( 0 ).getType();
             final RelDataType t10 = t1.getFieldList().get( 0 ).getType();
-            if ( !SqlTypeUtil.sameNamedType( t00, t10 ) ) {
+            if ( !PolyTypeUtil.sameNamedType( t00, t10 ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newValidationSignatureError();
                 }

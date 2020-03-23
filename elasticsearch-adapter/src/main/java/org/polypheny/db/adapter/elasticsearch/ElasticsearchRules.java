@@ -60,8 +60,8 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -192,7 +192,7 @@ class ElasticsearchRules {
             }
             if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
                 final RexNode op1 = call.getOperands().get( 1 );
-                if ( op1 instanceof RexLiteral && op1.getType().getSqlTypeName() == SqlTypeName.INTEGER ) {
+                if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                     return stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]";
                 }
             }

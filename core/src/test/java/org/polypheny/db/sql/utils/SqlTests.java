@@ -38,10 +38,10 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.utils.SqlTester.ParameterChecker;
 import org.polypheny.db.sql.utils.SqlTester.ResultChecker;
 import org.polypheny.db.sql.utils.SqlTester.TypeChecker;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
 
@@ -51,9 +51,9 @@ import org.polypheny.db.util.Util;
  */
 public abstract class SqlTests {
 
-    public static final TypeChecker INTEGER_TYPE_CHECKER = new SqlTypeChecker( SqlTypeName.INTEGER );
+    public static final TypeChecker INTEGER_TYPE_CHECKER = new SqlTypeChecker( PolyType.INTEGER );
 
-    public static final TypeChecker BOOLEAN_TYPE_CHECKER = new SqlTypeChecker( SqlTypeName.BOOLEAN );
+    public static final TypeChecker BOOLEAN_TYPE_CHECKER = new SqlTypeChecker( PolyType.BOOLEAN );
 
     /**
      * Checker which allows any type.
@@ -90,10 +90,10 @@ public abstract class SqlTests {
      * @return String representation of type
      */
     public static String getTypeString( RelDataType sqlType ) {
-        switch ( sqlType.getSqlTypeName() ) {
+        switch ( sqlType.getPolyType() ) {
             case VARCHAR:
             case CHAR:
-                String actual = sqlType.getSqlTypeName().name();
+                String actual = sqlType.getPolyType().name();
                 if ( sqlType.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED ) {
                     actual = actual + "(" + sqlType.getPrecision() + ")";
                 }
@@ -471,10 +471,10 @@ public abstract class SqlTests {
      */
     private static class SqlTypeChecker implements TypeChecker {
 
-        private final SqlTypeName typeName;
+        private final PolyType typeName;
 
 
-        SqlTypeChecker( SqlTypeName typeName ) {
+        SqlTypeChecker( PolyType typeName ) {
             this.typeName = typeName;
         }
 
