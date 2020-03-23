@@ -44,7 +44,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -83,7 +83,7 @@ public class CeilOperatorConversion implements DruidSqlOperatorConverter {
                 return null;
             }
             final TimeZone tz;
-            if ( arg.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+            if ( arg.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                 tz = TimeZone.getTimeZone( query.getConnectionConfig().timeZone() );
             } else {
                 tz = DateTimeUtils.UTC_ZONE;

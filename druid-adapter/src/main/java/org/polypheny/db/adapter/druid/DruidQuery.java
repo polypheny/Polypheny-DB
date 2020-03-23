@@ -98,9 +98,9 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -268,9 +268,9 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         switch ( rexNode.getKind() ) {
             case INPUT_REF:
                 columnName = extractColumnName( rexNode, rowType, druidQuery );
-                if ( rexNode.getType().getSqlTypeName() == SqlTypeName.DATE
-                        || rexNode.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP
-                        || rexNode.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+                if ( rexNode.getType().getSqlTypeName() == PolyType.DATE
+                        || rexNode.getType().getSqlTypeName() == PolyType.TIMESTAMP
+                        || rexNode.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     // Use UTC for DATE and TIMESTAMP types
                     extractionFunction = TimeExtractionFunction.createDefault( DateTimeUtils.UTC_ZONE.getID() );
                 } else {
@@ -287,11 +287,11 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     return Pair.of( null, null );
                 }
                 RexNode extractValueNode = ((RexCall) rexNode).getOperands().get( 1 );
-                if ( extractValueNode.getType().getSqlTypeName() == SqlTypeName.DATE || extractValueNode.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP ) {
+                if ( extractValueNode.getType().getSqlTypeName() == PolyType.DATE || extractValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP ) {
                     // Use 'UTC' at the extraction level
                     extractionFunction = TimeExtractionFunction.createExtractFromGranularity( granularity, DateTimeUtils.UTC_ZONE.getID() );
                     columnName = extractColumnName( extractValueNode, rowType, druidQuery );
-                } else if ( extractValueNode.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+                } else if ( extractValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     // Use local time zone at the extraction level
                     extractionFunction = TimeExtractionFunction.createExtractFromGranularity( granularity, druidQuery.getConnectionConfig().timeZone() );
                     columnName = extractColumnName( extractValueNode, rowType, druidQuery );
@@ -309,9 +309,9 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     return Pair.of( null, null );
                 }
                 RexNode floorValueNode = ((RexCall) rexNode).getOperands().get( 0 );
-                if ( floorValueNode.getType().getSqlTypeName() == SqlTypeName.DATE
-                        || floorValueNode.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP
-                        || floorValueNode.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+                if ( floorValueNode.getType().getSqlTypeName() == PolyType.DATE
+                        || floorValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP
+                        || floorValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     // Use 'UTC' at the extraction level, since all datetime types are represented in 'UTC'
                     extractionFunction = TimeExtractionFunction.createFloorFromGranularity( granularity, DateTimeUtils.UTC_ZONE.getID() );
                     columnName = extractColumnName( floorValueNode, rowType, druidQuery );
@@ -326,8 +326,8 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 }
                 columnName = extractColumnName( ((RexCall) rexNode).getOperands().get( 0 ), rowType, druidQuery );
                 // CASE CAST to TIME/DATE need to make sure that we have valid extraction fn
-                final SqlTypeName toTypeName = rexNode.getType().getSqlTypeName();
-                if ( toTypeName == SqlTypeName.DATE || toTypeName == SqlTypeName.TIMESTAMP || toTypeName == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+                final PolyType toTypeName = rexNode.getType().getSqlTypeName();
+                if ( toTypeName == PolyType.DATE || toTypeName == PolyType.TIMESTAMP || toTypeName == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     extractionFunction = TimeExtractionFunction.translateCastToTimeExtract( rexNode, TimeZone.getTimeZone( druidQuery.getConnectionConfig().timeZone() ) );
                     if ( extractionFunction == null ) {
                         // no extraction Function means cast is not valid thus bail out
@@ -355,16 +355,16 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             // it is not a leaf cast don't bother going further.
             return false;
         }
-        final SqlTypeName toTypeName = rexNode.getType().getSqlTypeName();
-        if ( toTypeName.getFamily() == SqlTypeFamily.CHARACTER ) {
+        final PolyType toTypeName = rexNode.getType().getSqlTypeName();
+        if ( toTypeName.getFamily() == PolyTypeFamily.CHARACTER ) {
             // CAST of input to character type
             return true;
         }
-        if ( toTypeName.getFamily() == SqlTypeFamily.NUMERIC ) {
+        if ( toTypeName.getFamily() == PolyTypeFamily.NUMERIC ) {
             // CAST of input to numeric type, it is part of a bounded comparison
             return true;
         }
-        if ( toTypeName.getFamily() == SqlTypeFamily.TIMESTAMP || toTypeName.getFamily() == SqlTypeFamily.DATETIME ) {
+        if ( toTypeName.getFamily() == PolyTypeFamily.TIMESTAMP || toTypeName.getFamily() == PolyTypeFamily.DATETIME ) {
             // CAST of literal to timestamp type
             return true;
         }
@@ -692,7 +692,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             for ( RelFieldCollation fCol : sort.collation.getFieldCollations() ) {
                 collationIndexes.add( fCol.getFieldIndex() );
                 collationDirections.add( fCol.getDirection() );
-                if ( sort.getRowType().getFieldList().get( fCol.getFieldIndex() ).getType().getFamily() == SqlTypeFamily.NUMERIC ) {
+                if ( sort.getRowType().getFieldList().get( fCol.getFieldIndex() ).getType().getFamily() == PolyTypeFamily.NUMERIC ) {
                     numericCollationBitSetBuilder.set( fCol.getFieldIndex() );
                 }
             }
@@ -882,11 +882,11 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             final RexNode filterNode;
             // Type check First
             final RelDataType type = aggCall.getType();
-            final SqlTypeName sqlTypeName = type.getSqlTypeName();
+            final PolyType polyType = type.getSqlTypeName();
             final boolean isNotAcceptedType;
-            if ( SqlTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( sqlTypeName ) || SqlTypeFamily.INTEGER.getTypeNames().contains( sqlTypeName ) ) {
+            if ( PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( polyType ) || PolyTypeFamily.INTEGER.getTypeNames().contains( polyType ) ) {
                 isNotAcceptedType = false;
-            } else if ( SqlTypeFamily.EXACT_NUMERIC.getTypeNames().contains( sqlTypeName ) && (type.getScale() == 0 || RuntimeConfig.APPROXIMATE_DECIMAL.getBoolean()) ) {
+            } else if ( PolyTypeFamily.EXACT_NUMERIC.getTypeNames().contains( polyType ) && (type.getScale() == 0 || RuntimeConfig.APPROXIMATE_DECIMAL.getBoolean()) ) {
                 // Decimal, If scale is zero or we allow approximating decimal, we can proceed
                 isNotAcceptedType = false;
             } else {
@@ -1297,16 +1297,16 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     private static JsonAggregation getJsonAggregation( String name, AggregateCall aggCall, RexNode filterNode, String fieldName, String aggExpression, DruidQuery druidQuery ) {
         final boolean fractional;
         final RelDataType type = aggCall.getType();
-        final SqlTypeName sqlTypeName = type.getSqlTypeName();
+        final PolyType polyType = type.getSqlTypeName();
         final JsonAggregation aggregation;
 
-        if ( SqlTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( sqlTypeName ) ) {
+        if ( PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( polyType ) ) {
             fractional = true;
-        } else if ( SqlTypeFamily.INTEGER.getTypeNames().contains( sqlTypeName ) ) {
+        } else if ( PolyTypeFamily.INTEGER.getTypeNames().contains( polyType ) ) {
             fractional = false;
-        } else if ( SqlTypeFamily.EXACT_NUMERIC.getTypeNames().contains( sqlTypeName ) ) {
+        } else if ( PolyTypeFamily.EXACT_NUMERIC.getTypeNames().contains( polyType ) ) {
             // Decimal
-            assert sqlTypeName == SqlTypeName.DECIMAL;
+            assert polyType == PolyType.DECIMAL;
             if ( type.getScale() == 0 ) {
                 fractional = false;
             } else {

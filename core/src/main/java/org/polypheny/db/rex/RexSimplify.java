@@ -67,8 +67,8 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -227,7 +227,7 @@ public class RexSimplify {
     RexNode simplify( RexNode e, RexUnknownAs unknownAs ) {
         if ( strong.isNull( e ) ) {
             // Only boolean NULL (aka UNKNOWN) can be converted to FALSE. Even in unknownAs=FALSE mode, we must not convert a NULL integer (say) to FALSE
-            if ( e.getType().getSqlTypeName() == SqlTypeName.BOOLEAN ) {
+            if ( e.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
                 switch ( unknownAs ) {
                     case FALSE:
                     case TRUE:
@@ -309,7 +309,7 @@ public class RexSimplify {
         // "1 != 1" becomes FALSE;
         // "1 != NULL" becomes UNKNOWN (or FALSE if unknownAsFalse);
         // "1 != '1'" is unchanged because the types are not the same.
-        if ( o0.isA( SqlKind.LITERAL ) && o1.isA( SqlKind.LITERAL ) && SqlTypeUtil.equalSansNullability( rexBuilder.getTypeFactory(), o0.getType(), o1.getType() ) ) {
+        if ( o0.isA( SqlKind.LITERAL ) && o1.isA( SqlKind.LITERAL ) && PolyTypeUtil.equalSansNullability( rexBuilder.getTypeFactory(), o0.getType(), o1.getType() ) ) {
             final C v0 = ((RexLiteral) o0).getValueAs( clazz );
             final C v1 = ((RexLiteral) o1).getValueAs( clazz );
             if ( v0 == null || v1 == null ) {
@@ -432,7 +432,7 @@ public class RexSimplify {
                 // NOT NOT x ==> x
                 return simplify( ((RexCall) a).getOperands().get( 0 ), unknownAs );
             case LITERAL:
-                if ( a.getType().getSqlTypeName() == SqlTypeName.BOOLEAN && !RexLiteral.isNullLiteral( a ) ) {
+                if ( a.getType().getSqlTypeName() == PolyType.BOOLEAN && !RexLiteral.isNullLiteral( a ) ) {
                     return rexBuilder.makeLiteral( !RexLiteral.booleanValue( a ) );
                 }
         }
@@ -718,7 +718,7 @@ public class RexSimplify {
             }
         }
 
-        if ( call.getType().getSqlTypeName() == SqlTypeName.BOOLEAN ) {
+        if ( call.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
             final RexNode result = simplifyBooleanCase( rexBuilder, branches, unknownAs, caseType );
             if ( result != null ) {
                 if ( sameTypeOrNarrowsNullability( caseType, result.getType() ) ) {
@@ -760,7 +760,7 @@ public class RexSimplify {
      */
     private boolean sameTypeOrNarrowsNullability( RelDataType oldType, RelDataType newType ) {
         return oldType.equals( newType )
-                || (SqlTypeUtil.equalSansNullability( rexBuilder.typeFactory, oldType, newType )
+                || (PolyTypeUtil.equalSansNullability( rexBuilder.typeFactory, oldType, newType )
                 && oldType.isNullable());
     }
 
@@ -1478,7 +1478,7 @@ public class RexSimplify {
             if ( v1 == null ) {
                 throw new AssertionError( "interpreter returned null for " + foo1.e );
             }
-            if ( before.getType().getSqlTypeName() == SqlTypeName.BOOLEAN ) {
+            if ( before.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
                 switch ( unknownAs ) {
                     case FALSE:
                     case TRUE:
@@ -1508,7 +1508,7 @@ public class RexSimplify {
             case LITERAL:
                 final RexLiteral literal = (RexLiteral) operand;
                 final Comparable value = literal.getValueAs( Comparable.class );
-                final SqlTypeName typeName = literal.getTypeName();
+                final PolyType typeName = literal.getTypeName();
 
                 // First, try to remove the cast without changing the value.
                 // makeCast and canRemoveCastFromLiteral have the same logic, so we are sure to be able to remove the cast.

@@ -54,12 +54,12 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.type.InferTypes;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -71,20 +71,20 @@ public class SqlCastFunction extends SqlFunction {
     /**
      * Map of all casts that do not preserve monotonicity.
      */
-    private final SetMultimap<SqlTypeFamily, SqlTypeFamily> nonMonotonicCasts =
-            ImmutableSetMultimap.<SqlTypeFamily, SqlTypeFamily>builder()
-                    .put( SqlTypeFamily.EXACT_NUMERIC, SqlTypeFamily.CHARACTER )
-                    .put( SqlTypeFamily.NUMERIC, SqlTypeFamily.CHARACTER )
-                    .put( SqlTypeFamily.APPROXIMATE_NUMERIC, SqlTypeFamily.CHARACTER )
-                    .put( SqlTypeFamily.DATETIME_INTERVAL, SqlTypeFamily.CHARACTER )
-                    .put( SqlTypeFamily.CHARACTER, SqlTypeFamily.EXACT_NUMERIC )
-                    .put( SqlTypeFamily.CHARACTER, SqlTypeFamily.NUMERIC )
-                    .put( SqlTypeFamily.CHARACTER, SqlTypeFamily.APPROXIMATE_NUMERIC )
-                    .put( SqlTypeFamily.CHARACTER, SqlTypeFamily.DATETIME_INTERVAL )
-                    .put( SqlTypeFamily.DATETIME, SqlTypeFamily.TIME )
-                    .put( SqlTypeFamily.TIMESTAMP, SqlTypeFamily.TIME )
-                    .put( SqlTypeFamily.TIME, SqlTypeFamily.DATETIME )
-                    .put( SqlTypeFamily.TIME, SqlTypeFamily.TIMESTAMP )
+    private final SetMultimap<PolyTypeFamily, PolyTypeFamily> nonMonotonicCasts =
+            ImmutableSetMultimap.<PolyTypeFamily, PolyTypeFamily>builder()
+                    .put( PolyTypeFamily.EXACT_NUMERIC, PolyTypeFamily.CHARACTER )
+                    .put( PolyTypeFamily.NUMERIC, PolyTypeFamily.CHARACTER )
+                    .put( PolyTypeFamily.APPROXIMATE_NUMERIC, PolyTypeFamily.CHARACTER )
+                    .put( PolyTypeFamily.DATETIME_INTERVAL, PolyTypeFamily.CHARACTER )
+                    .put( PolyTypeFamily.CHARACTER, PolyTypeFamily.EXACT_NUMERIC )
+                    .put( PolyTypeFamily.CHARACTER, PolyTypeFamily.NUMERIC )
+                    .put( PolyTypeFamily.CHARACTER, PolyTypeFamily.APPROXIMATE_NUMERIC )
+                    .put( PolyTypeFamily.CHARACTER, PolyTypeFamily.DATETIME_INTERVAL )
+                    .put( PolyTypeFamily.DATETIME, PolyTypeFamily.TIME )
+                    .put( PolyTypeFamily.TIMESTAMP, PolyTypeFamily.TIME )
+                    .put( PolyTypeFamily.TIME, PolyTypeFamily.DATETIME )
+                    .put( PolyTypeFamily.TIME, PolyTypeFamily.TIMESTAMP )
                     .build();
 
 
@@ -128,7 +128,7 @@ public class SqlCastFunction extends SqlFunction {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.of( 2 );
+        return PolyOperandCountRanges.of( 2 );
     }
 
 
@@ -145,13 +145,13 @@ public class SqlCastFunction extends SqlFunction {
         }
         RelDataType validatedNodeType = callBinding.getValidator().getValidatedNodeType( left );
         RelDataType returnType = callBinding.getValidator().deriveType( callBinding.getScope(), right );
-        if ( !SqlTypeUtil.canCastFrom( returnType, validatedNodeType, true ) ) {
+        if ( !PolyTypeUtil.canCastFrom( returnType, validatedNodeType, true ) ) {
             if ( throwOnFailure ) {
                 throw callBinding.newError( RESOURCE.cannotCastValue( validatedNodeType.toString(), returnType.toString() ) );
             }
             return false;
         }
-        if ( SqlTypeUtil.areCharacterSetsMismatched( validatedNodeType, returnType ) ) {
+        if ( PolyTypeUtil.areCharacterSetsMismatched( validatedNodeType, returnType ) ) {
             if ( throwOnFailure ) {
                 // Include full type string to indicate character set mismatch.
                 throw callBinding.newError( RESOURCE.cannotCastValue( validatedNodeType.getFullTypeString(), returnType.getFullTypeString() ) );
@@ -186,7 +186,7 @@ public class SqlCastFunction extends SqlFunction {
     public SqlMonotonicity getMonotonicity( SqlOperatorBinding call ) {
         RelDataTypeFamily castFrom = call.getOperandType( 0 ).getFamily();
         RelDataTypeFamily castTo = call.getOperandType( 1 ).getFamily();
-        if ( castFrom instanceof SqlTypeFamily && castTo instanceof SqlTypeFamily && nonMonotonicCasts.containsEntry( castFrom, castTo ) ) {
+        if ( castFrom instanceof PolyTypeFamily && castTo instanceof PolyTypeFamily && nonMonotonicCasts.containsEntry( castFrom, castTo ) ) {
             return SqlMonotonicity.NOT_MONOTONIC;
         } else {
             return call.getOperandMonotonicity( 0 );

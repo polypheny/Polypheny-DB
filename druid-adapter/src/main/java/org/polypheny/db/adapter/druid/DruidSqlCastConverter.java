@@ -44,7 +44,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -68,27 +68,27 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
             return null;
         }
 
-        final SqlTypeName fromType = operand.getType().getSqlTypeName();
-        final SqlTypeName toType = rexNode.getType().getSqlTypeName();
+        final PolyType fromType = operand.getType().getSqlTypeName();
+        final PolyType toType = rexNode.getType().getSqlTypeName();
         final String timeZoneConf = druidQuery.getConnectionConfig().timeZone();
         final TimeZone timeZone = TimeZone.getTimeZone( timeZoneConf == null ? "UTC" : timeZoneConf );
         final boolean nullEqualToEmpty = RuntimeConfig.NULL_EQUAL_TO_EMPTY.getBoolean();
 
-        if ( SqlTypeName.CHAR_TYPES.contains( fromType ) && SqlTypeName.DATETIME_TYPES.contains( toType ) ) {
+        if ( PolyType.CHAR_TYPES.contains( fromType ) && PolyType.DATETIME_TYPES.contains( toType ) ) {
             //case chars to dates
-            return castCharToDateTime( toType == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ? timeZone : DateTimeUtils.UTC_ZONE, operandExpression, toType, nullEqualToEmpty ? "" : null );
-        } else if ( SqlTypeName.DATETIME_TYPES.contains( fromType ) && SqlTypeName.CHAR_TYPES.contains( toType ) ) {
+            return castCharToDateTime( toType == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ? timeZone : DateTimeUtils.UTC_ZONE, operandExpression, toType, nullEqualToEmpty ? "" : null );
+        } else if ( PolyType.DATETIME_TYPES.contains( fromType ) && PolyType.CHAR_TYPES.contains( toType ) ) {
             //case dates to chars
-            return castDateTimeToChar( fromType == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ? timeZone : DateTimeUtils.UTC_ZONE, operandExpression, fromType );
-        } else if ( SqlTypeName.DATETIME_TYPES.contains( fromType ) && toType == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+            return castDateTimeToChar( fromType == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ? timeZone : DateTimeUtils.UTC_ZONE, operandExpression, fromType );
+        } else if ( PolyType.DATETIME_TYPES.contains( fromType ) && toType == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
             if ( timeZone.equals( DateTimeUtils.UTC_ZONE ) ) {
                 // bail out, internal representation is the same, we do not need to do anything
                 return operandExpression;
             }
             // to timestamp with local time zone
             return castCharToDateTime( timeZone, castDateTimeToChar( DateTimeUtils.UTC_ZONE, operandExpression, fromType ), toType, nullEqualToEmpty ? "" : null );
-        } else if ( fromType == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE && SqlTypeName.DATETIME_TYPES.contains( toType ) ) {
-            if ( toType != SqlTypeName.DATE && timeZone.equals( DateTimeUtils.UTC_ZONE ) ) {
+        } else if ( fromType == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE && PolyType.DATETIME_TYPES.contains( toType ) ) {
+            if ( toType != PolyType.DATE && timeZone.equals( DateTimeUtils.UTC_ZONE ) ) {
                 // bail out, internal representation is the same, we do not need to do anything
                 return operandExpression;
             }
@@ -111,7 +111,7 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
                 typeCastExpression = operandExpression;
             }
 
-            if ( toType == SqlTypeName.DATE ) {
+            if ( toType == PolyType.DATE ) {
                 // Floor to day when casting to DATE.
                 return DruidExpressions.applyTimestampFloor( typeCastExpression, Period.days( 1 ).toString(), "", TimeZone.getTimeZone( druidQuery.getConnectionConfig().timeZone() ) );
             } else {
@@ -122,14 +122,14 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
     }
 
 
-    private static String castCharToDateTime( TimeZone timeZone, String operand, final SqlTypeName toType, String format ) {
+    private static String castCharToDateTime( TimeZone timeZone, String operand, final PolyType toType, String format ) {
         // Cast strings to date times by parsing them from SQL format.
         final String timestampExpression = DruidExpressions.functionCall( "timestamp_parse", ImmutableList.of( operand, DruidExpressions.stringLiteral( format ), DruidExpressions.stringLiteral( timeZone.getID() ) ) );
 
-        if ( toType == SqlTypeName.DATE ) {
+        if ( toType == PolyType.DATE ) {
             // case to date we need to floor to day first
             return DruidExpressions.applyTimestampFloor( timestampExpression, Period.days( 1 ).toString(), "", timeZone );
-        } else if ( toType == SqlTypeName.TIMESTAMP || toType == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+        } else if ( toType == PolyType.TIMESTAMP || toType == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
             return timestampExpression;
         } else {
             throw new IllegalStateException( DruidQuery.format( "Unsupported DateTime type[%s]", toType ) );
@@ -137,17 +137,17 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
     }
 
 
-    private static String castDateTimeToChar( final TimeZone timeZone, final String operand, final SqlTypeName fromType ) {
+    private static String castDateTimeToChar( final TimeZone timeZone, final String operand, final PolyType fromType ) {
         return DruidExpressions.functionCall( "timestamp_format", ImmutableList.of( operand, DruidExpressions.stringLiteral( dateTimeFormatString( fromType ) ), DruidExpressions.stringLiteral( timeZone.getID() ) ) );
     }
 
 
-    public static String dateTimeFormatString( final SqlTypeName sqlTypeName ) {
-        if ( sqlTypeName == SqlTypeName.DATE ) {
+    public static String dateTimeFormatString( final PolyType polyType ) {
+        if ( polyType == PolyType.DATE ) {
             return "yyyy-MM-dd";
-        } else if ( sqlTypeName == SqlTypeName.TIMESTAMP ) {
+        } else if ( polyType == PolyType.TIMESTAMP ) {
             return "yyyy-MM-dd HH:mm:ss";
-        } else if ( sqlTypeName == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+        } else if ( polyType == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
             return "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
         } else {
             return null;

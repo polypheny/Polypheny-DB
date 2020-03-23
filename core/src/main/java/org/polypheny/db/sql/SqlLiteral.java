@@ -46,13 +46,13 @@ import org.polypheny.db.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Litmus;
@@ -81,57 +81,57 @@ import org.polypheny.db.util.Util;
  * <th>Value type</th>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#NULL}</td>
+ * <td>{@link PolyType#NULL}</td>
  * <td>The null value. It has its own special type.</td>
  * <td>null</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#BOOLEAN}</td>
+ * <td>{@link PolyType#BOOLEAN}</td>
  * <td>Boolean, namely <code>TRUE</code>, <code>FALSE</code> or <code>UNKNOWN</code>.</td>
  * <td>{@link Boolean}, or null represents the UNKNOWN value</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#DECIMAL}</td>
+ * <td>{@link PolyType#DECIMAL}</td>
  * <td>Exact number, for example <code>0</code>, <code>-.5</code>, <code>12345</code>.</td>
  * <td>{@link BigDecimal}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#DOUBLE}</td>
+ * <td>{@link PolyType#DOUBLE}</td>
  * <td>Approximate number, for example <code>6.023E-23</code>.</td>
  * <td>{@link BigDecimal}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#DATE}</td>
+ * <td>{@link PolyType#DATE}</td>
  * <td>Date, for example <code>DATE '1969-04'29'</code></td>
  * <td>{@link Calendar}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#TIME}</td>
+ * <td>{@link PolyType#TIME}</td>
  * <td>Time, for example <code>TIME '18:37:42.567'</code></td>
  * <td>{@link Calendar}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#TIMESTAMP}</td>
+ * <td>{@link PolyType#TIMESTAMP}</td>
  * <td>Timestamp, for example <code>TIMESTAMP '1969-04-29 18:37:42.567'</code></td>
  * <td>{@link Calendar}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#CHAR}</td>
+ * <td>{@link PolyType#CHAR}</td>
  * <td>Character constant, for example <code>'Hello, world!'</code>, <code>''</code>, <code>_N'Bonjour'</code>, <code>_ISO-8859-1'It''s superman!' COLLATE SHIFT_JIS$ja_JP$2</code>. These are always CHAR, never VARCHAR.</td>
  * <td>{@link NlsString}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#BINARY}</td>
+ * <td>{@link PolyType#BINARY}</td>
  * <td>Binary constant, for example <code>X'ABC'</code>, <code>X'7F'</code>. Note that strings with an odd number of hexits will later become values of the BIT datatype, because they have an incomplete number of bytes. But here, they are all binary constants, because that's how they were written. These constants are always BINARY, never VARBINARY.</td>
  * <td>{@link BitString}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#SYMBOL}</td>
+ * <td>{@link PolyType#SYMBOL}</td>
  * <td>A symbol is a special type used to make parsing easier; it is not part of the SQL standard, and is not exposed to end-users. It is used to hold a symbol, such as the LEADING flag in a call to the function <code>TRIM([LEADING|TRAILING|BOTH] chars FROM string)</code>.</td>
  * <td>An {@link Enum}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#INTERVAL_YEAR} .. {@link SqlTypeName#INTERVAL_SECOND}</td>
+ * <td>{@link PolyType#INTERVAL_YEAR} .. {@link PolyType#INTERVAL_SECOND}</td>
  * <td>Interval, for example <code>INTERVAL '1:34' HOUR</code>.</td>
  * <td>{@link SqlIntervalLiteral.IntervalValue}.</td>
  * </tr>
@@ -141,9 +141,9 @@ public class SqlLiteral extends SqlNode {
 
     /**
      * The type with which this literal was declared. This type is very approximate: the literal may have a different type once validated. For example, all numeric literals have a type name of
-     * {@link SqlTypeName#DECIMAL}, but on validation may become {@link SqlTypeName#INTEGER}.
+     * {@link PolyType#DECIMAL}, but on validation may become {@link PolyType#INTEGER}.
      */
-    private final SqlTypeName typeName;
+    private final PolyType typeName;
 
     /**
      * The value of this literal. The type of the value must be appropriate for the typeName, as defined by the {@link #valueMatchesType} method.
@@ -154,7 +154,7 @@ public class SqlLiteral extends SqlNode {
     /**
      * Creates a <code>SqlLiteral</code>.
      */
-    protected SqlLiteral( Object value, SqlTypeName typeName, SqlParserPos pos ) {
+    protected SqlLiteral( Object value, PolyType typeName, SqlParserPos pos ) {
         super( pos );
         this.value = value;
         this.typeName = typeName;
@@ -166,7 +166,7 @@ public class SqlLiteral extends SqlNode {
     /**
      * @return value of {@link #typeName}
      */
-    public SqlTypeName getTypeName() {
+    public PolyType getTypeName() {
         return typeName;
     }
 
@@ -174,7 +174,7 @@ public class SqlLiteral extends SqlNode {
     /**
      * @return whether value is appropriate for its type (we have rules about these things)
      */
-    public static boolean valueMatchesType( Object value, SqlTypeName typeName ) {
+    public static boolean valueMatchesType( Object value, PolyType typeName ) {
         switch ( typeName ) {
             case BOOLEAN:
                 return (value == null) || (value instanceof Boolean);
@@ -367,21 +367,21 @@ public class SqlLiteral extends SqlNode {
 
     /**
      * Extracts the value from a literal.
-     *
+     * <p>
      * Cases:
      * <ul>
      * <li>If the node is a character literal, a chain of string literals, or a CAST of a character literal, returns the value as a {@link NlsString}.</li>
      * <li>If the node is a numeric literal, or a negated numeric literal, returns the value as a {@link BigDecimal}.</li>
      * <li>If the node is a {@link SqlIntervalQualifier}, returns its {@link TimeUnitRange}.</li>
-     * <li>If the node is INTERVAL_DAY_TIME_ in {@link SqlTypeFamily}, returns its sign multiplied by its millisecond equivalent value</li>
-     * <li>If the node is INTERVAL_YEAR_MONTH_ in {@link SqlTypeFamily}, returns its sign multiplied by its months equivalent value</li>
+     * <li>If the node is INTERVAL_DAY_TIME_ in {@link PolyTypeFamily}, returns its sign multiplied by its millisecond equivalent value</li>
+     * <li>If the node is INTERVAL_YEAR_MONTH_ in {@link PolyTypeFamily}, returns its sign multiplied by its months equivalent value</li>
      * <li>Otherwise throws {@link IllegalArgumentException}.</li>
      * </ul>
      */
     public static Comparable value( SqlNode node ) throws IllegalArgumentException {
         if ( node instanceof SqlLiteral ) {
             final SqlLiteral literal = (SqlLiteral) node;
-            if ( literal.getTypeName() == SqlTypeName.SYMBOL ) {
+            if ( literal.getTypeName() == PolyType.SYMBOL ) {
                 return (Enum) literal.value;
             }
             switch ( literal.getTypeName().getFamily() ) {
@@ -400,7 +400,7 @@ public class SqlLiteral extends SqlNode {
         if ( SqlUtil.isLiteralChain( node ) ) {
             assert node instanceof SqlCall;
             final SqlLiteral literal = SqlLiteralChainOperator.concatenateOperands( (SqlCall) node );
-            assert SqlTypeUtil.inCharFamily( literal.getTypeName() );
+            assert PolyTypeUtil.inCharFamily( literal.getTypeName() );
             return (NlsString) literal.value;
         }
         if ( node instanceof SqlIntervalQualifier ) {
@@ -434,11 +434,11 @@ public class SqlLiteral extends SqlNode {
     public static String stringValue( SqlNode node ) {
         if ( node instanceof SqlLiteral ) {
             SqlLiteral literal = (SqlLiteral) node;
-            assert SqlTypeUtil.inCharFamily( literal.getTypeName() );
+            assert PolyTypeUtil.inCharFamily( literal.getTypeName() );
             return literal.value.toString();
         } else if ( SqlUtil.isLiteralChain( node ) ) {
             final SqlLiteral literal = SqlLiteralChainOperator.concatenateOperands( (SqlCall) node );
-            assert SqlTypeUtil.inCharFamily( literal.getTypeName() );
+            assert PolyTypeUtil.inCharFamily( literal.getTypeName() );
             return literal.value.toString();
         } else if ( node instanceof SqlCall && ((SqlCall) node).getOperator() == SqlStdOperatorTable.CAST ) {
             return stringValue( ((SqlCall) node).operand( 0 ) );
@@ -535,7 +535,7 @@ public class SqlLiteral extends SqlNode {
      * There's no singleton constant for a NULL literal. Instead, nulls must be instantiated via createNull(), because different instances have different context-dependent types.
      */
     public static SqlLiteral createNull( SqlParserPos pos ) {
-        return new SqlLiteral( null, SqlTypeName.NULL, pos );
+        return new SqlLiteral( null, PolyType.NULL, pos );
     }
 
 
@@ -544,13 +544,13 @@ public class SqlLiteral extends SqlNode {
      */
     public static SqlLiteral createBoolean( boolean b, SqlParserPos pos ) {
         return b
-                ? new SqlLiteral( Boolean.TRUE, SqlTypeName.BOOLEAN, pos )
-                : new SqlLiteral( Boolean.FALSE, SqlTypeName.BOOLEAN, pos );
+                ? new SqlLiteral( Boolean.TRUE, PolyType.BOOLEAN, pos )
+                : new SqlLiteral( Boolean.FALSE, PolyType.BOOLEAN, pos );
     }
 
 
     public static SqlLiteral createUnknown( SqlParserPos pos ) {
-        return new SqlLiteral( null, SqlTypeName.BOOLEAN, pos );
+        return new SqlLiteral( null, PolyType.BOOLEAN, pos );
     }
 
 
@@ -560,7 +560,7 @@ public class SqlLiteral extends SqlNode {
      * @see #symbolValue(Class)
      */
     public static SqlLiteral createSymbol( Enum<?> o, SqlParserPos pos ) {
-        return new SqlLiteral( o, SqlTypeName.SYMBOL, pos );
+        return new SqlLiteral( o, PolyType.SYMBOL, pos );
     }
 
 
@@ -568,7 +568,7 @@ public class SqlLiteral extends SqlNode {
      * Creates a literal which represents a sample specification.
      */
     public static SqlLiteral createSample( SqlSampleSpec sampleSpec, SqlParserPos pos ) {
-        return new SqlLiteral( sampleSpec, SqlTypeName.SYMBOL, pos );
+        return new SqlLiteral( sampleSpec, PolyType.SYMBOL, pos );
     }
 
 
@@ -709,7 +709,7 @@ public class SqlLiteral extends SqlNode {
             case BINARY:
                 bitString = (BitString) value;
                 int bitCount = bitString.getBitCount();
-                return typeFactory.createSqlType( SqlTypeName.BINARY, bitCount / 8 );
+                return typeFactory.createSqlType( PolyType.BINARY, bitCount / 8 );
             case CHAR:
                 NlsString string = (NlsString) value;
                 Charset charset = string.getCharset();
@@ -720,7 +720,7 @@ public class SqlLiteral extends SqlNode {
                 if ( null == collation ) {
                     collation = SqlCollation.COERCIBLE;
                 }
-                RelDataType type = typeFactory.createSqlType( SqlTypeName.CHAR, string.getValue().length() );
+                RelDataType type = typeFactory.createSqlType( PolyType.CHAR, string.getValue().length() );
                 type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
                 return type;
 
@@ -741,7 +741,7 @@ public class SqlLiteral extends SqlNode {
                 return typeFactory.createSqlIntervalType( intervalValue.getIntervalQualifier() );
 
             case SYMBOL:
-                return typeFactory.createSqlType( SqlTypeName.SYMBOL );
+                return typeFactory.createSqlType( PolyType.SYMBOL );
 
             case INTEGER: // handled in derived class
             case TIME: // handled in derived class
@@ -908,7 +908,7 @@ public class SqlLiteral extends SqlNode {
         if ( unicodeEscapeChar == 0 ) {
             return this;
         }
-        assert SqlTypeUtil.inCharFamily( getTypeName() );
+        assert PolyTypeUtil.inCharFamily( getTypeName() );
         NlsString ns = (NlsString) value;
         String s = ns.getValue();
         StringBuilder sb = new StringBuilder();

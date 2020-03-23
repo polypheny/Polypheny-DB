@@ -55,8 +55,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.PolyType;
 
 
 public abstract class Catalog {
@@ -445,7 +445,7 @@ public abstract class Catalog {
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, SqlTypeName type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
+    public abstract long addColumn( String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
 
     /**
      * Renames a column
@@ -470,7 +470,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param type     The new type of the column
      */
-    public abstract void setColumnType( long columnId, SqlTypeName type, Integer length, Integer precision ) throws GenericCatalogException;
+    public abstract void setColumnType( long columnId, PolyType type, Integer length, Integer precision ) throws GenericCatalogException;
 
     /**
      * Change nullability of the column (weather the column allows null values).
@@ -513,7 +513,7 @@ public abstract class Catalog {
      * @param type         The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-    public abstract void setDefaultValue( long columnId, SqlTypeName type, String defaultValue ) throws GenericCatalogException;
+    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws GenericCatalogException;
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.

@@ -55,7 +55,7 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -98,7 +98,7 @@ public class DruidQueryFilterTest {
     public void testBetweenFilterStringCase() throws IOException {
         final Fixture f = new Fixture();
         final List<RexNode> listRexNodes = ImmutableList.of( f.rexBuilder.makeLiteral( false ), f.rexBuilder.makeInputRef( f.varcharRowType, 0 ), f.rexBuilder.makeLiteral( "lower-bound" ), f.rexBuilder.makeLiteral( "upper-bound" ) );
-        RelDataType relDataType = f.typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+        RelDataType relDataType = f.typeFactory.createSqlType( PolyType.BOOLEAN );
         RexNode betweenRexNode = f.rexBuilder.makeCall( relDataType, SqlStdOperatorTable.BETWEEN, listRexNodes );
 
         DruidJsonFilter returnValue = DruidJsonFilter.toDruidFilters( betweenRexNode, f.varcharRowType, druidQuery );
@@ -120,7 +120,7 @@ public class DruidQueryFilterTest {
         final JavaTypeFactoryImpl typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RexBuilder rexBuilder = new RexBuilder( typeFactory );
         final DruidTable druidTable = new DruidTable( Mockito.mock( DruidSchema.class ), "dataSource", null, ImmutableSet.of(), "timestamp", null, null, null );
-        final RelDataType varcharType = typeFactory.createSqlType( SqlTypeName.VARCHAR );
+        final RelDataType varcharType = typeFactory.createSqlType( PolyType.VARCHAR );
         final RelDataType varcharRowType = typeFactory.builder().add( "dimensionName", null, varcharType ).build();
     }
 }

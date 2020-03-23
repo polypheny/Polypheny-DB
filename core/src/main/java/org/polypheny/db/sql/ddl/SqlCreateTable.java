@@ -93,10 +93,10 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -230,9 +230,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
-                    final SqlTypeName dataType = SqlTypeName.get( columnDeclaration.dataType.getTypeName().getSimple() );
+                    final PolyType dataType = PolyType.get( columnDeclaration.dataType.getTypeName().getSimple() );
                     Collation collation = null;
-                    if ( dataType.getFamily() == SqlTypeFamily.CHARACTER ) {
+                    if ( dataType.getFamily() == PolyTypeFamily.CHARACTER ) {
                         if ( columnDeclaration.collation != null ) {
                             collation = Collation.parse( columnDeclaration.collation );
                         } else {
@@ -267,7 +267,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         if ( v.startsWith( "'" ) ) {
                             v = v.substring( 1, v.length() - 1 );
                         }
-                        transaction.getCatalog().setDefaultValue( addedColumnId, SqlTypeName.VARCHAR, v );
+                        transaction.getCatalog().setDefaultValue( addedColumnId, PolyType.VARCHAR, v );
                     }
                 } else if ( c.e instanceof SqlKeyConstraint ) {
                     SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;

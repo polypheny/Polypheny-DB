@@ -37,10 +37,10 @@ package org.polypheny.db.sql;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -53,14 +53,14 @@ public class SqlUnresolvedFunction extends SqlFunction {
     /**
      * Creates a placeholder SqlUnresolvedFunction for an invocation of a function with a possibly qualified name. This name must be resolved into either a builtin function or a user-defined function.
      *
-     * @param sqlIdentifier possibly qualified identifier for function
-     * @param returnTypeInference strategy to use for return type inference
+     * @param sqlIdentifier        possibly qualified identifier for function
+     * @param returnTypeInference  strategy to use for return type inference
      * @param operandTypeInference strategy to use for parameter type inference
-     * @param operandTypeChecker strategy to use for parameter type checking
-     * @param paramTypes array of parameter types
-     * @param funcType function category
+     * @param operandTypeChecker   strategy to use for parameter type checking
+     * @param paramTypes           array of parameter types
+     * @param funcType             function category
      */
-    public SqlUnresolvedFunction( SqlIdentifier sqlIdentifier, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, SqlFunctionCategory funcType ) {
+    public SqlUnresolvedFunction( SqlIdentifier sqlIdentifier, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, SqlFunctionCategory funcType ) {
         super( sqlIdentifier, returnTypeInference, operandTypeInference, operandTypeChecker, paramTypes, funcType );
     }
 
@@ -73,7 +73,7 @@ public class SqlUnresolvedFunction extends SqlFunction {
     @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
     }
 }
 

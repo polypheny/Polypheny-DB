@@ -47,15 +47,15 @@ import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.type.ComparableOperandTypeChecker;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.ComparableOperandTypeChecker;
+import org.polypheny.db.type.InferTypes;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.ReturnTypes;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 
@@ -133,8 +133,8 @@ public class SqlInOperator extends SqlBinaryOperator {
 
         // Now check that the left expression is compatible with the type of the list. Same strategy as the '=' operator.
         // Normalize the types on both sides to be row types for the purposes of compatibility-checking.
-        RelDataType leftRowType = SqlTypeUtil.promoteToRowType( typeFactory, leftType, null );
-        RelDataType rightRowType = SqlTypeUtil.promoteToRowType( typeFactory, rightType, null );
+        RelDataType leftRowType = PolyTypeUtil.promoteToRowType( typeFactory, leftType, null );
+        RelDataType rightRowType = PolyTypeUtil.promoteToRowType( typeFactory, rightType, null );
 
         final ComparableOperandTypeChecker checker = (ComparableOperandTypeChecker) OperandTypes.COMPARABLE_UNORDERED_COMPARABLE_UNORDERED;
         if ( !checker.checkOperandTypes( new ExplicitOperatorBinding( new SqlCallBinding( validator, scope, call ), ImmutableList.of( leftRowType, rightRowType ) ) ) ) {
@@ -143,7 +143,7 @@ public class SqlInOperator extends SqlBinaryOperator {
 
         // Result is a boolean, nullable if there are any nullable types on either side.
         return typeFactory.createTypeWithNullability(
-                typeFactory.createSqlType( SqlTypeName.BOOLEAN ),
+                typeFactory.createSqlType( PolyType.BOOLEAN ),
                 anyNullable( leftRowType.getFieldList() ) || anyNullable( rightRowType.getFieldList() ) );
     }
 

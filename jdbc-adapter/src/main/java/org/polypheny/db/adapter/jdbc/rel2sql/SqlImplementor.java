@@ -104,10 +104,10 @@ import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.fun.SqlSumEmptyIsZeroAggFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -517,7 +517,7 @@ public abstract class SqlImplementor {
 
                 case LITERAL:
                     final RexLiteral literal = (RexLiteral) rex;
-                    if ( literal.getTypeName() == SqlTypeName.SYMBOL ) {
+                    if ( literal.getTypeName() == PolyType.SYMBOL ) {
                         final Enum symbol = (Enum) literal.getValue();
                         return SqlLiteral.createSymbol( symbol, POS );
                     }
@@ -951,7 +951,7 @@ public abstract class SqlImplementor {
         public SqlNode toSql( RexProgram program, RexNode rex ) {
             if ( rex.getKind() == SqlKind.LITERAL ) {
                 final RexLiteral literal = (RexLiteral) rex;
-                if ( literal.getTypeName().getFamily() == SqlTypeFamily.CHARACTER ) {
+                if ( literal.getTypeName().getFamily() == PolyTypeFamily.CHARACTER ) {
                     return new SqlIdentifier( RexLiteral.stringValue( literal ), POS );
                 }
             }

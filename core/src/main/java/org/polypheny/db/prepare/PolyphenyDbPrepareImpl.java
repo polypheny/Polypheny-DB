@@ -162,8 +162,6 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParserImplFactory;
-import org.polypheny.db.sql.type.ExtraSqlTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -173,6 +171,8 @@ import org.polypheny.db.sql2rel.SqlToRelConverter.Config;
 import org.polypheny.db.sql2rel.SqlToRelConverter.ConfigBuilder;
 import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.Frameworks.PrepareAction;
+import org.polypheny.db.type.ExtraPolyTypes;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
@@ -698,7 +698,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         final JavaTypeFactory typeFactory = context.getTypeFactory();
         final RelDataType x =
                 typeFactory.builder()
-                        .add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, SqlTypeName.INTEGER )
+                        .add( SqlUtil.deriveAliasFromOrdinal( 0 ), null, PolyType.INTEGER )
                         .build();
         @SuppressWarnings("unchecked") final List<T> list = (List) ImmutableList.of( 1 );
         final List<String> origin = null;
@@ -956,7 +956,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
                     }
                     return ColumnMetaData.struct( columns );
-                case ExtraSqlTypes.GEOMETRY:
+                case ExtraPolyTypes.GEOMETRY:
                     typeOrdinal = Types.VARCHAR;
                     // fall through
                 default:
@@ -1005,8 +1005,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     private static String getTypeName( RelDataType type ) {
-        final SqlTypeName sqlTypeName = type.getSqlTypeName();
-        switch ( sqlTypeName ) {
+        final PolyType polyType = type.getSqlTypeName();
+        switch ( polyType ) {
             case ARRAY:
             case MULTISET:
             case MAP:
@@ -1027,7 +1027,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
             case INTERVAL_MINUTE_SECOND:
                 return "INTERVAL_MINUTE_TO_SECOND";
             default:
-                return sqlTypeName.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+                return polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
         }
     }
 

@@ -38,13 +38,13 @@ import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -72,9 +72,9 @@ public class SqlBinaryOperator extends SqlOperator {
             SqlKind kind,
             int prec,
             boolean leftAssoc,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker ) {
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 name,
                 kind,
@@ -120,7 +120,7 @@ public class SqlBinaryOperator extends SqlOperator {
     protected RelDataType adjustType( SqlValidator validator, final SqlCall call, RelDataType type ) {
         RelDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
         RelDataType operandType2 = validator.getValidatedNodeType( call.operand( 1 ) );
-        if ( SqlTypeUtil.inCharFamily( operandType1 ) && SqlTypeUtil.inCharFamily( operandType2 ) ) {
+        if ( PolyTypeUtil.inCharFamily( operandType1 ) && PolyTypeUtil.inCharFamily( operandType2 ) ) {
             Charset cs1 = operandType1.getCharset();
             Charset cs2 = operandType2.getCharset();
             assert (null != cs1) && (null != cs2) : "An implicit or explicit charset should have been set";
@@ -135,7 +135,7 @@ public class SqlBinaryOperator extends SqlOperator {
             // validation will occur inside getCoercibilityDyadicOperator...
             SqlCollation resultCol = SqlCollation.getCoercibilityDyadicOperator( col1, col2 );
 
-            if ( SqlTypeUtil.inCharFamily( type ) ) {
+            if ( PolyTypeUtil.inCharFamily( type ) ) {
                 type = validator.getTypeFactory().createTypeWithCharsetAndCollation( type, type.getCharset(), resultCol );
             }
         }
@@ -149,7 +149,7 @@ public class SqlBinaryOperator extends SqlOperator {
 
         RelDataType operandType1 = validator.getValidatedNodeType( call.operand( 0 ) );
         RelDataType operandType2 = validator.getValidatedNodeType( call.operand( 1 ) );
-        if ( SqlTypeUtil.inCharFamily( operandType1 ) && SqlTypeUtil.inCharFamily( operandType2 ) ) {
+        if ( PolyTypeUtil.inCharFamily( operandType1 ) && PolyTypeUtil.inCharFamily( operandType2 ) ) {
             Charset cs1 = operandType1.getCharset();
             Charset cs2 = operandType2.getCharset();
             assert (null != cs1) && (null != cs2) : "An implicit or explicit charset should have been set";
@@ -164,7 +164,7 @@ public class SqlBinaryOperator extends SqlOperator {
             // validation will occur inside getCoercibilityDyadicOperator...
             SqlCollation resultCol = SqlCollation.getCoercibilityDyadicOperator( col1, col2 );
 
-            if ( SqlTypeUtil.inCharFamily( type ) ) {
+            if ( PolyTypeUtil.inCharFamily( type ) ) {
                 type = validator.getTypeFactory()
                         .createTypeWithCharsetAndCollation( type, type.getCharset(), resultCol );
             }

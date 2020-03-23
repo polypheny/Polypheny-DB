@@ -52,8 +52,8 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 /**
@@ -64,7 +64,7 @@ public class DruidExpressions {
     /**
      * Type mapping between Polypheny-DB SQL family types and native Druid expression types
      */
-    static final Map<SqlTypeName, DruidType> EXPRESSION_TYPES;
+    static final Map<PolyType, DruidType> EXPRESSION_TYPES;
     /**
      * Druid expression safe chars, must be sorted.
      */
@@ -72,30 +72,30 @@ public class DruidExpressions {
 
 
     static {
-        final ImmutableMap.Builder<SqlTypeName, DruidType> builder = ImmutableMap.builder();
+        final ImmutableMap.Builder<PolyType, DruidType> builder = ImmutableMap.builder();
 
-        for ( SqlTypeName type : SqlTypeName.FRACTIONAL_TYPES ) {
+        for ( PolyType type : PolyType.FRACTIONAL_TYPES ) {
             builder.put( type, DruidType.DOUBLE );
         }
 
-        for ( SqlTypeName type : SqlTypeName.INT_TYPES ) {
+        for ( PolyType type : PolyType.INT_TYPES ) {
             builder.put( type, DruidType.LONG );
         }
 
-        for ( SqlTypeName type : SqlTypeName.STRING_TYPES ) {
+        for ( PolyType type : PolyType.STRING_TYPES ) {
             builder.put( type, DruidType.STRING );
         }
 
         // booleans in expressions are returned from druid as long. Druid will return 0 for false, non-zero value for true and null for absent value.
-        for ( SqlTypeName type : SqlTypeName.BOOLEAN_TYPES ) {
+        for ( PolyType type : PolyType.BOOLEAN_TYPES ) {
             builder.put( type, DruidType.LONG );
         }
 
         // Timestamps are treated as longs (millis since the epoch) in Druid expressions.
-        builder.put( SqlTypeName.TIMESTAMP, DruidType.LONG );
-        builder.put( SqlTypeName.DATE, DruidType.LONG );
-        builder.put( SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE, DruidType.LONG );
-        builder.put( SqlTypeName.OTHER, DruidType.COMPLEX );
+        builder.put( PolyType.TIMESTAMP, DruidType.LONG );
+        builder.put( PolyType.DATE, DruidType.LONG );
+        builder.put( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, DruidType.LONG );
+        builder.put( PolyType.OTHER, DruidType.COMPLEX );
         EXPRESSION_TYPES = builder.build();
         // Safe chars must be sorted
         Arrays.sort( SAFE_CHARS );
@@ -117,7 +117,7 @@ public class DruidExpressions {
     @Nullable
     public static String toDruidExpression( final RexNode rexNode, final RelDataType inputRowType, final DruidQuery druidRel ) {
         SqlKind kind = rexNode.getKind();
-        SqlTypeName sqlTypeName = rexNode.getType().getSqlTypeName();
+        PolyType polyType = rexNode.getType().getSqlTypeName();
 
         if ( kind == SqlKind.INPUT_REF ) {
             final RexInputRef ref = (RexInputRef) rexNode;
@@ -146,21 +146,21 @@ public class DruidExpressions {
             if ( RexLiteral.isNullLiteral( rexNode ) ) {
                 //case the filter/project might yield to unknown let Polypheny-DB deal with this for now
                 return null;
-            } else if ( SqlTypeName.NUMERIC_TYPES.contains( sqlTypeName ) ) {
+            } else if ( PolyType.NUMERIC_TYPES.contains( polyType ) ) {
                 return DruidExpressions.numberLiteral( (Number) RexLiteral.value( rexNode ) );
-            } else if ( SqlTypeFamily.INTERVAL_DAY_TIME == sqlTypeName.getFamily() ) {
+            } else if ( PolyTypeFamily.INTERVAL_DAY_TIME == polyType.getFamily() ) {
                 // Polypheny-DB represents DAY-TIME intervals in milliseconds.
                 final long milliseconds = ((Number) RexLiteral.value( rexNode )).longValue();
                 return DruidExpressions.numberLiteral( milliseconds );
-            } else if ( SqlTypeFamily.INTERVAL_YEAR_MONTH == sqlTypeName.getFamily() ) {
+            } else if ( PolyTypeFamily.INTERVAL_YEAR_MONTH == polyType.getFamily() ) {
                 // Polypheny-DB represents YEAR-MONTH intervals in months.
                 final long months = ((Number) RexLiteral.value( rexNode )).longValue();
                 return DruidExpressions.numberLiteral( months );
-            } else if ( SqlTypeName.STRING_TYPES.contains( sqlTypeName ) ) {
+            } else if ( PolyType.STRING_TYPES.contains( polyType ) ) {
                 return DruidExpressions.stringLiteral( RexLiteral.stringValue( rexNode ) );
-            } else if ( SqlTypeName.DATE == sqlTypeName || SqlTypeName.TIMESTAMP == sqlTypeName || SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE == sqlTypeName ) {
+            } else if ( PolyType.DATE == polyType || PolyType.TIMESTAMP == polyType || PolyType.TIME_WITH_LOCAL_TIME_ZONE == polyType ) {
                 return DruidExpressions.numberLiteral( DruidDateTimeUtils.literalValue( rexNode ) );
-            } else if ( SqlTypeName.BOOLEAN == sqlTypeName ) {
+            } else if ( PolyType.BOOLEAN == polyType ) {
                 return DruidExpressions.numberLiteral( RexLiteral.booleanValue( rexNode ) ? 1 : 0 );
             }
         }

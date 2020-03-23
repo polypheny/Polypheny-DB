@@ -38,10 +38,10 @@ import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.InferTypes;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**
@@ -57,7 +57,7 @@ class SqlDefaultOperator extends SqlSpecialOperator {
                 SqlKind.DEFAULT,
                 100,
                 true,
-                ReturnTypes.explicit( SqlTypeName.ANY ),
+                ReturnTypes.explicit( PolyType.ANY ),
                 InferTypes.RETURN_TYPE,
                 OperandTypes.NILADIC );
     }

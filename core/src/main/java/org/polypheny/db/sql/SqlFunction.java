@@ -40,11 +40,11 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.function.Functions;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
 
@@ -64,14 +64,14 @@ public class SqlFunction extends SqlOperator {
     /**
      * Creates a new SqlFunction for a call to a builtin function.
      *
-     * @param name Name of builtin function
-     * @param kind kind of operator implemented by function
-     * @param returnTypeInference strategy to use for return type inference
+     * @param name                 Name of builtin function
+     * @param kind                 kind of operator implemented by function
+     * @param returnTypeInference  strategy to use for return type inference
      * @param operandTypeInference strategy to use for parameter type inference
-     * @param operandTypeChecker strategy to use for parameter type checking
-     * @param category categorization for function
+     * @param operandTypeChecker   strategy to use for parameter type checking
+     * @param category             categorization for function
      */
-    public SqlFunction( String name, SqlKind kind, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, SqlFunctionCategory category ) {
+    public SqlFunction( String name, SqlKind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, SqlFunctionCategory category ) {
         // We leave sqlIdentifier as null to indicate that this is a builtin.  Same for paramTypes.
         this( name, null, kind, returnTypeInference, operandTypeInference, operandTypeChecker, null, category );
 
@@ -91,9 +91,9 @@ public class SqlFunction extends SqlOperator {
      */
     public SqlFunction(
             SqlIdentifier sqlIdentifier,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker,
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker,
             List<RelDataType> paramTypes,
             SqlFunctionCategory funcType ) {
         this(
@@ -115,9 +115,9 @@ public class SqlFunction extends SqlOperator {
             String name,
             SqlIdentifier sqlIdentifier,
             SqlKind kind,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker,
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker,
             List<RelDataType> paramTypes,
             SqlFunctionCategory category ) {
         super( name, kind, 100, 100, returnTypeInference, operandTypeInference, operandTypeChecker );

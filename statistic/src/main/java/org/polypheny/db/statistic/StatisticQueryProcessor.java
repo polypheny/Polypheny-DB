@@ -47,10 +47,10 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
@@ -219,7 +219,7 @@ public class StatisticQueryProcessor {
     }
 
 
-    public SqlTypeName getColumnType( String schemaTableColumn ) {
+    public PolyType getColumnType( String schemaTableColumn ) {
         String[] splits = schemaTableColumn.split( "\\." );
         if ( splits.length != 3 ) {
             return null;
@@ -231,10 +231,10 @@ public class StatisticQueryProcessor {
     /**
      * Method to get the type of a specific column
      */
-    public SqlTypeName getColumnType( String schema, String table, String column ) {
+    public PolyType getColumnType( String schema, String table, String column ) {
         Transaction transaction = getTransaction();
         // TODO: fix possible NullPointer
-        SqlTypeName type = null;
+        PolyType type = null;
 
         try {
             CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
@@ -320,11 +320,11 @@ public class StatisticQueryProcessor {
         }
 
         try {
-            List<SqlTypeName> types = new ArrayList<>();
+            List<PolyType> types = new ArrayList<>();
             List<String> names = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
 
-                types.add( SqlTypeName.get( metaData.type.name ) );
+                types.add( PolyType.get( metaData.type.name ) );
                 names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
             }
 

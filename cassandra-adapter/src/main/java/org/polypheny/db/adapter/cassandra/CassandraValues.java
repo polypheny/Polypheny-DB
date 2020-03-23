@@ -41,8 +41,8 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.IntervalSqlType;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
@@ -70,7 +70,7 @@ public class CassandraValues extends Values implements CassandraRel {
 
     public static Object getJavaClass( RexLiteral literal ) {
         RelDataType type = literal.getType();
-        if ( type instanceof BasicSqlType || type instanceof IntervalSqlType ) {
+        if ( type instanceof BasicPolyType || type instanceof IntervalPolyType ) {
             switch ( type.getSqlTypeName() ) {
                 case VARCHAR:
                 case CHAR:

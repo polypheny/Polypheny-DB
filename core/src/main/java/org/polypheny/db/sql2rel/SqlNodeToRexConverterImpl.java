@@ -48,8 +48,8 @@ import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlTimeLiteral;
 import org.polypheny.db.sql.SqlTimestampLiteral;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
@@ -98,8 +98,8 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
         if ( literal.getValue() == null ) {
             // Since there is no eq. RexLiteral of SqlLiteral.Unknown we treat it as a cast(null as boolean)
             RelDataType type;
-            if ( literal.getTypeName() == SqlTypeName.BOOLEAN ) {
-                type = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+            if ( literal.getTypeName() == PolyType.BOOLEAN ) {
+                type = typeFactory.createSqlType( PolyType.BOOLEAN );
                 type = typeFactory.createTypeWithNullability( type, true );
             } else {
                 type = validator.getValidatedNodeType( literal );

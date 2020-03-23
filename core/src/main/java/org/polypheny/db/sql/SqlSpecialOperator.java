@@ -36,9 +36,9 @@ package org.polypheny.db.sql;
 
 import java.util.function.Predicate;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.util.PrecedenceClimbingParser;
 import org.polypheny.db.util.Util;
 
@@ -59,7 +59,7 @@ public class SqlSpecialOperator extends SqlOperator {
     }
 
 
-    public SqlSpecialOperator( String name, SqlKind kind, int prec, boolean leftAssoc, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker ) {
+    public SqlSpecialOperator( String name, SqlKind kind, int prec, boolean leftAssoc, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 name,
                 kind,

@@ -64,7 +64,7 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
 
@@ -113,7 +113,7 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( Map.Entry<String, Class> field : fields ) {
-            SqlTypeName typeName = typeFactory.createJavaType( field.getValue() ).getSqlTypeName();
+            PolyType typeName = typeFactory.createJavaType( field.getValue() ).getSqlTypeName();
             // TODO (PCP)
             String physicalColumnName = field.getKey();
             fieldInfo.add( field.getKey(), physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );

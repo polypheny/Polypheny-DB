@@ -82,8 +82,8 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
@@ -497,11 +497,11 @@ public class RexToLixTranslator {
                         case VARBINARY:
                             // If this is a widening cast, no need to truncate.
                             final int sourcePrecision = sourceType.getPrecision();
-                            if ( SqlTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) <= 0 ) {
+                            if ( PolyTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) <= 0 ) {
                                 truncate = false;
                             }
                             // If this is a widening cast, no need to pad.
-                            if ( SqlTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) >= 0 ) {
+                            if ( PolyTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) >= 0 ) {
                                 pad = false;
                             }
                             // fall through

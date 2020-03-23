@@ -34,13 +34,13 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**
@@ -64,7 +64,7 @@ public class SqlSetOperator extends SqlBinaryOperator {
     }
 
 
-    public SqlSetOperator( String name, SqlKind kind, int prec, boolean all, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker ) {
+    public SqlSetOperator( String name, SqlKind kind, int prec, boolean all, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 name,
                 kind,

@@ -38,7 +38,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -68,8 +68,8 @@ public class RelRecordType extends RelDataTypeImpl implements Serializable {
 
 
     @Override
-    public SqlTypeName getSqlTypeName() {
-        return SqlTypeName.ROW;
+    public PolyType getSqlTypeName() {
+        return PolyType.ROW;
     }
 
 

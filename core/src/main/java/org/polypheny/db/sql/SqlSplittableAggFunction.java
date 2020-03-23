@@ -48,7 +48,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.mapping.Mappings.TargetMapping;
 
@@ -139,7 +139,7 @@ public interface SqlSplittableAggFunction {
                     ImmutableIntList.of(),
                     -1,
                     RelCollations.EMPTY,
-                    typeFactory.createSqlType( SqlTypeName.BIGINT ),
+                    typeFactory.createSqlType( PolyType.BIGINT ),
                     null );
         }
 
@@ -273,7 +273,7 @@ public interface SqlSplittableAggFunction {
                     ImmutableIntList.of(),
                     -1,
                     RelCollations.EMPTY,
-                    typeFactory.createSqlType( SqlTypeName.BIGINT ),
+                    typeFactory.createSqlType( PolyType.BIGINT ),
                     null );
         }
 

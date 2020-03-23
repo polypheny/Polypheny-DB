@@ -29,7 +29,7 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 // TODO(jan): General PostgresqlStore todo list:
 //   - Implement better logging.
@@ -117,7 +117,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    protected String getTypeString( SqlTypeName type ) {
+    protected String getTypeString( PolyType type ) {
         switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";

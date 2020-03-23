@@ -46,10 +46,10 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.ObjectSqlType;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.sql2rel.NullInitializerExpressionFactory;
+import org.polypheny.db.type.ObjectPolyType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
@@ -89,7 +89,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
 
     @Override
     public MockCatalogReader init() {
-        ObjectSqlType addressType = fixture.addressType;
+        ObjectPolyType addressType = fixture.addressType;
 
         // Register "SALES" schema.
         MockSchema salesSchema = new MockSchema( "SALES" );
@@ -98,7 +98,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         // Register "EMP" table with customer InitializerExpressionFactory to check whether newDefaultValue method called or not.
         final InitializerExpressionFactory countingInitializerExpressionFactory = new CountingFactory( ImmutableList.of( "DEPTNO" ) );
 
-        registerType( ImmutableList.of( salesSchema.getCatalogName(), salesSchema.getName(), "customBigInt" ), typeFactory -> typeFactory.createSqlType( SqlTypeName.BIGINT ) );
+        registerType( ImmutableList.of( salesSchema.getCatalogName(), salesSchema.getName(), "customBigInt" ), typeFactory -> typeFactory.createSqlType( PolyType.BIGINT ) );
 
         // Register "EMP" table.
         final MockTable empTable = MockTable.create( this, salesSchema, "EMP", false, 14, null, countingInitializerExpressionFactory );

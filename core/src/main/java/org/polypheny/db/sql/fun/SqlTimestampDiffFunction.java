@@ -39,10 +39,10 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 /**
@@ -75,15 +75,15 @@ class SqlTimestampDiffFunction extends SqlFunction {
     /**
      * Creates a SqlTimestampDiffFunction.
      */
-    private static final SqlReturnTypeInference RETURN_TYPE_INFERENCE =
+    private static final PolyReturnTypeInference RETURN_TYPE_INFERENCE =
             opBinding -> {
                 final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-                SqlTypeName sqlTypeName =
+                PolyType polyType =
                         opBinding.getOperandLiteralValue( 0, TimeUnit.class ) == TimeUnit.NANOSECOND
-                                ? SqlTypeName.BIGINT
-                                : SqlTypeName.INTEGER;
+                                ? PolyType.BIGINT
+                                : PolyType.INTEGER;
                 return typeFactory.createTypeWithNullability(
-                        typeFactory.createSqlType( sqlTypeName ),
+                        typeFactory.createSqlType( polyType ),
                         opBinding.getOperandType( 1 ).isNullable() || opBinding.getOperandType( 2 ).isNullable() );
             };
 
@@ -94,7 +94,7 @@ class SqlTimestampDiffFunction extends SqlFunction {
                 SqlKind.TIMESTAMP_DIFF,
                 RETURN_TYPE_INFERENCE,
                 null,
-                OperandTypes.family( SqlTypeFamily.ANY, SqlTypeFamily.DATETIME, SqlTypeFamily.DATETIME ),
+                OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.DATETIME, PolyTypeFamily.DATETIME ),
                 SqlFunctionCategory.TIMEDATE );
     }
 }

@@ -38,10 +38,10 @@ import java.math.BigDecimal;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 
 
 /**
@@ -50,7 +50,7 @@ import org.polypheny.db.sql.validate.SqlMonotonicity;
 public class SqlMonotonicBinaryOperator extends SqlBinaryOperator {
 
 
-    public SqlMonotonicBinaryOperator( String name, SqlKind kind, int prec, boolean isLeftAssoc, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker ) {
+    public SqlMonotonicBinaryOperator( String name, SqlKind kind, int prec, boolean isLeftAssoc, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker ) {
         super( name, kind, prec, isLeftAssoc, returnTypeInference, operandTypeInference, operandTypeChecker );
     }
 

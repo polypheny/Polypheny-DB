@@ -36,9 +36,9 @@ package org.polypheny.db.sql.fun;
 
 import org.polypheny.db.sql.SqlFunctionalOperator;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.validate.SqlModality;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**

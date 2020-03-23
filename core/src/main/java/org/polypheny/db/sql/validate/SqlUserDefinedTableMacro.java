@@ -60,9 +60,9 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -79,7 +79,7 @@ public class SqlUserDefinedTableMacro extends SqlFunction {
     private final TableMacro tableMacro;
 
 
-    public SqlUserDefinedTableMacro( SqlIdentifier opName, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableMacro tableMacro ) {
+    public SqlUserDefinedTableMacro( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableMacro tableMacro ) {
         super(
                 Util.last( opName.names ),
                 opName,

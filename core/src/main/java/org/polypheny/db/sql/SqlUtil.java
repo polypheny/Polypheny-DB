@@ -67,10 +67,10 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Resources;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BarfingInvocationHandler;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.Glossary;
@@ -164,7 +164,7 @@ public abstract class SqlUtil {
     public static boolean isNullLiteral( SqlNode node, boolean allowCast ) {
         if ( node instanceof SqlLiteral ) {
             SqlLiteral literal = (SqlLiteral) node;
-            if ( literal.getTypeName() == SqlTypeName.NULL ) {
+            if ( literal.getTypeName() == PolyType.NULL ) {
                 assert null == literal.getValue();
                 return true;
             } else {
@@ -505,7 +505,7 @@ public abstract class SqlUtil {
                     for ( Pair<RelDataType, RelDataType> p : Pair.zip( paramTypes, permutedArgTypes ) ) {
                         final RelDataType argType = p.right;
                         final RelDataType paramType = p.left;
-                        if ( argType != null && !SqlTypeUtil.canCastFrom( paramType, argType, false ) ) {
+                        if ( argType != null && !PolyTypeUtil.canCastFrom( paramType, argType, false ) ) {
                             return false;
                         }
                     }
@@ -633,8 +633,8 @@ public abstract class SqlUtil {
     /**
      * Constructs an operator signature from a type list.
      *
-     * @param op operator
-     * @param typeList list of types to use for operands. Types may be represented as {@link String}, {@link SqlTypeFamily}, or any object with a valid {@link Object#toString()} method.
+     * @param op       operator
+     * @param typeList list of types to use for operands. Types may be represented as {@link String}, {@link PolyTypeFamily}, or any object with a valid {@link Object#toString()} method.
      * @return constructed signature
      */
     public static String getOperatorSignature( SqlOperator op, List<?> typeList ) {
@@ -647,7 +647,7 @@ public abstract class SqlUtil {
      *
      * @param op operator
      * @param opName name to use for operator
-     * @param typeList list of {@link SqlTypeName} or {@link String} to use for operands
+     * @param typeList list of {@link PolyType} or {@link String} to use for operands
      * @return constructed signature
      */
     public static String getAliasedSignature( SqlOperator op, String opName, List<?> typeList ) {
@@ -743,7 +743,7 @@ public abstract class SqlUtil {
         if ( null == collation ) {
             collation = SqlCollation.COERCIBLE;
         }
-        RelDataType type = typeFactory.createSqlType( SqlTypeName.CHAR, str.getValue().length() );
+        RelDataType type = typeFactory.createSqlType( PolyType.CHAR, str.getValue().length() );
         type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
         return type;
     }

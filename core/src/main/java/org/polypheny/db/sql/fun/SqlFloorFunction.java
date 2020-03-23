@@ -45,9 +45,9 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**

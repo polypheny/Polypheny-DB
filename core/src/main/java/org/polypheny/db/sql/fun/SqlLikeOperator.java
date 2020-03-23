@@ -44,11 +44,11 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.InferTypes;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**
@@ -101,7 +101,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.between( 2, 3 );
+        return PolyOperandCountRanges.between( 2, 3 );
     }
 
 
@@ -124,7 +124,7 @@ public class SqlLikeOperator extends SqlSpecialOperator {
                 throw new AssertionError( "unexpected number of args to " + callBinding.getCall() + ": " + callBinding.getOperandCount() );
         }
 
-        return SqlTypeUtil.isCharTypeComparable( callBinding, callBinding.operands(), throwOnFailure );
+        return PolyTypeUtil.isCharTypeComparable( callBinding, callBinding.operands(), throwOnFailure );
     }
 
 

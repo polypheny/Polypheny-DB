@@ -41,14 +41,14 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SameOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlSingleOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeTransform;
-import org.polypheny.db.sql.type.SqlTypeTransforms;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.PolySingleOperandTypeChecker;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeTransform;
+import org.polypheny.db.type.PolyTypeTransforms;
+import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.SameOperandTypeChecker;
 import org.polypheny.db.util.Optionality;
 
 
@@ -57,12 +57,12 @@ import org.polypheny.db.util.Optionality;
  */
 public class SqlLeadLagAggFunction extends SqlAggFunction {
 
-    private static final SqlSingleOperandTypeChecker OPERAND_TYPES =
+    private static final PolySingleOperandTypeChecker OPERAND_TYPES =
             OperandTypes.or(
                     OperandTypes.ANY,
-                    OperandTypes.family( SqlTypeFamily.ANY, SqlTypeFamily.NUMERIC ),
+                    OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.NUMERIC ),
                     OperandTypes.and(
-                            OperandTypes.family( SqlTypeFamily.ANY, SqlTypeFamily.NUMERIC, SqlTypeFamily.ANY ),
+                            OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.NUMERIC, PolyTypeFamily.ANY ),
                             // Arguments 1 and 3 must have same type
                             new SameOperandTypeChecker( 3 ) {
                                 @Override
@@ -72,17 +72,17 @@ public class SqlLeadLagAggFunction extends SqlAggFunction {
                                 }
                             } ) );
 
-    private static final SqlReturnTypeInference RETURN_TYPE =
+    private static final PolyReturnTypeInference RETURN_TYPE =
             ReturnTypes.cascade( ReturnTypes.ARG0, ( binding, type ) -> {
                 // Result is NOT NULL if NOT NULL default value is provided
-                SqlTypeTransform transform;
+                PolyTypeTransform transform;
                 if ( binding.getOperandCount() < 3 ) {
-                    transform = SqlTypeTransforms.FORCE_NULLABLE;
+                    transform = PolyTypeTransforms.FORCE_NULLABLE;
                 } else {
                     RelDataType defValueType = binding.getOperandType( 2 );
                     transform = defValueType.isNullable()
-                            ? SqlTypeTransforms.FORCE_NULLABLE
-                            : SqlTypeTransforms.TO_NOT_NULLABLE;
+                            ? PolyTypeTransforms.FORCE_NULLABLE
+                            : PolyTypeTransforms.TO_NOT_NULLABLE;
                 }
                 return transform.transformType( binding, type );
             } );

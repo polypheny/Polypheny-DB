@@ -42,7 +42,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -65,7 +65,7 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
         if ( null == type ) {
             return null;
         }
-        return SqlTypeUtil.createMapType(
+        return PolyTypeUtil.createMapType(
                 opBinding.getTypeFactory(),
                 type.left,
                 type.right,
@@ -76,7 +76,7 @@ public class SqlMapValueConstructor extends SqlMultisetValueConstructor {
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final List<RelDataType> argTypes =
-                SqlTypeUtil.deriveAndCollectTypes(
+                PolyTypeUtil.deriveAndCollectTypes(
                         callBinding.getValidator(),
                         callBinding.getScope(),
                         callBinding.operands() );

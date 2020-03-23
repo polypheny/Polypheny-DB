@@ -45,9 +45,9 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlDialect;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -121,7 +121,7 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
-    protected abstract String getTypeString( SqlTypeName sqlTypeName );
+    protected abstract String getTypeString( PolyType polyType );
 
 
     @Override

@@ -121,7 +121,7 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParserImplFactory;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.NlsString;
@@ -4414,14 +4414,14 @@ SqlDataTypeSpec DataType() :
 // spaces in them but are not quoted.
 SqlIdentifier TypeName() :
 {
-    final SqlTypeName sqlTypeName;
+    final PolyType polyType;
     final SqlIdentifier typeName;
     final Span s = Span.of();
 }
 {
     (
-        sqlTypeName = SqlTypeName(s) {
-            typeName = new SqlIdentifier(sqlTypeName.name(), s.end(this));
+        polyType = PolyType(s) {
+            typeName = new SqlIdentifier(polyType.name(), s.end(this));
         }
 <#-- additional types are included here -->
 <#list parser.dataTypeParserMethods as method>
@@ -4439,61 +4439,61 @@ SqlIdentifier TypeName() :
 }
 
 // Types used for JDBC and ODBC scalar conversion function
-SqlTypeName SqlTypeName(Span s) :
+PolyType PolyType(Span s) :
 {
 }
 {
     (<CHARACTER> | <CHAR>) { s.add(this); }
     (
-        <VARYING> { return SqlTypeName.VARCHAR; }
+        <VARYING> { return PolyType.VARCHAR; }
     |
-        { return SqlTypeName.CHAR; }
+        { return PolyType.CHAR; }
     )
 |
-    <VARCHAR> { return SqlTypeName.VARCHAR; }
+    <VARCHAR> { return PolyType.VARCHAR; }
 |
-    <DATE> { return SqlTypeName.DATE; }
+    <DATE> { return PolyType.DATE; }
 |
-    <TIME> { return SqlTypeName.TIME; }
+    <TIME> { return PolyType.TIME; }
 |
-    <TIMESTAMP> { return SqlTypeName.TIMESTAMP; }
+    <TIMESTAMP> { return PolyType.TIMESTAMP; }
 |
     <GEOMETRY> {
         if (!this.conformance.allowGeometry()) {
             throw new ParseException(RESOURCE.geometryDisabled().str());
         }
-        return SqlTypeName.GEOMETRY;
+        return PolyType.GEOMETRY;
     }
 |
-    (<DECIMAL> | <DEC> | <NUMERIC>) { return SqlTypeName.DECIMAL; }
+    (<DECIMAL> | <DEC> | <NUMERIC>) { return PolyType.DECIMAL; }
 |
-    <BOOLEAN> { return SqlTypeName.BOOLEAN; }
+    <BOOLEAN> { return PolyType.BOOLEAN; }
 |
-    ( <INTEGER> | <INT> ) { return SqlTypeName.INTEGER; }
+    ( <INTEGER> | <INT> ) { return PolyType.INTEGER; }
 |
     <BINARY> { s.add(this); }
     (
-        <VARYING> { return SqlTypeName.VARBINARY; }
+        <VARYING> { return PolyType.VARBINARY; }
     |
-        { return SqlTypeName.BINARY; }
+        { return PolyType.BINARY; }
     )
 |
-    <VARBINARY> { return SqlTypeName.VARBINARY; }
+    <VARBINARY> { return PolyType.VARBINARY; }
 |
-    <TINYINT> { return SqlTypeName.TINYINT; }
+    <TINYINT> { return PolyType.TINYINT; }
 |
-    <SMALLINT> { return SqlTypeName.SMALLINT; }
+    <SMALLINT> { return PolyType.SMALLINT; }
 |
-    <BIGINT> { return SqlTypeName.BIGINT; }
+    <BIGINT> { return PolyType.BIGINT; }
 |
-    <REAL> { return SqlTypeName.REAL; }
+    <REAL> { return PolyType.REAL; }
 |
     <DOUBLE> { s.add(this); }
-    [ <PRECISION> ] { return SqlTypeName.DOUBLE; }
+    [ <PRECISION> ] { return PolyType.DOUBLE; }
 |
-    <FLOAT> { return SqlTypeName.FLOAT; }
+    <FLOAT> { return PolyType.FLOAT; }
 |
-    <ANY> { return SqlTypeName.ANY; }
+    <ANY> { return PolyType.ANY; }
 }
 
 // Types used for for JDBC and ODBC scalar conversion function
@@ -4549,7 +4549,7 @@ SqlIdentifier CollectionsTypeName() :
 {
     <MULTISET> {
         return new SqlIdentifier(
-            SqlTypeName.MULTISET.name(), getPos());
+            PolyType.MULTISET.name(), getPos());
     }
 }
 

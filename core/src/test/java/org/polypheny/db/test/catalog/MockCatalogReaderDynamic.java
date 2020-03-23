@@ -36,7 +36,7 @@ package org.polypheny.db.test.catalog;
 
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -72,8 +72,8 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
         registerTable( customerTable );
 
         // CREATE TABLE "REGION" - static table with known schema.
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
-        final RelDataType varcharType = typeFactory.createSqlType( SqlTypeName.VARCHAR );
+        final RelDataType intType = typeFactory.createSqlType( PolyType.INTEGER );
+        final RelDataType varcharType = typeFactory.createSqlType( PolyType.VARCHAR );
 
         MockTable regionTable = MockTable.create( this, schema, "REGION", false, 100 );
         regionTable.addColumn( "R_REGIONKEY", intType );

@@ -36,7 +36,7 @@ package org.polypheny.db.rel.type;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -80,14 +80,14 @@ class RelDataTypeHolder {
                 return Pair.of( f, false );
             }
             // A dynamic star field matches any field
-            if ( f.getType().getSqlTypeName() == SqlTypeName.DYNAMIC_STAR ) {
+            if ( f.getType().getSqlTypeName() == PolyType.DYNAMIC_STAR ) {
                 return Pair.of( f, false );
             }
         }
 
-        final SqlTypeName typeName = DynamicRecordType.isDynamicStarColName( fieldName )
-                ? SqlTypeName.DYNAMIC_STAR
-                : SqlTypeName.ANY;
+        final PolyType typeName = DynamicRecordType.isDynamicStarColName( fieldName )
+                ? PolyType.DYNAMIC_STAR
+                : PolyType.ANY;
 
         // This field does not exist in our field list; add it
         RelDataTypeField newField = new RelDataTypeFieldImpl(

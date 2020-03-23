@@ -37,8 +37,8 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -150,7 +150,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                                 RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
                     }
                 }
-                SqlTypeName dataType = SqlTypeName.get( type.getTypeName().getSimple() );
+                PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
                 transaction.getCatalog().setColumnType(
                         catalogColumn.id,
                         dataType,
@@ -213,7 +213,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                 if ( v.startsWith( "'" ) ) {
                     v = v.substring( 1, v.length() - 1 );
                 }
-                transaction.getCatalog().setDefaultValue( catalogColumn.id, SqlTypeName.VARCHAR, v );
+                transaction.getCatalog().setDefaultValue( catalogColumn.id, PolyType.VARCHAR, v );
             } else if ( dropDefault != null && dropDefault ) {
                 transaction.getCatalog().deleteDefaultValue( catalogColumn.id );
             } else {

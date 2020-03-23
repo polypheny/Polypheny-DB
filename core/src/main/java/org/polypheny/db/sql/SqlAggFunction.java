@@ -37,11 +37,11 @@ package org.polypheny.db.sql;
 import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.polypheny.db.plan.Context;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.util.Optionality;
 
 
@@ -64,9 +64,9 @@ public abstract class SqlAggFunction extends SqlFunction implements Context {
             String name,
             SqlIdentifier sqlIdentifier,
             SqlKind kind,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker,
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker,
             SqlFunctionCategory funcType,
             boolean requiresOrder,
             boolean requiresOver,

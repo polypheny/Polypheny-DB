@@ -33,8 +33,8 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -138,11 +138,11 @@ public class StatisticsManager<T extends Comparable<T>> {
      * @param qualifiedColumn column name
      * @param type            the type of the new column
      */
-    private void addColumn( String qualifiedColumn, SqlTypeName type ) {
+    private void addColumn( String qualifiedColumn, PolyType type ) {
         String[] splits = QueryColumn.getSplitColumn( qualifiedColumn );
-        if ( type.getFamily() == SqlTypeFamily.NUMERIC ) {
+        if ( type.getFamily() == PolyTypeFamily.NUMERIC ) {
             put( splits[0], splits[1], splits[2], new NumericalStatisticColumn<>( splits, type ) );
-        } else if ( type.getFamily() == SqlTypeFamily.CHARACTER ) {
+        } else if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
             put( splits[0], splits[1], splits[2], new AlphabeticStatisticColumn<>( splits, type ) );
         }
     }
@@ -227,9 +227,9 @@ public class StatisticsManager<T extends Comparable<T>> {
         if ( !this.sqlQueryInterface.hasData( column.getSchema(), column.getTable(), column.getName() ) ) {
             return null;
         }
-        if ( column.getType().getFamily() == SqlTypeFamily.NUMERIC ) {
+        if ( column.getType().getFamily() == PolyTypeFamily.NUMERIC ) {
             return this.reevaluateNumericalColumn( column );
-        } else if ( column.getType().getFamily() == SqlTypeFamily.CHARACTER ) {
+        } else if ( column.getType().getFamily() == PolyTypeFamily.CHARACTER ) {
             return this.reevaluateAlphabeticalColumn( column );
         }
         return null;

@@ -41,11 +41,11 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeTransforms;
 import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.PolyTypeTransforms;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**
@@ -61,7 +61,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * Return type inference for {@code DECODE}.
      */
-    protected static final SqlReturnTypeInference DECODE_RETURN_TYPE =
+    protected static final PolyReturnTypeInference DECODE_RETURN_TYPE =
             opBinding -> {
                 final List<RelDataType> list = new ArrayList<>();
                 for ( int i = 1, n = opBinding.getOperandCount(); i < n; i++ ) {
@@ -97,7 +97,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
             new SqlFunction(
                     "NVL",
                     SqlKind.NVL,
-                    ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, SqlTypeTransforms.TO_NULLABLE_ALL ),
+                    ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.TO_NULLABLE_ALL ),
                     null,
                     OperandTypes.SAME_SAME,
                     SqlFunctionCategory.SYSTEM );
@@ -109,7 +109,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
             new SqlFunction(
                     "LTRIM",
                     SqlKind.LTRIM,
-                    ReturnTypes.cascade( ReturnTypes.ARG0, SqlTypeTransforms.TO_NULLABLE, SqlTypeTransforms.TO_VARYING ),
+                    ReturnTypes.cascade( ReturnTypes.ARG0, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING ),
                     null,
                     OperandTypes.STRING,
                     SqlFunctionCategory.STRING );
@@ -121,7 +121,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
             new SqlFunction(
                     "RTRIM",
                     SqlKind.RTRIM,
-                    ReturnTypes.cascade( ReturnTypes.ARG0, SqlTypeTransforms.TO_NULLABLE, SqlTypeTransforms.TO_VARYING ),
+                    ReturnTypes.cascade( ReturnTypes.ARG0, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING ),
                     null,
                     OperandTypes.STRING,
                     SqlFunctionCategory.STRING );
@@ -147,7 +147,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
             new SqlFunction(
                     "GREATEST",
                     SqlKind.GREATEST,
-                    ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, SqlTypeTransforms.TO_NULLABLE ),
+                    ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.TO_NULLABLE ),
                     null,
                     OperandTypes.SAME_VARIADIC,
                     SqlFunctionCategory.SYSTEM );
@@ -159,7 +159,7 @@ public class OracleSqlOperatorTable extends ReflectiveSqlOperatorTable {
             new SqlFunction(
                     "LEAST",
                     SqlKind.LEAST,
-                    ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, SqlTypeTransforms.TO_NULLABLE ),
+                    ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.TO_NULLABLE ),
                     null,
                     OperandTypes.SAME_VARIADIC,
                     SqlFunctionCategory.SYSTEM );

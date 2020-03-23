@@ -128,10 +128,10 @@ import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.MultisetSqlType;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.MultisetPolyType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -318,7 +318,7 @@ public abstract class RelOptUtil {
             final RelDataType type1 = pair.left.getType();
             final RelDataType type2 = pair.right.getType();
             // If one of the types is ANY comparison should succeed
-            if ( type1.getSqlTypeName() == SqlTypeName.ANY || type2.getSqlTypeName() == SqlTypeName.ANY ) {
+            if ( type1.getSqlTypeName() == PolyType.ANY || type2.getSqlTypeName() == PolyType.ANY ) {
                 continue;
             }
             if ( !type1.equals( type2 ) ) {
@@ -1410,13 +1410,13 @@ public abstract class RelOptUtil {
                         ImmutableList.of(
                                 Pair.of(
                                         AvaticaConnection.ROWCOUNT_COLUMN_NAME,
-                                        typeFactory.createSqlType( SqlTypeName.BIGINT ) ) ) );
+                                        typeFactory.createSqlType( PolyType.BIGINT ) ) ) );
             case EXPLAIN:
                 return typeFactory.createStructType(
                         ImmutableList.of(
                                 Pair.of(
                                         AvaticaConnection.PLAN_COLUMN_NAME,
-                                        typeFactory.createSqlType( SqlTypeName.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED ) ) ) );
+                                        typeFactory.createSqlType( PolyType.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED ) ) ) );
             default:
                 throw Util.unexpected( kind );
         }
@@ -1435,7 +1435,7 @@ public abstract class RelOptUtil {
      */
     public static boolean eq( final String desc1, RelDataType type1, final String desc2, RelDataType type2, Litmus litmus ) {
         // if any one of the types is ANY return true
-        if ( type1.getSqlTypeName() == SqlTypeName.ANY || type2.getSqlTypeName() == SqlTypeName.ANY ) {
+        if ( type1.getSqlTypeName() == PolyType.ANY || type2.getSqlTypeName() == PolyType.ANY ) {
             return litmus.succeed();
         }
 
@@ -2912,7 +2912,7 @@ public abstract class RelOptUtil {
                 if ( !type.isNullable() ) {
                     pw.print( " NOT NULL" );
                 }
-            } else if ( type instanceof MultisetSqlType ) {
+            } else if ( type instanceof MultisetPolyType ) {
                 // E.g. "INTEGER NOT NULL MULTISET NOT NULL"
                 accept( type.getComponentType() );
                 pw.print( " MULTISET" );

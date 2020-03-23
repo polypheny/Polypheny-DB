@@ -40,9 +40,9 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**
@@ -52,7 +52,7 @@ public class SqlPositionFunction extends SqlFunction {
 
     // FIXME jvs 25-Jan-2009:  POSITION should verify that params are all same character set, like OVERLAY does implicitly as part of rtiDyadicStringSumPrecision
 
-    private static final SqlOperandTypeChecker OTC_CUSTOM = OperandTypes.or( OperandTypes.STRING_SAME_SAME, OperandTypes.STRING_SAME_SAME_INTEGER );
+    private static final PolyOperandTypeChecker OTC_CUSTOM = OperandTypes.or( OperandTypes.STRING_SAME_SAME, OperandTypes.STRING_SAME_SAME_INTEGER );
 
 
     public SqlPositionFunction() {

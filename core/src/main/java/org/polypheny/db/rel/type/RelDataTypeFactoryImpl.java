@@ -52,10 +52,10 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.sql.type.JavaToSqlTypeConversionRules;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.JavaToSqlTypeConversionRules;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Glossary;
 import org.polypheny.db.util.Util;
 
@@ -89,25 +89,25 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
     private static final Map<Class, RelDataTypeFamily> CLASS_FAMILIES =
             ImmutableMap.<Class, RelDataTypeFamily>builder()
-                    .put( String.class, SqlTypeFamily.CHARACTER )
-                    .put( byte[].class, SqlTypeFamily.BINARY )
-                    .put( boolean.class, SqlTypeFamily.BOOLEAN )
-                    .put( Boolean.class, SqlTypeFamily.BOOLEAN )
-                    .put( char.class, SqlTypeFamily.NUMERIC )
-                    .put( Character.class, SqlTypeFamily.NUMERIC )
-                    .put( short.class, SqlTypeFamily.NUMERIC )
-                    .put( Short.class, SqlTypeFamily.NUMERIC )
-                    .put( int.class, SqlTypeFamily.NUMERIC )
-                    .put( Integer.class, SqlTypeFamily.NUMERIC )
-                    .put( long.class, SqlTypeFamily.NUMERIC )
-                    .put( Long.class, SqlTypeFamily.NUMERIC )
-                    .put( float.class, SqlTypeFamily.APPROXIMATE_NUMERIC )
-                    .put( Float.class, SqlTypeFamily.APPROXIMATE_NUMERIC )
-                    .put( double.class, SqlTypeFamily.APPROXIMATE_NUMERIC )
-                    .put( Double.class, SqlTypeFamily.APPROXIMATE_NUMERIC )
-                    .put( java.sql.Date.class, SqlTypeFamily.DATE )
-                    .put( Time.class, SqlTypeFamily.TIME )
-                    .put( Timestamp.class, SqlTypeFamily.TIMESTAMP )
+                    .put( String.class, PolyTypeFamily.CHARACTER )
+                    .put( byte[].class, PolyTypeFamily.BINARY )
+                    .put( boolean.class, PolyTypeFamily.BOOLEAN )
+                    .put( Boolean.class, PolyTypeFamily.BOOLEAN )
+                    .put( char.class, PolyTypeFamily.NUMERIC )
+                    .put( Character.class, PolyTypeFamily.NUMERIC )
+                    .put( short.class, PolyTypeFamily.NUMERIC )
+                    .put( Short.class, PolyTypeFamily.NUMERIC )
+                    .put( int.class, PolyTypeFamily.NUMERIC )
+                    .put( Integer.class, PolyTypeFamily.NUMERIC )
+                    .put( long.class, PolyTypeFamily.NUMERIC )
+                    .put( Long.class, PolyTypeFamily.NUMERIC )
+                    .put( float.class, PolyTypeFamily.APPROXIMATE_NUMERIC )
+                    .put( Float.class, PolyTypeFamily.APPROXIMATE_NUMERIC )
+                    .put( double.class, PolyTypeFamily.APPROXIMATE_NUMERIC )
+                    .put( Double.class, PolyTypeFamily.APPROXIMATE_NUMERIC )
+                    .put( java.sql.Date.class, PolyTypeFamily.DATE )
+                    .put( Time.class, PolyTypeFamily.TIME )
+                    .put( Timestamp.class, PolyTypeFamily.TIMESTAMP )
                     .build();
 
     protected final RelDataTypeSystem typeSystem;
@@ -269,7 +269,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
     private RelDataType copySimpleType( RelDataType type, boolean nullable ) {
         if ( type instanceof JavaType ) {
             JavaType javaType = (JavaType) type;
-            if ( SqlTypeUtil.inCharFamily( javaType ) ) {
+            if ( PolyTypeUtil.inCharFamily( javaType ) ) {
                 return new JavaType( javaType.clazz, nullable, javaType.charset, javaType.collation );
             } else {
                 return new JavaType(
@@ -465,8 +465,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
      */
     @Override
     public RelDataType createDecimalProduct( RelDataType type1, RelDataType type2 ) {
-        if ( SqlTypeUtil.isExactNumeric( type1 ) && SqlTypeUtil.isExactNumeric( type2 ) ) {
-            if ( SqlTypeUtil.isDecimal( type1 ) || SqlTypeUtil.isDecimal( type2 ) ) {
+        if ( PolyTypeUtil.isExactNumeric( type1 ) && PolyTypeUtil.isExactNumeric( type2 ) ) {
+            if ( PolyTypeUtil.isDecimal( type1 ) || PolyTypeUtil.isDecimal( type2 ) ) {
                 int p1 = type1.getPrecision();
                 int p2 = type2.getPrecision();
                 int s1 = type1.getScale();
@@ -478,7 +478,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
                 precision = Math.min( precision, typeSystem.getMaxNumericPrecision() );
 
                 RelDataType ret;
-                ret = createSqlType( SqlTypeName.DECIMAL, precision, scale );
+                ret = createSqlType( PolyType.DECIMAL, precision, scale );
 
                 return ret;
             }
@@ -518,8 +518,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
      */
     @Override
     public RelDataType createDecimalQuotient( RelDataType type1, RelDataType type2 ) {
-        if ( SqlTypeUtil.isExactNumeric( type1 ) && SqlTypeUtil.isExactNumeric( type2 ) ) {
-            if ( SqlTypeUtil.isDecimal( type1 ) || SqlTypeUtil.isDecimal( type2 ) ) {
+        if ( PolyTypeUtil.isExactNumeric( type1 ) && PolyTypeUtil.isExactNumeric( type2 ) ) {
+            if ( PolyTypeUtil.isDecimal( type1 ) || PolyTypeUtil.isDecimal( type2 ) ) {
                 int p1 = type1.getPrecision();
                 int p2 = type2.getPrecision();
                 int s1 = type1.getScale();
@@ -537,7 +537,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
                 assert precision > 0;
 
                 RelDataType ret;
-                ret = createSqlType( SqlTypeName.DECIMAL, precision, scale );
+                ret = createSqlType( PolyType.DECIMAL, precision, scale );
 
                 return ret;
             }
@@ -587,7 +587,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
             super( fieldsOf( clazz ) );
             this.clazz = clazz;
             this.nullable = nullable;
-            assert (charset != null) == SqlTypeUtil.inCharFamily( this ) : "Need to be a chartype";
+            assert (charset != null) == PolyTypeUtil.inCharFamily( this ) : "Need to be a chartype";
             this.charset = charset;
             this.collation = collation;
             computeDigest();
@@ -644,10 +644,10 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
 
         @Override
-        public SqlTypeName getSqlTypeName() {
-            final SqlTypeName typeName = JavaToSqlTypeConversionRules.instance().lookup( clazz );
+        public PolyType getSqlTypeName() {
+            final PolyType typeName = JavaToSqlTypeConversionRules.instance().lookup( clazz );
             if ( typeName == null ) {
-                return SqlTypeName.OTHER;
+                return PolyType.OTHER;
             }
             return typeName;
         }

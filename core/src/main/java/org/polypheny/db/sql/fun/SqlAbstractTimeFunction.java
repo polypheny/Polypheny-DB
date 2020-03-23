@@ -40,11 +40,11 @@ import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Static;
 
 
@@ -53,12 +53,12 @@ import org.polypheny.db.util.Static;
  */
 public class SqlAbstractTimeFunction extends SqlFunction {
 
-    private static final SqlOperandTypeChecker OTC_CUSTOM = OperandTypes.or( OperandTypes.POSITIVE_INTEGER_LITERAL, OperandTypes.NILADIC );
+    private static final PolyOperandTypeChecker OTC_CUSTOM = OperandTypes.or( OperandTypes.POSITIVE_INTEGER_LITERAL, OperandTypes.NILADIC );
 
-    private final SqlTypeName typeName;
+    private final PolyType typeName;
 
 
-    protected SqlAbstractTimeFunction( String name, SqlTypeName typeName ) {
+    protected SqlAbstractTimeFunction( String name, PolyType typeName ) {
         super( name, SqlKind.OTHER_FUNCTION, null, null, OTC_CUSTOM, SqlFunctionCategory.TIMEDATE );
         this.typeName = typeName;
     }
@@ -76,13 +76,13 @@ public class SqlAbstractTimeFunction extends SqlFunction {
         int precision = 0;
         if ( opBinding.getOperandCount() == 1 ) {
             RelDataType type = opBinding.getOperandType( 0 );
-            if ( SqlTypeUtil.isNumeric( type ) ) {
+            if ( PolyTypeUtil.isNumeric( type ) ) {
                 precision = opBinding.getOperandLiteralValue( 0, Integer.class );
             }
         }
         assert precision >= 0;
-        if ( precision > SqlTypeName.MAX_DATETIME_PRECISION ) {
-            throw opBinding.newError( Static.RESOURCE.argumentMustBeValidPrecision( opBinding.getOperator().getName(), 0, SqlTypeName.MAX_DATETIME_PRECISION ) );
+        if ( precision > PolyType.MAX_DATETIME_PRECISION ) {
+            throw opBinding.newError( Static.RESOURCE.argumentMustBeValidPrecision( opBinding.getOperator().getName(), 0, PolyType.MAX_DATETIME_PRECISION ) );
         }
         return opBinding.getTypeFactory().createSqlType( typeName, precision );
     }

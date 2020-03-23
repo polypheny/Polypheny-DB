@@ -20,14 +20,14 @@ package org.polypheny.db.adapter.cassandra.util;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
 public class CassandraTypesUtils {
 
-    public static DataType getDataType( SqlTypeName sqlTypeName ) {
-        switch ( sqlTypeName ) {
+    public static DataType getDataType( PolyType polyType ) {
+        switch ( polyType ) {
             case BOOLEAN:
                 return DataTypes.BOOLEAN;
             case DATE:
@@ -43,33 +43,33 @@ public class CassandraTypesUtils {
             case FLOAT:
                 return DataTypes.FLOAT;
             default:
-                throw new RuntimeException( "Unable to convert sql type: " + sqlTypeName.getName() );
+                throw new RuntimeException( "Unable to convert sql type: " + polyType.getName() );
         }
     }
 
 
-    public static SqlTypeName getSqlTypeName( DataType dataType ) {
+    public static PolyType getSqlTypeName( DataType dataType ) {
         if ( dataType == DataTypes.UUID || dataType == DataTypes.TIMEUUID ) {
-            return SqlTypeName.CHAR;
+            return PolyType.CHAR;
         } else if ( dataType == DataTypes.ASCII || dataType == DataTypes.TEXT ) {
-            return SqlTypeName.VARCHAR;
+            return PolyType.VARCHAR;
         } else if ( dataType == DataTypes.INT || dataType == DataTypes.VARINT ) {
-            return SqlTypeName.INTEGER;
+            return PolyType.INTEGER;
         } else if ( dataType == DataTypes.BIGINT ) {
-            return SqlTypeName.BIGINT;
+            return PolyType.BIGINT;
         } else if ( dataType == DataTypes.DOUBLE ) {
-            return SqlTypeName.DOUBLE;
+            return PolyType.DOUBLE;
         } else if ( dataType == DataTypes.FLOAT ) {
-            return SqlTypeName.FLOAT;
+            return PolyType.FLOAT;
         } else if ( dataType == DataTypes.TIME ) {
-            return SqlTypeName.TIME;
+            return PolyType.TIME;
         } else if ( dataType == DataTypes.DATE ) {
-            return SqlTypeName.DATE;
+            return PolyType.DATE;
         } else if ( dataType == DataTypes.TIMESTAMP ) {
-            return SqlTypeName.TIMESTAMP;
+            return PolyType.TIMESTAMP;
         } else {
             log.warn( "Unable to find type for cql type: {}. Returning ANY.", dataType );
-            return SqlTypeName.ANY;
+            return PolyType.ANY;
         }
     }
 

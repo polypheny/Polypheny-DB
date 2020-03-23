@@ -22,7 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -42,7 +42,7 @@ public final class CatalogColumn implements CatalogEntity {
     public final long databaseId;
     public final String databaseName;
     public final int position;
-    public final SqlTypeName type;
+    public final PolyType type;
     public final Integer length; // JDBC length or precision depending on type
     public final Integer scale; // decimal digits
     public final boolean nullable;
@@ -60,7 +60,7 @@ public final class CatalogColumn implements CatalogEntity {
             final long databaseId,
             @NonNull final String databaseName,
             final int position,
-            @NonNull final SqlTypeName type,
+            @NonNull final PolyType type,
             final Integer length,
             final Integer scale,
             final boolean nullable,

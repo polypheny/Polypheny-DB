@@ -48,8 +48,8 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlUnnestOperator;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.type.MapSqlType;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.MapPolyType;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -135,16 +135,16 @@ public class Uncollect extends SingleRel {
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
 
-        if ( fields.size() == 1 && fields.get( 0 ).getType().getSqlTypeName() == SqlTypeName.ANY ) {
+        if ( fields.size() == 1 && fields.get( 0 ).getType().getSqlTypeName() == PolyType.ANY ) {
             // Component type is unknown to Uncollect, build a row type with input column name and Any type.
             return builder
-                    .add( fields.get( 0 ).getName(), null, SqlTypeName.ANY )
+                    .add( fields.get( 0 ).getName(), null, PolyType.ANY )
                     .nullable( true )
                     .build();
         }
 
         for ( RelDataTypeField field : fields ) {
-            if ( field.getType() instanceof MapSqlType ) {
+            if ( field.getType() instanceof MapPolyType ) {
                 builder.add( SqlUnnestOperator.MAP_KEY_COLUMN_NAME, null, field.getType().getKeyType() );
                 builder.add( SqlUnnestOperator.MAP_VALUE_COLUMN_NAME, null, field.getType().getValueType() );
             } else {
@@ -159,7 +159,7 @@ public class Uncollect extends SingleRel {
             }
         }
         if ( withOrdinality ) {
-            builder.add( SqlUnnestOperator.ORDINALITY_COLUMN_NAME, null, SqlTypeName.INTEGER );
+            builder.add( SqlUnnestOperator.ORDINALITY_COLUMN_NAME, null, PolyType.INTEGER );
         }
         return builder.build();
     }

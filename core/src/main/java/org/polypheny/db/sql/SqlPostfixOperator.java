@@ -35,11 +35,11 @@ package org.polypheny.db.sql;
 
 
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -50,7 +50,7 @@ import org.polypheny.db.util.Util;
 public class SqlPostfixOperator extends SqlOperator {
 
 
-    public SqlPostfixOperator( String name, SqlKind kind, int prec, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker ) {
+    public SqlPostfixOperator( String name, SqlKind kind, int prec, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 name,
                 kind,
@@ -77,13 +77,13 @@ public class SqlPostfixOperator extends SqlOperator {
 
     @Override
     protected RelDataType adjustType( SqlValidator validator, SqlCall call, RelDataType type ) {
-        if ( SqlTypeUtil.inCharFamily( type ) ) {
+        if ( PolyTypeUtil.inCharFamily( type ) ) {
             // Determine coercibility and resulting collation name of unary operator if needed.
             RelDataType operandType = validator.getValidatedNodeType( call.operand( 0 ) );
             if ( null == operandType ) {
                 throw new AssertionError( "operand's type should have been derived" );
             }
-            if ( SqlTypeUtil.inCharFamily( operandType ) ) {
+            if ( PolyTypeUtil.inCharFamily( operandType ) ) {
                 SqlCollation collation = operandType.getCollation();
                 assert null != collation : "An implicit or explicit collation should have been set";
                 type = validator.getTypeFactory()

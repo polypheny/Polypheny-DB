@@ -52,10 +52,10 @@ import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Static;
 
 
@@ -75,7 +75,7 @@ public class SqlJsonValueFunction extends SqlFunction {
                 ( callBinding, returnType, operandTypes ) -> {
                     RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
                     for ( int i = 0; i < operandTypes.length; ++i ) {
-                        operandTypes[i] = typeFactory.createSqlType( SqlTypeName.ANY );
+                        operandTypes[i] = typeFactory.createSqlType( PolyType.ANY );
                     }
                 },
                 null,
@@ -124,7 +124,7 @@ public class SqlJsonValueFunction extends SqlFunction {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.between( 5, 6 );
+        return PolyOperandCountRanges.between( 5, 6 );
     }
 
 
@@ -151,7 +151,7 @@ public class SqlJsonValueFunction extends SqlFunction {
         if ( opBinding.getOperandCount() == 6 ) {
             ret = opBinding.getOperandType( 5 );
         } else {
-            ret = opBinding.getTypeFactory().createSqlType( SqlTypeName.ANY );
+            ret = opBinding.getTypeFactory().createSqlType( PolyType.ANY );
         }
         return opBinding.getTypeFactory().createTypeWithNullability( ret, true );
     }
@@ -203,7 +203,7 @@ public class SqlJsonValueFunction extends SqlFunction {
 
 
     private boolean canCastFrom( SqlCallBinding callBinding, boolean throwOnFailure, RelDataType inType, RelDataType outType ) {
-        if ( SqlTypeUtil.canCastFrom( outType, inType, true ) ) {
+        if ( PolyTypeUtil.canCastFrom( outType, inType, true ) ) {
             return true;
         }
         if ( throwOnFailure ) {

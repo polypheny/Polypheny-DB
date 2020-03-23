@@ -43,10 +43,10 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlOperatorTable;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.sql.util.ListSqlOperatorTable;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -92,7 +92,7 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
         public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()
-                    .add( "I", null, SqlTypeName.INTEGER )
+                    .add( "I", null, PolyType.INTEGER )
                     .build();
         }
     }
@@ -112,7 +112,7 @@ public class MockSqlOperatorTable extends ChainedSqlOperatorTable {
         public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             return typeFactory.builder()
-                    .add( "NAME", null, SqlTypeName.VARCHAR, 1024 )
+                    .add( "NAME", null, PolyType.VARCHAR, 1024 )
                     .build();
         }
     }

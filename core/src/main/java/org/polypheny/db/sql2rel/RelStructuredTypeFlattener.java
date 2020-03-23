@@ -94,9 +94,9 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableBitSet.Builder;
 import org.polypheny.db.util.Pair;
@@ -212,7 +212,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         final List<RexNode> structuringExps = new ArrayList<>();
         for ( RelDataTypeField field : structuredType.getFieldList() ) {
             // TODO:  row
-            if ( field.getType().getSqlTypeName() == SqlTypeName.STRUCTURED ) {
+            if ( field.getType().getSqlTypeName() == PolyType.STRUCTURED ) {
                 restructured = true;
                 structuringExps.add( restructure( field.getType() ) );
             } else {
@@ -327,7 +327,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
     private int calculateFlattenedOffset( RelDataType rowType, int ordinal ) {
         int offset = 0;
-        if ( SqlTypeUtil.needsNullIndicator( rowType ) ) {
+        if ( PolyTypeUtil.needsNullIndicator( rowType ) ) {
             // skip null indicator
             ++offset;
         }
@@ -337,7 +337,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             if ( oldFieldType.isStruct() ) {
                 // TODO jvs 10-Feb-2005:  this isn't terribly efficient; keep a mapping somewhere
                 RelDataType flattened =
-                        SqlTypeUtil.flattenRecordType(
+                        PolyTypeUtil.flattenRecordType(
                                 rexBuilder.getTypeFactory(),
                                 oldFieldType,
                                 null );
@@ -593,7 +593,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                 RexInputRef inputRef = (RexInputRef) exp;
 
                 // expand to range
-                RelDataType flattenedType = SqlTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), exp.getType(), null );
+                RelDataType flattenedType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), exp.getType(), null );
                 List<RelDataTypeField> fieldList = flattenedType.getFieldList();
                 int n = fieldList.size();
                 for ( int j = 0; j < n; ++j ) {
@@ -649,7 +649,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     private void flattenNullLiteral( RelDataType type, List<Pair<RexNode, String>> flattenedExps ) {
-        RelDataType flattenedType = SqlTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), type, null );
+        RelDataType flattenedType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), type, null );
         for ( RelDataTypeField field : flattenedType.getFieldList() ) {
             flattenedExps.add(
                     Pair.of(
@@ -671,7 +671,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
     public void rewriteRel( TableScan rel ) {
         RelNode newRel = rel.getTable().toRel( toRelContext );
-        if ( !SqlTypeUtil.isFlat( rel.getRowType() ) ) {
+        if ( !PolyTypeUtil.isFlat( rel.getRowType() ) ) {
             final List<Pair<RexNode, String>> flattenedExpList = new ArrayList<>();
             flattenInputs(
                     rel.getRowType().getFieldList(),
@@ -778,7 +778,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
 
         private RelDataType removeDistinct( RelDataType type ) {
-            if ( type.getSqlTypeName() != SqlTypeName.DISTINCT ) {
+            if ( type.getSqlTypeName() != PolyType.DISTINCT ) {
                 return type;
             }
             return type.getFieldList().get( 0 ).getType();
@@ -804,7 +804,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
                     iInput += newField.i;
                     return new RexInputRef( iInput, removeDistinct( newField.e ) );
                 } else if ( refExp instanceof RexCorrelVariable ) {
-                    RelDataType refType = SqlTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), refExp.getType(), null );
+                    RelDataType refType = PolyTypeUtil.flattenRecordType( rexBuilder.getTypeFactory(), refExp.getType(), null );
                     refExp = rexBuilder.makeCorrel( refType, ((RexCorrelVariable) refExp).id );
                     return rexBuilder.makeFieldAccess( refExp, iInput );
                 } else if ( refExp instanceof RexCall ) {

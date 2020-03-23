@@ -46,7 +46,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlQuantifyOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -100,7 +100,7 @@ public class RexSubQuery extends RexCall {
                 nullable = true;
             }
         }
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), nullable );
+        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BOOLEAN ), nullable );
     }
 
 
@@ -109,7 +109,7 @@ public class RexSubQuery extends RexCall {
      */
     public static RexSubQuery exists( RelNode rel ) {
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
-        final RelDataType type = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+        final RelDataType type = typeFactory.createSqlType( PolyType.BOOLEAN );
         return new RexSubQuery( type, SqlStdOperatorTable.EXISTS, ImmutableList.of(), rel );
     }
 

@@ -46,11 +46,11 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlSingleOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolySingleOperandTypeChecker;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 /**
@@ -58,11 +58,11 @@ import org.polypheny.db.sql.type.SqlTypeName;
  */
 class SqlItemOperator extends SqlSpecialOperator {
 
-    private static final SqlSingleOperandTypeChecker ARRAY_OR_MAP =
+    private static final PolySingleOperandTypeChecker ARRAY_OR_MAP =
             OperandTypes.or(
-                    OperandTypes.family( SqlTypeFamily.ARRAY ),
-                    OperandTypes.family( SqlTypeFamily.MAP ),
-                    OperandTypes.family( SqlTypeFamily.ANY ) );
+                    OperandTypes.family( PolyTypeFamily.ARRAY ),
+                    OperandTypes.family( PolyTypeFamily.MAP ),
+                    OperandTypes.family( PolyTypeFamily.ANY ) );
 
 
     SqlItemOperator() {
@@ -99,7 +99,7 @@ class SqlItemOperator extends SqlSpecialOperator {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.of( 2 );
+        return PolyOperandCountRanges.of( 2 );
     }
 
 
@@ -111,22 +111,22 @@ class SqlItemOperator extends SqlSpecialOperator {
             return false;
         }
         final RelDataType operandType = callBinding.getOperandType( 0 );
-        final SqlSingleOperandTypeChecker checker = getChecker( operandType );
+        final PolySingleOperandTypeChecker checker = getChecker( operandType );
         return checker.checkSingleOperandType( callBinding, right, 0, throwOnFailure );
     }
 
 
-    private SqlSingleOperandTypeChecker getChecker( RelDataType operandType ) {
+    private PolySingleOperandTypeChecker getChecker( RelDataType operandType ) {
         switch ( operandType.getSqlTypeName() ) {
             case ARRAY:
-                return OperandTypes.family( SqlTypeFamily.INTEGER );
+                return OperandTypes.family( PolyTypeFamily.INTEGER );
             case MAP:
                 return OperandTypes.family( operandType.getKeyType().getSqlTypeName().getFamily() );
             case ANY:
             case DYNAMIC_STAR:
                 return OperandTypes.or(
-                        OperandTypes.family( SqlTypeFamily.INTEGER ),
-                        OperandTypes.family( SqlTypeFamily.CHARACTER ) );
+                        OperandTypes.family( PolyTypeFamily.INTEGER ),
+                        OperandTypes.family( PolyTypeFamily.CHARACTER ) );
             default:
                 throw new AssertionError( operandType.getSqlTypeName() );
         }
@@ -150,7 +150,7 @@ class SqlItemOperator extends SqlSpecialOperator {
                 return typeFactory.createTypeWithNullability( operandType.getValueType(), true );
             case ANY:
             case DYNAMIC_STAR:
-                return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+                return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
             default:
                 throw new AssertionError();
         }

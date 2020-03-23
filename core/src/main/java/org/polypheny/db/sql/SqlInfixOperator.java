@@ -35,9 +35,9 @@ package org.polypheny.db.sql;
 
 
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 
 
 /**
@@ -54,9 +54,9 @@ public class SqlInfixOperator extends SqlSpecialOperator {
             String[] names,
             SqlKind kind,
             int precedence,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker ) {
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 names[0],
                 kind,

@@ -57,9 +57,9 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.type.InferTypes;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**

@@ -43,9 +43,9 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 import org.polypheny.db.util.Util;
 
 
@@ -62,7 +62,7 @@ public class SqlUserDefinedFunction extends SqlFunction {
     /**
      * Creates a {@link SqlUserDefinedFunction}.
      */
-    public SqlUserDefinedFunction( SqlIdentifier opName, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function ) {
+    public SqlUserDefinedFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function ) {
         this(
                 opName,
                 returnTypeInference,
@@ -77,7 +77,7 @@ public class SqlUserDefinedFunction extends SqlFunction {
     /**
      * Constructor used internally and by derived classes.
      */
-    protected SqlUserDefinedFunction( SqlIdentifier opName, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function, SqlFunctionCategory category ) {
+    protected SqlUserDefinedFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, Function function, SqlFunctionCategory category ) {
         super(
                 Util.last( opName.names ),
                 opName,

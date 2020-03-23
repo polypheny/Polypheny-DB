@@ -43,9 +43,9 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -81,7 +81,7 @@ public class SqlSequenceValueOperator extends SqlSpecialOperator {
     @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         final RelDataTypeFactory typeFactory = validator.getTypeFactory();
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BIGINT ), false );
+        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BIGINT ), false );
     }
 
 

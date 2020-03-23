@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 public class SchemaToJsonMapper {
@@ -115,7 +115,7 @@ public class SchemaToJsonMapper {
             if ( addDefaultValueDefinition ) {
                 if ( column.defaultValue != null ) {
                     writer.keyword( "DEFAULT" );
-                    if ( Arrays.asList( SqlTypeName.VARCHAR.name(), SqlTypeName.DATE.name(), SqlTypeName.TIME.name(), SqlTypeName.TIMESTAMP.name() ).contains( column.type ) ) {
+                    if ( Arrays.asList( PolyType.VARCHAR.name(), PolyType.DATE.name(), PolyType.TIME.name(), PolyType.TIMESTAMP.name() ).contains( column.type ) ) {
                         writer.literal( "'" + column.defaultValue + "'" );
                     } else {
                         writer.literal( column.defaultValue );

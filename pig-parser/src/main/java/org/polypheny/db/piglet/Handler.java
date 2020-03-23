@@ -48,9 +48,9 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.PigRelBuilder;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
@@ -294,13 +294,13 @@ public class Handler {
         final RelDataTypeFactory typeFactory = builder.getTypeFactory();
         switch ( type.name ) {
             case "boolean":
-                return typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+                return typeFactory.createSqlType( PolyType.BOOLEAN );
             case "int":
-                return typeFactory.createSqlType( SqlTypeName.INTEGER );
+                return typeFactory.createSqlType( PolyType.INTEGER );
             case "float":
-                return typeFactory.createSqlType( SqlTypeName.REAL );
+                return typeFactory.createSqlType( PolyType.REAL );
             default:
-                return typeFactory.createSqlType( SqlTypeName.VARCHAR );
+                return typeFactory.createSqlType( PolyType.VARCHAR );
         }
     }
 

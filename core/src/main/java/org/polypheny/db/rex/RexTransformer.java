@@ -41,7 +41,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -76,7 +76,7 @@ public class RexTransformer {
 
     private boolean isBoolean( RexNode node ) {
         RelDataType type = node.getType();
-        return SqlTypeUtil.inBooleanFamily( type );
+        return PolyTypeUtil.inBooleanFamily( type );
     }
 
 

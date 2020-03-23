@@ -39,7 +39,7 @@ import java.util.List;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlIntervalQualifier;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -172,11 +172,11 @@ public interface RelDataType {
     int getScale();
 
     /**
-     * Gets the {@link SqlTypeName} of this type.
+     * Gets the {@link PolyType} of this type.
      *
      * @return SqlTypeName, or null if this is not an SQL predefined type
      */
-    SqlTypeName getSqlTypeName();
+    PolyType getSqlTypeName();
 
     /**
      * Gets the {@link SqlIdentifier} associated with this type. For a predefined type, this is a simple identifier based on

@@ -68,7 +68,7 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -773,7 +773,7 @@ final class Statements {
                     if ( rsdv.next() ) {
                         defaultValue = new CatalogDefaultValue(
                                 getLong( rsdv, 1 ),
-                                SqlTypeName.get( rsdv.getString( 2 ) ),
+                                PolyType.get( rsdv.getString( 2 ) ),
                                 rsdv.getString( 3 ),
                                 rsdv.getString( 4 )
                         );
@@ -796,7 +796,7 @@ final class Statements {
                         getLong( rs, 7 ),
                         rs.getString( 8 ),
                         getInt( rs, 9 ),
-                        SqlTypeName.get( rs.getString( 10 ) ),
+                        PolyType.get( rs.getString( 10 ) ),
                         getIntOrNull( rs, 11 ),
                         getIntOrNull( rs, 12 ),
                         rs.getBoolean( 13 ),
@@ -906,7 +906,7 @@ final class Statements {
     }
 
 
-    static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, SqlTypeName type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
+    static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "table", "" + tableId );
         data.put( "name", quoteString( name ) );
@@ -940,7 +940,7 @@ final class Statements {
     }
 
 
-    static void setColumnType( XATransactionHandler transactionHandler, long columnId, SqlTypeName type, final Integer length, final Integer scale, Collation collation ) throws GenericCatalogException {
+    static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolyType type, final Integer length, final Integer scale, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "type", "" + quoteString( type.getName() ) );
         data.put( "length", length == null ? null : "" + length );
@@ -983,7 +983,7 @@ final class Statements {
     }
 
 
-    static void setDefaultValue( XATransactionHandler transactionHandler, long columnId, SqlTypeName type, String defaultValue ) throws GenericCatalogException {
+    static void setDefaultValue( XATransactionHandler transactionHandler, long columnId, PolyType type, String defaultValue ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "column", "" + columnId );
         data.put( "type", "" + quoteString( type.getName() ) );

@@ -42,8 +42,8 @@ import org.polypheny.db.rel.type.RelDataTypeFieldImpl;
 import org.polypheny.db.rel.type.StructKind;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.ObjectSqlType;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.ObjectPolyType;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -69,20 +69,20 @@ final class Fixture {
     final RelDataType skillRecordType;
     final RelDataType empRecordType;
     final RelDataType empListType;
-    final ObjectSqlType addressType;
+    final ObjectPolyType addressType;
 
 
     Fixture( RelDataTypeFactory typeFactory ) {
-        intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        intType = typeFactory.createSqlType( PolyType.INTEGER );
         intTypeNull = typeFactory.createTypeWithNullability( intType, true );
-        varchar10Type = typeFactory.createSqlType( SqlTypeName.VARCHAR, 10 );
+        varchar10Type = typeFactory.createSqlType( PolyType.VARCHAR, 10 );
         varchar10TypeNull = typeFactory.createTypeWithNullability( varchar10Type, true );
-        varchar20Type = typeFactory.createSqlType( SqlTypeName.VARCHAR, 20 );
+        varchar20Type = typeFactory.createSqlType( PolyType.VARCHAR, 20 );
         varchar20TypeNull = typeFactory.createTypeWithNullability( varchar20Type, true );
-        timestampType = typeFactory.createSqlType( SqlTypeName.TIMESTAMP );
+        timestampType = typeFactory.createSqlType( PolyType.TIMESTAMP );
         timestampTypeNull = typeFactory.createTypeWithNullability( timestampType, true );
-        dateType = typeFactory.createSqlType( SqlTypeName.DATE );
-        booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+        dateType = typeFactory.createSqlType( PolyType.DATE );
+        booleanType = typeFactory.createSqlType( PolyType.BOOLEAN );
         booleanTypeNull = typeFactory.createTypeWithNullability( booleanType, true );
         rectilinearCoordType =
                 typeFactory.builder()
@@ -130,7 +130,7 @@ final class Fixture {
                         .build();
         empListType = typeFactory.createArrayType( empRecordType, -1 );
         addressType =
-                new ObjectSqlType( SqlTypeName.STRUCTURED,
+                new ObjectPolyType( PolyType.STRUCTURED,
                         new SqlIdentifier( "ADDRESS", SqlParserPos.ZERO ),
                         false,
                         Arrays.asList(

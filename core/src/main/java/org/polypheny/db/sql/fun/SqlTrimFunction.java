@@ -46,14 +46,14 @@ import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SameOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlSingleOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeTransformCascade;
-import org.polypheny.db.sql.type.SqlTypeTransforms;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolySingleOperandTypeChecker;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeTransformCascade;
+import org.polypheny.db.type.PolyTypeTransforms;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.ReturnTypes;
+import org.polypheny.db.type.SameOperandTypeChecker;
 
 
 /**
@@ -63,9 +63,9 @@ public class SqlTrimFunction extends SqlFunction {
 
     protected static final SqlTrimFunction INSTANCE =
             new SqlTrimFunction( "TRIM", SqlKind.TRIM,
-                    ReturnTypes.cascade( ReturnTypes.ARG2, SqlTypeTransforms.TO_NULLABLE, SqlTypeTransforms.TO_VARYING ),
+                    ReturnTypes.cascade( ReturnTypes.ARG2, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING ),
                     OperandTypes.and(
-                            OperandTypes.family( SqlTypeFamily.ANY, SqlTypeFamily.STRING, SqlTypeFamily.STRING ),
+                            OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.STRING, PolyTypeFamily.STRING ),
                             // Arguments 1 and 2 must have same type
                             new SameOperandTypeChecker( 3 ) {
                                 @Override
@@ -111,7 +111,7 @@ public class SqlTrimFunction extends SqlFunction {
     }
 
 
-    public SqlTrimFunction( String name, SqlKind kind, SqlTypeTransformCascade returnTypeInference, SqlSingleOperandTypeChecker operandTypeChecker ) {
+    public SqlTrimFunction( String name, SqlKind kind, PolyTypeTransformCascade returnTypeInference, PolySingleOperandTypeChecker operandTypeChecker ) {
         super( name, kind, returnTypeInference, null, operandTypeChecker, SqlFunctionCategory.STRING );
     }
 
@@ -171,7 +171,7 @@ public class SqlTrimFunction extends SqlFunction {
         }
         switch ( kind ) {
             case TRIM:
-                return SqlTypeUtil.isCharTypeComparable(
+                return PolyTypeUtil.isCharTypeComparable(
                         callBinding,
                         ImmutableList.of( callBinding.operand( 1 ), callBinding.operand( 2 ) ),
                         throwOnFailure );

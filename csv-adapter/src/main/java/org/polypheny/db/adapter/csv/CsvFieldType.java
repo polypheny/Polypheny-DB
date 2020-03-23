@@ -39,7 +39,7 @@ import java.util.Map;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -85,7 +85,7 @@ enum CsvFieldType {
     }
 
 
-    public static CsvFieldType getCsvFieldType( SqlTypeName type ) {
+    public static CsvFieldType getCsvFieldType( PolyType type ) {
         switch ( type ) {
             case BOOLEAN:
                 return CsvFieldType.BOOLEAN;

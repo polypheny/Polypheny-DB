@@ -42,9 +42,9 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -90,7 +90,7 @@ public class PolySchemaBuilder {
             //
             for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
                 List<String> columnNames = new LinkedList<>();
-                final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+                final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
                 final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
                 for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                     columnNames.add( catalogColumn.name );
@@ -159,14 +159,14 @@ public class PolySchemaBuilder {
 
 
     private RelDataType sqlType( RelDataTypeFactory typeFactory, CatalogColumn column ) {
-        final SqlTypeName sqlTypeName = SqlTypeName.get( column.type.name() );
-        if ( column.length != null && column.scale != null && sqlTypeName.allowsPrecScale( true, true ) ) {
-            return typeFactory.createSqlType( sqlTypeName, column.length, column.scale );
-        } else if ( column.length != null && sqlTypeName.allowsPrecNoScale() ) {
-            return typeFactory.createSqlType( sqlTypeName, column.length );
+        final PolyType polyType = PolyType.get( column.type.name() );
+        if ( column.length != null && column.scale != null && polyType.allowsPrecScale( true, true ) ) {
+            return typeFactory.createSqlType( polyType, column.length, column.scale );
+        } else if ( column.length != null && polyType.allowsPrecNoScale() ) {
+            return typeFactory.createSqlType( polyType, column.length );
         } else {
-            assert sqlTypeName.allowsNoPrecNoScale();
-            return typeFactory.createSqlType( sqlTypeName );
+            assert polyType.allowsNoPrecNoScale();
+            return typeFactory.createSqlType( polyType );
         }
     }
 

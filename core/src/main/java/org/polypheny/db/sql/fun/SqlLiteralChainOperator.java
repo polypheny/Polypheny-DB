@@ -49,13 +49,13 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.InferTypes;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.ReturnTypes;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
@@ -96,7 +96,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
             if ( operand.i == 0 ) {
                 firstType = type;
             } else {
-                if ( !SqlTypeUtil.sameNamedType( firstType, type ) ) {
+                if ( !PolyTypeUtil.sameNamedType( firstType, type ) ) {
                     return false;
                 }
             }
@@ -123,7 +123,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         // Here we know all the operands have the same type, which has a size (precision), but not a scale.
         RelDataType ret = opBinding.getOperandType( 0 );
-        SqlTypeName typeName = ret.getSqlTypeName();
+        PolyType typeName = ret.getSqlTypeName();
         assert typeName.allowsPrecNoScale() : "LiteralChain has impossible operand type " + typeName;
         int size = 0;
         for ( RelDataType type : opBinding.collectOperandTypes() ) {
@@ -181,7 +181,7 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
                 rand.unparse( writer, leftPrec, rightPrec );
             } else {
                 // print without prefix
-                if ( rand.getTypeName() == SqlTypeName.BINARY ) {
+                if ( rand.getTypeName() == PolyType.BINARY ) {
                     BitString bs = (BitString) rand.getValue();
                     writer.literal( "'" + bs.toHexString() + "'" );
                 } else {

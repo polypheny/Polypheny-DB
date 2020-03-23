@@ -42,10 +42,10 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeTransforms;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyTypeTransforms;
+import org.polypheny.db.type.ReturnTypes;
 import org.polypheny.db.util.Util;
 
 
@@ -60,7 +60,7 @@ public class SqlCoalesceFunction extends SqlFunction {
         // COALESCE into CASE early.  However, validator rewrite can optionally be disabled, in which case these strategies are used.
         super( "COALESCE",
                 SqlKind.COALESCE,
-                ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, SqlTypeTransforms.LEAST_NULLABLE ),
+                ReturnTypes.cascade( ReturnTypes.LEAST_RESTRICTIVE, PolyTypeTransforms.LEAST_NULLABLE ),
                 null,
                 OperandTypes.SAME_VARIADIC,
                 SqlFunctionCategory.SYSTEM );

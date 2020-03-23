@@ -47,7 +47,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlFloorFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -61,7 +61,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
     private static final RelDataTypeSystem POSTGRESQL_TYPE_SYSTEM =
             new RelDataTypeSystemImpl() {
                 @Override
-                public int getMaxPrecision( SqlTypeName typeName ) {
+                public int getMaxPrecision( PolyType typeName ) {
                     switch ( typeName ) {
                         case VARCHAR:
                             // From htup_details.h in postgresql:

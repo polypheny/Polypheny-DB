@@ -43,10 +43,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.fun.SqlBetweenOperator;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
@@ -54,6 +50,10 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -104,17 +104,17 @@ public abstract class SqlOperator {
     /**
      * used to infer the return type of a call to this operator
      */
-    private final SqlReturnTypeInference returnTypeInference;
+    private final PolyReturnTypeInference returnTypeInference;
 
     /**
      * used to infer types of unknown operands
      */
-    private final SqlOperandTypeInference operandTypeInference;
+    private final PolyOperandTypeInference operandTypeInference;
 
     /**
      * used to validate operand types
      */
-    private final SqlOperandTypeChecker operandTypeChecker;
+    private final PolyOperandTypeChecker operandTypeChecker;
 
 
     /**
@@ -125,9 +125,9 @@ public abstract class SqlOperator {
             SqlKind kind,
             int leftPrecedence,
             int rightPrecedence,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker ) {
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker ) {
         assert kind != null;
         this.name = name;
         this.kind = kind;
@@ -147,9 +147,9 @@ public abstract class SqlOperator {
             SqlKind kind,
             int prec,
             boolean leftAssoc,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker ) {
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker ) {
         this(
                 name,
                 kind,
@@ -179,14 +179,14 @@ public abstract class SqlOperator {
     }
 
 
-    public SqlOperandTypeChecker getOperandTypeChecker() {
+    public PolyOperandTypeChecker getOperandTypeChecker() {
         return operandTypeChecker;
     }
 
 
     /**
      * Returns a constraint on the number of operands expected by this operator.
-     * Subclasses may override this method; when they don't, the range is derived from the {@link SqlOperandTypeChecker} associated with this operator.
+     * Subclasses may override this method; when they don't, the range is derived from the {@link PolyOperandTypeChecker} associated with this operator.
      *
      * @return acceptable range
      */
@@ -420,7 +420,7 @@ public abstract class SqlOperator {
 
 
     /**
-     * Infers the return type of an invocation of this operator; only called after the number and types of operands have already been validated. Subclasses must either override this method or supply an instance of {@link SqlReturnTypeInference} to the constructor.
+     * Infers the return type of an invocation of this operator; only called after the number and types of operands have already been validated. Subclasses must either override this method or supply an instance of {@link PolyReturnTypeInference} to the constructor.
      *
      * @param opBinding description of invocation (not necessarily a {@link SqlCall})
      * @return inferred return type
@@ -531,7 +531,7 @@ public abstract class SqlOperator {
             // for sure that the row argument maps to a ColumnList type
             if ( operand.getKind() == SqlKind.ROW && convertRowArgToColumnList ) {
                 RelDataTypeFactory typeFactory = validator.getTypeFactory();
-                nodeType = typeFactory.createSqlType( SqlTypeName.COLUMN_LIST );
+                nodeType = typeFactory.createSqlType( PolyType.COLUMN_LIST );
                 ((SqlValidatorImpl) validator).setValidatedNodeType( operand, nodeType );
             } else {
                 nodeType = validator.deriveType( operandScope, operand );
@@ -570,9 +570,9 @@ public abstract class SqlOperator {
 
 
     /**
-     * Checks that the operand values in a {@link SqlCall} to this operator are valid. Subclasses must either override this method or supply an instance of {@link SqlOperandTypeChecker} to the constructor.
+     * Checks that the operand values in a {@link SqlCall} to this operator are valid. Subclasses must either override this method or supply an instance of {@link PolyOperandTypeChecker} to the constructor.
      *
-     * @param callBinding description of call
+     * @param callBinding    description of call
      * @param throwOnFailure whether to throw an exception if check fails (otherwise returns false in that case)
      * @return whether check succeeded
      */
@@ -597,7 +597,7 @@ public abstract class SqlOperator {
     }
 
 
-    protected void checkOperandCount( SqlValidator validator, SqlOperandTypeChecker argType, SqlCall call ) {
+    protected void checkOperandCount( SqlValidator validator, PolyOperandTypeChecker argType, SqlCall call ) {
         SqlOperandCountRange od = call.getOperator().getOperandCountRange();
         if ( od.isValidCount( call.operandCount() ) ) {
             return;
@@ -650,7 +650,7 @@ public abstract class SqlOperator {
     }
 
 
-    public SqlOperandTypeInference getOperandTypeInference() {
+    public PolyOperandTypeInference getOperandTypeInference() {
         return operandTypeInference;
     }
 
@@ -772,7 +772,7 @@ public abstract class SqlOperator {
     /**
      * @return the return type inference strategy for this operator, or null if return type inference is implemented by a subclass override
      */
-    public SqlReturnTypeInference getReturnTypeInference() {
+    public PolyReturnTypeInference getReturnTypeInference() {
         return returnTypeInference;
     }
 

@@ -39,9 +39,9 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.ReturnTypes;
 
 
 /**
@@ -49,7 +49,7 @@ import org.polypheny.db.sql.type.SqlOperandTypeChecker;
  */
 public class SqlOverlayFunction extends SqlFunction {
 
-    private static final SqlOperandTypeChecker OTC_CUSTOM =
+    private static final PolyOperandTypeChecker OTC_CUSTOM =
             OperandTypes.or(
                     OperandTypes.STRING_STRING_INTEGER,
                     OperandTypes.STRING_STRING_INTEGER_INTEGER );

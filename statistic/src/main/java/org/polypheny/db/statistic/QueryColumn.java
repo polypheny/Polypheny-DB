@@ -18,7 +18,7 @@ package org.polypheny.db.statistic;
 
 
 import lombok.Getter;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -36,10 +36,10 @@ class QueryColumn {
     private String name;
 
     @Getter
-    private SqlTypeName type;
+    private PolyType type;
 
 
-    QueryColumn( String schema, String table, String name, SqlTypeName type ) {
+    QueryColumn( String schema, String table, String name, PolyType type ) {
         this.schema = schema.replace( "\\", "" ).replace( "\"", "" );
         this.table = table.replace( "\\", "" ).replace( "\"", "" );
         this.name = name.replace( "\\", "" ).replace( "\"", "" );
@@ -47,7 +47,7 @@ class QueryColumn {
     }
 
 
-    QueryColumn( String schemaTableName, SqlTypeName type ) {
+    QueryColumn( String schemaTableName, PolyType type ) {
         this( schemaTableName.split( "\\." )[0], schemaTableName.split( "\\." )[1], schemaTableName.split( "\\." )[2], type );
     }
 

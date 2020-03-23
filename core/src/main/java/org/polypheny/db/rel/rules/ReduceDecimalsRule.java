@@ -61,9 +61,9 @@ import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -326,8 +326,8 @@ public class ReduceDecimalsRule extends RelOptRule {
          */
         public RexExpander( RexBuilder builder ) {
             this.builder = builder;
-            int8 = builder.getTypeFactory().createSqlType( SqlTypeName.BIGINT );
-            real8 = builder.getTypeFactory().createSqlType( SqlTypeName.DOUBLE );
+            int8 = builder.getTypeFactory().createSqlType( PolyType.BIGINT );
+            real8 = builder.getTypeFactory().createSqlType( PolyType.DOUBLE );
         }
 
 
@@ -514,7 +514,7 @@ public class ReduceDecimalsRule extends RelOptRule {
                 return value;
             }
             int scaleDiff = required - scale;
-            if ( SqlTypeUtil.isApproximateNumeric( value.getType() ) ) {
+            if ( PolyTypeUtil.isApproximateNumeric( value.getType() ) ) {
                 return makeMultiply( value, makeApproxScaleFactor( scaleDiff ) );
             }
 
@@ -533,7 +533,7 @@ public class ReduceDecimalsRule extends RelOptRule {
          * @return an integer representation of the decimal value
          */
         protected RexNode decodeValue( RexNode decimalNode ) {
-            assert SqlTypeUtil.isDecimal( decimalNode.getType() );
+            assert PolyTypeUtil.isDecimal( decimalNode.getType() );
             return builder.decodeIntervalOrDecimal( decimalNode );
         }
 
@@ -545,8 +545,8 @@ public class ReduceDecimalsRule extends RelOptRule {
          * @return the primitive value of the numeric node
          */
         protected RexNode accessValue( RexNode node ) {
-            assert SqlTypeUtil.isNumeric( node.getType() );
-            if ( SqlTypeUtil.isDecimal( node.getType() ) ) {
+            assert PolyTypeUtil.isNumeric( node.getType() );
+            if ( PolyTypeUtil.isDecimal( node.getType() ) ) {
                 return decodeValue( node );
             }
             return node;
@@ -699,21 +699,21 @@ public class ReduceDecimalsRule extends RelOptRule {
             RexNode operand = operands.get( 0 );
             RelDataType fromType = operand.getType();
             RelDataType toType = call.getType();
-            assert SqlTypeUtil.isDecimal( fromType ) || SqlTypeUtil.isDecimal( toType );
+            assert PolyTypeUtil.isDecimal( fromType ) || PolyTypeUtil.isDecimal( toType );
 
-            if ( SqlTypeUtil.isIntType( toType ) ) {
+            if ( PolyTypeUtil.isIntType( toType ) ) {
                 // decimal to int
                 return ensureType(
                         toType,
                         scaleDown( decodeValue( operand ), fromType.getScale() ),
                         false );
-            } else if ( SqlTypeUtil.isApproximateNumeric( toType ) ) {
+            } else if ( PolyTypeUtil.isApproximateNumeric( toType ) ) {
                 // decimal to floating point
                 return ensureType(
                         toType,
                         scaleDownDouble( decodeValue( operand ), fromType.getScale() ),
                         false );
-            } else if ( SqlTypeUtil.isApproximateNumeric( fromType ) ) {
+            } else if ( PolyTypeUtil.isApproximateNumeric( fromType ) ) {
                 // real to decimal
                 return encodeValue(
                         ensureScale( operand, 0, toType.getScale() ),
@@ -721,7 +721,7 @@ public class ReduceDecimalsRule extends RelOptRule {
                         true );
             }
 
-            if ( !SqlTypeUtil.isExactNumeric( fromType ) || !SqlTypeUtil.isExactNumeric( toType ) ) {
+            if ( !PolyTypeUtil.isExactNumeric( fromType ) || !PolyTypeUtil.isExactNumeric( toType ) ) {
                 throw Util.needToImplement( "Cast from '" + fromType.toString() + "' to '" + toType.toString() + "'" );
             }
             int fromScale = fromType.getScale();
@@ -732,13 +732,13 @@ public class ReduceDecimalsRule extends RelOptRule {
             // NOTE: precision 19 overflows when its underlying bigint representation overflows
             boolean checkOverflow = (toType.getPrecision() < 19) && (toDigits < fromDigits);
 
-            if ( SqlTypeUtil.isIntType( fromType ) ) {
+            if ( PolyTypeUtil.isIntType( fromType ) ) {
                 // int to decimal
                 return encodeValue(
                         ensureScale( operand, 0, toType.getScale() ),
                         toType,
                         checkOverflow );
-            } else if ( SqlTypeUtil.isDecimal( fromType ) && SqlTypeUtil.isDecimal( toType ) ) {
+            } else if ( PolyTypeUtil.isDecimal( fromType ) && PolyTypeUtil.isDecimal( toType ) ) {
                 // decimal to decimal
                 RexNode value = decodeValue( operand );
                 RexNode scaled;
@@ -784,11 +784,11 @@ public class ReduceDecimalsRule extends RelOptRule {
             assert operands.size() == 2;
             RelDataType typeA = operands.get( 0 ).getType();
             RelDataType typeB = operands.get( 1 ).getType();
-            assert SqlTypeUtil.isNumeric( typeA ) && SqlTypeUtil.isNumeric( typeB );
+            assert PolyTypeUtil.isNumeric( typeA ) && PolyTypeUtil.isNumeric( typeB );
 
-            if ( SqlTypeUtil.isApproximateNumeric( typeA ) || SqlTypeUtil.isApproximateNumeric( typeB ) ) {
+            if ( PolyTypeUtil.isApproximateNumeric( typeA ) || PolyTypeUtil.isApproximateNumeric( typeB ) ) {
                 List<RexNode> newOperands;
-                if ( SqlTypeUtil.isApproximateNumeric( typeA ) ) {
+                if ( PolyTypeUtil.isApproximateNumeric( typeA ) ) {
                     newOperands = ImmutableList.of( operands.get( 0 ), ensureType( real8, operands.get( 1 ) ) );
                 } else {
                     newOperands = ImmutableList.of( ensureType( real8, operands.get( 0 ) ), operands.get( 1 ) );
@@ -827,7 +827,7 @@ public class ReduceDecimalsRule extends RelOptRule {
             assert operands.size() == 2;
             typeA = operands.get( 0 ).getType();
             typeB = operands.get( 1 ).getType();
-            assert SqlTypeUtil.isExactNumeric( typeA ) && SqlTypeUtil.isExactNumeric( typeB );
+            assert PolyTypeUtil.isExactNumeric( typeA ) && PolyTypeUtil.isExactNumeric( typeB );
 
             scaleA = typeA.getScale();
             scaleB = typeB.getScale();
@@ -918,8 +918,8 @@ public class ReduceDecimalsRule extends RelOptRule {
 
 
         private RexNode expandMod( RexCall call, List<RexNode> operands ) {
-            assert SqlTypeUtil.isExactNumeric( typeA );
-            assert SqlTypeUtil.isExactNumeric( typeB );
+            assert PolyTypeUtil.isExactNumeric( typeA );
+            assert PolyTypeUtil.isExactNumeric( typeB );
             if ( scaleA != 0 || scaleB != 0 ) {
                 throw RESOURCE.argumentMustHaveScaleZero( call.getOperator().getName() ).ex();
             }
@@ -929,7 +929,7 @@ public class ReduceDecimalsRule extends RelOptRule {
                             accessValue( operands.get( 0 ) ),
                             accessValue( operands.get( 1 ) ) );
             RelDataType retType = call.getType();
-            if ( SqlTypeUtil.isDecimal( retType ) ) {
+            if ( PolyTypeUtil.isDecimal( retType ) ) {
                 return encodeValue( result, retType );
             }
             return ensureType( call.getType(), result );
@@ -1067,14 +1067,14 @@ public class ReduceDecimalsRule extends RelOptRule {
                     continue;
                 }
                 RexNode expr = ensureType( retType, call.operands.get( i ), false );
-                if ( SqlTypeUtil.isDecimal( retType ) ) {
+                if ( PolyTypeUtil.isDecimal( retType ) ) {
                     expr = decodeValue( expr );
                 }
                 opBuilder.add( expr );
             }
 
             RexNode newCall = builder.makeCall( retType, call.getOperator(), opBuilder.build() );
-            if ( SqlTypeUtil.isDecimal( retType ) ) {
+            if ( PolyTypeUtil.isDecimal( retType ) ) {
                 newCall = encodeValue( newCall, retType );
             }
             return newCall;
@@ -1102,7 +1102,7 @@ public class ReduceDecimalsRule extends RelOptRule {
         public RexNode expand( RexCall call ) {
             ImmutableList.Builder<RexNode> opBuilder = ImmutableList.builder();
             for ( RexNode operand : call.operands ) {
-                if ( SqlTypeUtil.isNumeric( operand.getType() ) ) {
+                if ( PolyTypeUtil.isNumeric( operand.getType() ) ) {
                     opBuilder.add( accessValue( operand ) );
                 } else {
                     opBuilder.add( operand );
@@ -1110,7 +1110,7 @@ public class ReduceDecimalsRule extends RelOptRule {
             }
 
             RexNode newCall = builder.makeCall( call.getType(), call.getOperator(), opBuilder.build() );
-            if ( SqlTypeUtil.isDecimal( call.getType() ) ) {
+            if ( PolyTypeUtil.isDecimal( call.getType() ) ) {
                 return encodeValue( newCall, call.getType() );
             } else {
                 return newCall;
@@ -1159,7 +1159,7 @@ public class ReduceDecimalsRule extends RelOptRule {
 
             for ( Ord<RexNode> operand : Ord.zip( call.operands ) ) {
                 RelDataType targetType = getArgType( call, operand.i );
-                if ( SqlTypeUtil.isDecimal( operand.e.getType() ) ) {
+                if ( PolyTypeUtil.isDecimal( operand.e.getType() ) ) {
                     opBuilder.add( ensureType( targetType, operand.e, true ) );
                 } else {
                     opBuilder.add( operand.e );

@@ -70,15 +70,15 @@ import org.polypheny.db.sql.SqlValuesOperator;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.SqlWithinGroupOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.ReflectiveSqlOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlModality;
 import org.polypheny.db.sql2rel.AuxiliaryConverter;
+import org.polypheny.db.type.InferTypes;
+import org.polypheny.db.type.OperandTypes;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.ReturnTypes;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Pair;
@@ -1260,7 +1260,7 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
             new SqlSpecialOperator( "Reinterpret", SqlKind.REINTERPRET ) {
                 @Override
                 public SqlOperandCountRange getOperandCountRange() {
-                    return SqlOperandCountRanges.between( 1, 2 );
+                    return PolyOperandCountRanges.between( 1, 2 );
                 }
             };
 
@@ -1679,22 +1679,22 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     /**
      * The <code>LOCALTIME [(<i>precision</i>)]</code> function.
      */
-    public static final SqlFunction LOCALTIME = new SqlAbstractTimeFunction( "LOCALTIME", SqlTypeName.TIME );
+    public static final SqlFunction LOCALTIME = new SqlAbstractTimeFunction( "LOCALTIME", PolyType.TIME );
 
     /**
      * The <code>LOCALTIMESTAMP [(<i>precision</i>)]</code> function.
      */
-    public static final SqlFunction LOCALTIMESTAMP = new SqlAbstractTimeFunction( "LOCALTIMESTAMP", SqlTypeName.TIMESTAMP );
+    public static final SqlFunction LOCALTIMESTAMP = new SqlAbstractTimeFunction( "LOCALTIMESTAMP", PolyType.TIMESTAMP );
 
     /**
      * The <code>CURRENT_TIME [(<i>precision</i>)]</code> function.
      */
-    public static final SqlFunction CURRENT_TIME = new SqlAbstractTimeFunction( "CURRENT_TIME", SqlTypeName.TIME );
+    public static final SqlFunction CURRENT_TIME = new SqlAbstractTimeFunction( "CURRENT_TIME", PolyType.TIME );
 
     /**
      * The <code>CURRENT_TIMESTAMP [(<i>precision</i>)]</code> function.
      */
-    public static final SqlFunction CURRENT_TIMESTAMP = new SqlAbstractTimeFunction( "CURRENT_TIMESTAMP", SqlTypeName.TIMESTAMP );
+    public static final SqlFunction CURRENT_TIMESTAMP = new SqlAbstractTimeFunction( "CURRENT_TIMESTAMP", PolyType.TIMESTAMP );
 
     /**
      * The <code>CURRENT_DATE</code> function.

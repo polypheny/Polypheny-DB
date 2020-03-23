@@ -57,9 +57,9 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -760,11 +760,11 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted column
      */
     @Override
-    public long addColumn( String name, long tableId, int position, SqlTypeName type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
+    public long addColumn( String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
-            if ( type.getFamily() == SqlTypeFamily.CHARACTER && collation == null ) {
+            if ( type.getFamily() == PolyTypeFamily.CHARACTER && collation == null ) {
                 throw new RuntimeException( "Collation is not allowed to be null for char types." );
             }
             if ( scale != null && scale > length ) {
@@ -819,13 +819,13 @@ public class CatalogImpl extends Catalog {
      * @param type     The new type of the column
      */
     @Override
-    public void setColumnType( long columnId, SqlTypeName type, Integer length, Integer scale ) throws GenericCatalogException {
+    public void setColumnType( long columnId, PolyType type, Integer length, Integer scale ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             if ( scale != null && scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
-            Collation collation = type.getFamily() == SqlTypeFamily.CHARACTER ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
+            Collation collation = type.getFamily() == PolyTypeFamily.CHARACTER ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
             Statements.setColumnType( transactionHandler, columnId, type, length, scale, collation );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownCollationException e ) {
             throw new GenericCatalogException( e );
@@ -877,7 +877,7 @@ public class CatalogImpl extends Catalog {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogColumn catalogColumn = Statements.getColumn( transactionHandler, columnId );
-            if ( catalogColumn.type.getFamily() != SqlTypeFamily.CHARACTER ) {
+            if ( catalogColumn.type.getFamily() != PolyTypeFamily.CHARACTER ) {
                 throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
             }
             Statements.setCollation( transactionHandler, columnId, collation );
@@ -937,7 +937,7 @@ public class CatalogImpl extends Catalog {
      * @param defaultValue The default value
      */
     @Override
-    public void setDefaultValue( long columnId, SqlTypeName type, String defaultValue ) throws GenericCatalogException {
+    public void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws GenericCatalogException {
         try {
             deleteDefaultValue( columnId );
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );

@@ -38,10 +38,10 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyOperandTypeInference;
+import org.polypheny.db.type.PolyReturnTypeInference;
 
 
 /**
@@ -50,7 +50,7 @@ import org.polypheny.db.sql.validate.SqlMonotonicity;
 public class SqlMonotonicUnaryFunction extends SqlFunction {
 
 
-    protected SqlMonotonicUnaryFunction( String name, SqlKind kind, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, SqlFunctionCategory funcType ) {
+    protected SqlMonotonicUnaryFunction( String name, SqlKind kind, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, SqlFunctionCategory funcType ) {
         super( name, kind, returnTypeInference, operandTypeInference, operandTypeChecker, funcType );
     }
 

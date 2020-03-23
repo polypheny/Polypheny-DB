@@ -63,9 +63,6 @@ import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.utils.AbstractSqlTester;
 import org.polypheny.db.sql.utils.SqlRuntimeTester;
 import org.polypheny.db.sql.utils.SqlTester;
@@ -76,6 +73,9 @@ import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.test.SqlTestFactory;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyOperandTypeChecker;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.Pair;
@@ -6845,7 +6845,7 @@ public abstract class SqlOperatorBaseTest {
                 "TIMESTAMP(3) NOT NULL" );
 
         // The following test would correctly return "TIMESTAMP(6) NOT NULL" if max precision were 6 or higher
-        assumeTrue( tester.getValidator().getTypeFactory().getTypeSystem().getMaxPrecision( SqlTypeName.TIMESTAMP ) == 3 );
+        assumeTrue( tester.getValidator().getTypeFactory().getTypeSystem().getMaxPrecision( PolyType.TIMESTAMP ) == 3 );
         tester.checkType(
                 "timestampadd(MICROSECOND, 2, timestamp '2016-02-24 12:42:25.000000')",
                 // "2016-02-24 12:42:25.000002",
@@ -7754,14 +7754,14 @@ public abstract class SqlOperatorBaseTest {
         final SqlValidatorScope scope = validator.getEmptyScope();
         final RelDataTypeFactory typeFactory = validator.getTypeFactory();
         final Builder builder = new Builder( typeFactory );
-        builder.add0( SqlTypeName.BOOLEAN, true, false );
-        builder.add0( SqlTypeName.TINYINT, 0, 1, -3, Byte.MAX_VALUE, Byte.MIN_VALUE );
-        builder.add0( SqlTypeName.SMALLINT, 0, 1, -4, Short.MAX_VALUE, Short.MIN_VALUE );
-        builder.add0( SqlTypeName.INTEGER, 0, 1, -2, Integer.MIN_VALUE, Integer.MAX_VALUE );
-        builder.add0( SqlTypeName.BIGINT, 0, 1, -5, Integer.MAX_VALUE, Long.MAX_VALUE, Long.MIN_VALUE );
-        builder.add1( SqlTypeName.VARCHAR, 11, "", " ", "hello world" );
-        builder.add1( SqlTypeName.CHAR, 5, "", "e", "hello" );
-        builder.add0( SqlTypeName.TIMESTAMP, 0L, DateTimeUtils.MILLIS_PER_DAY );
+        builder.add0( PolyType.BOOLEAN, true, false );
+        builder.add0( PolyType.TINYINT, 0, 1, -3, Byte.MAX_VALUE, Byte.MIN_VALUE );
+        builder.add0( PolyType.SMALLINT, 0, 1, -4, Short.MAX_VALUE, Short.MIN_VALUE );
+        builder.add0( PolyType.INTEGER, 0, 1, -2, Integer.MIN_VALUE, Integer.MAX_VALUE );
+        builder.add0( PolyType.BIGINT, 0, 1, -5, Integer.MAX_VALUE, Long.MAX_VALUE, Long.MIN_VALUE );
+        builder.add1( PolyType.VARCHAR, 11, "", " ", "hello world" );
+        builder.add1( PolyType.CHAR, 5, "", "e", "hello" );
+        builder.add0( PolyType.TIMESTAMP, 0L, DateTimeUtils.MILLIS_PER_DAY );
         for ( SqlOperator op : SqlStdOperatorTable.instance().getOperatorList() ) {
             switch ( op.getKind() ) {
                 case TRIM: // can't handle the flag argument
@@ -7772,7 +7772,7 @@ public abstract class SqlOperatorBaseTest {
                 case SPECIAL:
                     continue;
             }
-            final SqlOperandTypeChecker typeChecker = op.getOperandTypeChecker();
+            final PolyOperandTypeChecker typeChecker = op.getOperandTypeChecker();
             if ( typeChecker == null ) {
                 continue;
             }
@@ -7831,10 +7831,10 @@ public abstract class SqlOperatorBaseTest {
     }
 
 
-    private List<Object> getValues( BasicSqlType type, boolean inBound ) {
+    private List<Object> getValues( BasicPolyType type, boolean inBound ) {
         List<Object> values = new ArrayList<>();
         for ( boolean sign : FALSE_TRUE ) {
-            for ( SqlTypeName.Limit limit : SqlTypeName.Limit.values() ) {
+            for ( PolyType.Limit limit : PolyType.Limit.values() ) {
                 Object o = type.getLimit( sign, limit, !inBound );
                 if ( o == null ) {
                     continue;
@@ -8035,12 +8035,12 @@ public abstract class SqlOperatorBaseTest {
         }
 
 
-        public void add0( SqlTypeName typeName, Object... values ) {
+        public void add0( PolyType typeName, Object... values ) {
             add( typeFactory.createSqlType( typeName ), values );
         }
 
 
-        public void add1( SqlTypeName typeName, int precision, Object... values ) {
+        public void add1( PolyType typeName, int precision, Object... values ) {
             add( typeFactory.createSqlType( typeName, precision ), values );
         }
 

@@ -48,7 +48,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Source;
 
@@ -138,7 +138,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         final List<String> names = new ArrayList<>();
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
-            types.add( typeFactory.createSqlType( SqlTypeName.TIMESTAMP ) );
+            types.add( typeFactory.createSqlType( PolyType.TIMESTAMP ) );
         }
         try ( CSVReader reader = openCsv( source ) ) {
             String[] strings = reader.readNext();
@@ -162,7 +162,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                 }
                 final RelDataType type;
                 if ( fieldType == null ) {
-                    type = typeFactory.createSqlType( SqlTypeName.VARCHAR );
+                    type = typeFactory.createSqlType( PolyType.VARCHAR );
                 } else {
                     type = fieldType.toType( typeFactory );
                 }
@@ -177,7 +177,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         }
         if ( names.isEmpty() ) {
             names.add( "line" );
-            types.add( typeFactory.createSqlType( SqlTypeName.VARCHAR ) );
+            types.add( typeFactory.createSqlType( PolyType.VARCHAR ) );
         }
         return typeFactory.createStructType( Pair.zip( names, types ) );
     }

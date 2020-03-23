@@ -75,7 +75,7 @@ import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
@@ -226,7 +226,7 @@ public class SqlValidatorUtil {
 
     public static void checkCharsetAndCollateConsistentIfCharType( RelDataType type ) {
         // (every charset must have a default collation)
-        if ( SqlTypeUtil.inCharFamily( type ) ) {
+        if ( PolyTypeUtil.inCharFamily( type ) ) {
             Charset strCharset = type.getCharset();
             Charset colCharset = type.getCollation().getCharset();
             assert null != strCharset;
