@@ -41,7 +41,7 @@ import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 
 
 /**
- * SQL array type.
+ * Array type.
  */
 public class ArrayType extends AbstractPolyType {
 
@@ -49,7 +49,7 @@ public class ArrayType extends AbstractPolyType {
 
 
     /**
-     * Creates an ArraySqlType. This constructor should only be called from a factory method.
+     * Creates an ArrayType. This constructor should only be called from a factory method.
      */
     public ArrayType( RelDataType elementType, boolean isNullable ) {
         super( PolyType.ARRAY, isNullable, null );

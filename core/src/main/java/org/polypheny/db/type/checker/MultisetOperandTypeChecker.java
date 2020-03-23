@@ -29,7 +29,8 @@ import org.polypheny.db.util.Static;
 
 
 /**
- * Parameter type-checking strategy types must be [nullable] Multiset, [nullable] Multiset and the two types must have the same element type
+ * Parameter type-checking strategy types must be [nullable] Multiset, [nullable] Multiset and the two types must have the
+ * same element type
  *
  * @see MultisetPolyType#getComponentType
  */

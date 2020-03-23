@@ -32,7 +32,8 @@ import org.polypheny.db.util.Static;
 
 
 /**
- * TableFunctionReturnTypeInference implements rules for deriving table function output row types by expanding references to cursor parameters.
+ * TableFunctionReturnTypeInference implements rules for deriving table function output row types by expanding references to
+ * cursor parameters.
  */
 public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInference {
 
@@ -70,7 +71,8 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
                 continue;
             }
 
-            // Look up position of cursor parameter with same name as output field, also counting how many cursors appear before it (need this for correspondence with RelNode child position).
+            // Look up position of cursor parameter with same name as output field, also counting how many cursors appear
+            // before it (need this for correspondence with RelNode child position).
             int paramOrdinal = -1;
             int iCursor = 0;
             for ( int i = 0; i < paramNames.size(); ++i ) {
@@ -136,7 +138,13 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
     }
 
 
-    private void addOutputColumn( List<String> expandedFieldNames, List<RelDataType> expandedOutputTypes, int iInputColumn, int iCursor, SqlOperatorBinding opBinding, RelDataTypeField cursorField ) {
+    private void addOutputColumn(
+            List<String> expandedFieldNames,
+            List<RelDataType> expandedOutputTypes,
+            int iInputColumn,
+            int iCursor,
+            SqlOperatorBinding opBinding,
+            RelDataTypeField cursorField ) {
         columnMappings.add( new RelColumnMapping( expandedFieldNames.size(), iCursor, iInputColumn, !isPassthrough ) );
 
         // As a special case, system fields are implicitly NOT NULL. A badly behaved UDX can still provide NULL values,

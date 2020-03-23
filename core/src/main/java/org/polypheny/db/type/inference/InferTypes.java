@@ -51,7 +51,7 @@ public abstract class InferTypes {
                     }
                 }
 
-                // REVIEW jvs:  We can't assert this because SqlAdvisorValidator produces unknown types for incomplete expressions.
+                // REVIEW jvs: We can't assert this because SqlAdvisorValidator produces unknown types for incomplete expressions.
                 // Maybe we need to distinguish the two kinds of unknown.
                 //assert !knownType.equals(unknownType);
                 for ( int i = 0; i < operandTypes.length; ++i ) {
@@ -60,7 +60,8 @@ public abstract class InferTypes {
             };
 
     /**
-     * Operand type-inference strategy where an unknown operand type is derived from the call's return type. If the return type is a record, it must have the same number of fields as the number of operands.
+     * Operand type-inference strategy where an unknown operand type is derived from the call's return type. If the return
+     * type is a record, it must have the same number of fields as the number of operands.
      */
     public static final PolyOperandTypeInference RETURN_TYPE =
             ( callBinding, returnType, operandTypes ) -> {
@@ -84,8 +85,9 @@ public abstract class InferTypes {
             };
 
     /**
-     * Operand type-inference strategy where an unknown operand type is assumed to be VARCHAR(1024).  This is not something which should be used in most cases (especially since the precision is arbitrary),
-     * but for IS [NOT] NULL, we don't really care about the type at all, so it's reasonable to use something that every other type can be cast to.
+     * Operand type-inference strategy where an unknown operand type is assumed to be VARCHAR(1024). This is not something
+     * which should be used in most cases (especially since the precision is arbitrary), but for IS [NOT] NULL, we don't
+     * really care about the type at all, so it's reasonable to use something that every other type can be cast to.
      */
     public static final PolyOperandTypeInference VARCHAR_1024 =
             ( callBinding, returnType, operandTypes ) -> {

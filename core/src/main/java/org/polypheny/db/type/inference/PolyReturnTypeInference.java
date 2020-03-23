@@ -26,8 +26,8 @@ import org.polypheny.db.util.Glossary;
 /**
  * Strategy interface to infer the type of an operator call from the type of the operands.
  * <p>
- * This interface is an example of the {@link Glossary#STRATEGY_PATTERN strategy pattern}.
- * This makes sense because many operators have similar, straightforward strategies, such as to take the type of the first operand.
+ * This interface is an example of the {@link Glossary#STRATEGY_PATTERN strategy pattern}. This makes sense because many
+ * operators have similar, straightforward strategies, such as to take the type of the first operand.
  */
 public interface PolyReturnTypeInference {
 

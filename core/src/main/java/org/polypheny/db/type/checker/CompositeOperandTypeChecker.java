@@ -86,7 +86,11 @@ public class CompositeOperandTypeChecker implements PolyOperandTypeChecker {
     /**
      * Package private. Use {@link OperandTypes#and}, {@link OperandTypes#or}.
      */
-    CompositeOperandTypeChecker( Composition composition, ImmutableList<? extends PolyOperandTypeChecker> allowedRules, @Nullable String allowedSignatures, @Nullable SqlOperandCountRange range ) {
+    CompositeOperandTypeChecker(
+            Composition composition,
+            ImmutableList<? extends PolyOperandTypeChecker> allowedRules,
+            @Nullable String allowedSignatures,
+            @Nullable SqlOperandCountRange range ) {
         this.allowedRules = Objects.requireNonNull( allowedRules );
         this.composition = Objects.requireNonNull( composition );
         this.allowedSignatures = allowedSignatures;

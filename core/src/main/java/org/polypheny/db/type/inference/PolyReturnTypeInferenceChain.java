@@ -23,8 +23,9 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
- * Strategy to infer the type of an operator call from the type of the operands by using a series of {@link PolyReturnTypeInference} rules in a given order.
- * If a rule fails to find a return type (by returning NULL), next rule is tried until there are no more rules in which case NULL will be returned.
+ * Strategy to infer the type of an operator call from the type of the operands by using a series of
+ * {@link PolyReturnTypeInference} rules in a given order. If a rule fails to find a return type (by returning NULL), next
+ * rule is tried until there are no more rules in which case NULL will be returned.
  */
 public class PolyReturnTypeInferenceChain implements PolyReturnTypeInference {
 

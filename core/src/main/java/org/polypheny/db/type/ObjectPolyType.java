@@ -61,7 +61,12 @@ public class ObjectPolyType extends AbstractPolyType {
      * @param nullable      whether type accepts nulls
      * @param fields        object attribute definitions
      */
-    public ObjectPolyType( PolyType typeName, SqlIdentifier sqlIdentifier, boolean nullable, List<? extends RelDataTypeField> fields, RelDataTypeComparability comparability ) {
+    public ObjectPolyType(
+            PolyType typeName,
+            SqlIdentifier sqlIdentifier,
+            boolean nullable,
+            List<? extends RelDataTypeField> fields,
+            RelDataTypeComparability comparability ) {
         super( typeName, nullable, fields );
         this.sqlIdentifier = sqlIdentifier;
         this.comparability = comparability;
@@ -91,7 +96,8 @@ public class ObjectPolyType extends AbstractPolyType {
     // override AbstractSqlType
     @Override
     public RelDataTypeFamily getFamily() {
-        // each UDT is in its own lonely family, until one day when we support inheritance (at which time also need to implement getPrecedenceList).
+        // each UDT is in its own lonely family, until one day when we support inheritance (at which time also need
+        // to implement getPrecedenceList).
         return family;
     }
 
@@ -99,7 +105,7 @@ public class ObjectPolyType extends AbstractPolyType {
     // implement RelDataTypeImpl
     @Override
     protected void generateTypeString( StringBuilder sb, boolean withDetail ) {
-        // TODO jvs 10-Feb-2005:  proper quoting; dump attributes withDetail?
+        // TODO: proper quoting; dump attributes withDetail?
         sb.append( "ObjectSqlType(" );
         sb.append( sqlIdentifier.toString() );
         sb.append( ")" );

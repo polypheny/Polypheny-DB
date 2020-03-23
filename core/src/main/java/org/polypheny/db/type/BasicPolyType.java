@@ -43,7 +43,7 @@ import org.polypheny.db.util.SerializableCharset;
 
 
 /**
- * BasicSqlType represents a standard atomic type (excluding interval types).
+ * BasicPolyType represents a standard atomic type (excluding interval types).
  * <p>
  * Instances of this class are immutable.
  */
@@ -108,7 +108,14 @@ public class BasicPolyType extends AbstractPolyType {
     /**
      * Internal constructor.
      */
-    private BasicPolyType( RelDataTypeSystem typeSystem, PolyType typeName, boolean nullable, int precision, int scale, SqlCollation collation, SerializableCharset wrappedCharset ) {
+    private BasicPolyType(
+            RelDataTypeSystem typeSystem,
+            PolyType typeName,
+            boolean nullable,
+            int precision,
+            int scale,
+            SqlCollation collation,
+            SerializableCharset wrappedCharset ) {
         super( typeName, nullable, null );
         this.typeSystem = Objects.requireNonNull( typeSystem );
         this.precision = precision;
@@ -126,7 +133,14 @@ public class BasicPolyType extends AbstractPolyType {
         if ( nullable == this.isNullable ) {
             return this;
         }
-        return new BasicPolyType( this.typeSystem, this.typeName, nullable, this.precision, this.scale, this.collation, this.wrappedCharset );
+        return new BasicPolyType(
+                this.typeSystem,
+                this.typeName,
+                nullable,
+                this.precision,
+                this.scale,
+                this.collation,
+                this.wrappedCharset );
     }
 
 
@@ -137,7 +151,14 @@ public class BasicPolyType extends AbstractPolyType {
      */
     BasicPolyType createWithCharsetAndCollation( Charset charset, SqlCollation collation ) {
         Preconditions.checkArgument( PolyTypeUtil.inCharFamily( this ) );
-        return new BasicPolyType( this.typeSystem, this.typeName, this.isNullable, this.precision, this.scale, collation, SerializableCharset.forCharset( charset ) );
+        return new BasicPolyType(
+                this.typeSystem,
+                this.typeName,
+                this.isNullable,
+                this.precision,
+                this.scale,
+                collation,
+                SerializableCharset.forCharset( charset ) );
     }
 
 

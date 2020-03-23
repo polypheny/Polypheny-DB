@@ -102,7 +102,8 @@ public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
 
 
     /**
-     * Similar functionality to {@link #checkOperandTypes(SqlCallBinding, boolean)}, but not part of the interface, and cannot throw an error.
+     * Similar functionality to {@link #checkOperandTypes(SqlCallBinding, boolean)}, but not part of the interface, and
+     * cannot throw an error.
      */
     public boolean checkOperandTypes( SqlOperatorBinding operatorBinding ) {
         return checkOperandTypesImpl( operatorBinding, false, null );

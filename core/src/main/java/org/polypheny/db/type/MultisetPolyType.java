@@ -80,8 +80,10 @@ public class MultisetPolyType extends AbstractPolyType {
     // implement RelDataType
     @Override
     public RelDataTypeFamily getFamily() {
-        // TODO jvs 2-Dec-2004:  This gives each multiset type its own family.  But that's not quite correct; the family should be based on the element type for proper comparability semantics (per 4.10.4 of SQL/2003).
-        //  So either this should make up canonical families dynamically, or the comparison type-checking should not rely on this.  I think the same goes for ROW types.
+        // TODO: This gives each multiset type its own family. But that's not quite correct; the family should be based on
+        //  the element type for proper comparability semantics (per 4.10.4 of SQL/2003). So either this should make up
+        //  canonical families dynamically, or the comparison type-checking should not rely on this.
+        //  I think the same goes for ROW types.
         return this;
     }
 

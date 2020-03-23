@@ -42,11 +42,12 @@ import org.polypheny.db.type.inference.ReturnTypes;
 /**
  * Strategies for checking operand types.
  * <p>
- * This class defines singleton instances of strategy objects for operand type checking. {@link ReturnTypes} and {@link InferTypes} provide similar strategies
- * for operand type inference and operator return type inference.
+ * This class defines singleton instances of strategy objects for operand type checking. {@link ReturnTypes} and
+ * {@link InferTypes} provide similar strategies for operand type inference and operator return type inference.
  * <p>
- * Note to developers: avoid anonymous inner classes here except for unique, non-generalizable strategies; anything else belongs in a reusable top-level class. If you find yourself copying and pasting an existing strategy's
- * anonymous inner class, you're making a mistake.
+ * Note to developers: avoid anonymous inner classes here except for unique, non-generalizable strategies; anything else
+ * belongs in a reusable top-level class. If you find yourself copying and pasting an existing strategy's anonymous
+ * inner class, you're making a mistake.
  *
  * @see PolyOperandTypeChecker
  * @see ReturnTypes
@@ -67,7 +68,8 @@ public abstract class OperandTypes {
 
 
     /**
-     * Creates a checker that passes if each operand is a member of a corresponding family, and allows specified parameters to be optional.
+     * Creates a checker that passes if each operand is a member of a corresponding family, and allows specified parameters
+     * to be optional.
      */
     public static FamilyOperandTypeChecker family( List<PolyTypeFamily> families, Predicate<Integer> optional ) {
         return new FamilyOperandTypeChecker( families, optional );

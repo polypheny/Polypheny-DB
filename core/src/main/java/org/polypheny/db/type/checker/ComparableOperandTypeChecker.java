@@ -25,7 +25,8 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 
 
 /**
- * Type checking strategy which verifies that types have the required attributes to be used as arguments to comparison operators.
+ * Type checking strategy which verifies that types have the required attributes to be used as arguments to
+ * comparison operators.
  */
 public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
 
@@ -73,7 +74,8 @@ public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
 
 
     /**
-     * Similar functionality to {@link #checkOperandTypes(SqlCallBinding, boolean)}, but not part of the interface, and cannot throw an error.
+     * Similar functionality to {@link #checkOperandTypes(SqlCallBinding, boolean)}, but not part of the interface,
+     * and cannot throw an error.
      */
     @Override
     public boolean checkOperandTypes( SqlOperatorBinding callBinding ) {

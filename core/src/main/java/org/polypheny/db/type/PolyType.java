@@ -356,9 +356,11 @@ public enum PolyType {
     // SqlTypeFamily.ANY
     public static final List<PolyType> ALL_TYPES =
             ImmutableList.of(
-                    BOOLEAN, INTEGER, VARCHAR, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, TINYINT, SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH,
-                    INTERVAL_DAY, INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE, INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND,
-                    INTERVAL_SECOND, TIME_WITH_LOCAL_TIME_ZONE, TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
+                    BOOLEAN, INTEGER, VARCHAR, DATE, TIME, TIMESTAMP, NULL, DECIMAL, ANY, CHAR, BINARY, VARBINARY, TINYINT,
+                    SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY,
+                    INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE,
+                    INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND, TIME_WITH_LOCAL_TIME_ZONE,
+                    TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
 
     public static final List<PolyType> BOOLEAN_TYPES = ImmutableList.of( BOOLEAN );
 
@@ -792,12 +794,15 @@ public enum PolyType {
                         return null;
                     case OVERFLOW:
                         if ( beyond ) {
-                            // It is impossible to represent an invalid year as a date literal. SQL dates are represented as 'yyyy-mm-dd', and 1 <= yyyy <= 9999 is valid. There is no year 0: the year
-                            // before 1AD is 1BC, so SimpleDateFormat renders the day before 0001-01-01 (AD) as 0001-12-31 (BC), which looks like a valid date.
+                            // It is impossible to represent an invalid year as a date literal. SQL dates are represented
+                            // as 'yyyy-mm-dd', and 1 <= yyyy <= 9999 is valid. There is no year 0: the year before 1AD is 1BC,
+                            // so SimpleDateFormat renders the day before 0001-01-01 (AD) as 0001-12-31 (BC), which looks
+                            // like a valid date.
                             return null;
                         }
 
-                        // "SQL:2003 6.1 <data type> Access Rules 6" says that year is between 1 and 9999, and days/months are the valid Gregorian calendar values for these years.
+                        // "SQL:2003 6.1 <data type> Access Rules 6" says that year is between 1 and 9999, and days/months
+                        // are the valid Gregorian calendar values for these years.
                         if ( sign ) {
                             calendar.set( Calendar.YEAR, 9999 );
                             calendar.set( Calendar.MONTH, 11 );
@@ -863,12 +868,15 @@ public enum PolyType {
                         return null;
                     case OVERFLOW:
                         if ( beyond ) {
-                            // It is impossible to represent an invalid year as a date literal. SQL dates are represented as 'yyyy-mm-dd', and 1 <= yyyy <= 9999 is valid. There is no year 0: the year
-                            // before 1AD is 1BC, so SimpleDateFormat renders the day before 0001-01-01 (AD) as 0001-12-31 (BC), which looks like a valid date.
+                            // It is impossible to represent an invalid year as a date literal. SQL dates are represented
+                            // as 'yyyy-mm-dd', and 1 <= yyyy <= 9999 is valid. There is no year 0: the year before
+                            // 1AD is 1BC, so SimpleDateFormat renders the day before 0001-01-01 (AD) as 0001-12-31 (BC),
+                            // which looks like a valid date.
                             return null;
                         }
 
-                        // "SQL:2003 6.1 <data type> Access Rules 6" says that year is between 1 and 9999, and days/months are the valid Gregorian calendar values for these years.
+                        // "SQL:2003 6.1 <data type> Access Rules 6" says that year is between 1 and 9999, and days/months
+                        // are the valid Gregorian calendar values for these years.
                         if ( sign ) {
                             calendar.set( Calendar.YEAR, 9999 );
                             calendar.set( Calendar.MONTH, 11 );
@@ -902,7 +910,8 @@ public enum PolyType {
 
 
     /**
-     * Returns the minimum precision (or length) allowed for this type, or -1 if precision/length are not applicable for this type.
+     * Returns the minimum precision (or length) allowed for this type, or -1 if precision/length are not applicable
+     * for this type.
      *
      * @return Minimum allowed precision
      */
@@ -939,7 +948,8 @@ public enum PolyType {
 
 
     /**
-     * Returns the minimum scale (or fractional second precision in the case of intervals) allowed for this type, or -1 if precision/length are not applicable for this type.
+     * Returns the minimum scale (or fractional second precision in the case of intervals) allowed for this type, or -1 if
+     * precision/length are not applicable for this type.
      *
      * @return Minimum allowed scale
      */

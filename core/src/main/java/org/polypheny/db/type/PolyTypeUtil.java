@@ -488,8 +488,9 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Tests whether two types have the same name and structure, possibly with differing modifiers. For example, VARCHAR(1) and VARCHAR(10) are considered the same, while VARCHAR(1) and CHAR(1) are considered
-     * different. Likewise, VARCHAR(1) MULTISET and VARCHAR(10) MULTISET are considered the same.
+     * Tests whether two types have the same name and structure, possibly with differing modifiers. For example, VARCHAR(1)
+     * and VARCHAR(10) are considered the same, while VARCHAR(1) and CHAR(1) are considered different.
+     * Likewise, VARCHAR(1) MULTISET and VARCHAR(10) MULTISET are considered the same.
      *
      * @return true if types have same name and structure
      */
@@ -550,7 +551,8 @@ public abstract class PolyTypeUtil {
 
             case MULTISET:
 
-                // TODO Wael Jan-24-2005: Need a better way to tell fennel this number. This a very generic place and implementation details like this doesnt belong here. Waiting to change this once we have blob support
+                // TODO: Need a better way to tell fennel this number. This a very generic place and implementation details
+                //  like this doesnt belong here. Waiting to change this once we have blob support
                 return 4096;
 
             default:
@@ -624,8 +626,9 @@ public abstract class PolyTypeUtil {
 
         // TODO jvs: handle all the other cases like rows, collections, UDT's
         if ( fromType.getSqlTypeName() == PolyType.NULL ) {
-            // REVIEW jvs: We allow assignment from NULL to any type, including NOT NULL types, since in the case where no rows are actually processed, the assignment is legal (FRG-365).
-            // However, it would be better if the validator's NULL type inference guaranteed that we had already assigned a real (nullable) type to every NULL literal.
+            // REVIEW jvs: We allow assignment from NULL to any type, including NOT NULL types, since in the case where no
+            // rows are actually processed, the assignment is legal (FRG-365). However, it would be better if the validator's
+            // NULL type inference guaranteed that we had already assigned a real (nullable) type to every NULL literal.
             return true;
         }
 
@@ -645,7 +648,8 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Determines whether two types both have different character sets. If one or the other type has no character set (e.g. in cast from INT to VARCHAR), that is not a mismatch.
+     * Determines whether two types both have different character sets. If one or the other type has no character set
+     * (e.g. in cast from INT to VARCHAR), that is not a mismatch.
      *
      * @param t1 first type
      * @param t2 second type
@@ -670,7 +674,8 @@ public abstract class PolyTypeUtil {
     /**
      * Compares two types and returns true if fromType can be cast to toType.
      * <p>
-     * REVIEW jvs: The coerce param below shouldn't really be necessary. We're using it as a hack because {@code SqlTypeFactoryImpl#leastRestrictiveSqlType} isn't complete enough yet.
+     * REVIEW jvs: The coerce param below shouldn't really be necessary. We're using it as a hack because
+     * {@code SqlTypeFactoryImpl#leastRestrictiveSqlType} isn't complete enough yet.
      * Once it is, this param (and the non-coerce rules of {@link PolyTypeAssignmentRules}) should go away.
      *
      * @param toType   target of assignment
@@ -746,8 +751,9 @@ public abstract class PolyTypeUtil {
             return false;
         }
 
-        // REVIEW jvs: We don't impose SQL rules for character sets here; instead, we do that in SqlCastFunction. The reason is that this method is called from at least one place (MedJdbcNameDirectory)
-        // where internally a cast across character repertoires is OK.  Should probably clean that up.
+        // REVIEW jvs: We don't impose SQL rules for character sets here; instead, we do that in SqlCastFunction. The reason
+        // is that this method is called from at least one place (MedJdbcNameDirectory) where internally a cast across
+        // character repertoires is OK.  Should probably clean that up.
 
         PolyTypeAssignmentRules rules = PolyTypeAssignmentRules.instance( coerce );
         return rules.canCastFrom( toTypeName, fromTypeName );
@@ -755,11 +761,12 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Flattens a record type by recursively expanding any fields which are themselves record types. For each record type, a representative null value field is also prepended (with state NULL for a null value and FALSE
-     * for non-null), and all component types are asserted to be nullable, since SQL doesn't allow NOT NULL to be specified on attributes.
+     * Flattens a record type by recursively expanding any fields which are themselves record types. For each record type,
+     * a representative null value field is also prepended (with state NULL for a null value and FALSE for non-null), and
+     * all component types are asserted to be nullable, since SQL doesn't allow NOT NULL to be specified on attributes.
      *
-     * @param typeFactory factory which should produced flattened type
-     * @param recordType type with possible nesting
+     * @param typeFactory   factory which should produced flattened type
+     * @param recordType    type with possible nesting
      * @param flatteningMap if non-null, receives map from unflattened ordinal to flattened ordinal (must have length at least recordType.getFieldList().size())
      * @return flattened equivalent
      */
@@ -1012,7 +1019,8 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns whether a type is flat. It is not flat if it is a record type that has one or more fields that are themselves record types.
+     * Returns whether a type is flat. It is not flat if it is a record type that has one or more fields that are
+     * themselves record types.
      */
     public static boolean isFlat( RelDataType type ) {
         if ( type.isStruct() ) {
@@ -1027,7 +1035,8 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns whether two types are comparable. They need to be scalar types of the same family, or struct types whose fields are pairwise comparable.
+     * Returns whether two types are comparable. They need to be scalar types of the same family, or struct types whose
+     * fields are pairwise comparable.
      *
      * @param type1 First type
      * @param type2 Second type
@@ -1080,7 +1089,8 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns the least restrictive type T, such that a value of type T can be compared with values of type {@code type0} and {@code type1} using {@code =}.
+     * Returns the least restrictive type T, such that a value of type T can be compared with values of type {@code type0}
+     * and {@code type1} using {@code =}.
      */
     public static RelDataType leastRestrictiveForComparison( RelDataTypeFactory typeFactory, RelDataType type1, RelDataType type2 ) {
         final RelDataType type = typeFactory.leastRestrictive( ImmutableList.of( type1, type2 ) );
@@ -1132,7 +1142,8 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns whether all types in a collection have the same family, as determined by {@link #isSameFamily(RelDataType, RelDataType)}.
+     * Returns whether all types in a collection have the same family, as determined by
+     * {@link #isSameFamily(RelDataType, RelDataType)}.
      *
      * @param types Types to check
      * @return true if all types are of the same family
@@ -1152,7 +1163,8 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns whether two types are scalar types of the same family, or struct types whose fields are pairwise of the same family.
+     * Returns whether two types are scalar types of the same family, or struct types whose fields are pairwise of
+     * the same family.
      *
      * @param type1 First type
      * @param type2 Second type
@@ -1230,7 +1242,8 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns whether a precision is greater or equal than another, treating {@link RelDataType#PRECISION_NOT_SPECIFIED} as infinity.
+     * Returns whether a precision is greater or equal than another, treating
+     * {@link RelDataType#PRECISION_NOT_SPECIFIED} as infinity.
      */
     public static int comparePrecision( int p0, int p1 ) {
         if ( p0 == p1 ) {

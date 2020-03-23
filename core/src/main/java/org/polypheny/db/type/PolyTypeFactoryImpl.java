@@ -371,7 +371,8 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
                                 resultType = type;
                             }
                         } else {
-                            // Let the result type have precision (p), scale (s) and number of whole digits (d) as follows: d = max(p1 - s1, p2 - s2) s <= max(s1, s2) p = s + d
+                            // Let the result type have precision (p), scale (s) and number of whole digits (d) as
+                            // follows: d = max(p1 - s1, p2 - s2) s <= max(s1, s2) p = s + d
 
                             int p1 = resultType.getPrecision();
                             int p2 = type.getPrecision();

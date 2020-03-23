@@ -112,7 +112,8 @@ public class JavaToSqlTypeConversionRules {
 
 
     /**
-     * Make this public when needed. To represent COLUMN_LIST SQL value, we need a type distinguishable from {@link List} in user-defined types.
+     * Make this public when needed. To represent COLUMN_LIST SQL value, we need a type distinguishable
+     * from {@link List} in user-defined types.
      */
     private interface ColumnList extends List {
 

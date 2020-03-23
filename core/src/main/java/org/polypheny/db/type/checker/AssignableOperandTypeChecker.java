@@ -66,7 +66,8 @@ public class AssignableOperandTypeChecker implements PolyOperandTypeChecker {
 
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
-        // Do not use callBinding.operands(). We have not resolved to a function yet, therefore we do not know the ordered parameter names.
+        // Do not use callBinding.operands(). We have not resolved to a function yet, therefore we do not know the ordered
+        // parameter names.
         final List<SqlNode> operands = callBinding.getCall().getOperandList();
         for ( Pair<RelDataType, SqlNode> pair : Pair.zip( paramTypes, operands ) ) {
             RelDataType argType = callBinding.getValidator().deriveType( callBinding.getScope(), pair.right );

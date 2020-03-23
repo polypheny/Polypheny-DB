@@ -48,7 +48,8 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * SqlTypeExplicitPrecedenceList implements the {@link RelDataTypePrecedenceList} interface via an explicit list of {@link PolyType} entries.
+ * SqlTypeExplicitPrecedenceList implements the {@link RelDataTypePrecedenceList} interface via an explicit
+ * list of {@link PolyType} entries.
  */
 public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList {
 

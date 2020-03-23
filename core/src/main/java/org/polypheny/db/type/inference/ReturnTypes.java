@@ -97,13 +97,15 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference ARG0 = new OrdinalReturnTypeInference( 0 );
     /**
-     * Type-inference strategy whereby the result type of a call is VARYING the type of the first argument. The length returned is the same as length of the first argument. If any of the other operands are nullable the
-     * returned type will also be nullable. First Arg must be of string type.
+     * Type-inference strategy whereby the result type of a call is VARYING the type of the first argument. The length
+     * returned is the same as length of the first argument. If any of the other operands are nullable the returned type will
+     * also be nullable. First Arg must be of string type.
      */
     public static final PolyReturnTypeInference ARG0_NULLABLE_VARYING = cascade( ARG0, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING );
 
     /**
-     * Type-inference strategy whereby the result type of a call is the type of the operand #0 (0-based). If any of the other operands are nullable the returned type will also be nullable.
+     * Type-inference strategy whereby the result type of a call is the type of the operand #0 (0-based). If any of the other
+     * operands are nullable the returned type will also be nullable.
      */
     public static final PolyReturnTypeInference ARG0_NULLABLE = cascade( ARG0, PolyTypeTransforms.TO_NULLABLE );
 
@@ -117,7 +119,8 @@ public abstract class ReturnTypes {
     public static final PolyReturnTypeInference ARG0_INTERVAL_NULLABLE = cascade( ARG0_INTERVAL, PolyTypeTransforms.TO_NULLABLE );
 
     /**
-     * Type-inference strategy whereby the result type of a call is the type of the operand #0 (0-based), and nullable if the call occurs within a "GROUP BY ()" query. E.g. in "select sum(1) as s from empty", s may be null.
+     * Type-inference strategy whereby the result type of a call is the type of the operand #0 (0-based), and nullable if
+     * the call occurs within a "GROUP BY ()" query. E.g. in "select sum(1) as s from empty", s may be null.
      */
     public static final PolyReturnTypeInference ARG0_NULLABLE_IF_EMPTY =
             new OrdinalReturnTypeInference( 0 ) {
@@ -137,7 +140,8 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference ARG1 = new OrdinalReturnTypeInference( 1 );
     /**
-     * Type-inference strategy whereby the result type of a call is the type of the operand #1 (0-based). If any of the other operands are nullable the returned type will also be nullable.
+     * Type-inference strategy whereby the result type of a call is the type of the operand #1 (0-based). If any of the other
+     * operands are nullable the returned type will also be nullable.
      */
     public static final PolyReturnTypeInference ARG1_NULLABLE = cascade( ARG1, PolyTypeTransforms.TO_NULLABLE );
     /**
@@ -145,7 +149,8 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference ARG2 = new OrdinalReturnTypeInference( 2 );
     /**
-     * Type-inference strategy whereby the result type of a call is the type of operand #2 (0-based). If any of the other operands are nullable the returned type will also be nullable.
+     * Type-inference strategy whereby the result type of a call is the type of operand #2 (0-based). If any of the other
+     * operands are nullable the returned type will also be nullable.
      */
     public static final PolyReturnTypeInference ARG2_NULLABLE = cascade( ARG2, PolyTypeTransforms.TO_NULLABLE );
     /**
@@ -153,12 +158,14 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference BOOLEAN = explicit( PolyType.BOOLEAN );
     /**
-     * Type-inference strategy whereby the result type of a call is Boolean, with nulls allowed if any of the operands allow nulls.
+     * Type-inference strategy whereby the result type of a call is Boolean, with nulls allowed if any of the operands
+     * allow nulls.
      */
     public static final PolyReturnTypeInference BOOLEAN_NULLABLE = cascade( BOOLEAN, PolyTypeTransforms.TO_NULLABLE );
 
     /**
-     * Type-inference strategy with similar effect to {@link #BOOLEAN_NULLABLE}, which is more efficient, but can only be used if all arguments are BOOLEAN.
+     * Type-inference strategy with similar effect to {@link #BOOLEAN_NULLABLE}, which is more efficient, but can only be
+     * used if all arguments are BOOLEAN.
      */
     public static final PolyReturnTypeInference BOOLEAN_NULLABLE_OPTIMIZED =
             opBinding -> {
@@ -248,14 +255,16 @@ public abstract class ReturnTypes {
      */
     public static final PolyReturnTypeInference COLUMN_LIST = explicit( PolyType.COLUMN_LIST );
     /**
-     * Type-inference strategy whereby the result type of a call is using its operands biggest type, using the SQL:1999 rules described in "Data types of results of aggregations".
-     * These rules are used in union, except, intersect, case and other places.
+     * Type-inference strategy whereby the result type of a call is using its operands biggest type, using the SQL:1999 rules
+     * described in "Data types of results of aggregations". These rules are used in union, except, intersect, case and
+     * other places.
      *
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 9.3
      */
     public static final PolyReturnTypeInference LEAST_RESTRICTIVE = opBinding -> opBinding.getTypeFactory().leastRestrictive( opBinding.collectOperandTypes() );
     /**
-     * Returns the same type as the multiset carries. The multiset type returned is the least restrictive of the call's multiset operands
+     * Returns the same type as the multiset carries. The multiset type returned is the least restrictive of the call's
+     * multiset operands.
      */
     public static final PolyReturnTypeInference MULTISET = opBinding -> {
         ExplicitOperatorBinding newBinding =
@@ -304,7 +313,8 @@ public abstract class ReturnTypes {
     public static final PolyReturnTypeInference MULTISET_PROJECT_ONLY = cascade( MULTISET, PolyTypeTransforms.ONLY_COLUMN );
 
     /**
-     * Type-inference strategy whereby the result type of a call is {@link #ARG0_INTERVAL_NULLABLE} and {@link #LEAST_RESTRICTIVE}. These rules are used for integer division.
+     * Type-inference strategy whereby the result type of a call is {@link #ARG0_INTERVAL_NULLABLE} and
+     * {@link #LEAST_RESTRICTIVE}. These rules are used for integer division.
      */
     public static final PolyReturnTypeInference INTEGER_QUOTIENT_NULLABLE = chain( ARG0_INTERVAL_NULLABLE, LEAST_RESTRICTIVE );
 
@@ -330,12 +340,14 @@ public abstract class ReturnTypes {
         return null;
     };
     /**
-     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_SCALE0} with a fallback to {@link #ARG0} This rule is used for floor, ceiling.
+     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_SCALE0} with a fallback to
+     * {@link #ARG0} This rule is used for floor, ceiling.
      */
     public static final PolyReturnTypeInference ARG0_OR_EXACT_NO_SCALE = chain( DECIMAL_SCALE0, ARG0 );
 
     /**
-     * Type-inference strategy whereby the result type of a call is the decimal product of two exact numeric operands where at least one of the operands is a decimal.
+     * Type-inference strategy whereby the result type of a call is the decimal product of two exact numeric operands
+     * where at least one of the operands is a decimal.
      */
     public static final PolyReturnTypeInference DECIMAL_PRODUCT = opBinding -> {
         RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
@@ -344,18 +356,20 @@ public abstract class ReturnTypes {
         return typeFactory.createDecimalProduct( type1, type2 );
     };
     /**
-     * Same as {@link #DECIMAL_PRODUCT} but returns with nullability if any of the operands is nullable by using {@link PolyTypeTransforms#TO_NULLABLE}
+     * Same as {@link #DECIMAL_PRODUCT} but returns with nullability if any of the operands is nullable by using
+     * {@link PolyTypeTransforms#TO_NULLABLE}
      */
     public static final PolyReturnTypeInference DECIMAL_PRODUCT_NULLABLE = cascade( DECIMAL_PRODUCT, PolyTypeTransforms.TO_NULLABLE );
 
     /**
-     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_PRODUCT_NULLABLE} with a fallback to {@link #ARG0_INTERVAL_NULLABLE} and {@link #LEAST_RESTRICTIVE}.
-     * These rules are used for multiplication.
+     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_PRODUCT_NULLABLE} with a fallback to
+     * {@link #ARG0_INTERVAL_NULLABLE} and {@link #LEAST_RESTRICTIVE}. These rules are used for multiplication.
      */
     public static final PolyReturnTypeInference PRODUCT_NULLABLE = chain( DECIMAL_PRODUCT_NULLABLE, ARG0_INTERVAL_NULLABLE, LEAST_RESTRICTIVE );
 
     /**
-     * Type-inference strategy whereby the result type of a call is the decimal product of two exact numeric operands where at least one of the operands is a decimal.
+     * Type-inference strategy whereby the result type of a call is the decimal product of two exact numeric operands where
+     * at least one of the operands is a decimal.
      */
     public static final PolyReturnTypeInference DECIMAL_QUOTIENT = opBinding -> {
         RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
@@ -364,17 +378,21 @@ public abstract class ReturnTypes {
         return typeFactory.createDecimalQuotient( type1, type2 );
     };
     /**
-     * Same as {@link #DECIMAL_QUOTIENT} but returns with nullability if any of the operands is nullable by using {@link PolyTypeTransforms#TO_NULLABLE}
+     * Same as {@link #DECIMAL_QUOTIENT} but returns with nullability if any of the operands is nullable by using
+     * {@link PolyTypeTransforms#TO_NULLABLE}
      */
     public static final PolyReturnTypeInference DECIMAL_QUOTIENT_NULLABLE = cascade( DECIMAL_QUOTIENT, PolyTypeTransforms.TO_NULLABLE );
 
     /**
-     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_QUOTIENT_NULLABLE} with a fallback to {@link #ARG0_INTERVAL_NULLABLE} and {@link #LEAST_RESTRICTIVE} These rules are used for division.
+     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_QUOTIENT_NULLABLE} with a fallback to
+     * {@link #ARG0_INTERVAL_NULLABLE} and {@link #LEAST_RESTRICTIVE} These rules are used for division.
      */
     public static final PolyReturnTypeInference QUOTIENT_NULLABLE = chain( DECIMAL_QUOTIENT_NULLABLE, ARG0_INTERVAL_NULLABLE, LEAST_RESTRICTIVE );
     /**
-     * Type-inference strategy whereby the result type of a call is the decimal sum of two exact numeric operands where at least one of the operands is a decimal. Let p1, s1 be the precision and scale of the first operand Let
-     * p2, s2 be the precision and scale of the second operand Let p, s be the precision and scale of the result, Then the result type is a decimal with:
+     * Type-inference strategy whereby the result type of a call is the decimal sum of two exact numeric operands where at
+     * least one of the operands is a decimal. Let p1, s1 be the precision and scale of the first operand Let p2, s2 be the
+     * precision and scale of the second operand Let p, s be the precision and scale of the result, Then the result type
+     * is a decimal with:
      *
      * <ul>
      * <li>s = max(s1, s2)</li>
@@ -410,12 +428,14 @@ public abstract class ReturnTypes {
         return null;
     };
     /**
-     * Same as {@link #DECIMAL_SUM} but returns with nullability if any of the operands is nullable by using {@link PolyTypeTransforms#TO_NULLABLE}.
+     * Same as {@link #DECIMAL_SUM} but returns with nullability if any of the operands is nullable by using
+     * {@link PolyTypeTransforms#TO_NULLABLE}.
      */
     public static final PolyReturnTypeInference DECIMAL_SUM_NULLABLE = cascade( DECIMAL_SUM, PolyTypeTransforms.TO_NULLABLE );
 
     /**
-     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_SUM_NULLABLE} with a fallback to {@link #LEAST_RESTRICTIVE}
+     * Type-inference strategy whereby the result type of a call is {@link #DECIMAL_SUM_NULLABLE} with a fallback to
+     * {@link #LEAST_RESTRICTIVE}
      * These rules are used for addition and subtraction.
      */
     public static final PolyReturnTypeInference NULLABLE_SUM = new PolyReturnTypeInferenceChain( DECIMAL_SUM_NULLABLE, LEAST_RESTRICTIVE );
@@ -491,7 +511,8 @@ public abstract class ReturnTypes {
             };
 
     /**
-     * Same as {@link #DYADIC_STRING_SUM_PRECISION} and using {@link PolyTypeTransforms#TO_NULLABLE}, {@link PolyTypeTransforms#TO_VARYING}.
+     * Same as {@link #DYADIC_STRING_SUM_PRECISION} and using {@link PolyTypeTransforms#TO_NULLABLE},
+     * {@link PolyTypeTransforms#TO_VARYING}.
      */
     public static final PolyReturnTypeInference DYADIC_STRING_SUM_PRECISION_NULLABLE_VARYING = cascade( DYADIC_STRING_SUM_PRECISION, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING );
 
@@ -501,7 +522,9 @@ public abstract class ReturnTypes {
     public static final PolyReturnTypeInference DYADIC_STRING_SUM_PRECISION_NULLABLE = cascade( DYADIC_STRING_SUM_PRECISION, PolyTypeTransforms.TO_NULLABLE );
 
     /**
-     * Type-inference strategy where the expression is assumed to be registered as a {@link org.polypheny.db.sql.validate.SqlValidatorNamespace}, and therefore the result type of the call is the type of that namespace.
+     * Type-inference strategy where the expression is assumed to be registered as a
+     * {@link org.polypheny.db.sql.validate.SqlValidatorNamespace}, and therefore the result type of the call is the type of
+     * that namespace.
      */
     public static final PolyReturnTypeInference SCOPE = opBinding -> {
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;
@@ -509,7 +532,8 @@ public abstract class ReturnTypes {
     };
 
     /**
-     * Returns a multiset of column #0 of a multiset. For example, given <code>RECORD(x INTEGER, y DATE) MULTISET</code>, returns <code>INTEGER MULTISET</code>.
+     * Returns a multiset of column #0 of a multiset. For example, given <code>RECORD(x INTEGER, y DATE) MULTISET</code>,
+     * returns <code>INTEGER MULTISET</code>.
      */
     public static final PolyReturnTypeInference MULTISET_PROJECT0 = opBinding -> {
         assert opBinding.getOperandCount() == 1;
@@ -522,7 +546,8 @@ public abstract class ReturnTypes {
         return opBinding.getTypeFactory().createMultisetType( firstColType, -1 );
     };
     /**
-     * Returns a multiset of the first column of a multiset. For example, given <code>INTEGER MULTISET</code>, returns <code>RECORD(x INTEGER) MULTISET</code>.
+     * Returns a multiset of the first column of a multiset. For example, given <code>INTEGER MULTISET</code>, returns
+     * <code>RECORD(x INTEGER) MULTISET</code>.
      */
     public static final PolyReturnTypeInference MULTISET_RECORD = opBinding -> {
         assert opBinding.getOperandCount() == 1;
@@ -534,7 +559,8 @@ public abstract class ReturnTypes {
         return typeFactory.createMultisetType( type, -1 );
     };
     /**
-     * Returns the field type of a structured type which has only one field. For example, given {@code RECORD(x INTEGER)} returns {@code INTEGER}.
+     * Returns the field type of a structured type which has only one field. For example, given {@code RECORD(x INTEGER)}
+     * returns {@code INTEGER}.
      */
     public static final PolyReturnTypeInference RECORD_TO_SCALAR = opBinding -> {
         assert opBinding.getOperandCount() == 1;
@@ -553,8 +579,9 @@ public abstract class ReturnTypes {
     };
 
     /**
-     * Type-inference strategy for SUM aggregate function inferred from the operand type, and nullable if the call occurs within a "GROUP BY ()" query. E.g. in "select sum(x) as s from empty", s may be null.
-     * Also, with the default implementation of RelDataTypeSystem, s has the same type name as x.
+     * Type-inference strategy for SUM aggregate function inferred from the operand type, and nullable if the call occurs
+     * within a "GROUP BY ()" query. E.g. in "select sum(x) as s from empty", s may be null. Also, with the default
+     * implementation of RelDataTypeSystem, s has the same type name as x.
      */
     public static final PolyReturnTypeInference AGG_SUM = opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
@@ -569,7 +596,8 @@ public abstract class ReturnTypes {
     };
 
     /**
-     * Type-inference strategy for $SUM0 aggregate function inferred from the operand type. By default the inferred type is identical to the operand type. E.g. in "select $sum0(x) as s from empty", s has the same type as x.
+     * Type-inference strategy for $SUM0 aggregate function inferred from the operand type. By default the inferred type is
+     * identical to the operand type. E.g. in "select $sum0(x) as s from empty", s has the same type as x.
      */
     public static final PolyReturnTypeInference AGG_SUM_EMPTY_IS_ZERO =
             opBinding -> {
@@ -592,7 +620,8 @@ public abstract class ReturnTypes {
     };
 
     /**
-     * Type-inference strategy for the {@code NTILE}, {@code RANK}, {@code DENSE_RANK}, and {@code ROW_NUMBER} aggregate functions.
+     * Type-inference strategy for the {@code NTILE}, {@code RANK}, {@code DENSE_RANK}, and {@code ROW_NUMBER} aggregate
+     * functions.
      */
     public static final PolyReturnTypeInference RANK = opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();

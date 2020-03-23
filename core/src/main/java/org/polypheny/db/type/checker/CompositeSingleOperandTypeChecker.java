@@ -31,7 +31,10 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
     /**
      * Package private. Use {@link OperandTypes#and}, {@link OperandTypes#or}.
      */
-    CompositeSingleOperandTypeChecker( CompositeOperandTypeChecker.Composition composition, ImmutableList<? extends PolySingleOperandTypeChecker> allowedRules, String allowedSignatures ) {
+    CompositeSingleOperandTypeChecker(
+            CompositeOperandTypeChecker.Composition composition,
+            ImmutableList<? extends PolySingleOperandTypeChecker> allowedRules,
+            String allowedSignatures ) {
         super( composition, allowedRules, allowedSignatures, null );
     }
 
@@ -76,7 +79,8 @@ public class CompositeSingleOperandTypeChecker extends CompositeOperandTypeCheck
         }
 
         if ( !ret && throwOnFailure ) {
-            // In the case of a composite OR, we want to throw an error describing in more detail what the problem was, hence doing the loop again.
+            // In the case of a composite OR, we want to throw an error describing in more detail what the problem was,
+            // hence doing the loop again.
             for ( PolySingleOperandTypeChecker rule : rules ) {
                 rule.checkSingleOperandType( callBinding, node, iFormalOperand, true );
             }
