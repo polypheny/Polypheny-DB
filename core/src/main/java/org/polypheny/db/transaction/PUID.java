@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.transaction;
 
 
 import java.io.Serializable;
