@@ -119,6 +119,10 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "BOOLEAN";
             case VARBINARY:
                 return "VARBINARY";
+            case TINYINT:
+                return "TINYINT";
+            case SMALLINT:
+                return "SMALLINT";
             case INTEGER:
                 return "INT";
             case BIGINT:

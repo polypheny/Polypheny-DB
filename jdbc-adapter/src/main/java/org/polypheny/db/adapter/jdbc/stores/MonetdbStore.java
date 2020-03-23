@@ -116,6 +116,10 @@ public class MonetdbStore extends AbstractJdbcStore {
                 return "BOOLEAN";
             case VARBINARY:
                 throw new RuntimeException( "Unsupported datatype: " + type.name() );
+            case TINYINT:
+                return "TINYINT";
+            case SMALLINT:
+                return "SMALLINT";
             case INTEGER:
                 return "INT";
             case BIGINT:

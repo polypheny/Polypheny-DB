@@ -36,6 +36,7 @@ package org.polypheny.db.type;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import java.math.BigDecimal;
@@ -1134,6 +1135,11 @@ public enum PolyType {
      */
     public String getName() {
         return toString();
+    }
+
+
+    public static Set<PolyType> availableTypes() {
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, VARCHAR, VARBINARY );
     }
 
 

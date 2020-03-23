@@ -1756,7 +1756,7 @@ public class Crud implements InformationObserver {
         }
          */
 
-        for ( PolyType polyType : PolyType.values() ) {
+        for ( PolyType polyType : PolyType.availableTypes() ) {
             String[] row = new String[1];
             row[0] = polyType.name();
             data.add( row );
