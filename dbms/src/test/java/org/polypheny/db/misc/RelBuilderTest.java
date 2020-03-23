@@ -591,7 +591,7 @@ public class RelBuilderTest {
         RelNode actual =
                 builder.values( new String[]{ "x" }, 42 )
                         .empty()
-                        .project( rex.makeLiteral( value, rex.getTypeFactory().createSqlType( polyType ), false ) )
+                        .project( rex.makeLiteral( value, rex.getTypeFactory().createPolyType( polyType ), false ) )
                         .build();
         assertThat( message, actual, Matchers.hasTree( expected ) );
     }
@@ -2249,7 +2249,7 @@ public class RelBuilderTest {
         //   )
         final RelBuilder builder = createRelBuilder().scan( "employee" );
         final RelDataTypeFactory typeFactory = builder.getTypeFactory();
-        final RelDataType intType = typeFactory.createSqlType( PolyType.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
 
         RexNode pattern = builder.patternConcat(
                 builder.literal( "STRT" ),
@@ -2331,7 +2331,7 @@ public class RelBuilderTest {
     @Test
     public void testFilterCastAny() {
         final RelBuilder builder = createRelBuilder();
-        final RelDataType anyType = builder.getTypeFactory().createSqlType( PolyType.ANY );
+        final RelDataType anyType = builder.getTypeFactory().createPolyType( PolyType.ANY );
         final RelNode root =
                 builder.scan( "employee" )
                         .filter(
@@ -2355,7 +2355,7 @@ public class RelBuilderTest {
                         .filter(
                                 builder.getRexBuilder().makeCast(
                                         typeFactory.createTypeWithNullability(
-                                                typeFactory.createSqlType( PolyType.BOOLEAN ),
+                                                typeFactory.createPolyType( PolyType.BOOLEAN ),
                                                 true ),
                                         builder.equals(
                                                 builder.field( "deptno" ),

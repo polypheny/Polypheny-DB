@@ -44,17 +44,17 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 class SqlTypeFixture {
 
     PolyTypeFactoryImpl typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-    final RelDataType sqlBoolean = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BOOLEAN ), false );
-    final RelDataType sqlBigInt = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BIGINT ), false );
-    final RelDataType sqlBigIntNullable = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BIGINT ), true );
-    final RelDataType sqlInt = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.INTEGER ), false );
-    final RelDataType sqlDate = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.DATE ), false );
-    final RelDataType sqlVarchar = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.VARCHAR ), false );
-    final RelDataType sqlChar = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.CHAR ), false );
-    final RelDataType sqlVarcharNullable = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.VARCHAR ), true );
-    final RelDataType sqlNull = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.NULL ), false );
-    final RelDataType sqlAny = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), false );
-    final RelDataType sqlFloat = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.FLOAT ), false );
+    final RelDataType sqlBoolean = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
+    final RelDataType sqlBigInt = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), false );
+    final RelDataType sqlBigIntNullable = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), true );
+    final RelDataType sqlInt = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), false );
+    final RelDataType sqlDate = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.DATE ), false );
+    final RelDataType sqlVarchar = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), false );
+    final RelDataType sqlChar = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.CHAR ), false );
+    final RelDataType sqlVarcharNullable = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), true );
+    final RelDataType sqlNull = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.NULL ), false );
+    final RelDataType sqlAny = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), false );
+    final RelDataType sqlFloat = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.FLOAT ), false );
     final RelDataType arrayFloat = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlFloat, -1 ), false );
     final RelDataType arrayBigInt = typeFactory.createTypeWithNullability( typeFactory.createArrayType( sqlBigIntNullable, -1 ), false );
     final RelDataType multisetFloat = typeFactory.createTypeWithNullability( typeFactory.createMultisetType( sqlFloat, -1 ), false );

@@ -161,12 +161,12 @@ public class PolySchemaBuilder {
     private RelDataType sqlType( RelDataTypeFactory typeFactory, CatalogColumn column ) {
         final PolyType polyType = PolyType.get( column.type.name() );
         if ( column.length != null && column.scale != null && polyType.allowsPrecScale( true, true ) ) {
-            return typeFactory.createSqlType( polyType, column.length, column.scale );
+            return typeFactory.createPolyType( polyType, column.length, column.scale );
         } else if ( column.length != null && polyType.allowsPrecNoScale() ) {
-            return typeFactory.createSqlType( polyType, column.length );
+            return typeFactory.createPolyType( polyType, column.length );
         } else {
             assert polyType.allowsNoPrecNoScale();
-            return typeFactory.createSqlType( polyType );
+            return typeFactory.createPolyType( polyType );
         }
     }
 

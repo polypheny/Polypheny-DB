@@ -72,8 +72,8 @@ public class MockCatalogReaderDynamic extends MockCatalogReader {
         registerTable( customerTable );
 
         // CREATE TABLE "REGION" - static table with known schema.
-        final RelDataType intType = typeFactory.createSqlType( PolyType.INTEGER );
-        final RelDataType varcharType = typeFactory.createSqlType( PolyType.VARCHAR );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final RelDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR );
 
         MockTable regionTable = MockTable.create( this, schema, "REGION", false, 100 );
         regionTable.addColumn( "R_REGIONKEY", intType );

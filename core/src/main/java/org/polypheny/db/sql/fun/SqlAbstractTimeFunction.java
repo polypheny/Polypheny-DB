@@ -84,7 +84,7 @@ public class SqlAbstractTimeFunction extends SqlFunction {
         if ( precision > PolyType.MAX_DATETIME_PRECISION ) {
             throw opBinding.newError( Static.RESOURCE.argumentMustBeValidPrecision( opBinding.getOperator().getName(), 0, PolyType.MAX_DATETIME_PRECISION ) );
         }
-        return opBinding.getTypeFactory().createSqlType( typeName, precision );
+        return opBinding.getTypeFactory().createPolyType( typeName, precision );
     }
 
 

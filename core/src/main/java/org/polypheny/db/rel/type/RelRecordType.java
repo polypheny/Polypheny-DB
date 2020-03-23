@@ -68,7 +68,7 @@ public class RelRecordType extends RelDataTypeImpl implements Serializable {
 
 
     @Override
-    public PolyType getSqlTypeName() {
+    public PolyType getPolyType() {
         return PolyType.ROW;
     }
 

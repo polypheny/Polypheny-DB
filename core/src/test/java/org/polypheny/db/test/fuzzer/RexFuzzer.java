@@ -121,7 +121,7 @@ public class RexFuzzer extends RexProgramBuilderBase {
         this.rexBuilder = rexBuilder;
         this.typeFactory = typeFactory;
 
-        intType = typeFactory.createSqlType( PolyType.INTEGER );
+        intType = typeFactory.createPolyType( PolyType.INTEGER );
         nullableIntType = typeFactory.createTypeWithNullability( intType, true );
     }
 

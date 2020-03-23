@@ -130,8 +130,8 @@ public class RexExecutorTest {
             Object[] values = new Object[1];
             final DataContext testContext = new TestDataContext( values );
             final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
-            final RelDataType varchar = typeFactory.createSqlType( PolyType.VARCHAR );
-            final RelDataType integer = typeFactory.createSqlType( PolyType.INTEGER );
+            final RelDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
+            final RelDataType integer = typeFactory.createPolyType( PolyType.INTEGER );
             // Polypheny-DB is internally creating the input ref via a RexRangeRef
             // which eventually leads to a RexInputRef. So we are good.
             final RexInputRef input = rexBuilder.makeInputRef( varchar, 0 );

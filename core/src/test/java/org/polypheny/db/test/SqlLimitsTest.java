@@ -79,28 +79,28 @@ public class SqlLimitsTest {
     public static List<RelDataType> getTypes( RelDataTypeFactory typeFactory ) {
         final int maxPrecision = typeFactory.getTypeSystem().getMaxPrecision( PolyType.DECIMAL );
         return ImmutableList.of(
-                typeFactory.createSqlType( PolyType.BOOLEAN ),
-                typeFactory.createSqlType( PolyType.TINYINT ),
-                typeFactory.createSqlType( PolyType.SMALLINT ),
-                typeFactory.createSqlType( PolyType.INTEGER ),
-                typeFactory.createSqlType( PolyType.BIGINT ),
-                typeFactory.createSqlType( PolyType.DECIMAL ),
-                typeFactory.createSqlType( PolyType.DECIMAL, 5 ),
-                typeFactory.createSqlType( PolyType.DECIMAL, 6, 2 ),
-                typeFactory.createSqlType( PolyType.DECIMAL, maxPrecision, 0 ),
-                typeFactory.createSqlType( PolyType.DECIMAL, maxPrecision, 5 ),
+                typeFactory.createPolyType( PolyType.BOOLEAN ),
+                typeFactory.createPolyType( PolyType.TINYINT ),
+                typeFactory.createPolyType( PolyType.SMALLINT ),
+                typeFactory.createPolyType( PolyType.INTEGER ),
+                typeFactory.createPolyType( PolyType.BIGINT ),
+                typeFactory.createPolyType( PolyType.DECIMAL ),
+                typeFactory.createPolyType( PolyType.DECIMAL, 5 ),
+                typeFactory.createPolyType( PolyType.DECIMAL, 6, 2 ),
+                typeFactory.createPolyType( PolyType.DECIMAL, maxPrecision, 0 ),
+                typeFactory.createPolyType( PolyType.DECIMAL, maxPrecision, 5 ),
 
                 // todo: test IntervalDayTime and IntervalYearMonth
                 // todo: test Float, Real, Double
 
-                typeFactory.createSqlType( PolyType.CHAR, 5 ),
-                typeFactory.createSqlType( PolyType.VARCHAR, 1 ),
-                typeFactory.createSqlType( PolyType.VARCHAR, 20 ),
-                typeFactory.createSqlType( PolyType.BINARY, 3 ),
-                typeFactory.createSqlType( PolyType.VARBINARY, 4 ),
-                typeFactory.createSqlType( PolyType.DATE ),
-                typeFactory.createSqlType( PolyType.TIME, 0 ),
-                typeFactory.createSqlType( PolyType.TIMESTAMP, 0 ) );
+                typeFactory.createPolyType( PolyType.CHAR, 5 ),
+                typeFactory.createPolyType( PolyType.VARCHAR, 1 ),
+                typeFactory.createPolyType( PolyType.VARCHAR, 20 ),
+                typeFactory.createPolyType( PolyType.BINARY, 3 ),
+                typeFactory.createPolyType( PolyType.VARBINARY, 4 ),
+                typeFactory.createPolyType( PolyType.DATE ),
+                typeFactory.createPolyType( PolyType.TIME, 0 ),
+                typeFactory.createPolyType( PolyType.TIMESTAMP, 0 ) );
     }
 
 
@@ -208,14 +208,14 @@ public class SqlLimitsTest {
             s = buf.toString();
         } else if ( o instanceof Calendar ) {
             Calendar calendar = (Calendar) o;
-            DateFormat dateFormat = getDateFormat( type.getSqlTypeName() );
+            DateFormat dateFormat = getDateFormat( type.getPolyType() );
             dateFormat.setTimeZone( DateTimeUtils.UTC_ZONE );
             s = dateFormat.format( calendar.getTime() );
         } else {
             s = o.toString();
         }
         pw.print( s );
-        SqlLiteral literal = type.getSqlTypeName().createLiteral( o, SqlParserPos.ZERO );
+        SqlLiteral literal = type.getPolyType().createLiteral( o, SqlParserPos.ZERO );
         pw.print( "; as SQL: " );
         pw.print( literal.toSqlString( AnsiSqlDialect.DEFAULT ) );
         pw.println();

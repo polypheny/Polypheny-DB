@@ -88,7 +88,7 @@ public class SqlCountAggFunction extends SqlAggFunction {
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
         if ( call.isCountStar() ) {
-            return validator.getTypeFactory().createSqlType( PolyType.BIGINT );
+            return validator.getTypeFactory().createPolyType( PolyType.BIGINT );
         }
         return super.deriveType( validator, scope, call );
     }

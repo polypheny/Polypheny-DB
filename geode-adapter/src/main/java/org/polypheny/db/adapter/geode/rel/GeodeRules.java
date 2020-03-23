@@ -144,9 +144,9 @@ public class GeodeRules {
             if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
                 final RexNode op1 = call.getOperands().get( 1 );
                 if ( op1 instanceof RexLiteral ) {
-                    if ( op1.getType().getSqlTypeName() == PolyType.INTEGER ) {
+                    if ( op1.getType().getPolyType() == PolyType.INTEGER ) {
                         return stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]";
-                    } else if ( op1.getType().getSqlTypeName() == PolyType.CHAR ) {
+                    } else if ( op1.getType().getPolyType() == PolyType.CHAR ) {
                         return stripQuotes( strings.get( 0 ) ) + "." + ((RexLiteral) op1).getValue2();
                     }
                 }
@@ -188,7 +188,7 @@ public class GeodeRules {
         public boolean matches( RelOptRuleCall call ) {
             LogicalProject project = call.rel( 0 );
             for ( RexNode e : project.getProjects() ) {
-                if ( e.getType().getSqlTypeName() == PolyType.GEOMETRY ) {
+                if ( e.getType().getPolyType() == PolyType.GEOMETRY ) {
                     // For spatial Functions Drop to Polypheny-DB Enumerable
                     return false;
                 }

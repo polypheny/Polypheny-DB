@@ -639,9 +639,9 @@ public class RexImpTable {
 
     private static RelDataType toSql( RelDataTypeFactory typeFactory, RelDataType type ) {
         if ( type instanceof RelDataTypeFactoryImpl.JavaType ) {
-            final PolyType typeName = type.getSqlTypeName();
+            final PolyType typeName = type.getPolyType();
             if ( typeName != null && typeName != PolyType.OTHER ) {
-                return typeFactory.createTypeWithNullability( typeFactory.createSqlType( typeName ), type.isNullable() );
+                return typeFactory.createTypeWithNullability( typeFactory.createPolyType( typeName ), type.isNullable() );
             }
         }
         return type;
@@ -1791,7 +1791,7 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             switch ( call.getOperands().size() ) {
                 case 1:
-                    switch ( call.getType().getSqlTypeName() ) {
+                    switch ( call.getType().getPolyType() ) {
                         case BIGINT:
                         case INTEGER:
                         case SMALLINT:
@@ -1803,7 +1803,7 @@ public class RexImpTable {
                     final Type type;
                     final Method floorMethod;
                     Expression operand = translatedOperands.get( 0 );
-                    switch ( call.getType().getSqlTypeName() ) {
+                    switch ( call.getType().getPolyType() ) {
                         case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                             operand = Expressions.call(
                                     BuiltInMethod.TIMESTAMP_WITH_LOCAL_TIME_ZONE_TO_TIMESTAMP.method,
@@ -1962,7 +1962,7 @@ public class RexImpTable {
          */
         private boolean anyAnyOperands( RexCall call ) {
             for ( RexNode operand : call.operands ) {
-                if ( operand.getType().getSqlTypeName() == PolyType.ANY ) {
+                if ( operand.getType().getPolyType() == PolyType.ANY ) {
                     return true;
                 }
             }
@@ -2026,7 +2026,7 @@ public class RexImpTable {
             final TimeUnitRange timeUnitRange = (TimeUnitRange) ((ConstantExpression) translatedOperands.get( 0 )).value;
             final TimeUnit unit = timeUnitRange.startUnit;
             Expression operand = translatedOperands.get( 1 );
-            final PolyType polyType = call.operands.get( 1 ).getType().getSqlTypeName();
+            final PolyType polyType = call.operands.get( 1 ).getType().getPolyType();
             switch ( unit ) {
                 case MILLENNIUM:
                 case CENTURY:
@@ -2330,7 +2330,7 @@ public class RexImpTable {
 
         @Override
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
-            final MethodImplementor implementor = getImplementor( call.getOperands().get( 0 ).getType().getSqlTypeName() );
+            final MethodImplementor implementor = getImplementor( call.getOperands().get( 0 ).getType().getPolyType() );
             // Since we follow PostgreSQL's semantics that an out-of-bound reference returns NULL, x[y] can return null even if x and y are both NOT NULL.
             // (In SQL standard semantics, an out-of-bound reference to an array throws an exception.)
             final NullPolicy nullPolicy = NullPolicy.ANY;
@@ -2476,10 +2476,10 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             final RexNode operand0 = call.getOperands().get( 0 );
             Expression trop0 = translatedOperands.get( 0 );
-            final PolyType typeName1 = call.getOperands().get( 1 ).getType().getSqlTypeName();
+            final PolyType typeName1 = call.getOperands().get( 1 ).getType().getPolyType();
             Expression trop1 = translatedOperands.get( 1 );
-            final PolyType typeName = call.getType().getSqlTypeName();
-            switch ( operand0.getType().getSqlTypeName() ) {
+            final PolyType typeName = call.getType().getPolyType();
+            switch ( operand0.getType().getPolyType() ) {
                 case DATE:
                     switch ( typeName ) {
                         case TIMESTAMP:
@@ -2520,7 +2520,7 @@ public class RexImpTable {
                             return Expressions.convert_( trop0, long.class );
                         default:
                             final BuiltInMethod method =
-                                    operand0.getType().getSqlTypeName() == PolyType.TIMESTAMP
+                                    operand0.getType().getPolyType() == PolyType.TIMESTAMP
                                             ? BuiltInMethod.ADD_MONTHS
                                             : BuiltInMethod.ADD_MONTHS_INT;
                             return Expressions.call( method.method, trop0, trop1 );

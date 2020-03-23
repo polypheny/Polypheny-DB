@@ -89,8 +89,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         final RelDataType mapType =
                 typeFactory.createMapType(
-                        typeFactory.createSqlType( PolyType.VARCHAR ),
-                        typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true ) );
+                        typeFactory.createPolyType( PolyType.VARCHAR ),
+                        typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true ) );
         // TODO (PCP)
         return typeFactory.builder().add( "_MAP", null, mapType ).build();
     }

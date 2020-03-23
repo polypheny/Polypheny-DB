@@ -138,7 +138,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         final List<String> names = new ArrayList<>();
         if ( stream ) {
             names.add( ROWTIME_COLUMN_NAME );
-            types.add( typeFactory.createSqlType( PolyType.TIMESTAMP ) );
+            types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
         }
         try ( CSVReader reader = openCsv( source ) ) {
             String[] strings = reader.readNext();
@@ -162,7 +162,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
                 }
                 final RelDataType type;
                 if ( fieldType == null ) {
-                    type = typeFactory.createSqlType( PolyType.VARCHAR );
+                    type = typeFactory.createPolyType( PolyType.VARCHAR );
                 } else {
                     type = fieldType.toType( typeFactory );
                 }
@@ -177,7 +177,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
         }
         if ( names.isEmpty() ) {
             names.add( "line" );
-            types.add( typeFactory.createSqlType( PolyType.VARCHAR ) );
+            types.add( typeFactory.createPolyType( PolyType.VARCHAR ) );
         }
         return typeFactory.createStructType( Pair.zip( names, types ) );
     }

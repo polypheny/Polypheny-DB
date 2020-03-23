@@ -70,7 +70,7 @@ public class FloorOperatorConversion implements DruidSqlOperatorConverter {
         } else if ( call.getOperands().size() == 2 ) {
             // FLOOR(expr TO timeUnit)
             final TimeZone tz;
-            if ( arg.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+            if ( arg.getType().getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                 tz = TimeZone.getTimeZone( druidQuery.getConnectionConfig().timeZone() );
             } else {
                 tz = DateTimeUtils.UTC_ZONE;

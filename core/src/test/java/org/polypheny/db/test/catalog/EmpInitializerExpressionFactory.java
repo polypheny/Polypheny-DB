@@ -69,11 +69,11 @@ class EmpInitializerExpressionFactory extends NullInitializerExpressionFactory {
         final RelDataTypeFactory typeFactory = rexBuilder.getTypeFactory();
         switch ( iColumn ) {
             case 0:
-                return rexBuilder.makeExactLiteral( new BigDecimal( 123 ), typeFactory.createSqlType( PolyType.INTEGER ) );
+                return rexBuilder.makeExactLiteral( new BigDecimal( 123 ), typeFactory.createPolyType( PolyType.INTEGER ) );
             case 1:
                 return rexBuilder.makeLiteral( "Bob" );
             case 5:
-                return rexBuilder.makeExactLiteral( new BigDecimal( 555 ), typeFactory.createSqlType( PolyType.INTEGER ) );
+                return rexBuilder.makeExactLiteral( new BigDecimal( 555 ), typeFactory.createPolyType( PolyType.INTEGER ) );
             default:
                 return rexBuilder.constantNull();
         }

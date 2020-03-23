@@ -47,11 +47,11 @@ import org.polypheny.db.runtime.GeoFunctions;
 
 
 /**
- * JavaToSqlTypeConversionRules defines mappings from common Java types to corresponding SQL types.
+ * JavaToPolyTypeConversionRules defines mappings from common Java types to corresponding PolyTypes.
  */
-public class JavaToSqlTypeConversionRules {
+public class JavaToPolyTypeConversionRules {
 
-    private static final JavaToSqlTypeConversionRules INSTANCE = new JavaToSqlTypeConversionRules();
+    private static final JavaToPolyTypeConversionRules INSTANCE = new JavaToPolyTypeConversionRules();
 
     private final Map<Class<?>, PolyType> rules =
             ImmutableMap.<Class<?>, PolyType>builder()
@@ -95,7 +95,7 @@ public class JavaToSqlTypeConversionRules {
     /**
      * Returns the {@link org.polypheny.db.util.Glossary#SINGLETON_PATTERN singleton} instance.
      */
-    public static JavaToSqlTypeConversionRules instance() {
+    public static JavaToPolyTypeConversionRules instance() {
         return INSTANCE;
     }
 
@@ -104,7 +104,7 @@ public class JavaToSqlTypeConversionRules {
      * Returns a corresponding {@link PolyType} for a given Java class.
      *
      * @param javaClass the Java class to lookup
-     * @return a corresponding SqlTypeName if found, otherwise null is returned
+     * @return a corresponding PolyType if found, otherwise null is returned
      */
     public PolyType lookup( Class javaClass ) {
         return rules.get( javaClass );

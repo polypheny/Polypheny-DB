@@ -309,8 +309,8 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
     @Override
     public RelDataType getRowType( RelDataTypeFactory relDataTypeFactory ) {
         final RelDataType mapType = relDataTypeFactory.createMapType(
-                relDataTypeFactory.createSqlType( PolyType.VARCHAR ),
-                relDataTypeFactory.createTypeWithNullability( relDataTypeFactory.createSqlType( PolyType.ANY ), true ) );
+                relDataTypeFactory.createPolyType( PolyType.VARCHAR ),
+                relDataTypeFactory.createTypeWithNullability( relDataTypeFactory.createPolyType( PolyType.ANY ), true ) );
         // TODO (PCP)
         return relDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
     }

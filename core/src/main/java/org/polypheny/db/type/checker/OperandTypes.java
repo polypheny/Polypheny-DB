@@ -444,7 +444,7 @@ public abstract class OperandTypes {
                     } else if ( type.getFieldList().size() != 1 ) {
                         validationError = true;
                     } else {
-                        PolyType typeName = type.getFieldList().get( 0 ).getType().getSqlTypeName();
+                        PolyType typeName = type.getFieldList().get( 0 ).getType().getPolyType();
                         if ( typeName != PolyType.MULTISET && typeName != PolyType.ARRAY ) {
                             validationError = true;
                         }

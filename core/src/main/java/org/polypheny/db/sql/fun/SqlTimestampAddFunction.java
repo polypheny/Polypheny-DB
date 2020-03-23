@@ -97,16 +97,16 @@ public class SqlTimestampAddFunction extends SqlFunction {
             case MICROSECOND:
                 switch ( timeUnit ) {
                     case MILLISECOND:
-                        type = typeFactory.createSqlType( PolyType.TIMESTAMP, MILLISECOND_PRECISION );
+                        type = typeFactory.createPolyType( PolyType.TIMESTAMP, MILLISECOND_PRECISION );
                         break;
                     case MICROSECOND:
-                        type = typeFactory.createSqlType( PolyType.TIMESTAMP, MICROSECOND_PRECISION );
+                        type = typeFactory.createPolyType( PolyType.TIMESTAMP, MICROSECOND_PRECISION );
                         break;
                     default:
-                        if ( operandType2.getSqlTypeName() == PolyType.TIME ) {
-                            type = typeFactory.createSqlType( PolyType.TIME );
+                        if ( operandType2.getPolyType() == PolyType.TIME ) {
+                            type = typeFactory.createPolyType( PolyType.TIME );
                         } else {
-                            type = typeFactory.createSqlType( PolyType.TIMESTAMP );
+                            type = typeFactory.createPolyType( PolyType.TIMESTAMP );
                         }
                 }
                 break;

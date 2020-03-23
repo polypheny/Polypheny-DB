@@ -108,7 +108,7 @@ public class RexCall extends RexNode {
             // For instance, AND/OR arguments should be BOOLEAN, so AND(true, null) is better than AND(true, null:BOOLEAN), and we keep the same info +($0, 2) is better than +($0, 2:BIGINT). Note: if $0 has BIGINT,
             // then 2 is expected to be of BIGINT type as well.
             RexDigestIncludeType includeType = RexDigestIncludeType.OPTIONAL;
-            if ( (isA( SqlKind.AND ) || isA( SqlKind.OR )) && operand.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
+            if ( (isA( SqlKind.AND ) || isA( SqlKind.OR )) && operand.getType().getPolyType() == PolyType.BOOLEAN ) {
                 includeType = RexDigestIncludeType.NO_TYPE;
             }
             if ( SIMPLE_BINARY_OPS.contains( getKind() ) ) {

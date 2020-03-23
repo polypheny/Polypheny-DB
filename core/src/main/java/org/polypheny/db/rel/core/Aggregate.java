@@ -162,7 +162,7 @@ public abstract class Aggregate extends SingleRel {
 
     private boolean isPredicate( RelNode input, int index ) {
         final RelDataType type = input.getRowType().getFieldList().get( index ).getType();
-        return type.getSqlTypeName() == PolyType.BOOLEAN && !type.isNullable();
+        return type.getPolyType() == PolyType.BOOLEAN && !type.isNullable();
     }
 
 
@@ -345,7 +345,7 @@ public abstract class Aggregate extends SingleRel {
         }
         if ( indicator ) {
             for ( int groupKey : groupList ) {
-                final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BOOLEAN ), false );
+                final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
                 final String base = "i$" + fieldList.get( groupKey ).getName();
                 String name = base;
                 int i = 0;

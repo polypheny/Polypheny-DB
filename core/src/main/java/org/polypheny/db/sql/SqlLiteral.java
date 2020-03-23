@@ -703,13 +703,13 @@ public class SqlLiteral extends SqlNode {
         switch ( typeName ) {
             case NULL:
             case BOOLEAN:
-                RelDataType ret = typeFactory.createSqlType( typeName );
+                RelDataType ret = typeFactory.createPolyType( typeName );
                 ret = typeFactory.createTypeWithNullability( ret, null == value );
                 return ret;
             case BINARY:
                 bitString = (BitString) value;
                 int bitCount = bitString.getBitCount();
-                return typeFactory.createSqlType( PolyType.BINARY, bitCount / 8 );
+                return typeFactory.createPolyType( PolyType.BINARY, bitCount / 8 );
             case CHAR:
                 NlsString string = (NlsString) value;
                 Charset charset = string.getCharset();
@@ -720,7 +720,7 @@ public class SqlLiteral extends SqlNode {
                 if ( null == collation ) {
                     collation = SqlCollation.COERCIBLE;
                 }
-                RelDataType type = typeFactory.createSqlType( PolyType.CHAR, string.getValue().length() );
+                RelDataType type = typeFactory.createPolyType( PolyType.CHAR, string.getValue().length() );
                 type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
                 return type;
 
@@ -741,7 +741,7 @@ public class SqlLiteral extends SqlNode {
                 return typeFactory.createSqlIntervalType( intervalValue.getIntervalQualifier() );
 
             case SYMBOL:
-                return typeFactory.createSqlType( PolyType.SYMBOL );
+                return typeFactory.createPolyType( PolyType.SYMBOL );
 
             case INTEGER: // handled in derived class
             case TIME: // handled in derived class

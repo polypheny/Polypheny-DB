@@ -522,7 +522,7 @@ public abstract class DateRangeRules {
         private RexLiteral dateTimeLiteral( RexBuilder rexBuilder, Calendar calendar, RexNode operand ) {
             final TimestampString ts;
             final int p;
-            switch ( operand.getType().getSqlTypeName() ) {
+            switch ( operand.getType().getPolyType() ) {
                 case TIMESTAMP:
                     ts = TimestampString.fromCalendarFields( calendar );
                     p = operand.getType().getPrecision();
@@ -540,7 +540,7 @@ public abstract class DateRangeRules {
                     final DateString d = DateString.fromCalendarFields( calendar );
                     return rexBuilder.makeDateLiteral( d );
                 default:
-                    throw Util.unexpected( operand.getType().getSqlTypeName() );
+                    throw Util.unexpected( operand.getType().getPolyType() );
             }
         }
 

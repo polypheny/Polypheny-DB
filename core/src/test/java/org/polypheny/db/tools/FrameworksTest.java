@@ -212,7 +212,7 @@ public class FrameworksTest {
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
-                        final RelDataType type = cluster.getTypeFactory().createSqlType( PolyType.DECIMAL, 30, 2 );
+                        final RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
                         final RexLiteral literal = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ONE, type );
                         final RexNode call = cluster.getRexBuilder().makeCall( SqlStdOperatorTable.PLUS, literal, literal );
                         assertEquals( expected, call.getType().getPrecision() );
@@ -375,8 +375,8 @@ public class FrameworksTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "id", null, typeFactory.createSqlType( PolyType.INTEGER ) )
-                    .add( "name", null, typeFactory.createSqlType( PolyType.INTEGER ) )
+                    .add( "id", null, typeFactory.createPolyType( PolyType.INTEGER ) )
+                    .add( "name", null, typeFactory.createPolyType( PolyType.INTEGER ) )
                     .build();
         }
 

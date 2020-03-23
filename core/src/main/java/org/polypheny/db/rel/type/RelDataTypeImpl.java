@@ -271,14 +271,14 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
 
 
     @Override
-    public PolyType getSqlTypeName() {
+    public PolyType getPolyType() {
         return null;
     }
 
 
     @Override
     public SqlIdentifier getSqlIdentifier() {
-        PolyType typeName = getSqlTypeName();
+        PolyType typeName = getPolyType();
         if ( typeName == null ) {
             return null;
         }
@@ -361,7 +361,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     /**
      * Returns a {@link org.polypheny.db.rel.type.RelProtoDataType} that will create a type {@code typeName}.
      * <p>
-     * For example, {@code proto(SqlTypeName.DATE), false} will create {@code DATE NOT NULL}.
+     * For example, {@code proto(PolyType.DATE), false} will create {@code DATE NOT NULL}.
      *
      * @param typeName Type name
      * @param nullable Whether nullable
@@ -370,7 +370,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     public static RelProtoDataType proto( final PolyType typeName, final boolean nullable ) {
         assert typeName != null;
         return typeFactory -> {
-            final RelDataType type = typeFactory.createSqlType( typeName );
+            final RelDataType type = typeFactory.createPolyType( typeName );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
     }
@@ -379,7 +379,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     /**
      * Returns a {@link org.polypheny.db.rel.type.RelProtoDataType} that will create a type {@code typeName(precision)}.
      * <p>
-     * For example, {@code proto(SqlTypeName.VARCHAR, 100, false)} will create {@code VARCHAR(100) NOT NULL}.
+     * For example, {@code proto(PolyType.VARCHAR, 100, false)} will create {@code VARCHAR(100) NOT NULL}.
      *
      * @param typeName  Type name
      * @param precision Precision
@@ -389,7 +389,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final boolean nullable ) {
         assert typeName != null;
         return typeFactory -> {
-            final RelDataType type = typeFactory.createSqlType( typeName, precision );
+            final RelDataType type = typeFactory.createPolyType( typeName, precision );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
     }
@@ -398,7 +398,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
     /**
      * Returns a {@link org.polypheny.db.rel.type.RelProtoDataType} that will create a type {@code typeName(precision, scale)}.
      * <p>
-     * For example, {@code proto(SqlTypeName.DECIMAL, 7, 2, false)} will create {@code DECIMAL(7, 2) NOT NULL}.
+     * For example, {@code proto(PolyType.DECIMAL, 7, 2, false)} will create {@code DECIMAL(7, 2) NOT NULL}.
      *
      * @param typeName  Type name
      * @param precision Precision
@@ -408,7 +408,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final int scale, final boolean nullable ) {
         return typeFactory -> {
-            final RelDataType type = typeFactory.createSqlType( typeName, precision, scale );
+            final RelDataType type = typeFactory.createPolyType( typeName, precision, scale );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
     }

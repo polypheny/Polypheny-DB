@@ -92,7 +92,7 @@ public class DynamicRecordTypeImpl extends DynamicRecordType {
 
 
     @Override
-    public PolyType getSqlTypeName() {
+    public PolyType getPolyType() {
         return PolyType.ROW;
     }
 
@@ -117,7 +117,7 @@ public class DynamicRecordTypeImpl extends DynamicRecordType {
 
     @Override
     public RelDataTypeFamily getFamily() {
-        return getSqlTypeName().getFamily();
+        return getPolyType().getFamily();
     }
 
 }

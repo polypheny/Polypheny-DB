@@ -99,7 +99,7 @@ public class SqlNodeToRexConverterImpl implements SqlNodeToRexConverter {
             // Since there is no eq. RexLiteral of SqlLiteral.Unknown we treat it as a cast(null as boolean)
             RelDataType type;
             if ( literal.getTypeName() == PolyType.BOOLEAN ) {
-                type = typeFactory.createSqlType( PolyType.BOOLEAN );
+                type = typeFactory.createPolyType( PolyType.BOOLEAN );
                 type = typeFactory.createTypeWithNullability( type, true );
             } else {
                 type = validator.getValidatedNodeType( literal );

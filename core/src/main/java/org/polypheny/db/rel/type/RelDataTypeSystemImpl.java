@@ -78,7 +78,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
     @Override
     public int getDefaultPrecision( PolyType typeName ) {
-        // Following BasicSqlType precision as the default
+        // Following BasicPolyType precision as the default
         switch ( typeName ) {
             case CHAR:
             case BINARY:
@@ -124,7 +124,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 // farrago supports only 0 (see
-                // SqlTypeName.getDefaultPrecision), but it should be 6
+                // PolyType.getDefaultPrecision), but it should be 6
                 // (microseconds) per SQL99 part 2 section 6.1 syntax rule 30.
                 return 0;
             default:
@@ -270,13 +270,13 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
     @Override
     public RelDataType deriveFractionalRankType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.DOUBLE ), false );
+        return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.DOUBLE ), false );
     }
 
 
     @Override
     public RelDataType deriveRankType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BIGINT ), false );
+        return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), false );
     }
 
 

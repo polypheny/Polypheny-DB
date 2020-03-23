@@ -113,10 +113,10 @@ public class GeodeTable extends AbstractQueryableTable implements TranslatableTa
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 
         for ( Map.Entry<String, Class> field : fields ) {
-            PolyType typeName = typeFactory.createJavaType( field.getValue() ).getSqlTypeName();
+            PolyType typeName = typeFactory.createJavaType( field.getValue() ).getPolyType();
             // TODO (PCP)
             String physicalColumnName = field.getKey();
-            fieldInfo.add( field.getKey(), physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
+            fieldInfo.add( field.getKey(), physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
         }
 
         final RelProtoDataType resultRowType = RelDataTypeImpl.proto( fieldInfo.build() );

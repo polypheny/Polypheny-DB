@@ -52,7 +52,7 @@ public class SqlTypeFactoryTest {
     public void testLeastRestrictiveWithAny() {
         SqlTypeFixture f = new SqlTypeFixture();
         RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlBigInt, f.sqlAny ) );
-        assertThat( leastRestrictive.getSqlTypeName(), is( PolyType.ANY ) );
+        assertThat( leastRestrictive.getPolyType(), is( PolyType.ANY ) );
     }
 
 
@@ -60,7 +60,7 @@ public class SqlTypeFactoryTest {
     public void testLeastRestrictiveWithNumbers() {
         SqlTypeFixture f = new SqlTypeFixture();
         RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlBigInt, f.sqlInt ) );
-        assertThat( leastRestrictive.getSqlTypeName(), is( PolyType.BIGINT ) );
+        assertThat( leastRestrictive.getPolyType(), is( PolyType.BIGINT ) );
     }
 
 
@@ -68,7 +68,7 @@ public class SqlTypeFactoryTest {
     public void testLeastRestrictiveWithNullability() {
         SqlTypeFixture f = new SqlTypeFixture();
         RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlVarcharNullable, f.sqlAny ) );
-        assertThat( leastRestrictive.getSqlTypeName(), is( PolyType.ANY ) );
+        assertThat( leastRestrictive.getPolyType(), is( PolyType.ANY ) );
         assertThat( leastRestrictive.isNullable(), is( true ) );
     }
 
@@ -77,7 +77,7 @@ public class SqlTypeFactoryTest {
     public void testLeastRestrictiveWithNull() {
         SqlTypeFixture f = new SqlTypeFixture();
         RelDataType leastRestrictive = f.typeFactory.leastRestrictive( Lists.newArrayList( f.sqlNull, f.sqlNull ) );
-        assertThat( leastRestrictive.getSqlTypeName(), is( PolyType.NULL ) );
+        assertThat( leastRestrictive.getPolyType(), is( PolyType.NULL ) );
         assertThat( leastRestrictive.isNullable(), is( true ) );
     }
 

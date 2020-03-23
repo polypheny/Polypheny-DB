@@ -56,7 +56,7 @@ public class ObjectPolyType extends AbstractPolyType {
     /**
      * Constructs an object type. This should only be called from a factory method.
      *
-     * @param typeName      SqlTypeName for this type (either Distinct or Structured)
+     * @param typeName      PolyType for this type (either Distinct or Structured)
      * @param sqlIdentifier identifier for this type
      * @param nullable      whether type accepts nulls
      * @param fields        object attribute definitions

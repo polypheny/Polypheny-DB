@@ -66,11 +66,11 @@ public class ProcedureNamespace extends AbstractNamespace {
         final SqlOperator operator = call.getOperator();
         final SqlCallBinding callBinding = new SqlCallBinding( validator, scope, call );
         if ( operator instanceof SqlUserDefinedTableFunction ) {
-            assert type.getSqlTypeName() == PolyType.CURSOR : "User-defined table function should have CURSOR type, not " + type;
+            assert type.getPolyType() == PolyType.CURSOR : "User-defined table function should have CURSOR type, not " + type;
             final SqlUserDefinedTableFunction udf = (SqlUserDefinedTableFunction) operator;
             return udf.getRowType( validator.typeFactory, callBinding.operands() );
         } else if ( operator instanceof SqlUserDefinedTableMacro ) {
-            assert type.getSqlTypeName() == PolyType.CURSOR : "User-defined table macro should have CURSOR type, not " + type;
+            assert type.getPolyType() == PolyType.CURSOR : "User-defined table macro should have CURSOR type, not " + type;
             final SqlUserDefinedTableMacro udf = (SqlUserDefinedTableMacro) operator;
             return udf.getTable( validator.typeFactory, callBinding.operands() ).getRowType( validator.typeFactory );
         }

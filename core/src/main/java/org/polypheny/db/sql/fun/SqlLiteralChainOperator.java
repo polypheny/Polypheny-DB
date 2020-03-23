@@ -123,14 +123,14 @@ public class SqlLiteralChainOperator extends SqlSpecialOperator {
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         // Here we know all the operands have the same type, which has a size (precision), but not a scale.
         RelDataType ret = opBinding.getOperandType( 0 );
-        PolyType typeName = ret.getSqlTypeName();
+        PolyType typeName = ret.getPolyType();
         assert typeName.allowsPrecNoScale() : "LiteralChain has impossible operand type " + typeName;
         int size = 0;
         for ( RelDataType type : opBinding.collectOperandTypes() ) {
             size += type.getPrecision();
-            assert type.getSqlTypeName() == typeName;
+            assert type.getPolyType() == typeName;
         }
-        return opBinding.getTypeFactory().createSqlType( typeName, size );
+        return opBinding.getTypeFactory().createPolyType( typeName, size );
     }
 
 

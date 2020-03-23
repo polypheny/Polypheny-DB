@@ -119,7 +119,7 @@ public class SqlUserDefinedAggFunction extends SqlAggFunction {
 
     private RelDataType toSql( RelDataType type ) {
         if ( type instanceof JavaType && ((JavaType) type).getJavaClass() == Object.class ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
         return JavaTypeFactoryImpl.toSql( typeFactory, type );
     }

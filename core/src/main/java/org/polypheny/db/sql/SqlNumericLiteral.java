@@ -113,15 +113,15 @@ public class SqlNumericLiteral extends SqlLiteral {
                 } else {
                     result = PolyType.BIGINT;
                 }
-                return typeFactory.createSqlType( result );
+                return typeFactory.createPolyType( result );
             }
 
             // else we have a decimal
-            return typeFactory.createSqlType( PolyType.DECIMAL, prec.intValue(), scaleValue );
+            return typeFactory.createPolyType( PolyType.DECIMAL, prec.intValue(), scaleValue );
         }
 
         // else we have a a float, real or double.  make them all double for now.
-        return typeFactory.createSqlType( PolyType.DOUBLE );
+        return typeFactory.createPolyType( PolyType.DOUBLE );
     }
 
 

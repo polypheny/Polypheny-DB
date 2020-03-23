@@ -73,7 +73,7 @@ public class SqlUnresolvedFunction extends SqlFunction {
     @Override
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+        return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
     }
 }
 

@@ -86,9 +86,9 @@ public enum PolyTypeFamily implements RelDataTypeFamily {
     private static final Map<Integer, PolyTypeFamily> JDBC_TYPE_TO_FAMILY =
             ImmutableMap.<Integer, PolyTypeFamily>builder()
                     // Not present:
-                    // SqlTypeName.MULTISET shares Types.ARRAY with SqlTypeName.ARRAY;
-                    // SqlTypeName.MAP has no corresponding JDBC type
-                    // SqlTypeName.COLUMN_LIST has no corresponding JDBC type
+                    // PolyType.MULTISET shares Types.ARRAY with PolyType.ARRAY;
+                    // PolyType.MAP has no corresponding JDBC type
+                    // PolyType.COLUMN_LIST has no corresponding JDBC type
                     .put( Types.BIT, NUMERIC )
                     .put( Types.TINYINT, NUMERIC )
                     .put( Types.SMALLINT, NUMERIC )

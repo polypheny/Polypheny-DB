@@ -138,7 +138,7 @@ public class RexMultisetUtil {
     public static boolean isMultisetCast( RexCall call ) {
         switch ( call.getKind() ) {
             case CAST:
-                return call.getType().getSqlTypeName() == PolyType.MULTISET;
+                return call.getType().getPolyType() == PolyType.MULTISET;
             default:
                 return false;
         }

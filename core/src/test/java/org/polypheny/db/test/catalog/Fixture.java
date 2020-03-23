@@ -73,16 +73,16 @@ final class Fixture {
 
 
     Fixture( RelDataTypeFactory typeFactory ) {
-        intType = typeFactory.createSqlType( PolyType.INTEGER );
+        intType = typeFactory.createPolyType( PolyType.INTEGER );
         intTypeNull = typeFactory.createTypeWithNullability( intType, true );
-        varchar10Type = typeFactory.createSqlType( PolyType.VARCHAR, 10 );
+        varchar10Type = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
         varchar10TypeNull = typeFactory.createTypeWithNullability( varchar10Type, true );
-        varchar20Type = typeFactory.createSqlType( PolyType.VARCHAR, 20 );
+        varchar20Type = typeFactory.createPolyType( PolyType.VARCHAR, 20 );
         varchar20TypeNull = typeFactory.createTypeWithNullability( varchar20Type, true );
-        timestampType = typeFactory.createSqlType( PolyType.TIMESTAMP );
+        timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
         timestampTypeNull = typeFactory.createTypeWithNullability( timestampType, true );
-        dateType = typeFactory.createSqlType( PolyType.DATE );
-        booleanType = typeFactory.createSqlType( PolyType.BOOLEAN );
+        dateType = typeFactory.createPolyType( PolyType.DATE );
+        booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
         booleanTypeNull = typeFactory.createTypeWithNullability( booleanType, true );
         rectilinearCoordType =
                 typeFactory.builder()

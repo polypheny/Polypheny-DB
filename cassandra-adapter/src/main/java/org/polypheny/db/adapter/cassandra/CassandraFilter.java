@@ -333,7 +333,7 @@ public class CassandraFilter extends Filter implements CassandraRel {
             Object value = literalValue( right );
             String valueString = value.toString();
             if ( value instanceof String ) {
-                PolyType typeName = rowType.getField( name, true, false ).getType().getSqlTypeName();
+                PolyType typeName = rowType.getField( name, true, false ).getType().getPolyType();
                 if ( typeName != PolyType.CHAR ) {
                     valueString = "'" + valueString + "'";
                 }

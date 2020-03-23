@@ -158,7 +158,7 @@ public class PermutationTestCase {
     public void testProjectPermutation() {
         final RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
         final RexBuilder builder = new RexBuilder( typeFactory );
-        final RelDataType doubleType = typeFactory.createSqlType( PolyType.DOUBLE );
+        final RelDataType doubleType = typeFactory.createPolyType( PolyType.DOUBLE );
 
         // A project with [1, 1] is not a permutation, so should return null
         final Permutation perm = Project.getPermutation( 2, ImmutableList.of( builder.makeInputRef( doubleType, 1 ), builder.makeInputRef( doubleType, 1 ) ) );

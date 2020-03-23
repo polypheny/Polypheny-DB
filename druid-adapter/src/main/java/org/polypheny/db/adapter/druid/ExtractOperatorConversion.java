@@ -92,7 +92,7 @@ public class ExtractOperatorConversion implements DruidSqlOperatorConverter {
             return null;
         }
 
-        final TimeZone tz = arg.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE
+        final TimeZone tz = arg.getType().getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE
                 ? TimeZone.getTimeZone( query.getConnectionConfig().timeZone() )
                 : DateTimeUtils.UTC_ZONE;
         return DruidExpressions.applyTimeExtract( input, druidUnit, tz );

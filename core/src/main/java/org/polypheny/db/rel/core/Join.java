@@ -137,7 +137,7 @@ public abstract class Join extends BiRel {
             return litmus.fail( "field count mismatch" );
         }
         if ( condition != null ) {
-            if ( condition.getType().getSqlTypeName() != PolyType.BOOLEAN ) {
+            if ( condition.getType().getPolyType() != PolyType.BOOLEAN ) {
                 return litmus.fail( "condition must be boolean: {}", condition.getType() );
             }
             // The input to the condition is a row type consisting of system fields, left fields, and right fields. Very similar to the output row type, except that fields

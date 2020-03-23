@@ -62,7 +62,7 @@ public class SqlOperatorBindingTest {
     @Before
     public void setUp() {
         JavaTypeFactory typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        integerDataType = typeFactory.createSqlType( PolyType.INTEGER );
+        integerDataType = typeFactory.createPolyType( PolyType.INTEGER );
         integerType = PolyTypeUtil.convertTypeToSpec( integerDataType );
         rexBuilder = new RexBuilder( typeFactory );
     }

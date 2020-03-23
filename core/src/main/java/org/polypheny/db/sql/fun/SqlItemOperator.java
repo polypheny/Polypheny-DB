@@ -117,18 +117,18 @@ class SqlItemOperator extends SqlSpecialOperator {
 
 
     private PolySingleOperandTypeChecker getChecker( RelDataType operandType ) {
-        switch ( operandType.getSqlTypeName() ) {
+        switch ( operandType.getPolyType() ) {
             case ARRAY:
                 return OperandTypes.family( PolyTypeFamily.INTEGER );
             case MAP:
-                return OperandTypes.family( operandType.getKeyType().getSqlTypeName().getFamily() );
+                return OperandTypes.family( operandType.getKeyType().getPolyType().getFamily() );
             case ANY:
             case DYNAMIC_STAR:
                 return OperandTypes.or(
                         OperandTypes.family( PolyTypeFamily.INTEGER ),
                         OperandTypes.family( PolyTypeFamily.CHARACTER ) );
             default:
-                throw new AssertionError( operandType.getSqlTypeName() );
+                throw new AssertionError( operandType.getPolyType() );
         }
     }
 
@@ -143,14 +143,14 @@ class SqlItemOperator extends SqlSpecialOperator {
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType operandType = opBinding.getOperandType( 0 );
-        switch ( operandType.getSqlTypeName() ) {
+        switch ( operandType.getPolyType() ) {
             case ARRAY:
                 return typeFactory.createTypeWithNullability( operandType.getComponentType(), true );
             case MAP:
                 return typeFactory.createTypeWithNullability( operandType.getValueType(), true );
             case ANY:
             case DYNAMIC_STAR:
-                return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+                return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
             default:
                 throw new AssertionError();
         }

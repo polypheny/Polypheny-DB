@@ -138,7 +138,7 @@ public class PhysTypeImpl implements PhysType {
             builder.add( rowType.getFieldList().get( index ) );
         }
         if ( indicator ) {
-            final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BOOLEAN ), false );
+            final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
             for ( int index : integers ) {
                 builder.add( "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
             }

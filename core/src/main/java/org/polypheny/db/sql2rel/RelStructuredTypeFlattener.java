@@ -212,7 +212,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
         final List<RexNode> structuringExps = new ArrayList<>();
         for ( RelDataTypeField field : structuredType.getFieldList() ) {
             // TODO:  row
-            if ( field.getType().getSqlTypeName() == PolyType.STRUCTURED ) {
+            if ( field.getType().getPolyType() == PolyType.STRUCTURED ) {
                 restructured = true;
                 structuringExps.add( restructure( field.getType() ) );
             } else {
@@ -778,7 +778,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
 
         private RelDataType removeDistinct( RelDataType type ) {
-            if ( type.getSqlTypeName() != PolyType.DISTINCT ) {
+            if ( type.getPolyType() != PolyType.DISTINCT ) {
                 return type;
             }
             return type.getFieldList().get( 0 ).getType();

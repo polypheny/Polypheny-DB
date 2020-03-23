@@ -127,7 +127,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
         registerOp( SqlStdOperatorTable.MINUS,
                 ( cx, call ) -> {
                     final RexCall e = (RexCall) StandardConvertletTable.this.convertCall( cx, call, call.getOperator() );
-                    switch ( e.getOperands().get( 0 ).getType().getSqlTypeName() ) {
+                    switch ( e.getOperands().get( 0 ).getType().getPolyType() ) {
                         case DATE:
                         case TIME:
                         case TIMESTAMP:
@@ -740,7 +740,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                             switch ( (PolyTypeFamily) family ) {
                                 case INTEGER:
                                 case NUMERIC:
-                                    nonCharacterTypes.add( cx.getTypeFactory().createSqlType( PolyType.BIGINT ) );
+                                    nonCharacterTypes.add( cx.getTypeFactory().createPolyType( PolyType.BIGINT ) );
                             }
                         }
                     }
@@ -756,7 +756,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
 
     private RexNode convertPlus( SqlRexContext cx, SqlCall call ) {
         final RexNode rex = convertCall( cx, call );
-        switch ( rex.getType().getSqlTypeName() ) {
+        switch ( rex.getType().getPolyType() ) {
             case DATE:
             case TIME:
             case TIMESTAMP:
@@ -765,7 +765,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                 final RexBuilder rexBuilder = cx.getRexBuilder();
                 List<RexNode> operands = ((RexCall) rex).getOperands();
                 if ( operands.size() == 2 ) {
-                    final PolyType polyType = operands.get( 0 ).getType().getSqlTypeName();
+                    final PolyType polyType = operands.get( 0 ).getType().getPolyType();
                     switch ( polyType ) {
                         case INTERVAL_YEAR:
                         case INTERVAL_YEAR_MONTH:
@@ -859,7 +859,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
      * Called automatically via reflection.
      */
     public RexNode convertRow( SqlRexContext cx, SqlRowOperator op, SqlCall call ) {
-        if ( cx.getValidator().getValidatedNodeType( call ).getSqlTypeName() != PolyType.COLUMN_LIST ) {
+        if ( cx.getValidator().getValidatedNodeType( call ).getPolyType() != PolyType.COLUMN_LIST ) {
             return convertCall( cx, call );
         }
         final RexBuilder rexBuilder = cx.getRexBuilder();
@@ -1403,7 +1403,7 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                     ImmutableList.of( op2, op1 ) );
             final RelDataType intType =
                     cx.getTypeFactory().createTypeWithNullability(
-                            cx.getTypeFactory().createSqlType( polyType ),
+                            cx.getTypeFactory().createPolyType( polyType ),
                             PolyTypeUtil.containsNullable( rexCall.getType() ) );
             RexNode e = rexBuilder.makeCast( intType, rexCall );
             return rexBuilder.multiplyDivide( e, multiplier, divider );

@@ -86,7 +86,7 @@ public class RexAnalyzer {
 
     private static List<Comparable> getComparables( RexNode variable ) {
         final ImmutableList.Builder<Comparable> values = ImmutableList.builder();
-        switch ( variable.getType().getSqlTypeName() ) {
+        switch ( variable.getType().getPolyType() ) {
             case BOOLEAN:
                 values.add( true );
                 values.add( false );

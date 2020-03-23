@@ -143,7 +143,7 @@ public class SqlInOperator extends SqlBinaryOperator {
 
         // Result is a boolean, nullable if there are any nullable types on either side.
         return typeFactory.createTypeWithNullability(
-                typeFactory.createSqlType( PolyType.BOOLEAN ),
+                typeFactory.createPolyType( PolyType.BOOLEAN ),
                 anyNullable( leftRowType.getFieldList() ) || anyNullable( rightRowType.getFieldList() ) );
     }
 

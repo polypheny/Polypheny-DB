@@ -192,15 +192,15 @@ public interface RelDataTypeFactory {
     RelDataType leastRestrictive( List<RelDataType> types );
 
     /**
-     * Creates a SQL type with no precision or scale.
+     * Creates a poly type with no precision or scale.
      *
      * @param typeName Name of the type, for example {@link PolyType#BOOLEAN}, never null
      * @return canonical type descriptor
      */
-    RelDataType createSqlType( PolyType typeName );
+    RelDataType createPolyType( PolyType typeName );
 
     /**
-     * Creates a SQL type that represents the "unknown" type.
+     * Creates a type that represents the "unknown" type.
      * It is only equal to itself, and is distinct from the NULL type.
      *
      * @return unknown type
@@ -208,23 +208,23 @@ public interface RelDataTypeFactory {
     RelDataType createUnknownType();
 
     /**
-     * Creates a SQL type with length (precision) but no scale.
+     * Creates a Poly type with length (precision) but no scale.
      *
      * @param typeName  Name of the type, for example {@link PolyType#VARCHAR}. Never null.
      * @param precision Maximum length of the value (non-numeric types) or the precision of the value (numeric/datetime types). Must be non-negative or {@link RelDataType#PRECISION_NOT_SPECIFIED}.
      * @return canonical type descriptor
      */
-    RelDataType createSqlType( PolyType typeName, int precision );
+    RelDataType createPolyType( PolyType typeName, int precision );
 
     /**
-     * Creates a SQL type with precision and scale.
+     * Creates a Poly type with precision and scale.
      *
      * @param typeName  Name of the type, for example {@link PolyType#DECIMAL}. Never null.
      * @param precision Precision of the value. Must be non-negative or {@link RelDataType#PRECISION_NOT_SPECIFIED}.
      * @param scale     scale of the values, i.e. the number of decimal places to shift the value. For example, a NUMBER(10,3) value of "123.45" is represented "123450" (that is, multiplied by 10^3). A negative scale <em>is</em> valid.
      * @return canonical type descriptor
      */
-    RelDataType createSqlType( PolyType typeName, int precision, int scale );
+    RelDataType createPolyType( PolyType typeName, int precision, int scale );
 
     /**
      * Creates a SQL interval type.
@@ -457,28 +457,28 @@ public interface RelDataTypeFactory {
 
 
         /**
-         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(PolyType)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createPolyType(PolyType)}.
          */
         public Builder add( String name, String physicalName, PolyType typeName ) {
-            add( name, physicalName, typeFactory.createSqlType( typeName ) );
+            add( name, physicalName, typeFactory.createPolyType( typeName ) );
             return this;
         }
 
 
         /**
-         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(PolyType, int)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createPolyType(PolyType, int)}.
          */
         public Builder add( String name, String physicalName, PolyType typeName, int precision ) {
-            add( name, physicalName, typeFactory.createSqlType( typeName, precision ) );
+            add( name, physicalName, typeFactory.createPolyType( typeName, precision ) );
             return this;
         }
 
 
         /**
-         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(PolyType, int, int)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createPolyType(PolyType, int, int)}.
          */
         public Builder add( String name, String physicalName, PolyType typeName, int precision, int scale ) {
-            add( name, physicalName, typeFactory.createSqlType( typeName, precision, scale ) );
+            add( name, physicalName, typeFactory.createPolyType( typeName, precision, scale ) );
             return this;
         }
 

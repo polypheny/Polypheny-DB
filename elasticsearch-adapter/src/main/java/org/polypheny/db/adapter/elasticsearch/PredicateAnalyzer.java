@@ -1025,22 +1025,22 @@ class PredicateAnalyzer {
 
 
         boolean isIntegral() {
-            return PolyType.INT_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.INT_TYPES.contains( literal.getType().getPolyType() );
         }
 
 
         boolean isFloatingPoint() {
-            return PolyType.APPROX_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.APPROX_TYPES.contains( literal.getType().getPolyType() );
         }
 
 
         boolean isBoolean() {
-            return PolyType.BOOLEAN_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.BOOLEAN_TYPES.contains( literal.getType().getPolyType() );
         }
 
 
         public boolean isString() {
-            return PolyType.CHAR_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.CHAR_TYPES.contains( literal.getType().getPolyType() );
         }
 
 

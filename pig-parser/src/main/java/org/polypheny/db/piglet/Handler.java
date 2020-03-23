@@ -108,7 +108,7 @@ public class Handler {
                 builder.push( input );
                 System.out.println( input.getRowType() );
                 for ( RelDataTypeField field : input.getRowType().getFieldList() ) {
-                    switch ( field.getType().getSqlTypeName() ) {
+                    switch ( field.getType().getPolyType() ) {
                         case ARRAY:
                             System.out.println( field );
                     }
@@ -294,13 +294,13 @@ public class Handler {
         final RelDataTypeFactory typeFactory = builder.getTypeFactory();
         switch ( type.name ) {
             case "boolean":
-                return typeFactory.createSqlType( PolyType.BOOLEAN );
+                return typeFactory.createPolyType( PolyType.BOOLEAN );
             case "int":
-                return typeFactory.createSqlType( PolyType.INTEGER );
+                return typeFactory.createPolyType( PolyType.INTEGER );
             case "float":
-                return typeFactory.createSqlType( PolyType.REAL );
+                return typeFactory.createPolyType( PolyType.REAL );
             default:
-                return typeFactory.createSqlType( PolyType.VARCHAR );
+                return typeFactory.createPolyType( PolyType.VARCHAR );
         }
     }
 

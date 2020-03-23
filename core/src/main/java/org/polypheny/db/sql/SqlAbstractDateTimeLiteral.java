@@ -94,7 +94,7 @@ public abstract class SqlAbstractDateTimeLiteral extends SqlLiteral {
 
     @Override
     public RelDataType createSqlType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createSqlType( getTypeName(), getPrec() );
+        return typeFactory.createPolyType( getTypeName(), getPrec() );
     }
 
 

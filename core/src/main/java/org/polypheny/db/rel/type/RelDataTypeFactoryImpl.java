@@ -52,7 +52,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.sql.SqlCollation;
-import org.polypheny.db.type.JavaToSqlTypeConversionRules;
+import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -478,7 +478,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
                 precision = Math.min( precision, typeSystem.getMaxNumericPrecision() );
 
                 RelDataType ret;
-                ret = createSqlType( PolyType.DECIMAL, precision, scale );
+                ret = createPolyType( PolyType.DECIMAL, precision, scale );
 
                 return ret;
             }
@@ -537,7 +537,7 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
                 assert precision > 0;
 
                 RelDataType ret;
-                ret = createSqlType( PolyType.DECIMAL, precision, scale );
+                ret = createPolyType( PolyType.DECIMAL, precision, scale );
 
                 return ret;
             }
@@ -644,8 +644,8 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
 
 
         @Override
-        public PolyType getSqlTypeName() {
-            final PolyType typeName = JavaToSqlTypeConversionRules.instance().lookup( clazz );
+        public PolyType getPolyType() {
+            final PolyType typeName = JavaToPolyTypeConversionRules.instance().lookup( clazz );
             if ( typeName == null ) {
                 return PolyType.OTHER;
             }

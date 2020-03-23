@@ -174,13 +174,13 @@ public interface RelDataType {
     /**
      * Gets the {@link PolyType} of this type.
      *
-     * @return SqlTypeName, or null if this is not an SQL predefined type
+     * @return PolyType, or null if this is not an predefined type
      */
-    PolyType getSqlTypeName();
+    PolyType getPolyType();
 
     /**
      * Gets the {@link SqlIdentifier} associated with this type. For a predefined type, this is a simple identifier based on
-     * {@link #getSqlTypeName}. For a user-defined type, this is a compound identifier which uniquely names the type.
+     * {@link #getPolyType}. For a user-defined type, this is a compound identifier which uniquely names the type.
      *
      * @return SqlIdentifier, or null if this is not an SQL type
      */

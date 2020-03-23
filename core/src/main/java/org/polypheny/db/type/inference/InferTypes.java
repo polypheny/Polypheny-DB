@@ -80,7 +80,7 @@ public abstract class InferTypes {
             ( callBinding, returnType, operandTypes ) -> {
                 RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
                 for ( int i = 0; i < operandTypes.length; ++i ) {
-                    operandTypes[i] = typeFactory.createSqlType( PolyType.BOOLEAN );
+                    operandTypes[i] = typeFactory.createPolyType( PolyType.BOOLEAN );
                 }
             };
 
@@ -93,7 +93,7 @@ public abstract class InferTypes {
             ( callBinding, returnType, operandTypes ) -> {
                 RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
                 for ( int i = 0; i < operandTypes.length; ++i ) {
-                    operandTypes[i] = typeFactory.createSqlType( PolyType.VARCHAR, 1024 );
+                    operandTypes[i] = typeFactory.createPolyType( PolyType.VARCHAR, 1024 );
                 }
             };
 

@@ -241,7 +241,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
         if ( STRONG.isNull( node ) ) {
             switch ( unknownAs ) {
                 case FALSE:
-                    if ( node.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
+                    if ( node.getType().getPolyType() == PolyType.BOOLEAN ) {
                         if ( !falseLiteral.equals( opt ) ) {
                             assertEquals( nodeToString( node ) + " is always null boolean, so it should simplify to FALSE " + uaf, falseLiteral, opt );
                         }
@@ -252,7 +252,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
                     }
                     break;
                 case TRUE:
-                    if ( node.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
+                    if ( node.getType().getPolyType() == PolyType.BOOLEAN ) {
                         if ( !trueLiteral.equals( opt ) ) {
                             assertEquals( nodeToString( node ) + " is always null boolean, so it should simplify to TRUE " + uaf, trueLiteral, opt );
                         }

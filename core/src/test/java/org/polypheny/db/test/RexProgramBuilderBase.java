@@ -159,15 +159,15 @@ public abstract class RexProgramBuilderBase {
         trueLiteral = rexBuilder.makeLiteral( true );
         falseLiteral = rexBuilder.makeLiteral( false );
 
-        nonNullableInt = typeFactory.createSqlType( PolyType.INTEGER );
+        nonNullableInt = typeFactory.createPolyType( PolyType.INTEGER );
         nullableInt = typeFactory.createTypeWithNullability( nonNullableInt, true );
         nullInt = rexBuilder.makeNullLiteral( nullableInt );
 
-        nonNullableBool = typeFactory.createSqlType( PolyType.BOOLEAN );
+        nonNullableBool = typeFactory.createPolyType( PolyType.BOOLEAN );
         nullableBool = typeFactory.createTypeWithNullability( nonNullableBool, true );
         nullBool = rexBuilder.makeNullLiteral( nullableBool );
 
-        nonNullableVarchar = typeFactory.createSqlType( PolyType.VARCHAR );
+        nonNullableVarchar = typeFactory.createPolyType( PolyType.VARCHAR );
         nullableVarchar = typeFactory.createTypeWithNullability( nonNullableVarchar, true );
         nullVarchar = rexBuilder.makeNullLiteral( nullableVarchar );
     }

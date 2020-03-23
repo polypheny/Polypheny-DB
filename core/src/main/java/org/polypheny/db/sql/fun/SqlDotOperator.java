@@ -151,7 +151,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
         final SqlNode left = callBinding.operand( 0 );
         final SqlNode right = callBinding.operand( 1 );
         final RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), left );
-        if ( type.getSqlTypeName() != PolyType.ROW ) {
+        if ( type.getPolyType() != PolyType.ROW ) {
             return false;
         } else if ( type.getSqlIdentifier().isStar() ) {
             return false;
@@ -163,11 +163,11 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
 
     private PolySingleOperandTypeChecker getChecker( RelDataType operandType ) {
-        switch ( operandType.getSqlTypeName() ) {
+        switch ( operandType.getPolyType() ) {
             case ROW:
                 return OperandTypes.family( PolyTypeFamily.STRING );
             default:
-                throw new AssertionError( operandType.getSqlTypeName() );
+                throw new AssertionError( operandType.getPolyType() );
         }
     }
 
@@ -188,7 +188,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType recordType = opBinding.getOperandType( 0 );
-        switch ( recordType.getSqlTypeName() ) {
+        switch ( recordType.getPolyType() ) {
             case ROW:
                 final String fieldName = opBinding.getOperandLiteralValue( 1, String.class );
                 final RelDataType type = opBinding.getOperandType( 0 )

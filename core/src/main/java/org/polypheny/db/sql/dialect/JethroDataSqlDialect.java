@@ -190,7 +190,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                 return false;
             }
             for ( int i = 0; i < paramTypes.size(); i++ ) {
-                if ( paramTypes.get( i ).getSqlTypeName() != operandTypes.get( i ) ) {
+                if ( paramTypes.get( i ).getPolyType() != operandTypes.get( i ) ) {
                     return false;
                 }
             }

@@ -283,10 +283,10 @@ public class DruidDateTimeUtils {
                 final RelDataType callType = call.getType();
                 final RelDataType operandType = operand.getType();
                 if ( operand.getKind() == SqlKind.LITERAL
-                        && callType.getSqlTypeName() == operandType.getSqlTypeName()
-                        && (callType.getSqlTypeName() == PolyType.DATE
-                        || callType.getSqlTypeName() == PolyType.TIMESTAMP
-                        || callType.getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
+                        && callType.getPolyType() == operandType.getPolyType()
+                        && (callType.getPolyType() == PolyType.DATE
+                        || callType.getPolyType() == PolyType.TIMESTAMP
+                        || callType.getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE)
                         && callType.isNullable()
                         && !operandType.isNullable() ) {
                     return literalValue( operand );
@@ -323,10 +323,10 @@ public class DruidDateTimeUtils {
         final TimeUnitRange timeUnit = (TimeUnitRange) flag.getValue();
 
         final RelDataType valueType = value.getType();
-        if ( valueType.getSqlTypeName() == PolyType.DATE || valueType.getSqlTypeName() == PolyType.TIMESTAMP ) {
+        if ( valueType.getPolyType() == PolyType.DATE || valueType.getPolyType() == PolyType.TIMESTAMP ) {
             // We use 'UTC' for date/timestamp type as Druid needs timezone information
             return Granularities.createGranularity( timeUnit, "UTC" );
-        } else if ( valueType.getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+        } else if ( valueType.getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
             return Granularities.createGranularity( timeUnit, timeZone );
         }
         // Type not recognized

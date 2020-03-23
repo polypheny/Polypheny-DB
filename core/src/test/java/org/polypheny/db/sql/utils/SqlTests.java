@@ -90,10 +90,10 @@ public abstract class SqlTests {
      * @return String representation of type
      */
     public static String getTypeString( RelDataType sqlType ) {
-        switch ( sqlType.getSqlTypeName() ) {
+        switch ( sqlType.getPolyType() ) {
             case VARCHAR:
             case CHAR:
-                String actual = sqlType.getSqlTypeName().name();
+                String actual = sqlType.getPolyType().name();
                 if ( sqlType.getPrecision() != RelDataType.PRECISION_NOT_SPECIFIED ) {
                     actual = actual + "(" + sqlType.getPrecision() + ")";
                 }

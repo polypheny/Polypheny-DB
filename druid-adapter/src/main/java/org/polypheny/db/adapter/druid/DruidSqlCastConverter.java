@@ -68,8 +68,8 @@ public class DruidSqlCastConverter implements DruidSqlOperatorConverter {
             return null;
         }
 
-        final PolyType fromType = operand.getType().getSqlTypeName();
-        final PolyType toType = rexNode.getType().getSqlTypeName();
+        final PolyType fromType = operand.getType().getPolyType();
+        final PolyType toType = rexNode.getType().getPolyType();
         final String timeZoneConf = druidQuery.getConnectionConfig().timeZone();
         final TimeZone timeZone = TimeZone.getTimeZone( timeZoneConf == null ? "UTC" : timeZoneConf );
         final boolean nullEqualToEmpty = RuntimeConfig.NULL_EQUAL_TO_EMPTY.getBoolean();

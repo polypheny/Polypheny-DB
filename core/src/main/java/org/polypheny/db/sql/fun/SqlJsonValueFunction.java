@@ -75,7 +75,7 @@ public class SqlJsonValueFunction extends SqlFunction {
                 ( callBinding, returnType, operandTypes ) -> {
                     RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
                     for ( int i = 0; i < operandTypes.length; ++i ) {
-                        operandTypes[i] = typeFactory.createSqlType( PolyType.ANY );
+                        operandTypes[i] = typeFactory.createPolyType( PolyType.ANY );
                     }
                 },
                 null,
@@ -151,7 +151,7 @@ public class SqlJsonValueFunction extends SqlFunction {
         if ( opBinding.getOperandCount() == 6 ) {
             ret = opBinding.getOperandType( 5 );
         } else {
-            ret = opBinding.getTypeFactory().createSqlType( PolyType.ANY );
+            ret = opBinding.getTypeFactory().createPolyType( PolyType.ANY );
         }
         return opBinding.getTypeFactory().createTypeWithNullability( ret, true );
     }

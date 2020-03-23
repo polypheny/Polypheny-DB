@@ -69,7 +69,7 @@ public abstract class AbstractPolyType extends RelDataTypeImpl implements Clonea
 
     // implement RelDataType
     @Override
-    public PolyType getSqlTypeName() {
+    public PolyType getPolyType() {
         return typeName;
     }
 

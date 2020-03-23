@@ -214,11 +214,11 @@ public class RelJson {
             final Integer scale = (Integer) map.get( "scale" );
             final RelDataType type;
             if ( precision == null ) {
-                type = typeFactory.createSqlType( polyType );
+                type = typeFactory.createPolyType( polyType );
             } else if ( scale == null ) {
-                type = typeFactory.createSqlType( polyType, precision );
+                type = typeFactory.createPolyType( polyType, precision );
             } else {
-                type = typeFactory.createSqlType( polyType, precision, scale );
+                type = typeFactory.createPolyType( polyType, precision, scale );
             }
             final boolean nullable = (Boolean) map.get( "nullable" );
             return typeFactory.createTypeWithNullability( type, nullable );
@@ -281,12 +281,12 @@ public class RelJson {
             return list;
         } else {
             final Map<String, Object> map = jsonBuilder.map();
-            map.put( "type", node.getSqlTypeName().name() );
+            map.put( "type", node.getPolyType().name() );
             map.put( "nullable", node.isNullable() );
-            if ( node.getSqlTypeName().allowsPrec() ) {
+            if ( node.getPolyType().allowsPrec() ) {
                 map.put( "precision", node.getPrecision() );
             }
-            if ( node.getSqlTypeName().allowsScale() ) {
+            if ( node.getPolyType().allowsScale() ) {
                 map.put( "scale", node.getScale() );
             }
             return map;
@@ -415,7 +415,7 @@ public class RelJson {
                 final Object literal = map.get( "literal" );
                 final PolyType polyType = Util.enumVal( PolyType.class, (String) map.get( "type" ) );
                 if ( literal == null ) {
-                    return rexBuilder.makeNullLiteral( typeFactory.createSqlType( polyType ) );
+                    return rexBuilder.makeNullLiteral( typeFactory.createPolyType( polyType ) );
                 }
                 return toRex( relInput, literal );
             }

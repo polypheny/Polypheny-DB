@@ -279,17 +279,17 @@ public class JdbcSchema implements Schema {
                     component = parseTypeString( typeFactory, remaining );
                 }
                 if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                 }
                 return typeFactory.createArrayType( component, -1 );
         }
         if ( precision != null && scale != null && polyType.allowsPrecScale( true, true ) ) {
-            return typeFactory.createSqlType( polyType, precision, scale );
+            return typeFactory.createPolyType( polyType, precision, scale );
         } else if ( precision != null && polyType.allowsPrecNoScale() ) {
-            return typeFactory.createSqlType( polyType, precision );
+            return typeFactory.createPolyType( polyType, precision );
         } else {
             assert polyType.allowsNoPrecNoScale();
-            return typeFactory.createSqlType( polyType );
+            return typeFactory.createPolyType( polyType );
         }
     }
 
@@ -320,12 +320,12 @@ public class JdbcSchema implements Schema {
         try {
             final PolyType typeName = PolyType.valueOf( typeString );
             return typeName.allowsPrecScale( true, true )
-                    ? typeFactory.createSqlType( typeName, precision, scale )
+                    ? typeFactory.createPolyType( typeName, precision, scale )
                     : typeName.allowsPrecScale( true, false )
-                            ? typeFactory.createSqlType( typeName, precision )
-                            : typeFactory.createSqlType( typeName );
+                            ? typeFactory.createPolyType( typeName, precision )
+                            : typeFactory.createPolyType( typeName );
         } catch ( IllegalArgumentException e ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
     }
 

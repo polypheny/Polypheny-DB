@@ -73,7 +73,7 @@ public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
             }
         }
         RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
 
         // Pass type checking for operators if it's of type 'ANY'.
         if ( typeName.getFamily() == PolyTypeFamily.ANY ) {

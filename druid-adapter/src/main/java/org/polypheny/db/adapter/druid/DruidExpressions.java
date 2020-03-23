@@ -117,7 +117,7 @@ public class DruidExpressions {
     @Nullable
     public static String toDruidExpression( final RexNode rexNode, final RelDataType inputRowType, final DruidQuery druidRel ) {
         SqlKind kind = rexNode.getKind();
-        PolyType polyType = rexNode.getType().getSqlTypeName();
+        PolyType polyType = rexNode.getType().getPolyType();
 
         if ( kind == SqlKind.INPUT_REF ) {
             final RexInputRef ref = (RexInputRef) rexNode;

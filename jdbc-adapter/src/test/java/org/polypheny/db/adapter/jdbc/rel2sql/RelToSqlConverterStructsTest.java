@@ -138,11 +138,11 @@ public class RelToSqlConverterStructsTest {
     private static final Table TABLE = new Table() {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            final RelDataType aType = typeFactory.createSqlType( PolyType.BIGINT );
-            final RelDataType bType = typeFactory.createSqlType( PolyType.BIGINT );
-            final RelDataType cType = typeFactory.createSqlType( PolyType.BIGINT );
-            final RelDataType dType = typeFactory.createSqlType( PolyType.BIGINT );
-            final RelDataType eType = typeFactory.createSqlType( PolyType.BIGINT );
+            final RelDataType aType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType bType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType cType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType dType = typeFactory.createPolyType( PolyType.BIGINT );
+            final RelDataType eType = typeFactory.createPolyType( PolyType.BIGINT );
             final RelDataType n11Type = typeFactory.createStructType( ImmutableList.of( bType ), ImmutableList.of( "b" ) );
             final RelDataType n12Type = typeFactory.createStructType( ImmutableList.of( cType ), ImmutableList.of( "c" ) );
             final RelDataType n1Type = typeFactory.createStructType( ImmutableList.of( n11Type, n12Type ), ImmutableList.of( "n11", "n12" ) );

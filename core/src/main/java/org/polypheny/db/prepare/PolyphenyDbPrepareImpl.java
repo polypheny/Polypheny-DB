@@ -977,7 +977,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
 
     private int getTypeOrdinal( RelDataType type ) {
-        return type.getSqlTypeName().getJdbcOrdinal();
+        return type.getPolyType().getJdbcOrdinal();
     }
 
 
@@ -1005,7 +1005,7 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     private static String getTypeName( RelDataType type ) {
-        final PolyType polyType = type.getSqlTypeName();
+        final PolyType polyType = type.getPolyType();
         switch ( polyType ) {
             case ARRAY:
             case MULTISET:

@@ -330,7 +330,7 @@ public abstract class ReturnTypes {
             } else {
                 int p = type1.getPrecision();
                 RelDataType ret;
-                ret = opBinding.getTypeFactory().createSqlType( PolyType.DECIMAL, p, 0 );
+                ret = opBinding.getTypeFactory().createPolyType( PolyType.DECIMAL, p, 0 );
                 if ( type1.isNullable() ) {
                     ret = opBinding.getTypeFactory().createTypeWithNullability( ret, true );
                 }
@@ -421,7 +421,7 @@ public abstract class ReturnTypes {
                 precision = Math.min( precision, typeSystem.getMaxNumericPrecision() );
                 assert precision > 0;
 
-                return typeFactory.createSqlType( PolyType.DECIMAL, precision, scale );
+                return typeFactory.createPolyType( PolyType.DECIMAL, precision, scale );
             }
         }
 
@@ -461,7 +461,7 @@ public abstract class ReturnTypes {
                 final RelDataType argType0 = opBinding.getOperandType( 0 );
                 final RelDataType argType1 = opBinding.getOperandType( 1 );
 
-                final boolean containsAnyType = (argType0.getSqlTypeName() == PolyType.ANY) || (argType1.getSqlTypeName() == PolyType.ANY);
+                final boolean containsAnyType = (argType0.getPolyType() == PolyType.ANY) || (argType1.getPolyType() == PolyType.ANY);
 
                 if ( !containsAnyType && !(PolyTypeUtil.inCharOrBinaryFamilies( argType0 ) && PolyTypeUtil.inCharOrBinaryFamilies( argType1 )) ) {
                     Preconditions.checkArgument( PolyTypeUtil.sameNamedType( argType0, argType1 ) );
@@ -477,9 +477,9 @@ public abstract class ReturnTypes {
                 }
 
                 // Determine whether result is variable-length
-                PolyType typeName = argType0.getSqlTypeName();
+                PolyType typeName = argType0.getPolyType();
                 if ( PolyTypeUtil.isBoundedVariableWidth( argType1 ) ) {
-                    typeName = argType1.getSqlTypeName();
+                    typeName = argType1.getPolyType();
                 }
 
                 RelDataType ret;
@@ -495,7 +495,7 @@ public abstract class ReturnTypes {
                     typePrecision = (int) x;
                 }
 
-                ret = typeFactory.createSqlType( typeName, typePrecision );
+                ret = typeFactory.createPolyType( typeName, typePrecision );
                 if ( null != pickedCollation ) {
                     RelDataType pickedType;
                     if ( argType0.getCollation().equals( pickedCollation ) ) {

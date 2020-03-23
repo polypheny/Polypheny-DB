@@ -112,7 +112,7 @@ public abstract class PolyTypeTransforms {
             new PolyTypeTransform() {
                 @Override
                 public RelDataType transformType( SqlOperatorBinding opBinding, RelDataType typeToTransform ) {
-                    switch ( typeToTransform.getSqlTypeName() ) {
+                    switch ( typeToTransform.getPolyType() ) {
                         case VARCHAR:
                         case VARBINARY:
                             return typeToTransform;
@@ -120,7 +120,7 @@ public abstract class PolyTypeTransforms {
 
                     PolyType retTypeName = toVar( typeToTransform );
 
-                    RelDataType ret = opBinding.getTypeFactory().createSqlType( retTypeName, typeToTransform.getPrecision() );
+                    RelDataType ret = opBinding.getTypeFactory().createPolyType( retTypeName, typeToTransform.getPrecision() );
                     if ( PolyTypeUtil.inCharFamily( typeToTransform ) ) {
                         ret = opBinding.getTypeFactory()
                                 .createTypeWithCharsetAndCollation(
@@ -133,7 +133,7 @@ public abstract class PolyTypeTransforms {
 
 
                 private PolyType toVar( RelDataType type ) {
-                    final PolyType polyType = type.getSqlTypeName();
+                    final PolyType polyType = type.getPolyType();
                     switch ( polyType ) {
                         case CHAR:
                             return PolyType.VARCHAR;

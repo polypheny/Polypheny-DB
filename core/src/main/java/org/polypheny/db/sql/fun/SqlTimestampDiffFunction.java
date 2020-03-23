@@ -83,7 +83,7 @@ class SqlTimestampDiffFunction extends SqlFunction {
                                 ? PolyType.BIGINT
                                 : PolyType.INTEGER;
                 return typeFactory.createTypeWithNullability(
-                        typeFactory.createSqlType( polyType ),
+                        typeFactory.createPolyType( polyType ),
                         opBinding.getOperandType( 1 ).isNullable() || opBinding.getOperandType( 2 ).isNullable() );
             };
 

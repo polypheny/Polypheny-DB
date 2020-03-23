@@ -758,7 +758,7 @@ public class RelBuilder {
      * Creates an expression that casts an expression to a given type.
      */
     public RexNode cast( RexNode expr, PolyType typeName ) {
-        final RelDataType type = cluster.getTypeFactory().createSqlType( typeName );
+        final RelDataType type = cluster.getTypeFactory().createPolyType( typeName );
         return cluster.getRexBuilder().makeCast( type, expr );
     }
 
@@ -767,7 +767,7 @@ public class RelBuilder {
      * Creates an expression that casts an expression to a type with a given name and precision or length.
      */
     public RexNode cast( RexNode expr, PolyType typeName, int precision ) {
-        final RelDataType type = cluster.getTypeFactory().createSqlType( typeName, precision );
+        final RelDataType type = cluster.getTypeFactory().createPolyType( typeName, precision );
         return cluster.getRexBuilder().makeCast( type, expr );
     }
 
@@ -776,7 +776,7 @@ public class RelBuilder {
      * Creates an expression that casts an expression to a type with a given name, precision and scale.
      */
     public RexNode cast( RexNode expr, PolyType typeName, int precision, int scale ) {
-        final RelDataType type = cluster.getTypeFactory().createSqlType( typeName, precision, scale );
+        final RelDataType type = cluster.getTypeFactory().createPolyType( typeName, precision, scale );
         return cluster.getRexBuilder().makeCast( type, expr );
     }
 
@@ -1171,7 +1171,7 @@ public class RelBuilder {
             // Convert into binary calls
             return patternConcat( patternConcat( Util.skipLast( list ) ), Util.last( list ) );
         }
-        final RelDataType t = getTypeFactory().createSqlType( PolyType.NULL );
+        final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
         return getRexBuilder().makeCall( t, SqlStdOperatorTable.PATTERN_CONCAT, list );
     }
 
@@ -1188,7 +1188,7 @@ public class RelBuilder {
      * Creates a call that creates alternate patterns; for use in {@link #match}.
      */
     public RexNode patternAlter( Iterable<? extends RexNode> nodes ) {
-        final RelDataType t = getTypeFactory().createSqlType( PolyType.NULL );
+        final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
         return getRexBuilder().makeCall( t, SqlStdOperatorTable.PATTERN_ALTER, ImmutableList.copyOf( nodes ) );
     }
 
@@ -1205,7 +1205,7 @@ public class RelBuilder {
      * Creates a call that creates quantify patterns; for use in {@link #match}.
      */
     public RexNode patternQuantify( Iterable<? extends RexNode> nodes ) {
-        final RelDataType t = getTypeFactory().createSqlType( PolyType.NULL );
+        final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
         return getRexBuilder().makeCall( t, SqlStdOperatorTable.PATTERN_QUANTIFIER, ImmutableList.copyOf( nodes ) );
     }
 
@@ -1222,7 +1222,7 @@ public class RelBuilder {
      * Creates a call that creates permute patterns; for use in {@link #match}.
      */
     public RexNode patternPermute( Iterable<? extends RexNode> nodes ) {
-        final RelDataType t = getTypeFactory().createSqlType( PolyType.NULL );
+        final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
         return getRexBuilder().makeCall( t, SqlStdOperatorTable.PATTERN_PERMUTE, ImmutableList.copyOf( nodes ) );
     }
 
@@ -1239,7 +1239,7 @@ public class RelBuilder {
      * Creates a call that creates an exclude pattern; for use in {@link #match}.
      */
     public RexNode patternExclude( RexNode node ) {
-        final RelDataType t = getTypeFactory().createSqlType( PolyType.NULL );
+        final RelDataType t = getTypeFactory().createPolyType( PolyType.NULL );
         return getRexBuilder().makeCall( t, SqlStdOperatorTable.PATTERN_EXCLUDE, ImmutableList.of( node ) );
     }
 
@@ -2533,7 +2533,7 @@ public class RelBuilder {
             this.operands = Objects.requireNonNull( operands );
             this.orderKeys = Objects.requireNonNull( orderKeys );
             if ( filter != null ) {
-                if ( filter.getType().getSqlTypeName() != PolyType.BOOLEAN ) {
+                if ( filter.getType().getPolyType() != PolyType.BOOLEAN ) {
                     throw RESOURCE.filterMustBeBoolean().ex();
                 }
                 if ( filter.getType().isNullable() ) {

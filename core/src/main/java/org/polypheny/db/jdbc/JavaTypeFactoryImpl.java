@@ -61,7 +61,7 @@ import org.polypheny.db.runtime.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.IntervalPolyType;
-import org.polypheny.db.type.JavaToSqlTypeConversionRules;
+import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Pair;
@@ -153,16 +153,16 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
             case BOX:
                 return createJavaType( Primitive.ofBox( clazz ).boxClass );
         }
-        if ( JavaToSqlTypeConversionRules.instance().lookup( clazz ) != null ) {
+        if ( JavaToPolyTypeConversionRules.instance().lookup( clazz ) != null ) {
             return createJavaType( clazz );
         } else if ( clazz.isArray() ) {
             return createMultisetType( createType( clazz.getComponentType() ), -1 );
         } else if ( List.class.isAssignableFrom( clazz ) ) {
-            return createArrayType( createTypeWithNullability( createSqlType( PolyType.ANY ), true ), -1 );
+            return createArrayType( createTypeWithNullability( createPolyType( PolyType.ANY ), true ), -1 );
         } else if ( Map.class.isAssignableFrom( clazz ) ) {
             return createMapType(
-                    createTypeWithNullability( createSqlType( PolyType.ANY ), true ),
-                    createTypeWithNullability( createSqlType( PolyType.ANY ), true ) );
+                    createTypeWithNullability( createPolyType( PolyType.ANY ), true ),
+                    createTypeWithNullability( createPolyType( PolyType.ANY ), true ) );
         } else {
             return createStructType( clazz );
         }
@@ -179,7 +179,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
             return getJavaClass( type.getFieldList().get( 0 ).getType() );
         }
         if ( type instanceof BasicPolyType || type instanceof IntervalPolyType ) {
-            switch ( type.getSqlTypeName() ) {
+            switch ( type.getPolyType() ) {
                 case VARCHAR:
                 case CHAR:
                     return String.class;
@@ -229,7 +229,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return Object.class;
             }
         }
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case ROW:
                 assert type instanceof RelRecordType;
                 if ( type instanceof JavaRecordType ) {
@@ -263,7 +263,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     type.getFieldNames() );
         }
         if ( type instanceof JavaType ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( type.getSqlTypeName() ), type.isNullable() );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( type.getPolyType() ), type.isNullable() );
         }
         return type;
     }

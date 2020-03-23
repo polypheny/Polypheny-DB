@@ -145,7 +145,7 @@ public class RelDataTypeFieldImpl implements RelDataTypeField, Serializable {
 
     @Override
     public boolean isDynamicStar() {
-        return type.getSqlTypeName() == PolyType.DYNAMIC_STAR;
+        return type.getPolyType() == PolyType.DYNAMIC_STAR;
     }
 
 }

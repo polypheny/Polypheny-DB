@@ -53,7 +53,7 @@ import org.polypheny.db.util.Util;
  */
 public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList {
 
-    // NOTE jvs 25-Jan-2005:  the null entries delimit equivalence classes
+    // NOTE: The null entries delimit equivalence classes
     private static final List<PolyType> NUMERIC_TYPES =
             ImmutableNullableList.of(
                     PolyType.TINYINT,
@@ -74,7 +74,7 @@ public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList
     private static final List<PolyType> COMPACT_NUMERIC_TYPES = ImmutableList.copyOf( Util.filter( NUMERIC_TYPES, Objects::nonNull ) );
 
     /**
-     * Map from SqlTypeName to corresponding precedence list.
+     * Map from PolyType to corresponding precedence list.
      *
      * @see Glossary#SQL2003 SQL:2003 Part 2 Section 9.5
      */
@@ -139,7 +139,7 @@ public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList
     // implement RelDataTypePrecedenceList
     @Override
     public boolean containsType( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         return typeName != null && typeNames.contains( typeName );
     }
 
@@ -150,8 +150,8 @@ public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList
         assert containsType( type1 ) : type1;
         assert containsType( type2 ) : type2;
 
-        int p1 = getListPosition( type1.getSqlTypeName(), typeNames );
-        int p2 = getListPosition( type2.getSqlTypeName(), typeNames );
+        int p1 = getListPosition( type1.getPolyType(), typeNames );
+        int p2 = getListPosition( type2.getPolyType(), typeNames );
         return p2 - p1;
     }
 
@@ -171,7 +171,7 @@ public class PolyTypeExplicitPrecedenceList implements RelDataTypePrecedenceList
 
 
     static RelDataTypePrecedenceList getListForType( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return null;
         }

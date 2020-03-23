@@ -71,7 +71,7 @@ public class CassandraValues extends Values implements CassandraRel {
     public static Object getJavaClass( RexLiteral literal ) {
         RelDataType type = literal.getType();
         if ( type instanceof BasicPolyType || type instanceof IntervalPolyType ) {
-            switch ( type.getSqlTypeName() ) {
+            switch ( type.getPolyType() ) {
                 case VARCHAR:
                 case CHAR:
                     return literal.getValue2();

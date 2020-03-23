@@ -139,7 +139,7 @@ public interface SqlSplittableAggFunction {
                     ImmutableIntList.of(),
                     -1,
                     RelCollations.EMPTY,
-                    typeFactory.createSqlType( PolyType.BIGINT ),
+                    typeFactory.createPolyType( PolyType.BIGINT ),
                     null );
         }
 
@@ -273,7 +273,7 @@ public interface SqlSplittableAggFunction {
                     ImmutableIntList.of(),
                     -1,
                     RelCollations.EMPTY,
-                    typeFactory.createSqlType( PolyType.BIGINT ),
+                    typeFactory.createPolyType( PolyType.BIGINT ),
                     null );
         }
 

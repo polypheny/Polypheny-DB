@@ -389,7 +389,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     private static String getTypeName( RelDataType type ) {
-        final PolyType polyType = type.getSqlTypeName();
+        final PolyType polyType = type.getPolyType();
         switch ( polyType ) {
             case ARRAY:
             case MULTISET:
@@ -417,7 +417,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
 
     private int getTypeOrdinal( RelDataType type ) {
-        return type.getSqlTypeName().getJdbcOrdinal();
+        return type.getPolyType().getJdbcOrdinal();
     }
 
 

@@ -99,7 +99,7 @@ public class PostgresqlSqlDialect extends SqlDialect {
     @Override
     public SqlNode getCastSpec( RelDataType type ) {
         String castSpec;
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case TINYINT:
                 // Postgres has no tinyint (1 byte), so instead cast to smallint (2 bytes)
                 castSpec = "_smallint";

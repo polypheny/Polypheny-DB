@@ -57,9 +57,9 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
 
     @Override
-    public RelDataType createSqlType( PolyType typeName ) {
+    public RelDataType createPolyType( PolyType typeName ) {
         if ( typeName.allowsPrec() ) {
-            return createSqlType( typeName, typeSystem.getDefaultPrecision( typeName ) );
+            return createPolyType( typeName, typeSystem.getDefaultPrecision( typeName ) );
         }
         assertBasic( typeName );
         RelDataType newType = new BasicPolyType( typeSystem, typeName );
@@ -68,13 +68,13 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
 
     @Override
-    public RelDataType createSqlType( PolyType typeName, int precision ) {
+    public RelDataType createPolyType( PolyType typeName, int precision ) {
         final int maxPrecision = typeSystem.getMaxPrecision( typeName );
         if ( maxPrecision >= 0 && precision > maxPrecision ) {
             precision = maxPrecision;
         }
         if ( typeName.allowsScale() ) {
-            return createSqlType( typeName, precision, typeName.getDefaultScale() );
+            return createPolyType( typeName, precision, typeName.getDefaultScale() );
         }
         assertBasic( typeName );
         assert (precision >= 0) || (precision == RelDataType.PRECISION_NOT_SPECIFIED);
@@ -85,7 +85,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
 
     @Override
-    public RelDataType createSqlType( PolyType typeName, int precision, int scale ) {
+    public RelDataType createPolyType( PolyType typeName, int precision, int scale ) {
         assertBasic( typeName );
         assert (precision >= 0) || (precision == RelDataType.PRECISION_NOT_SPECIFIED);
         final int maxPrecision = typeSystem.getMaxPrecision( typeName );
@@ -159,7 +159,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
         assert types.size() >= 1;
 
         RelDataType type0 = types.get( 0 );
-        if ( type0.getSqlTypeName() != null ) {
+        if ( type0.getPolyType() != null ) {
             RelDataType resultType = leastRestrictiveSqlType( types );
             if ( resultType != null ) {
                 return resultType;
@@ -176,7 +176,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
         boolean anyNullable = resultType.isNullable();
         for ( int i = 1; i < types.size(); i++ ) {
             RelDataType type = types.get( i );
-            if ( type.getSqlTypeName() == PolyType.NULL ) {
+            if ( type.getPolyType() == PolyType.NULL ) {
                 anyNullable = true;
                 continue;
             }
@@ -238,7 +238,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
         int anyCount = 0;
 
         for ( RelDataType type : types ) {
-            final PolyType typeName = type.getSqlTypeName();
+            final PolyType typeName = type.getPolyType();
             if ( typeName == null ) {
                 return null;
             }
@@ -259,7 +259,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
         //  if any of the inputs are ANY, the output is ANY
         if ( anyCount > 0 ) {
             return createTypeWithNullability(
-                    createSqlType( PolyType.ANY ),
+                    createPolyType( PolyType.ANY ),
                     nullCount > 0 || nullableCount > 0 );
         }
 
@@ -267,7 +267,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
             RelDataType type = types.get( i );
             RelDataTypeFamily family = type.getFamily();
 
-            final PolyType typeName = type.getSqlTypeName();
+            final PolyType typeName = type.getPolyType();
             if ( typeName == PolyType.NULL ) {
                 continue;
             }
@@ -277,22 +277,22 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
             if ( isJavaType( type ) && javaCount + nullCount < types.size() ) {
                 final RelDataType originalType = type;
                 type = typeName.allowsPrecScale( true, true )
-                        ? createSqlType( typeName, type.getPrecision(), type.getScale() )
+                        ? createPolyType( typeName, type.getPrecision(), type.getScale() )
                         : typeName.allowsPrecScale( true, false )
-                                ? createSqlType( typeName, type.getPrecision() )
-                                : createSqlType( typeName );
+                                ? createPolyType( typeName, type.getPrecision() )
+                                : createPolyType( typeName );
                 type = createTypeWithNullability( type, originalType.isNullable() );
             }
 
             if ( resultType == null ) {
                 resultType = type;
-                if ( resultType.getSqlTypeName() == PolyType.ROW ) {
+                if ( resultType.getPolyType() == PolyType.ROW ) {
                     return leastRestrictiveStructuredType( types );
                 }
             }
 
             RelDataTypeFamily resultFamily = resultType.getFamily();
-            PolyType resultTypeName = resultType.getSqlTypeName();
+            PolyType resultTypeName = resultType.getPolyType();
 
             if ( resultFamily != family ) {
                 return null;
@@ -309,15 +309,15 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
                 // If either type is LOB, then result is LOB with no precision.
                 // Otherwise, if either is variable width, result is variable width.  Otherwise, result is fixed width.
                 if ( PolyTypeUtil.isLob( resultType ) ) {
-                    resultType = createSqlType( resultType.getSqlTypeName() );
+                    resultType = createPolyType( resultType.getPolyType() );
                 } else if ( PolyTypeUtil.isLob( type ) ) {
-                    resultType = createSqlType( type.getSqlTypeName() );
+                    resultType = createPolyType( type.getPolyType() );
                 } else if ( PolyTypeUtil.isBoundedVariableWidth( resultType ) ) {
-                    resultType = createSqlType( resultType.getSqlTypeName(), precision );
+                    resultType = createPolyType( resultType.getPolyType(), precision );
                 } else {
                     // this catch-all case covers type variable, and both fixed
 
-                    PolyType newTypeName = type.getSqlTypeName();
+                    PolyType newTypeName = type.getPolyType();
 
                     if ( typeSystem.shouldConvertRaggedUnionTypesToVarying() ) {
                         if ( resultType.getPrecision() != type.getPrecision() ) {
@@ -329,7 +329,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
                         }
                     }
 
-                    resultType = createSqlType( newTypeName, precision );
+                    resultType = createPolyType( newTypeName, precision );
                 }
                 Charset charset = null;
                 SqlCollation collation = null;
@@ -391,11 +391,11 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
                             int precision = dout + scale;
                             assert precision <= maxPrecision;
                             assert precision > 0
-                                    || (resultType.getSqlTypeName() == PolyType.DECIMAL
+                                    || (resultType.getPolyType() == PolyType.DECIMAL
                                     && precision == 0
                                     && scale == 0);
 
-                            resultType = createSqlType( PolyType.DECIMAL, precision, scale );
+                            resultType = createPolyType( PolyType.DECIMAL, precision, scale );
                         }
                     }
                 } else if ( PolyTypeUtil.isApproximateNumeric( resultType ) ) {
@@ -460,7 +460,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
 
     private RelDataType createDoublePrecisionType() {
-        return createSqlType( PolyType.DOUBLE );
+        return createPolyType( PolyType.DOUBLE );
     }
 
 
@@ -478,7 +478,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
     private RelDataType copyObjectType( RelDataType type, boolean nullable ) {
         return new ObjectPolyType(
-                type.getSqlTypeName(),
+                type.getPolyType(),
                 type.getSqlIdentifier(),
                 nullable,
                 type.getFieldList(),

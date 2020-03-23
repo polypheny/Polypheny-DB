@@ -89,7 +89,7 @@ public class ArrayType extends AbstractPolyType {
         return new RelDataTypePrecedenceList() {
             @Override
             public boolean containsType( RelDataType type ) {
-                return type.getSqlTypeName() == getSqlTypeName()
+                return type.getPolyType() == getPolyType()
                         && type.getComponentType() != null
                         && getComponentType().getPrecedenceList().containsType( type.getComponentType() );
             }

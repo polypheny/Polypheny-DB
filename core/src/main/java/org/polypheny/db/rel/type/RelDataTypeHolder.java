@@ -80,7 +80,7 @@ class RelDataTypeHolder {
                 return Pair.of( f, false );
             }
             // A dynamic star field matches any field
-            if ( f.getType().getSqlTypeName() == PolyType.DYNAMIC_STAR ) {
+            if ( f.getType().getPolyType() == PolyType.DYNAMIC_STAR ) {
                 return Pair.of( f, false );
             }
         }
@@ -93,7 +93,7 @@ class RelDataTypeHolder {
         RelDataTypeField newField = new RelDataTypeFieldImpl(
                 fieldName,
                 fields.size(),
-                typeFactory.createTypeWithNullability( typeFactory.createSqlType( typeName ), true ) );
+                typeFactory.createTypeWithNullability( typeFactory.createPolyType( typeName ), true ) );
 
         // Add the name to our list of field names
         fields.add( newField );

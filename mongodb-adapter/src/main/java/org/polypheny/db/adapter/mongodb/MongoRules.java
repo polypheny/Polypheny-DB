@@ -222,7 +222,7 @@ public class MongoRules {
             }
             if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
                 final RexNode op1 = call.operands.get( 1 );
-                if ( op1 instanceof RexLiteral && op1.getType().getSqlTypeName() == PolyType.INTEGER ) {
+                if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                     if ( !Bug.CALCITE_194_FIXED ) {
                         return "'" + stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]'";
                     }

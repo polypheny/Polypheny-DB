@@ -227,7 +227,7 @@ public class RexSimplify {
     RexNode simplify( RexNode e, RexUnknownAs unknownAs ) {
         if ( strong.isNull( e ) ) {
             // Only boolean NULL (aka UNKNOWN) can be converted to FALSE. Even in unknownAs=FALSE mode, we must not convert a NULL integer (say) to FALSE
-            if ( e.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
+            if ( e.getType().getPolyType() == PolyType.BOOLEAN ) {
                 switch ( unknownAs ) {
                     case FALSE:
                     case TRUE:
@@ -432,7 +432,7 @@ public class RexSimplify {
                 // NOT NOT x ==> x
                 return simplify( ((RexCall) a).getOperands().get( 0 ), unknownAs );
             case LITERAL:
-                if ( a.getType().getSqlTypeName() == PolyType.BOOLEAN && !RexLiteral.isNullLiteral( a ) ) {
+                if ( a.getType().getPolyType() == PolyType.BOOLEAN && !RexLiteral.isNullLiteral( a ) ) {
                     return rexBuilder.makeLiteral( !RexLiteral.booleanValue( a ) );
                 }
         }
@@ -718,7 +718,7 @@ public class RexSimplify {
             }
         }
 
-        if ( call.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
+        if ( call.getType().getPolyType() == PolyType.BOOLEAN ) {
             final RexNode result = simplifyBooleanCase( rexBuilder, branches, unknownAs, caseType );
             if ( result != null ) {
                 if ( sameTypeOrNarrowsNullability( caseType, result.getType() ) ) {
@@ -1478,7 +1478,7 @@ public class RexSimplify {
             if ( v1 == null ) {
                 throw new AssertionError( "interpreter returned null for " + foo1.e );
             }
-            if ( before.getType().getSqlTypeName() == PolyType.BOOLEAN ) {
+            if ( before.getType().getPolyType() == PolyType.BOOLEAN ) {
                 switch ( unknownAs ) {
                     case FALSE:
                     case TRUE:
@@ -1519,7 +1519,7 @@ public class RexSimplify {
                 // Next, try to convert the value to a different type, e.g. CAST('123' as integer)
                 switch ( literal.getTypeName() ) {
                     case TIME:
-                        switch ( e.getType().getSqlTypeName() ) {
+                        switch ( e.getType().getPolyType() ) {
                             case TIMESTAMP:
                                 return e;
                         }

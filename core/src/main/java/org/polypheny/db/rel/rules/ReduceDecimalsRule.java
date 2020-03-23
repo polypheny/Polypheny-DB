@@ -326,8 +326,8 @@ public class ReduceDecimalsRule extends RelOptRule {
          */
         public RexExpander( RexBuilder builder ) {
             this.builder = builder;
-            int8 = builder.getTypeFactory().createSqlType( PolyType.BIGINT );
-            real8 = builder.getTypeFactory().createSqlType( PolyType.DOUBLE );
+            int8 = builder.getTypeFactory().createPolyType( PolyType.BIGINT );
+            real8 = builder.getTypeFactory().createPolyType( PolyType.DOUBLE );
         }
 
 
@@ -1225,7 +1225,7 @@ public class ReduceDecimalsRule extends RelOptRule {
             boolean outerCheck = RexUtil.canReinterpretOverflow( outer );
             boolean innerCheck = RexUtil.canReinterpretOverflow( inner );
 
-            if ( (outerType.getSqlTypeName() != valueType.getSqlTypeName())
+            if ( (outerType.getPolyType() != valueType.getPolyType())
                     || (outerType.getPrecision() != valueType.getPrecision())
                     || (outerType.getScale() != valueType.getScale()) ) {
                 return false;

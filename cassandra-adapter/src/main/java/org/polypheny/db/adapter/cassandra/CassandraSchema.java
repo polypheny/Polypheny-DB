@@ -144,11 +144,11 @@ public class CassandraSchema extends AbstractSchema {
             final DataType type = column.getValue().getType();
 
             // TODO: This mapping of types can be done much better
-            PolyType typeName = CassandraTypesUtils.getSqlTypeName( type );
+            PolyType typeName = CassandraTypesUtils.getPolyType( type );
 
             // TODO (PCP)
             String physicalColumnName = columnName;
-            fieldInfo.add( columnName, physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
+            fieldInfo.add( columnName, physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
         }
 
         return RelDataTypeImpl.proto( fieldInfo.build() );

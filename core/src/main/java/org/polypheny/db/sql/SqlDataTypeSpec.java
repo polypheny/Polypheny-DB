@@ -359,13 +359,13 @@ public class SqlDataTypeSpec extends SqlNode {
         RelDataType type;
         if ( (precision >= 0) && (scale >= 0) ) {
             assert polyType.allowsPrecScale( true, true );
-            type = typeFactory.createSqlType( polyType, precision, scale );
+            type = typeFactory.createPolyType( polyType, precision, scale );
         } else if ( precision >= 0 ) {
             assert polyType.allowsPrecNoScale();
-            type = typeFactory.createSqlType( polyType, precision );
+            type = typeFactory.createPolyType( polyType, precision );
         } else {
             assert polyType.allowsNoPrecNoScale();
-            type = typeFactory.createSqlType( polyType );
+            type = typeFactory.createPolyType( polyType );
         }
 
         if ( PolyTypeUtil.inCharFamily( type ) ) {

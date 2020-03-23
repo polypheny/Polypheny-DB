@@ -645,7 +645,7 @@ public class SqlWindow extends SqlCall {
 
                 // get the type family for the sort key for Frame Boundary Val.
                 RelDataType orderType = validator.deriveType( operandScope, orderList.get( 0 ) );
-                orderTypeFam = orderType.getSqlTypeName().getFamily();
+                orderTypeFam = orderType.getPolyType().getFamily();
             } else {
                 // requires an ORDER BY clause if frame is logical(RANGE)
                 // We relax this requirement if the table appears to be sorted already
@@ -708,7 +708,7 @@ public class SqlWindow extends SqlCall {
                 // If this is a range spec check and make sure the boundary type and order by type are compatible
                 if ( orderTypeFam != null && !isRows ) {
                     RelDataType bndType = validator.deriveType( scope, boundVal );
-                    PolyTypeFamily bndTypeFam = bndType.getSqlTypeName().getFamily();
+                    PolyTypeFamily bndTypeFam = bndType.getPolyType().getFamily();
                     switch ( orderTypeFam ) {
                         case NUMERIC:
                             if ( PolyTypeFamily.NUMERIC != bndTypeFam ) {

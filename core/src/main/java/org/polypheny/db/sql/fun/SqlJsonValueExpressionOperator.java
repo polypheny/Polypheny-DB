@@ -59,12 +59,12 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
                 true,
                 opBinding -> {
                     final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-                    return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+                    return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                 },
                 ( callBinding, returnType, operandTypes ) -> {
                     if ( callBinding.isOperandNull( 0, false ) ) {
                         final RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
-                        operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+                        operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                     }
                 },
                 structured ? OperandTypes.ANY : OperandTypes.STRING );

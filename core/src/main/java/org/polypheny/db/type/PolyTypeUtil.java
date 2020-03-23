@@ -249,15 +249,15 @@ public abstract class PolyTypeUtil {
 
 
     /**
-     * Returns typeName.equals(type.getSqlTypeName()). If typeName.equals(SqlTypeName.Any) true is always returned.
+     * Returns typeName.equals(type.getPolyType()). If typeName.equals(PolyType.Any) true is always returned.
      */
     public static boolean isOfSameTypeName( PolyType typeName, RelDataType type ) {
-        return PolyType.ANY == typeName || typeName == type.getSqlTypeName();
+        return PolyType.ANY == typeName || typeName == type.getPolyType();
     }
 
 
     /**
-     * Returns true if any element in <code>typeNames</code> matches type.getSqlTypeName().
+     * Returns true if any element in <code>typeNames</code> matches type.getPolyType().
      *
      * @see #isOfSameTypeName(PolyType, RelDataType)
      */
@@ -323,8 +323,8 @@ public abstract class PolyTypeUtil {
      * @return true if two types are in same type family, or one or the other is of type {@link PolyType#NULL}.
      */
     public static boolean inSameFamilyOrNull( RelDataType t1, RelDataType t2 ) {
-        return (t1.getSqlTypeName() == PolyType.NULL)
-                || (t2.getSqlTypeName() == PolyType.NULL)
+        return (t1.getPolyType() == PolyType.NULL)
+                || (t2.getPolyType() == PolyType.NULL)
                 || (t1.getFamily() == t2.getFamily());
     }
 
@@ -350,7 +350,7 @@ public abstract class PolyTypeUtil {
      * @return true if type is variable width with bounded precision
      */
     public static boolean isBoundedVariableWidth( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
         }
@@ -371,7 +371,7 @@ public abstract class PolyTypeUtil {
      * @return true if type is one of the integer types
      */
     public static boolean isIntType( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
         }
@@ -391,7 +391,7 @@ public abstract class PolyTypeUtil {
      * @return true if type is decimal
      */
     public static boolean isDecimal( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
         }
@@ -403,7 +403,7 @@ public abstract class PolyTypeUtil {
      * @return true if type is bigint
      */
     public static boolean isBigint( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
         }
@@ -415,7 +415,7 @@ public abstract class PolyTypeUtil {
      * @return true if type is numeric with exact precision
      */
     public static boolean isExactNumeric( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
         }
@@ -445,7 +445,7 @@ public abstract class PolyTypeUtil {
      */
     public static long maxValue( RelDataType type ) {
         assert PolyTypeUtil.isIntType( type );
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case TINYINT:
                 return Byte.MAX_VALUE;
             case SMALLINT:
@@ -455,7 +455,7 @@ public abstract class PolyTypeUtil {
             case BIGINT:
                 return Long.MAX_VALUE;
             default:
-                throw Util.unexpected( type.getSqlTypeName() );
+                throw Util.unexpected( type.getPolyType() );
         }
     }
 
@@ -464,7 +464,7 @@ public abstract class PolyTypeUtil {
      * @return true if type is numeric with approximate precision
      */
     public static boolean isApproximateNumeric( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         if ( typeName == null ) {
             return false;
         }
@@ -521,7 +521,7 @@ public abstract class PolyTypeUtil {
                 return false;
             }
         }
-        return t1.getSqlTypeName() == t2.getSqlTypeName();
+        return t1.getPolyType() == t2.getPolyType();
     }
 
 
@@ -534,7 +534,7 @@ public abstract class PolyTypeUtil {
      * @return maximum bytes, or 0 for a fixed-width type or type with unknown maximum
      */
     public static int getMaxByteSize( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
 
         if ( typeName == null ) {
             return 0;
@@ -567,7 +567,7 @@ public abstract class PolyTypeUtil {
      * @param type a numeric type
      */
     public static long getMinValue( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         switch ( typeName ) {
             case TINYINT:
                 return Byte.MIN_VALUE;
@@ -590,7 +590,7 @@ public abstract class PolyTypeUtil {
      * @param type a numeric type
      */
     public static long getMaxValue( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
         switch ( typeName ) {
             case TINYINT:
                 return Byte.MAX_VALUE;
@@ -625,15 +625,15 @@ public abstract class PolyTypeUtil {
         }
 
         // TODO jvs: handle all the other cases like rows, collections, UDT's
-        if ( fromType.getSqlTypeName() == PolyType.NULL ) {
+        if ( fromType.getPolyType() == PolyType.NULL ) {
             // REVIEW jvs: We allow assignment from NULL to any type, including NOT NULL types, since in the case where no
             // rows are actually processed, the assignment is legal (FRG-365). However, it would be better if the validator's
             // NULL type inference guaranteed that we had already assigned a real (nullable) type to every NULL literal.
             return true;
         }
 
-        if ( fromType.getSqlTypeName() == PolyType.ARRAY ) {
-            if ( toType.getSqlTypeName() != PolyType.ARRAY ) {
+        if ( fromType.getPolyType() == PolyType.ARRAY ) {
+            if ( toType.getPolyType() != PolyType.ARRAY ) {
                 return false;
             }
             return canAssignFrom( toType.getComponentType(), fromType.getComponentType() );
@@ -691,8 +691,8 @@ public abstract class PolyTypeUtil {
             return true;
         }
 
-        final PolyType fromTypeName = fromType.getSqlTypeName();
-        final PolyType toTypeName = toType.getSqlTypeName();
+        final PolyType fromTypeName = fromType.getPolyType();
+        final PolyType toTypeName = toType.getPolyType();
         if ( toType.isStruct() || fromType.isStruct() ) {
             if ( toTypeName == PolyType.DISTINCT ) {
                 if ( fromTypeName == PolyType.DISTINCT ) {
@@ -794,7 +794,7 @@ public abstract class PolyTypeUtil {
     public static boolean needsNullIndicator( RelDataType recordType ) {
         // NOTE jvs: It would be more storage-efficient to say that no null indicator is required for structured type columns
         // declared as NOT NULL.  However, the uniformity of always having a null indicator makes things cleaner in many places.
-        return recordType.getSqlTypeName() == PolyType.STRUCTURED;
+        return recordType.getPolyType() == PolyType.STRUCTURED;
     }
 
 
@@ -802,7 +802,7 @@ public abstract class PolyTypeUtil {
         boolean nested = false;
         if ( needsNullIndicator( type ) ) {
             // NOTE jvs 9-Mar-2005:  other code (e.g. RelStructuredTypeFlattener) relies on the null indicator field coming first.
-            RelDataType indicatorType = typeFactory.createSqlType( PolyType.BOOLEAN );
+            RelDataType indicatorType = typeFactory.createPolyType( PolyType.BOOLEAN );
             if ( type.isNullable() ) {
                 indicatorType = typeFactory.createTypeWithNullability( indicatorType, true );
             }
@@ -848,7 +848,7 @@ public abstract class PolyTypeUtil {
      * @return corresponding parse representation
      */
     public static SqlDataTypeSpec convertTypeToSpec( RelDataType type ) {
-        PolyType typeName = type.getSqlTypeName();
+        PolyType typeName = type.getPolyType();
 
         // TODO jvs: support row types, user-defined types, interval types, multiset types, etc
         assert typeName != null;
@@ -1131,8 +1131,8 @@ public abstract class PolyTypeUtil {
     protected static RelDataTypeFamily family( RelDataType type ) {
         // REVIEW jvs: This is needed to keep the Saffron type system happy.
         RelDataTypeFamily family = null;
-        if ( type.getSqlTypeName() != null ) {
-            family = type.getSqlTypeName().getFamily();
+        if ( type.getPolyType() != null ) {
+            family = type.getPolyType().getFamily();
         }
         if ( family == null ) {
             family = type.getFamily();
@@ -1260,7 +1260,7 @@ public abstract class PolyTypeUtil {
 
 
     public static boolean isArray( RelDataType type ) {
-        return type.getSqlTypeName() == PolyType.ARRAY;
+        return type.getPolyType() == PolyType.ARRAY;
     }
 
 

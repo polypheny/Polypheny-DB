@@ -318,7 +318,7 @@ public abstract class RelOptUtil {
             final RelDataType type1 = pair.left.getType();
             final RelDataType type2 = pair.right.getType();
             // If one of the types is ANY comparison should succeed
-            if ( type1.getSqlTypeName() == PolyType.ANY || type2.getSqlTypeName() == PolyType.ANY ) {
+            if ( type1.getPolyType() == PolyType.ANY || type2.getPolyType() == PolyType.ANY ) {
                 continue;
             }
             if ( !type1.equals( type2 ) ) {
@@ -1410,13 +1410,13 @@ public abstract class RelOptUtil {
                         ImmutableList.of(
                                 Pair.of(
                                         AvaticaConnection.ROWCOUNT_COLUMN_NAME,
-                                        typeFactory.createSqlType( PolyType.BIGINT ) ) ) );
+                                        typeFactory.createPolyType( PolyType.BIGINT ) ) ) );
             case EXPLAIN:
                 return typeFactory.createStructType(
                         ImmutableList.of(
                                 Pair.of(
                                         AvaticaConnection.PLAN_COLUMN_NAME,
-                                        typeFactory.createSqlType( PolyType.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED ) ) ) );
+                                        typeFactory.createPolyType( PolyType.VARCHAR, RelDataType.PRECISION_NOT_SPECIFIED ) ) ) );
             default:
                 throw Util.unexpected( kind );
         }
@@ -1435,7 +1435,7 @@ public abstract class RelOptUtil {
      */
     public static boolean eq( final String desc1, RelDataType type1, final String desc2, RelDataType type2, Litmus litmus ) {
         // if any one of the types is ANY return true
-        if ( type1.getSqlTypeName() == PolyType.ANY || type2.getSqlTypeName() == PolyType.ANY ) {
+        if ( type1.getPolyType() == PolyType.ANY || type2.getPolyType() == PolyType.ANY ) {
             return litmus.succeed();
         }
 

@@ -60,8 +60,8 @@ import org.polypheny.db.util.Util;
  *
  * <ul>
  * <li>{@link java.sql.Types} does not include all SQL2003 data-types;</li>
- * <li>SqlTypeName provides a type-safe enumeration;</li>
- * <li>SqlTypeName provides a place to hang extra information such as whether the type carries precision and scale.</li>
+ * <li>PolyType provides a type-safe enumeration;</li>
+ * <li>PolyType provides a place to hang extra information such as whether the type carries precision and scale.</li>
  * </ul>
  */
 public enum PolyType {
@@ -532,7 +532,7 @@ public enum PolyType {
 
 
     /**
-     * @return the ordinal from {@link java.sql.Types} corresponding to this SqlTypeName
+     * @return the ordinal from {@link java.sql.Types} corresponding to this PolyType
      */
     public int getJdbcOrdinal() {
         return jdbcOrdinal;
@@ -575,7 +575,7 @@ public enum PolyType {
 
 
     /**
-     * Gets the SqlTypeFamily containing this SqlTypeName.
+     * Gets the SqlTypeFamily containing this PolyType.
      *
      * @return containing family, or null for none
      */
@@ -585,10 +585,10 @@ public enum PolyType {
 
 
     /**
-     * Gets the SqlTypeName corresponding to a JDBC type.
+     * Gets the PolyType corresponding to a JDBC type.
      *
      * @param jdbcType the JDBC type of interest
-     * @return corresponding SqlTypeName, or null if the type is not known
+     * @return corresponding PolyType, or null if the type is not known
      */
     public static PolyType getNameForJdbcType( int jdbcType ) {
         return JDBC_TYPE_TO_NAME.get( jdbcType );

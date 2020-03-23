@@ -135,7 +135,7 @@ public class Uncollect extends SingleRel {
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
 
-        if ( fields.size() == 1 && fields.get( 0 ).getType().getSqlTypeName() == PolyType.ANY ) {
+        if ( fields.size() == 1 && fields.get( 0 ).getType().getPolyType() == PolyType.ANY ) {
             // Component type is unknown to Uncollect, build a row type with input column name and Any type.
             return builder
                     .add( fields.get( 0 ).getName(), null, PolyType.ANY )

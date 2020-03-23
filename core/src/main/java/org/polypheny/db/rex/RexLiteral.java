@@ -173,7 +173,7 @@ public class RexLiteral extends RexNode {
      */
     private final RelDataType type;
 
-    // TODO jvs 26-May-2006:  Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading SqlTypeName).
+    // TODO jvs: Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading PolyType).
     /**
      * An indication of the broad type of this literal -- even if its type isn't a SQL type. Sometimes this will be different than the SQL type; for example, all exact numbers, including integers have typeName
      * {@link PolyType#DECIMAL}. See {@link #valueMatchesType} for the definitive story.
@@ -374,12 +374,12 @@ public class RexLiteral extends RexNode {
         }
         // The variable here simplifies debugging (one can set a breakpoint at return) final ensures we set the value in all the branches, and it ensures the value is set just once
         final RexDigestIncludeType includeType;
-        if ( type.getSqlTypeName() == PolyType.BOOLEAN
-                || type.getSqlTypeName() == PolyType.INTEGER
-                || type.getSqlTypeName() == PolyType.SYMBOL ) {
+        if ( type.getPolyType() == PolyType.BOOLEAN
+                || type.getPolyType() == PolyType.INTEGER
+                || type.getPolyType() == PolyType.SYMBOL ) {
             // We don't want false:BOOLEAN NOT NULL, so we don't print type information for non-nullable BOOLEAN and INTEGER
             includeType = RexDigestIncludeType.NO_TYPE;
-        } else if ( type.getSqlTypeName() == PolyType.CHAR && value instanceof NlsString ) {
+        } else if ( type.getPolyType() == PolyType.CHAR && value instanceof NlsString ) {
             NlsString nlsString = (NlsString) value;
 
             // Ignore type information for 'Bar':CHAR(3)
@@ -394,9 +394,9 @@ public class RexLiteral extends RexNode {
                 includeType = RexDigestIncludeType.ALWAYS;
             }
         } else if ( type.getPrecision() == 0 && (
-                type.getSqlTypeName() == PolyType.TIME
-                        || type.getSqlTypeName() == PolyType.TIMESTAMP
-                        || type.getSqlTypeName() == PolyType.DATE) ) {
+                type.getPolyType() == PolyType.TIME
+                        || type.getPolyType() == PolyType.TIMESTAMP
+                        || type.getPolyType() == PolyType.DATE) ) {
             // Ignore type information for '12:23:20':TIME(0)
             // Note that '12:23:20':TIME WITH LOCAL TIME ZONE
             includeType = RexDigestIncludeType.NO_TYPE;
@@ -456,7 +456,7 @@ public class RexLiteral extends RexNode {
 
 
     private String intervalString( BigDecimal v ) {
-        final List<TimeUnit> timeUnits = getTimeUnits( type.getSqlTypeName() );
+        final List<TimeUnit> timeUnits = getTimeUnits( type.getPolyType() );
         final StringBuilder b = new StringBuilder();
         for ( TimeUnit timeUnit : timeUnits ) {
             final BigDecimal[] result = v.divideAndRemainder( timeUnit.multiplier );

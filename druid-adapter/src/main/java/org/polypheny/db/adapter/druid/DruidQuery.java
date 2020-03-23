@@ -268,9 +268,9 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         switch ( rexNode.getKind() ) {
             case INPUT_REF:
                 columnName = extractColumnName( rexNode, rowType, druidQuery );
-                if ( rexNode.getType().getSqlTypeName() == PolyType.DATE
-                        || rexNode.getType().getSqlTypeName() == PolyType.TIMESTAMP
-                        || rexNode.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+                if ( rexNode.getType().getPolyType() == PolyType.DATE
+                        || rexNode.getType().getPolyType() == PolyType.TIMESTAMP
+                        || rexNode.getType().getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     // Use UTC for DATE and TIMESTAMP types
                     extractionFunction = TimeExtractionFunction.createDefault( DateTimeUtils.UTC_ZONE.getID() );
                 } else {
@@ -287,11 +287,11 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     return Pair.of( null, null );
                 }
                 RexNode extractValueNode = ((RexCall) rexNode).getOperands().get( 1 );
-                if ( extractValueNode.getType().getSqlTypeName() == PolyType.DATE || extractValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP ) {
+                if ( extractValueNode.getType().getPolyType() == PolyType.DATE || extractValueNode.getType().getPolyType() == PolyType.TIMESTAMP ) {
                     // Use 'UTC' at the extraction level
                     extractionFunction = TimeExtractionFunction.createExtractFromGranularity( granularity, DateTimeUtils.UTC_ZONE.getID() );
                     columnName = extractColumnName( extractValueNode, rowType, druidQuery );
-                } else if ( extractValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+                } else if ( extractValueNode.getType().getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     // Use local time zone at the extraction level
                     extractionFunction = TimeExtractionFunction.createExtractFromGranularity( granularity, druidQuery.getConnectionConfig().timeZone() );
                     columnName = extractColumnName( extractValueNode, rowType, druidQuery );
@@ -309,9 +309,9 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     return Pair.of( null, null );
                 }
                 RexNode floorValueNode = ((RexCall) rexNode).getOperands().get( 0 );
-                if ( floorValueNode.getType().getSqlTypeName() == PolyType.DATE
-                        || floorValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP
-                        || floorValueNode.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+                if ( floorValueNode.getType().getPolyType() == PolyType.DATE
+                        || floorValueNode.getType().getPolyType() == PolyType.TIMESTAMP
+                        || floorValueNode.getType().getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     // Use 'UTC' at the extraction level, since all datetime types are represented in 'UTC'
                     extractionFunction = TimeExtractionFunction.createFloorFromGranularity( granularity, DateTimeUtils.UTC_ZONE.getID() );
                     columnName = extractColumnName( floorValueNode, rowType, druidQuery );
@@ -326,7 +326,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 }
                 columnName = extractColumnName( ((RexCall) rexNode).getOperands().get( 0 ), rowType, druidQuery );
                 // CASE CAST to TIME/DATE need to make sure that we have valid extraction fn
-                final PolyType toTypeName = rexNode.getType().getSqlTypeName();
+                final PolyType toTypeName = rexNode.getType().getPolyType();
                 if ( toTypeName == PolyType.DATE || toTypeName == PolyType.TIMESTAMP || toTypeName == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                     extractionFunction = TimeExtractionFunction.translateCastToTimeExtract( rexNode, TimeZone.getTimeZone( druidQuery.getConnectionConfig().timeZone() ) );
                     if ( extractionFunction == null ) {
@@ -355,7 +355,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             // it is not a leaf cast don't bother going further.
             return false;
         }
-        final PolyType toTypeName = rexNode.getType().getSqlTypeName();
+        final PolyType toTypeName = rexNode.getType().getPolyType();
         if ( toTypeName.getFamily() == PolyTypeFamily.CHARACTER ) {
             // CAST of input to character type
             return true;
@@ -770,7 +770,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                 final String virColName = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
                 virtualColumnsBuilder.add( VirtualColumn.builder()
                         .withName( virColName )
-                        .withExpression( expression ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getSqlTypeName() ) )
+                        .withExpression( expression ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) )
                         .build() );
                 usedFieldNames.add( virColName );
                 projectedColumnsBuilder.add( virColName );
@@ -780,7 +780,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     final String virColName = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
                     virtualColumnsBuilder.add( VirtualColumn.builder()
                             .withName( virColName )
-                            .withExpression( DruidExpressions.fromColumn( druidColumn.left ) ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getSqlTypeName() ) )
+                            .withExpression( DruidExpressions.fromColumn( druidColumn.left ) ).withType( DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) )
                             .build() );
                     usedFieldNames.add( virColName );
                     projectedColumnsBuilder.add( virColName );
@@ -820,7 +820,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             Pair<String, ExtractionFunction> druidColumn = toDruidColumn( project, inputRowType, druidQuery );
             if ( druidColumn.left != null && druidColumn.right == null ) {
                 // SIMPLE INPUT REF
-                dimensionSpec = new DefaultDimensionSpec( druidColumn.left, druidColumn.left, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getSqlTypeName() ) );
+                dimensionSpec = new DefaultDimensionSpec( druidColumn.left, druidColumn.left, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) );
                 usedFieldNames.add( druidColumn.left );
             } else if ( druidColumn.left != null && druidColumn.right != null ) {
                 // CASE it is an extraction Dimension
@@ -850,9 +850,9 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
                     return null;
                 }
                 final String name = SqlValidatorUtil.uniquify( "vc", usedFieldNames, SqlValidatorUtil.EXPR_SUGGESTER );
-                VirtualColumn vc = new VirtualColumn( name, expression, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getSqlTypeName() ) );
+                VirtualColumn vc = new VirtualColumn( name, expression, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) );
                 virtualColumnList.add( vc );
-                dimensionSpec = new DefaultDimensionSpec( name, name, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getSqlTypeName() ) );
+                dimensionSpec = new DefaultDimensionSpec( name, name, DruidExpressions.EXPRESSION_TYPES.get( project.getType().getPolyType() ) );
                 usedFieldNames.add( name );
 
             }
@@ -882,7 +882,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
             final RexNode filterNode;
             // Type check First
             final RelDataType type = aggCall.getType();
-            final PolyType polyType = type.getSqlTypeName();
+            final PolyType polyType = type.getPolyType();
             final boolean isNotAcceptedType;
             if ( PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( polyType ) || PolyTypeFamily.INTEGER.getTypeNames().contains( polyType ) ) {
                 isNotAcceptedType = false;
@@ -1297,7 +1297,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
     private static JsonAggregation getJsonAggregation( String name, AggregateCall aggCall, RexNode filterNode, String fieldName, String aggExpression, DruidQuery druidQuery ) {
         final boolean fractional;
         final RelDataType type = aggCall.getType();
-        final PolyType polyType = type.getSqlTypeName();
+        final PolyType polyType = type.getPolyType();
         final JsonAggregation aggregation;
 
         if ( PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( polyType ) ) {
@@ -1539,7 +1539,7 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
 
 
         private ColumnMetaData.Rep getPrimitive( RelDataTypeField field ) {
-            switch ( field.getType().getSqlTypeName() ) {
+            switch ( field.getType().getPolyType() ) {
                 case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 case TIMESTAMP:
                     return ColumnMetaData.Rep.JAVA_SQL_TIMESTAMP;

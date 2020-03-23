@@ -98,7 +98,7 @@ public class MockCatalogReaderSimple extends MockCatalogReader {
         // Register "EMP" table with customer InitializerExpressionFactory to check whether newDefaultValue method called or not.
         final InitializerExpressionFactory countingInitializerExpressionFactory = new CountingFactory( ImmutableList.of( "DEPTNO" ) );
 
-        registerType( ImmutableList.of( salesSchema.getCatalogName(), salesSchema.getName(), "customBigInt" ), typeFactory -> typeFactory.createSqlType( PolyType.BIGINT ) );
+        registerType( ImmutableList.of( salesSchema.getCatalogName(), salesSchema.getName(), "customBigInt" ), typeFactory -> typeFactory.createPolyType( PolyType.BIGINT ) );
 
         // Register "EMP" table.
         final MockTable empTable = MockTable.create( this, salesSchema, "EMP", false, 14, null, countingInitializerExpressionFactory );

@@ -562,16 +562,16 @@ public class SqlDialect {
     public SqlNode getCastSpec( RelDataType type ) {
         if ( type instanceof BasicPolyType ) {
             int precision = type.getPrecision();
-            switch ( type.getSqlTypeName() ) {
+            switch ( type.getPolyType() ) {
                 case VARCHAR:
                     // if needed, adjust varchar length to max length supported by the system
-                    int maxPrecision = getTypeSystem().getMaxPrecision( type.getSqlTypeName() );
+                    int maxPrecision = getTypeSystem().getMaxPrecision( type.getPolyType() );
                     if ( type.getPrecision() > maxPrecision ) {
                         precision = maxPrecision;
                     }
             }
             return new SqlDataTypeSpec(
-                    new SqlIdentifier( type.getSqlTypeName().name(), SqlParserPos.ZERO ),
+                    new SqlIdentifier( type.getPolyType().name(), SqlParserPos.ZERO ),
                     precision,
                     type.getScale(),
                     type.getCharset() != null && supportsCharSet()

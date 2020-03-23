@@ -73,8 +73,8 @@ public class JsonTable extends AbstractTable implements ScannableTable {
                 "_MAP",
                 null,
                 typeFactory.createMapType(
-                        typeFactory.createSqlType( PolyType.VARCHAR ),
-                        typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.VARCHAR ), true ) ) ).build();
+                        typeFactory.createPolyType( PolyType.VARCHAR ),
+                        typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), true ) ) ).build();
     }
 
 

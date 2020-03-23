@@ -531,7 +531,7 @@ public abstract class SqlOperator {
             // for sure that the row argument maps to a ColumnList type
             if ( operand.getKind() == SqlKind.ROW && convertRowArgToColumnList ) {
                 RelDataTypeFactory typeFactory = validator.getTypeFactory();
-                nodeType = typeFactory.createSqlType( PolyType.COLUMN_LIST );
+                nodeType = typeFactory.createPolyType( PolyType.COLUMN_LIST );
                 ((SqlValidatorImpl) validator).setValidatedNodeType( operand, nodeType );
             } else {
                 nodeType = validator.deriveType( operandScope, operand );

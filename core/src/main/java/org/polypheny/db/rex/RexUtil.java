@@ -437,8 +437,8 @@ public class RexUtil {
      * </ul>
      */
     private static boolean canAssignFrom( RelDataType type1, RelDataType type2 ) {
-        final PolyType name1 = type1.getSqlTypeName();
-        final PolyType name2 = type2.getSqlTypeName();
+        final PolyType name1 = type1.getPolyType();
+        final PolyType name2 = type2.getPolyType();
         if ( name1.getFamily() == name2.getFamily() ) {
             switch ( name1.getFamily() ) {
                 case NUMERIC:
@@ -691,7 +691,7 @@ public class RexUtil {
             case CAST:
                 RelDataType lhsType = call.getType();
                 RelDataType rhsType = call.operands.get( 0 ).getType();
-                if ( rhsType.getSqlTypeName() == PolyType.NULL ) {
+                if ( rhsType.getPolyType() == PolyType.NULL ) {
                     return false;
                 }
                 if ( PolyTypeUtil.inCharFamily( lhsType ) || PolyTypeUtil.inCharFamily( rhsType ) ) {
@@ -1367,9 +1367,9 @@ public class RexUtil {
             return false;
         }
         final RelDataType source = ((RexCall) node).getOperands().get( 0 ).getType();
-        final PolyType sourcePolyType = source.getSqlTypeName();
+        final PolyType sourcePolyType = source.getPolyType();
         final RelDataType target = node.getType();
-        final PolyType targetPolyType = target.getSqlTypeName();
+        final PolyType targetPolyType = target.getPolyType();
         // 1) Both INT numeric types
         if ( PolyTypeFamily.INTEGER.getTypeNames().contains( sourcePolyType ) && PolyTypeFamily.INTEGER.getTypeNames().contains( targetPolyType ) ) {
             return targetPolyType.compareTo( sourcePolyType ) >= 0;

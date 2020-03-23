@@ -289,7 +289,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         this.conformance = Objects.requireNonNull( conformance );
 
         unknownType = typeFactory.createUnknownType();
-        booleanType = typeFactory.createSqlType( PolyType.BOOLEAN );
+        booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
 
         rewriteCalls = true;
         expandColumnReferences = true;
@@ -1031,10 +1031,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private void handleOffsetFetch( SqlNode offset, SqlNode fetch ) {
         if ( offset instanceof SqlDynamicParam ) {
-            setValidatedNodeType( offset, typeFactory.createSqlType( PolyType.INTEGER ) );
+            setValidatedNodeType( offset, typeFactory.createPolyType( PolyType.INTEGER ) );
         }
         if ( fetch instanceof SqlDynamicParam ) {
-            setValidatedNodeType( fetch, typeFactory.createSqlType( PolyType.INTEGER ) );
+            setValidatedNodeType( fetch, typeFactory.createPolyType( PolyType.INTEGER ) );
         }
     }
 
@@ -4771,7 +4771,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 identifier = (SqlIdentifier) firstOrderByColumn;
             }
             RelDataType firstOrderByColumnType = deriveType( scope, identifier );
-            if ( firstOrderByColumnType.getSqlTypeName() != PolyType.TIMESTAMP ) {
+            if ( firstOrderByColumnType.getPolyType() != PolyType.TIMESTAMP ) {
                 throw newValidationError( interval, RESOURCE.firstColumnOfOrderByMustBeTimestamp() );
             }
 

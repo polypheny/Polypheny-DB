@@ -83,7 +83,7 @@ public class CeilOperatorConversion implements DruidSqlOperatorConverter {
                 return null;
             }
             final TimeZone tz;
-            if ( arg.getType().getSqlTypeName() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
+            if ( arg.getType().getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ) {
                 tz = TimeZone.getTimeZone( query.getConnectionConfig().timeZone() );
             } else {
                 tz = DateTimeUtils.UTC_ZONE;

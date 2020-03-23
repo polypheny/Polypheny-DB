@@ -279,7 +279,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
         for ( FunctionParameter o : function.getParameters() ) {
             final RelDataType type = o.getType( typeFactory );
             argTypes.add( type );
-            typeFamilies.add( Util.first( type.getSqlTypeName().getFamily(), PolyTypeFamily.ANY ) );
+            typeFamilies.add( Util.first( type.getPolyType().getFamily(), PolyTypeFamily.ANY ) );
         }
         final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
         final List<RelDataType> paramTypes = toSql( typeFactory, argTypes );
@@ -336,7 +336,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     private static RelDataType toSql( RelDataTypeFactory typeFactory, RelDataType type ) {
         if ( type instanceof RelDataTypeFactoryImpl.JavaType && ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.ANY ), true );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
         return JavaTypeFactoryImpl.toSql( typeFactory, type );
     }

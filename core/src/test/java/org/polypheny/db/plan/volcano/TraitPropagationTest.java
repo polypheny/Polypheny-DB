@@ -135,7 +135,7 @@ public class TraitPropagationTest {
 
             final RelDataType stringType = typeFactory.createJavaType( String.class );
             final RelDataType integerType = typeFactory.createJavaType( Integer.class );
-            final RelDataType sqlBigInt = typeFactory.createSqlType( PolyType.BIGINT );
+            final RelDataType sqlBigInt = typeFactory.createPolyType( PolyType.BIGINT );
 
             // SELECT * from T;
             final Table table = new AbstractTable() {

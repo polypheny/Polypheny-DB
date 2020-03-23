@@ -65,7 +65,7 @@ public class TableFunctionReturnTypeInference extends ExplicitReturnTypeInferenc
         for ( RelDataTypeField field : unexpandedOutputType.getFieldList() ) {
             RelDataType fieldType = field.getType();
             String fieldName = field.getName();
-            if ( fieldType.getSqlTypeName() != PolyType.CURSOR ) {
+            if ( fieldType.getPolyType() != PolyType.CURSOR ) {
                 expandedOutputTypes.add( fieldType );
                 expandedFieldNames.add( fieldName );
                 continue;

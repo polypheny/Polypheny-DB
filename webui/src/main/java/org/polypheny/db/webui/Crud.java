@@ -1743,14 +1743,14 @@ public class Crud implements InformationObserver {
         ArrayList<String[]> data = new ArrayList<>();
 
         /*
-        for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
+        for ( PolyType polyType : PolyType.values() ) {
             // ignore types that are not relevant
-            if ( sqlTypeName.getJdbcOrdinal() < -500 || sqlTypeName.getJdbcOrdinal() > 500 ) {
+            if ( polyType.getJdbcOrdinal() < -500 || polyType.getJdbcOrdinal() > 500 ) {
                 continue;
             }
             String[] row = new String[1];
             for ( int i = 1; i <= 18; i++ ) {
-                row[0] = sqlTypeName.name();
+                row[0] = polyType.name();
             }
             data.add( row );
         }

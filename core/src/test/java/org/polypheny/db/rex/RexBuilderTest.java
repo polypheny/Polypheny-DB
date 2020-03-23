@@ -76,8 +76,8 @@ public class RexBuilderTest {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
-        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createSqlType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
-        RexNode ensuredNode = builder.ensureType( typeFactory.createSqlType( PolyType.ANY ), node, true );
+        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
+        RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.ANY ), node, true );
 
         assertEquals( node, ensuredNode );
     }
@@ -91,8 +91,8 @@ public class RexBuilderTest {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
-        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createSqlType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
-        RexNode ensuredNode = builder.ensureType( typeFactory.createSqlType( PolyType.BOOLEAN ), node, true );
+        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
+        RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.BOOLEAN ), node, true );
 
         assertEquals( node, ensuredNode );
     }
@@ -106,11 +106,11 @@ public class RexBuilderTest {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         RexBuilder builder = new RexBuilder( typeFactory );
 
-        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createSqlType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
-        RexNode ensuredNode = builder.ensureType( typeFactory.createSqlType( PolyType.INTEGER ), node, true );
+        RexNode node = new RexLiteral( Boolean.TRUE, typeFactory.createPolyType( PolyType.BOOLEAN ), PolyType.BOOLEAN );
+        RexNode ensuredNode = builder.ensureType( typeFactory.createPolyType( PolyType.INTEGER ), node, true );
 
         assertNotEquals( node, ensuredNode );
-        assertEquals( ensuredNode.getType(), typeFactory.createSqlType( PolyType.INTEGER ) );
+        assertEquals( ensuredNode.getType(), typeFactory.createPolyType( PolyType.INTEGER ) );
     }
 
 
@@ -127,10 +127,10 @@ public class RexBuilderTest {
     @Test
     public void testTimestampLiteral() {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType timestampType = typeFactory.createSqlType( PolyType.TIMESTAMP );
-        final RelDataType timestampType3 = typeFactory.createSqlType( PolyType.TIMESTAMP, 3 );
-        final RelDataType timestampType9 = typeFactory.createSqlType( PolyType.TIMESTAMP, 9 );
-        final RelDataType timestampType18 = typeFactory.createSqlType( PolyType.TIMESTAMP, 18 );
+        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
+        final RelDataType timestampType3 = typeFactory.createPolyType( PolyType.TIMESTAMP, 3 );
+        final RelDataType timestampType9 = typeFactory.createPolyType( PolyType.TIMESTAMP, 9 );
+        final RelDataType timestampType18 = typeFactory.createPolyType( PolyType.TIMESTAMP, 18 );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // Old way: provide a Calendar
@@ -203,10 +203,10 @@ public class RexBuilderTest {
     @Test
     public void testTimestampWithLocalTimeZoneLiteral() {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType timestampType = typeFactory.createSqlType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-        final RelDataType timestampType3 = typeFactory.createSqlType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 3 );
-        final RelDataType timestampType9 = typeFactory.createSqlType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 9 );
-        final RelDataType timestampType18 = typeFactory.createSqlType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 18 );
+        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+        final RelDataType timestampType3 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 3 );
+        final RelDataType timestampType9 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 9 );
+        final RelDataType timestampType18 = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, 18 );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // The new way
@@ -264,10 +264,10 @@ public class RexBuilderTest {
     @Test
     public void testTimeLiteral() {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        RelDataType timeType = typeFactory.createSqlType( PolyType.TIME );
-        final RelDataType timeType3 = typeFactory.createSqlType( PolyType.TIME, 3 );
-        final RelDataType timeType9 = typeFactory.createSqlType( PolyType.TIME, 9 );
-        final RelDataType timeType18 = typeFactory.createSqlType( PolyType.TIME, 18 );
+        RelDataType timeType = typeFactory.createPolyType( PolyType.TIME );
+        final RelDataType timeType3 = typeFactory.createPolyType( PolyType.TIME, 3 );
+        final RelDataType timeType9 = typeFactory.createPolyType( PolyType.TIME, 9 );
+        final RelDataType timeType18 = typeFactory.createPolyType( PolyType.TIME, 18 );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // Old way: provide a Calendar
@@ -340,7 +340,7 @@ public class RexBuilderTest {
     @Test
     public void testDateLiteral() {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        RelDataType dateType = typeFactory.createSqlType( PolyType.DATE );
+        RelDataType dateType = typeFactory.createPolyType( PolyType.DATE );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         // Old way: provide a Calendar
@@ -376,7 +376,7 @@ public class RexBuilderTest {
     @Test
     public void testDecimalLiteral() {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType type = typeFactory.createSqlType( PolyType.DECIMAL );
+        final RelDataType type = typeFactory.createPolyType( PolyType.DECIMAL );
         final RexBuilder builder = new RexBuilder( typeFactory );
         final RexLiteral literal = builder.makeExactLiteral( null, type );
         assertThat( literal.getValue3(), nullValue() );
@@ -525,7 +525,7 @@ public class RexBuilderTest {
     @Test
     public void testStringLiteral() {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        final RelDataType varchar = typeFactory.createSqlType( PolyType.VARCHAR );
+        final RelDataType varchar = typeFactory.createPolyType( PolyType.VARCHAR );
         final RexBuilder builder = new RexBuilder( typeFactory );
 
         final NlsString latin1 = new NlsString( "foobar", "LATIN1", SqlCollation.IMPLICIT );

@@ -48,7 +48,7 @@ public class CassandraTypesUtils {
     }
 
 
-    public static PolyType getSqlTypeName( DataType dataType ) {
+    public static PolyType getPolyType( DataType dataType ) {
         if ( dataType == DataTypes.UUID || dataType == DataTypes.TIMEUUID ) {
             return PolyType.CHAR;
         } else if ( dataType == DataTypes.ASCII || dataType == DataTypes.TEXT ) {
@@ -73,34 +73,4 @@ public class CassandraTypesUtils {
         }
     }
 
-/*
-    public static DataType getDataType( PolySqlType polySqlType ) {
-        switch ( polySqlType ) {
-            case BOOLEAN:
-                return DataTypes.BOOLEAN;
-            case VARBINARY:
-                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
-            case INTEGER:
-                return DataTypes.INT;
-            case BIGINT:
-                return DataTypes.BIGINT;
-            case REAL:
-                throw new RuntimeException( "Unsupported datatype: " + polySqlType.name() );
-            case DOUBLE:
-                return DataTypes.DOUBLE;
-            case DECIMAL:
-                return DataTypes.DECIMAL;
-            case VARCHAR:
-                return DataTypes.TEXT;
-            case TEXT:
-                return DataTypes.TEXT;
-            case DATE:
-                return DataTypes.DATE;
-            case TIME:
-                return DataTypes.TIME;
-            case TIMESTAMP:
-                return DataTypes.TIMESTAMP;
-        }
-        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
-    }*/
 }

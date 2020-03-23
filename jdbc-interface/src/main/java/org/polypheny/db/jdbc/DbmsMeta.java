@@ -658,7 +658,7 @@ public class DbmsMeta implements ProtobufMeta {
                             null,
                             (short) DatabaseMetaData.typeNullable, // All types are nullable
                             typeSystem.isCaseSensitive( polyType ),
-                            (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under SqlTypeName
+                            (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under PolyType
                             false,
                             false,
                             typeSystem.isAutoincrement( polyType ),

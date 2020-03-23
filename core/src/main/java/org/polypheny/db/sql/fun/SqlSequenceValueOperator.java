@@ -81,7 +81,7 @@ public class SqlSequenceValueOperator extends SqlSpecialOperator {
     @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         final RelDataTypeFactory typeFactory = validator.getTypeFactory();
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BIGINT ), false );
+        return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), false );
     }
 
 

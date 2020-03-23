@@ -992,7 +992,7 @@ public class SqlToRelConverter {
                     // Generate
                     //    emp CROSS JOIN (SELECT COUNT(*) AS c,
                     //                       COUNT(deptno) AS ck FROM dept)
-                    final RelDataType longType = typeFactory.createSqlType( PolyType.BIGINT );
+                    final RelDataType longType = typeFactory.createPolyType( PolyType.BIGINT );
                     final RelNode seek = converted.r.getInput( 0 ); // fragile
                     final int keyCount = leftKeys.size();
                     final List<Integer> args = ImmutableIntList.range( 0, keyCount );
@@ -1166,7 +1166,7 @@ public class SqlToRelConverter {
                 final Project left = (Project) join.getLeft();
                 final RelNode leftLeft = ((Join) left.getInput()).getLeft();
                 final int leftLeftCount = leftLeft.getRowType().getFieldCount();
-                final RelDataType longType = typeFactory.createSqlType( PolyType.BIGINT );
+                final RelDataType longType = typeFactory.createPolyType( PolyType.BIGINT );
                 final RexNode cRef = rexBuilder.makeInputRef( root, leftLeftCount );
                 final RexNode ckRef = rexBuilder.makeInputRef( root, leftLeftCount + 1 );
                 final RexNode iRef = rexBuilder.makeInputRef( root, root.getRowType().getFieldCount() - 1 );
@@ -1350,8 +1350,8 @@ public class SqlToRelConverter {
      * Ensures that an expression has a given {@link PolyType}, applying a cast if necessary. If the expression already has the right type family, returns the expression unchanged.
      */
     private RexNode ensureSqlType( RelDataType type, RexNode node ) {
-        if ( type.getSqlTypeName() == node.getType().getSqlTypeName()
-                || (type.getSqlTypeName() == PolyType.VARCHAR && node.getType().getSqlTypeName() == PolyType.CHAR) ) {
+        if ( type.getPolyType() == node.getType().getPolyType()
+                || (type.getPolyType() == PolyType.VARCHAR && node.getType().getPolyType() == PolyType.CHAR) ) {
             return node;
         }
         return rexBuilder.ensureType( type, node, true );
@@ -1492,7 +1492,7 @@ public class SqlToRelConverter {
             return rexBuilder.makeExactLiteral( roundedValue, type );
         }
 
-        if ( (value instanceof NlsString) && (type.getSqlTypeName() == PolyType.CHAR) ) {
+        if ( (value instanceof NlsString) && (type.getPolyType() == PolyType.CHAR) ) {
             // pad fixed character type
             NlsString unpadded = (NlsString) value;
             return rexBuilder.makeCharLiteral(
@@ -4840,7 +4840,7 @@ public class SqlToRelConverter {
                 final RelDataType histogramType = computeHistogramType( type );
 
                 // For DECIMAL, since it's already represented as a bigint we want to do a reinterpretCast instead of a cast to avoid losing any precision.
-                boolean reinterpretCast = type.getSqlTypeName() == PolyType.DECIMAL;
+                boolean reinterpretCast = type.getPolyType() == PolyType.DECIMAL;
 
                 // Replace original expression with CAST of not one of the supported types
                 if ( histogramType != type ) {
@@ -4942,10 +4942,10 @@ public class SqlToRelConverter {
          * Returns the type for a histogram function. It is either the actual type or an an approximation to it.
          */
         private RelDataType computeHistogramType( RelDataType type ) {
-            if ( PolyTypeUtil.isExactNumeric( type ) && type.getSqlTypeName() != PolyType.BIGINT ) {
-                return typeFactory.createSqlType( PolyType.BIGINT );
-            } else if ( PolyTypeUtil.isApproximateNumeric( type ) && type.getSqlTypeName() != PolyType.DOUBLE ) {
-                return typeFactory.createSqlType( PolyType.DOUBLE );
+            if ( PolyTypeUtil.isExactNumeric( type ) && type.getPolyType() != PolyType.BIGINT ) {
+                return typeFactory.createPolyType( PolyType.BIGINT );
+            } else if ( PolyTypeUtil.isApproximateNumeric( type ) && type.getPolyType() != PolyType.DOUBLE ) {
+                return typeFactory.createPolyType( PolyType.DOUBLE );
             } else {
                 return type;
             }

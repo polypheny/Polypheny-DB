@@ -100,7 +100,7 @@ public class RexSubQuery extends RexCall {
                 nullable = true;
             }
         }
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( PolyType.BOOLEAN ), nullable );
+        return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), nullable );
     }
 
 
@@ -109,7 +109,7 @@ public class RexSubQuery extends RexCall {
      */
     public static RexSubQuery exists( RelNode rel ) {
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
-        final RelDataType type = typeFactory.createSqlType( PolyType.BOOLEAN );
+        final RelDataType type = typeFactory.createPolyType( PolyType.BOOLEAN );
         return new RexSubQuery( type, SqlStdOperatorTable.EXISTS, ImmutableList.of(), rel );
     }
 

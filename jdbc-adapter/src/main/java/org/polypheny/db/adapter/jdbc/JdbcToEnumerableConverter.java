@@ -277,7 +277,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final RelDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
         dateTimeArgs.add( Expressions.constant( i + 1 ) );
-        PolyType polyType = fieldType.getSqlTypeName();
+        PolyType polyType = fieldType.getPolyType();
         boolean offset = false;
         switch ( calendarPolicy ) {
             case LOCAL:

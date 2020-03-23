@@ -85,7 +85,7 @@ public class SqlUnnestOperator extends SqlFunctionalOperator {
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for ( Integer operand : Util.range( opBinding.getOperandCount() ) ) {
             RelDataType type = opBinding.getOperandType( operand );
-            if ( type.getSqlTypeName() == PolyType.ANY ) {
+            if ( type.getPolyType() == PolyType.ANY ) {
                 // Unnest Operator in schema less systems returns one column as the output $unnest is a place holder to specify that one column with type ANY is output.
                 return builder
                         .add( "$unnest", null, PolyType.ANY )

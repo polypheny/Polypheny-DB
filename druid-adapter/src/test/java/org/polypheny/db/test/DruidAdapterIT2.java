@@ -1785,7 +1785,7 @@ public class DruidAdapterIT2 {
 //        sql( "?" )
 //                .withRel( b -> {
 //                    // select product_id from foodmart.foodmart where product_id < cast(10 as varchar)
-//                    final RelDataType intType = b.getTypeFactory().createSqlType( SqlTypeName.INTEGER );
+//                    final RelDataType intType = b.getTypeFactory().createSqlType( PolyType.INTEGER );
 //                    return b.scan( "foodmart", "foodmart" )
 //                            .filter( b.call( SqlStdOperatorTable.LESS_THAN,
 //                                    b.getRexBuilder().makeCall( intType, SqlStdOperatorTable.CAST, ImmutableList.of( b.field( "product_id" ) ) ),

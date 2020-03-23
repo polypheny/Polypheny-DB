@@ -135,7 +135,7 @@ public class MysqlSqlDialect extends SqlDialect {
 
     @Override
     public SqlNode getCastSpec( RelDataType type ) {
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case VARCHAR:
                 // MySQL doesn't have a VARCHAR type, only CHAR.
                 return new SqlDataTypeSpec( new SqlIdentifier( "CHAR", SqlParserPos.ZERO ), type.getPrecision(), -1, null, null, SqlParserPos.ZERO );

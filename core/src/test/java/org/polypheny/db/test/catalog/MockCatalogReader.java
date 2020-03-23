@@ -991,8 +991,8 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
         @Override
-        public PolyType getSqlTypeName() {
-            return delegate.getSqlTypeName();
+        public PolyType getPolyType() {
+            return delegate.getPolyType();
         }
 
 

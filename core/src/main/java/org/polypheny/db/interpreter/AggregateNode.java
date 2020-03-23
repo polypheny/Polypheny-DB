@@ -134,7 +134,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             return () -> new CountAccumulator( call );
         } else if ( call.getAggregation() == SqlStdOperatorTable.SUM || call.getAggregation() == SqlStdOperatorTable.SUM0 ) {
             final Class<?> clazz;
-            switch ( call.type.getSqlTypeName() ) {
+            switch ( call.type.getPolyType() ) {
                 case DOUBLE:
                 case REAL:
                 case FLOAT:
@@ -155,7 +155,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             }
         } else if ( call.getAggregation() == SqlStdOperatorTable.MIN ) {
             final Class<?> clazz;
-            switch ( call.getType().getSqlTypeName() ) {
+            switch ( call.getType().getPolyType() ) {
                 case INTEGER:
                     clazz = MinInt.class;
                     break;
@@ -173,7 +173,7 @@ public class AggregateNode extends AbstractSingleNode<Aggregate> {
             return new UdaAccumulatorFactory( AggregateFunctionImpl.create( clazz ), call, true );
         } else if ( call.getAggregation() == SqlStdOperatorTable.MAX ) {
             final Class<?> clazz;
-            switch ( call.getType().getSqlTypeName() ) {
+            switch ( call.getType().getPolyType() ) {
                 case INTEGER:
                     clazz = MaxInt.class;
                     break;

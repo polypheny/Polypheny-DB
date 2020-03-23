@@ -192,7 +192,7 @@ class ElasticsearchRules {
             }
             if ( call.getOperator() == SqlStdOperatorTable.ITEM ) {
                 final RexNode op1 = call.getOperands().get( 1 );
-                if ( op1 instanceof RexLiteral && op1.getType().getSqlTypeName() == PolyType.INTEGER ) {
+                if ( op1 instanceof RexLiteral && op1.getType().getPolyType() == PolyType.INTEGER ) {
                     return stripQuotes( strings.get( 0 ) ) + "[" + ((RexLiteral) op1).getValue2() + "]";
                 }
             }

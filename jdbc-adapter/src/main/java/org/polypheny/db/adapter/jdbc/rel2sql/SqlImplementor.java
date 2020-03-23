@@ -304,7 +304,7 @@ public abstract class SqlImplementor {
                 final RexNode o1 = call.operands.get( 1 );
                 if ( o0.getKind() == SqlKind.CAST && o1.getKind() != SqlKind.CAST ) {
                     final RexNode o0b = ((RexCall) o0).getOperands().get( 0 );
-                    switch ( o0b.getType().getSqlTypeName() ) {
+                    switch ( o0b.getType().getPolyType() ) {
                         case CHAR:
                         case VARCHAR:
                             return call.clone( call.getType(), ImmutableList.of( o0b, o1 ) );
@@ -312,7 +312,7 @@ public abstract class SqlImplementor {
                 }
                 if ( o1.getKind() == SqlKind.CAST && o0.getKind() != SqlKind.CAST ) {
                     final RexNode o1b = ((RexCall) o1).getOperands().get( 0 );
-                    switch ( o1b.getType().getSqlTypeName() ) {
+                    switch ( o1b.getType().getPolyType() ) {
                         case CHAR:
                         case VARCHAR:
                             return call.clone( call.getType(), ImmutableList.of( o0, o1b ) );

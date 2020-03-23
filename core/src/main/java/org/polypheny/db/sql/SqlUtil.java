@@ -743,7 +743,7 @@ public abstract class SqlUtil {
         if ( null == collation ) {
             collation = SqlCollation.COERCIBLE;
         }
-        RelDataType type = typeFactory.createSqlType( PolyType.CHAR, str.getValue().length() );
+        RelDataType type = typeFactory.createPolyType( PolyType.CHAR, str.getValue().length() );
         type = typeFactory.createTypeWithCharsetAndCollation( type, charset, collation );
         return type;
     }
