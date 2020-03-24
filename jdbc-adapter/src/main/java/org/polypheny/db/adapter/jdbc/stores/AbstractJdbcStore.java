@@ -34,8 +34,6 @@ import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
@@ -258,9 +256,9 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     @Override
-    public void truncate( Context context, CatalogTable combinedTable ) {
+    public void truncate( Context context, CatalogTable catalogTable ) {
         StringBuilder builder = new StringBuilder();
-        String physicalTableName = getPhysicalTableName( combinedTable.id );
+        String physicalTableName = getPhysicalTableName( catalogTable.id );
         builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
         executeUpdate( builder, context );
     }
