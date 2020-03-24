@@ -54,18 +54,18 @@ public class InformationDuration extends Information {
         this.duration += this.children.get( name ).stop();
     }
 
-    Duration get( final String name ) {
+    public Duration get( final String name ) {
         return this.children.get( name );
     }
 
-    Duration addNanoDuration( final String name, final long nanoDuration ) {
+    public Duration addNanoDuration( final String name, final long nanoDuration ) {
         Duration d = new Duration( name, nanoDuration );
         this.children.put( name, d );
         this.duration += nanoDuration;
         return d;
     }
 
-    Duration addMilliDuration( final String name, final long milliDuration ) {
+    public Duration addMilliDuration( final String name, final long milliDuration ) {
         Duration d = new Duration( name, milliDuration * 1_000_000L );
         this.children.put( name, d );
         this.duration += milliDuration * 1_000_000L;
@@ -133,13 +133,13 @@ public class InformationDuration extends Information {
             return this.children.get( childName ).stop();
         }
 
-        Duration start( final String name ) {
+        public Duration start( final String name ) {
             Duration d = new Duration( name );
             this.children.put( name, d );
             return d;
         }
 
-        Duration get( final String name ) {
+        public Duration get( final String name ) {
             return this.children.get( name );
         }
 
@@ -148,7 +148,7 @@ public class InformationDuration extends Information {
          *
          * @param milliSeconds limit in milliseconds
          */
-        Duration setLimit( final long milliSeconds ) {
+        public Duration setLimit( final long milliSeconds ) {
             this.limit = milliSeconds * 1_000_000;
             return this;
         }
@@ -156,7 +156,7 @@ public class InformationDuration extends Information {
         /**
          * Hide the progressbar for this Duration's children
          */
-        Duration noProgressBar() {
+        public Duration noProgressBar() {
             this.noProgressBar = true;
             return this;
         }

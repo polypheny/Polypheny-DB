@@ -88,14 +88,15 @@ public class JavaInformation {
         InformationGraph heapOverTimeGraph = new InformationGraph(
                 groupHeapOverTime,
                 GraphType.LINE,
-                new String[]{ "Free" }
+                null,
+                new GraphData<Long>( "Free", new Long[]{ Runtime.getRuntime().totalMemory() }, 20 )
         );
         im.registerInformation( heapOverTimeGraph );
 
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
                     long current = Runtime.getRuntime().totalMemory();
-                    // TODO: Update the graph
+                    heapOverTimeGraph.addData( "Free", current );
                 },
                 "Update Java runtime information",
                 TaskPriority.LOW,
