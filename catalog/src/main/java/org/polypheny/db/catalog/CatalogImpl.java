@@ -1033,8 +1033,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameTable( long tableId, String name ) throws GenericCatalogException {
         try {
-            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            tables.replace( tableId, CatalogTable.rename( table, name ) );
+            CatalogTable table = CatalogTable.rename( Objects.requireNonNull( tables.get( tableId ) ), name );
+            tables.replace( tableId, table );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
             tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
 
@@ -1150,7 +1150,9 @@ public class CatalogImpl extends Catalog {
             CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
 
             columnPlacements.put( new Object[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
-            tables.replace( column.tableId, CatalogTable.addColumnPlacement( Objects.requireNonNull( tables.get( column.tableId ) ), columnId, storeId ) );
+            CatalogTable table = CatalogTable.addColumnPlacement( Objects.requireNonNull( tables.get( column.tableId ) ), columnId, storeId );
+            tables.replace( column.tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
             listeners.firePropertyChange( "addColumnPlacement", null, column );
         } catch ( NullPointerException e ) {
@@ -1170,8 +1172,9 @@ public class CatalogImpl extends Catalog {
 
         try {
             columnPlacements.remove( new Object[]{ storeId, columnId } );
-            CatalogTable table = getTable( getColumn( columnId ).tableId );
-            tables.replace( table.id, CatalogTable.removeColumnPlacement( table, columnId, storeId ) );
+            CatalogTable table = CatalogTable.removeColumnPlacement( getTable( getColumn( columnId ).tableId ), columnId, storeId );
+            tables.replace( table.id, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.id }, table );
 
             listeners.firePropertyChange( "deleteColumnPlacement", null, columnId );
         } catch ( UnknownTableException | UnknownColumnException e ) {
@@ -1194,10 +1197,12 @@ public class CatalogImpl extends Catalog {
         return new ArrayList<>( columnPlacements.prefixSubMap( new Object[]{ storeId } ).values() );
     }
 
+
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId ) {
         return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).collect( Collectors.toList() );
     }
+
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
@@ -1387,7 +1392,9 @@ public class CatalogImpl extends Catalog {
             List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( tableId ) ) );
             children.add( id );
             tableChildren.replace( tableId, ImmutableList.copyOf( children ) );
-            tables.replace( tableId, CatalogTable.addColumn( table, id, name ) );
+            CatalogTable updatedTable = CatalogTable.addColumn( table, id, name );
+            tables.replace( tableId, updatedTable );
+            tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
 
             listeners.firePropertyChange( "addColumn", null, column );
             return id;
@@ -1411,7 +1418,9 @@ public class CatalogImpl extends Catalog {
             columns.replace( columnId, column );
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, old.name } );
             columnNames.put( new Object[]{ column.databaseId, column.schemaId, column.tableId, name }, column );
-            tables.replace( old.tableId, CatalogTable.replaceColumnName( Objects.requireNonNull( tables.get( column.tableId ) ), columnId, name ) );
+            CatalogTable table = CatalogTable.replaceColumnName( Objects.requireNonNull( tables.get( column.tableId ) ), columnId, name );
+            tables.replace( old.tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -1557,7 +1566,9 @@ public class CatalogImpl extends Catalog {
 
             deleteDefaultValue( columnId );
             getColumnPlacements( columnId ).forEach( p -> deleteColumnPlacement( p.storeId, p.columnId ) );
-            tables.replace( column.tableId, CatalogTable.removeColumn( getTable( column.tableId ), columnId, column.name ) );
+            CatalogTable table = CatalogTable.removeColumn( getTable( column.tableId ), columnId, column.name );
+            tables.replace( column.tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
             columns.remove( columnId );
 
@@ -2063,7 +2074,6 @@ public class CatalogImpl extends Catalog {
     public List<CatalogKey> getKeys() {
         return new ArrayList<>( keys.values() );
     }
-
 
 
     @Override

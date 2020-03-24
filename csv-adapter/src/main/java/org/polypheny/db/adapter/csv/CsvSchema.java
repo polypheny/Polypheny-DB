@@ -106,7 +106,7 @@ public class CsvSchema extends AbstractSchema {
         }
 
         // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
-        String csvFileName = CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( csvStore.getStoreId() ).iterator().next().physicalTableName + ".csv";
+        String csvFileName = CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ).iterator().next().physicalTableName + ".csv";
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );
