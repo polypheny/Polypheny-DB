@@ -155,10 +155,6 @@ public class CatalogImpl extends Catalog {
             db.close();
         }
         synchronized ( this ) {
-            File file = new File( "./" + path );
-            if( file.exists() ){
-                file.delete();
-            }
 
             isPersistent = isPersistent();
             if ( isPersistent ) {
