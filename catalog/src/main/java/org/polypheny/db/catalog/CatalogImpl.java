@@ -1246,7 +1246,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
             CatalogColumnPlacement placement = CatalogColumnPlacement.replacePhysicalNames( old, physicalSchemaName, physicalTableName, physicalColumnName );
-            columnPlacements.put( new Object[]{ storeId, columnId }, placement );
+            columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
 
         } catch ( NullPointerException e ) {
             throw new UnknownColumnPlacementException( storeId, columnId );

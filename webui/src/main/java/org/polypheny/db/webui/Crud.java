@@ -18,7 +18,6 @@ package org.polypheny.db.webui;
 
 
 import au.com.bytecode.opencsv.CSVReader;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -76,7 +75,6 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.PolySqlType;
 import org.polypheny.db.SqlProcessor;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
 import org.polypheny.db.adapter.StoreManager;
@@ -95,9 +93,7 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -1331,7 +1327,10 @@ public class Crud implements InformationObserver {
             ArrayList<String[]> data = new ArrayList<>();
             for ( CatalogStore catalogStore : transaction.getCatalog().getStores() ) {
                 Store store = StoreManager.getInstance().getStore( catalogStore.id );
-                List<CatalogColumnPlacement> placements = transaction.getCatalog().getColumnPlacementsOnStore( catalogStore.id );
+                List<CatalogColumnPlacement> placements = transaction.getCatalog().getColumnPlacementsOnStore( catalogStore.id, table.id );
+                if ( placements.size() == 0 ) {
+                    continue;
+                }
                 String[] arr = new String[3];
                 arr[0] = store.getUniqueName();
                 arr[1] = store.getAdapterName();

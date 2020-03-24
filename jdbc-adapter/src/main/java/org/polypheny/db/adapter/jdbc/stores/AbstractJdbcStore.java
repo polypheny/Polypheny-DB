@@ -140,7 +140,7 @@ public abstract class AbstractJdbcStore extends Store {
         }
         builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
         boolean first = true;
-        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( getStoreId() ) ) {
+        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
             CatalogColumn catalogColumn;
             try {
                 catalogColumn = context.getTransaction().getCatalog().getColumn( placement.columnId );
@@ -165,7 +165,7 @@ public abstract class AbstractJdbcStore extends Store {
         builder.append( " )" );
         executeUpdate( builder, context );
         // Add physical names to placements
-        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( getStoreId() ) ) {
+        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
             try {
                 context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
                         getStoreId(),

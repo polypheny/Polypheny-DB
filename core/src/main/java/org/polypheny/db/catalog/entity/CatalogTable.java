@@ -174,7 +174,7 @@ public final class CatalogTable implements CatalogEntity {
         if ( placementsByStore.containsKey( storeId ) ) {
             List<Long> placements = new ArrayList<>( placementsByStore.get( storeId ) );
             placements.add( columnId );
-            placementsByStore.put( storeId, ImmutableList.copyOf( placements ) );
+            placementsByStore.replace( storeId, ImmutableList.copyOf( placements ) );
         } else {
             placementsByStore.put( storeId, ImmutableList.of( columnId ) );
         }
@@ -186,7 +186,12 @@ public final class CatalogTable implements CatalogEntity {
         Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( table.placementsByStore );
         List<Long> placements = new ArrayList<>( placementsByStore.get( storeId ) );
         placements.remove( columnId );
-        placementsByStore.put( storeId, ImmutableList.copyOf( placements ) );
+        if( placements.size() != 0){
+            placementsByStore.put( storeId, ImmutableList.copyOf( placements ) );
+        }else {
+            placementsByStore.remove( storeId );
+        }
+
 
         return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
     }
