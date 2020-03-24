@@ -21,6 +21,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -152,11 +155,17 @@ public class CatalogImpl extends Catalog {
             db.close();
         }
         synchronized ( this ) {
+            File file = new File( "./" + path );
+            if( file.exists() ){
+                file.delete();
+            }
+
             isPersistent = isPersistent();
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
                 db = DBMaker
                         .fileDB( new File( "./" + path ) )
+                        .fileDeleteAfterOpen()
                         .closeOnJvmShutdown()
                         .checksumHeaderBypass() // TODO clean shutdown needed
                         .fileMmapEnable()
@@ -247,16 +256,16 @@ public class CatalogImpl extends Catalog {
                 Store store = manager.getStore( placements.get( 0 ).storeId );
                 if ( !store.isPersistent() ) {
 
-                    CatalogTable combinedTable = null;
+                    CatalogTable catalogTable = null;
                     try {
-                        combinedTable = getTable( c.tableId );
+                        catalogTable = getTable( c.tableId );
                     } catch ( UnknownTableException e ) {
                         e.printStackTrace();
                     }
                     // TODO only full placements atm here
 
                     if ( !restoredTables.contains( c.tableId ) ) {
-                        store.createTable( trx.getPrepareContext(), combinedTable );
+                        store.createTable( trx.getPrepareContext(), catalogTable );
                         restoredTables.add( c.tableId );
                     }
 

@@ -69,9 +69,9 @@ public abstract class Store {
         this.schemaReadOnly = schemaReadOnly;
 
         if ( settings.containsKey( "persistent" ) ) {
-            persistent = Boolean.parseBoolean( settings.get( "persistent" ) );
+            this.persistent = Boolean.parseBoolean( settings.get( "persistent" ) );
         } else {
-            persistent = false;
+            this.persistent = false;
         }
     }
 
