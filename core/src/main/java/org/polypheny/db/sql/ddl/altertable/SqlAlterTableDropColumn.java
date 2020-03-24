@@ -26,8 +26,8 @@ import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -80,20 +80,20 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable catalogTable = getCatalogCombinedTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
 
-        if ( catalogTable.getColumns().size() < 2 ) {
-            throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.getTable().name );
+        if ( catalogTable.columnIds.size() < 2 ) {
+            throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
         }
 
         if ( column.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        CatalogColumn catalogColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, column );
+        CatalogColumn catalogColumn = getCatalogColumn( context, transaction, catalogTable.id, column );
         try {
             // Check whether all stores support schema changes
-            for ( CatalogColumnPlacement dp : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
+            for ( CatalogColumnPlacement dp : transaction.getCatalog().getColumnPlacements( catalogColumn.id ) ) {
                 if ( StoreManager.getInstance().getStore( dp.storeId ).isSchemaReadOnly() ) {
                     throw SqlUtil.newContextException(
                             SqlParserPos.ZERO,
@@ -102,7 +102,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             }
 
             // Check if column is part of an key
-            for ( CatalogKey key : catalogTable.getKeys() ) {
+            for ( CatalogKey key : transaction.getCatalog().getTableKeys( catalogTable.id ) ) {
                 if ( key.columnIds.contains( catalogColumn.id ) ) {
                     CatalogCombinedKey combinedKey = transaction.getCatalog().getCombinedKey( key.id );
                     if ( combinedKey.isPrimaryKey() ) {
@@ -119,13 +119,13 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             }
 
             // Delete column from underlying data stores
-            for ( CatalogColumnPlacement dp : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
+            for ( CatalogColumnPlacement dp : transaction.getCatalog().getColumnPlacementsByColumn( catalogColumn.id ) ) {
                 StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, dp );
                 transaction.getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
             }
 
             // Delete from catalog
-            List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.getTable().id );
+            List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.id );
             transaction.getCatalog().deleteColumn( catalogColumn.id );
             if ( catalogColumn.position != columns.size() ) {
                 // Update position of the other columns
@@ -134,7 +134,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 }
             }
 
-        } catch ( UnknownTypeException | UnknownCollationException | GenericCatalogException | UnknownKeyException | UnknownTableException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

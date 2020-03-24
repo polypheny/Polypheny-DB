@@ -32,11 +32,10 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManagerImpl;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.ContextImpl;
@@ -115,7 +114,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public Catalog getCatalog() {
         if ( catalog == null ) {
-            catalog = CatalogManagerImpl.getInstance().getCatalog( xid );
+            catalog = CatalogManager.getInstance().getCatalog( xid );
         }
         return catalog;
     }

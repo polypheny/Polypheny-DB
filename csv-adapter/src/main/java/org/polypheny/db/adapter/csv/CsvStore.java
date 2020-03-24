@@ -12,6 +12,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -65,8 +66,8 @@ public class CsvStore extends Store {
 
 
     @Override
-    public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        return currentSchema.createCsvTable( combinedTable, this );
+    public Table createTableSchema( CatalogTable catalogTable ) {
+        return currentSchema.createCsvTable( catalogTable, this );
     }
 
 
@@ -77,19 +78,19 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
+    public void createTable( Context context, CatalogTable catalogTable ) {
         throw new RuntimeException( "CSV adapter does not support creating table" );
     }
 
 
     @Override
-    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable ) {
         log.warn( "CSV adapter does not support dropping tables!" );
     }
 
 
     @Override
-    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         log.warn( "CSV adapter does not support adding columns!" );
     }
 
@@ -120,7 +121,7 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void truncate( Context context, CatalogCombinedTable table ) {
+    public void truncate( Context context, CatalogTable table ) {
         log.warn( "CSV Store does not support truncate." );
     }
 

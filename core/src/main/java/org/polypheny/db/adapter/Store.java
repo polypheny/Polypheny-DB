@@ -26,6 +26,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -69,7 +70,7 @@ public abstract class Store {
 
         if ( settings.containsKey( "persistent" ) ) {
             persistent = Boolean.parseBoolean( settings.get( "persistent" ) );
-        }else {
+        } else {
             persistent = false;
         }
     }
@@ -77,15 +78,15 @@ public abstract class Store {
 
     public abstract void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name );
 
-    public abstract Table createTableSchema( CatalogCombinedTable combinedTable );
+    public abstract Table createTableSchema( CatalogTable combinedTable );
 
     public abstract Schema getCurrentSchema();
 
-    public abstract void createTable( Context context, CatalogCombinedTable combinedTable );
+    public abstract void createTable( Context context, CatalogTable combinedTable );
 
-    public abstract void dropTable( Context context, CatalogCombinedTable combinedTable );
+    public abstract void dropTable( Context context, CatalogTable combinedTable );
 
-    public abstract void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+    public abstract void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn );
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
@@ -95,7 +96,7 @@ public abstract class Store {
 
     public abstract void rollback( PolyXid xid );
 
-    public abstract void truncate( Context context, CatalogCombinedTable table );
+    public abstract void truncate( Context context, CatalogTable table );
 
     public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn );
 
@@ -131,7 +132,7 @@ public abstract class Store {
             if ( newSettings.containsKey( s.name ) ) {
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
-                    if ( ! s.canBeNull && newValue == null ) {
+                    if ( !s.canBeNull && newValue == null ) {
                         throw new RuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {

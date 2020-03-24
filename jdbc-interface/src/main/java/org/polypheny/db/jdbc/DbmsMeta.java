@@ -310,45 +310,41 @@ public class DbmsMeta implements ProtobufMeta {
         if ( log.isTraceEnabled() ) {
             log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
         }
-        try {
-            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogColumn> columns = connection.getCurrentOrCreateNewTransaction().getCatalog().getColumns(
-                    database == null ? null : new Pattern( database ),
-                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
-                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
-                    (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            );
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    toEnumerable( columns ),
-                    PrimitiveCatalogColumn.class,
-                    // According to JDBC standard:
-                    "TABLE_CAT",  // the database name
-                    "TABLE_SCHEM",        // the schema name
-                    "TABLE_NAME",         // the table name
-                    "COLUMN_NAME",        // the column name
-                    "DATA_TYPE",          // The SQL data type from java.sql.Types.
-                    "TYPE_NAME",          // The name of the data type.
-                    "COLUMN_SIZE",        // The length of the column (number of chars in a string or number of digits in a numerical data type).
-                    "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
-                    "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
-                    "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
-                    "NULLABLE",           // Indicates if the column is nullable. 1 means nullable
-                    "REMARKS",            // The comments associated with the column. --> Polypheny-DB always returns null for this column
-                    "COLUMN_DEF",         // The default value of the column.
-                    "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
-                    "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
-                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types) --> always null
-                    "ORDINAL_POSITION",   // The index of the column within the table.
-                    "IS_NULLABLE",        // Indicates if the column allows null values.
-                    // Polypheny-DB specific extensions:
-                    "COLLATION"
-            );
-        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException | UnknownTypeException | UnknownTableException | UnknownSchemaException e ) {
-            throw propagate( e );
-        }
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final List<CatalogColumn> columns = connection.getCurrentOrCreateNewTransaction().getCatalog().getColumns(
+                database == null ? null : new Pattern( database ),
+                (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
+                (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
+        );
+        StatementHandle statementHandle = createStatement( ch );
+        return createMetaResultSet(
+                ch,
+                statementHandle,
+                toEnumerable( columns ),
+                PrimitiveCatalogColumn.class,
+                // According to JDBC standard:
+                "TABLE_CAT",  // the database name
+                "TABLE_SCHEM",        // the schema name
+                "TABLE_NAME",         // the table name
+                "COLUMN_NAME",        // the column name
+                "DATA_TYPE",          // The SQL data type from java.sql.Types.
+                "TYPE_NAME",          // The name of the data type.
+                "COLUMN_SIZE",        // The length of the column (number of chars in a string or number of digits in a numerical data type).
+                "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
+                "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
+                "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
+                "NULLABLE",           // Indicates if the column is nullable. 1 means nullable
+                "REMARKS",            // The comments associated with the column. --> Polypheny-DB always returns null for this column
+                "COLUMN_DEF",         // The default value of the column.
+                "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
+                "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
+                "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types) --> always null
+                "ORDINAL_POSITION",   // The index of the column within the table.
+                "IS_NULLABLE",        // Indicates if the column allows null values.
+                // Polypheny-DB specific extensions:
+                "COLLATION"
+        );
     }
 
 

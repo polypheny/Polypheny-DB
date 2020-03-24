@@ -18,6 +18,7 @@ package org.polypheny.db.webui;
 
 
 import au.com.bytecode.opencsv.CSVReader;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -92,6 +93,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -331,7 +333,7 @@ public class Crud implements InformationObserver {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException | UnknownSchemaException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | TransactionException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
@@ -827,7 +829,6 @@ public class Crud implements InformationObserver {
 
         try {
             CatalogTable catalogTable = transaction.getCatalog().getTable( databaseName, t[0], t[1] );
-            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( catalogTable.id );
             ArrayList<String> primaryColumns;
             if ( catalogTable.primaryKey != null ) {
                 CatalogPrimaryKey primaryKey = transaction.getCatalog().getPrimaryKey( catalogTable.primaryKey );
@@ -835,7 +836,7 @@ public class Crud implements InformationObserver {
             } else {
                 primaryColumns = new ArrayList<>();
             }
-            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+            for ( CatalogColumn catalogColumn : transaction.getCatalog().getColumns( catalogTable.id ) ) {
                 String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
                 cols.add(
                         new DbColumn(
@@ -1324,14 +1325,13 @@ public class Crud implements InformationObserver {
         Result result;
         try {
             CatalogTable table = transaction.getCatalog().getTable( databaseName, schemaName, tableName );
-            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( table.id );
-            Map<Integer, List<CatalogColumnPlacement>> placementsByStore = combinedTable.getColumnPlacementsByStore();
+            // Map<Integer, List<CatalogColumnPlacement>> placementsByStore = table.placementsByStore;
             DbColumn[] header = { new DbColumn( "Store" ), new DbColumn( "Adapter" ), new DbColumn( "Columns" ) };
 
             ArrayList<String[]> data = new ArrayList<>();
-            for ( Entry<Integer, List<CatalogColumnPlacement>> entrySet : placementsByStore.entrySet() ) {
-                Store store = StoreManager.getInstance().getStore( entrySet.getKey() );
-                List<CatalogColumnPlacement> placements = entrySet.getValue();
+            for ( CatalogStore catalogStore : transaction.getCatalog().getStores() ) {
+                Store store = StoreManager.getInstance().getStore( catalogStore.id );
+                List<CatalogColumnPlacement> placements = transaction.getCatalog().getColumnPlacementsOnStore( catalogStore.id );
                 String[] arr = new String[3];
                 arr[0] = store.getUniqueName();
                 arr[1] = store.getAdapterName();
@@ -1525,10 +1525,9 @@ public class Crud implements InformationObserver {
                     }
 
                     // get tables with its columns
-                    CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( catalogTable.id );
                     DbTable table = new DbTable( catalogTable.name, catalogTable.schemaName );
-                    for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                        table.addColumn( new DbColumn( catalogColumn.name ) );
+                    for ( String columnName : catalogTable.columnNames ) {
+                        table.addColumn( new DbColumn( columnName ) );
                     }
 
                     // get primary key with its columns
@@ -1569,7 +1568,7 @@ public class Crud implements InformationObserver {
                 }
             }
             transaction.commit();
-        } catch ( GenericCatalogException | UnknownTableException | TransactionException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException | TransactionException | UnknownKeyException e ) {
             log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
             try {
                 transaction.rollback();
@@ -2033,9 +2032,8 @@ public class Crud implements InformationObserver {
         ) {
             log.info( String.format( "Exporting %s.%s", request.schema, request.table ) );
             CatalogTable catalogTable = transaction.getCatalog().getTable( this.databaseName, request.schema, request.table );
-            CatalogCombinedTable catalogCombinedTable = transaction.getCatalog().getCombinedTable( catalogTable.id );
 
-            catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogCombinedTable, request.createPks, request.defaultValues ) );
+            catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
             catalogWriter.flush();
 
             String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, request.table );
@@ -2409,7 +2407,7 @@ public class Crud implements InformationObserver {
             for ( CatalogColumn catalogColumn : catalogColumns ) {
                 dataTypes.put( catalogColumn.name, catalogColumn.type );
             }
-        } catch ( UnknownTableException | GenericCatalogException | UnknownCollationException | UnknownTypeException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception", e );
         }
         return dataTypes;

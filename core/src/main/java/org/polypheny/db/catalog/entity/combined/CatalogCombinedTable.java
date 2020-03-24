@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 
-
+@Deprecated
 public class CatalogCombinedTable implements CatalogCombinedEntity {
 
     private static final long serialVersionUID = 8962946154629484568L;

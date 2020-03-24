@@ -85,18 +85,6 @@ public class CatalogTest {
     }
 
 
-    @Test
-    public void testCombinedMaps() throws UnknownUserException, UnknownSchemaException, UnknownDatabaseException, GenericCatalogException, UnknownTableException, UnknownColumnException {
-        testLayout();
-        CatalogCombinedDatabase database = catalog.getCombinedDatabase( 0 );
-        assertEquals( database.getDatabase().name, "test_db" );
-
-        assertEquals( database.getSchemas().size(), 1 );
-        assertEquals( database.getSchemas().get( 0 ).getTables().size(), 1 );
-        assertEquals( database.getSchemas().get( 0 ).getTables().get( 0 ).getColumns().size(), 1 );
-    }
-
-
     @After
     public void close() {
         catalog.close();

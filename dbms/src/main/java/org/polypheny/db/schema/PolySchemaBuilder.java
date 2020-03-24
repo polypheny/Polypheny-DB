@@ -25,16 +25,22 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -65,80 +71,6 @@ public class PolySchemaBuilder {
     }
 
 
-    /*public AbstractPolyphenyDbSchema update( Transaction transaction ) {
-        final AbstractPolyphenyDbSchema polyphenyDbSchema;
-        final Schema schema = new RootSchema();
-        if ( false ) {
-            polyphenyDbSchema = new CachingPolyphenyDbSchema( null, schema, "" );
-        } else {
-            polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
-        }
-
-        SchemaPlus rootSchema = polyphenyDbSchema.plus();
-
-        // Build schema
-        Catalog catalog = transaction.getCatalog();
-        List<CatalogSchema> schemas;
-        try {
-            schemas = catalog.getSchemas( 0, null );
-            // combinedDatabase = transaction.getCatalog().getCombinedDatabase( 0 );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
-        }
-        List<CatalogTable> catalogTables = null;
-        // TODO DL refactor, perhaps for such occasion still combined object?
-        try {
-            for ( CatalogSchema catalogSchema : schemas ) {
-                Map<String, Table> tableMap = new HashMap<>();
-                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name ).plus();
-                // Create schema on stores
-                for ( Store store : StoreManager.getInstance().getStores().values() ) {
-                    store.createNewSchema( transaction, rootSchema, catalogSchema.name );
-                }
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO MV: This assumes that there are only "complete" placements of tables and no vertical portioning at all.
-                //
-
-                catalogTables = catalog.getTables( catalogSchema.id, null );
-
-                for ( CatalogTable catalogTable : catalogTables ) {
-                    Map<Integer, List<CatalogColumnPlacement>> placements = new HashMap<>();
-                    List<CatalogStore> stores = catalog.getStores();
-
-                    for ( CatalogStore store : stores ) {
-                        placements.put( store.id, catalog.getColumnPlacementsOnStore( store.id ) );
-                    }
-
-                    Map<Long, List<CatalogColumnPlacement>> placementsColumn = new HashMap<>();
-                    List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
-                    for ( CatalogColumn column : columns ) {
-                        placementsColumn.put(column.id, catalog.getColumnPlacementByColumn( column.id ));
-                    }
-
-                    CatalogCombinedTable combinedTable = new CatalogCombinedTable( catalogTable, catalog.getColumns( catalogTable.id ), catalogSchema, catalog.getDatabase( 0 ), catalog.getUser( catalogTable.ownerName ), placements, placementsColumn, catalog.getKeys().stream().filter( k -> k.tableId == catalogTable.id ).collect( Collectors.toList()) );
-                    int storeId = combinedTable.getColumnPlacementsByStore().keySet().iterator().next(); // TODO MV: This looks inefficient
-                    Store store = StoreManager.getInstance().getStore( storeId );
-                    Table table = store.createTableSchema( combinedTable );
-                    s.add( catalogTable.name, table );
-                    tableMap.put( catalogTable.name, table );
-                }
-                rootSchema.add( catalogSchema.name, s );
-                tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
-                CatalogDatabase catalogDatabase = catalog.getDatabase( 0 );
-                if ( catalogDatabase.defaultSchemaId == catalogSchema.id ) {
-                    tableMap.forEach( rootSchema::add );
-                }
-            }
-        } catch ( GenericCatalogException | UnknownDatabaseException | UnknownCollationException | UnknownTypeException | UnknownUserException e ) {
-            e.printStackTrace();
-        }
-
-        polyphenyDbSchema.getSubSchemaMap().forEach( ( schemaName, s ) -> s.setSchema( StoreManager.getInstance().getStore( 0 ).getCurrentSchema() ) );
-
-        return polyphenyDbSchema;
-    }*/
-
-
     public AbstractPolyphenyDbSchema update( Transaction transaction ) {
         final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
@@ -150,60 +82,54 @@ public class PolySchemaBuilder {
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
 
-        //
-        // Build logical schema
-        CatalogCombinedDatabase combinedDatabase;
-        try {
-            combinedDatabase = transaction.getCatalog().getCombinedDatabase( 0 );
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownTableException | UnknownDatabaseException | UnknownUserException e ) {
-            throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
-        }
+        Catalog catalog = transaction.getCatalog();
 
-        for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
-            Map<String, LogicalTable> tableMap = new HashMap<>();
-            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), combinedSchema.getSchema().name ).plus();
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // TODO MV: This assumes that there are only "complete" placements of tables and no vertical portioning at all.
-            //
-            for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
-                List<String> columnNames = new LinkedList<>();
-                final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-                final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-                for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                    columnNames.add( catalogColumn.name );
-                    fieldInfo.add( catalogColumn.name, null, sqlType( typeFactory, catalogColumn ) ).nullable( catalogColumn.nullable );
+        try {
+            CatalogDatabase catalogDatabase = catalog.getDatabase( 0 );
+            for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
+                Map<String, LogicalTable> tableMap = new HashMap<>();
+                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name ).plus();
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // TODO MV: This assumes that there are only "complete" placements of tables and no vertical portioning at all.
+                //
+                for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
+                    List<String> columnNames = new LinkedList<>();
+                    final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+                    final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+                    for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
+                        columnNames.add( catalogColumn.name );
+                        fieldInfo.add( catalogColumn.name, null, sqlType( typeFactory, catalogColumn ) ).nullable( catalogColumn.nullable );
+                    }
+                    List<Long> columnIds = new LinkedList<>();
+                    catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
+                    LogicalTable table = new LogicalTable(
+                            catalogTable.id,
+                            catalogTable.schemaName,
+                            catalogTable.name,
+                            columnIds,
+                            columnNames,
+                            RelDataTypeImpl.proto( fieldInfo.build() ) );
+                    s.add( catalogTable.name, table );
+                    tableMap.put( catalogTable.name, table );
                 }
-                List<Long> columnIds = new LinkedList<>();
-                combinedTable.getColumns().forEach( c -> columnIds.add( c.id ) );
-                LogicalTable table = new LogicalTable(
-                        combinedTable.getTable().id,
-                        combinedTable.getSchema().name,
-                        combinedTable.getTable().name,
-                        columnIds,
-                        columnNames,
-                        RelDataTypeImpl.proto( fieldInfo.build() ) );
-                s.add( combinedTable.getTable().name, table );
-                tableMap.put( combinedTable.getTable().name, table );
+                rootSchema.add( catalogSchema.name, s );
+                tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
+                if ( catalogDatabase.defaultSchemaId != null && catalogSchema.id == catalogDatabase.defaultSchemaId ) {
+                    tableMap.forEach( rootSchema::add );
+                }
+                s.polyphenyDbSchema().setSchema( new LogicalSchema( catalogSchema.name, tableMap ) );
             }
-            rootSchema.add( combinedSchema.getSchema().name, s );
-            tableMap.forEach( rootSchema.getSubSchema( combinedSchema.getSchema().name )::add );
-            if ( combinedDatabase.getDefaultSchema() != null && combinedSchema.getSchema().id == combinedDatabase.getDefaultSchema().id ) {
-                tableMap.forEach( rootSchema::add );
-            }
-            s.polyphenyDbSchema().setSchema( new LogicalSchema( combinedSchema.getSchema().name, tableMap ) );
-        }
 
-        //
-        // Build store schema
-        try {
+            //
+            // Build store schema
             List<CatalogStore> stores = transaction.getCatalog().getStores();
-            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+            for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
                 for ( CatalogStore catalogStore : stores ) {
                     // Get list of tables on this store
                     Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
                     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-                    for ( CatalogColumnPlacement placement : transaction.getCatalog().getColumnPlacementsOnStoreAndSchema( catalogStore.id, combinedSchema.getSchema().id ) ) {
+                    for ( CatalogColumnPlacement placement : transaction.getCatalog().getColumnPlacementsOnStoreAndSchema( catalogStore.id, catalogSchema.id ) ) {
                         tableIdsPerSchema.putIfAbsent( placement.physicalSchemaName, new HashSet<>() );
                         tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
                     }
@@ -212,14 +138,14 @@ public class PolySchemaBuilder {
                         Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
                         Map<String, Table> physicalTables = new HashMap<>();
                         Store store = StoreManager.getInstance().getStore( catalogStore.id );
-                        final String schemaName = buildStoreSchemaName( catalogStore.uniqueName, combinedSchema.getSchema().name, physicalSchemaName );
+                        final String schemaName = buildStoreSchemaName( catalogStore.uniqueName, catalogSchema.name, physicalSchemaName );
                         store.createNewSchema( transaction, rootSchema, schemaName );
                         SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, store.getCurrentSchema(), schemaName ).plus();
                         for ( long tableId : tableIds ) {
-                            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
-                            Table table = store.createTableSchema( combinedTable );
-                            physicalTables.put( combinedTable.getTable().name, table );
-                            s.add( combinedTable.getTable().name, table );
+                            CatalogTable catalogTable = catalog.getTable( tableId );
+                            Table table = store.createTableSchema( catalogTable );
+                            physicalTables.put( catalog.getTable( tableId ).name, table );
+                            s.add( catalog.getTable( tableId ).name, table );
                         }
                         rootSchema.add( schemaName, s );
                         physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
@@ -227,13 +153,12 @@ public class PolySchemaBuilder {
                     }
                 }
             }
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownSchemaException | UnknownDatabaseException e ) {
             throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
         }
 
         return polyphenyDbSchema;
     }
-
 
 
     private RelDataType sqlType( RelDataTypeFactory typeFactory, CatalogColumn column ) {
@@ -252,8 +177,6 @@ public class PolySchemaBuilder {
     public static String buildStoreSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
         return storeName + "_" + logicalSchema + "_" + physicalSchema;
     }
-
-
 
 
     /**

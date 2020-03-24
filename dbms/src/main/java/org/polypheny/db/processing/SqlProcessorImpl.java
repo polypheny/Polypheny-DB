@@ -28,6 +28,7 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.SqlProcessor;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -243,11 +244,11 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         Context prepareContext = transaction.getPrepareContext();
         SqlNodeList oldColumnList = insert.getTargetColumnList();
         if ( oldColumnList != null ) {
-            CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+            CatalogTable catalogTable = getCatalogTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
             SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
-            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][combinedTable.getColumns().size()];
+            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][catalogTable.columnIds.size()];
             int pos = 0;
-            for ( CatalogColumn column : combinedTable.getColumns() ) {
+            for ( CatalogColumn column : CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id ) ) {
                 // Add column
                 newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
 
@@ -331,13 +332,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         return catalogTable;
     }
 
-
+    @Deprecated
     private CatalogCombinedTable getCatalogCombinedTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
-        try {
-            return transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+        //return transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
+        return null;
     }
 
 

@@ -534,7 +534,7 @@ final class Statements {
 
 
     private static List<CatalogTable> tableFilter( TransactionHandler transactionHandler, String filter ) throws UnknownTableTypeException, GenericCatalogException {
-        final String sql = "SELECT t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", t.\"type\", t.\"definition\", t.\"primary_key\" FROM \"table\" t, \"schema\" s, \"database\" d, \"user\" u WHERE t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\" AND t.\"owner\" = u.\"id\"" + filter + ";";
+        /*final String sql = "SELECT t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", u.\"id\", u.\"username\", t.\"type\", t.\"definition\", t.\"primary_key\" FROM \"table\" t, \"schema\" s, \"database\" d, \"user\" u WHERE t.\"schema\" = s.\"id\" AND s.\"database\" = d.\"id\" AND t.\"owner\" = u.\"id\"" + filter + ";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogTable> list = new LinkedList<>();
             while ( rs.next() ) {
@@ -555,7 +555,8 @@ final class Statements {
             return list;
         } catch ( SQLException e ) {
             throw new GenericCatalogException( e );
-        }
+        }*/
+        return null;
     }
 
 

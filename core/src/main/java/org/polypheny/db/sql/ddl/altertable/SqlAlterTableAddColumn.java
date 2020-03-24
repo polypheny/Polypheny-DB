@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
@@ -114,7 +115,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable catalogTable = getCatalogCombinedTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
 
         if ( column.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
@@ -122,11 +123,11 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
         CatalogColumn beforeColumn = null;
         if ( beforeColumnName != null ) {
-            beforeColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, beforeColumnName );
+            beforeColumn = getCatalogColumn( context, transaction, catalogTable.id, beforeColumnName );
         }
         CatalogColumn afterColumn = null;
         if ( afterColumnName != null ) {
-            afterColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, afterColumnName );
+            afterColumn = getCatalogColumn( context, transaction, catalogTable.id, afterColumnName );
         }
 
         // TODO: Check if the column either allows null values or has a default value defined.
@@ -134,12 +135,12 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         CatalogColumn addedColumn;
         Long columnId = null;
         try {
-            if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.getTable().id, column.getSimple() ) ) {
+            if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.id, column.getSimple() ) ) {
                 throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
             }
 
             // Check whether all stores support schema changes
-            for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+            for ( int storeId : catalogTable.placementsByStore.keySet() ) {
                 if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
                     throw SqlUtil.newContextException(
                             SqlParserPos.ZERO,
@@ -147,7 +148,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 }
             }
 
-            List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.getTable().id );
+            List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.id );
             int position = columns.size() + 1;
             if ( beforeColumn != null || afterColumn != null ) {
                 if ( beforeColumn != null ) {
@@ -162,7 +163,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             }
             columnId = transaction.getCatalog().addColumn(
                     column.getSimple(),
-                    catalogTable.getTable().id,
+                    catalogTable.id,
                     position,
                     PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() ),
                     type.getPrecision() == -1 ? null : type.getPrecision(),
@@ -187,12 +188,12 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             //
 
             // Add column on underlying data stores
-            for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+            for ( int storeId : catalogTable.placementsByStore.keySet() ) {
                 transaction.getCatalog().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
                 StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
             }
-        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException | UnknownColumnException | UnknownTableException e ) {
-            if( columnId != null){
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
+            if ( columnId != null ) {
                 try {
                     transaction.getCatalog().deleteColumn( columnId );
                 } catch ( GenericCatalogException ex ) {

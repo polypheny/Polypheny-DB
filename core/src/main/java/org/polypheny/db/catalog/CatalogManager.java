@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog;
 
 
+import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -24,6 +25,14 @@ import org.polypheny.db.transaction.PolyXid;
 
 
 public abstract class CatalogManager {
+
+    public static CatalogManager INSTANCE = null;
+
+
+    public static CatalogManager getInstance() {
+        return INSTANCE;
+    }
+
 
     /**
      * Returns the user with the specified name.
@@ -37,4 +46,5 @@ public abstract class CatalogManager {
     public abstract Catalog getCatalog( PolyXid xid );
 
     public abstract Catalog getCatalog();
+
 }

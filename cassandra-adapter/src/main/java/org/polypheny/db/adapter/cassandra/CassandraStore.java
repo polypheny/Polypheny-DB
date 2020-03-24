@@ -33,8 +33,10 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -117,8 +119,8 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        return new CassandraTable( this.currentSchema, combinedTable.getTable().name, false );
+    public Table createTableSchema( CatalogTable catalogTable ) {
+        return new CassandraTable( this.currentSchema, catalogTable.name, false );
     }
 
 
@@ -129,13 +131,13 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
+    public void createTable( Context context, CatalogTable catalogTable ) {
         List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
+        qualifiedNames.add( catalogTable.schemaName );
+        qualifiedNames.add( catalogTable.name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
-        List<CatalogColumn> columns = combinedTable.getColumns();
+        List<CatalogColumn> columns = CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id );
         CatalogColumn column = columns.remove( 0 );
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
                 .withPartitionKey( column.name, CassandraTypesUtils.getDataType( column.type ) );
@@ -151,10 +153,10 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable ) {
         List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
+        qualifiedNames.add( catalogTable.schemaName );
+        qualifiedNames.add( catalogTable.name );
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
@@ -166,7 +168,7 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         // TODO JS: Implement
         log.warn( "addColumn is not implemented yet." );
     }
@@ -202,10 +204,10 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void truncate( Context context, CatalogCombinedTable table ) {
+    public void truncate( Context context, CatalogTable table ) {
         List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( table.getSchema().name );
-        qualifiedNames.add( table.getTable().name );
+        qualifiedNames.add( table.schemaName );
+        qualifiedNames.add( table.name);
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();

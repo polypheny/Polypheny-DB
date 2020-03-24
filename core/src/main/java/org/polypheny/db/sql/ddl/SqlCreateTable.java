@@ -57,6 +57,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
@@ -292,9 +293,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 }
             }
 
-            CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( tableId );
+            CatalogTable catalogTable = transaction.getCatalog().getTable( tableId );
             for ( Store store : stores ) {
-                store.createTable( context, combinedTable );
+                store.createTable( context, catalogTable );
             }
         } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException e ) {
             throw new RuntimeException( e );

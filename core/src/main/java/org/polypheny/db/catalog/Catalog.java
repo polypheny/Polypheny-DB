@@ -113,7 +113,6 @@ public abstract class Catalog {
 
     /**
      * Restores all columnPlacements in the dedicated store
-     * @param trx
      */
     public abstract void restoreColumnPlacements( Transaction trx );
 
@@ -397,6 +396,8 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
 
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId );
+
 
     /**
      * Get column placements on a store
@@ -404,10 +405,13 @@ public abstract class Catalog {
      * @param storeId The id of the store
      * @return List of column placements on this store
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId );
 
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
 
     public abstract List<CatalogKey> getKeys();
+
+    public abstract List<CatalogKey> getTableKeys( long tableId );
 
     /**
      * Get column placements in a specific schema on a specific store
@@ -437,7 +441,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException, UnknownTableException;
+    public abstract List<CatalogColumn> getColumns( long tableId );
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
@@ -449,7 +453,7 @@ public abstract class Catalog {
      * @param columnNamePattern Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException, UnknownTypeException, UnknownTableException, UnknownSchemaException;
+    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern );
 
     /**
      * Returns the column with the specified id.
@@ -756,12 +760,6 @@ public abstract class Catalog {
      *
      */
 
-
-    public abstract CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException, UnknownDatabaseException, UnknownUserException;
-
-    public abstract CatalogCombinedSchema getCombinedSchema( long schemaId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException, UnknownDatabaseException, UnknownUserException;
-
-    public abstract CatalogCombinedTable getCombinedTable( long tableId ) throws GenericCatalogException, UnknownTableException;
 
     public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 

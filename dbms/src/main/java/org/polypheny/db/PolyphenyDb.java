@@ -21,8 +21,7 @@ import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogImpl;
-import org.polypheny.db.catalog.CatalogManagerImpl;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -75,7 +74,7 @@ public class PolyphenyDb {
         Transaction trx = null;
         try {
             trx = transactionManager.startTransaction( "pa", "APP", false );
-            catalog = CatalogManagerImpl.getInstance().getCatalog( trx.getXid() );
+            catalog = CatalogManager.getInstance().getCatalog( trx.getXid() );
             StoreManager.getInstance().restoreStores( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false );
@@ -179,8 +178,8 @@ public class PolyphenyDb {
             log.warn( "Interrupted on join()", e );
         }
 
-        StatisticsManager store = StatisticsManager.getInstance();
-        // store.setSqlQueryInterface( statisticQueryProcessor );
+        StatisticsManager statisticsManager = StatisticsManager.getInstance();
+        statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

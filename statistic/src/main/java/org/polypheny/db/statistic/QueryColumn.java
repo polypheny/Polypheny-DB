@@ -19,6 +19,7 @@ package org.polypheny.db.statistic;
 
 import lombok.Getter;
 import org.polypheny.db.PolySqlType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 
 
 /**
@@ -85,5 +86,10 @@ class QueryColumn {
     public static String[] getSplitColumn( String schemaTableColumn ) {
         return schemaTableColumn.split( "\\." );
     }
+
+    public static QueryColumn fromCatalogColumn( CatalogColumn column ){
+        return new QueryColumn( column.schemaName, column.tableName, column.name, column.type );
+    }
+
 
 }

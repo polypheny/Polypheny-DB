@@ -109,15 +109,6 @@ public abstract class SqlDdl extends SqlCall {
     }
 
 
-    protected CatalogCombinedTable getCatalogCombinedTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
-        try {
-            return transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-
     protected CatalogColumn getCatalogColumn( Context context, Transaction transaction, long tableId, SqlIdentifier columnName ) {
         CatalogColumn catalogColumn;
         try {

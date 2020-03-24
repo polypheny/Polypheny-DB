@@ -20,6 +20,7 @@ package org.polypheny.db.sql.ddl;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDdl;
@@ -69,10 +70,10 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable table = getCatalogCombinedTable( context, transaction, name );
+        CatalogTable table = getCatalogTable( context, transaction, name );
 
         //  Execute truncate on all placements
-        table.getColumnPlacementsByStore().forEach( ( storeId, placements ) -> {
+        table.placementsByStore.forEach( ( storeId, placements ) -> {
             StoreManager.getInstance().getStore( storeId ).truncate( context, table );
         } );
     }

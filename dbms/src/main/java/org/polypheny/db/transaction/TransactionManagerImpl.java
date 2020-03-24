@@ -27,6 +27,7 @@ import org.polypheny.db.PUID.Type;
 import org.polypheny.db.PUID.UserId;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;

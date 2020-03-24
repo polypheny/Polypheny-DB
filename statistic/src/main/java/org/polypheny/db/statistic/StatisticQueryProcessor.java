@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -137,7 +138,7 @@ public class StatisticQueryProcessor {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( UnknownDatabaseException | GenericCatalogException | TransactionException | UnknownCollationException | UnknownTypeException | UnknownSchemaException | UnknownTableException e ) {
+        } catch ( UnknownDatabaseException | GenericCatalogException | TransactionException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
@@ -159,22 +160,13 @@ public class StatisticQueryProcessor {
         List<QueryColumn> columns = new ArrayList<>();
 
         try {
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
+            Catalog catalog = transaction.getCatalog();
+            List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
+            columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.schemaName, c.tableName, c.name, c.type ) ).collect( Collectors.toList() ) );
 
-            for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
-                for ( CatalogCombinedTable table : schema.getTables() ) {
-                    columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
-                }
-            }
             transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException | UnknownUserException e ) {
+        } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return columns;
     }
@@ -202,26 +194,15 @@ public class StatisticQueryProcessor {
         List<QueryColumn> columns = new ArrayList<>();
 
         try {
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-            for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
-                if ( schema.getSchema().name.equals( schemaName ) ) {
-                    for ( CatalogCombinedTable table : schema.getTables() ) {
-                        if ( table.getTable().name.equals( tableName ) ) {
-                            columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
-                        }
-                    }
-                }
-            }
+            Catalog catalog = transaction.getCatalog();
+
+            catalog
+                    .getColumns( new Pattern( databaseName ), new Pattern( schemaName ), new Pattern( tableName ), null )
+                    .forEach( c -> columns.add( QueryColumn.fromCatalogColumn( c ) ) );
             transaction.commit();
 
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException | UnknownUserException e ) {
+        } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return columns;
 
@@ -242,24 +223,14 @@ public class StatisticQueryProcessor {
      */
     public PolySqlType getColumnType( String schema, String table, String column ) {
         Transaction transaction = getTransaction();
-        // TODO: fix possible NullPointer
         PolySqlType type = null;
 
         try {
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-            type = combinedDatabase
-                    .getSchemas().stream().filter( s -> s.getSchema().name.equals( schema ) ).findFirst().get()
-                    .getTables().stream().filter( t -> t.getTable().name.equals( table ) ).findFirst().get()
-                    .getColumns().stream().filter( c -> c.name.equals( column ) ).findFirst().get().type;
+            Catalog catalog = transaction.getCatalog();
+            type = catalog.getColumn( databaseName, schema, table, column ).type;
             transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException | UnknownUserException e ) {
+        } catch ( GenericCatalogException | TransactionException | UnknownColumnException e ) {
             log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return type;
     }

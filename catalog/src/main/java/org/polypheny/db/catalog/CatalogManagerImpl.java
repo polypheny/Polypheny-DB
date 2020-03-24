@@ -36,19 +36,24 @@ public class CatalogManagerImpl extends CatalogManager {
 
     private static final boolean CREATE_SCHEMA = true;
 
-    private static CatalogManagerImpl INSTANCE = null;
+    //private static CatalogManagerImpl INSTANCE = new CatalogManagerImpl();
 
     private final ConcurrentHashMap<PolyXid, CatalogImpl> catalogs = new ConcurrentHashMap<>();
 
     private static CatalogImpl catalog = null;
 
 
-    public static CatalogManagerImpl getInstance() {
+    public static CatalogManager getInstance() {
         if ( INSTANCE == null ) {
             INSTANCE = new CatalogManagerImpl();
         }
         return INSTANCE;
     }
+
+    /*
+    public static CatalogManager getInstance() {
+        return INSTANCE;
+    }*/
 
 
     private CatalogManagerImpl() {
@@ -84,6 +89,4 @@ public class CatalogManagerImpl extends CatalogManager {
     void removeCatalog( PolyXid xid ) {
         log.error( "removing store" );
     }
-
-
 }
