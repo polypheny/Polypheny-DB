@@ -161,7 +161,6 @@ public class CatalogImpl extends Catalog {
                 log.info( "Making the catalog persistent." );
                 db = DBMaker
                         .fileDB( new File( "./" + path ) )
-                        .fileDeleteAfterOpen()
                         .closeOnJvmShutdown()
                         .checksumHeaderBypass() // TODO clean shutdown needed
                         .fileMmapEnable()
