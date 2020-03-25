@@ -33,7 +33,8 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 public class InformationGraph extends Information {
 
     private HashMap<String, GraphData> data = new HashMap<>();
-    private String[] labels;
+    @SerializedName("labels")
+    private String[] xLabels;
     private GraphType graphType;
     /**
      * Suggested min value of the y axis in the UI
@@ -56,11 +57,11 @@ public class InformationGraph extends Information {
      * Constructor
      *
      * @param group The group this InformationGraph object belongs to
-     * @param labels labels that are displayed on the x-axis
+     * @param xLabels labels that are displayed on the x-axis
      * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final InformationGroup group, GraphType type, final String[] labels, final GraphData... data ) {
-        this( group.getId(), type, labels, data );
+    public InformationGraph( final InformationGroup group, GraphType type, final String[] xLabels, final GraphData... data ) {
+        this( group.getId(), type, xLabels, data );
     }
 
 
@@ -68,11 +69,11 @@ public class InformationGraph extends Information {
      * Constructor
      *
      * @param groupId The id of the group to which this InformationGraph object belongs
-     * @param labels labels that are displayed on the x-axis
+     * @param xLabels labels that are displayed on the x-axis
      * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final String groupId, GraphType type, final String[] labels, final GraphData... data ) {
-        this( UUID.randomUUID().toString(), groupId, type, labels, data );
+    public InformationGraph( final String groupId, GraphType type, final String[] xLabels, final GraphData... data ) {
+        this( UUID.randomUUID().toString(), groupId, type, xLabels, data );
     }
 
 
@@ -81,14 +82,14 @@ public class InformationGraph extends Information {
      *
      * @param id unique id of the Information object
      * @param groupId id of the group to which this InformationGraph object belongs
-     * @param labels labels that are displayed on the x-axis
+     * @param xLabels labels that are displayed on the x-axis
      * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final String id, final String groupId, GraphType type, final String[] labels, final GraphData... data ) {
+    public InformationGraph( final String id, final String groupId, GraphType type, final String[] xLabels, final GraphData... data ) {
         super( id, groupId );
 
         for ( GraphData d : data ) {
-            this.data.put( d.label, d );
+            this.data.put( d.dataLabel, d );
         }
 
         if ( this.data.size() > 1 ) {
@@ -98,7 +99,7 @@ public class InformationGraph extends Information {
         }
 
         this.graphType = type;
-        this.labels = labels;
+        this.xLabels = xLabels;
     }
 
 
@@ -135,10 +136,10 @@ public class InformationGraph extends Information {
     /**
      * Set the data for this graph.
      *
-     * @param labels labels that are displayed on the x-axis
+     * @param xLabels labels that are displayed on the x-axis
      * @param data new GraphData objects. Types PIE, DOUGHNUT and POLARAREA can accept only one GraphData object
      */
-    public void updateGraph( final String[] labels, final GraphData... data ) {
+    public void updateGraph( final String[] xLabels, final GraphData... data ) {
 
         if ( data.length > 1 ) {
             if ( this.graphType == GraphType.PIE || this.graphType == GraphType.DOUGHNUT || this.graphType == GraphType.POLARAREA ) {
@@ -146,10 +147,10 @@ public class InformationGraph extends Information {
             }
         }
 
-        this.labels = labels;
+        this.xLabels = xLabels;
         this.data.clear();
         for ( GraphData d : data ) {
-            this.data.put( d.label, d );
+            this.data.put( d.dataLabel, d );
         }
         notifyManager();
     }
@@ -158,10 +159,10 @@ public class InformationGraph extends Information {
     /**
      * Add data to a graph
      *
-     * @param label The label of the data you want to update
+     * @param dataLabel The label of the data you want to update
      */
-    public InformationGraph addData( final String label, final Number... data ) {
-        this.data.get( label ).addData( data );
+    public InformationGraph addData( final String dataLabel, final Number... data ) {
+        this.data.get( dataLabel ).addData( data );
         notifyManager();
         return this;
     }
@@ -207,7 +208,8 @@ public class InformationGraph extends Information {
         /**
          * The label that describes the data.
          */
-        private final String label;
+        @SerializedName("label")
+        private final String dataLabel;
 
         /**
          * The maximum number of elements that should be stored
@@ -218,23 +220,23 @@ public class InformationGraph extends Information {
         /**
          * GraphData constructor
          *
-         * @param label The label that describes the data
+         * @param dataLabel The label that describes the data
          * @param data Data for the graph, e.g. a line in the line-graph. The maximum amount of data points is defined by DEFAULT_MAX_LENGTH
          */
-        public GraphData( final String label, final T[] data ) {
-            this( label, data, DEFAULT_MAX_LENGTH );
+        public GraphData( final String dataLabel, final T[] data ) {
+            this( dataLabel, data, DEFAULT_MAX_LENGTH );
         }
 
 
         /**
          * GraphData constructor
          *
-         * @param label The label that describes the data
+         * @param dataLabel The label that describes the data
          * @param data Data for the graph, e.g. a line in the line-graph
          * @param maxLength Maximal number of data points that should be stored.
          */
-        public GraphData( final String label, final T[] data, final int maxLength ) {
-            this.label = label;
+        public GraphData( final String dataLabel, final T[] data, final int maxLength ) {
+            this.dataLabel = dataLabel;
             this.data = new CircularFifoQueue<T>( maxLength );
             this.data.addAll( Arrays.asList( data ) );
         }
