@@ -162,6 +162,7 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.HubRequest;
+import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
@@ -713,12 +714,94 @@ public class Crud implements InformationObserver {
      * return possibly interesting Data to User
      */
 
-    Result classifyData( Request req, Response res ) {
+    public Result classifyData( Request req, Response res ) {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
 
         ExploreManager e = ExploreManager.getInstance();
         Explore explor = e.classifyData( classifyAllData.id, classifyAllData.query, classifyAllData.labeled );
         return new Result( classifyAllData.header, explor.getData() );
+    }
+
+    public Result createQuery(Request req, Response res){
+
+        QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
+        ExploreManager exploreManager = ExploreManager.getInstance();
+
+        //exploreManager.createSqlQuery(null, queryExplorationRequest.query);
+
+        Transaction transaction = getTransaction( queryExplorationRequest.analyze );
+        boolean autoCommit = true;
+
+        ArrayList<Result> results = new ArrayList<>();
+        Result result;
+        long executionTime = 0;
+        long temp = 0;
+        String query = queryExplorationRequest.query;
+        List<String> group = new ArrayList<>(  );
+        List<String> q = new ArrayList<>(  );
+        List<String> list = new ArrayList<>(  );
+        List<String> list2= new ArrayList<>(  );
+
+        try {
+            Result r = executeSqlSelect( transaction, queryExplorationRequest, query ).setInfo( new Debug().setGeneratedQuery( query ) );
+            for ( int i = 0; i < r.getHeader().length; i++ ){
+                group.add( r.getHeader()[i].dataType );
+            }
+        } catch (  QueryExecutionException | RuntimeException e ) {
+            e.printStackTrace();
+        }
+
+        q = Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
+        System.out.println( "Group: " + group );
+        System.out.println("q: " + q );
+
+        for ( int i = 0; i < q.size(); i ++){
+            if(group.get( i ).equals( "INTEGER" )){
+                list2.add( "MAX(" + q.get( i ) + ") AS MAXi" + i + " " );
+                list2.add( "MIN(" + q.get( i ) + ") AS MINi" + i + " " );
+            }
+            if(group.get( i ).equals( "VARCHAR" )){
+                list.add( q.get( i ) );
+                list2.add( q.get( i ) );
+            }
+        }
+        System.out.println( "list: " + list );
+
+        String listString = String.join(",", list);
+        String listString2 = String.join(",", list2);
+
+        System.out.println( "listString: " + listString );
+
+        query = query.split( "\nFROM" )[1];
+
+        query = "SELECT " + listString2 + "\nFROM" + query + "\nGROUP BY " + listString + " LIMIT 200";
+
+        System.out.println( query );
+
+        try {
+            temp = System.nanoTime();
+            result = executeSqlSelect( transaction, queryExplorationRequest, query, false, 200 ).setInfo( new Debug().setGeneratedQuery( query ) );
+            executionTime += System.nanoTime() - temp;
+            results.add( result );
+            if ( autoCommit ) {
+                transaction.commit();
+                transaction = getTransaction( queryExplorationRequest.analyze );
+            }
+        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            executionTime += System.nanoTime() - temp;
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+            results.add( result );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
+        }
+
+
+
+        return result;
     }
 
 
@@ -2172,11 +2255,14 @@ public class Crud implements InformationObserver {
      * Execute a select statement with default limit
      */
     private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
-        return executeSqlSelect( transaction, request, sqlSelect, false );
+        return executeSqlSelect( transaction, request, sqlSelect, false, getPageSize() );
     }
 
+    private Result executeSqlSelect(final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit) throws QueryExecutionException{
+        return executeSqlSelect( transaction, request, sqlSelect, noLimit, getPageSize() );
+    }
 
-    private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
+    private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit, final int pagnation ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -2195,7 +2281,7 @@ public class Crud implements InformationObserver {
             if ( noLimit ) {
                 rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
             } else {
-                rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+                rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, pagnation ), new ArrayList<>() );
             }
 
         } catch ( Throwable t ) {

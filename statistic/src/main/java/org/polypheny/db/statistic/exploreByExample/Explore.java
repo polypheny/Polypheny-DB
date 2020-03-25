@@ -19,9 +19,15 @@ package org.polypheny.db.statistic.exploreByExample;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.statistic.StatisticQueryColumn;
+import org.polypheny.db.statistic.StatisticsManager;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -35,9 +41,14 @@ public class Explore {
     @Getter
     private int id;
     List<List<String>> uniqueValues;
+    @Setter
     private String[][] labeled;
+    @Setter
     private String[][] unlabeled;
+    @Getter
+    @Setter
     private String[] dataType;
+    @Setter
     @Getter
     private String[] labels;
     private Instances unlabledData;
@@ -45,6 +56,10 @@ public class Explore {
     private String buildGraph;
     @Getter
     private String[][] data;
+    @Getter
+    private String query;
+    Map<String, List<String>> sqlValues;
+    private String [][] classifiedData;
 
 
     public Explore( int identifier, List<List<String>> uniqueValues, String[][] labeled, String[][] unlabeled, String[] dataType ) {
@@ -55,11 +70,14 @@ public class Explore {
         this.dataType = dataType;
     }
 
+    public Explore(int identifier, String query){
+        this.id = identifier;
+        this.query = query;
+    }
 
     public void updateExploration( String[][] labeled) {
         labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
-
 
     public void exploreUserInput() {
         unlabledData = createInstance(rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues);
@@ -70,6 +88,50 @@ public class Explore {
         unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues);
         data = classifyData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
+
+    public void prepareData(){
+        sqlValues = getSQLValues( query );
+        int counter = 0;
+
+        query += "\nWHERE ";
+        String info = "";
+
+        for( Entry<String, List<String>> sqlValue : sqlValues.entrySet()){
+            if(counter == 0) {
+                String key = sqlValue.getKey();
+                List<String> value = sqlValue.getValue();
+                for ( String val : value ) {
+                    info += key + "=" + val;
+                }
+                counter++;
+            }
+        }
+
+        query = query + info;
+        System.out.println( query + info );
+        System.out.println( sqlValues );
+    }
+
+
+    private Map<String, List<String>> getSQLValues(String query){
+        String col[];
+        col = query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," );
+
+        StatisticsManager<?> stats = StatisticsManager.getInstance();
+        List<StatisticQueryColumn> values = stats.getAllUniqueValues( Arrays.asList( col ), query );
+        Map<String, List<String>> sqlValues = new HashMap<>();
+
+        for(int i = 0; i < values.size(); i++){
+            sqlValues.put( col[i], Arrays.asList(values.get( i ).getData()) );
+        }
+
+
+        System.out.println( "uniqueValues" );
+        System.out.println( sqlValues );
+        return sqlValues;
+    }
+
+
 
 
     private String[][] rotate2dArray( String[][] table ) {
@@ -143,7 +205,7 @@ public class Explore {
         try {
             tree.setOptions( options );
         } catch ( Exception e ) {
-
+            log.error("setting options for Classification not possible");
             e.printStackTrace();
         }
 

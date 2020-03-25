@@ -54,11 +54,27 @@ public class ExploreManager {
         }
     }
 
+    public Explore createSqlQuery(Integer id, String query){
+
+        if ( id == null) {
+            int identifier = atomicId.getAndIncrement();
+            explore.put( identifier, new Explore( identifier, query ) );
+            explore.get( identifier ).prepareData();
+            return explore.get( identifier );
+        }
+        return null;
+    }
 
     public Explore exploreData( Integer id, String[] columnInfo, String query, String[][] labeled, String[][] unlabeled, String[] dataType ) {
 
-        if ( id != null && explore.containsKey( id ) ) {
+        if ( id != null && explore.containsKey( id ) && explore.get( id ).getDataType() != null ) {
             explore.get( id ).updateExploration( labeled );
+            return explore.get( id );
+        } else if ( id != null && explore.containsKey( id ) && explore.get( id ).getDataType() == null){
+            explore.get( id ).setLabeled( labeled );
+            explore.get( id ).setUnlabeled( unlabeled );
+            explore.get(id).setDataType( dataType );
+            explore.get( id ).exploreUserInput();
             return explore.get( id );
         } else {
             int identifier = atomicId.getAndIncrement();
