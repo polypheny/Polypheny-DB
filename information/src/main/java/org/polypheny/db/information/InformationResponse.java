@@ -14,22 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.information;
 
 
-import org.polypheny.db.webui.models.DbColumn;
+import lombok.NoArgsConstructor;
 
 
 /**
- * Model for a request to edit or create a Table used for request where you want to truncate/drop a table
- * and when you want to create a new table
+ * A response that can be sent back to the UI after executing an InformationAction
  */
-public class EditTableRequest {
+@NoArgsConstructor
+public class InformationResponse {
 
-    public String schema;
-    public String table;
-    public String action; // truncate / drop
-    public DbColumn[] columns;
-    public String store;
+    String errorMsg;
+    String successMsg;
 
+    public InformationResponse message( final String message ) {
+        this.successMsg = message;
+        return this;
+    }
+
+    public InformationResponse error( final String error ) {
+        this.errorMsg = error;
+        return this;
+    }
 }

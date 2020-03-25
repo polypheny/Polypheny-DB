@@ -111,10 +111,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.UnknownTypeException;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.background.BackgroundTask;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
@@ -163,8 +159,11 @@ public class DbmsMeta implements ProtobufMeta {
                 Arrays.asList( "Attribute", "Value" ) );
         im.registerInformation( connectionNumberTable );
 
-        ConnectionNumberInfo connectionPoolSizeInfo = new ConnectionNumberInfo( connectionNumberTable );
-        BackgroundTaskManager.INSTANCE.registerTask( connectionPoolSizeInfo, "Update JDBC Interface connection pool size", TaskPriority.LOW, TaskSchedulingType.EVERY_FIVE_SECONDS );
+        informationPage.setRefreshFunction( () -> {
+            connectionNumberTable.reset();
+            connectionNumberTable.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
+            connectionNumberTable.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
+        } );
     }
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
@@ -1406,25 +1405,5 @@ public class DbmsMeta implements ProtobufMeta {
             throw new RuntimeException( e );
         }
     }
-
-
-    private static class ConnectionNumberInfo implements BackgroundTask {
-
-        private final InformationTable table;
-
-
-        ConnectionNumberInfo( InformationTable table ) {
-            this.table = table;
-        }
-
-
-        @Override
-        public void backgroundTask() {
-            table.reset();
-            table.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
-            table.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
-        }
-    }
-
 
 }

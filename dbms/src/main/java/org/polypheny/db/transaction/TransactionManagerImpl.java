@@ -50,6 +50,7 @@ public class TransactionManagerImpl implements TransactionManager {
     public TransactionManagerImpl() {
         InformationManager im = InformationManager.getInstance();
         InformationPage page = new InformationPage( "Transactions", "Transactions" );
+        page.fullWidth();
         im.addPage( page );
         InformationGroup runningTransactionsGroup = new InformationGroup( page, "Running Transactions" );
         im.addGroup( runningTransactionsGroup );
@@ -57,14 +58,13 @@ public class TransactionManagerImpl implements TransactionManager {
                 runningTransactionsGroup,
                 Arrays.asList( "ID", "Analyze", "Involved Stores" ) );
         im.registerInformation( runningTransactionsTable );
-        BackgroundTaskManager.INSTANCE.registerTask(
-                () -> {
-                    runningTransactionsTable.reset();
-                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze(), v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
-                },
-                "Update transaction overview",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS );
+        page.setRefreshFunction( () -> {
+            runningTransactionsTable.reset();
+            transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow(
+                    k.getGlobalTransactionId(),
+                    v.isAnalyze(),
+                    v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
+        } );
     }
 
 

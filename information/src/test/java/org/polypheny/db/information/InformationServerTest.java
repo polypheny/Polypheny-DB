@@ -20,9 +20,11 @@ package org.polypheny.db.information;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.webui.InformationServer;
@@ -33,6 +35,7 @@ import oshi.software.os.OperatingSystem;
 import oshi.software.os.OperatingSystem.ProcessSort;
 
 
+@Slf4j
 public class InformationServerTest {
 
 
@@ -48,31 +51,49 @@ public class InformationServerTest {
     private static void demoData() {
         InformationManager im = InformationManager.getInstance();
 
+        //SYSTEM GROUP
+
         SystemInfo si = new SystemInfo();
         HardwareAbstractionLayer hal = si.getHardware();
         OperatingSystem os = si.getOperatingSystem();
 
-        InformationPage p = new InformationPage( "p1", "System", "Here you can find some information about this computer, as well as randomly generated data." );
-        im.addPage( p );
+        InformationPage systemPage = new InformationPage( "p1", "System", "Here you can find some information about this computer, as well as randomly generated data." );
+        im.addPage( systemPage );
+        systemPage.setRefreshFunction( () -> {
+            log.debug( "refreshing page" );
+        } );
 
-        InformationGroup g1 = new InformationGroup( p, "System" ).setOrder( 1 );
-        im.addGroup( g1 );
+        InformationGroup systemGroup = new InformationGroup( systemPage, "System" ).setOrder( 1 );
+        im.addGroup( systemGroup );
 
         String family = os.getFamily();
         String manufacturer = os.getManufacturer();
         String version = os.getVersion().toString();
-        Information i1 = new InformationHtml( "os", "System", "<ul>"
+        Information i1 = new InformationHtml( "os", systemGroup.getId(), "<ul>"
                 + "<li>family: " + family + "</li>"
                 + "<li>manufacturer: " + manufacturer + "</li>"
                 + "<li>version: " + version + "</li>"
-                + "</ul>" );
+                + "</ul>" ).setOrder( 1 );
         im.registerInformation( i1 );
 
-        InformationGroup g2 = new InformationGroup( p, "cpu" ).setOrder( 2 );
-        im.addGroup( g2 );
+        Information iAction = new InformationAction( systemGroup, "executeAction", ( params ) -> {
+            String out = "Executed action with params: ";
+            if ( params != null ) {
+                for ( Map.Entry<String, String> entry : params.entrySet() ) {
+                    out += String.format( "%s: %s; ", entry.getKey(), entry.getValue() );
+                }
+            }
+            return out;
+        } ).withParameters( "p1", "p2", "p3" ).setOrder( 2 );
+        im.registerInformation( iAction );
+
+        //CPU GROUP
+
+        InformationGroup cpuGroup = new InformationGroup( systemPage, "cpu" ).setOrder( 2 );
+        im.addGroup( cpuGroup );
 
         int cpuLoad = (int) Math.round( hal.getProcessor().getSystemCpuLoad() * 100 );
-        InformationProgress i2 = new InformationProgress( "mem", "cpu", "cpu load", cpuLoad );
+        InformationProgress i2 = new InformationProgress( "mem", cpuGroup.getId(), "cpu load", cpuLoad );
         im.registerInformation( i2 );
 
         Timer t1 = new Timer();
@@ -84,8 +105,10 @@ public class InformationServerTest {
             }
         }, 5000, 5000 );
 
-        InformationGroup g3 = new InformationGroup( p.getId(), "processes" );
-        im.addGroup( g3 );
+        //PROCESSES GROUP
+
+        InformationGroup processesGroup = new InformationGroup( systemPage.getId(), "processes" );
+        im.addGroup( processesGroup );
 
         List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
 
@@ -104,7 +127,7 @@ public class InformationServerTest {
         }
 
         GraphData<Double> data = new GraphData<Double>( "processes", procPerc.toArray( new Double[0] ) );
-        InformationGraph graph = new InformationGraph( "proc-graph", "processes", GraphType.POLARAREA, procNames.toArray( new String[0] ), data );
+        InformationGraph graph = new InformationGraph( "proc-graph", processesGroup.getId(), GraphType.POLARAREA, procNames.toArray( new String[0] ), data );
         im.registerInformation( graph );
 
         Timer t2 = new Timer();
@@ -132,7 +155,8 @@ public class InformationServerTest {
             }
         }, 5000, 5000 );
 
-        //random data
+        //RANDOM DATA GROUP
+
         Integer[] randomData1 = new Integer[10];
         Integer[] randomData2 = new Integer[10];
         Integer[] randomData3 = new Integer[10];
@@ -142,14 +166,33 @@ public class InformationServerTest {
             randomData2[i] = r.nextInt( 100 );
             randomData3[i] = r.nextInt( 100 );
         }
-        InformationGroup randomGroup = new InformationGroup( p, "random data" ).setOrder( 4 );
+        InformationGroup randomGroup = new InformationGroup( systemPage, "random data" ).setOrder( 4 );
         im.addGroup( randomGroup );
         String[] randomLabels = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
         GraphData randomGraphData1 = new GraphData<Integer>( "x", randomData1 );
         GraphData randomGraphData2 = new GraphData<Integer>( "y", randomData2 );
         //GraphData randomGraphData3 = new GraphData<Integer>( "z", randomData3);
-        InformationGraph randomGraph = new InformationGraph( "random.graph", "random data", GraphType.BAR, randomLabels, randomGraphData1, randomGraphData2 );
+        InformationGraph randomGraph = new InformationGraph( "random.graph", randomGroup.getId(), GraphType.BAR, randomLabels, randomGraphData1, randomGraphData2 );
         im.registerInformation( randomGraph );
+
+        //COLLECTING DATA GROUP
+
+        InformationGroup collectingGroup = new InformationGroup( systemPage, "collecting data" ).setOrder( 5 );
+        collectingGroup.setRefreshFunction( () -> {
+            im.getInformation( "collectingGraph" ).unwrap( InformationGraph.class ).addData( "dynamic", (int) (Math.random() * 10) );
+        } );
+        im.addGroup( collectingGroup );
+        GraphData<Integer> dynamicData = new GraphData<>( "dynamic", new Integer[]{ 1, 2, 3 }, 10 );
+        GraphData<Integer> staticData = new GraphData<>( "static", new Integer[]{ 2, 4, 6, 8, 10, 9, 7, 5, 3, 1 } );
+        InformationGraph collectingGraph = new InformationGraph( "collectingGraph", collectingGroup.getId(), GraphType.BAR, null, new GraphData[]{ dynamicData, staticData } ).maxY( 10 );
+        im.registerInformation( collectingGraph );
+        Timer collectingTimer = new Timer();
+        collectingTimer.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                collectingGraph.addData( "dynamic", (int) (Math.random() * 10) );
+            }
+        }, 5000, 5000 );
 
         Timer t3 = new Timer();
         t3.scheduleAtFixedRate( new TimerTask() {
@@ -171,6 +214,62 @@ public class InformationServerTest {
             }
         }, 10000, 10000 );
 
+        //DURATION GROUP
+
+        InformationGroup durationGroup = new InformationGroup( systemPage, "durations" );
+        im.addGroup( durationGroup );
+        InformationDuration duration1 = new InformationDuration( durationGroup );
+        duration1.start( "Task1" ).setLimit( 50 );
+        sleep( 100 );
+        duration1.stop( "Task1" );
+        duration1.addNanoDuration( "TaskInBetween", 30_000_000L );
+        duration1.addMilliDuration( "TaskInBetween", 30L );
+        duration1.start( "Task2" ).setLimit( 1000 ).noProgressBar();
+        duration1.get( "Task2" ).start( "sub1" );
+        sleep( 150 );
+        duration1.get( "Task2" ).stop( "sub1" );
+        duration1.get( "Task2" ).start( "sub2" );
+        sleep( 50 );
+        duration1.get( "Task2" ).stop( "sub2" );
+        duration1.stop( "Task2" );
+        duration1.start( "Task3" );
+        sleep( 50 );
+        duration1.stop( "Task3" );
+        duration1.setOrder( 1 );
+        im.registerInformation( duration1 );
+
+        InformationDuration duration2 = new InformationDuration( durationGroup );
+        duration2.start( "group1" );
+        duration2.get( "group1" ).start( "sub1" );
+        sleep( 100 );
+        duration2.get( "group1" ).get( "sub1" ).start( "subSub" ).setLimit( 50 );
+        sleep( 100 );
+        duration2.get( "group1" ).get( "sub1" ).stop( "subSub" );
+        duration2.get( "group1" ).get( "sub1" ).get( "subSub" ).start( "s4" );
+        duration2.get( "group1" ).get( "sub1" ).start( "subSub2" );
+        sleep( 100 );
+        duration2.get( "group1" ).get( "sub1" ).stop( "subSub2" );
+        duration2.get( "group1" ).stop( "sub1" );
+        duration2.stop( "group1" );
+        duration2.setOrder( 2 );
+        im.registerInformation( duration2 );
+
+        InformationDuration duration3 = new InformationDuration( durationGroup );
+        duration3.start( "test" );
+        duration3.stop( "test" );
+        duration3.setOrder( 3 );
+        im.registerInformation( duration3 );
+    }
+
+    /**
+     * Sleep method for testing
+     */
+    private static void sleep( long sleep ) {
+        try {
+            Thread.sleep( sleep );
+        } catch ( InterruptedException e ) {
+            e.printStackTrace();
+        }
     }
 
 
