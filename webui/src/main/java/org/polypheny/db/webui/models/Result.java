@@ -20,6 +20,7 @@ package org.polypheny.db.webui.models;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
@@ -71,6 +72,8 @@ public class Result {
      */
     private ResultType type;
 
+    @Setter
+    private int explorerId;
 
     /**
      * Build a Result object containing the data from the ResultSet, including the headers of the columns

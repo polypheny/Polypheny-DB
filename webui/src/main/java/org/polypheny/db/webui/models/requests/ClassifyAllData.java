@@ -24,9 +24,5 @@ public class ClassifyAllData {
 
     public Integer id;
     public DbColumn[] header;
-    public String query;
-    public String[] columnInfo;
-    public String[][] labeled;
-
-
+    public String[][] classified;
 }

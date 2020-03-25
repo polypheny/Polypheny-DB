@@ -712,13 +712,15 @@ public class Crud implements InformationObserver {
     /**
      * Gets the classified Data from User
      * return possibly interesting Data to User
+     * @return
      */
 
     public Result classifyData( Request req, Response res ) {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
 
         ExploreManager e = ExploreManager.getInstance();
-        Explore explor = e.classifyData( classifyAllData.id, classifyAllData.query, classifyAllData.labeled );
+        System.out.println( Arrays.deepToString( classifyAllData.classified ) );
+        Explore explor = e.classifyData( classifyAllData.id, classifyAllData.classified );
         return new Result( classifyAllData.header, explor.getData() );
     }
 
@@ -726,9 +728,6 @@ public class Crud implements InformationObserver {
 
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
-
-        //exploreManager.createSqlQuery(null, queryExplorationRequest.query);
-
         Transaction transaction = getTransaction( queryExplorationRequest.analyze );
         boolean autoCommit = true;
 
@@ -736,47 +735,28 @@ public class Crud implements InformationObserver {
         Result result;
         long executionTime = 0;
         long temp = 0;
+
         String query = queryExplorationRequest.query;
         List<String> group = new ArrayList<>(  );
-        List<String> q = new ArrayList<>(  );
-        List<String> list = new ArrayList<>(  );
-        List<String> list2= new ArrayList<>(  );
+
+        Map<String, String> typeInfo = new HashMap<>(  );
 
         try {
             Result r = executeSqlSelect( transaction, queryExplorationRequest, query ).setInfo( new Debug().setGeneratedQuery( query ) );
+
             for ( int i = 0; i < r.getHeader().length; i++ ){
-                group.add( r.getHeader()[i].dataType );
+                typeInfo.put( r.getHeader()[i].name, r.getHeader()[i].dataType );
+               group.add( r.getHeader()[i].dataType );
             }
+
         } catch (  QueryExecutionException | RuntimeException e ) {
             e.printStackTrace();
         }
 
-        q = Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
-        System.out.println( "Group: " + group );
-        System.out.println("q: " + q );
+        Explore explore = exploreManager.createSqlQuery(null, queryExplorationRequest.query, group);
+        query = explore.getSqlStatment();
 
-        for ( int i = 0; i < q.size(); i ++){
-            if(group.get( i ).equals( "INTEGER" )){
-                list2.add( "MAX(" + q.get( i ) + ") AS MAXi" + i + " " );
-                list2.add( "MIN(" + q.get( i ) + ") AS MINi" + i + " " );
-            }
-            if(group.get( i ).equals( "VARCHAR" )){
-                list.add( q.get( i ) );
-                list2.add( q.get( i ) );
-            }
-        }
-        System.out.println( "list: " + list );
-
-        String listString = String.join(",", list);
-        String listString2 = String.join(",", list2);
-
-        System.out.println( "listString: " + listString );
-
-        query = query.split( "\nFROM" )[1];
-
-        query = "SELECT " + listString2 + "\nFROM" + query + "\nGROUP BY " + listString + " LIMIT 200";
-
-        System.out.println( query );
+        //query = query.replace( "SELECT", "SELECT DISTINCT" );
 
         try {
             temp = System.nanoTime();
@@ -799,8 +779,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-
-
+        result.setExplorerId( explore.getId() );
         return result;
     }
 
@@ -815,7 +794,7 @@ public class Crud implements InformationObserver {
         dataType[exploreData.header.length] = "VARCHAR";
 
         ExploreManager e = ExploreManager.getInstance();
-        Explore explore = e.exploreData( exploreData.id, exploreData.columnInfo, exploreData.query, exploreData.labeled, exploreData.unlabeled, dataType );
+        Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType);
 
         return new ExploreResult( exploreData.header, explore.getLabels(), explore.getId(), explore.getBuildGraph() );
     }

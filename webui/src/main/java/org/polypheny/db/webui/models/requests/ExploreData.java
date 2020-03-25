@@ -24,9 +24,6 @@ public class ExploreData {
 
     public Integer id;
     public DbColumn[] header;
-    public String query;
-    public String[] columnInfo;
-    public String[][] labeled;
-    public String[][] unlabeled;
+    public String[][] classified;
 
 }

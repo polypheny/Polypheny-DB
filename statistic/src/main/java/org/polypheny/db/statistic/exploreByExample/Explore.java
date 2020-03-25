@@ -19,6 +19,7 @@ package org.polypheny.db.statistic.exploreByExample;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +41,12 @@ public class Explore {
 
     @Getter
     private int id;
+    @Setter
     List<List<String>> uniqueValues;
     @Setter
-    private String[][] labeled;
+    private List<String[]> labeled;
     @Setter
-    private String[][] unlabeled;
+    private List<String[]> unlabeled;
     @Getter
     @Setter
     private String[] dataType;
@@ -60,9 +62,12 @@ public class Explore {
     private String query;
     Map<String, List<String>> sqlValues;
     private String [][] classifiedData;
+    List<String> typeInfo;
+    @Getter
+    private String sqlStatment;
 
 
-    public Explore( int identifier, List<List<String>> uniqueValues, String[][] labeled, String[][] unlabeled, String[] dataType ) {
+    public Explore( int identifier, List<List<String>> uniqueValues, List<String[]> labeled, List<String[]> unlabeled, String[] dataType ) {
         this.id = identifier;
         this.uniqueValues = uniqueValues;
         this.labeled = labeled;
@@ -70,12 +75,14 @@ public class Explore {
         this.dataType = dataType;
     }
 
-    public Explore(int identifier, String query){
+    public Explore(int identifier, String query, List<String> typeInfo){
         this.id = identifier;
         this.query = query;
+        this.sqlStatment = query;
+        this.typeInfo = typeInfo;
     }
 
-    public void updateExploration( String[][] labeled) {
+    public void updateExploration( List<String[]> labeled) {
         labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
 
@@ -84,74 +91,70 @@ public class Explore {
         labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
 
-    public void classifyAllData( String[][] labeled, String[][] allData ) {
+    public void classifyAllData( List<String[]> labeled, List<String[]> allData ) {
         unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues);
         data = classifyData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
 
-    public void prepareData(){
-        sqlValues = getSQLValues( query );
-        int counter = 0;
+    //TODO: ISA change SQL Statment, now really ugly and min missing
+    public void createSQLStatement(){
 
-        query += "\nWHERE ";
-        String info = "";
+        List<String> q = new ArrayList<>(  );
+        List<String> list = new ArrayList<>(  );
+        List<String> list2= new ArrayList<>(  );
 
-        for( Entry<String, List<String>> sqlValue : sqlValues.entrySet()){
-            if(counter == 0) {
-                String key = sqlValue.getKey();
-                List<String> value = sqlValue.getValue();
-                for ( String val : value ) {
-                    info += key + "=" + val;
-                }
-                counter++;
+
+        q = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
+        System.out.println( "Group: " + typeInfo );
+        System.out.println("q: " + q );
+
+        for ( int i = 0; i < q.size(); i ++){
+            if(typeInfo.get( i ).equals( "INTEGER" )){
+                list2.add( "MAX(" + q.get( i ) + ") AS MAXi" + i + " " );
+                //list2.add( "MIN(" + q.get( i ) + ") AS MINi" + i + " " );
+            }
+            if(typeInfo.get( i ).equals( "VARCHAR" )){
+                list.add( q.get( i ) );
+                list2.add( q.get( i ) );
             }
         }
+        System.out.println( "list: " + list );
 
-        query = query + info;
-        System.out.println( query + info );
-        System.out.println( sqlValues );
+        String listString = String.join(",", list);
+        String listString2 = String.join(",", list2);
+
+        System.out.println( "listString: " + listString );
+
+        sqlStatment = sqlStatment.split( "\nFROM" )[1];
+
+        sqlStatment = "SELECT " + listString2 + "\nFROM" + sqlStatment + "\nGROUP BY " + listString + " LIMIT 200";
+
+        System.out.println( sqlStatment );
+
     }
 
-
-    private Map<String, List<String>> getSQLValues(String query){
-        String col[];
-        col = query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," );
-
-        StatisticsManager<?> stats = StatisticsManager.getInstance();
-        List<StatisticQueryColumn> values = stats.getAllUniqueValues( Arrays.asList( col ), query );
-        Map<String, List<String>> sqlValues = new HashMap<>();
-
-        for(int i = 0; i < values.size(); i++){
-            sqlValues.put( col[i], Arrays.asList(values.get( i ).getData()) );
-        }
-
-
-        System.out.println( "uniqueValues" );
-        System.out.println( sqlValues );
-        return sqlValues;
-    }
-
-
-
-
-    private String[][] rotate2dArray( String[][] table ) {
-        int width = table[0].length;
-        int height = table.length;
+    private List<String[]> rotate2dArray( List<String[]> table ) {
+        int width = table.get( 0 ).length;
+        int height = table.size();
 
         String[][] rotatedTable = new String[width][height];
 
         for ( int x = 0; x < width; x++ ) {
             for ( int y = 0; y < height; y++ ) {
-                rotatedTable[x][y] = table[y][x];
+                rotatedTable[x][y] = table.get( y )[x];
             }
         }
-        return rotatedTable;
+        List<String[]> tab = new ArrayList<>(  );
+        Collections.addAll( tab, rotatedTable );
+
+        System.out.println( tab );
+        return tab;
     }
 
-    public Instances createInstance( String[][] rotatedTable, String[][] table, String[] dataType, List<List<String>> uniqueValues ){
+    public Instances createInstance( List<String[]> rotatedTable, List<String[]> table, String[] dataType, List<List<String>> uniqueValues ){
 
-        int numInstances = rotatedTable[0].length;
-        int dimLength = table[0].length;
+        int numInstances = rotatedTable.get( 0 ).length;
+        int dimLength = table.get( 0 ).length;
         FastVector atts = new FastVector();
         FastVector attVals;
         FastVector attValsEl[] = new FastVector[dimLength];
@@ -182,14 +185,14 @@ public class Explore {
 
             for ( int dim = 0; dim < dimLength; dim++ ) {
                 if ( dataType[dim].equals( "VARCHAR" ) ) {
-                    if (attValsEl[dim].contains( table[obj][dim] )){
-                        vals[dim] = attValsEl[dim].indexOf( table[obj][dim] );
+                    if (attValsEl[dim].contains( table.get( obj )[dim] )){
+                        vals[dim] = attValsEl[dim].indexOf( table.get( obj )[dim] );
                     }
                     else {
                         vals[dim] = Utils.missingValue();
                     }
                 } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
-                    vals[dim] = Double.parseDouble( table[obj][dim] );
+                    vals[dim] = Double.parseDouble( table.get( obj )[dim] );
                 }
             }
             classifiedData.add( new DenseInstance( 1.0, vals ) );

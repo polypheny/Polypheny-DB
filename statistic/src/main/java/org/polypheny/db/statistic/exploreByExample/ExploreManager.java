@@ -43,10 +43,17 @@ public class ExploreManager {
     }
 
 
-    public Explore classifyData( Integer id, String query, String[][] labeled ) {
-        if ( id != null && explore.containsKey( id ) ) {
-            System.out.println( Arrays.deepToString( getAllData( query ) ) );
-            explore.get( id ).classifyAllData( labeled, getAllData( query ) );
+    public Explore classifyData( Integer id,  String[][] classified ) {
+        List<String[]> labeled = new ArrayList<>(  );
+
+        for (String[] data : classified){
+            if(!(data[data.length -1 ].equals( "?" ))) {
+                labeled.add( data );
+            }
+        }
+
+        if ( id != null && explore.containsKey( id ) && explore.get( id ).getDataType() != null ) {
+            explore.get( id ).classifyAllData( labeled, getAllData( explore.get(id).getQuery()) );
             return explore.get( id );
         } else {
             System.out.println( "Fehler" );
@@ -54,18 +61,29 @@ public class ExploreManager {
         }
     }
 
-    public Explore createSqlQuery(Integer id, String query){
+    public Explore createSqlQuery(Integer id, String query, List <String> typeInfo){
 
         if ( id == null) {
             int identifier = atomicId.getAndIncrement();
-            explore.put( identifier, new Explore( identifier, query ) );
-            explore.get( identifier ).prepareData();
+            explore.put( identifier, new Explore( identifier, query, typeInfo ) );
+            explore.get( identifier ).createSQLStatement();
             return explore.get( identifier );
         }
         return null;
     }
 
-    public Explore exploreData( Integer id, String[] columnInfo, String query, String[][] labeled, String[][] unlabeled, String[] dataType ) {
+    public Explore exploreData( Integer id, String[][] classified, String[] dataType ) {
+        List<String[]> labeled = new ArrayList<>(  );
+        List<String[]> unlabeled = new ArrayList<>(  );
+
+        for (String[] data : classified){
+            if(!(data[data.length -1 ].equals( "?" ))){
+                labeled.add( data );
+                unlabeled.add(data);
+            }else if (data[data.length -1 ].equals( "?" )){
+                unlabeled.add( data );
+            }
+        }
 
         if ( id != null && explore.containsKey( id ) && explore.get( id ).getDataType() != null ) {
             explore.get( id ).updateExploration( labeled );
@@ -73,22 +91,24 @@ public class ExploreManager {
         } else if ( id != null && explore.containsKey( id ) && explore.get( id ).getDataType() == null){
             explore.get( id ).setLabeled( labeled );
             explore.get( id ).setUnlabeled( unlabeled );
+            explore.get(id).setUniqueValues( getStatistics( explore.get( id ).getQuery() ) );
             explore.get(id).setDataType( dataType );
             explore.get( id ).exploreUserInput();
             return explore.get( id );
         } else {
             int identifier = atomicId.getAndIncrement();
-            explore.put( identifier, new Explore( identifier, getStatistics( columnInfo, query ), labeled, unlabeled, dataType ) );
+            //explore.put( identifier, new Explore( identifier, getStatistics( columnInfo, query ), labeled, unlabeled, dataType ) );
             explore.get( identifier ).exploreUserInput();
             return explore.get( identifier );
         }
     }
 
 
-    private List<List<String>> getStatistics( String[] columnInfo, String query ) {
+    private List<List<String>> getStatistics( String query ) {
+
         List<List<String>> uniqueValues = new ArrayList<>();
         StatisticsManager<?> stats = StatisticsManager.getInstance();
-        List<StatisticQueryColumn> values = stats.getAllUniqueValues( Arrays.asList( columnInfo ), query );
+        List<StatisticQueryColumn> values = stats.getAllUniqueValues( prepareColInfo(query) , query );
 
         for ( StatisticQueryColumn uniqueValue : values ) {
             uniqueValues.add( Arrays.asList( uniqueValue.getData() ) );
@@ -103,24 +123,30 @@ public class ExploreManager {
     }
 
 
-    private String[][] getAllData( String query ) {
+    private List<String> prepareColInfo( String query ) {
+        List<String> colInfo = Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
+        System.out.println( colInfo );
+        return colInfo;
+    }
+
+
+    private List<String[]> getAllData( String query ) {
 
         StatisticsManager<?> stats = StatisticsManager.getInstance();
         StatisticResult statisticResult = stats.getTable( query );
         StatisticQueryColumn[] columns = statisticResult.getColumns();
-        String[][] allDataTable = new String[columns.length + 1][];
+        List<String[]> allDataTable = new ArrayList<>(  );
         int len = 0;
         for ( int i = 0; i < columns.length; i++ ) {
-            allDataTable[i] = columns[i].getData();
+            allDataTable.set( i, columns[i].getData() );
             len = columns[i].getData().length;
         }
         String[] questionMark = new String[len];
         for ( int j = 0; j < len; j++ ) {
             questionMark[j] = "?";
         }
-        allDataTable[columns.length] = questionMark;
+        allDataTable.set( columns.length, questionMark );
 
-        System.out.println( Arrays.deepToString( allDataTable ) );
         return allDataTable;
     }
 
