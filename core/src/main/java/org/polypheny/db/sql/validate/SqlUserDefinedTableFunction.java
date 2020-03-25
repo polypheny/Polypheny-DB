@@ -42,9 +42,9 @@ import org.polypheny.db.schema.TableFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**
@@ -54,7 +54,7 @@ import org.polypheny.db.sql.type.SqlReturnTypeInference;
  */
 public class SqlUserDefinedTableFunction extends SqlUserDefinedFunction {
 
-    public SqlUserDefinedTableFunction( SqlIdentifier opName, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableFunction function ) {
+    public SqlUserDefinedTableFunction( SqlIdentifier opName, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker, List<RelDataType> paramTypes, TableFunction function ) {
         super(
                 opName,
                 returnTypeInference,

@@ -48,7 +48,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.TableFactory;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
 
@@ -74,10 +74,10 @@ public class DruidTableFactory implements TableFactory {
         // If "dataSource" operand is present it overrides the table name.
         final String dataSource = (String) operand.get( "dataSource" );
         final Set<String> metricNameBuilder = new LinkedHashSet<>();
-        final Map<String, SqlTypeName> fieldBuilder = new LinkedHashMap<>();
+        final Map<String, PolyType> fieldBuilder = new LinkedHashMap<>();
         final Map<String, List<ComplexMetric>> complexMetrics = new HashMap<>();
         final String timestampColumnName;
-        final SqlTypeName timestampColumnType;
+        final PolyType timestampColumnType;
         final Object timestampInfo = operand.get( "timestampColumn" );
         if ( timestampInfo != null ) {
             if ( timestampInfo instanceof Map ) {
@@ -87,20 +87,20 @@ public class DruidTableFactory implements TableFactory {
                 }
                 timestampColumnName = (String) map.get( "name" );
                 if ( !(map.get( "type" ) instanceof String) || map.get( "type" ).equals( "timestamp with local time zone" ) ) {
-                    timestampColumnType = SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
+                    timestampColumnType = PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
                 } else if ( map.get( "type" ).equals( "timestamp" ) ) {
-                    timestampColumnType = SqlTypeName.TIMESTAMP;
+                    timestampColumnType = PolyType.TIMESTAMP;
                 } else {
                     throw new IllegalArgumentException( "unexpected type for timestampColumn array" );
                 }
             } else {
                 // String (for backwards compatibility)
                 timestampColumnName = (String) timestampInfo;
-                timestampColumnType = SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
+                timestampColumnType = PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
             }
         } else {
             timestampColumnName = DruidTable.DEFAULT_TIMESTAMP_COLUMN;
-            timestampColumnType = SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
+            timestampColumnType = PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE;
         }
         fieldBuilder.put( timestampColumnName, timestampColumnType );
         final Object dimensionsRaw = operand.get( "dimensions" );
@@ -108,7 +108,7 @@ public class DruidTableFactory implements TableFactory {
             // noinspection unchecked
             final List<String> dimensions = (List<String>) dimensionsRaw;
             for ( String dimension : dimensions ) {
-                fieldBuilder.put( dimension, SqlTypeName.VARCHAR );
+                fieldBuilder.put( dimension, PolyType.VARCHAR );
             }
         }
 
@@ -152,9 +152,9 @@ public class DruidTableFactory implements TableFactory {
                     assert fieldName != null;
                     // Only add the complex metric if there exists an alias for it
                     if ( complexMetrics.containsKey( fieldName ) ) {
-                        SqlTypeName type = fieldBuilder.get( fieldName );
-                        if ( type != SqlTypeName.VARCHAR ) {
-                            fieldBuilder.put( fieldName, SqlTypeName.VARBINARY );
+                        PolyType type = fieldBuilder.get( fieldName );
+                        if ( type != PolyType.VARCHAR ) {
+                            fieldBuilder.put( fieldName, PolyType.VARBINARY );
                             // else, this complex metric is also a dimension, so it's type should remain as VARCHAR, but it'll also be added as a complex metric.
                         }
                         complexMetrics.get( fieldName ).add( new ComplexMetric( metricName, druidType ) );

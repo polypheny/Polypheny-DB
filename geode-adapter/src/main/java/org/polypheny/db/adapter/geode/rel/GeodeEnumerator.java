@@ -45,7 +45,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
 /**
@@ -73,7 +73,7 @@ class GeodeEnumerator implements Enumerator<Object> {
         this.current = null;
 
         final RelDataTypeFactory typeFactory =
-                new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+                new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         this.fieldTypes = protoRowType.apply( typeFactory ).getFieldList();
     }
 

@@ -82,8 +82,8 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlConformance;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ControlFlowException;
 import org.polypheny.db.util.Pair;
@@ -207,12 +207,12 @@ public class RexToLixTranslator {
 
     Expression translateCast( RelDataType sourceType, RelDataType targetType, Expression operand ) {
         Expression convert = null;
-        switch ( targetType.getSqlTypeName() ) {
+        switch ( targetType.getPolyType() ) {
             case ANY:
                 convert = operand;
                 break;
             case DATE:
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case CHAR:
                     case VARCHAR:
                         convert = Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
@@ -234,7 +234,7 @@ public class RexToLixTranslator {
                 }
                 break;
             case TIME:
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case CHAR:
                     case VARCHAR:
                         convert = Expressions.call( BuiltInMethod.STRING_TO_TIME.method, operand );
@@ -265,7 +265,7 @@ public class RexToLixTranslator {
                 }
                 break;
             case TIME_WITH_LOCAL_TIME_ZONE:
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case CHAR:
                     case VARCHAR:
                         convert = Expressions.call( BuiltInMethod.STRING_TO_TIME_WITH_LOCAL_TIME_ZONE.method, operand );
@@ -293,7 +293,7 @@ public class RexToLixTranslator {
                 }
                 break;
             case TIMESTAMP:
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case CHAR:
                     case VARCHAR:
                         convert = Expressions.call( BuiltInMethod.STRING_TO_TIMESTAMP.method, operand );
@@ -332,7 +332,7 @@ public class RexToLixTranslator {
                 }
                 break;
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case CHAR:
                     case VARCHAR:
                         convert = Expressions.call(
@@ -389,7 +389,7 @@ public class RexToLixTranslator {
                 }
                 break;
             case BOOLEAN:
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case CHAR:
                     case VARCHAR:
                         convert = Expressions.call(
@@ -400,7 +400,7 @@ public class RexToLixTranslator {
             case CHAR:
             case VARCHAR:
                 final SqlIntervalQualifier interval = sourceType.getIntervalQualifier();
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case DATE:
                         convert = RexImpTable.optimize2(
                                 operand,
@@ -481,7 +481,7 @@ public class RexToLixTranslator {
         // Going from anything to CHAR(n) or VARCHAR(n), make sure value is no longer than n.
         boolean pad = false;
         boolean truncate = true;
-        switch ( targetType.getSqlTypeName() ) {
+        switch ( targetType.getPolyType() ) {
             case CHAR:
             case BINARY:
                 pad = true;
@@ -490,18 +490,18 @@ public class RexToLixTranslator {
             case VARBINARY:
                 final int targetPrecision = targetType.getPrecision();
                 if ( targetPrecision >= 0 ) {
-                    switch ( sourceType.getSqlTypeName() ) {
+                    switch ( sourceType.getPolyType() ) {
                         case CHAR:
                         case VARCHAR:
                         case BINARY:
                         case VARBINARY:
                             // If this is a widening cast, no need to truncate.
                             final int sourcePrecision = sourceType.getPrecision();
-                            if ( SqlTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) <= 0 ) {
+                            if ( PolyTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) <= 0 ) {
                                 truncate = false;
                             }
                             // If this is a widening cast, no need to pad.
-                            if ( SqlTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) >= 0 ) {
+                            if ( PolyTypeUtil.comparePrecision( sourcePrecision, targetPrecision ) >= 0 ) {
                                 pad = false;
                             }
                             // fall through
@@ -540,9 +540,9 @@ public class RexToLixTranslator {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                switch ( sourceType.getSqlTypeName().getFamily() ) {
+                switch ( sourceType.getPolyType().getFamily() ) {
                     case NUMERIC:
-                        final BigDecimal multiplier = targetType.getSqlTypeName().getEndUnit().multiplier;
+                        final BigDecimal multiplier = targetType.getPolyType().getEndUnit().multiplier;
                         final BigDecimal divider = BigDecimal.ONE;
                         convert = RexImpTable.multiplyDivide( convert, multiplier, divider );
                 }
@@ -728,7 +728,7 @@ public class RexToLixTranslator {
         }
         Type javaClass = typeFactory.getJavaClass( type );
         final Object value2;
-        switch ( literal.getType().getSqlTypeName() ) {
+        switch ( literal.getType().getPolyType() ) {
             case DECIMAL:
                 final BigDecimal bd = literal.getValueAs( BigDecimal.class );
                 if ( javaClass == float.class ) {
@@ -1184,9 +1184,9 @@ public class RexToLixTranslator {
 
 
     private static Expression scaleIntervalToNumber( RelDataType sourceType, RelDataType targetType, Expression operand ) {
-        switch ( targetType.getSqlTypeName().getFamily() ) {
+        switch ( targetType.getPolyType().getFamily() ) {
             case NUMERIC:
-                switch ( sourceType.getSqlTypeName() ) {
+                switch ( sourceType.getPolyType() ) {
                     case INTERVAL_YEAR:
                     case INTERVAL_YEAR_MONTH:
                     case INTERVAL_MONTH:
@@ -1202,7 +1202,7 @@ public class RexToLixTranslator {
                     case INTERVAL_SECOND:
                         // Scale to the given field.
                         final BigDecimal multiplier = BigDecimal.ONE;
-                        final BigDecimal divider = sourceType.getSqlTypeName().getEndUnit().multiplier;
+                        final BigDecimal divider = sourceType.getPolyType().getEndUnit().multiplier;
                         return RexImpTable.multiplyDivide( operand, multiplier, divider );
                 }
         }

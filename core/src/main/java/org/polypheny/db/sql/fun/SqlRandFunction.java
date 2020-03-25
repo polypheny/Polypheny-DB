@@ -38,8 +38,8 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**

@@ -43,11 +43,11 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.IntervalSqlType;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.IntervalPolyType;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -72,7 +72,7 @@ public class SqlDatetimePlusOperator extends SqlSpecialOperator {
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType leftType = opBinding.getOperandType( 0 );
-        final IntervalSqlType unitType = (IntervalSqlType) opBinding.getOperandType( 1 );
+        final IntervalPolyType unitType = (IntervalPolyType) opBinding.getOperandType( 1 );
         final TimeUnit timeUnit = unitType.getIntervalQualifier().getStartUnit();
         return SqlTimestampAddFunction.deduceType( typeFactory, timeUnit, unitType, leftType );
     }

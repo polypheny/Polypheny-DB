@@ -59,7 +59,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
 
@@ -89,8 +89,8 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         final RelDataType mapType =
                 typeFactory.createMapType(
-                        typeFactory.createSqlType( SqlTypeName.VARCHAR ),
-                        typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true ) );
+                        typeFactory.createPolyType( PolyType.VARCHAR ),
+                        typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true ) );
         // TODO (PCP)
         return typeFactory.builder().add( "_MAP", null, mapType ).build();
     }

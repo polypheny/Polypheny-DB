@@ -35,7 +35,8 @@ package org.polypheny.db.rel.type;
 
 
 /**
- * RelDataTypeFamily represents a family of related types. The specific criteria for membership in a type family are type-system dependent.
+ * RelDataTypeFamily represents a family of related types. The specific criteria for membership in a type
+ * family are type-system dependent.
  */
 public interface RelDataTypeFamily {
 

@@ -54,7 +54,7 @@ import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -150,12 +150,12 @@ public class JethroDataSqlDialect extends SqlDialect {
      */
     static class JethroSupportedFunction {
 
-        private final List<SqlTypeName> operandTypes;
+        private final List<PolyType> operandTypes;
 
 
         JethroSupportedFunction( String name, String operands ) {
             Objects.requireNonNull( name ); // not currently used
-            final ImmutableList.Builder<SqlTypeName> b = ImmutableList.builder();
+            final ImmutableList.Builder<PolyType> b = ImmutableList.builder();
             for ( String strType : operands.split( ":" ) ) {
                 b.add( parse( strType ) );
             }
@@ -163,24 +163,24 @@ public class JethroDataSqlDialect extends SqlDialect {
         }
 
 
-        private SqlTypeName parse( String strType ) {
+        private PolyType parse( String strType ) {
             switch ( strType.toLowerCase( Locale.ROOT ) ) {
                 case "bigint":
                 case "long":
-                    return SqlTypeName.BIGINT;
+                    return PolyType.BIGINT;
                 case "integer":
                 case "int":
-                    return SqlTypeName.INTEGER;
+                    return PolyType.INTEGER;
                 case "double":
-                    return SqlTypeName.DOUBLE;
+                    return PolyType.DOUBLE;
                 case "float":
-                    return SqlTypeName.FLOAT;
+                    return PolyType.FLOAT;
                 case "string":
-                    return SqlTypeName.VARCHAR;
+                    return PolyType.VARCHAR;
                 case "timestamp":
-                    return SqlTypeName.TIMESTAMP;
+                    return PolyType.TIMESTAMP;
                 default:
-                    return SqlTypeName.ANY;
+                    return PolyType.ANY;
             }
         }
 
@@ -190,7 +190,7 @@ public class JethroDataSqlDialect extends SqlDialect {
                 return false;
             }
             for ( int i = 0; i < paramTypes.size(); i++ ) {
-                if ( paramTypes.get( i ).getSqlTypeName() != operandTypes.get( i ) ) {
+                if ( paramTypes.get( i ).getPolyType() != operandTypes.get( i ) ) {
                     return false;
                 }
             }

@@ -92,11 +92,11 @@ import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -135,7 +135,7 @@ public class TraitPropagationTest {
 
             final RelDataType stringType = typeFactory.createJavaType( String.class );
             final RelDataType integerType = typeFactory.createJavaType( Integer.class );
-            final RelDataType sqlBigInt = typeFactory.createSqlType( SqlTypeName.BIGINT );
+            final RelDataType sqlBigInt = typeFactory.createPolyType( PolyType.BIGINT );
 
             // SELECT * from T;
             final Table table = new AbstractTable() {

@@ -36,22 +36,24 @@ package org.polypheny.db.rel.type;
 
 /**
  * Describes a policy for resolving fields in record types.
- *
+ * <p>
  * The usual value is {@link #FULLY_QUALIFIED}.
- *
- * A field whose record type is labeled {@link #PEEK_FIELDS} can be omitted. In Phoenix, column families are represented by fields like this. {@link #PEEK_FIELDS_DEFAULT} is similar,
- * but represents the default column family, so it will win in the event of a tie.
- *
+ * <p>
+ * A field whose record type is labeled {@link #PEEK_FIELDS} can be omitted. In Phoenix, column families are represented by
+ * fields like this. {@link #PEEK_FIELDS_DEFAULT} is similar, but represents the default column family, so it will win in
+ * the event of a tie.
+ * <p>
  * SQL usually disallows a record type. For instance,
  *
  * <blockquote><pre>SELECT address.zip FROM Emp AS e</pre></blockquote>
- *
+ * <p>
  * is disallowed because {@code address} "looks like" a table alias. You'd have to write
  *
  * <blockquote><pre>SELECT e.address.zip FROM Emp AS e</pre></blockquote>
- *
- * But if a table has one or more columns that are record-typed and are labeled {@link #PEEK_FIELDS} or {@link #PEEK_FIELDS_DEFAULT} we suspend that rule and would allow {@code address.zip}.
- *
+ * <p>
+ * But if a table has one or more columns that are record-typed and are labeled {@link #PEEK_FIELDS} or
+ * {@link #PEEK_FIELDS_DEFAULT} we suspend that rule and would allow {@code address.zip}.
+ * <p>
  * If there are multiple matches, we choose the one that is:
  * <ol>
  * <li>Shorter. If you write {@code zipcode}, {@code address.zipcode} will be preferred over {@code product.supplier.zipcode}.</li>

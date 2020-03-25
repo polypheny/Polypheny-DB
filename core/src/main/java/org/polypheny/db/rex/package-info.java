@@ -15,7 +15,7 @@
  *
  * Every row-expression has a type. (Compare with {@link org.polypheny.db.sql.SqlNode}, which is created before validation, and therefore types may not be available.)
  *
- * Every node in the parse tree is a {@link org.polypheny.db.rex.RexNode}. Sub-types are:<
+ * Every node in the parse tree is a {@link org.polypheny.db.rex.RexNode}. Sub-types are:
  * <ul>
  * <li>{@link org.polypheny.db.rex.RexLiteral} represents a boolean, numeric, string, or date constant, or the value <code>NULL</code>.</li>
  * <li>{@link org.polypheny.db.rex.RexVariable} represents a leaf of the tree. It has sub-types:

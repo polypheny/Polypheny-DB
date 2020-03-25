@@ -69,8 +69,8 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -120,7 +120,7 @@ public final class Schemas {
 
 
     private static boolean canConvert( RelDataType fromType, RelDataType toType ) {
-        return SqlTypeUtil.canAssignFrom( toType, fromType );
+        return PolyTypeUtil.canAssignFrom( toType, fromType );
     }
 
 

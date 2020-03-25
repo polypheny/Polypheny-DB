@@ -34,10 +34,10 @@
 package org.polypheny.db.adapter.pig;
 
 
-import static org.polypheny.db.sql.type.SqlTypeName.VARCHAR;
+import static org.polypheny.db.type.PolyType.VARCHAR;
 
 import org.apache.pig.data.DataType;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -48,10 +48,10 @@ public enum PigDataType {
     CHARARRAY( DataType.CHARARRAY, VARCHAR );
 
     private byte pigType; // Pig defines types using bytes
-    private SqlTypeName sqlType;
+    private PolyType sqlType;
 
 
-    PigDataType( byte pigType, SqlTypeName sqlType ) {
+    PigDataType( byte pigType, PolyType sqlType ) {
         this.pigType = pigType;
         this.sqlType = sqlType;
     }
@@ -62,7 +62,7 @@ public enum PigDataType {
     }
 
 
-    public SqlTypeName getSqlType() {
+    public PolyType getSqlType() {
         return sqlType;
     }
 
@@ -77,7 +77,7 @@ public enum PigDataType {
     }
 
 
-    public static PigDataType valueOf( SqlTypeName sqlType ) {
+    public static PigDataType valueOf( PolyType sqlType ) {
         for ( PigDataType pigDataType : values() ) {
             if ( pigDataType.sqlType == sqlType ) {
                 return pigDataType;

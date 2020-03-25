@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -48,6 +47,11 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
@@ -128,7 +132,7 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
-    protected abstract String getTypeString( PolySqlType polySqlType );
+    protected abstract String getTypeString( PolyType polyType );
 
 
     @Override

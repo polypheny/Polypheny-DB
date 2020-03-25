@@ -52,7 +52,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexDigestIncludeType;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.SqlExplainLevel;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Pair;
 
 
@@ -137,7 +137,7 @@ public abstract class Values extends AbstractRelNode {
 
                 // TODO jvs 19-Feb-2006: strengthen this a bit.  For example, overflow, rounding, and padding/truncation must already have been dealt with.
                 if ( !RexLiteral.isNullLiteral( literal ) ) {
-                    assert SqlTypeUtil.canAssignFrom( fieldType, literal.getType() ) : "to " + fieldType + " from " + literal;
+                    assert PolyTypeUtil.canAssignFrom( fieldType, literal.getType() ) : "to " + fieldType + " from " + literal;
                 }
             }
         }

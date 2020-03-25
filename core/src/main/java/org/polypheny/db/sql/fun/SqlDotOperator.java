@@ -48,16 +48,16 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlSingleOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 
@@ -98,7 +98,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.of( 2 );
+        return PolyOperandCountRanges.of( 2 );
     }
 
 
@@ -151,23 +151,23 @@ public class SqlDotOperator extends SqlSpecialOperator {
         final SqlNode left = callBinding.operand( 0 );
         final SqlNode right = callBinding.operand( 1 );
         final RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), left );
-        if ( type.getSqlTypeName() != SqlTypeName.ROW ) {
+        if ( type.getPolyType() != PolyType.ROW ) {
             return false;
         } else if ( type.getSqlIdentifier().isStar() ) {
             return false;
         }
         final RelDataType operandType = callBinding.getOperandType( 0 );
-        final SqlSingleOperandTypeChecker checker = getChecker( operandType );
+        final PolySingleOperandTypeChecker checker = getChecker( operandType );
         return checker.checkSingleOperandType( callBinding, right, 0, throwOnFailure );
     }
 
 
-    private SqlSingleOperandTypeChecker getChecker( RelDataType operandType ) {
-        switch ( operandType.getSqlTypeName() ) {
+    private PolySingleOperandTypeChecker getChecker( RelDataType operandType ) {
+        switch ( operandType.getPolyType() ) {
             case ROW:
-                return OperandTypes.family( SqlTypeFamily.STRING );
+                return OperandTypes.family( PolyTypeFamily.STRING );
             default:
-                throw new AssertionError( operandType.getSqlTypeName() );
+                throw new AssertionError( operandType.getPolyType() );
         }
     }
 
@@ -188,7 +188,7 @@ public class SqlDotOperator extends SqlSpecialOperator {
     public RelDataType inferReturnType( SqlOperatorBinding opBinding ) {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType recordType = opBinding.getOperandType( 0 );
-        switch ( recordType.getSqlTypeName() ) {
+        switch ( recordType.getPolyType() ) {
             case ROW:
                 final String fieldName = opBinding.getOperandLiteralValue( 1, String.class );
                 final RelDataType type = opBinding.getOperandType( 0 )

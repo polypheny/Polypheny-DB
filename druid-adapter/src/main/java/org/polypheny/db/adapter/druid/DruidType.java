@@ -34,28 +34,28 @@
 package org.polypheny.db.adapter.druid;
 
 
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
  * Druid type.
  */
 public enum DruidType {
-    LONG( SqlTypeName.BIGINT ),
-    FLOAT( SqlTypeName.FLOAT ),
-    DOUBLE( SqlTypeName.DOUBLE ),
-    STRING( SqlTypeName.VARCHAR ),
-    COMPLEX( SqlTypeName.OTHER ),
-    HYPER_UNIQUE( SqlTypeName.VARBINARY ),
-    THETA_SKETCH( SqlTypeName.VARBINARY );
+    LONG( PolyType.BIGINT ),
+    FLOAT( PolyType.FLOAT ),
+    DOUBLE( PolyType.DOUBLE ),
+    STRING( PolyType.VARCHAR ),
+    COMPLEX( PolyType.OTHER ),
+    HYPER_UNIQUE( PolyType.VARBINARY ),
+    THETA_SKETCH( PolyType.VARBINARY );
 
     /**
      * The corresponding SQL type.
      */
-    public final SqlTypeName sqlType;
+    public final PolyType sqlType;
 
 
-    DruidType( SqlTypeName sqlType ) {
+    DruidType( PolyType sqlType ) {
         this.sqlType = sqlType;
     }
 

@@ -73,14 +73,14 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.ExtraSqlTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.ExtraPolyTypes;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -408,8 +408,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
      * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
      */
     private static String getTypeName( RelDataType type ) {
-        final SqlTypeName sqlTypeName = type.getSqlTypeName();
-        switch ( sqlTypeName ) {
+        final PolyType polyType = type.getPolyType();
+        switch ( polyType ) {
             case ARRAY:
             case MULTISET:
             case MAP:
@@ -430,13 +430,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             case INTERVAL_MINUTE_SECOND:
                 return "INTERVAL_MINUTE_TO_SECOND";
             default:
-                return sqlTypeName.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+                return polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
         }
     }
 
 
     private int getTypeOrdinal( RelDataType type ) {
-        return type.getSqlTypeName().getJdbcOrdinal();
+        return type.getPolyType().getJdbcOrdinal();
     }
 
 
@@ -488,7 +488,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         columns.add( metaData( typeFactory, field.getIndex(), field.getName(), field.getType(), null, null ) );
                     }
                     return ColumnMetaData.struct( columns );
-                case ExtraSqlTypes.GEOMETRY:
+                case ExtraPolyTypes.GEOMETRY:
                     typeOrdinal = Types.VARCHAR;
                     // fall through
                 default:

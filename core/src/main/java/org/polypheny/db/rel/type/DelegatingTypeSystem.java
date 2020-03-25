@@ -34,7 +34,7 @@
 package org.polypheny.db.rel.type;
 
 
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -54,19 +54,19 @@ public class DelegatingTypeSystem implements RelDataTypeSystem {
 
 
     @Override
-    public int getMaxScale( SqlTypeName typeName ) {
+    public int getMaxScale( PolyType typeName ) {
         return typeSystem.getMaxScale( typeName );
     }
 
 
     @Override
-    public int getDefaultPrecision( SqlTypeName typeName ) {
+    public int getDefaultPrecision( PolyType typeName ) {
         return typeSystem.getDefaultPrecision( typeName );
     }
 
 
     @Override
-    public int getMaxPrecision( SqlTypeName typeName ) {
+    public int getMaxPrecision( PolyType typeName ) {
         return typeSystem.getMaxPrecision( typeName );
     }
 
@@ -84,25 +84,25 @@ public class DelegatingTypeSystem implements RelDataTypeSystem {
 
 
     @Override
-    public String getLiteral( SqlTypeName typeName, boolean isPrefix ) {
+    public String getLiteral( PolyType typeName, boolean isPrefix ) {
         return typeSystem.getLiteral( typeName, isPrefix );
     }
 
 
     @Override
-    public boolean isCaseSensitive( SqlTypeName typeName ) {
+    public boolean isCaseSensitive( PolyType typeName ) {
         return typeSystem.isCaseSensitive( typeName );
     }
 
 
     @Override
-    public boolean isAutoincrement( SqlTypeName typeName ) {
+    public boolean isAutoincrement( PolyType typeName ) {
         return typeSystem.isAutoincrement( typeName );
     }
 
 
     @Override
-    public int getNumTypeRadix( SqlTypeName typeName ) {
+    public int getNumTypeRadix( PolyType typeName ) {
         return typeSystem.getNumTypeRadix( typeName );
     }
 

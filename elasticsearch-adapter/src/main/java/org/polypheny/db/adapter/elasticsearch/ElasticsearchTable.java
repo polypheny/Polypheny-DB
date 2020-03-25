@@ -69,7 +69,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -309,8 +309,8 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
     @Override
     public RelDataType getRowType( RelDataTypeFactory relDataTypeFactory ) {
         final RelDataType mapType = relDataTypeFactory.createMapType(
-                relDataTypeFactory.createSqlType( SqlTypeName.VARCHAR ),
-                relDataTypeFactory.createTypeWithNullability( relDataTypeFactory.createSqlType( SqlTypeName.ANY ), true ) );
+                relDataTypeFactory.createPolyType( PolyType.VARCHAR ),
+                relDataTypeFactory.createTypeWithNullability( relDataTypeFactory.createPolyType( PolyType.ANY ), true ) );
         // TODO (PCP)
         return relDataTypeFactory.builder().add( "_MAP", null, mapType ).build();
     }

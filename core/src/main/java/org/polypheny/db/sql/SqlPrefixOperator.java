@@ -35,12 +35,12 @@ package org.polypheny.db.sql;
 
 
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -51,7 +51,7 @@ import org.polypheny.db.util.Util;
 public class SqlPrefixOperator extends SqlOperator {
 
 
-    public SqlPrefixOperator( String name, SqlKind kind, int prec, SqlReturnTypeInference returnTypeInference, SqlOperandTypeInference operandTypeInference, SqlOperandTypeChecker operandTypeChecker ) {
+    public SqlPrefixOperator( String name, SqlKind kind, int prec, PolyReturnTypeInference returnTypeInference, PolyOperandTypeInference operandTypeInference, PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 name,
                 kind,
@@ -78,13 +78,13 @@ public class SqlPrefixOperator extends SqlOperator {
 
     @Override
     protected RelDataType adjustType( SqlValidator validator, SqlCall call, RelDataType type ) {
-        if ( SqlTypeUtil.inCharFamily( type ) ) {
+        if ( PolyTypeUtil.inCharFamily( type ) ) {
             // Determine coercibility and resulting collation name of unary operator if needed.
             RelDataType operandType = validator.getValidatedNodeType( call.operand( 0 ) );
             if ( null == operandType ) {
                 throw new AssertionError( "operand's type should have been derived" );
             }
-            if ( SqlTypeUtil.inCharFamily( operandType ) ) {
+            if ( PolyTypeUtil.inCharFamily( operandType ) ) {
                 SqlCollation collation = operandType.getCollation();
                 assert null != collation : "An implicit or explicit collation should have been set";
                 type = validator.getTypeFactory()

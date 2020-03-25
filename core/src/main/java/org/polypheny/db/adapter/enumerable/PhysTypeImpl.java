@@ -59,7 +59,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory.Builder;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -138,7 +138,7 @@ public class PhysTypeImpl implements PhysType {
             builder.add( rowType.getFieldList().get( index ) );
         }
         if ( indicator ) {
-            final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), false );
+            final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
             for ( int index : integers ) {
                 builder.add( "i$" + rowType.getFieldList().get( index ).getName(), null, booleanType );
             }

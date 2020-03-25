@@ -48,7 +48,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -94,7 +94,7 @@ public class DruidSchema extends AbstractSchema {
 
 
     private Table table( String tableName, DruidConnectionImpl connection ) {
-        final Map<String, SqlTypeName> fieldMap = new LinkedHashMap<>();
+        final Map<String, PolyType> fieldMap = new LinkedHashMap<>();
         final Set<String> metricNameSet = new LinkedHashSet<>();
         final Map<String, List<ComplexMetric>> complexMetrics = new HashMap<>();
 

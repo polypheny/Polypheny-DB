@@ -37,7 +37,7 @@ package org.polypheny.db.sql.validate;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSelect;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -87,7 +87,7 @@ public class SelectNamespace extends AbstractNamespace {
     @Override
     public SqlMonotonicity getMonotonicity( String columnName ) {
         final RelDataType rowType = this.getRowTypeSansSystemColumns();
-        final int field = SqlTypeUtil.findField( rowType, columnName );
+        final int field = PolyTypeUtil.findField( rowType, columnName );
         final SqlNode selectItem = validator.getRawSelectScope( select ).getExpandedSelectList().get( field );
         return validator.getSelectScope( select ).getMonotonicity( selectItem );
     }

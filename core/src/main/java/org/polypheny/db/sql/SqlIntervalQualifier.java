@@ -46,10 +46,10 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -148,47 +148,47 @@ public class SqlIntervalQualifier extends SqlNode {
     //~ Methods ----------------------------------------------------------------
 
 
-    public SqlTypeName typeName() {
+    public PolyType typeName() {
         switch ( timeUnitRange ) {
             case YEAR:
             case ISOYEAR:
             case CENTURY:
             case DECADE:
             case MILLENNIUM:
-                return SqlTypeName.INTERVAL_YEAR;
+                return PolyType.INTERVAL_YEAR;
             case YEAR_TO_MONTH:
-                return SqlTypeName.INTERVAL_YEAR_MONTH;
+                return PolyType.INTERVAL_YEAR_MONTH;
             case MONTH:
             case QUARTER:
-                return SqlTypeName.INTERVAL_MONTH;
+                return PolyType.INTERVAL_MONTH;
             case DOW:
             case ISODOW:
             case DOY:
             case DAY:
             case WEEK:
-                return SqlTypeName.INTERVAL_DAY;
+                return PolyType.INTERVAL_DAY;
             case DAY_TO_HOUR:
-                return SqlTypeName.INTERVAL_DAY_HOUR;
+                return PolyType.INTERVAL_DAY_HOUR;
             case DAY_TO_MINUTE:
-                return SqlTypeName.INTERVAL_DAY_MINUTE;
+                return PolyType.INTERVAL_DAY_MINUTE;
             case DAY_TO_SECOND:
-                return SqlTypeName.INTERVAL_DAY_SECOND;
+                return PolyType.INTERVAL_DAY_SECOND;
             case HOUR:
-                return SqlTypeName.INTERVAL_HOUR;
+                return PolyType.INTERVAL_HOUR;
             case HOUR_TO_MINUTE:
-                return SqlTypeName.INTERVAL_HOUR_MINUTE;
+                return PolyType.INTERVAL_HOUR_MINUTE;
             case HOUR_TO_SECOND:
-                return SqlTypeName.INTERVAL_HOUR_SECOND;
+                return PolyType.INTERVAL_HOUR_SECOND;
             case MINUTE:
-                return SqlTypeName.INTERVAL_MINUTE;
+                return PolyType.INTERVAL_MINUTE;
             case MINUTE_TO_SECOND:
-                return SqlTypeName.INTERVAL_MINUTE_SECOND;
+                return PolyType.INTERVAL_MINUTE_SECOND;
             case SECOND:
             case MILLISECOND:
             case EPOCH:
             case MICROSECOND:
             case NANOSECOND:
-                return SqlTypeName.INTERVAL_SECOND;
+                return PolyType.INTERVAL_SECOND;
             default:
                 throw new AssertionError( timeUnitRange );
         }

@@ -43,18 +43,19 @@ import org.apache.calcite.avatica.util.TimeUnit;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlIntervalQualifier;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Glossary;
 
 
 /**
- * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java, and collection types.
- * The factory also provides methods for return type inference for arithmetic in cases where SQL 2003 is implementation defined or impractical.
- *
+ * RelDataTypeFactory is a factory for datatype descriptors. It defines methods for instantiating and combining SQL, Java,
+ * and collection types. The factory also provides methods for return type inference for arithmetic in cases where SQL 2003
+ * is implementation defined or impractical.
+ * <p>
  * This interface is an example of the {@link Glossary#ABSTRACT_FACTORY_PATTERN abstract factory pattern}.
- * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal if and only if they are represented by the same Java object.
- * This reduces memory consumption and comparison cost.
+ * Any implementation of <code>RelDataTypeFactory</code> must ensure that type objects are canonical: two types are equal
+ * if and only if they are represented by the same Java object. This reduces memory consumption and comparison cost.
  */
 public interface RelDataTypeFactory {
 
@@ -143,7 +144,8 @@ public interface RelDataTypeFactory {
     RelDataType createMultisetType( RelDataType elementType, long maxCardinality );
 
     /**
-     * Duplicates a type, making a deep copy. Normally, this is a no-op, since canonical type objects are returned. However, it is useful when copying a type from one factory to another.
+     * Duplicates a type, making a deep copy. Normally, this is a no-op, since canonical type objects are returned.
+     * However, it is useful when copying a type from one factory to another.
      *
      * @param type input type
      * @return output type, a new object equivalent to input type
@@ -151,8 +153,9 @@ public interface RelDataTypeFactory {
     RelDataType copyType( RelDataType type );
 
     /**
-     * Creates a type that is the same as another type but with possibly different nullability. The output type may be identical to the input type. For type systems without a concept of nullability, the return value
-     * is always the same as the input.
+     * Creates a type that is the same as another type but with possibly different nullability. The output type may be
+     * identical to the input type. For type systems without a concept of nullability, the return value is always
+     * the same as the input.
      *
      * @param type input type
      * @param nullable true to request a nullable type; false to request a NOT NULL type
@@ -162,7 +165,8 @@ public interface RelDataTypeFactory {
     RelDataType createTypeWithNullability( RelDataType type, boolean nullable );
 
     /**
-     * Creates a type that is the same as another type but with possibly different charset or collation. For types without a concept of charset or collation this function must throw an error.
+     * Creates a type that is the same as another type but with possibly different charset or collation. For types without a
+     * concept of charset or collation this function must throw an error.
      *
      * @param type input type
      * @param charset charset to assign
@@ -178,7 +182,8 @@ public interface RelDataTypeFactory {
     Charset getDefaultCharset();
 
     /**
-     * Returns the most general of a set of types (that is, one type to which they can all be cast), or null if conversion is not possible. The result may be a new type that is less restrictive than any of the input types,
+     * Returns the most general of a set of types (that is, one type to which they can all be cast), or null if conversion
+     * is not possible. The result may be a new type that is less restrictive than any of the input types,
      * e.g. <code>leastRestrictive(INT, NUMERIC(3, 2))</code> could be {@code NUMERIC(12, 2)}.
      *
      * @param types input types to be combined using union (not null, not empty)
@@ -187,15 +192,15 @@ public interface RelDataTypeFactory {
     RelDataType leastRestrictive( List<RelDataType> types );
 
     /**
-     * Creates a SQL type with no precision or scale.
+     * Creates a poly type with no precision or scale.
      *
-     * @param typeName Name of the type, for example {@link SqlTypeName#BOOLEAN}, never null
+     * @param typeName Name of the type, for example {@link PolyType#BOOLEAN}, never null
      * @return canonical type descriptor
      */
-    RelDataType createSqlType( SqlTypeName typeName );
+    RelDataType createPolyType( PolyType typeName );
 
     /**
-     * Creates a SQL type that represents the "unknown" type.
+     * Creates a type that represents the "unknown" type.
      * It is only equal to itself, and is distinct from the NULL type.
      *
      * @return unknown type
@@ -203,23 +208,23 @@ public interface RelDataTypeFactory {
     RelDataType createUnknownType();
 
     /**
-     * Creates a SQL type with length (precision) but no scale.
+     * Creates a Poly type with length (precision) but no scale.
      *
-     * @param typeName Name of the type, for example {@link SqlTypeName#VARCHAR}. Never null.
+     * @param typeName  Name of the type, for example {@link PolyType#VARCHAR}. Never null.
      * @param precision Maximum length of the value (non-numeric types) or the precision of the value (numeric/datetime types). Must be non-negative or {@link RelDataType#PRECISION_NOT_SPECIFIED}.
      * @return canonical type descriptor
      */
-    RelDataType createSqlType( SqlTypeName typeName, int precision );
+    RelDataType createPolyType( PolyType typeName, int precision );
 
     /**
-     * Creates a SQL type with precision and scale.
+     * Creates a Poly type with precision and scale.
      *
-     * @param typeName Name of the type, for example {@link SqlTypeName#DECIMAL}. Never null.
+     * @param typeName  Name of the type, for example {@link PolyType#DECIMAL}. Never null.
      * @param precision Precision of the value. Must be non-negative or {@link RelDataType#PRECISION_NOT_SPECIFIED}.
-     * @param scale scale of the values, i.e. the number of decimal places to shift the value. For example, a NUMBER(10,3) value of "123.45" is represented "123450" (that is, multiplied by 10^3). A negative scale <em>is</em> valid.
+     * @param scale     scale of the values, i.e. the number of decimal places to shift the value. For example, a NUMBER(10,3) value of "123.45" is represented "123450" (that is, multiplied by 10^3). A negative scale <em>is</em> valid.
      * @return canonical type descriptor
      */
-    RelDataType createSqlType( SqlTypeName typeName, int precision, int scale );
+    RelDataType createPolyType( PolyType typeName, int precision, int scale );
 
     /**
      * Creates a SQL interval type.
@@ -230,7 +235,8 @@ public interface RelDataTypeFactory {
     RelDataType createSqlIntervalType( SqlIntervalQualifier intervalQualifier );
 
     /**
-     * Infers the return type of a decimal multiplication. Decimal multiplication involves at least one decimal operand and requires both operands to have exact numeric types.
+     * Infers the return type of a decimal multiplication. Decimal multiplication involves at least one decimal operand and
+     * requires both operands to have exact numeric types.
      *
      * @param type1 type of the first operand
      * @param type2 type of the second operand
@@ -246,7 +252,8 @@ public interface RelDataTypeFactory {
     boolean useDoubleMultiplication( RelDataType type1, RelDataType type2 );
 
     /**
-     * Infers the return type of a decimal division. Decimal division involves at least one decimal operand and requires both operands to have exact numeric types.
+     * Infers the return type of a decimal division. Decimal division involves at least one decimal operand and requires
+     * both operands to have exact numeric types.
      *
      * @param type1 type of the first operand
      * @param type2 type of the second operand
@@ -255,8 +262,8 @@ public interface RelDataTypeFactory {
     RelDataType createDecimalQuotient( RelDataType type1, RelDataType type2 );
 
     /**
-     * Creates a {@link org.polypheny.db.rel.type.RelDataTypeFactory.FieldInfoBuilder}. But since {@code FieldInfoBuilder} is deprecated, we recommend that you use
-     * its base class {@link Builder}, which is not deprecated.
+     * Creates a {@link org.polypheny.db.rel.type.RelDataTypeFactory.FieldInfoBuilder}. But since {@code FieldInfoBuilder}
+     * is deprecated, we recommend that you use its base class {@link Builder}, which is not deprecated.
      */
     FieldInfoBuilder builder();
 
@@ -321,19 +328,19 @@ public interface RelDataTypeFactory {
 
 
         @Override
-        public FieldInfoBuilder add( String name, String physicalName, SqlTypeName typeName ) {
+        public FieldInfoBuilder add( String name, String physicalName, PolyType typeName ) {
             return (FieldInfoBuilder) super.add( name, physicalName, typeName );
         }
 
 
         @Override
-        public FieldInfoBuilder add( String name, String physicalName, SqlTypeName typeName, int precision ) {
+        public FieldInfoBuilder add( String name, String physicalName, PolyType typeName, int precision ) {
             return (FieldInfoBuilder) super.add( name, physicalName, typeName, precision );
         }
 
 
         @Override
-        public FieldInfoBuilder add( String name, String physicalName, SqlTypeName typeName, int precision, int scale ) {
+        public FieldInfoBuilder add( String name, String physicalName, PolyType typeName, int precision, int scale ) {
             return (FieldInfoBuilder) super.add( name, physicalName, typeName, precision, scale );
         }
 
@@ -450,28 +457,28 @@ public interface RelDataTypeFactory {
 
 
         /**
-         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createPolyType(PolyType)}.
          */
-        public Builder add( String name, String physicalName, SqlTypeName typeName ) {
-            add( name, physicalName, typeFactory.createSqlType( typeName ) );
+        public Builder add( String name, String physicalName, PolyType typeName ) {
+            add( name, physicalName, typeFactory.createPolyType( typeName ) );
             return this;
         }
 
 
         /**
-         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createPolyType(PolyType, int)}.
          */
-        public Builder add( String name, String physicalName, SqlTypeName typeName, int precision ) {
-            add( name, physicalName, typeFactory.createSqlType( typeName, precision ) );
+        public Builder add( String name, String physicalName, PolyType typeName, int precision ) {
+            add( name, physicalName, typeFactory.createPolyType( typeName, precision ) );
             return this;
         }
 
 
         /**
-         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createSqlType(SqlTypeName, int, int)}.
+         * Adds a field with a type created using {@link org.polypheny.db.rel.type.RelDataTypeFactory#createPolyType(PolyType, int, int)}.
          */
-        public Builder add( String name, String physicalName, SqlTypeName typeName, int precision, int scale ) {
-            add( name, physicalName, typeFactory.createSqlType( typeName, precision, scale ) );
+        public Builder add( String name, String physicalName, PolyType typeName, int precision, int scale ) {
+            add( name, physicalName, typeFactory.createPolyType( typeName, precision, scale ) );
             return this;
         }
 

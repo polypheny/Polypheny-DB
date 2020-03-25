@@ -44,10 +44,10 @@ import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeTransforms;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeTransforms;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -59,9 +59,9 @@ public class SqlJsonQueryFunction extends SqlFunction {
         super(
                 "JSON_QUERY",
                 SqlKind.OTHER_FUNCTION,
-                ReturnTypes.cascade( ReturnTypes.VARCHAR_2000, SqlTypeTransforms.FORCE_NULLABLE ),
+                ReturnTypes.cascade( ReturnTypes.VARCHAR_2000, PolyTypeTransforms.FORCE_NULLABLE ),
                 null,
-                OperandTypes.family( SqlTypeFamily.ANY, SqlTypeFamily.ANY, SqlTypeFamily.ANY, SqlTypeFamily.ANY ),
+                OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.ANY, PolyTypeFamily.ANY, PolyTypeFamily.ANY ),
                 SqlFunctionCategory.SYSTEM );
     }
 

@@ -41,8 +41,9 @@ import org.apache.calcite.linq4j.Ord;
 
 /**
  * Type of the cartesian product of two or more sets of records.
- *
- * Its fields are those of its constituent records, but unlike a {@link RelRecordType}, those fields' names are not necessarily distinct.
+ * <p>
+ * Its fields are those of its constituent records, but unlike a {@link RelRecordType}, those fields' names are not
+ * necessarily distinct.
  */
 public class RelCrossType extends RelDataTypeImpl {
 

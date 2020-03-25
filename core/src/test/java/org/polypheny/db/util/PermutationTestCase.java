@@ -50,7 +50,7 @@ import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -158,7 +158,7 @@ public class PermutationTestCase {
     public void testProjectPermutation() {
         final RelDataTypeFactory typeFactory = new JavaTypeFactoryImpl();
         final RexBuilder builder = new RexBuilder( typeFactory );
-        final RelDataType doubleType = typeFactory.createSqlType( SqlTypeName.DOUBLE );
+        final RelDataType doubleType = typeFactory.createPolyType( PolyType.DOUBLE );
 
         // A project with [1, 1] is not a permutation, so should return null
         final Permutation perm = Project.getPermutation( 2, ImmutableList.of( builder.makeInputRef( doubleType, 1 ), builder.makeInputRef( doubleType, 1 ) ) );

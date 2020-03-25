@@ -85,7 +85,7 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
 
@@ -212,7 +212,7 @@ public class FrameworksTest {
                 new Frameworks.PrepareAction<Void>( config ) {
                     @Override
                     public Void apply( RelOptCluster cluster, RelOptSchema relOptSchema, SchemaPlus rootSchema ) {
-                        final RelDataType type = cluster.getTypeFactory().createSqlType( SqlTypeName.DECIMAL, 30, 2 );
+                        final RelDataType type = cluster.getTypeFactory().createPolyType( PolyType.DECIMAL, 30, 2 );
                         final RexLiteral literal = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ONE, type );
                         final RexNode call = cluster.getRexBuilder().makeCall( SqlStdOperatorTable.PLUS, literal, literal );
                         assertEquals( expected, call.getType().getPrecision() );
@@ -375,8 +375,8 @@ public class FrameworksTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "id", null, typeFactory.createSqlType( SqlTypeName.INTEGER ) )
-                    .add( "name", null, typeFactory.createSqlType( SqlTypeName.INTEGER ) )
+                    .add( "id", null, typeFactory.createPolyType( PolyType.INTEGER ) )
+                    .add( "name", null, typeFactory.createPolyType( PolyType.INTEGER ) )
                     .build();
         }
 

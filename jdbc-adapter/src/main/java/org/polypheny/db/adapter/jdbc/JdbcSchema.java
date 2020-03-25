@@ -69,8 +69,8 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialectFactory;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Util;
 
 
@@ -137,7 +137,7 @@ public class JdbcSchema implements Schema {
     public JdbcTable createJdbcTable( CatalogCombinedTable combinedTable ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
         // not a type; before being used, the proto-type will be copied into a real type factory.
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<String> logicalColumnNames = new LinkedList<>();
         List<String> physicalColumnNames = new LinkedList<>();
@@ -161,7 +161,7 @@ public class JdbcSchema implements Schema {
             if ( physicalTableName == null ) {
                 physicalTableName = placement.physicalTableName;
             }
-            SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO MV: Replace PolySqlType with native
+            PolyType dataTypeName = PolyType.get( catalogColumn.type.name() ); // TODO MV: Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             logicalColumnNames.add( catalogColumn.name );
@@ -267,10 +267,10 @@ public class JdbcSchema implements Schema {
     }
 
 
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, SqlTypeName dataTypeName, Integer precision, Integer scale, String typeString ) {
+    private RelDataType sqlType( RelDataTypeFactory typeFactory, PolyType dataTypeName, Integer precision, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
-        final SqlTypeName sqlTypeName = Util.first( dataTypeName, SqlTypeName.ANY );
-        switch ( sqlTypeName ) {
+        final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
+        switch ( polyType ) {
             case ARRAY:
                 RelDataType component = null;
                 if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
@@ -279,17 +279,17 @@ public class JdbcSchema implements Schema {
                     component = parseTypeString( typeFactory, remaining );
                 }
                 if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                 }
                 return typeFactory.createArrayType( component, -1 );
         }
-        if ( precision != null && scale != null && sqlTypeName.allowsPrecScale( true, true ) ) {
-            return typeFactory.createSqlType( sqlTypeName, precision, scale );
-        } else if ( precision != null && sqlTypeName.allowsPrecNoScale() ) {
-            return typeFactory.createSqlType( sqlTypeName, precision );
+        if ( precision != null && scale != null && polyType.allowsPrecScale( true, true ) ) {
+            return typeFactory.createPolyType( polyType, precision, scale );
+        } else if ( precision != null && polyType.allowsPrecNoScale() ) {
+            return typeFactory.createPolyType( polyType, precision );
         } else {
-            assert sqlTypeName.allowsNoPrecNoScale();
-            return typeFactory.createSqlType( sqlTypeName );
+            assert polyType.allowsNoPrecNoScale();
+            return typeFactory.createPolyType( polyType );
         }
     }
 
@@ -318,14 +318,14 @@ public class JdbcSchema implements Schema {
             }
         }
         try {
-            final SqlTypeName typeName = SqlTypeName.valueOf( typeString );
+            final PolyType typeName = PolyType.valueOf( typeString );
             return typeName.allowsPrecScale( true, true )
-                    ? typeFactory.createSqlType( typeName, precision, scale )
+                    ? typeFactory.createPolyType( typeName, precision, scale )
                     : typeName.allowsPrecScale( true, false )
-                            ? typeFactory.createSqlType( typeName, precision )
-                            : typeFactory.createSqlType( typeName );
+                            ? typeFactory.createPolyType( typeName, precision )
+                            : typeFactory.createPolyType( typeName );
         } catch ( IllegalArgumentException e ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
     }
 

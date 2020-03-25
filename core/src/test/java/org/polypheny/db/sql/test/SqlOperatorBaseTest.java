@@ -63,9 +63,6 @@ import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.utils.AbstractSqlTester;
 import org.polypheny.db.sql.utils.SqlRuntimeTester;
 import org.polypheny.db.sql.utils.SqlTester;
@@ -76,6 +73,9 @@ import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.test.PolyphenyDbAssert;
 import org.polypheny.db.test.SqlTestFactory;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.Pair;
@@ -6845,7 +6845,7 @@ public abstract class SqlOperatorBaseTest {
                 "TIMESTAMP(3) NOT NULL" );
 
         // The following test would correctly return "TIMESTAMP(6) NOT NULL" if max precision were 6 or higher
-        assumeTrue( tester.getValidator().getTypeFactory().getTypeSystem().getMaxPrecision( SqlTypeName.TIMESTAMP ) == 3 );
+        assumeTrue( tester.getValidator().getTypeFactory().getTypeSystem().getMaxPrecision( PolyType.TIMESTAMP ) == 3 );
         tester.checkType(
                 "timestampadd(MICROSECOND, 2, timestamp '2016-02-24 12:42:25.000000')",
                 // "2016-02-24 12:42:25.000002",
@@ -7648,13 +7648,13 @@ public abstract class SqlOperatorBaseTest {
 //        final List<RelDataType> types = SqlLimitsTest.getTypes( tester.getValidator().getTypeFactory() );
 //        for ( RelDataType type : types ) {
 //            for ( Object o : getValues( (BasicSqlType) type, true ) ) {
-//                SqlLiteral literal = type.getSqlTypeName().createLiteral( o, SqlParserPos.ZERO );
+//                SqlLiteral literal = type.getPolyType().createLiteral( o, SqlParserPos.ZERO );
 //                SqlString literalString = literal.toSqlString( AnsiSqlDialect.DEFAULT );
 //                final String expr = "CAST(" + literalString + " AS " + type + ")";
 //                try {
 //                    tester.checkType( expr, type.getFullTypeString() );
 //
-//                    if ( type.getSqlTypeName() == SqlTypeName.BINARY ) {
+//                    if ( type.getPolyType() == PolyType.BINARY ) {
 //                        // Casting a string/binary values may change the value. For example, CAST(X'AB' AS BINARY(2)) yields X'AB00'.
 //                    } else {
 //                        tester.checkScalar(
@@ -7688,11 +7688,11 @@ public abstract class SqlOperatorBaseTest {
 //        final List<RelDataType> types = SqlLimitsTest.getTypes( tester.getValidator().getTypeFactory() );
 //        for ( RelDataType type : types ) {
 //            for ( Object o : getValues( (BasicSqlType) type, false ) ) {
-//                SqlLiteral literal = type.getSqlTypeName().createLiteral( o, SqlParserPos.ZERO );
+//                SqlLiteral literal = type.getPolyType().createLiteral( o, SqlParserPos.ZERO );
 //                SqlString literalString = literal.toSqlString( AnsiSqlDialect.DEFAULT );
 //
-//                if ( (type.getSqlTypeName() == SqlTypeName.BIGINT)
-//                        || ((type.getSqlTypeName() == SqlTypeName.DECIMAL)
+//                if ( (type.getPolyType() == PolyType.BIGINT)
+//                        || ((type.getPolyType() == PolyType.DECIMAL)
 //                        && (type.getPrecision() == 19)) ) {
 //                    // Values which are too large to be literals fail at validate time.
 //                    tester.checkFails(
@@ -7700,10 +7700,10 @@ public abstract class SqlOperatorBaseTest {
 //                            "Numeric literal '.*' out of range",
 //                            false );
 //                } else if (
-//                        (type.getSqlTypeName() == SqlTypeName.CHAR)
-//                                || (type.getSqlTypeName() == SqlTypeName.VARCHAR)
-//                                || (type.getSqlTypeName() == SqlTypeName.BINARY)
-//                                || (type.getSqlTypeName() == SqlTypeName.VARBINARY) ) {
+//                        (type.getPolyType() == PolyType.CHAR)
+//                                || (type.getPolyType() == PolyType.VARCHAR)
+//                                || (type.getPolyType() == PolyType.BINARY)
+//                                || (type.getPolyType() == PolyType.VARBINARY) ) {
 //                    // Casting overlarge string/binary values do not fail - they are truncated. See testCastTruncates().
 //                } else {
 //                    if ( Bug.CALCITE_2539_FIXED ) {
@@ -7754,14 +7754,14 @@ public abstract class SqlOperatorBaseTest {
         final SqlValidatorScope scope = validator.getEmptyScope();
         final RelDataTypeFactory typeFactory = validator.getTypeFactory();
         final Builder builder = new Builder( typeFactory );
-        builder.add0( SqlTypeName.BOOLEAN, true, false );
-        builder.add0( SqlTypeName.TINYINT, 0, 1, -3, Byte.MAX_VALUE, Byte.MIN_VALUE );
-        builder.add0( SqlTypeName.SMALLINT, 0, 1, -4, Short.MAX_VALUE, Short.MIN_VALUE );
-        builder.add0( SqlTypeName.INTEGER, 0, 1, -2, Integer.MIN_VALUE, Integer.MAX_VALUE );
-        builder.add0( SqlTypeName.BIGINT, 0, 1, -5, Integer.MAX_VALUE, Long.MAX_VALUE, Long.MIN_VALUE );
-        builder.add1( SqlTypeName.VARCHAR, 11, "", " ", "hello world" );
-        builder.add1( SqlTypeName.CHAR, 5, "", "e", "hello" );
-        builder.add0( SqlTypeName.TIMESTAMP, 0L, DateTimeUtils.MILLIS_PER_DAY );
+        builder.add0( PolyType.BOOLEAN, true, false );
+        builder.add0( PolyType.TINYINT, 0, 1, -3, Byte.MAX_VALUE, Byte.MIN_VALUE );
+        builder.add0( PolyType.SMALLINT, 0, 1, -4, Short.MAX_VALUE, Short.MIN_VALUE );
+        builder.add0( PolyType.INTEGER, 0, 1, -2, Integer.MIN_VALUE, Integer.MAX_VALUE );
+        builder.add0( PolyType.BIGINT, 0, 1, -5, Integer.MAX_VALUE, Long.MAX_VALUE, Long.MIN_VALUE );
+        builder.add1( PolyType.VARCHAR, 11, "", " ", "hello world" );
+        builder.add1( PolyType.CHAR, 5, "", "e", "hello" );
+        builder.add0( PolyType.TIMESTAMP, 0L, DateTimeUtils.MILLIS_PER_DAY );
         for ( SqlOperator op : SqlStdOperatorTable.instance().getOperatorList() ) {
             switch ( op.getKind() ) {
                 case TRIM: // can't handle the flag argument
@@ -7772,7 +7772,7 @@ public abstract class SqlOperatorBaseTest {
                 case SPECIAL:
                     continue;
             }
-            final SqlOperandTypeChecker typeChecker = op.getOperandTypeChecker();
+            final PolyOperandTypeChecker typeChecker = op.getOperandTypeChecker();
             if ( typeChecker == null ) {
                 continue;
             }
@@ -7831,10 +7831,10 @@ public abstract class SqlOperatorBaseTest {
     }
 
 
-    private List<Object> getValues( BasicSqlType type, boolean inBound ) {
+    private List<Object> getValues( BasicPolyType type, boolean inBound ) {
         List<Object> values = new ArrayList<>();
         for ( boolean sign : FALSE_TRUE ) {
-            for ( SqlTypeName.Limit limit : SqlTypeName.Limit.values() ) {
+            for ( PolyType.Limit limit : PolyType.Limit.values() ) {
                 Object o = type.getLimit( sign, limit, !inBound );
                 if ( o == null ) {
                     continue;
@@ -7989,17 +7989,17 @@ public abstract class SqlOperatorBaseTest {
             if ( value == null ) {
                 int precision = type.getPrecision();
                 int scale = type.getScale();
-                if ( !type.getSqlTypeName().allowsPrec() ) {
+                if ( !type.getPolyType().allowsPrec() ) {
                     precision = -1;
                 }
-                if ( !type.getSqlTypeName().allowsScale() ) {
+                if ( !type.getPolyType().allowsScale() ) {
                     scale = -1;
                 }
                 return SqlStdOperatorTable.CAST.createCall(
                         SqlParserPos.ZERO, SqlLiteral.createNull( SqlParserPos.ZERO ),
-                        new SqlDataTypeSpec( new SqlIdentifier( type.getSqlTypeName().getName(), SqlParserPos.ZERO ), precision, scale, null, null, SqlParserPos.ZERO ) );
+                        new SqlDataTypeSpec( new SqlIdentifier( type.getPolyType().getName(), SqlParserPos.ZERO ), precision, scale, null, null, SqlParserPos.ZERO ) );
             }
-            switch ( type.getSqlTypeName() ) {
+            switch ( type.getPolyType() ) {
                 case BOOLEAN:
                     return SqlLiteral.createBoolean( (Boolean) value, SqlParserPos.ZERO );
                 case TINYINT:
@@ -8035,13 +8035,13 @@ public abstract class SqlOperatorBaseTest {
         }
 
 
-        public void add0( SqlTypeName typeName, Object... values ) {
-            add( typeFactory.createSqlType( typeName ), values );
+        public void add0( PolyType typeName, Object... values ) {
+            add( typeFactory.createPolyType( typeName ), values );
         }
 
 
-        public void add1( SqlTypeName typeName, int precision, Object... values ) {
-            add( typeFactory.createSqlType( typeName, precision ), values );
+        public void add1( PolyType typeName, int precision, Object... values ) {
+            add( typeFactory.createPolyType( typeName, precision ), values );
         }
 
 

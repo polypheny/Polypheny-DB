@@ -34,8 +34,8 @@
 package org.polypheny.db.rel.type;
 
 
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 /**
@@ -52,7 +52,7 @@ import org.polypheny.db.sql.type.SqlTypeName;
 public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
     @Override
-    public int getMaxScale( SqlTypeName typeName ) {
+    public int getMaxScale( PolyType typeName ) {
         switch ( typeName ) {
             case DECIMAL:
                 return getMaxNumericScale();
@@ -69,7 +69,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                return SqlTypeName.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
+                return PolyType.MAX_INTERVAL_FRACTIONAL_SECOND_PRECISION;
             default:
                 return -1;
         }
@@ -77,8 +77,8 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
 
     @Override
-    public int getDefaultPrecision( SqlTypeName typeName ) {
-        // Following BasicSqlType precision as the default
+    public int getDefaultPrecision( PolyType typeName ) {
+        // Following BasicPolyType precision as the default
         switch ( typeName ) {
             case CHAR:
             case BINARY:
@@ -101,7 +101,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                return SqlTypeName.DEFAULT_INTERVAL_START_PRECISION;
+                return PolyType.DEFAULT_INTERVAL_START_PRECISION;
             case BOOLEAN:
                 return 1;
             case TINYINT:
@@ -124,7 +124,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 // farrago supports only 0 (see
-                // SqlTypeName.getDefaultPrecision), but it should be 6
+                // PolyType.getDefaultPrecision), but it should be 6
                 // (microseconds) per SQL99 part 2 section 6.1 syntax rule 30.
                 return 0;
             default:
@@ -134,7 +134,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
 
     @Override
-    public int getMaxPrecision( SqlTypeName typeName ) {
+    public int getMaxPrecision( PolyType typeName ) {
         switch ( typeName ) {
             case DECIMAL:
                 return getMaxNumericPrecision();
@@ -148,7 +148,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
             case TIME_WITH_LOCAL_TIME_ZONE:
             case TIMESTAMP:
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-                return SqlTypeName.MAX_DATETIME_PRECISION;
+                return PolyType.MAX_DATETIME_PRECISION;
             case INTERVAL_YEAR:
             case INTERVAL_YEAR_MONTH:
             case INTERVAL_MONTH:
@@ -162,7 +162,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
             case INTERVAL_MINUTE:
             case INTERVAL_MINUTE_SECOND:
             case INTERVAL_SECOND:
-                return SqlTypeName.MAX_INTERVAL_START_PRECISION;
+                return PolyType.MAX_INTERVAL_START_PRECISION;
             default:
                 return getDefaultPrecision( typeName );
         }
@@ -182,7 +182,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
 
     @Override
-    public String getLiteral( SqlTypeName typeName, boolean isPrefix ) {
+    public String getLiteral( PolyType typeName, boolean isPrefix ) {
         switch ( typeName ) {
             case VARBINARY:
             case VARCHAR:
@@ -224,7 +224,7 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
 
     @Override
-    public boolean isCaseSensitive( SqlTypeName typeName ) {
+    public boolean isCaseSensitive( PolyType typeName ) {
         switch ( typeName ) {
             case CHAR:
             case VARCHAR:
@@ -236,14 +236,14 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
 
     @Override
-    public boolean isAutoincrement( SqlTypeName typeName ) {
+    public boolean isAutoincrement( PolyType typeName ) {
         return false;
     }
 
 
     @Override
-    public int getNumTypeRadix( SqlTypeName typeName ) {
-        if ( typeName.getFamily() == SqlTypeFamily.NUMERIC && getDefaultPrecision( typeName ) != -1 ) {
+    public int getNumTypeRadix( PolyType typeName ) {
+        if ( typeName.getFamily() == PolyTypeFamily.NUMERIC && getDefaultPrecision( typeName ) != -1 ) {
             return 10;
         }
         return 0;
@@ -270,13 +270,13 @@ public abstract class RelDataTypeSystemImpl implements RelDataTypeSystem {
 
     @Override
     public RelDataType deriveFractionalRankType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.DOUBLE ), false );
+        return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.DOUBLE ), false );
     }
 
 
     @Override
     public RelDataType deriveRankType( RelDataTypeFactory typeFactory ) {
-        return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BIGINT ), false );
+        return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BIGINT ), false );
     }
 
 

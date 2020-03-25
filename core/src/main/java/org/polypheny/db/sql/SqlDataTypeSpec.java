@@ -40,12 +40,12 @@ import java.util.TimeZone;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -232,16 +232,16 @@ public class SqlDataTypeSpec extends SqlNode {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         String name = typeName.getSimple();
-        if ( SqlTypeName.get( name ) != null ) {
-            SqlTypeName sqlTypeName = SqlTypeName.get( name );
+        if ( PolyType.get( name ) != null ) {
+            PolyType polyType = PolyType.get( name );
 
             // we have a built-in data type
             writer.keyword( name );
 
-            if ( sqlTypeName.allowsPrec() && (precision >= 0) ) {
+            if ( polyType.allowsPrec() && (precision >= 0) ) {
                 final SqlWriter.Frame frame = writer.startList( SqlWriter.FrameTypeEnum.FUN_CALL, "(", ")" );
                 writer.print( precision );
-                if ( sqlTypeName.allowsScale() && (scale >= 0) ) {
+                if ( polyType.allowsScale() && (scale >= 0) ) {
                     writer.sep( ",", true );
                     writer.print( scale );
                 }
@@ -315,7 +315,7 @@ public class SqlDataTypeSpec extends SqlNode {
         if ( typeName.isSimple() ) {
             if ( null != collectionsTypeName ) {
                 final String collectionName = collectionsTypeName.getSimple();
-                if ( SqlTypeName.get( collectionName ) == null ) {
+                if ( PolyType.get( collectionName ) == null ) {
                     throw validator.newValidationError( this, Static.RESOURCE.unknownDatatypeName( collectionName ) );
                 }
             }
@@ -350,25 +350,25 @@ public class SqlDataTypeSpec extends SqlNode {
             return null;
         }
         final String name = typeName.getSimple();
-        final SqlTypeName sqlTypeName = SqlTypeName.get( name );
-        if ( sqlTypeName == null ) {
+        final PolyType polyType = PolyType.get( name );
+        if ( polyType == null ) {
             return null;
         }
 
         // NOTE jvs 15-Jan-2009:  earlier validation is supposed to have caught these, which is why it's OK for them to be assertions rather than user-level exceptions.
         RelDataType type;
         if ( (precision >= 0) && (scale >= 0) ) {
-            assert sqlTypeName.allowsPrecScale( true, true );
-            type = typeFactory.createSqlType( sqlTypeName, precision, scale );
+            assert polyType.allowsPrecScale( true, true );
+            type = typeFactory.createPolyType( polyType, precision, scale );
         } else if ( precision >= 0 ) {
-            assert sqlTypeName.allowsPrecNoScale();
-            type = typeFactory.createSqlType( sqlTypeName, precision );
+            assert polyType.allowsPrecNoScale();
+            type = typeFactory.createPolyType( polyType, precision );
         } else {
-            assert sqlTypeName.allowsNoPrecNoScale();
-            type = typeFactory.createSqlType( sqlTypeName );
+            assert polyType.allowsNoPrecNoScale();
+            type = typeFactory.createPolyType( polyType );
         }
 
-        if ( SqlTypeUtil.inCharFamily( type ) ) {
+        if ( PolyTypeUtil.inCharFamily( type ) ) {
             // Applying Syntax rule 10 from SQL:99 spec section 6.22 "If TD is a fixed-length, variable-length or large object character string,
             // then the collating sequence of the result of the <cast specification> is the default collating sequence for the
             // character repertoire of TD and the result of the <cast specification> has the Coercible coercibility characteristic."
@@ -386,15 +386,15 @@ public class SqlDataTypeSpec extends SqlNode {
 
         if ( null != collectionsTypeName ) {
             final String collectionName = collectionsTypeName.getSimple();
-            final SqlTypeName collectionsSqlTypeName = Objects.requireNonNull( SqlTypeName.get( collectionName ), collectionName );
+            final PolyType collectionsPolyType = Objects.requireNonNull( PolyType.get( collectionName ), collectionName );
 
-            switch ( collectionsSqlTypeName ) {
+            switch ( collectionsPolyType ) {
                 case MULTISET:
                     type = typeFactory.createMultisetType( type, -1 );
                     break;
 
                 default:
-                    throw Util.unexpected( collectionsSqlTypeName );
+                    throw Util.unexpected( collectionsPolyType );
             }
         }
 

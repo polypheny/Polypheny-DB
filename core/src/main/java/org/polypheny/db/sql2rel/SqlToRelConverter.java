@@ -183,10 +183,6 @@ import org.polypheny.db.sql.fun.SqlQuantifyOperator;
 import org.polypheny.db.sql.fun.SqlRowOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
-import org.polypheny.db.sql.type.TableFunctionReturnTypeInference;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql.validate.AggregatingSelectScope;
@@ -209,6 +205,10 @@ import org.polypheny.db.sql.validate.SqlValidatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.TableFunctionReturnTypeInference;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Litmus;
@@ -977,7 +977,7 @@ public class SqlToRelConverter {
                 //         and q.indicator <> TRUE"
                 //
                 final RelDataType targetRowType =
-                        SqlTypeUtil.promoteToRowType(
+                        PolyTypeUtil.promoteToRowType(
                                 typeFactory,
                                 validator.getValidatedNodeType( leftKeyNode ),
                                 null );
@@ -992,7 +992,7 @@ public class SqlToRelConverter {
                     // Generate
                     //    emp CROSS JOIN (SELECT COUNT(*) AS c,
                     //                       COUNT(deptno) AS ck FROM dept)
-                    final RelDataType longType = typeFactory.createSqlType( SqlTypeName.BIGINT );
+                    final RelDataType longType = typeFactory.createPolyType( PolyType.BIGINT );
                     final RelNode seek = converted.r.getInput( 0 ); // fragile
                     final int keyCount = leftKeys.size();
                     final List<Integer> args = ImmutableIntList.range( 0, keyCount );
@@ -1166,7 +1166,7 @@ public class SqlToRelConverter {
                 final Project left = (Project) join.getLeft();
                 final RelNode leftLeft = ((Join) left.getInput()).getLeft();
                 final int leftLeftCount = leftLeft.getRowType().getFieldCount();
-                final RelDataType longType = typeFactory.createSqlType( SqlTypeName.BIGINT );
+                final RelDataType longType = typeFactory.createPolyType( PolyType.BIGINT );
                 final RexNode cRef = rexBuilder.makeInputRef( root, leftLeftCount );
                 final RexNode ckRef = rexBuilder.makeInputRef( root, leftLeftCount + 1 );
                 final RexNode iRef = rexBuilder.makeInputRef( root, root.getRowType().getFieldCount() - 1 );
@@ -1347,11 +1347,11 @@ public class SqlToRelConverter {
 
 
     /**
-     * Ensures that an expression has a given {@link SqlTypeName}, applying a cast if necessary. If the expression already has the right type family, returns the expression unchanged.
+     * Ensures that an expression has a given {@link PolyType}, applying a cast if necessary. If the expression already has the right type family, returns the expression unchanged.
      */
     private RexNode ensureSqlType( RelDataType type, RexNode node ) {
-        if ( type.getSqlTypeName() == node.getType().getSqlTypeName()
-                || (type.getSqlTypeName() == SqlTypeName.VARCHAR && node.getType().getSqlTypeName() == SqlTypeName.CHAR) ) {
+        if ( type.getPolyType() == node.getType().getPolyType()
+                || (type.getPolyType() == PolyType.VARCHAR && node.getType().getPolyType() == PolyType.CHAR) ) {
             return node;
         }
         return rexBuilder.ensureType( type, node, true );
@@ -1405,7 +1405,7 @@ public class SqlToRelConverter {
         if ( targetRowType != null ) {
             rowType = targetRowType;
         } else {
-            rowType = SqlTypeUtil.promoteToRowType( typeFactory, validator.getValidatedNodeType( rowList ), null );
+            rowType = PolyTypeUtil.promoteToRowType( typeFactory, validator.getValidatedNodeType( rowList ), null );
         }
 
         final List<RelNode> unionInputs = new ArrayList<>();
@@ -1487,12 +1487,12 @@ public class SqlToRelConverter {
 
         Comparable value = literal.getValue();
 
-        if ( SqlTypeUtil.isExactNumeric( type ) && SqlTypeUtil.hasScale( type ) ) {
+        if ( PolyTypeUtil.isExactNumeric( type ) && PolyTypeUtil.hasScale( type ) ) {
             BigDecimal roundedValue = NumberUtil.rescaleBigDecimal( (BigDecimal) value, type.getScale() );
             return rexBuilder.makeExactLiteral( roundedValue, type );
         }
 
-        if ( (value instanceof NlsString) && (type.getSqlTypeName() == SqlTypeName.CHAR) ) {
+        if ( (value instanceof NlsString) && (type.getPolyType() == PolyType.CHAR) ) {
             // pad fixed character type
             NlsString unpadded = (NlsString) value;
             return rexBuilder.makeCharLiteral(
@@ -2147,7 +2147,7 @@ public class SqlToRelConverter {
 
 
     private Set<RelColumnMapping> getColumnMappings( SqlOperator op ) {
-        SqlReturnTypeInference rti = op.getReturnTypeInference();
+        PolyReturnTypeInference rti = op.getReturnTypeInference();
         if ( rti == null ) {
             return null;
         }
@@ -4840,7 +4840,7 @@ public class SqlToRelConverter {
                 final RelDataType histogramType = computeHistogramType( type );
 
                 // For DECIMAL, since it's already represented as a bigint we want to do a reinterpretCast instead of a cast to avoid losing any precision.
-                boolean reinterpretCast = type.getSqlTypeName() == SqlTypeName.DECIMAL;
+                boolean reinterpretCast = type.getPolyType() == PolyType.DECIMAL;
 
                 // Replace original expression with CAST of not one of the supported types
                 if ( histogramType != type ) {
@@ -4942,10 +4942,10 @@ public class SqlToRelConverter {
          * Returns the type for a histogram function. It is either the actual type or an an approximation to it.
          */
         private RelDataType computeHistogramType( RelDataType type ) {
-            if ( SqlTypeUtil.isExactNumeric( type ) && type.getSqlTypeName() != SqlTypeName.BIGINT ) {
-                return typeFactory.createSqlType( SqlTypeName.BIGINT );
-            } else if ( SqlTypeUtil.isApproximateNumeric( type ) && type.getSqlTypeName() != SqlTypeName.DOUBLE ) {
-                return typeFactory.createSqlType( SqlTypeName.DOUBLE );
+            if ( PolyTypeUtil.isExactNumeric( type ) && type.getPolyType() != PolyType.BIGINT ) {
+                return typeFactory.createPolyType( PolyType.BIGINT );
+            } else if ( PolyTypeUtil.isApproximateNumeric( type ) && type.getPolyType() != PolyType.DOUBLE ) {
+                return typeFactory.createPolyType( PolyType.DOUBLE );
             } else {
                 return type;
             }

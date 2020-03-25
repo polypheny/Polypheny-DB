@@ -17,9 +17,6 @@
 package org.polypheny.db.transaction;
 
 
-import org.polypheny.db.PUID;
-
-
 public class Utils {
 
 

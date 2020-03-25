@@ -34,7 +34,7 @@
 package org.polypheny.db.rel.type;
 
 
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -55,21 +55,21 @@ public interface RelDataTypeSystem {
     /**
      * Returns the maximum scale of a given type.
      */
-    int getMaxScale( SqlTypeName typeName );
+    int getMaxScale( PolyType typeName );
 
     /**
      * Returns default precision for this type if supported, otherwise -1 if precision is either unsupported or must be specified explicitly.
      *
      * @return Default precision
      */
-    int getDefaultPrecision( SqlTypeName typeName );
+    int getDefaultPrecision( PolyType typeName );
 
     /**
      * Returns the maximum precision (or length) allowed for this type, or -1 if precision/length are not applicable for this type.
      *
      * @return Maximum allowed precision
      */
-    int getMaxPrecision( SqlTypeName typeName );
+    int getMaxPrecision( PolyType typeName );
 
     /**
      * Returns the maximum scale of a NUMERIC or DECIMAL type.
@@ -84,23 +84,23 @@ public interface RelDataTypeSystem {
     /**
      * Returns the LITERAL string for the type, either PREFIX/SUFFIX.
      */
-    String getLiteral( SqlTypeName typeName, boolean isPrefix );
+    String getLiteral( PolyType typeName, boolean isPrefix );
 
     /**
      * Returns whether the type is case sensitive.
      */
-    boolean isCaseSensitive( SqlTypeName typeName );
+    boolean isCaseSensitive( PolyType typeName );
 
     /**
      * Returns whether the type can be auto increment.
      */
-    boolean isAutoincrement( SqlTypeName typeName );
+    boolean isAutoincrement( PolyType typeName );
 
     /**
      * Returns the numeric type radix, typically 2 or 10.
      * 0 means "not applicable".
      */
-    int getNumTypeRadix( SqlTypeName typeName );
+    int getNumTypeRadix( PolyType typeName );
 
     /**
      * Returns the return type of a call to the {@code SUM} aggregate function, inferred from its argument type.

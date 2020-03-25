@@ -41,9 +41,9 @@ import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Util;
 
 

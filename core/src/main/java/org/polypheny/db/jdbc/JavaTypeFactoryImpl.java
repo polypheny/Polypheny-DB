@@ -59,11 +59,11 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelRecordType;
 import org.polypheny.db.runtime.GeoFunctions;
 import org.polypheny.db.runtime.Unit;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.IntervalSqlType;
-import org.polypheny.db.sql.type.JavaToSqlTypeConversionRules;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.IntervalPolyType;
+import org.polypheny.db.type.JavaToPolyTypeConversionRules;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -73,7 +73,7 @@ import org.polypheny.db.util.Util;
  *
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.</p>
  */
-public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeFactory {
+public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaTypeFactory {
 
     private final Map<List<Pair<Type, Boolean>>, SyntheticRecordType> syntheticTypes = new HashMap<>();
 
@@ -153,16 +153,16 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
             case BOX:
                 return createJavaType( Primitive.ofBox( clazz ).boxClass );
         }
-        if ( JavaToSqlTypeConversionRules.instance().lookup( clazz ) != null ) {
+        if ( JavaToPolyTypeConversionRules.instance().lookup( clazz ) != null ) {
             return createJavaType( clazz );
         } else if ( clazz.isArray() ) {
             return createMultisetType( createType( clazz.getComponentType() ), -1 );
         } else if ( List.class.isAssignableFrom( clazz ) ) {
-            return createArrayType( createTypeWithNullability( createSqlType( SqlTypeName.ANY ), true ), -1 );
+            return createArrayType( createTypeWithNullability( createPolyType( PolyType.ANY ), true ), -1 );
         } else if ( Map.class.isAssignableFrom( clazz ) ) {
             return createMapType(
-                    createTypeWithNullability( createSqlType( SqlTypeName.ANY ), true ),
-                    createTypeWithNullability( createSqlType( SqlTypeName.ANY ), true ) );
+                    createTypeWithNullability( createPolyType( PolyType.ANY ), true ),
+                    createTypeWithNullability( createPolyType( PolyType.ANY ), true ) );
         } else {
             return createStructType( clazz );
         }
@@ -178,8 +178,8 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
         if ( type.isStruct() && type.getFieldCount() == 1 ) {
             return getJavaClass( type.getFieldList().get( 0 ).getType() );
         }
-        if ( type instanceof BasicSqlType || type instanceof IntervalSqlType ) {
-            switch ( type.getSqlTypeName() ) {
+        if ( type instanceof BasicPolyType || type instanceof IntervalPolyType ) {
+            switch ( type.getPolyType() ) {
                 case VARCHAR:
                 case CHAR:
                     return String.class;
@@ -229,7 +229,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
                     return Object.class;
             }
         }
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case ROW:
                 assert type instanceof RelRecordType;
                 if ( type instanceof JavaRecordType ) {
@@ -263,7 +263,7 @@ public class JavaTypeFactoryImpl extends SqlTypeFactoryImpl implements JavaTypeF
                     type.getFieldNames() );
         }
         if ( type instanceof JavaType ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( type.getSqlTypeName() ), type.isNullable() );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( type.getPolyType() ), type.isNullable() );
         }
         return type;
     }
