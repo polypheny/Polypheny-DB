@@ -572,6 +572,7 @@ public class Crud implements InformationObserver {
         //remove whitespace at the end
         allQueries = allQueries.replaceAll( "(\\s*)$", "" );
         String[] queries = allQueries.split( ";", 0 );
+        boolean noLimit = false;
         for ( String query : queries ) {
             Result result;
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
@@ -603,8 +604,12 @@ public class Crud implements InformationObserver {
                 if ( !p2.matcher( query ).find() ) {
                     query = query + " LIMIT " + getPageSize();
                 }
-                // decrease limit if it is too large
+                //If the user specifies a limit
                 else {
+                    noLimit = true;
+                }
+                // decrease limit if it is too large
+                /*else {
                     Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
                     Matcher limitMatcher = pattern.matcher( query );
                     if ( limitMatcher.find() ) {
@@ -614,10 +619,10 @@ public class Crud implements InformationObserver {
                             query = limitMatcher.replaceFirst( "$1 " + getPageSize() );
                         }
                     }
-                }
+                }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction, request, query ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = executeSqlSelect( transaction, request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
