@@ -20,6 +20,7 @@ package org.polypheny.db.information;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -75,7 +76,15 @@ public class InformationServerTest {
                 + "</ul>" ).setOrder( 1 );
         im.registerInformation( i1 );
 
-        Information iAction = new InformationAction( systemGroup, "executeAction", () -> "Executed action" ).setOrder( 2 );
+        Information iAction = new InformationAction( systemGroup, "executeAction", ( params ) -> {
+            String out = "Executed action with params: ";
+            if ( params != null ) {
+                for ( Map.Entry<String, String> entry : params.entrySet() ) {
+                    out += String.format( "%s: %s; ", entry.getKey(), entry.getValue() );
+                }
+            }
+            return out;
+        } ).withParameters( "p1", "p2", "p3" ).setOrder( 2 );
         im.registerInformation( iAction );
 
         //CPU GROUP

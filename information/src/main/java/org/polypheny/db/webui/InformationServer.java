@@ -79,7 +79,8 @@ public class InformationServer implements InformationObserver {
 
         http.post( "/executeAction", ( res, req ) -> {
             try {
-                String msg = im.getInformation( res.body() ).unwrap( InformationAction.class ).executeAction();
+                InformationAction action = gson.fromJson( res.body(), InformationAction.class );
+                String msg = im.getInformation( action.getId() ).unwrap( InformationAction.class ).executeAction( action.getParameters() );
                 return new InformationResponse().message( msg );
             } catch ( Exception e ) {
                 String errorMsg = "Could not execute InformationAction";

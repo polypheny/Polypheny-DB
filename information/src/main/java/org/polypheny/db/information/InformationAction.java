@@ -17,7 +17,9 @@
 package org.polypheny.db.information;
 
 
+import java.util.HashMap;
 import java.util.UUID;
+import lombok.Getter;
 
 
 /**
@@ -27,7 +29,9 @@ public class InformationAction extends Information {
 
     @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private String label;
-    private Action action;
+    private transient Action action;
+    @Getter
+    private HashMap<String, String> parameters = new HashMap<>();
 
 
     /**
@@ -42,8 +46,16 @@ public class InformationAction extends Information {
     }
 
 
-    public String executeAction() {
-        return this.action.run();
+    public InformationAction withParameters( final String... actions ) {
+        for ( String a : actions ) {
+            this.parameters.put( a, "" );
+        }
+        return this;
+    }
+
+
+    public String executeAction( final HashMap<String, String> parameters ) {
+        return this.action.run( parameters );
     }
 
 
@@ -52,7 +64,7 @@ public class InformationAction extends Information {
      */
     public interface Action {
 
-        String run();
+        String run( final HashMap<String, String> parameters );
     }
 
 }
