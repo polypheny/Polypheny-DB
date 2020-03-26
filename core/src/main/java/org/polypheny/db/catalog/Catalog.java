@@ -439,6 +439,7 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumn> getColumns( long tableId );
 
+
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
      * <code>getColumns(xid, databaseName, null, null, null)</code> returns all columns of the database.

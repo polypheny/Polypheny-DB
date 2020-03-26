@@ -179,8 +179,8 @@ public class PolyphenyDb {
             log.warn( "Interrupted on join()", e );
         }
 
-        StatisticsManager statisticsManager = StatisticsManager.getInstance();
-        // statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
+        StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
+        statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

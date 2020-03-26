@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -346,6 +347,7 @@ public class CatalogImpl extends Catalog {
      * @param db the MapDB database object on which the maps are generated from
      */
     private void initColumnInfo( DB db ) {
+
         columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
         //noinspection unchecked
         columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
@@ -1264,9 +1266,13 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogColumn> getColumns( long tableId ) {
+        Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
+        // TODO DL check solution for all
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            return new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
+            List<CatalogColumn> columns = new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
+            columns.sort( columnComparator );
+            return columns;
         } catch ( NullPointerException e ) {
             return new ArrayList<>();
         }
