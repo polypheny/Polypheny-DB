@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -239,6 +238,17 @@ public class CassandraStore extends Store {
         context.getTransaction().registerInvolvedStore( this );
         // TODO JS: Wrap with error handling to check whether successful, if not, try iterative revision names to find one that works.
         this.session.execute( addColumn );
+
+        try {
+            context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+                    getStoreId(),
+                    catalogColumn.id,
+                    this.dbKeyspace,
+                    physicalTableName,
+                    physicalColumnName );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -296,7 +306,7 @@ public class CassandraStore extends Store {
     public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
 //    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         // FIXME JS: Cassandra transaction hotfix
-        context.getTransaction().registerInvolvedStore( this );
+        /*context.getTransaction().registerInvolvedStore( this );
 
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogColumn.schemaName, catalogColumn.tableName );
@@ -351,7 +361,7 @@ public class CassandraStore extends Store {
 
         this.session.execute( builder.build() );
 
-        physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );
+        physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );*/
     }
 
 

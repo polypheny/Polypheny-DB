@@ -19,9 +19,6 @@ package org.polypheny.db.adapter.cassandra.util;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
-import com.datastax.oss.driver.api.querybuilder.term.Term;
-import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.type.PolyType;
 
@@ -44,7 +41,12 @@ public class CassandraTypesUtils {
             case DOUBLE:
                 return DataTypes.DOUBLE;
             case FLOAT:
+            case REAL:
                 return DataTypes.FLOAT;
+            case VARCHAR:
+                return DataTypes.TEXT;
+            case VARBINARY:
+                return DataTypes.BLOB;
             default:
                 throw new RuntimeException( "Unable to convert sql type: " + polyType.getName() );
         }
@@ -63,13 +65,16 @@ public class CassandraTypesUtils {
         } else if ( dataType == DataTypes.DOUBLE ) {
             return PolyType.DOUBLE;
         } else if ( dataType == DataTypes.FLOAT ) {
-            return PolyType.FLOAT;
+            // TODO JS: Float vs real?
+            return PolyType.REAL;
         } else if ( dataType == DataTypes.TIME ) {
             return PolyType.TIME;
         } else if ( dataType == DataTypes.DATE ) {
             return PolyType.DATE;
         } else if ( dataType == DataTypes.TIMESTAMP ) {
             return PolyType.TIMESTAMP;
+        } else if ( dataType == DataTypes.BLOB ) {
+            return PolyType.VARBINARY;
         } else {
             log.warn( "Unable to find type for cql type: {}. Returning ANY.", dataType );
             return PolyType.ANY;
