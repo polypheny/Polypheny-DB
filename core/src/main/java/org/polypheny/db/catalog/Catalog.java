@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -38,10 +36,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -63,6 +58,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 
 
 public abstract class Catalog {
@@ -499,7 +495,7 @@ public abstract class Catalog {
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
+    public abstract long addColumn( String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
 
     /**
      * Renames a column
@@ -524,7 +520,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param type The new type of the column
      */
-    public abstract void setColumnType( long columnId, PolySqlType type, Integer length, Integer precision ) throws GenericCatalogException;
+    public abstract void setColumnType( long columnId, PolyType type, Integer length, Integer precision ) throws GenericCatalogException;
 
     /**
      * Change nullability of the column (weather the column allows null values).
@@ -567,7 +563,10 @@ public abstract class Catalog {
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-    public abstract void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws GenericCatalogException, UnknownColumnException;
+
+
+    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws GenericCatalogException, UnknownColumnException;
+
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.

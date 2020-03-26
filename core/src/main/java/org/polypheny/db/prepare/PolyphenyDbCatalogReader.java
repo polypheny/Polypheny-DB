@@ -66,13 +66,6 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.type.FamilyOperandTypeChecker;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlMoniker;
 import org.polypheny.db.sql.validate.SqlMonikerImpl;
 import org.polypheny.db.sql.validate.SqlMonikerType;
@@ -83,6 +76,13 @@ import org.polypheny.db.sql.validate.SqlUserDefinedFunction;
 import org.polypheny.db.sql.validate.SqlUserDefinedTableFunction;
 import org.polypheny.db.sql.validate.SqlUserDefinedTableMacro;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.checker.FamilyOperandTypeChecker;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
 
@@ -275,11 +275,11 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
      */
     private static SqlOperator toOp( RelDataTypeFactory typeFactory, SqlIdentifier name, final Function function ) {
         List<RelDataType> argTypes = new ArrayList<>();
-        List<SqlTypeFamily> typeFamilies = new ArrayList<>();
+        List<PolyTypeFamily> typeFamilies = new ArrayList<>();
         for ( FunctionParameter o : function.getParameters() ) {
             final RelDataType type = o.getType( typeFactory );
             argTypes.add( type );
-            typeFamilies.add( Util.first( type.getSqlTypeName().getFamily(), SqlTypeFamily.ANY ) );
+            typeFamilies.add( Util.first( type.getPolyType().getFamily(), PolyTypeFamily.ANY ) );
         }
         final FamilyOperandTypeChecker typeChecker = OperandTypes.family( typeFamilies, i -> function.getParameters().get( i ).isOptional() );
         final List<RelDataType> paramTypes = toSql( typeFactory, argTypes );
@@ -306,7 +306,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    private static SqlReturnTypeInference infer( final ScalarFunction function ) {
+    private static PolyReturnTypeInference infer( final ScalarFunction function ) {
         return opBinding -> {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             final RelDataType type;
@@ -320,7 +320,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-    private static SqlReturnTypeInference infer( final AggregateFunction function ) {
+    private static PolyReturnTypeInference infer( final AggregateFunction function ) {
         return opBinding -> {
             final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
             final RelDataType type = function.getReturnType( typeFactory );
@@ -336,7 +336,7 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
 
     private static RelDataType toSql( RelDataTypeFactory typeFactory, RelDataType type ) {
         if ( type instanceof RelDataTypeFactoryImpl.JavaType && ((RelDataTypeFactoryImpl.JavaType) type).getJavaClass() == Object.class ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
         return JavaTypeFactoryImpl.toSql( typeFactory, type );
     }

@@ -61,9 +61,9 @@ import org.polypheny.db.rex.RexUnknownAs;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.test.RexProgramBuilderBase;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -241,7 +241,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
         if ( STRONG.isNull( node ) ) {
             switch ( unknownAs ) {
                 case FALSE:
-                    if ( node.getType().getSqlTypeName() == SqlTypeName.BOOLEAN ) {
+                    if ( node.getType().getPolyType() == PolyType.BOOLEAN ) {
                         if ( !falseLiteral.equals( opt ) ) {
                             assertEquals( nodeToString( node ) + " is always null boolean, so it should simplify to FALSE " + uaf, falseLiteral, opt );
                         }
@@ -252,7 +252,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
                     }
                     break;
                 case TRUE:
-                    if ( node.getType().getSqlTypeName() == SqlTypeName.BOOLEAN ) {
+                    if ( node.getType().getPolyType() == PolyType.BOOLEAN ) {
                         if ( !trueLiteral.equals( opt ) ) {
                             assertEquals( nodeToString( node ) + " is always null boolean, so it should simplify to TRUE " + uaf, trueLiteral, opt );
                         }
@@ -271,7 +271,7 @@ public class RexProgramFuzzyTest extends RexProgramBuilderBase {
         if ( opt.getType().isNullable() && !node.getType().isNullable() ) {
             fail( nodeToString( node ) + " had non-nullable type " + opt.getType() + ", and it was optimized to " + nodeToString( opt ) + " that has nullable type " + opt.getType() + ", " + uaf );
         }
-        if ( !SqlTypeUtil.equalSansNullability( typeFactory, node.getType(), opt.getType() ) ) {
+        if ( !PolyTypeUtil.equalSansNullability( typeFactory, node.getType(), opt.getType() ) ) {
             assertEquals( nodeToString( node ) + " has different type after simplification to " + nodeToString( opt ), node.getType(), opt.getType() );
         }
     }

@@ -63,7 +63,6 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlMatchRecognize;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
@@ -71,6 +70,7 @@ import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Util;
@@ -475,7 +475,7 @@ public class RelBuilderTest {
         RelNode root =
                 builder.scan( "employee" )
                         .project( builder.field( "deptno" ),
-                                builder.cast( builder.field( 6 ), SqlTypeName.SMALLINT ),
+                                builder.cast( builder.field( 6 ), PolyType.SMALLINT ),
                                 builder.literal( 20 ),
                                 builder.field( 6 ),
                                 builder.alias( builder.field( 6 ), "C" ) )
@@ -499,7 +499,7 @@ public class RelBuilderTest {
         RelNode root =
                 builder.scan( "employee" )
                         .project( builder.field( "deptno" ),
-                                builder.cast( builder.field( 6 ), SqlTypeName.INTEGER ),
+                                builder.cast( builder.field( 6 ), PolyType.INTEGER ),
                                 builder.or(
                                         builder.equals( builder.field( "deptno" ), builder.literal( 20 ) ),
                                         builder.and( builder.literal( null ),
@@ -597,13 +597,13 @@ public class RelBuilderTest {
     }
 
 
-    private void project1( int value, SqlTypeName sqlTypeName, String message, String expected ) {
+    private void project1( int value, PolyType polyType, String message, String expected ) {
         final RelBuilder builder = createRelBuilder();
         RexBuilder rex = builder.getRexBuilder();
         RelNode actual =
                 builder.values( new String[]{ "x" }, 42 )
                         .empty()
-                        .project( rex.makeLiteral( value, rex.getTypeFactory().createSqlType( sqlTypeName ), false ) )
+                        .project( rex.makeLiteral( value, rex.getTypeFactory().createPolyType( polyType ), false ) )
                         .build();
         assertThat( message, actual, Matchers.hasTree( expected ) );
     }
@@ -611,7 +611,7 @@ public class RelBuilderTest {
 
     @Test
     public void testProject1asInt() {
-        project1( 1, SqlTypeName.INTEGER,
+        project1( 1, PolyType.INTEGER,
                 "project(1 as INT) might omit type of 1 in the output plan as it is convention to omit INTEGER for integer literals",
                 "LogicalProject($f0=[1])\n"
                         + "  LogicalValues(tuples=[[]])\n" );
@@ -620,7 +620,7 @@ public class RelBuilderTest {
 
     @Test
     public void testProject1asBigInt() {
-        project1( 1, SqlTypeName.BIGINT, "project(1 as BIGINT) should contain type of 1 in the output plan since the convention is to omit type of INTEGER",
+        project1( 1, PolyType.BIGINT, "project(1 as BIGINT) should contain type of 1 in the output plan since the convention is to omit type of INTEGER",
                 "LogicalProject($f0=[1:BIGINT])\n"
                         + "  LogicalValues(tuples=[[]])\n" );
     }
@@ -722,9 +722,9 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         RelDataType rowType =
                 builder.getTypeFactory().builder()
-                        .add( "a", null, SqlTypeName.BIGINT )
-                        .add( "b", null, SqlTypeName.VARCHAR, 10 )
-                        .add( "c", null, SqlTypeName.VARCHAR, 10 )
+                        .add( "a", null, PolyType.BIGINT )
+                        .add( "b", null, PolyType.VARCHAR, 10 )
+                        .add( "c", null, PolyType.VARCHAR, 10 )
                         .build();
         RelNode root =
                 builder.scan( "department" )
@@ -742,9 +742,9 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         RelDataType rowType =
                 builder.getTypeFactory().builder()
-                        .add( "a", null, SqlTypeName.BIGINT )
-                        .add( "b", null, SqlTypeName.VARCHAR, 10 )
-                        .add( "c", null, SqlTypeName.VARCHAR, 10 )
+                        .add( "a", null, PolyType.BIGINT )
+                        .add( "b", null, PolyType.VARCHAR, 10 )
+                        .add( "c", null, PolyType.VARCHAR, 10 )
                         .build();
         RelNode root =
                 builder.scan( "department" )
@@ -1978,8 +1978,8 @@ public class RelBuilderTest {
         final RelBuilder builder = createRelBuilder();
         RelDataType rowType =
                 builder.getTypeFactory().builder()
-                        .add( "a", null, SqlTypeName.BIGINT )
-                        .add( "a", null, SqlTypeName.VARCHAR, 10 )
+                        .add( "a", null, PolyType.BIGINT )
+                        .add( "a", null, PolyType.VARCHAR, 10 )
                         .build();
         RelNode root = builder.values( rowType, null, null, 1, null ).build();
         final String expected = "LogicalValues(tuples=[[{ null, null }, { 1, null }]])\n";
@@ -2261,7 +2261,7 @@ public class RelBuilderTest {
         //   )
         final RelBuilder builder = createRelBuilder().scan( "employee" );
         final RelDataTypeFactory typeFactory = builder.getTypeFactory();
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
 
         RexNode pattern = builder.patternConcat(
                 builder.literal( "STRT" ),
@@ -2343,13 +2343,13 @@ public class RelBuilderTest {
     @Test
     public void testFilterCastAny() {
         final RelBuilder builder = createRelBuilder();
-        final RelDataType anyType = builder.getTypeFactory().createSqlType( SqlTypeName.ANY );
+        final RelDataType anyType = builder.getTypeFactory().createPolyType( PolyType.ANY );
         final RelNode root =
                 builder.scan( "employee" )
                         .filter(
                                 builder.cast(
                                         builder.getRexBuilder().makeInputRef( anyType, 0 ),
-                                        SqlTypeName.BOOLEAN ) )
+                                        PolyType.BOOLEAN ) )
                         .build();
         final String expected = ""
                 + "LogicalFilter(condition=[CAST($0):BOOLEAN NOT NULL])\n"
@@ -2367,7 +2367,7 @@ public class RelBuilderTest {
                         .filter(
                                 builder.getRexBuilder().makeCast(
                                         typeFactory.createTypeWithNullability(
-                                                typeFactory.createSqlType( SqlTypeName.BOOLEAN ),
+                                                typeFactory.createPolyType( PolyType.BOOLEAN ),
                                                 true ),
                                         builder.equals(
                                                 builder.field( "deptno" ),

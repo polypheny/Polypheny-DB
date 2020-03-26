@@ -20,7 +20,6 @@ package org.polypheny.db.information;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.commons.text.StringEscapeUtils;
 
 
 public class InformationTable extends InformationHtml {
@@ -61,13 +60,13 @@ public class InformationTable extends InformationHtml {
     public InformationTable( String id, String groupId, List<String> labels ) {
         super( id, groupId, "" );
         this.labels = labels;
-        updateHtml( generateHtml() );
+        notifyManager();
     }
 
 
     public void addRow( List<String> row ) {
         rows.add( row );
-        updateHtml( generateHtml() );
+        notifyManager();
     }
 
 
@@ -86,35 +85,7 @@ public class InformationTable extends InformationHtml {
 
     public void reset() {
         rows = new LinkedList<>();
-        updateHtml( generateHtml() );
+        notifyManager();
     }
 
-
-    private String generateHtml() {
-        StringBuilder sb = new StringBuilder();
-        sb.append( "<table class=\"table table-responsive-sm\">" );
-
-        // build header
-        sb.append( "<thead>" );
-        sb.append( "<tr>" );
-        for ( String s : labels ) {
-            sb.append( "<th>" ).append( StringEscapeUtils.escapeHtml4( s ) ).append( "</th>" );
-        }
-        sb.append( "</tr>" );
-        sb.append( "</thead>" );
-
-        // build body
-        sb.append( "<tbody>" );
-        for ( List<String> row : rows ) {
-            sb.append( "<tr>" );
-            for ( String s : row ) {
-                sb.append( "<td>" ).append( StringEscapeUtils.escapeHtml4( s ) ).append( "</td>" );
-            }
-            sb.append( "</tr>" );
-        }
-        sb.append( "</tbody>" );
-
-        sb.append( "</table>" );
-        return sb.toString();
-    }
 }

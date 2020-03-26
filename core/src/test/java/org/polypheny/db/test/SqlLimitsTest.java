@@ -53,8 +53,8 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -77,30 +77,30 @@ public class SqlLimitsTest {
      * Returns a list of typical types.
      */
     public static List<RelDataType> getTypes( RelDataTypeFactory typeFactory ) {
-        final int maxPrecision = typeFactory.getTypeSystem().getMaxPrecision( SqlTypeName.DECIMAL );
+        final int maxPrecision = typeFactory.getTypeSystem().getMaxPrecision( PolyType.DECIMAL );
         return ImmutableList.of(
-                typeFactory.createSqlType( SqlTypeName.BOOLEAN ),
-                typeFactory.createSqlType( SqlTypeName.TINYINT ),
-                typeFactory.createSqlType( SqlTypeName.SMALLINT ),
-                typeFactory.createSqlType( SqlTypeName.INTEGER ),
-                typeFactory.createSqlType( SqlTypeName.BIGINT ),
-                typeFactory.createSqlType( SqlTypeName.DECIMAL ),
-                typeFactory.createSqlType( SqlTypeName.DECIMAL, 5 ),
-                typeFactory.createSqlType( SqlTypeName.DECIMAL, 6, 2 ),
-                typeFactory.createSqlType( SqlTypeName.DECIMAL, maxPrecision, 0 ),
-                typeFactory.createSqlType( SqlTypeName.DECIMAL, maxPrecision, 5 ),
+                typeFactory.createPolyType( PolyType.BOOLEAN ),
+                typeFactory.createPolyType( PolyType.TINYINT ),
+                typeFactory.createPolyType( PolyType.SMALLINT ),
+                typeFactory.createPolyType( PolyType.INTEGER ),
+                typeFactory.createPolyType( PolyType.BIGINT ),
+                typeFactory.createPolyType( PolyType.DECIMAL ),
+                typeFactory.createPolyType( PolyType.DECIMAL, 5 ),
+                typeFactory.createPolyType( PolyType.DECIMAL, 6, 2 ),
+                typeFactory.createPolyType( PolyType.DECIMAL, maxPrecision, 0 ),
+                typeFactory.createPolyType( PolyType.DECIMAL, maxPrecision, 5 ),
 
                 // todo: test IntervalDayTime and IntervalYearMonth
                 // todo: test Float, Real, Double
 
-                typeFactory.createSqlType( SqlTypeName.CHAR, 5 ),
-                typeFactory.createSqlType( SqlTypeName.VARCHAR, 1 ),
-                typeFactory.createSqlType( SqlTypeName.VARCHAR, 20 ),
-                typeFactory.createSqlType( SqlTypeName.BINARY, 3 ),
-                typeFactory.createSqlType( SqlTypeName.VARBINARY, 4 ),
-                typeFactory.createSqlType( SqlTypeName.DATE ),
-                typeFactory.createSqlType( SqlTypeName.TIME, 0 ),
-                typeFactory.createSqlType( SqlTypeName.TIMESTAMP, 0 ) );
+                typeFactory.createPolyType( PolyType.CHAR, 5 ),
+                typeFactory.createPolyType( PolyType.VARCHAR, 1 ),
+                typeFactory.createPolyType( PolyType.VARCHAR, 20 ),
+                typeFactory.createPolyType( PolyType.BINARY, 3 ),
+                typeFactory.createPolyType( PolyType.VARBINARY, 4 ),
+                typeFactory.createPolyType( PolyType.DATE ),
+                typeFactory.createPolyType( PolyType.TIME, 0 ),
+                typeFactory.createPolyType( PolyType.TIMESTAMP, 0 ) );
     }
 
 
@@ -123,63 +123,63 @@ public class SqlLimitsTest {
                     "  min - epsilon:          ",
                     type,
                     false,
-                    SqlTypeName.Limit.OVERFLOW,
+                    PolyType.Limit.OVERFLOW,
                     true );
             printLimit(
                     pw,
                     "  min:                    ",
                     type,
                     false,
-                    SqlTypeName.Limit.OVERFLOW,
+                    PolyType.Limit.OVERFLOW,
                     false );
             printLimit(
                     pw,
                     "  zero - delta:           ",
                     type,
                     false,
-                    SqlTypeName.Limit.UNDERFLOW,
+                    PolyType.Limit.UNDERFLOW,
                     false );
             printLimit(
                     pw,
                     "  zero - delta + epsilon: ",
                     type,
                     false,
-                    SqlTypeName.Limit.UNDERFLOW,
+                    PolyType.Limit.UNDERFLOW,
                     true );
             printLimit(
                     pw,
                     "  zero:                   ",
                     type,
                     false,
-                    SqlTypeName.Limit.ZERO,
+                    PolyType.Limit.ZERO,
                     false );
             printLimit(
                     pw,
                     "  zero + delta - epsilon: ",
                     type,
                     true,
-                    SqlTypeName.Limit.UNDERFLOW,
+                    PolyType.Limit.UNDERFLOW,
                     true );
             printLimit(
                     pw,
                     "  zero + delta:           ",
                     type,
                     true,
-                    SqlTypeName.Limit.UNDERFLOW,
+                    PolyType.Limit.UNDERFLOW,
                     false );
             printLimit(
                     pw,
                     "  max:                    ",
                     type,
                     true,
-                    SqlTypeName.Limit.OVERFLOW,
+                    PolyType.Limit.OVERFLOW,
                     false );
             printLimit(
                     pw,
                     "  max + epsilon:          ",
                     type,
                     true,
-                    SqlTypeName.Limit.OVERFLOW,
+                    PolyType.Limit.OVERFLOW,
                     true );
             pw.println();
         }
@@ -188,8 +188,8 @@ public class SqlLimitsTest {
     }
 
 
-    private void printLimit( PrintWriter pw, String desc, RelDataType type, boolean sign, SqlTypeName.Limit limit, boolean beyond ) {
-        Object o = ((BasicSqlType) type).getLimit( sign, limit, beyond );
+    private void printLimit( PrintWriter pw, String desc, RelDataType type, boolean sign, PolyType.Limit limit, boolean beyond ) {
+        Object o = ((BasicPolyType) type).getLimit( sign, limit, beyond );
         if ( o == null ) {
             return;
         }
@@ -208,21 +208,21 @@ public class SqlLimitsTest {
             s = buf.toString();
         } else if ( o instanceof Calendar ) {
             Calendar calendar = (Calendar) o;
-            DateFormat dateFormat = getDateFormat( type.getSqlTypeName() );
+            DateFormat dateFormat = getDateFormat( type.getPolyType() );
             dateFormat.setTimeZone( DateTimeUtils.UTC_ZONE );
             s = dateFormat.format( calendar.getTime() );
         } else {
             s = o.toString();
         }
         pw.print( s );
-        SqlLiteral literal = type.getSqlTypeName().createLiteral( o, SqlParserPos.ZERO );
+        SqlLiteral literal = type.getPolyType().createLiteral( o, SqlParserPos.ZERO );
         pw.print( "; as SQL: " );
         pw.print( literal.toSqlString( AnsiSqlDialect.DEFAULT ) );
         pw.println();
     }
 
 
-    private DateFormat getDateFormat( SqlTypeName typeName ) {
+    private DateFormat getDateFormat( PolyType typeName ) {
         switch ( typeName ) {
             case DATE:
                 return new SimpleDateFormat( "MMM d, yyyy", Locale.ROOT );

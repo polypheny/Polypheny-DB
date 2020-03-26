@@ -46,12 +46,12 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -86,7 +86,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
         if ( null == type ) {
             return null;
         }
-        return SqlTypeUtil.createMultisetType(
+        return PolyTypeUtil.createMultisetType(
                 opBinding.getTypeFactory(),
                 type,
                 false );
@@ -101,7 +101,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
     @Override
     public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
         final List<RelDataType> argTypes =
-                SqlTypeUtil.deriveAndCollectTypes(
+                PolyTypeUtil.deriveAndCollectTypes(
                         callBinding.getValidator(),
                         callBinding.getScope(),
                         callBinding.operands() );
@@ -125,7 +125,7 @@ public class SqlMultisetQueryConstructor extends SqlSpecialOperator {
         subSelect.validateExpr( validator, scope );
         SqlValidatorNamespace ns = validator.getNamespace( subSelect );
         assert null != ns.getRowType();
-        return SqlTypeUtil.createMultisetType(
+        return PolyTypeUtil.createMultisetType(
                 validator.getTypeFactory(),
                 ns.getRowType(),
                 false );

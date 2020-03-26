@@ -76,7 +76,7 @@ import org.polypheny.db.schema.impl.ViewTable;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -122,7 +122,7 @@ public class Smalls {
 
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                return typeFactory.builder().add( "c", null, SqlTypeName.INTEGER ).build();
+                return typeFactory.builder().add( "c", null, PolyType.INTEGER ).build();
             }
         };
     }
@@ -254,7 +254,7 @@ public class Smalls {
         return new ScannableTable() {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-                return typeFactory.builder().add( "N", null, SqlTypeName.BIGINT ).build();
+                return typeFactory.builder().add( "N", null, PolyType.BIGINT ).build();
             }
 
 
@@ -336,7 +336,7 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
-                        .add( "result", null, SqlTypeName.INTEGER )
+                        .add( "result", null, PolyType.INTEGER )
                         .build();
             }
 
@@ -359,7 +359,7 @@ public class Smalls {
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
-                        .add( "result", null, SqlTypeName.INTEGER )
+                        .add( "result", null, PolyType.INTEGER )
                         .build();
             }
 
@@ -376,14 +376,14 @@ public class Smalls {
 
     public static TranslatableTable view( String s ) {
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.INTEGER ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, PolyType.INTEGER ).build(),
                 "values (1), (3), " + s, ImmutableList.of(), Arrays.asList( "view" ) );
     }
 
 
     public static TranslatableTable strView( String s ) {
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.VARCHAR, 100 ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, PolyType.VARCHAR, 100 ).build(),
                 "values (" + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( s ) + ")",
                 ImmutableList.of(), Arrays.asList( "view" ) );
     }
@@ -393,7 +393,7 @@ public class Smalls {
         assertThat( RexLiteral.validConstant( o, Litmus.THROW ), is( true ) );
         assertThat( RexLiteral.validConstant( p, Litmus.THROW ), is( true ) );
         return new ViewTable( Object.class,
-                typeFactory -> typeFactory.builder().add( "c", null, SqlTypeName.VARCHAR, 100 ).build(),
+                typeFactory -> typeFactory.builder().add( "c", null, PolyType.VARCHAR, 100 ).build(),
                 "values " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( o.toString() ) + ", " + PolyphenyDbSqlDialect.DEFAULT.quoteStringLiteral( p.toString() ),
                 ImmutableList.of(), Arrays.asList( "view" ) );
     }
@@ -1126,7 +1126,7 @@ public class Smalls {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "S", null, SqlTypeName.VARCHAR, 12 )
+                    .add( "S", null, PolyType.VARCHAR, 12 )
                     .build();
         }
 

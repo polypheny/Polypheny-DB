@@ -43,7 +43,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlAggFunction;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.mapping.Mapping;
 import org.polypheny.db.util.mapping.Mappings;
 
@@ -97,7 +97,7 @@ public class AggregateCall {
             int groupCount, RelNode input, RelDataType type, String name ) {
         if ( type == null ) {
             final RelDataTypeFactory typeFactory = input.getCluster().getTypeFactory();
-            final List<RelDataType> types = SqlTypeUtil.projectTypes( input.getRowType(), argList );
+            final List<RelDataType> types = PolyTypeUtil.projectTypes( input.getRowType(), argList );
             final Aggregate.AggCallBinding callBinding = new Aggregate.AggCallBinding( typeFactory, aggFunction, types, groupCount, filterArg >= 0 );
             type = aggFunction.inferReturnType( callBinding );
         }
@@ -263,7 +263,7 @@ public class AggregateCall {
         return new Aggregate.AggCallBinding(
                 aggregateRelBase.getCluster().getTypeFactory(),
                 aggFunction,
-                SqlTypeUtil.projectTypes( rowType, argList ),
+                PolyTypeUtil.projectTypes( rowType, argList ),
                 aggregateRelBase.getGroupCount(),
                 hasFilter() );
     }

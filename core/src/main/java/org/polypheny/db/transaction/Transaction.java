@@ -26,6 +26,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -75,4 +76,6 @@ public interface Transaction {
     void addChangedTable( String qualifiedTableName );
 
     Router getRouter();
+
+    InformationDuration getDuration();
 }

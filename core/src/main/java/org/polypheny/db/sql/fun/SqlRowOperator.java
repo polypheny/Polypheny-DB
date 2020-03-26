@@ -44,8 +44,8 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.util.Pair;
 
 

@@ -55,12 +55,12 @@ import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.util.Pair;
 
 
@@ -173,7 +173,7 @@ public class SqlCaseOperator extends SqlOperator {
         for ( SqlNode node : whenList ) {
             // should throw validation error if something wrong...
             RelDataType type = callBinding.getValidator().deriveType( callBinding.getScope(), node );
-            if ( !SqlTypeUtil.inBooleanFamily( type ) ) {
+            if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newError( RESOURCE.expectedBoolean() );
                 }
@@ -257,7 +257,7 @@ public class SqlCaseOperator extends SqlOperator {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.any();
+        return PolyOperandCountRanges.any();
     }
 
 

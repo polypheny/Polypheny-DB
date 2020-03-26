@@ -21,8 +21,8 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -42,7 +42,7 @@ public final class CatalogColumn implements CatalogEntity {
     public final long databaseId;
     public final String databaseName;
     public final int position;
-    public final PolySqlType type;
+    public final PolyType type;
     public final Integer length; // JDBC length or precision depending on type
     public final Integer scale; // decimal digits
     public final boolean nullable;
@@ -60,7 +60,7 @@ public final class CatalogColumn implements CatalogEntity {
             final long databaseId,
             @NonNull final String databaseName,
             final int position,
-            @NonNull final PolySqlType type,
+            @NonNull final PolyType type,
             final Integer length,
             final Integer scale,
             final boolean nullable,
@@ -92,7 +92,7 @@ public final class CatalogColumn implements CatalogEntity {
                 schemaName,
                 tableName,
                 name,
-                type.getJavaSqlTypesValue(),
+                type.getJdbcOrdinal(),
                 type.name(),
                 length,
                 null,
@@ -146,7 +146,7 @@ public final class CatalogColumn implements CatalogEntity {
     }
 
 
-    public static CatalogColumn replaceColumnType( CatalogColumn column, PolySqlType type, Integer length, Integer scale, Collation collation ) {
+    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, Integer length, Integer scale, Collation collation ) {
         return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, length, scale, column.nullable, collation, column.defaultValue );
     }
 

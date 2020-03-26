@@ -21,7 +21,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -29,10 +28,8 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;

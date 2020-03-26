@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.PolySqlType;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -43,7 +43,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     private final String column;
 
     @Getter
-    private final PolySqlType type;
+    private final PolyType type;
 
     @Expose
     @Getter
@@ -64,7 +64,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     public int count;
 
 
-    public StatisticColumn( String schema, String table, String column, PolySqlType type ) {
+    public StatisticColumn( String schema, String table, String column, PolyType type ) {
         this.schema = schema.replace( "\\", "" ).replace( "\"", "" );
         this.table = table.replace( "\\", "" ).replace( "\"", "" );
         this.column = column.replace( "\\", "" ).replace( "\"", "" );
@@ -74,7 +74,7 @@ public abstract class StatisticColumn<T extends Comparable<T>> {
     }
 
 
-    StatisticColumn( String[] splitColumn, PolySqlType type ) {
+    StatisticColumn( String[] splitColumn, PolyType type ) {
         this( splitColumn[0], splitColumn[1], splitColumn[2], type );
     }
 

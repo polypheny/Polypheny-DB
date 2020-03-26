@@ -37,6 +37,8 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.information.InformationDuration;
+import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
@@ -84,6 +86,8 @@ public class TransactionImpl implements Transaction {
     private List<Store> involvedStores = new CopyOnWriteArrayList<>();
 
     private PolyphenyDbSchema cachedSchema = null;
+
+    private InformationDuration duration = null;
 
 
     TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
@@ -278,6 +282,19 @@ public class TransactionImpl implements Transaction {
     @Override
     public Router getRouter() {
         return RouterManager.getInstance().getRouter();
+    }
+
+
+    @Override
+    public InformationDuration getDuration() {
+        if ( duration == null ) {
+            InformationManager im = getQueryAnalyzer();
+            InformationGroup group = new InformationGroup( "p1", "Processing" );
+            im.addGroup( group );
+            duration = new InformationDuration( group );
+            im.registerInformation( duration );
+        }
+        return duration;
     }
 
 }

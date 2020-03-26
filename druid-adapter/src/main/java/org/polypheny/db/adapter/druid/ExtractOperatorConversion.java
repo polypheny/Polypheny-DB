@@ -45,7 +45,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -92,7 +92,7 @@ public class ExtractOperatorConversion implements DruidSqlOperatorConverter {
             return null;
         }
 
-        final TimeZone tz = arg.getType().getSqlTypeName() == SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE
+        final TimeZone tz = arg.getType().getPolyType() == PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE
                 ? TimeZone.getTimeZone( query.getConnectionConfig().timeZone() )
                 : DateTimeUtils.UTC_ZONE;
         return DruidExpressions.applyTimeExtract( input, druidUnit, tz );

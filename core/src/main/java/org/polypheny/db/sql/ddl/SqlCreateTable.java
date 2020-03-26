@@ -48,7 +48,6 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
@@ -58,7 +57,6 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -97,6 +95,8 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -230,9 +230,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Ord<SqlNode> c : Ord.zip( columnList ) ) {
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
-                    final PolySqlType polySqlType = PolySqlType.getPolySqlTypeFromSting( columnDeclaration.dataType.getTypeName().getSimple() );
+                    final PolyType dataType = PolyType.get( columnDeclaration.dataType.getTypeName().getSimple() );
                     Collation collation = null;
-                    if ( polySqlType.isCharType() ) {
+                    if ( dataType.getFamily() == PolyTypeFamily.CHARACTER ) {
                         if ( columnDeclaration.collation != null ) {
                             collation = Collation.parse( columnDeclaration.collation );
                         } else {
@@ -243,7 +243,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
-                            polySqlType,
+                            dataType,
                             columnDeclaration.dataType.getPrecision() == -1 ? null : columnDeclaration.dataType.getPrecision(),
                             columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
                             columnDeclaration.dataType.getNullable(),
@@ -267,7 +267,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         if ( v.startsWith( "'" ) ) {
                             v = v.substring( 1, v.length() - 1 );
                         }
-                        transaction.getCatalog().setDefaultValue( addedColumnId, PolySqlType.VARCHAR, v );
+                        transaction.getCatalog().setDefaultValue( addedColumnId, PolyType.VARCHAR, v );
                     }
                 } else if ( c.e instanceof SqlKeyConstraint ) {
                     SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;

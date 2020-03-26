@@ -201,14 +201,14 @@ public interface SqlTester extends AutoCloseable, Tester {
     /**
      * Tests that a SQL query returns a single column with the given type. For example,
      *
-     * <pre>check("VALUES (1 + 2)", "3", SqlTypeName.Integer);</pre>
-     *
+     * <pre>check("VALUES (1 + 2)", "3", PolyType.Integer);</pre>
+     * <p>
      * If <code>result</code> is null, the expression must yield the SQL NULL value. If <code>result</code> is a {@link java.util.regex.Pattern}, the result must match that pattern.
      *
-     * @param query SQL query
+     * @param query       SQL query
      * @param typeChecker Checks whether the result is the expected type; must not be null
-     * @param result Expected result
-     * @param delta The acceptable tolerance between the expected and actual
+     * @param result      Expected result
+     * @param delta       The acceptable tolerance between the expected and actual
      */
     void check( String query, TypeChecker typeChecker, Object result, double delta );
 

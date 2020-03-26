@@ -21,16 +21,12 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
@@ -42,6 +38,7 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -165,7 +162,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     column.getSimple(),
                     catalogTable.id,
                     position,
-                    PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() ),
+                    PolyType.get( type.getTypeName().getSimple() ),
                     type.getPrecision() == -1 ? null : type.getPrecision(),
                     type.getScale() == -1 ? null : type.getScale(),
                     nullable,
@@ -180,7 +177,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 if ( v.startsWith( "'" ) ) {
                     v = v.substring( 1, v.length() - 1 );
                 }
-                transaction.getCatalog().setDefaultValue( addedColumn.id, PolySqlType.VARCHAR, v );
+                transaction.getCatalog().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
             }
 
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

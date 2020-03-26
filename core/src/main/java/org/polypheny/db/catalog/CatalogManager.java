@@ -17,7 +17,6 @@
 package org.polypheny.db.catalog;
 
 
-import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;

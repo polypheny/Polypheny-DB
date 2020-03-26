@@ -37,7 +37,7 @@ package org.polypheny.db.sql;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.sql.fun.SqlConvertFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -47,25 +47,25 @@ import org.polypheny.db.sql.type.SqlTypeName;
  * @see SqlJdbcFunctionCall
  */
 public enum SqlJdbcDataTypeName {
-    SQL_CHAR( SqlTypeName.CHAR ),
-    SQL_VARCHAR( SqlTypeName.VARCHAR ),
-    SQL_DATE( SqlTypeName.DATE ),
-    SQL_TIME( SqlTypeName.TIME ),
-    SQL_TIME_WITH_LOCAL_TIME_ZONE( SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE ),
-    SQL_TIMESTAMP( SqlTypeName.TIMESTAMP ),
-    SQL_TIMESTAMP_WITH_LOCAL_TIME_ZONE( SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE ),
-    SQL_DECIMAL( SqlTypeName.DECIMAL ),
-    SQL_NUMERIC( SqlTypeName.DECIMAL ),
-    SQL_BOOLEAN( SqlTypeName.BOOLEAN ),
-    SQL_INTEGER( SqlTypeName.INTEGER ),
-    SQL_BINARY( SqlTypeName.BINARY ),
-    SQL_VARBINARY( SqlTypeName.VARBINARY ),
-    SQL_TINYINT( SqlTypeName.TINYINT ),
-    SQL_SMALLINT( SqlTypeName.SMALLINT ),
-    SQL_BIGINT( SqlTypeName.BIGINT ),
-    SQL_REAL( SqlTypeName.REAL ),
-    SQL_DOUBLE( SqlTypeName.DOUBLE ),
-    SQL_FLOAT( SqlTypeName.FLOAT ),
+    SQL_CHAR( PolyType.CHAR ),
+    SQL_VARCHAR( PolyType.VARCHAR ),
+    SQL_DATE( PolyType.DATE ),
+    SQL_TIME( PolyType.TIME ),
+    SQL_TIME_WITH_LOCAL_TIME_ZONE( PolyType.TIME_WITH_LOCAL_TIME_ZONE ),
+    SQL_TIMESTAMP( PolyType.TIMESTAMP ),
+    SQL_TIMESTAMP_WITH_LOCAL_TIME_ZONE( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE ),
+    SQL_DECIMAL( PolyType.DECIMAL ),
+    SQL_NUMERIC( PolyType.DECIMAL ),
+    SQL_BOOLEAN( PolyType.BOOLEAN ),
+    SQL_INTEGER( PolyType.INTEGER ),
+    SQL_BINARY( PolyType.BINARY ),
+    SQL_VARBINARY( PolyType.VARBINARY ),
+    SQL_TINYINT( PolyType.TINYINT ),
+    SQL_SMALLINT( PolyType.SMALLINT ),
+    SQL_BIGINT( PolyType.BIGINT ),
+    SQL_REAL( PolyType.REAL ),
+    SQL_DOUBLE( PolyType.DOUBLE ),
+    SQL_FLOAT( PolyType.FLOAT ),
     SQL_INTERVAL_YEAR( TimeUnitRange.YEAR ),
     SQL_INTERVAL_YEAR_TO_MONTH( TimeUnitRange.YEAR_TO_MONTH ),
     SQL_INTERVAL_MONTH( TimeUnitRange.MONTH ),
@@ -81,10 +81,10 @@ public enum SqlJdbcDataTypeName {
     SQL_INTERVAL_SECOND( TimeUnitRange.SECOND );
 
     private final TimeUnitRange range;
-    private final SqlTypeName typeName;
+    private final PolyType typeName;
 
 
-    SqlJdbcDataTypeName( SqlTypeName typeName ) {
+    SqlJdbcDataTypeName( PolyType typeName ) {
         this( typeName, null );
     }
 
@@ -94,7 +94,7 @@ public enum SqlJdbcDataTypeName {
     }
 
 
-    SqlJdbcDataTypeName( SqlTypeName typeName, TimeUnitRange range ) {
+    SqlJdbcDataTypeName( PolyType typeName, TimeUnitRange range ) {
         assert (typeName == null) != (range == null);
         this.typeName = typeName;
         this.range = range;

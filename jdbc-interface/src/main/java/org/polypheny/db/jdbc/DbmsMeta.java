@@ -59,7 +59,6 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.SqlProcessor;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
@@ -86,12 +85,10 @@ import org.polypheny.db.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -106,16 +103,12 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.background.BackgroundTask;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
@@ -164,8 +157,11 @@ public class DbmsMeta implements ProtobufMeta {
                 Arrays.asList( "Attribute", "Value" ) );
         im.registerInformation( connectionNumberTable );
 
-        ConnectionNumberInfo connectionPoolSizeInfo = new ConnectionNumberInfo( connectionNumberTable );
-        BackgroundTaskManager.INSTANCE.registerTask( connectionPoolSizeInfo, "Update JDBC Interface connection pool size", TaskPriority.LOW, TaskSchedulingType.EVERY_FIVE_SECONDS );
+        informationPage.setRefreshFunction( () -> {
+            connectionNumberTable.reset();
+            connectionNumberTable.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
+            connectionNumberTable.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
+        } );
     }
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
@@ -644,27 +640,27 @@ public class DbmsMeta implements ProtobufMeta {
         final StatementHandle statementHandle = createStatement( ch );
         final RelDataTypeSystem typeSystem = RelDataTypeSystem.DEFAULT;
         final List<Object> objects = new LinkedList<>();
-        for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
+        for ( PolyType polyType : PolyType.values() ) {
             objects.add(
                     new Serializable[]{
-                            sqlTypeName.getName(),
-                            sqlTypeName.getJdbcOrdinal(),
-                            typeSystem.getMaxPrecision( sqlTypeName ),
-                            typeSystem.getLiteral( sqlTypeName, true ),
-                            typeSystem.getLiteral( sqlTypeName, false ),
+                            polyType.getName(),
+                            polyType.getJdbcOrdinal(),
+                            typeSystem.getMaxPrecision( polyType ),
+                            typeSystem.getLiteral( polyType, true ),
+                            typeSystem.getLiteral( polyType, false ),
                             null,
                             (short) DatabaseMetaData.typeNullable, // All types are nullable
-                            typeSystem.isCaseSensitive( sqlTypeName ),
-                            (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under SqlTypeName
+                            typeSystem.isCaseSensitive( polyType ),
+                            (short) DatabaseMetaData.typeSearchable, // Making all type searchable; we may want to be specific and declare under PolyType
                             false,
                             false,
-                            typeSystem.isAutoincrement( sqlTypeName ),
-                            sqlTypeName.getName(),
-                            (short) sqlTypeName.getMinScale(),
-                            (short) typeSystem.getMaxScale( sqlTypeName ),
+                            typeSystem.isAutoincrement( polyType ),
+                            polyType.getName(),
+                            (short) polyType.getMinScale(),
+                            (short) typeSystem.getMaxScale( polyType ),
                             null,
                             null,
-                            typeSystem.getNumTypeRadix( sqlTypeName ) == 0 ? null : typeSystem.getNumTypeRadix( sqlTypeName ) } );
+                            typeSystem.getNumTypeRadix( polyType ) == 0 ? null : typeSystem.getNumTypeRadix( polyType ) } );
         }
         return createMetaResultSet(
                 ch,
@@ -891,6 +887,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @deprecated See {@link #prepareAndExecute(StatementHandle, String, long, int, PrepareCallback)}
      */
     @Override
+    @Deprecated
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final PrepareCallback callback ) throws NoSuchStatementException {
         if ( log.isTraceEnabled() ) {
             log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, PrepareCallback {} )", h, sql, maxRowCount, callback );
@@ -1090,6 +1087,7 @@ public class DbmsMeta implements ProtobufMeta {
      * @deprecated See {@link #execute(StatementHandle, List, int)}
      */
     @Override
+    @Deprecated
     public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final long maxRowCount ) throws NoSuchStatementException {
         if ( log.isTraceEnabled() ) {
             log.trace( "execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
@@ -1401,25 +1399,5 @@ public class DbmsMeta implements ProtobufMeta {
             throw new RuntimeException( e );
         }
     }
-
-
-    private static class ConnectionNumberInfo implements BackgroundTask {
-
-        private final InformationTable table;
-
-
-        ConnectionNumberInfo( InformationTable table ) {
-            this.table = table;
-        }
-
-
-        @Override
-        public void backgroundTask() {
-            table.reset();
-            table.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
-            table.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
-        }
-    }
-
 
 }

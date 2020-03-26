@@ -59,7 +59,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.DateString;
@@ -90,71 +90,71 @@ import org.polypheny.db.util.Util;
  * <th>Value type</th>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#NULL}</td>
+ * <td>{@link PolyType#NULL}</td>
  * <td>The null value. It has its own special type.</td>
  * <td>null</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#BOOLEAN}</td>
+ * <td>{@link PolyType#BOOLEAN}</td>
  * <td>Boolean, namely <code>TRUE</code>, <code>FALSE</code> or <code> UNKNOWN</code>.</td>
  * <td>{@link Boolean}, or null represents the UNKNOWN value</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#DECIMAL}</td>
+ * <td>{@link PolyType#DECIMAL}</td>
  * <td>Exact number, for example <code>0</code>, <code>-.5</code>, <code> 12345</code>.</td>
  * <td>{@link BigDecimal}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#DOUBLE}</td>
+ * <td>{@link PolyType#DOUBLE}</td>
  * <td>Approximate number, for example <code>6.023E-23</code>.</td>
  * <td>{@link BigDecimal}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#DATE}</td>
+ * <td>{@link PolyType#DATE}</td>
  * <td>Date, for example <code>DATE '1969-04'29'</code></td>
  * <td>{@link Calendar}; also {@link Calendar} (UTC time zone) and {@link Integer} (days since POSIX epoch)</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#TIME}</td>
+ * <td>{@link PolyType#TIME}</td>
  * <td>Time, for example <code>TIME '18:37:42.567'</code></td>
  * <td>{@link Calendar}; also {@link Calendar} (UTC time zone) and {@link Integer} (milliseconds since midnight)</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#TIMESTAMP}</td>
+ * <td>{@link PolyType#TIMESTAMP}</td>
  * <td>Timestamp, for example <code>TIMESTAMP '1969-04-29 18:37:42.567'</code></td>
  * <td>{@link TimestampString}; also {@link Calendar} (UTC time zone) and {@link Long} (milliseconds since POSIX epoch)</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#INTERVAL_DAY},
- * {@link SqlTypeName#INTERVAL_DAY_HOUR},
- * {@link SqlTypeName#INTERVAL_DAY_MINUTE},
- * {@link SqlTypeName#INTERVAL_DAY_SECOND},
- * {@link SqlTypeName#INTERVAL_HOUR},
- * {@link SqlTypeName#INTERVAL_HOUR_MINUTE},
- * {@link SqlTypeName#INTERVAL_HOUR_SECOND},
- * {@link SqlTypeName#INTERVAL_MINUTE},
- * {@link SqlTypeName#INTERVAL_MINUTE_SECOND},
- * {@link SqlTypeName#INTERVAL_SECOND}</td>
+ * <td>{@link PolyType#INTERVAL_DAY},
+ * {@link PolyType#INTERVAL_DAY_HOUR},
+ * {@link PolyType#INTERVAL_DAY_MINUTE},
+ * {@link PolyType#INTERVAL_DAY_SECOND},
+ * {@link PolyType#INTERVAL_HOUR},
+ * {@link PolyType#INTERVAL_HOUR_MINUTE},
+ * {@link PolyType#INTERVAL_HOUR_SECOND},
+ * {@link PolyType#INTERVAL_MINUTE},
+ * {@link PolyType#INTERVAL_MINUTE_SECOND},
+ * {@link PolyType#INTERVAL_SECOND}</td>
  * <td>Interval, for example <code>INTERVAL '4:3:2' HOUR TO SECOND</code></td>
  * <td>{@link BigDecimal}; also {@link Long} (milliseconds)</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#INTERVAL_YEAR}, {@link SqlTypeName#INTERVAL_YEAR_MONTH}, {@link SqlTypeName#INTERVAL_MONTH}</td>
+ * <td>{@link PolyType#INTERVAL_YEAR}, {@link PolyType#INTERVAL_YEAR_MONTH}, {@link PolyType#INTERVAL_MONTH}</td>
  * <td>Interval, for example <code>INTERVAL '2-3' YEAR TO MONTH</code></td>
  * <td>{@link BigDecimal}; also {@link Integer} (months)</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#CHAR}</td>
+ * <td>{@link PolyType#CHAR}</td>
  * <td>Character constant, for example <code>'Hello, world!'</code>, <code>''</code>, <code>_N'Bonjour'</code>, <code>_ISO-8859-1'It''s superman!' COLLATE SHIFT_JIS$ja_JP$2</code>. These are always CHAR, never VARCHAR.</td>
  * <td>{@link NlsString}; also {@link String}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#BINARY}</td>
+ * <td>{@link PolyType#BINARY}</td>
  * <td>Binary constant, for example <code>X'7F34'</code>. (The number of hexits must be even; see above.) These constants are always BINARY, never VARBINARY.</td>
  * <td>{@link ByteBuffer}; also {@code byte[]}</td>
  * </tr>
  * <tr>
- * <td>{@link SqlTypeName#SYMBOL}</td>
+ * <td>{@link PolyType#SYMBOL}</td>
  * <td>A symbol is a special type used to make parsing easier; it is not part of the SQL standard, and is not exposed to end-users. It is used to hold a flag, such as the LEADING flag in a call to the function <code> TRIM([LEADING|TRAILING|BOTH] chars FROM string)</code>.</td>
  * <td>An enum class</td>
  * </tr>
@@ -173,12 +173,12 @@ public class RexLiteral extends RexNode {
      */
     private final RelDataType type;
 
-    // TODO jvs 26-May-2006:  Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading SqlTypeName).
+    // TODO jvs: Use SqlTypeFamily instead; it exists for exactly this purpose (to avoid the confusion which results from overloading PolyType).
     /**
      * An indication of the broad type of this literal -- even if its type isn't a SQL type. Sometimes this will be different than the SQL type; for example, all exact numbers, including integers have typeName
-     * {@link SqlTypeName#DECIMAL}. See {@link #valueMatchesType} for the definitive story.
+     * {@link PolyType#DECIMAL}. See {@link #valueMatchesType} for the definitive story.
      */
-    private final SqlTypeName typeName;
+    private final PolyType typeName;
 
     private static final ImmutableList<TimeUnit> TIME_UNITS = ImmutableList.copyOf( TimeUnit.values() );
 
@@ -186,13 +186,13 @@ public class RexLiteral extends RexNode {
     /**
      * Creates a <code>RexLiteral</code>.
      */
-    RexLiteral( Comparable value, RelDataType type, SqlTypeName typeName ) {
+    RexLiteral( Comparable value, RelDataType type, PolyType typeName ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
         this.typeName = Objects.requireNonNull( typeName );
         Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
         Preconditions.checkArgument( (value == null) == type.isNullable() );
-        Preconditions.checkArgument( typeName != SqlTypeName.ANY );
+        Preconditions.checkArgument( typeName != PolyType.ANY );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
     }
 
@@ -252,7 +252,7 @@ public class RexLiteral extends RexNode {
     /**
      * @return whether value is appropriate for its type (we have rules about these things)
      */
-    public static boolean valueMatchesType( Comparable value, SqlTypeName typeName, boolean strict ) {
+    public static boolean valueMatchesType( Comparable value, PolyType typeName, boolean strict ) {
         if ( value == null ) {
             return true;
         }
@@ -331,7 +331,7 @@ public class RexLiteral extends RexNode {
     }
 
 
-    private static String toJavaString( Comparable value, SqlTypeName typeName, RelDataType type, RexDigestIncludeType includeType ) {
+    private static String toJavaString( Comparable value, PolyType typeName, RelDataType type, RexDigestIncludeType includeType ) {
         assert includeType != RexDigestIncludeType.OPTIONAL : "toJavaString must not be called with includeType=OPTIONAL";
         String fullTypeString = type.getFullTypeString();
         if ( value == null ) {
@@ -374,12 +374,12 @@ public class RexLiteral extends RexNode {
         }
         // The variable here simplifies debugging (one can set a breakpoint at return) final ensures we set the value in all the branches, and it ensures the value is set just once
         final RexDigestIncludeType includeType;
-        if ( type.getSqlTypeName() == SqlTypeName.BOOLEAN
-                || type.getSqlTypeName() == SqlTypeName.INTEGER
-                || type.getSqlTypeName() == SqlTypeName.SYMBOL ) {
+        if ( type.getPolyType() == PolyType.BOOLEAN
+                || type.getPolyType() == PolyType.INTEGER
+                || type.getPolyType() == PolyType.SYMBOL ) {
             // We don't want false:BOOLEAN NOT NULL, so we don't print type information for non-nullable BOOLEAN and INTEGER
             includeType = RexDigestIncludeType.NO_TYPE;
-        } else if ( type.getSqlTypeName() == SqlTypeName.CHAR && value instanceof NlsString ) {
+        } else if ( type.getPolyType() == PolyType.CHAR && value instanceof NlsString ) {
             NlsString nlsString = (NlsString) value;
 
             // Ignore type information for 'Bar':CHAR(3)
@@ -394,9 +394,9 @@ public class RexLiteral extends RexNode {
                 includeType = RexDigestIncludeType.ALWAYS;
             }
         } else if ( type.getPrecision() == 0 && (
-                type.getSqlTypeName() == SqlTypeName.TIME
-                        || type.getSqlTypeName() == SqlTypeName.TIMESTAMP
-                        || type.getSqlTypeName() == SqlTypeName.DATE) ) {
+                type.getPolyType() == PolyType.TIME
+                        || type.getPolyType() == PolyType.TIMESTAMP
+                        || type.getPolyType() == PolyType.DATE) ) {
             // Ignore type information for '12:23:20':TIME(0)
             // Note that '12:23:20':TIME WITH LOCAL TIME ZONE
             includeType = RexDigestIncludeType.NO_TYPE;
@@ -444,7 +444,7 @@ public class RexLiteral extends RexNode {
     /**
      * Returns a list of the time units covered by an interval type such as HOUR TO SECOND. Adds MILLISECOND if the end is SECOND, to deal with fractional seconds.
      */
-    private static List<TimeUnit> getTimeUnits( SqlTypeName typeName ) {
+    private static List<TimeUnit> getTimeUnits( PolyType typeName ) {
         final TimeUnit start = typeName.getStartUnit();
         final TimeUnit end = typeName.getEndUnit();
         final ImmutableList<TimeUnit> list = TIME_UNITS.subList( start.ordinal(), end.ordinal() + 1 );
@@ -456,7 +456,7 @@ public class RexLiteral extends RexNode {
 
 
     private String intervalString( BigDecimal v ) {
-        final List<TimeUnit> timeUnits = getTimeUnits( type.getSqlTypeName() );
+        final List<TimeUnit> timeUnits = getTimeUnits( type.getPolyType() );
         final StringBuilder b = new StringBuilder();
         for ( TimeUnit timeUnit : timeUnits ) {
             final BigDecimal[] result = v.divideAndRemainder( timeUnit.multiplier );
@@ -530,7 +530,7 @@ public class RexLiteral extends RexNode {
      * @param typeName Type family
      * @param includeType if representation should include data type
      */
-    private static void printAsJava( Comparable value, PrintWriter pw, SqlTypeName typeName, boolean java, RexDigestIncludeType includeType ) {
+    private static void printAsJava( Comparable value, PrintWriter pw, PolyType typeName, boolean java, RexDigestIncludeType includeType ) {
         switch ( typeName ) {
             case CHAR:
                 NlsString nlsString = (NlsString) value;
@@ -649,7 +649,7 @@ public class RexLiteral extends RexNode {
      * @param literal the (non-SQL encoded) string representation, as returned by the Jdbc call to return a column as a string
      * @return a typed RexLiteral, or null
      */
-    public static RexLiteral fromJdbcString( RelDataType type, SqlTypeName typeName, String literal ) {
+    public static RexLiteral fromJdbcString( RelDataType type, PolyType typeName, String literal ) {
         if ( literal == null ) {
             return null;
         }
@@ -731,7 +731,7 @@ public class RexLiteral extends RexNode {
     }
 
 
-    private static String getCalendarFormat( SqlTypeName typeName ) {
+    private static String getCalendarFormat( PolyType typeName ) {
         switch ( typeName ) {
             case DATE:
                 return DateTimeUtils.DATE_FORMAT_STRING;
@@ -745,7 +745,7 @@ public class RexLiteral extends RexNode {
     }
 
 
-    public SqlTypeName getTypeName() {
+    public PolyType getTypeName() {
         return typeName;
     }
 
@@ -995,7 +995,7 @@ public class RexLiteral extends RexNode {
 
     @Override
     public boolean isAlwaysTrue() {
-        if ( typeName != SqlTypeName.BOOLEAN ) {
+        if ( typeName != PolyType.BOOLEAN ) {
             return false;
         }
         return booleanValue( this );
@@ -1004,7 +1004,7 @@ public class RexLiteral extends RexNode {
 
     @Override
     public boolean isAlwaysFalse() {
-        if ( typeName != SqlTypeName.BOOLEAN ) {
+        if ( typeName != PolyType.BOOLEAN ) {
             return false;
         }
         return !booleanValue( this );

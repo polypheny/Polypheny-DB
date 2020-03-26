@@ -17,20 +17,16 @@
 package org.polypheny.db.catalog.entity;
 
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 
 

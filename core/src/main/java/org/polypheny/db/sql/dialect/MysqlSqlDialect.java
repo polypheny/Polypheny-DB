@@ -57,9 +57,9 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -135,7 +135,7 @@ public class MysqlSqlDialect extends SqlDialect {
 
     @Override
     public SqlNode getCastSpec( RelDataType type ) {
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case VARCHAR:
                 // MySQL doesn't have a VARCHAR type, only CHAR.
                 return new SqlDataTypeSpec( new SqlIdentifier( "CHAR", SqlParserPos.ZERO ), type.getPrecision(), -1, null, null, SqlParserPos.ZERO );

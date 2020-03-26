@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import java.util.List;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Util;
@@ -44,13 +44,13 @@ import org.polypheny.db.util.Util;
 
 /**
  * A character string literal.
- *
- * Its {@link #value} field is an {@link NlsString} and {@code #typeName} is {@link SqlTypeName#CHAR}.
+ * <p>
+ * Its {@link #value} field is an {@link NlsString} and {@code #typeName} is {@link PolyType#CHAR}.
  */
 public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
 
     protected SqlCharStringLiteral( NlsString val, SqlParserPos pos ) {
-        super( val, SqlTypeName.CHAR, pos );
+        super( val, PolyType.CHAR, pos );
     }
 
 

@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDdl;
 import org.polypheny.db.sql.SqlExecutableStatement;

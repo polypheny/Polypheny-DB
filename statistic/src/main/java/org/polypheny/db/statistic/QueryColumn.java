@@ -18,13 +18,15 @@ package org.polypheny.db.statistic;
 
 
 import lombok.Getter;
-import org.polypheny.db.PolySqlType;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.type.PolyType;
 
 
 /**
  * Boilerplate of a column to guide the handling and pattern of a column
  */
+@Slf4j
 class QueryColumn {
 
     @Getter
@@ -37,10 +39,10 @@ class QueryColumn {
     private String name;
 
     @Getter
-    private PolySqlType type;
+    private PolyType type;
 
 
-    QueryColumn( String schema, String table, String name, PolySqlType type ) {
+    QueryColumn( String schema, String table, String name, PolyType type ) {
         this.schema = schema.replace( "\\", "" ).replace( "\"", "" );
         this.table = table.replace( "\\", "" ).replace( "\"", "" );
         this.name = name.replace( "\\", "" ).replace( "\"", "" );
@@ -48,7 +50,7 @@ class QueryColumn {
     }
 
 
-    QueryColumn( String schemaTableName, PolySqlType type ) {
+    QueryColumn( String schemaTableName, PolyType type ) {
         this( schemaTableName.split( "\\." )[0], schemaTableName.split( "\\." )[1], schemaTableName.split( "\\." )[2], type );
     }
 
@@ -87,7 +89,8 @@ class QueryColumn {
         return schemaTableColumn.split( "\\." );
     }
 
-    public static QueryColumn fromCatalogColumn( CatalogColumn column ){
+
+    public static QueryColumn fromCatalogColumn( CatalogColumn column ) {
         return new QueryColumn( column.schemaName, column.tableName, column.name, column.type );
     }
 

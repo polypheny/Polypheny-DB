@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
@@ -36,23 +35,18 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -94,7 +88,7 @@ public class PolySchemaBuilder {
                 //
                 for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
                     List<String> columnNames = new LinkedList<>();
-                    final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+                    final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
                     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
                     for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                         columnNames.add( catalogColumn.name );
@@ -111,6 +105,7 @@ public class PolySchemaBuilder {
                             RelDataTypeImpl.proto( fieldInfo.build() ) );
                     s.add( catalogTable.name, table );
                     tableMap.put( catalogTable.name, table );
+
                 }
                 rootSchema.add( catalogSchema.name, s );
                 tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
@@ -162,14 +157,14 @@ public class PolySchemaBuilder {
 
 
     private RelDataType sqlType( RelDataTypeFactory typeFactory, CatalogColumn column ) {
-        final SqlTypeName sqlTypeName = SqlTypeName.get( column.type.name() );
-        if ( column.length != null && column.scale != null && sqlTypeName.allowsPrecScale( true, true ) ) {
-            return typeFactory.createSqlType( sqlTypeName, column.length, column.scale );
-        } else if ( column.length != null && sqlTypeName.allowsPrecNoScale() ) {
-            return typeFactory.createSqlType( sqlTypeName, column.length );
+        final PolyType polyType = PolyType.get( column.type.name() );
+        if ( column.length != null && column.scale != null && polyType.allowsPrecScale( true, true ) ) {
+            return typeFactory.createPolyType( polyType, column.length, column.scale );
+        } else if ( column.length != null && polyType.allowsPrecNoScale() ) {
+            return typeFactory.createPolyType( polyType, column.length );
         } else {
-            assert sqlTypeName.allowsNoPrecNoScale();
-            return typeFactory.createSqlType( sqlTypeName );
+            assert polyType.allowsNoPrecNoScale();
+            return typeFactory.createPolyType( polyType );
         }
     }
 

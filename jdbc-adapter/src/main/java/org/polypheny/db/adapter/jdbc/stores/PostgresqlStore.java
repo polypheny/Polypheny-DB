@@ -23,14 +23,13 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.type.PolyType;
 
 // TODO(jan): General PostgresqlStore todo list:
 //   - Implement better logging.
@@ -118,12 +117,16 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
-    protected String getTypeString( PolySqlType polySqlType ) {
-        switch ( polySqlType ) {
+    protected String getTypeString( PolyType type ) {
+        switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";
             case VARBINARY:
                 return "VARBINARY";
+            case TINYINT:
+                return "TINYINT";
+            case SMALLINT:
+                return "SMALLINT";
             case INTEGER:
                 return "INT";
             case BIGINT:
@@ -136,8 +139,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 return "DECIMAL";
             case VARCHAR:
                 return "VARCHAR";
-            case TEXT:
-                return "TEXT";
             case DATE:
                 return "DATE";
             case TIME:
@@ -145,7 +146,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case TIMESTAMP:
                 return "TIMESTAMP";
         }
-        throw new RuntimeException( "Unknown type: " + polySqlType.name() );
+        throw new RuntimeException( "Unknown type: " + type.name() );
     }
 
 

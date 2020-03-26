@@ -20,20 +20,15 @@ package org.polypheny.db.sql.ddl.altertable;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.NonNull;
-import org.polypheny.db.PolySqlType;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -43,6 +38,7 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -154,10 +150,10 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                                 RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
                     }
                 }
-                PolySqlType polySqlType = PolySqlType.getPolySqlTypeFromSting( type.getTypeName().getSimple() );
+                PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
                 transaction.getCatalog().setColumnType(
                         catalogColumn.id,
-                        polySqlType,
+                        dataType,
                         type.getPrecision() == -1 ? null : type.getPrecision(),
                         type.getScale() == -1 ? null : type.getScale() );
                 for ( CatalogColumnPlacement placement : transaction.getCatalog().getColumnPlacements( catalogColumn.id ) ) {
@@ -217,7 +213,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                 if ( v.startsWith( "'" ) ) {
                     v = v.substring( 1, v.length() - 1 );
                 }
-                transaction.getCatalog().setDefaultValue( catalogColumn.id, PolySqlType.VARCHAR, v );
+                transaction.getCatalog().setDefaultValue( catalogColumn.id, PolyType.VARCHAR, v );
             } else if ( dropDefault != null && dropDefault ) {
                 transaction.getCatalog().deleteDefaultValue( catalogColumn.id );
             } else {

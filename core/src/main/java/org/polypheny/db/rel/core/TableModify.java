@@ -52,7 +52,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -219,7 +219,7 @@ public abstract class TableModify extends SingleRel {
         }
 
         if ( flattened ) {
-            inputRowType = SqlTypeUtil.flattenRecordType( typeFactory, inputRowType, null );
+            inputRowType = PolyTypeUtil.flattenRecordType( typeFactory, inputRowType, null );
         }
 
         return inputRowType;

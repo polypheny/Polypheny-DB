@@ -39,8 +39,8 @@ import org.polypheny.db.util.Util;
 
 /**
  * RelDataTypeComparability is an enumeration of the categories of comparison operators which types may support.
- *
- * NOTE jvs 17-Mar-2005: the order of values of this enumeration is significant (from least inclusive to most inclusive) and should not be changed.
+ * <p>
+ * NOTE: The order of values of this enumeration is significant (from least inclusive to most inclusive) and should not be changed.
  */
 public enum RelDataTypeComparability {
     NONE( "No comparisons allowed" ),

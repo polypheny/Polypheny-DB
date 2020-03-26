@@ -146,7 +146,7 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
             final RelDataType type = f.getType();
             final Class clazz = (Class) typeFactory.getJavaClass( type );
             final ColumnMetaData.Rep rep = Util.first( ColumnMetaData.Rep.of( clazz ), ColumnMetaData.Rep.OBJECT );
-            return Pair.of( rep, type.getSqlTypeName().getJdbcOrdinal() );
+            return Pair.of( rep, type.getPolyType().getJdbcOrdinal() );
         } );
     }
 

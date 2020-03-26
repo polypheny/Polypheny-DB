@@ -38,7 +38,7 @@ import java.math.BigDecimal;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Util;
 
 
@@ -55,7 +55,7 @@ public class SqlNumericLiteral extends SqlLiteral {
     protected SqlNumericLiteral( BigDecimal value, Integer prec, Integer scale, boolean isExact, SqlParserPos pos ) {
         super(
                 value,
-                isExact ? SqlTypeName.DECIMAL : SqlTypeName.DOUBLE,
+                isExact ? PolyType.DECIMAL : PolyType.DOUBLE,
                 pos );
         this.prec = prec;
         this.scale = scale;
@@ -106,22 +106,22 @@ public class SqlNumericLiteral extends SqlLiteral {
             int scaleValue = scale.intValue();
             if ( 0 == scaleValue ) {
                 BigDecimal bd = (BigDecimal) value;
-                SqlTypeName result;
+                PolyType result;
                 long l = bd.longValue();
                 if ( (l >= Integer.MIN_VALUE) && (l <= Integer.MAX_VALUE) ) {
-                    result = SqlTypeName.INTEGER;
+                    result = PolyType.INTEGER;
                 } else {
-                    result = SqlTypeName.BIGINT;
+                    result = PolyType.BIGINT;
                 }
-                return typeFactory.createSqlType( result );
+                return typeFactory.createPolyType( result );
             }
 
             // else we have a decimal
-            return typeFactory.createSqlType( SqlTypeName.DECIMAL, prec.intValue(), scaleValue );
+            return typeFactory.createPolyType( PolyType.DECIMAL, prec.intValue(), scaleValue );
         }
 
         // else we have a a float, real or double.  make them all double for now.
-        return typeFactory.createSqlType( SqlTypeName.DOUBLE );
+        return typeFactory.createPolyType( PolyType.DOUBLE );
     }
 
 

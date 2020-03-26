@@ -157,12 +157,12 @@ public class VisitorDataContext implements DataContext {
             final RexLiteral rexLiteral = (RexLiteral) literal;
             final RelDataType type = inputRef.getType();
 
-            if ( type.getSqlTypeName() == null ) {
-                log.warn( "{} returned null SqlTypeName", inputRef.toString() );
+            if ( type.getPolyType() == null ) {
+                log.warn( "{} returned null PolyType", inputRef.toString() );
                 return null;
             }
 
-            switch ( type.getSqlTypeName() ) {
+            switch ( type.getPolyType() ) {
                 case INTEGER:
                     return Pair.of( index, rexLiteral.getValueAs( Integer.class ) );
                 case DOUBLE:
@@ -188,7 +188,7 @@ public class VisitorDataContext implements DataContext {
                     return Pair.of( index, rexLiteral.getValueAs( String.class ) );
                 default:
                     // TODO: Support few more supported cases
-                    log.warn( "{} for value of class {} is being handled in default way", type.getSqlTypeName(), rexLiteral.getValue().getClass() );
+                    log.warn( "{} for value of class {} is being handled in default way", type.getPolyType(), rexLiteral.getValue().getClass() );
                     if ( rexLiteral.getValue() instanceof NlsString ) {
                         return Pair.of( index, ((NlsString) rexLiteral.getValue()).getValue() );
                     } else {

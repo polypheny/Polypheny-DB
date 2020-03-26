@@ -44,7 +44,6 @@ import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.rel.type.RelDataType;
@@ -54,8 +53,8 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Source;
 import org.polypheny.db.util.Sources;
 import org.polypheny.db.util.Util;
@@ -85,21 +84,18 @@ public class CsvSchema extends AbstractSchema {
 
 
     public Table createCsvTable( CatalogTable catalogTable, CsvStore csvStore ) {
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ) ) {
-            CatalogColumn catalogColumn = null;
-            // TODO MV: This is not efficient
-            // Get catalog column
-
+            CatalogColumn catalogColumn;
             try {
                 catalogColumn = CatalogManager.getInstance().getCatalog().getColumn( placement.columnId );
             } catch ( UnknownColumnException | GenericCatalogException e ) {
                 throw new RuntimeException( "Column not found." ); // This should not happen
             }
 
-            SqlTypeName dataTypeName = SqlTypeName.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
+            PolyType dataTypeName = PolyType.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
@@ -142,10 +138,10 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, SqlTypeName dataTypeName, Integer length, Integer scale, String typeString ) {
+    private RelDataType sqlType( RelDataTypeFactory typeFactory, PolyType dataTypeName, Integer length, Integer scale, String typeString ) {
         // Fall back to ANY if type is unknown
-        final SqlTypeName sqlTypeName = Util.first( dataTypeName, SqlTypeName.ANY );
-        switch ( sqlTypeName ) {
+        final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
+        switch ( polyType ) {
             case ARRAY:
                 RelDataType component = null;
                 if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
@@ -154,17 +150,17 @@ public class CsvSchema extends AbstractSchema {
                     component = parseTypeString( typeFactory, remaining );
                 }
                 if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                 }
                 return typeFactory.createArrayType( component, -1 );
         }
-        if ( scale != null && length != null && length >= 0 && scale >= 0 && sqlTypeName.allowsPrecScale( true, true ) ) {
-            return typeFactory.createSqlType( sqlTypeName, length, scale );
-        } else if ( length != null && length >= 0 && sqlTypeName.allowsPrecNoScale() ) {
-            return typeFactory.createSqlType( sqlTypeName, length );
+        if ( scale != null && length != null && length >= 0 && scale >= 0 && polyType.allowsPrecScale( true, true ) ) {
+            return typeFactory.createPolyType( polyType, length, scale );
+        } else if ( length != null && length >= 0 && polyType.allowsPrecNoScale() ) {
+            return typeFactory.createPolyType( polyType, length );
         } else {
-            assert sqlTypeName.allowsNoPrecNoScale();
-            return typeFactory.createSqlType( sqlTypeName );
+            assert polyType.allowsNoPrecNoScale();
+            return typeFactory.createPolyType( polyType );
         }
     }
 
@@ -193,14 +189,14 @@ public class CsvSchema extends AbstractSchema {
             }
         }
         try {
-            final SqlTypeName typeName = SqlTypeName.valueOf( typeString );
+            final PolyType typeName = PolyType.valueOf( typeString );
             return typeName.allowsPrecScale( true, true )
-                    ? typeFactory.createSqlType( typeName, precision, scale )
+                    ? typeFactory.createPolyType( typeName, precision, scale )
                     : typeName.allowsPrecScale( true, false )
-                            ? typeFactory.createSqlType( typeName, precision )
-                            : typeFactory.createSqlType( typeName );
+                            ? typeFactory.createPolyType( typeName, precision )
+                            : typeFactory.createPolyType( typeName );
         } catch ( IllegalArgumentException e ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
         }
     }
 

@@ -21,9 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,7 +39,6 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -77,6 +73,8 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -464,19 +462,19 @@ public class CatalogImpl extends Catalog {
         CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
 
-        addDefaultColumn( csv, depts, "deptno", PolySqlType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, depts, "name", PolySqlType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+        addDefaultColumn( csv, depts, "deptno", PolyType.INTEGER, null, 1, null );
+        addDefaultColumn( csv, depts, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
 
         CatalogTable emps = getTable( schema.id, "emps" );
-        addDefaultColumn( csv, emps, "empid", PolySqlType.INTEGER, null, 1, null );
-        addDefaultColumn( csv, emps, "deptno", PolySqlType.INTEGER, null, 2, null );
-        addDefaultColumn( csv, emps, "name", PolySqlType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
-        addDefaultColumn( csv, emps, "salary", PolySqlType.INTEGER, null, 4, null );
-        addDefaultColumn( csv, emps, "commission", PolySqlType.INTEGER, null, 5, null );
+        addDefaultColumn( csv, emps, "empid", PolyType.INTEGER, null, 1, null );
+        addDefaultColumn( csv, emps, "deptno", PolyType.INTEGER, null, 2, null );
+        addDefaultColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
+        addDefaultColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
     }
 
 
-    private void addDefaultColumn( CatalogStore csv, CatalogTable table, String name, PolySqlType type, Collation collation, int position, Integer length ) throws GenericCatalogException, UnknownTableException {
+    private void addDefaultColumn( CatalogStore csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) throws GenericCatalogException, UnknownTableException {
         if ( !checkIfExistsColumn( table.id, name ) ) {
             long colId = addColumn( name, table.id, position, type, length, null, false, collation );
             addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, table.name, name );
@@ -1378,11 +1376,10 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted column
      */
     @Override
-    public long addColumn( String name, long tableId, int position, PolySqlType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
+    public long addColumn( String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-
-            if ( type.isCharType() && collation == null ) {
+            if ( type.getFamily() == PolyTypeFamily.CHARACTER && collation == null ) {
                 throw new RuntimeException( "Collation is not allowed to be null for char types." );
             }
             if ( scale != null && scale > length ) {
@@ -1459,7 +1456,7 @@ public class CatalogImpl extends Catalog {
      * @param type The new type of the column
      */
     @Override
-    public void setColumnType( long columnId, PolySqlType type, Integer length, Integer scale ) throws GenericCatalogException {
+    public void setColumnType( long columnId, PolyType type, Integer length, Integer scale ) throws GenericCatalogException {
         try {
 
             CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
@@ -1467,7 +1464,7 @@ public class CatalogImpl extends Catalog {
             if ( scale != null && scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
-            Collation collation = type.isCharType() ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
+            Collation collation = type.getFamily() == PolyTypeFamily.CHARACTER ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
 
             columns.replace( columnId, CatalogColumn.replaceColumnType( column, type, length, scale, collation ) );
 
@@ -1522,7 +1519,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
 
-            if ( !column.type.isCharType() ) {
+            if ( column.type.getFamily() != PolyTypeFamily.CHARACTER ) {
                 throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
             }
 
@@ -1593,7 +1590,7 @@ public class CatalogImpl extends Catalog {
      * @param defaultValue The default value
      */
     @Override
-    public void setDefaultValue( long columnId, PolySqlType type, String defaultValue ) throws UnknownColumnException {
+    public void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws UnknownColumnException {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
             // TODO DL also fix call
