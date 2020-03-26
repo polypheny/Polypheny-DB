@@ -49,14 +49,14 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
-import org.polypheny.db.sql.type.ComparableOperandTypeChecker;
-import org.polypheny.db.sql.type.InferTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.ComparableOperandTypeChecker;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.InferTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.Util;
@@ -96,7 +96,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
     /**
      * Custom operand-type checking strategy.
      */
-    private static final SqlOperandTypeChecker OTC_CUSTOM = new ComparableOperandTypeChecker( 3, RelDataTypeComparability.ALL, SqlOperandTypeChecker.Consistency.COMPARE );
+    private static final PolyOperandTypeChecker OTC_CUSTOM = new ComparableOperandTypeChecker( 3, RelDataTypeComparability.ALL, PolyOperandTypeChecker.Consistency.COMPARE );
     private static final SqlWriter.FrameType FRAME_TYPE = SqlWriter.FrameTypeEnum.create( "BETWEEN" );
 
 
@@ -129,7 +129,7 @@ public class SqlBetweenOperator extends SqlInfixOperator {
 
 
     private List<RelDataType> collectOperandTypes( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
-        List<RelDataType> argTypes = SqlTypeUtil.deriveAndCollectTypes( validator, scope, call.getOperandList() );
+        List<RelDataType> argTypes = PolyTypeUtil.deriveAndCollectTypes( validator, scope, call.getOperandList() );
         return ImmutableNullableList.of(
                 argTypes.get( VALUE_OPERAND ),
                 argTypes.get( LOWER_OPERAND ),

@@ -63,7 +63,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexTransformer;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -95,7 +95,7 @@ public class RexTransformerTest {
     public void setUp() {
         typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         rexBuilder = new RexBuilder( typeFactory );
-        boolRelDataType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+        boolRelDataType = typeFactory.createPolyType( PolyType.BOOLEAN );
 
         x = new RexInputRef(
                 0,
@@ -209,11 +209,11 @@ public class RexTransformerTest {
     @Test
     public void testPreTests() {
         // can make variable nullable?
-        RexNode node = new RexInputRef( 0, typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), true ) );
+        RexNode node = new RexInputRef( 0, typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), true ) );
         assertTrue( node.getType().isNullable() );
 
         // can make variable not nullable?
-        node = new RexInputRef( 0, typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), false ) );
+        node = new RexInputRef( 0, typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false ) );
         assertFalse( node.getType().isNullable() );
     }
 

@@ -37,11 +37,11 @@ package org.polypheny.db.sql;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -81,9 +81,9 @@ public class SqlGroupedWindowFunction extends SqlFunction {
             String name,
             SqlKind kind,
             SqlGroupedWindowFunction groupFunction,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker,
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker,
             SqlFunctionCategory category ) {
         super( name, kind, returnTypeInference, operandTypeInference, operandTypeChecker, category );
         this.groupFunction = groupFunction;

@@ -254,10 +254,21 @@ public class InformationManager {
         }
 
         for ( InformationGroup g : this.groups.values() ) {
+            g.refresh();
             String page = g.getPageId();
             this.pages.get( page ).addGroup( g );
         }
+
+        p.refresh();
         return p;
+    }
+
+
+    /**
+     * Get an InformationGroup WITHOUT its InformationObjects
+     */
+    public InformationGroup getGroup( final String id ) {
+        return this.groups.get( id );
     }
 
 

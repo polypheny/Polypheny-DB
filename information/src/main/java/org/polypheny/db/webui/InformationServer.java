@@ -19,12 +19,15 @@ package org.polypheny.db.webui;
 
 import static spark.Service.ignite;
 
+import com.google.gson.Gson;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationResponse;
 import spark.Service;
 
 
@@ -33,6 +36,8 @@ import spark.Service;
  */
 @Slf4j
 public class InformationServer implements InformationObserver {
+
+    Gson gson = new Gson();
 
     public InformationServer( final int port ) {
 
@@ -70,6 +75,28 @@ public class InformationServer implements InformationObserver {
                 log.error( "Caught exception!", e );
                 return "";
             }
+        } );
+
+        http.post( "/executeAction", ( res, req ) -> {
+            try {
+                InformationAction action = gson.fromJson( res.body(), InformationAction.class );
+                String msg = im.getInformation( action.getId() ).unwrap( InformationAction.class ).executeAction( action.getParameters() );
+                return new InformationResponse().message( msg );
+            } catch ( Exception e ) {
+                String errorMsg = "Could not execute InformationAction";
+                log.error( errorMsg, e );
+                return new InformationResponse().error( errorMsg );
+            }
+        }, gson::toJson );
+
+        http.post( "/refreshPage", ( req, res ) -> {
+            im.getPage( req.body() ).refresh();
+            return "";
+        } );
+
+        http.post( "/refreshGroup", ( req, res ) -> {
+            im.getGroup( req.body() ).refresh();
+            return "";
         } );
     }
 

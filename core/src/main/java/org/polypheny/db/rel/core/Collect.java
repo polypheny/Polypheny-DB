@@ -46,7 +46,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.fun.SqlMultisetQueryConstructor;
 import org.polypheny.db.sql.fun.SqlMultisetValueConstructor;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -129,7 +129,7 @@ public class Collect extends SingleRel {
         RelDataType childType = rel.getInput().getRowType();
         assert childType.isStruct();
         final RelDataTypeFactory typeFactory = rel.getCluster().getTypeFactory();
-        RelDataType ret = SqlTypeUtil.createMultisetType( typeFactory, childType, false );
+        RelDataType ret = PolyTypeUtil.createMultisetType( typeFactory, childType, false );
         ret = typeFactory.builder().add( fieldName, null, ret ).build();
         return typeFactory.createTypeWithNullability( ret, false );
     }

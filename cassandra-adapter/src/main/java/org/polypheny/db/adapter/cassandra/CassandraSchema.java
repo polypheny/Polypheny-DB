@@ -71,8 +71,8 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -167,7 +167,7 @@ public class CassandraSchema extends AbstractSchema {
         }
 
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
-        final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
 //        Pattern columnIdPattern = Pattern.compile( "^col([0-9]+)(r([0-9]+))?" );
 
@@ -179,7 +179,7 @@ public class CassandraSchema extends AbstractSchema {
             final DataType type = column.getValue().getType();
 
             // TODO: This mapping of types can be done much better
-            SqlTypeName typeName = CassandraTypesUtils.getSqlTypeName( type );
+            PolyType typeName = CassandraTypesUtils.getPolyType( type );
 
             // TODO (PCP)
             /*Matcher m = columnIdPattern.matcher( physicalColumnName );
@@ -193,8 +193,8 @@ public class CassandraSchema extends AbstractSchema {
             CatalogColumn logicalColumn = this.logicalColumnFromPhysicalColumn( physicalColumnName );
             String logicalColumnName = this.logicalColumnFromPhysical( physicalColumnName );
 
-            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, typeFactory.createSqlType( typeName ) ) ) );
-//            fieldInfo.add( logicalColumnName, physicalColumnName, typeFactory.createSqlType( typeName ) ).nullable( true );
+            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ) ) );
+//            fieldInfo.add( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
         }
 
         preorderedList.sort( Comparator.naturalOrder() );

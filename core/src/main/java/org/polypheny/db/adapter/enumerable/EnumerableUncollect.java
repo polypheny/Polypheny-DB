@@ -47,7 +47,7 @@ import org.polypheny.db.rel.core.Uncollect;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.runtime.SqlFunctions.FlatProductInputType;
-import org.polypheny.db.sql.type.MapSqlType;
+import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -106,7 +106,7 @@ public class EnumerableUncollect extends Uncollect implements EnumerableRel {
 
         for ( RelDataTypeField field : child.getRowType().getFieldList() ) {
             final RelDataType type = field.getType();
-            if ( type instanceof MapSqlType ) {
+            if ( type instanceof MapPolyType ) {
                 fieldCounts.add( 2 );
                 inputTypes.add( FlatProductInputType.MAP );
             } else {

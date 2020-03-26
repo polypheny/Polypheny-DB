@@ -58,7 +58,6 @@ import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlConformanceEnum;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
@@ -73,6 +72,7 @@ import org.polypheny.db.test.catalog.MockCatalogReader;
 import org.polypheny.db.test.catalog.MockCatalogReaderDynamic;
 import org.polypheny.db.test.catalog.MockCatalogReaderSimple;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -691,7 +691,7 @@ public abstract class SqlToRelTestBase {
 
 
         protected RelDataTypeFactory createTypeFactory() {
-            return new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+            return new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         }
 
 

@@ -59,9 +59,9 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Util;
@@ -259,7 +259,7 @@ public class AggregateReduceFunctionsRule extends RelOptRule {
             // anything else:  preserve original call
             RexBuilder rexBuilder = oldAggRel.getCluster().getRexBuilder();
             final int nGroups = oldAggRel.getGroupCount();
-            List<RelDataType> oldArgTypes = SqlTypeUtil.projectTypes( oldAggRel.getInput().getRowType(), oldCall.getArgList() );
+            List<RelDataType> oldArgTypes = PolyTypeUtil.projectTypes( oldAggRel.getInput().getRowType(), oldCall.getArgList() );
             return rexBuilder.addAggCall( oldCall, nGroups, oldAggRel.indicator, newCalls, aggCallMapping, oldArgTypes );
         }
     }

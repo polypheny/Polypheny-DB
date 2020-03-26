@@ -190,7 +190,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         final RelDataType rowType = getRowType( typeFactory );
 
         Function1<String, Void> addField = fieldName -> {
-            SqlTypeName typeName = rowType.getField( fieldName, true, false ).getType().getSqlTypeName();
+            PolyType typeName = rowType.getField( fieldName, true, false ).getType().getPolyType();
             fieldInfo.add( fieldName, typeFactory.createSqlType( typeName ) ).nullable( true );
             return null;
         };*/
@@ -238,7 +238,7 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
         final RelDataType rowType = getRowType( typeFactory );
 
         Function1<String, Void> addField = fieldName -> {
-            SqlTypeName typeName = rowType.getField( fieldName, true, false ).getType().getSqlTypeName();
+            PolyType typeName = rowType.getField( fieldName, true, false ).getType().getPolyType();
             fieldInfo.add( fieldName, typeFactory.createSqlType( typeName ) ).nullable( true );
             return null;
         };

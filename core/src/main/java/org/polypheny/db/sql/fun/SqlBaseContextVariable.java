@@ -39,9 +39,9 @@ import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**
@@ -52,7 +52,7 @@ public class SqlBaseContextVariable extends SqlFunction {
     /**
      * Creates a SqlBaseContextVariable.
      */
-    protected SqlBaseContextVariable( String name, SqlReturnTypeInference returnType, SqlFunctionCategory category ) {
+    protected SqlBaseContextVariable( String name, PolyReturnTypeInference returnType, SqlFunctionCategory category ) {
         super( name, SqlKind.OTHER_FUNCTION, returnType, null, OperandTypes.NILADIC, category );
     }
 

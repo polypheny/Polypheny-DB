@@ -34,9 +34,9 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**
@@ -49,9 +49,9 @@ public class SqlFunctionalOperator extends SqlSpecialOperator {
             SqlKind kind,
             int pred,
             boolean isLeftAssoc,
-            SqlReturnTypeInference returnTypeInference,
-            SqlOperandTypeInference operandTypeInference,
-            SqlOperandTypeChecker operandTypeChecker ) {
+            PolyReturnTypeInference returnTypeInference,
+            PolyOperandTypeInference operandTypeInference,
+            PolyOperandTypeChecker operandTypeChecker ) {
         super(
                 name,
                 kind,

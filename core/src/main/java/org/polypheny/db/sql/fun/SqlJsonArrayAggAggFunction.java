@@ -44,12 +44,12 @@ import org.polypheny.db.sql.SqlJsonConstructorNullClause;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeFamily;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 
 
@@ -68,7 +68,7 @@ public class SqlJsonArrayAggAggFunction extends SqlAggFunction {
                 SqlKind.JSON_ARRAYAGG,
                 ReturnTypes.VARCHAR_2000,
                 null,
-                OperandTypes.family( SqlTypeFamily.ANY ),
+                OperandTypes.family( PolyTypeFamily.ANY ),
                 SqlFunctionCategory.SYSTEM,
                 false,
                 false,

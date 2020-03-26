@@ -49,7 +49,7 @@ import org.polypheny.db.rel.metadata.RelMdCollation;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -113,7 +113,7 @@ public class LogicalValues extends Values {
         final RelDataType rowType =
                 cluster.getTypeFactory()
                         .builder()
-                        .add( "ZERO", null, SqlTypeName.INTEGER )
+                        .add( "ZERO", null, PolyType.INTEGER )
                         .nullable( false )
                         .build();
         final ImmutableList<ImmutableList<RexLiteral>> tuples =

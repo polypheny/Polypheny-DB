@@ -99,9 +99,6 @@ import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParseException;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.ChainedSqlOperatorTable;
 import org.polypheny.db.sql.util.ListSqlOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -117,6 +114,9 @@ import org.polypheny.db.tools.RelConversionException;
 import org.polypheny.db.tools.RuleSet;
 import org.polypheny.db.tools.RuleSets;
 import org.polypheny.db.tools.ValidationException;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 import org.polypheny.db.util.Util;
 
@@ -1186,7 +1186,7 @@ public class PlannerTest {
         public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
             // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
             if ( call.isCountStar() ) {
-                return validator.getTypeFactory().createSqlType( SqlTypeName.BIGINT );
+                return validator.getTypeFactory().createPolyType( PolyType.BIGINT );
             }
             return super.deriveType( validator, scope, call );
         }

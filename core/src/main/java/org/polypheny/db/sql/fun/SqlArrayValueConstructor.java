@@ -37,7 +37,7 @@ package org.polypheny.db.sql.fun;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperatorBinding;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -56,6 +56,6 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
         if ( null == type ) {
             return null;
         }
-        return SqlTypeUtil.createArrayType( opBinding.getTypeFactory(), type, false );
+        return PolyTypeUtil.createArrayType( opBinding.getTypeFactory(), type, false );
     }
 }

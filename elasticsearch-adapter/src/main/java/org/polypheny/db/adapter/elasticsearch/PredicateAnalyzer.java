@@ -61,8 +61,8 @@ import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSyntax;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 /**
@@ -1025,22 +1025,22 @@ class PredicateAnalyzer {
 
 
         boolean isIntegral() {
-            return SqlTypeName.INT_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.INT_TYPES.contains( literal.getType().getPolyType() );
         }
 
 
         boolean isFloatingPoint() {
-            return SqlTypeName.APPROX_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.APPROX_TYPES.contains( literal.getType().getPolyType() );
         }
 
 
         boolean isBoolean() {
-            return SqlTypeName.BOOLEAN_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.BOOLEAN_TYPES.contains( literal.getType().getPolyType() );
         }
 
 
         public boolean isString() {
-            return SqlTypeName.CHAR_TYPES.contains( literal.getType().getSqlTypeName() );
+            return PolyType.CHAR_TYPES.contains( literal.getType().getPolyType() );
         }
 
 
@@ -1078,14 +1078,14 @@ class PredicateAnalyzer {
     private static void checkForIncompatibleDateTimeOperands( RexCall call ) {
         RelDataType op1 = call.getOperands().get( 0 ).getType();
         RelDataType op2 = call.getOperands().get( 1 ).getType();
-        if ( (SqlTypeFamily.DATETIME.contains( op1 ) && !SqlTypeFamily.DATETIME.contains( op2 ))
-                || (SqlTypeFamily.DATETIME.contains( op2 ) && !SqlTypeFamily.DATETIME.contains( op1 ))
-                || (SqlTypeFamily.DATE.contains( op1 ) && !SqlTypeFamily.DATE.contains( op2 ))
-                || (SqlTypeFamily.DATE.contains( op2 ) && !SqlTypeFamily.DATE.contains( op1 ))
-                || (SqlTypeFamily.TIMESTAMP.contains( op1 ) && !SqlTypeFamily.TIMESTAMP.contains( op2 ))
-                || (SqlTypeFamily.TIMESTAMP.contains( op2 ) && !SqlTypeFamily.TIMESTAMP.contains( op1 ))
-                || (SqlTypeFamily.TIME.contains( op1 ) && !SqlTypeFamily.TIME.contains( op2 ))
-                || (SqlTypeFamily.TIME.contains( op2 ) && !SqlTypeFamily.TIME.contains( op1 )) ) {
+        if ( (PolyTypeFamily.DATETIME.contains( op1 ) && !PolyTypeFamily.DATETIME.contains( op2 ))
+                || (PolyTypeFamily.DATETIME.contains( op2 ) && !PolyTypeFamily.DATETIME.contains( op1 ))
+                || (PolyTypeFamily.DATE.contains( op1 ) && !PolyTypeFamily.DATE.contains( op2 ))
+                || (PolyTypeFamily.DATE.contains( op2 ) && !PolyTypeFamily.DATE.contains( op1 ))
+                || (PolyTypeFamily.TIMESTAMP.contains( op1 ) && !PolyTypeFamily.TIMESTAMP.contains( op2 ))
+                || (PolyTypeFamily.TIMESTAMP.contains( op2 ) && !PolyTypeFamily.TIMESTAMP.contains( op1 ))
+                || (PolyTypeFamily.TIME.contains( op1 ) && !PolyTypeFamily.TIME.contains( op2 ))
+                || (PolyTypeFamily.TIME.contains( op2 ) && !PolyTypeFamily.TIME.contains( op1 )) ) {
             throw new PredicateAnalyzerException( "Cannot handle " + call.getKind() + " expression for _id field, " + call );
         }
     }

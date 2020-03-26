@@ -42,7 +42,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Source;
 
 
@@ -73,8 +73,8 @@ public class JsonTable extends AbstractTable implements ScannableTable {
                 "_MAP",
                 null,
                 typeFactory.createMapType(
-                        typeFactory.createSqlType( SqlTypeName.VARCHAR ),
-                        typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.VARCHAR ), true ) ) ).build();
+                        typeFactory.createPolyType( PolyType.VARCHAR ),
+                        typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.VARCHAR ), true ) ) ).build();
     }
 
 

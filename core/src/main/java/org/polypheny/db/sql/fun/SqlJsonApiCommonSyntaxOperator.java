@@ -38,12 +38,12 @@ import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -57,14 +57,14 @@ public class SqlJsonApiCommonSyntaxOperator extends SqlSpecialOperator {
                 SqlKind.JSON_API_COMMON_SYNTAX,
                 100,
                 true,
-                ReturnTypes.explicit( SqlTypeName.ANY ),
+                ReturnTypes.explicit( PolyType.ANY ),
                 null,
-                OperandTypes.family( SqlTypeFamily.ANY, SqlTypeFamily.STRING ) );
+                OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.STRING ) );
     }
 
 
     @Override
-    protected void checkOperandCount( SqlValidator validator, SqlOperandTypeChecker argType, SqlCall call ) {
+    protected void checkOperandCount( SqlValidator validator, PolyOperandTypeChecker argType, SqlCall call ) {
         if ( call.operandCount() != 2 ) {
             throw new UnsupportedOperationException( "json passing syntax is not yet supported" );
         }

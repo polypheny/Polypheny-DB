@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import java.util.Objects;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 
 
@@ -58,13 +58,13 @@ import org.polypheny.db.util.Litmus;
 public class SqlIntervalLiteral extends SqlLiteral {
 
 
-    protected SqlIntervalLiteral( int sign, String intervalStr, SqlIntervalQualifier intervalQualifier, SqlTypeName sqlTypeName, SqlParserPos pos ) {
-        this( new IntervalValue( intervalQualifier, sign, intervalStr ), sqlTypeName, pos );
+    protected SqlIntervalLiteral( int sign, String intervalStr, SqlIntervalQualifier intervalQualifier, PolyType polyType, SqlParserPos pos ) {
+        this( new IntervalValue( intervalQualifier, sign, intervalStr ), polyType, pos );
     }
 
 
-    private SqlIntervalLiteral( IntervalValue intervalValue, SqlTypeName sqlTypeName, SqlParserPos pos ) {
-        super( intervalValue, sqlTypeName, pos );
+    private SqlIntervalLiteral( IntervalValue intervalValue, PolyType polyType, SqlParserPos pos ) {
+        super( intervalValue, polyType, pos );
     }
 
 

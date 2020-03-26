@@ -39,10 +39,10 @@ import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperandCountRange;
-import org.polypheny.db.sql.type.MultisetSqlType;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
+import org.polypheny.db.type.MultisetPolyType;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Static;
 
 
@@ -73,8 +73,8 @@ public class SqlMultisetMemberOfOperator extends SqlBinaryOperator {
             return false;
         }
 
-        MultisetSqlType mt =
-                (MultisetSqlType) callBinding.getValidator().deriveType(
+        MultisetPolyType mt =
+                (MultisetPolyType) callBinding.getValidator().deriveType(
                         callBinding.getScope(),
                         callBinding.operand( 1 ) );
 
@@ -96,7 +96,7 @@ public class SqlMultisetMemberOfOperator extends SqlBinaryOperator {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.of( 2 );
+        return PolyOperandCountRanges.of( 2 );
     }
 }
 

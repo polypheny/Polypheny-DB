@@ -65,7 +65,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSelectKeyword;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -83,20 +83,20 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     final ImmutableList<Interval> intervals;
     final String timestampFieldName;
     final ImmutableMap<String, List<ComplexMetric>> complexMetrics;
-    final ImmutableMap<String, SqlTypeName> allFields;
+    final ImmutableMap<String, PolyType> allFields;
 
 
     /**
      * Creates a Druid table.
      *
-     * @param schema Druid schema that contains this table
-     * @param dataSource Druid data source name
-     * @param protoRowType Field names and types
-     * @param metricFieldNames Names of fields that are metrics
-     * @param intervals Default interval if query does not constrain the time, or null
+     * @param schema             Druid schema that contains this table
+     * @param dataSource         Druid data source name
+     * @param protoRowType       Field names and types
+     * @param metricFieldNames   Names of fields that are metrics
+     * @param intervals          Default interval if query does not constrain the time, or null
      * @param timestampFieldName Name of the column that contains the time
      */
-    public DruidTable( DruidSchema schema, String dataSource, RelProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, SqlTypeName> allFields ) {
+    public DruidTable( DruidSchema schema, String dataSource, RelProtoDataType protoRowType, Set<String> metricFieldNames, String timestampFieldName, List<Interval> intervals, Map<String, List<ComplexMetric>> complexMetrics, Map<String, PolyType> allFields ) {
         this.timestampFieldName = Objects.requireNonNull( timestampFieldName );
         this.schema = Objects.requireNonNull( schema );
         this.dataSource = Objects.requireNonNull( dataSource );
@@ -121,7 +121,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      * @param complexMetrics List of complex metrics in Druid (thetaSketch, hyperUnique)
      * @return A table
      */
-    static Table create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, SqlTypeName> fieldMap, Set<String> metricNameSet, String timestampColumnName, DruidConnectionImpl connection, Map<String, List<ComplexMetric>> complexMetrics ) {
+    static Table create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, PolyType> fieldMap, Set<String> metricNameSet, String timestampColumnName, DruidConnectionImpl connection, Map<String, List<ComplexMetric>> complexMetrics ) {
         assert connection != null;
 
         connection.metadata( dataSourceName, timestampColumnName, intervals, fieldMap, metricNameSet, complexMetrics );
@@ -142,8 +142,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      * @param complexMetrics List of complex metrics in Druid (thetaSketch, hyperUnique)
      * @return A table
      */
-    static Table create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, SqlTypeName> fieldMap, Set<String> metricNameSet, String timestampColumnName, Map<String, List<ComplexMetric>> complexMetrics ) {
-        final ImmutableMap<String, SqlTypeName> fields = ImmutableMap.copyOf( fieldMap );
+    static Table create( DruidSchema druidSchema, String dataSourceName, List<Interval> intervals, Map<String, PolyType> fieldMap, Set<String> metricNameSet, String timestampColumnName, Map<String, List<ComplexMetric>> complexMetrics ) {
+        final ImmutableMap<String, PolyType> fields = ImmutableMap.copyOf( fieldMap );
         return new DruidTable( druidSchema, dataSourceName, new MapRelProtoDataType( fields, timestampColumnName ), ImmutableSet.copyOf( metricNameSet ), timestampColumnName, intervals, complexMetrics, fieldMap );
     }
 
@@ -168,7 +168,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     @Override
     public boolean isRolledUp( String column ) {
         // The only rolled up columns we care about are Complex Metrics (aka sketches). But we also need to check if this column name is a dimension
-        return complexMetrics.get( column ) != null && allFields.get( column ) != SqlTypeName.VARCHAR;
+        return complexMetrics.get( column ) != null && allFields.get( column ) != PolyType.VARCHAR;
     }
 
 
@@ -253,17 +253,17 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
      */
     private static class MapRelProtoDataType implements RelProtoDataType {
 
-        private final ImmutableMap<String, SqlTypeName> fields;
+        private final ImmutableMap<String, PolyType> fields;
         private final String timestampColumn;
 
 
-        MapRelProtoDataType( ImmutableMap<String, SqlTypeName> fields ) {
+        MapRelProtoDataType( ImmutableMap<String, PolyType> fields ) {
             this.fields = fields;
             this.timestampColumn = DruidTable.DEFAULT_TIMESTAMP_COLUMN;
         }
 
 
-        MapRelProtoDataType( ImmutableMap<String, SqlTypeName> fields, String timestampColumn ) {
+        MapRelProtoDataType( ImmutableMap<String, PolyType> fields, String timestampColumn ) {
             this.fields = fields;
             this.timestampColumn = timestampColumn;
         }
@@ -272,7 +272,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
         @Override
         public RelDataType apply( RelDataTypeFactory typeFactory ) {
             final RelDataTypeFactory.Builder builder = typeFactory.builder();
-            for ( Map.Entry<String, SqlTypeName> field : fields.entrySet() ) {
+            for ( Map.Entry<String, PolyType> field : fields.entrySet() ) {
                 final String key = field.getKey();
                 // TODO (PCP)
                 String physicalColumnName = key;

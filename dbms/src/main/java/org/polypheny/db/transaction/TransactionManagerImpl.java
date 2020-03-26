@@ -20,11 +20,6 @@ package org.polypheny.db.transaction;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import org.polypheny.db.PUID;
-import org.polypheny.db.PUID.ConnectionId;
-import org.polypheny.db.PUID.NodeId;
-import org.polypheny.db.PUID.Type;
-import org.polypheny.db.PUID.UserId;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -38,6 +33,10 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.transaction.PUID.ConnectionId;
+import org.polypheny.db.transaction.PUID.NodeId;
+import org.polypheny.db.transaction.PUID.Type;
+import org.polypheny.db.transaction.PUID.UserId;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -51,6 +50,7 @@ public class TransactionManagerImpl implements TransactionManager {
     public TransactionManagerImpl() {
         InformationManager im = InformationManager.getInstance();
         InformationPage page = new InformationPage( "Transactions", "Transactions" );
+        page.fullWidth();
         im.addPage( page );
         InformationGroup runningTransactionsGroup = new InformationGroup( page, "Running Transactions" );
         im.addGroup( runningTransactionsGroup );
@@ -58,14 +58,13 @@ public class TransactionManagerImpl implements TransactionManager {
                 runningTransactionsGroup,
                 Arrays.asList( "ID", "Analyze", "Involved Stores" ) );
         im.registerInformation( runningTransactionsTable );
-        BackgroundTaskManager.INSTANCE.registerTask(
-                () -> {
-                    runningTransactionsTable.reset();
-                    transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow( k.getGlobalTransactionId(), v.isAnalyze(), v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
-                },
-                "Update transaction overview",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS );
+        page.setRefreshFunction( () -> {
+            runningTransactionsTable.reset();
+            transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow(
+                    k.getGlobalTransactionId(),
+                    v.isAnalyze(),
+                    v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
+        } );
     }
 
 

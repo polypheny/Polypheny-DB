@@ -38,7 +38,7 @@ import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 import org.polypheny.db.util.Util;
 
@@ -79,7 +79,7 @@ public class SqlJoin extends SqlCall {
         this.conditionType = Objects.requireNonNull( conditionType );
         this.condition = condition;
 
-        Preconditions.checkArgument( natural.getTypeName() == SqlTypeName.BOOLEAN );
+        Preconditions.checkArgument( natural.getTypeName() == PolyType.BOOLEAN );
         Objects.requireNonNull( conditionType.symbolValue( JoinConditionType.class ) );
         Objects.requireNonNull( joinType.symbolValue( JoinType.class ) );
     }

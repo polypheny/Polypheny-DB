@@ -34,8 +34,8 @@
 package org.polypheny.db.sql;
 
 
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 import org.polypheny.db.util.Optionality;
 
 
@@ -45,7 +45,7 @@ import org.polypheny.db.util.Optionality;
 public class SqlRankFunction extends SqlAggFunction {
 
 
-    public SqlRankFunction( SqlKind kind, SqlReturnTypeInference returnTypes, boolean requiresOrder ) {
+    public SqlRankFunction( SqlKind kind, PolyReturnTypeInference returnTypes, boolean requiresOrder ) {
         super(
                 kind.name(),
                 null,

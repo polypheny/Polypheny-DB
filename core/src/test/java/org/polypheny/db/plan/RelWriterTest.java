@@ -41,9 +41,9 @@ import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.test.Matchers;
 import org.polypheny.db.tools.Frameworks;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
@@ -108,7 +108,7 @@ public class RelWriterTest {
                                             rexBuilder.makeFieldAccess( rexBuilder.makeRangeReference( scan ), "deptno", true ),
                                             rexBuilder.makeExactLiteral( BigDecimal.TEN ) ) );
                     final RelJsonWriter writer = new RelJsonWriter();
-                    final RelDataType bigIntType = cluster.getTypeFactory().createSqlType( SqlTypeName.BIGINT );
+                    final RelDataType bigIntType = cluster.getTypeFactory().createPolyType( PolyType.BIGINT );
                     LogicalAggregate aggregate =
                             LogicalAggregate.create( filter, ImmutableBitSet.of( 0 ), null,
                                     ImmutableList.of(

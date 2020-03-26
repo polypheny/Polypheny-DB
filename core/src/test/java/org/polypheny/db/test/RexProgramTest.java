@@ -62,9 +62,9 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlTypeAssignmentRules;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeAssignmentRules;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.NlsString;
@@ -184,7 +184,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     private void checkSimplify3_( RexNode node, String expected, String expectedFalse, String expectedTrue ) {
         final RexNode simplified = simplify.simplifyUnknownAs( node, RexUnknownAs.UNKNOWN );
         assertThat( "simplify(unknown as unknown): " + node, simplified.toString(), equalTo( expected ) );
-        if ( node.getType().getSqlTypeName() == SqlTypeName.BOOLEAN ) {
+        if ( node.getType().getPolyType() == PolyType.BOOLEAN ) {
             final RexNode simplified2 = simplify.simplifyUnknownAs( node, RexUnknownAs.FALSE );
             assertThat( "simplify(unknown as false): " + node, simplified2.toString(), equalTo( expectedFalse ) );
             final RexNode simplified3 = simplify.simplifyUnknownAs( node, RexUnknownAs.TRUE );
@@ -327,8 +327,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
         assert variant >= 0 && variant <= 4;
         List<RelDataType> types =
                 Arrays.asList(
-                        typeFactory.createSqlType( SqlTypeName.INTEGER ),
-                        typeFactory.createSqlType( SqlTypeName.INTEGER ) );
+                        typeFactory.createPolyType( PolyType.INTEGER ),
+                        typeFactory.createPolyType( PolyType.INTEGER ) );
         List<String> names = Arrays.asList( "x", "y" );
         RelDataType inputRowType = typeFactory.createStructType( types, names );
         final RexProgramBuilder builder = new RexProgramBuilder( inputRowType, rexBuilder );
@@ -419,7 +419,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testStrong() {
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
 
         final ImmutableBitSet c = ImmutableBitSet.of();
         final ImmutableBitSet c0 = ImmutableBitSet.of( 0 );
@@ -555,16 +555,16 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testLosslessCast() {
-        final RelDataType tinyIntType = typeFactory.createSqlType( SqlTypeName.TINYINT );
-        final RelDataType smallIntType = typeFactory.createSqlType( SqlTypeName.SMALLINT );
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
-        final RelDataType bigIntType = typeFactory.createSqlType( SqlTypeName.BIGINT );
-        final RelDataType floatType = typeFactory.createSqlType( SqlTypeName.FLOAT );
-        final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
-        final RelDataType charType5 = typeFactory.createSqlType( SqlTypeName.CHAR, 5 );
-        final RelDataType charType6 = typeFactory.createSqlType( SqlTypeName.CHAR, 6 );
-        final RelDataType varCharType10 = typeFactory.createSqlType( SqlTypeName.VARCHAR, 10 );
-        final RelDataType varCharType11 = typeFactory.createSqlType( SqlTypeName.VARCHAR, 11 );
+        final RelDataType tinyIntType = typeFactory.createPolyType( PolyType.TINYINT );
+        final RelDataType smallIntType = typeFactory.createPolyType( PolyType.SMALLINT );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final RelDataType bigIntType = typeFactory.createPolyType( PolyType.BIGINT );
+        final RelDataType floatType = typeFactory.createPolyType( PolyType.FLOAT );
+        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final RelDataType charType5 = typeFactory.createPolyType( PolyType.CHAR, 5 );
+        final RelDataType charType6 = typeFactory.createPolyType( PolyType.CHAR, 6 );
+        final RelDataType varCharType10 = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
+        final RelDataType varCharType11 = typeFactory.createPolyType( PolyType.VARCHAR, 11 );
 
         // Negative
         assertThat( RexUtil.isLosslessCast( rexBuilder.makeInputRef( intType, 0 ) ), is( false ) );
@@ -663,8 +663,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testCnf() {
-        final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, booleanType )
                 .add( "b", null, booleanType )
@@ -727,7 +727,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testCnf2() {
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "x", null, intType )
                 .add( "y", null, intType )
@@ -797,7 +797,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testThresholdCnf() {
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "x", null, intType )
                 .add( "y", null, intType )
@@ -847,7 +847,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
 
     private void checkExponentialCnf( int n ) {
-        final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for ( int i = 0; i < n; i++ ) {
             builder.add( "x" + i, null, booleanType )
@@ -875,8 +875,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
      */
     @Test
     public void testPullFactors() {
-        final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, booleanType )
                 .add( "b", null, booleanType )
@@ -931,8 +931,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplify() {
-        final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType intNullableType = typeFactory.createTypeWithNullability( intType, true );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, booleanType )
@@ -1165,8 +1165,8 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyFilter() {
-        final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, intType )
                 .add( "b", null, intType )
@@ -1341,7 +1341,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyAndPush() {
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, intType )
                 .add( "b", null, intType )
@@ -1402,7 +1402,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyOrTerms() {
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, intType ).nullable( false )
                 .add( "b", null, intType ).nullable( true )
@@ -1495,7 +1495,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyUnknown() {
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, intType ).nullable( true )
                 .build();
@@ -1539,7 +1539,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyAnd3() {
-        final RelDataType boolType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+        final RelDataType boolType = typeFactory.createPolyType( PolyType.BOOLEAN );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, boolType ).nullable( true )
                 .build();
@@ -1581,7 +1581,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexCall result = (RexCall) simplify.simplifyUnknownAs( caseNode, RexUnknownAs.UNKNOWN );
         assertThat( "The case should be nonNullable", caseNode.getType().isNullable(), is( false ) );
         assertThat( "Expected a nonNullable type", result.getType().isNullable(), is( false ) );
-        assertThat( result.getType().getSqlTypeName(), is( SqlTypeName.BOOLEAN ) );
+        assertThat( result.getType().getPolyType(), is( PolyType.BOOLEAN ) );
         assertThat( result.getOperator(), is( (SqlOperator) SqlStdOperatorTable.IS_TRUE ) );
         assertThat( result.getOperands().get( 0 ), is( condition ) );
     }
@@ -1594,7 +1594,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
         RexCall result = (RexCall) simplify.simplifyUnknownAs( caseNode, RexUnknownAs.UNKNOWN );
         assertThat( result.getType().isNullable(), is( false ) );
-        assertThat( result.getType().getSqlTypeName(), is( SqlTypeName.BOOLEAN ) );
+        assertThat( result.getType().getPolyType(), is( PolyType.BOOLEAN ) );
         assertThat( result, is( condition ) );
     }
 
@@ -1636,7 +1636,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
         RexCall result = (RexCall) simplify.simplifyUnknownAs( caseNode, RexUnknownAs.UNKNOWN );
         assertThat( result.getType().isNullable(), is( false ) );
-        assertThat( result.getType().getSqlTypeName(), is( SqlTypeName.CHAR ) );
+        assertThat( result.getType().getPolyType(), is( PolyType.CHAR ) );
         assertThat( result, is( caseNode ) );
     }
 
@@ -1735,22 +1735,22 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testSimplifyAnd() {
-        RelDataType booleanNotNullableType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), false );
-        RelDataType booleanNullableType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), true );
+        RelDataType booleanNotNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
+        RelDataType booleanNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), true );
         RexNode andCondition = and(
                 rexBuilder.makeInputRef( booleanNotNullableType, 0 ),
                 rexBuilder.makeInputRef( booleanNullableType, 1 ),
                 rexBuilder.makeInputRef( booleanNotNullableType, 2 ) );
         RexNode result = simplify.simplifyUnknownAs( andCondition, RexUnknownAs.UNKNOWN );
         assertThat( result.getType().isNullable(), is( true ) );
-        assertThat( result.getType().getSqlTypeName(), is( SqlTypeName.BOOLEAN ) );
+        assertThat( result.getType().getPolyType(), is( PolyType.BOOLEAN ) );
     }
 
 
     @Test
     public void testSimplifyIsNotNull() {
-        RelDataType intType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.INTEGER ), false );
-        RelDataType intNullableType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.INTEGER ), true );
+        RelDataType intType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), false );
+        RelDataType intNullableType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.INTEGER ), true );
         final RexInputRef i0 = rexBuilder.makeInputRef( intNullableType, 0 );
         final RexInputRef i1 = rexBuilder.makeInputRef( intNullableType, 1 );
         final RexInputRef i2 = rexBuilder.makeInputRef( intType, 2 );
@@ -1778,52 +1778,52 @@ public class RexProgramTest extends RexProgramBuilderBase {
     @Test
     public void testSimplifyCastLiteral() {
         final List<RexLiteral> literals = new ArrayList<>();
-        literals.add( rexBuilder.makeExactLiteral( BigDecimal.ONE, typeFactory.createSqlType( SqlTypeName.INTEGER ) ) );
-        literals.add( rexBuilder.makeExactLiteral( BigDecimal.valueOf( 2 ), typeFactory.createSqlType( SqlTypeName.BIGINT ) ) );
-        literals.add( rexBuilder.makeExactLiteral( BigDecimal.valueOf( 3 ), typeFactory.createSqlType( SqlTypeName.SMALLINT ) ) );
-        literals.add( rexBuilder.makeExactLiteral( BigDecimal.valueOf( 4 ), typeFactory.createSqlType( SqlTypeName.TINYINT ) ) );
-        literals.add( rexBuilder.makeExactLiteral( new BigDecimal( "1234" ), typeFactory.createSqlType( SqlTypeName.DECIMAL, 4, 0 ) ) );
-        literals.add( rexBuilder.makeExactLiteral( new BigDecimal( "123.45" ), typeFactory.createSqlType( SqlTypeName.DECIMAL, 5, 2 ) ) );
-        literals.add( rexBuilder.makeApproxLiteral( new BigDecimal( "3.1415" ), typeFactory.createSqlType( SqlTypeName.REAL ) ) );
-        literals.add( rexBuilder.makeApproxLiteral( BigDecimal.valueOf( Math.E ), typeFactory.createSqlType( SqlTypeName.FLOAT ) ) );
-        literals.add( rexBuilder.makeApproxLiteral( BigDecimal.valueOf( Math.PI ), typeFactory.createSqlType( SqlTypeName.DOUBLE ) ) );
+        literals.add( rexBuilder.makeExactLiteral( BigDecimal.ONE, typeFactory.createPolyType( PolyType.INTEGER ) ) );
+        literals.add( rexBuilder.makeExactLiteral( BigDecimal.valueOf( 2 ), typeFactory.createPolyType( PolyType.BIGINT ) ) );
+        literals.add( rexBuilder.makeExactLiteral( BigDecimal.valueOf( 3 ), typeFactory.createPolyType( PolyType.SMALLINT ) ) );
+        literals.add( rexBuilder.makeExactLiteral( BigDecimal.valueOf( 4 ), typeFactory.createPolyType( PolyType.TINYINT ) ) );
+        literals.add( rexBuilder.makeExactLiteral( new BigDecimal( "1234" ), typeFactory.createPolyType( PolyType.DECIMAL, 4, 0 ) ) );
+        literals.add( rexBuilder.makeExactLiteral( new BigDecimal( "123.45" ), typeFactory.createPolyType( PolyType.DECIMAL, 5, 2 ) ) );
+        literals.add( rexBuilder.makeApproxLiteral( new BigDecimal( "3.1415" ), typeFactory.createPolyType( PolyType.REAL ) ) );
+        literals.add( rexBuilder.makeApproxLiteral( BigDecimal.valueOf( Math.E ), typeFactory.createPolyType( PolyType.FLOAT ) ) );
+        literals.add( rexBuilder.makeApproxLiteral( BigDecimal.valueOf( Math.PI ), typeFactory.createPolyType( PolyType.DOUBLE ) ) );
         literals.add( rexBuilder.makeLiteral( true ) );
         literals.add( rexBuilder.makeLiteral( false ) );
         literals.add( rexBuilder.makeLiteral( "hello world" ) );
         literals.add( rexBuilder.makeLiteral( "1969-07-20 12:34:56" ) );
         literals.add( rexBuilder.makeLiteral( "1969-07-20" ) );
         literals.add( rexBuilder.makeLiteral( "12:34:45" ) );
-        literals.add( (RexLiteral) rexBuilder.makeLiteral( new ByteString( new byte[]{ 1, 2, -34, 0, -128 } ), typeFactory.createSqlType( SqlTypeName.BINARY, 5 ), false ) );
+        literals.add( (RexLiteral) rexBuilder.makeLiteral( new ByteString( new byte[]{ 1, 2, -34, 0, -128 } ), typeFactory.createPolyType( PolyType.BINARY, 5 ), false ) );
         literals.add( rexBuilder.makeDateLiteral( new DateString( 1974, 8, 9 ) ) );
         literals.add( rexBuilder.makeTimeLiteral( new TimeString( 1, 23, 45 ), 0 ) );
         literals.add( rexBuilder.makeTimestampLiteral( new TimestampString( 1974, 8, 9, 1, 23, 45 ), 0 ) );
 
-        final Multimap<SqlTypeName, RexLiteral> map = LinkedHashMultimap.create();
+        final Multimap<PolyType, RexLiteral> map = LinkedHashMultimap.create();
         for ( RexLiteral literal : literals ) {
             map.put( literal.getTypeName(), literal );
         }
 
         final List<RelDataType> types = new ArrayList<>();
-        types.add( typeFactory.createSqlType( SqlTypeName.INTEGER ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.BIGINT ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.SMALLINT ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.TINYINT ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.REAL ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.FLOAT ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.DOUBLE ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.BOOLEAN ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.VARCHAR, 10 ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.CHAR, 5 ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.VARBINARY, 60 ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.BINARY, 3 ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.TIMESTAMP ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.TIME ) );
-        types.add( typeFactory.createSqlType( SqlTypeName.DATE ) );
+        types.add( typeFactory.createPolyType( PolyType.INTEGER ) );
+        types.add( typeFactory.createPolyType( PolyType.BIGINT ) );
+        types.add( typeFactory.createPolyType( PolyType.SMALLINT ) );
+        types.add( typeFactory.createPolyType( PolyType.TINYINT ) );
+        types.add( typeFactory.createPolyType( PolyType.REAL ) );
+        types.add( typeFactory.createPolyType( PolyType.FLOAT ) );
+        types.add( typeFactory.createPolyType( PolyType.DOUBLE ) );
+        types.add( typeFactory.createPolyType( PolyType.BOOLEAN ) );
+        types.add( typeFactory.createPolyType( PolyType.VARCHAR, 10 ) );
+        types.add( typeFactory.createPolyType( PolyType.CHAR, 5 ) );
+        types.add( typeFactory.createPolyType( PolyType.VARBINARY, 60 ) );
+        types.add( typeFactory.createPolyType( PolyType.BINARY, 3 ) );
+        types.add( typeFactory.createPolyType( PolyType.TIMESTAMP ) );
+        types.add( typeFactory.createPolyType( PolyType.TIME ) );
+        types.add( typeFactory.createPolyType( PolyType.DATE ) );
 
         for ( RelDataType fromType : types ) {
             for ( RelDataType toType : types ) {
-                if ( SqlTypeAssignmentRules.instance( false ).canCastFrom( toType.getSqlTypeName(), fromType.getSqlTypeName() ) ) {
-                    for ( RexLiteral literal : map.get( fromType.getSqlTypeName() ) ) {
+                if ( PolyTypeAssignmentRules.instance( false ).canCastFrom( toType.getPolyType(), fromType.getPolyType() ) ) {
+                    for ( RexLiteral literal : map.get( fromType.getPolyType() ) ) {
                         final RexNode cast = rexBuilder.makeCast( toType, literal );
                         if ( cast instanceof RexLiteral ) {
                             assertThat( cast.getType(), is( toType ) );
@@ -1831,11 +1831,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
                         }
                         final RexNode simplified = simplify.simplifyUnknownAs( cast, RexUnknownAs.UNKNOWN );
                         boolean expectedSimplify =
-                                literal.getTypeName() != toType.getSqlTypeName()
-                                        || (literal.getTypeName() == SqlTypeName.CHAR
+                                literal.getTypeName() != toType.getPolyType()
+                                        || (literal.getTypeName() == PolyType.CHAR
                                         && ((NlsString) literal.getValue()).getValue().length()
                                         > toType.getPrecision())
-                                        || (literal.getTypeName() == SqlTypeName.BINARY
+                                        || (literal.getTypeName() == PolyType.BINARY
                                         && ((ByteString) literal.getValue()).length()
                                         > toType.getPrecision());
                         boolean couldSimplify = !cast.equals( simplified );
@@ -1865,11 +1865,11 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyCastLiteral2() {
         final RexLiteral literalAbc = rexBuilder.makeLiteral( "abc" );
         final RexLiteral literalOne = rexBuilder.makeExactLiteral( BigDecimal.ONE );
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
-        final RelDataType varcharType = typeFactory.createSqlType( SqlTypeName.VARCHAR, 10 );
-        final RelDataType booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
-        final RelDataType dateType = typeFactory.createSqlType( SqlTypeName.DATE );
-        final RelDataType timestampType = typeFactory.createSqlType( SqlTypeName.TIMESTAMP );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
+        final RelDataType varcharType = typeFactory.createPolyType( PolyType.VARCHAR, 10 );
+        final RelDataType booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
+        final RelDataType dateType = typeFactory.createPolyType( PolyType.DATE );
+        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
         checkSimplifyUnchanged( cast( literalAbc, intType ) );
         checkSimplifyUnchanged( cast( literalOne, intType ) );
         checkSimplifyUnchanged( cast( literalAbc, varcharType ) );
@@ -1898,12 +1898,12 @@ public class RexProgramTest extends RexProgramBuilderBase {
         final RexLiteral timestampLTZChar3 = rexBuilder.makeLiteral( "2011-07-20 12:34:56 UTC" );
         final RexLiteral literalTimestampLTZ = rexBuilder.makeTimestampWithLocalTimeZoneLiteral( new TimestampString( 2011, 7, 20, 8, 23, 45 ), 0 );
 
-        final RelDataType dateType = typeFactory.createSqlType( SqlTypeName.DATE );
-        final RelDataType timeType = typeFactory.createSqlType( SqlTypeName.TIME );
-        final RelDataType timestampType = typeFactory.createSqlType( SqlTypeName.TIMESTAMP );
-        final RelDataType timeLTZType = typeFactory.createSqlType( SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE );
-        final RelDataType timestampLTZType = typeFactory.createSqlType( SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
-        final RelDataType varCharType = typeFactory.createSqlType( SqlTypeName.VARCHAR, 40 );
+        final RelDataType dateType = typeFactory.createPolyType( PolyType.DATE );
+        final RelDataType timeType = typeFactory.createPolyType( PolyType.TIME );
+        final RelDataType timestampType = typeFactory.createPolyType( PolyType.TIMESTAMP );
+        final RelDataType timeLTZType = typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE );
+        final RelDataType timestampLTZType = typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+        final RelDataType varCharType = typeFactory.createPolyType( PolyType.VARCHAR, 40 );
 
         checkSimplify( cast( timeLTZChar1, timeLTZType ), "20:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
         checkSimplify( cast( timeLTZChar2, timeLTZType ), "12:34:45:TIME_WITH_LOCAL_TIME_ZONE(0)" );
@@ -2054,7 +2054,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
 
     @Test
     public void testConstantMap() {
-        final RelDataType intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        final RelDataType intType = typeFactory.createPolyType( PolyType.INTEGER );
         final RelDataType rowType = typeFactory.builder()
                 .add( "a", null, intType )
                 .add( "b", null, intType )
@@ -2162,7 +2162,7 @@ public class RexProgramTest extends RexProgramBuilderBase {
     public void testSimplifyFalse() {
         final RelDataType booleanNullableType =
                 typeFactory.createTypeWithNullability(
-                        typeFactory.createSqlType( SqlTypeName.BOOLEAN ), true );
+                        typeFactory.createPolyType( PolyType.BOOLEAN ), true );
         final RexNode booleanInput = input( booleanNullableType, 0 );
         final RexNode isFalse = isFalse( booleanInput );
         final RexCall result = (RexCall) simplify( isFalse );

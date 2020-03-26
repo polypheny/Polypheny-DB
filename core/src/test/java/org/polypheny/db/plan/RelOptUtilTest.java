@@ -43,10 +43,10 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.ScottSchema;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.sql.type.SqlTypeFactoryImpl;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
 
@@ -98,10 +98,10 @@ public class RelOptUtilTest {
 
     @Test
     public void testTypeDump() {
-        RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+        RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         RelDataType t1 = typeFactory.builder()
-                .add( "f0", null, SqlTypeName.DECIMAL, 5, 2 )
-                .add( "f1", null, SqlTypeName.VARCHAR, 10 )
+                .add( "f0", null, PolyType.DECIMAL, 5, 2 )
+                .add( "f1", null, PolyType.VARCHAR, 10 )
                 .build();
         TestUtil.assertEqualsVerbose( TestUtil.fold( "f0 DECIMAL(5, 2) NOT NULL,", "f1 VARCHAR(10) NOT NULL" ), Util.toLinux( RelOptUtil.dumpType( t1 ) + "\n" ) );
 

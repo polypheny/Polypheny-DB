@@ -39,8 +39,8 @@ import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.OperandTypes;
 
 
 /**
@@ -59,12 +59,12 @@ public class SqlJsonValueExpressionOperator extends SqlSpecialOperator {
                 true,
                 opBinding -> {
                     final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
-                    return typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+                    return typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                 },
                 ( callBinding, returnType, operandTypes ) -> {
                     if ( callBinding.isOperandNull( 0, false ) ) {
                         final RelDataTypeFactory typeFactory = callBinding.getTypeFactory();
-                        operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.ANY ), true );
+                        operandTypes[0] = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
                     }
                 },
                 structured ? OperandTypes.ANY : OperandTypes.STRING );

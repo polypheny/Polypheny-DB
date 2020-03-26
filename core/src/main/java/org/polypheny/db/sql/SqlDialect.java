@@ -58,9 +58,9 @@ import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
 import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.BasicSqlType;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.util.SqlBuilder;
+import org.polypheny.db.type.BasicPolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -560,18 +560,18 @@ public class SqlDialect {
 
 
     public SqlNode getCastSpec( RelDataType type ) {
-        if ( type instanceof BasicSqlType ) {
+        if ( type instanceof BasicPolyType ) {
             int precision = type.getPrecision();
-            switch ( type.getSqlTypeName() ) {
+            switch ( type.getPolyType() ) {
                 case VARCHAR:
                     // if needed, adjust varchar length to max length supported by the system
-                    int maxPrecision = getTypeSystem().getMaxPrecision( type.getSqlTypeName() );
+                    int maxPrecision = getTypeSystem().getMaxPrecision( type.getPolyType() );
                     if ( type.getPrecision() > maxPrecision ) {
                         precision = maxPrecision;
                     }
             }
             return new SqlDataTypeSpec(
-                    new SqlIdentifier( type.getSqlTypeName().name(), SqlParserPos.ZERO ),
+                    new SqlIdentifier( type.getPolyType().name(), SqlParserPos.ZERO ),
                     precision,
                     type.getScale(),
                     type.getCharset() != null && supportsCharSet()
@@ -580,7 +580,7 @@ public class SqlDialect {
                     null,
                     SqlParserPos.ZERO );
         }
-        return SqlTypeUtil.convertTypeToSpec( type );
+        return PolyTypeUtil.convertTypeToSpec( type );
     }
 
 

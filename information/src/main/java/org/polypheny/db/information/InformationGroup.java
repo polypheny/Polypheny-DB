@@ -26,7 +26,7 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 /**
  * An InformationGroup contains multiple Information object that will be rendered together in the UI.
  */
-public class InformationGroup {
+public class InformationGroup extends Refreshable {
 
     /**
      * Unique id for an InformationGroup.
