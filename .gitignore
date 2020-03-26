@@ -84,7 +84,6 @@ hs_err_pid*
 *.iws
 *.iml
 *.arff
-*.csv
 
 ## Plugin-specific files:
 

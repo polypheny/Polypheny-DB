@@ -717,9 +717,8 @@ public class Crud implements InformationObserver {
 
     public Result classifyData( Request req, Response res ) {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
-
         ExploreManager e = ExploreManager.getInstance();
-        System.out.println( Arrays.deepToString( classifyAllData.classified ) );
+
         Explore explor = e.classifyData( classifyAllData.id, classifyAllData.classified );
         return new Result( classifyAllData.header, explor.getData() );
     }
@@ -796,7 +795,7 @@ public class Crud implements InformationObserver {
         ExploreManager e = ExploreManager.getInstance();
         Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType);
 
-        return new ExploreResult( exploreData.header, explore.getLabels(), explore.getId(), explore.getBuildGraph() );
+        return new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() );
     }
 
 

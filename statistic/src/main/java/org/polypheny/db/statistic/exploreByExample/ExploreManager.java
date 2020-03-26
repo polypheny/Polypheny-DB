@@ -125,15 +125,16 @@ public class ExploreManager {
 
     private List<String> prepareColInfo( String query ) {
         List<String> colInfo = Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
-        System.out.println( colInfo );
         return colInfo;
     }
 
 
     private List<String[]> getAllData( String query ) {
 
+        String preparedQuery = query + " LIMIT 10";
+
         StatisticsManager<?> stats = StatisticsManager.getInstance();
-        StatisticResult statisticResult = stats.getTable( query );
+        StatisticResult statisticResult = stats.getTable( preparedQuery );
         StatisticQueryColumn[] columns = statisticResult.getColumns();
         List<String[]> allDataTable = new ArrayList<>(  );
         int len = 0;

@@ -20,15 +20,11 @@ package org.polypheny.db.statistic.exploreByExample;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.statistic.StatisticQueryColumn;
-import org.polypheny.db.statistic.StatisticsManager;
 import weka.classifiers.trees.J48;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -66,6 +62,9 @@ public class Explore {
     @Getter
     private String sqlStatment;
 
+    @Getter
+    private List<String[]> dataAfterClassification;
+
 
     public Explore( int identifier, List<List<String>> uniqueValues, List<String[]> labeled, List<String[]> unlabeled, String[] dataType ) {
         this.id = identifier;
@@ -83,12 +82,12 @@ public class Explore {
     }
 
     public void updateExploration( List<String[]> labeled) {
-        labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+        dataAfterClassification = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
 
     public void exploreUserInput() {
         unlabledData = createInstance(rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues);
-        labels = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+        dataAfterClassification = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
 
     public void classifyAllData( List<String[]> labeled, List<String[]> allData ) {
@@ -105,8 +104,7 @@ public class Explore {
 
 
         q = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
-        System.out.println( "Group: " + typeInfo );
-        System.out.println("q: " + q );
+
 
         for ( int i = 0; i < q.size(); i ++){
             if(typeInfo.get( i ).equals( "INTEGER" )){
@@ -118,19 +116,12 @@ public class Explore {
                 list2.add( q.get( i ) );
             }
         }
-        System.out.println( "list: " + list );
 
         String listString = String.join(",", list);
         String listString2 = String.join(",", list2);
 
-        System.out.println( "listString: " + listString );
-
         sqlStatment = sqlStatment.split( "\nFROM" )[1];
-
         sqlStatment = "SELECT " + listString2 + "\nFROM" + sqlStatment + "\nGROUP BY " + listString + " LIMIT 200";
-
-        System.out.println( sqlStatment );
-
     }
 
     private List<String[]> rotate2dArray( List<String[]> table ) {
@@ -146,8 +137,6 @@ public class Explore {
         }
         List<String[]> tab = new ArrayList<>(  );
         Collections.addAll( tab, rotatedTable );
-
-        System.out.println( tab );
         return tab;
     }
 
@@ -227,11 +216,12 @@ public class Explore {
         return tree;
     }
 
-    public String[] classifyUnlabledData( J48 tree, Instances unlabeled ){
+    public List<String[]> classifyUnlabledData( J48 tree, Instances unlabeled ){
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
         Instances labeled = new Instances( unlabeled );
         String[] label = new String[unlabeled.numInstances()];
+        List<String[]> labledData = new ArrayList<>();
 
         for ( int i = 0; i < unlabeled.numInstances(); i++ ) {
             double clsLabel = 0;
@@ -244,9 +234,10 @@ public class Explore {
 
             labeled.instance( i ).setClassValue( clsLabel );
             label[i] = unlabeled.classAttribute().value( (int) clsLabel );
+            labledData.add( labeled.instance( i ).toString().split( "," ) );
         }
 
-        return label;
+        return labledData;
     }
 
     public String[][] classifyData( J48 tree, Instances unlabeled ){
