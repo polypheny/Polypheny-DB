@@ -95,7 +95,7 @@ public class Explore {
         data = classifyData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
     }
 
-    //TODO: ISA change SQL Statment, now really ugly and min missing
+    //TODO: Isabel change SQL Statment, now really ugly and min missing
     public void createSQLStatement(){
 
         List<String> q = new ArrayList<>(  );
@@ -204,12 +204,14 @@ public class Explore {
         try {
             tree.buildClassifier( classifiedData );
         } catch ( Exception e ) {
+            log.error("build Classifier for tree not possible");
             e.printStackTrace();
         }
 
         try {
             this.buildGraph = tree.graph();
         } catch ( Exception e ) {
+            log.error("build graph tree not possible");
             e.printStackTrace();
         }
 
@@ -229,6 +231,7 @@ public class Explore {
             try {
                 clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
             } catch ( Exception e ) {
+                log.error("classification of unlabeled data not possible");
                 e.printStackTrace();
             }
 
@@ -240,6 +243,13 @@ public class Explore {
         return labledData;
     }
 
+
+    /**
+     * Classify all Data with tree built before
+     * @param tree J48 Weka Tree
+     * @param unlabeled all selected unlabeled Data
+     * @return only the data labeled as true
+     */
     public String[][] classifyData( J48 tree, Instances unlabeled ){
         List<String[]> labledData = new ArrayList<>();
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
@@ -251,6 +261,7 @@ public class Explore {
             try {
                 clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
             } catch ( Exception e ) {
+                log.error("classification of unlabeled data not possible");
                 e.printStackTrace();
             }
 

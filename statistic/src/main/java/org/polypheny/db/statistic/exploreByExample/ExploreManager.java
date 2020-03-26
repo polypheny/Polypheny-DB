@@ -97,7 +97,6 @@ public class ExploreManager {
             return explore.get( id );
         } else {
             int identifier = atomicId.getAndIncrement();
-            //explore.put( identifier, new Explore( identifier, getStatistics( columnInfo, query ), labeled, unlabeled, dataType ) );
             explore.get( identifier ).exploreUserInput();
             return explore.get( identifier );
         }
@@ -124,29 +123,34 @@ public class ExploreManager {
 
 
     private List<String> prepareColInfo( String query ) {
-        List<String> colInfo = Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
-        return colInfo;
+        return Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
     }
 
 
+    /**
+     * TODO Isabel add possiblity to change limit here and hand over to getTable in StatisticsManager
+     * Get the whole dataset
+     * @param query
+     * @return
+     */
     private List<String[]> getAllData( String query ) {
 
-        String preparedQuery = query + " LIMIT 10";
+        String queryLimit = query + "LIMIT 5000";
 
         StatisticsManager<?> stats = StatisticsManager.getInstance();
-        StatisticResult statisticResult = stats.getTable( preparedQuery );
+        StatisticResult statisticResult = stats.getTable( queryLimit);
         StatisticQueryColumn[] columns = statisticResult.getColumns();
         List<String[]> allDataTable = new ArrayList<>(  );
         int len = 0;
-        for ( int i = 0; i < columns.length; i++ ) {
-            allDataTable.set( i, columns[i].getData() );
-            len = columns[i].getData().length;
+        for ( StatisticQueryColumn column : columns ) {
+            allDataTable.add( column.getData() );
+            len = column.getData().length;
         }
         String[] questionMark = new String[len];
         for ( int j = 0; j < len; j++ ) {
             questionMark[j] = "?";
         }
-        allDataTable.set( columns.length, questionMark );
+        allDataTable.add( questionMark );
 
         return allDataTable;
     }

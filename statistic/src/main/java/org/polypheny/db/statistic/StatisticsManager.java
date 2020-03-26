@@ -364,24 +364,8 @@ public class StatisticsManager<T extends Comparable<T>> {
 
     /**
      * Gets all Unique Values for Classification
-     * TODO only working for one table
      * @param qualifiedColumnNames all columns
-     */
-    /*
-    public List<StatisticQueryColumn> getAllUniqueValues( List<String> qualifiedColumnNames, String qualifiedTableName  ) {
-        return qualifiedColumnNames.stream().map( c -> getAllUniqueValuesMethod( c, qualifiedTableName ) ).collect( Collectors.toList() );
-    }
-
-    private StatisticQueryColumn getAllUniqueValuesMethod( String qualifiedColumn, String qualifiedTableName ) {
-        String query = "SELECT " + qualifiedColumn + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumn + " LIMIT 20";
-        return this.sqlQueryInterface.selectOneStat( query );
-    }
-
-
-    public StatisticResult getTable(String[] qualifiedColumn, String qualifiedTableName){
-        String query = "SELECT " + Arrays.toString( qualifiedColumn ).replace( "[", "" ).replace( "]", "" ) + " FROM " + qualifiedTableName + " LIMIT 20";
-        return this.sqlQueryInterface.executeSqlSelect(query);
-    }
+     * TODO Isabel change string spliting now depending on Limit
      */
 
     public List<StatisticQueryColumn> getAllUniqueValues( List<String> qualifiedColumnNames, String qualifiedTableName  ) {
@@ -395,10 +379,9 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
     public StatisticResult getTable(String q){
-        String query = q.split( "LIMIT" )[0].replace( "\n", "" ) + " LIMIT 2000";
-        return this.sqlQueryInterface.executeSqlSelect( query, 2000 );
+        String query = q.split( "LIMIT" )[0].replace( "\n", " " ) + " LIMIT 5000";
+        return this.sqlQueryInterface.executeSqlSelect( query, 5000);
     }
-
 
     /**
      * Gets the amount of entries for a column
