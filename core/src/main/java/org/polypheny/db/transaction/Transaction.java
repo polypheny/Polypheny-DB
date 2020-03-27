@@ -43,7 +43,7 @@ public interface Transaction {
 
     SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
 
-    Catalog getCatalog();
+    // Catalog getCatalog();
 
     void commit() throws TransactionException;
 

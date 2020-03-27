@@ -115,13 +115,13 @@ public class TransactionImpl implements Transaction {
     }
 
 
-    @Override
+    /*@Override
     public Catalog getCatalog() {
         if ( catalog == null ) {
             catalog = CatalogManager.getInstance().getCatalog( xid );
         }
         return catalog;
-    }
+    }*/
 
 
     @Override

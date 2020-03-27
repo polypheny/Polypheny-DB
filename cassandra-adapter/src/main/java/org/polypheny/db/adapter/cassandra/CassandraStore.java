@@ -33,7 +33,6 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -113,7 +112,7 @@ public class CassandraStore extends Store {
 
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( CatalogManager.getInstance().getCatalog() ), this );
+        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider(), this );
     }
 
 
@@ -134,9 +133,9 @@ public class CassandraStore extends Store {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.schemaName );
         qualifiedNames.add( catalogTable.name );
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider();
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
-        List<CatalogColumn> columns = CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id );
+        List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
         CatalogColumn column = columns.remove( 0 );
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
                 .withPartitionKey( column.name, CassandraTypesUtils.getDataType( column.type ) );
@@ -156,7 +155,7 @@ public class CassandraStore extends Store {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.schemaName );
         qualifiedNames.add( catalogTable.name );
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider();
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
 
@@ -206,8 +205,8 @@ public class CassandraStore extends Store {
     public void truncate( Context context, CatalogTable table ) {
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( table.schemaName );
-        qualifiedNames.add( table.name);
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog() );
+        qualifiedNames.add( table.name );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider();
         String physicalTableName = physicalNameProvider.getPhysicalTableName( qualifiedNames );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
 

@@ -24,6 +24,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -51,6 +53,8 @@ public abstract class Store {
 
     @Getter
     private final boolean persistent;
+
+    protected final Catalog catalog = CatalogManager.getInstance().getCatalog();
 
 
     public Store(

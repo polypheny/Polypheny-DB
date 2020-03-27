@@ -29,7 +29,6 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -145,10 +144,10 @@ public abstract class AbstractJdbcStore extends Store {
         }
         builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
         boolean first = true;
-        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
             CatalogColumn catalogColumn;
             try {
-                catalogColumn = context.getTransaction().getCatalog().getColumn( placement.columnId );
+                catalogColumn = catalog.getColumn( placement.columnId );
             } catch ( GenericCatalogException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
@@ -170,9 +169,9 @@ public abstract class AbstractJdbcStore extends Store {
         builder.append( " )" );
         executeUpdate( builder, context );
         // Add physical names to placements
-        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
             try {
-                context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+                catalog.updateColumnPlacementPhysicalNames(
                         getStoreId(),
                         placement.columnId,
                         "public", // TODO MV: physical schema name
@@ -214,7 +213,7 @@ public abstract class AbstractJdbcStore extends Store {
         executeUpdate( builder, context );
         // Add physical name to placement
         try {
-            context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+            catalog.updateColumnPlacementPhysicalNames(
                     getStoreId(),
                     catalogColumn.id,
                     "public", // TODO MV: physical schema name

@@ -128,6 +128,7 @@ public class DbmsMeta implements ProtobufMeta {
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
+    private final Catalog catalog = CatalogManager.getInstance().getCatalog();
 
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
@@ -270,7 +271,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogTable> tables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables(
+            final List<CatalogTable> tables = catalog.getTables(
                     database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
@@ -308,7 +309,7 @@ public class DbmsMeta implements ProtobufMeta {
             log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
         }
         final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-        final List<CatalogColumn> columns = connection.getCurrentOrCreateNewTransaction().getCatalog().getColumns(
+        final List<CatalogColumn> columns = catalog.getColumns(
                 database == null ? null : new Pattern( database ),
                 (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                 (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
@@ -352,7 +353,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogSchema> schemas = connection.getCurrentOrCreateNewTransaction().getCatalog().getSchemas(
+            final List<CatalogSchema> schemas = catalog.getSchemas(
                     database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
             );
@@ -382,7 +383,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogDatabase> databases = connection.getCurrentOrCreateNewTransaction().getCatalog().getDatabases( null );
+            final List<CatalogDatabase> databases = catalog.getDatabases( null );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -502,11 +503,11 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = connection.getCurrentTransaction().getCatalog().getPrimaryKey( catalogTable.primaryKey );
+                    final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -541,10 +542,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
-                List<CatalogForeignKey> importedKeys = connection.getCurrentTransaction().getCatalog().getForeignKeys( catalogTable.id );
+                List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -586,10 +587,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
-                List<CatalogForeignKey> exportedKeys = connection.getCurrentTransaction().getCatalog().getExportedKeys( catalogTable.id );
+                List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -699,10 +700,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
-                List<CatalogIndex> catalogIndexInfos = connection.getCurrentTransaction().getCatalog().getIndexes( catalogTable.id, unique );
+                List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
                 catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -1216,7 +1217,6 @@ public class DbmsMeta implements ProtobufMeta {
         // Create transaction
         Transaction transaction = transactionManager.startTransaction( user, null, null, false );
 
-        final Catalog catalog = CatalogManager.getInstance().getCatalog();
         // Check database access
         final CatalogDatabase database;
         try {
