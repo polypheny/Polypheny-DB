@@ -38,7 +38,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.jdbc.Context;
@@ -98,8 +100,9 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
     @Override
     public void execute( Context context, Transaction transaction ) {
         try {
+            Catalog catalog = CatalogManager.getInstance().getCatalog();
             // Check if there is already a schema with this name
-            if ( transaction.getCatalog().checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
+            if ( catalog.checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
                 if ( ifNotExists ) {
                     // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
                     return;
@@ -109,7 +112,7 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
                     throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
                 }
             } else {
-                transaction.getCatalog().addSchema(
+                catalog.addSchema(
                         name.getSimple(),
                         context.getDatabaseId(),
                         context.getCurrentUserId(),

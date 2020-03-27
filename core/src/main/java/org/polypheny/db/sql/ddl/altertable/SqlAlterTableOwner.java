@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -72,15 +73,15 @@ public class SqlAlterTableOwner extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( owner.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + owner.toString() );
         }
         String newOwnerName = owner.getSimple();
         try {
-            CatalogUser catalogUser = transaction.getCatalog().getUser( newOwnerName );
-            transaction.getCatalog().setTableOwner( catalogTable.id, catalogUser.id );
+            CatalogUser catalogUser = CatalogManager.getInstance().getCatalog().getUser( newOwnerName );
+            CatalogManager.getInstance().getCatalog().setTableOwner( catalogTable.id, catalogUser.id );
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownUserException e ) {

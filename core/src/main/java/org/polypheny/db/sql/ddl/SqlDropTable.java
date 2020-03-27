@@ -39,6 +39,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -78,8 +80,9 @@ public class SqlDropTable extends SqlDropObject {
     public void execute( Context context, Transaction transaction ) {
         // Get table
         final CatalogTable table;
+        Catalog catalog = CatalogManager.getInstance().getCatalog();
         try {
-            table = getCatalogTable( context, transaction, name );
+            table = getCatalogTable( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
@@ -92,7 +95,7 @@ public class SqlDropTable extends SqlDropObject {
         // Check if there are foreign keys referencing this table
         List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
         try {
-            List<CatalogForeignKey> exportedKeys = transaction.getCatalog().getExportedKeys( table.id );
+            List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( table.id );
             if ( exportedKeys.size() > 0 ) {
                 for ( CatalogForeignKey foreignKey : exportedKeys ) {
                     if ( foreignKey.tableId == table.id ) {
@@ -123,7 +126,7 @@ public class SqlDropTable extends SqlDropObject {
                 StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
-                    transaction.getCatalog().deleteColumnPlacement( storeId, columnId );
+                    catalog.deleteColumnPlacement( storeId, columnId );
                 }
             }
         } catch ( GenericCatalogException e ) {
@@ -133,7 +136,7 @@ public class SqlDropTable extends SqlDropObject {
         // Delete the self-referencing foreign keys
         try {
             for ( CatalogForeignKey foreignKey : selfRefsToDelete ) {
-                transaction.getCatalog().deleteForeignKey( foreignKey.id );
+                catalog.deleteForeignKey( foreignKey.id );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while deleting self-referencing foreign key constraints.", e );
@@ -141,9 +144,9 @@ public class SqlDropTable extends SqlDropObject {
 
         // Delete indexes of this table
         try {
-            List<CatalogIndex> indexes = transaction.getCatalog().getIndexes( table.id, false );
+            List<CatalogIndex> indexes = catalog.getIndexes( table.id, false );
             for ( CatalogIndex index : indexes ) {
-                transaction.getCatalog().deleteIndex( index.id );
+                catalog.deleteIndex( index.id );
             }
         } catch ( GenericCatalogException | UnknownIndexException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
@@ -152,15 +155,15 @@ public class SqlDropTable extends SqlDropObject {
         // Delete keys and constraints
         try {
             // Remove primary key
-            transaction.getCatalog().deletePrimaryKey( table.id );
+            catalog.deletePrimaryKey( table.id );
             // Delete all foreign keys of the table
-            List<CatalogForeignKey> foreignKeys = transaction.getCatalog().getForeignKeys( table.id );
+            List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( table.id );
             for ( CatalogForeignKey foreignKey : foreignKeys ) {
-                transaction.getCatalog().deleteForeignKey( foreignKey.id );
+                catalog.deleteForeignKey( foreignKey.id );
             }
             // Delete all constraints of the table
-            for ( CatalogConstraint constraint : transaction.getCatalog().getConstraints( table.id ) ) {
-                transaction.getCatalog().deleteConstraint( constraint.id );
+            for ( CatalogConstraint constraint : catalog.getConstraints( table.id ) ) {
+                catalog.deleteConstraint( constraint.id );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
@@ -169,7 +172,7 @@ public class SqlDropTable extends SqlDropObject {
         // Delete columns
         try {
             for ( Long columnId : table.columnIds ) {
-                transaction.getCatalog().deleteColumn( columnId );
+                catalog.deleteColumn( columnId );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping columns.", e );
@@ -177,7 +180,7 @@ public class SqlDropTable extends SqlDropObject {
 
         // Delete the table
         try {
-            transaction.getCatalog().deleteTable( table.id );
+            catalog.deleteTable( table.id );
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping the table.", e );
         }

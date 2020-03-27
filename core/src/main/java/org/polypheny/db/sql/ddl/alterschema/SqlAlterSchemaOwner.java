@@ -21,6 +21,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -76,9 +78,10 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
     @Override
     public void execute( Context context, Transaction transaction ) {
         try {
-            CatalogSchema catalogSchema = transaction.getCatalog().getSchema( context.getDatabaseId(), schema.getSimple() );
-            CatalogUser catalogUser = transaction.getCatalog().getUser( owner.getSimple() );
-            transaction.getCatalog().setSchemaOwner( catalogSchema.id, catalogUser.id );
+            Catalog catalog = CatalogManager.getInstance().getCatalog();
+            CatalogSchema catalogSchema = catalog.getSchema( context.getDatabaseId(), schema.getSimple() );
+            CatalogUser catalogUser = catalog.getUser( owner.getSimple() );
+            catalog.setSchemaOwner( catalogSchema.id, catalogUser.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {

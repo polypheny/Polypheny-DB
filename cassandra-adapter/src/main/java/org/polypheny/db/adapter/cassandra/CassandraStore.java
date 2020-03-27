@@ -113,7 +113,7 @@ public class CassandraStore extends Store {
 
     @Override
     public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( transaction.getCatalog() ), this );
+        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( CatalogManager.getInstance().getCatalog() ), this );
     }
 
 

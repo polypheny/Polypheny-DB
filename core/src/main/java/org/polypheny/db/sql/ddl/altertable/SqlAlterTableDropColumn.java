@@ -22,6 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -77,7 +78,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( catalogTable.columnIds.size() < 2 ) {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
@@ -87,10 +88,10 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        CatalogColumn catalogColumn = getCatalogColumn( context, transaction, catalogTable.id, column );
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, column );
         try {
             // Check whether all stores support schema changes
-            for ( CatalogColumnPlacement dp : transaction.getCatalog().getColumnPlacements( catalogColumn.id ) ) {
+            for ( CatalogColumnPlacement dp : CatalogManager.getInstance().getCatalog().getColumnPlacements( catalogColumn.id ) ) {
                 if ( StoreManager.getInstance().getStore( dp.storeId ).isSchemaReadOnly() ) {
                     throw SqlUtil.newContextException(
                             SqlParserPos.ZERO,
@@ -99,9 +100,9 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             }
 
             // Check if column is part of an key
-            for ( CatalogKey key : transaction.getCatalog().getTableKeys( catalogTable.id ) ) {
+            for ( CatalogKey key : CatalogManager.getInstance().getCatalog().getTableKeys( catalogTable.id ) ) {
                 if ( key.columnIds.contains( catalogColumn.id ) ) {
-                    CatalogCombinedKey combinedKey = transaction.getCatalog().getCombinedKey( key.id );
+                    CatalogCombinedKey combinedKey = CatalogManager.getInstance().getCatalog().getCombinedKey( key.id );
                     if ( combinedKey.isPrimaryKey() ) {
                         throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the primary key." );
                     } else if ( combinedKey.getIndexes().size() > 0 ) {
@@ -116,18 +117,18 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             }
 
             // Delete column from underlying data stores
-            for ( CatalogColumnPlacement dp : transaction.getCatalog().getColumnPlacementsByColumn( catalogColumn.id ) ) {
+            for ( CatalogColumnPlacement dp : CatalogManager.getInstance().getCatalog().getColumnPlacementsByColumn( catalogColumn.id ) ) {
                 StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, dp );
-                transaction.getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
+                CatalogManager.getInstance().getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
             }
 
             // Delete from catalog
-            List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.id );
-            transaction.getCatalog().deleteColumn( catalogColumn.id );
+            List<CatalogColumn> columns = CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id );
+            CatalogManager.getInstance().getCatalog().deleteColumn( catalogColumn.id );
             if ( catalogColumn.position != columns.size() ) {
                 // Update position of the other columns
                 for ( int i = catalogColumn.position; i < columns.size(); i++ ) {
-                    transaction.getCatalog().setColumnPosition( columns.get( i ).id, i );
+                    CatalogManager.getInstance().getCatalog().setColumnPosition( columns.get( i ).id, i );
                 }
             }
 

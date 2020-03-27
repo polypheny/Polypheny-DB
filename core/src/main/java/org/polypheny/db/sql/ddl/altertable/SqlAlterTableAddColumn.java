@@ -24,6 +24,7 @@ import java.util.Objects;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -112,7 +113,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( column.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
@@ -120,11 +121,11 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
         CatalogColumn beforeColumn = null;
         if ( beforeColumnName != null ) {
-            beforeColumn = getCatalogColumn( context, transaction, catalogTable.id, beforeColumnName );
+            beforeColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
         }
         CatalogColumn afterColumn = null;
         if ( afterColumnName != null ) {
-            afterColumn = getCatalogColumn( context, transaction, catalogTable.id, afterColumnName );
+            afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
         }
 
         // TODO: Check if the column either allows null values or has a default value defined.
@@ -132,7 +133,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         CatalogColumn addedColumn;
         Long columnId = null;
         try {
-            if ( transaction.getCatalog().checkIfExistsColumn( catalogTable.id, column.getSimple() ) ) {
+            if ( CatalogManager.getInstance().getCatalog().checkIfExistsColumn( catalogTable.id, column.getSimple() ) ) {
                 throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
             }
 
@@ -145,7 +146,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 }
             }
 
-            List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.id );
+            List<CatalogColumn> columns = CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id );
             int position = columns.size() + 1;
             if ( beforeColumn != null || afterColumn != null ) {
                 if ( beforeColumn != null ) {
@@ -155,10 +156,10 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 }
                 // Update position of the other columns
                 for ( int i = columns.size(); i >= position; i-- ) {
-                    transaction.getCatalog().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
+                    CatalogManager.getInstance().getCatalog().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
                 }
             }
-            columnId = transaction.getCatalog().addColumn(
+            columnId = CatalogManager.getInstance().getCatalog().addColumn(
                     column.getSimple(),
                     catalogTable.id,
                     position,
@@ -168,7 +169,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     nullable,
                     Collation.CASE_INSENSITIVE
             );
-            addedColumn = transaction.getCatalog().getColumn( columnId );
+            addedColumn = CatalogManager.getInstance().getCatalog().getColumn( columnId );
 
             // Add default value
             if ( defaultValue != null ) {
@@ -177,7 +178,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 if ( v.startsWith( "'" ) ) {
                     v = v.substring( 1, v.length() - 1 );
                 }
-                transaction.getCatalog().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
+                CatalogManager.getInstance().getCatalog().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
             }
 
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -186,13 +187,13 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
             // Add column on underlying data stores
             for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-                transaction.getCatalog().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
+                CatalogManager.getInstance().getCatalog().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
                 StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
             }
         } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
             if ( columnId != null ) {
                 try {
-                    transaction.getCatalog().deleteColumn( columnId );
+                    CatalogManager.getInstance().getCatalog().deleteColumn( columnId );
                 } catch ( GenericCatalogException ex ) {
                     ex.printStackTrace();
                 }

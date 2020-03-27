@@ -30,6 +30,7 @@ import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -111,8 +112,8 @@ public class StatisticQueryProcessor {
         Transaction transaction = getTransaction();
 
         try {
-            Catalog catalog = transaction.getCatalog();
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
+            Catalog catalog = CatalogManager.getInstance().getCatalog();
+            CatalogDatabase catalogDatabase = catalog.getDatabase( databaseName );
             List<String> schemaTree = new ArrayList<>();
             List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
             for ( CatalogSchema schema : schemas ) {
@@ -154,7 +155,7 @@ public class StatisticQueryProcessor {
         List<QueryColumn> columns = new ArrayList<>();
 
         try {
-            Catalog catalog = transaction.getCatalog();
+            Catalog catalog = CatalogManager.getInstance().getCatalog();
             List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
             columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.schemaName, c.tableName, c.name, c.type ) ).collect( Collectors.toList() ) );
 
@@ -188,7 +189,7 @@ public class StatisticQueryProcessor {
         List<QueryColumn> columns = new ArrayList<>();
 
         try {
-            Catalog catalog = transaction.getCatalog();
+            Catalog catalog = CatalogManager.getInstance().getCatalog();
 
             catalog
                     .getColumns( new Pattern( databaseName ), new Pattern( schemaName ), new Pattern( tableName ), null )
@@ -221,7 +222,7 @@ public class StatisticQueryProcessor {
         PolyType type = null;
 
         try {
-            Catalog catalog = transaction.getCatalog();
+            Catalog catalog = CatalogManager.getInstance().getCatalog();
             type = catalog.getColumn( databaseName, schema, table, column ).type;
             transaction.commit();
         } catch ( GenericCatalogException | TransactionException | UnknownColumnException e ) {

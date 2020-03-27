@@ -51,9 +51,11 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -164,18 +166,18 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         if ( query != null ) {
             throw new RuntimeException( "Not supported yet" );
         }
-
+        Catalog catalog = CatalogManager.getInstance().getCatalog();
         String tableName;
         long schemaId;
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
                 tableName = name.names.get( 2 );
             } else if ( name.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+                schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
                 tableName = name.names.get( 1 );
             } else { // TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
         } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
@@ -191,7 +193,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
         try {
             // Check if there is already a table with this name
-            if ( transaction.getCatalog().checkIfExistsTable( schemaId, tableName ) ) {
+            if ( catalog.checkIfExistsTable( schemaId, tableName ) ) {
                 throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
             }
 
@@ -218,7 +220,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 stores = transaction.getRouter().createTable( schemaId, transaction );
             }
 
-            long tableId = transaction.getCatalog().addTable(
+            long tableId = catalog.addTable(
                     tableName,
                     schemaId,
                     context.getCurrentUserId(),
@@ -239,7 +241,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             collation = Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ); // Set default collation
                         }
                     }
-                    long addedColumnId = transaction.getCatalog().addColumn(
+                    long addedColumnId = catalog.addColumn(
                             columnDeclaration.name.getSimple(),
                             tableId,
                             position++,
@@ -251,7 +253,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     );
 
                     for ( Store s : stores ) {
-                        transaction.getCatalog().addColumnPlacement(
+                        catalog.addColumnPlacement(
                                 s.getStoreId(),
                                 addedColumnId,
                                 store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL,
@@ -267,18 +269,18 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         if ( v.startsWith( "'" ) ) {
                             v = v.substring( 1, v.length() - 1 );
                         }
-                        transaction.getCatalog().setDefaultValue( addedColumnId, PolyType.VARCHAR, v );
+                        catalog.setDefaultValue( addedColumnId, PolyType.VARCHAR, v );
                     }
                 } else if ( c.e instanceof SqlKeyConstraint ) {
                     SqlKeyConstraint constraint = (SqlKeyConstraint) c.e;
                     List<Long> columnIds = new LinkedList<>();
                     for ( SqlNode node : constraint.getColumnList().getList() ) {
                         String columnName = node.toString();
-                        CatalogColumn catalogColumn = transaction.getCatalog().getColumn( tableId, columnName );
+                        CatalogColumn catalogColumn = catalog.getColumn( tableId, columnName );
                         columnIds.add( catalogColumn.id );
                     }
                     if ( constraint.getOperator() == SqlKeyConstraint.PRIMARY ) {
-                        transaction.getCatalog().addPrimaryKey( tableId, columnIds );
+                        catalog.addPrimaryKey( tableId, columnIds );
                     } else if ( constraint.getOperator() == SqlKeyConstraint.UNIQUE ) {
                         String constraintName;
                         if ( constraint.getName() == null ) {
@@ -286,14 +288,14 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         } else {
                             constraintName = constraint.getName().getSimple();
                         }
-                        transaction.getCatalog().addUniqueConstraint( tableId, constraintName, columnIds );
+                        catalog.addUniqueConstraint( tableId, constraintName, columnIds );
                     }
                 } else {
                     throw new AssertionError( c.e.getClass() );
                 }
             }
 
-            CatalogTable catalogTable = transaction.getCatalog().getTable( tableId );
+            CatalogTable catalogTable = catalog.getTable( tableId );
             for ( Store store : stores ) {
                 store.createTable( context, catalogTable );
             }

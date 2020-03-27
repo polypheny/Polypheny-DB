@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -75,14 +76,14 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
             // Check if there are at least to placements for each column of this table
-            for ( List<CatalogColumnPlacement> placements : catalogTable.columnIds.stream().map( id -> transaction.getCatalog().getColumnPlacements( id ) ).collect( Collectors.toList() ) ) {
+            for ( List<CatalogColumnPlacement> placements : catalogTable.columnIds.stream().map( id -> CatalogManager.getInstance().getCatalog().getColumnPlacements( id ) ).collect( Collectors.toList() ) ) {
                 if ( placements.size() < 2 ) {
                     throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                 }
@@ -100,7 +101,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
                 storeInstance.dropTable( context, catalogTable );
                 // Delete placement in the catalog
                 for ( long columnId : placements.get( storeInstance.getStoreId() ) ) {
-                    transaction.getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), columnId );
+                    CatalogManager.getInstance().getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), columnId );
                 }
                 return;
             }

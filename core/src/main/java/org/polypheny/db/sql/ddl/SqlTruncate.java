@@ -69,7 +69,7 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable table = getCatalogTable( context, transaction, name );
+        CatalogTable table = getCatalogTable( context, name );
 
         //  Execute truncate on all placements
         table.placementsByStore.forEach( ( storeId, placements ) -> {

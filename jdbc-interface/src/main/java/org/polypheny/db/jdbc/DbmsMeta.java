@@ -64,6 +64,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.Catalog.TableType.PrimitiveTableType;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -1215,7 +1216,7 @@ public class DbmsMeta implements ProtobufMeta {
         // Create transaction
         Transaction transaction = transactionManager.startTransaction( user, null, null, false );
 
-        final Catalog catalog = transaction.getCatalog();
+        final Catalog catalog = CatalogManager.getInstance().getCatalog();
         // Check database access
         final CatalogDatabase database;
         try {

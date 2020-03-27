@@ -310,16 +310,16 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             long schemaId;
             String tableOldName;
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                schemaId = CatalogManager.getInstance().getCatalog().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+                schemaId = CatalogManager.getInstance().getCatalog().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
                 tableOldName = tableName.names.get( 1 );
             } else { // TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = CatalogManager.getInstance().getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableOldName = tableName.names.get( 0 );
             }
-            catalogTable = transaction.getCatalog().getTable( schemaId, tableOldName );
+            catalogTable = CatalogManager.getInstance().getCatalog().getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {
@@ -334,7 +334,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
     @Deprecated
     private CatalogCombinedTable getCatalogCombinedTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
-        //return transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
+        //return CatalogManager.getInstance().getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
         return null;
     }
 

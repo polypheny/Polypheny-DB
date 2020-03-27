@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -76,7 +77,7 @@ public class PolySchemaBuilder {
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
 
-        Catalog catalog = transaction.getCatalog();
+        Catalog catalog = CatalogManager.getInstance().getCatalog();
 
         try {
             CatalogDatabase catalogDatabase = catalog.getDatabase( 0 );
@@ -117,14 +118,14 @@ public class PolySchemaBuilder {
 
             //
             // Build store schema
-            List<CatalogStore> stores = transaction.getCatalog().getStores();
+            List<CatalogStore> stores = CatalogManager.getInstance().getCatalog().getStores();
             for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
                 for ( CatalogStore catalogStore : stores ) {
                     // Get list of tables on this store
                     Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
                     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-                    for ( CatalogColumnPlacement placement : transaction.getCatalog().getColumnPlacementsOnStoreAndSchema( catalogStore.id, catalogSchema.id ) ) {
+                    for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStoreAndSchema( catalogStore.id, catalogSchema.id ) ) {
                         tableIdsPerSchema.putIfAbsent( placement.physicalSchemaName, new HashSet<>() );
                         tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
                     }

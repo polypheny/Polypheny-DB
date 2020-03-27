@@ -134,6 +134,8 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong constraintIdBuilder = new AtomicLong();
     private static final AtomicLong indexIdBuilder = new AtomicLong();
     private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
+    Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
+    // TODO DL check solution for all
 
 
     public CatalogImpl() {
@@ -162,13 +164,15 @@ public class CatalogImpl extends Catalog {
                         .fileDB( new File( "./" + path ) )
                         .closeOnJvmShutdown()
                         .checksumHeaderBypass() // TODO clean shutdown needed
-                        .fileMmapEnable()
                         .fileMmapEnableIfSupported()
                         .fileMmapPreclearDisable()
                         .make();
             } else {
                 log.info( "Making the catalog not persistent." );
-                db = DBMaker.memoryDB().closeOnJvmShutdown().make();
+                db = DBMaker
+                        .memoryDB()
+                        .closeOnJvmShutdown()
+                        .make();
             }
 
             initDBLayout( db );
@@ -1266,8 +1270,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogColumn> getColumns( long tableId ) {
-        Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
-        // TODO DL check solution for all
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             List<CatalogColumn> columns = new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
