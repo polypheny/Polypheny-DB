@@ -20,6 +20,7 @@ package org.polypheny.db.catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.information.Information;
 import org.polypheny.db.transaction.PolyXid;
 
 
@@ -27,20 +28,21 @@ public abstract class CatalogManager {
 
     public static CatalogManager INSTANCE = null;
 
-
-    public static CatalogManager getInstance() {
+    public static CatalogManager setAndGetInstance( CatalogManager catalogManager ) {
+        if( INSTANCE != null ){
+            throw new RuntimeException( "Setting the CatalogManager, when already set is not permitted." );
+        }
+        INSTANCE = catalogManager;
         return INSTANCE;
     }
 
+    public static CatalogManager getInstance() {
+        if( INSTANCE == null ){
+            throw new RuntimeException( "CatalogManager was not set correctly on Polypheny-DB start-up" );
+        }
+        return INSTANCE;
+    }
 
-    /**
-     * Returns the user with the specified name.
-     *
-     * @param userName The name of the database
-     * @return The user
-     * @throws UnknownUserException If there is no user with this name.
-     */
-    public abstract CatalogUser getUser( String userName ) throws UnknownUserException, GenericCatalogException;
 
     public abstract Catalog getCatalog( PolyXid xid );
 

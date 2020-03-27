@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -74,8 +75,8 @@ public class PolyphenyDb {
         Catalog catalog;
         Transaction trx = null;
         try {
+            catalog = CatalogManager.setAndGetInstance( new CatalogManagerImpl() ).getCatalog();
             trx = transactionManager.startTransaction( "pa", "APP", false );
-            catalog = CatalogManager.getInstance().getCatalog( trx.getXid() );
             StoreManager.getInstance().restoreStores( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false );

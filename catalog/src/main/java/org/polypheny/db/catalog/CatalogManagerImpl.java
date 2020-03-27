@@ -46,27 +46,11 @@ public class CatalogManagerImpl extends CatalogManager {
         return INSTANCE;
     }
 
-    /*
-    public static CatalogManager getInstance() {
-        return INSTANCE;
-    }*/
 
-
-    private CatalogManagerImpl() {
-        catalog = new CatalogImpl();
-    }
-
-
-    /**
-     * Returns the user with the specified name.
-     *
-     * @param username The username
-     * @return The user
-     * @throws UnknownUserException If there is no user with this name.
-     */
-    @Override
-    public CatalogUser getUser( String username ) throws UnknownUserException {
-        return catalog.getUser( username );
+    public CatalogManagerImpl() {
+        if ( catalog == null ) {
+            catalog = new CatalogImpl();
+        }
     }
 
 
