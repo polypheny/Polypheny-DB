@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -63,6 +62,7 @@ public class StatisticQueryProcessor {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
+    private final Catalog catalog = CatalogManager.getInstance().getCatalog();
 
 
     /**
@@ -109,11 +109,8 @@ public class StatisticQueryProcessor {
      */
     public List<List<String>> getSchemaTree() {
         List<List<String>> result = new ArrayList<>();
-        Transaction transaction = getTransaction();
 
         try {
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
-            CatalogDatabase catalogDatabase = catalog.getDatabase( databaseName );
             List<String> schemaTree = new ArrayList<>();
             List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
             for ( CatalogSchema schema : schemas ) {
@@ -132,14 +129,8 @@ public class StatisticQueryProcessor {
                 schemaTree.addAll( tables );
                 result.add( schemaTree );
             }
-            transaction.commit();
-        } catch ( UnknownDatabaseException | GenericCatalogException | TransactionException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return result;
     }
@@ -151,18 +142,11 @@ public class StatisticQueryProcessor {
      * @return all the columns
      */
     public List<QueryColumn> getAllColumns() {
-        Transaction transaction = getTransaction();
         List<QueryColumn> columns = new ArrayList<>();
 
-        try {
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
-            List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
-            columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.schemaName, c.tableName, c.name, c.type ) ).collect( Collectors.toList() ) );
+        List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
+        columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.schemaName, c.tableName, c.name, c.type ) ).collect( Collectors.toList() ) );
 
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-        }
         return columns;
     }
 
@@ -184,21 +168,13 @@ public class StatisticQueryProcessor {
      * @return all columns
      */
     public List<QueryColumn> getAllColumns( String schemaName, String tableName ) {
-        Transaction transaction = getTransaction();
 
         List<QueryColumn> columns = new ArrayList<>();
 
-        try {
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
+        catalog
+                .getColumns( new Pattern( databaseName ), new Pattern( schemaName ), new Pattern( tableName ), null )
+                .forEach( c -> columns.add( QueryColumn.fromCatalogColumn( c ) ) );
 
-            catalog
-                    .getColumns( new Pattern( databaseName ), new Pattern( schemaName ), new Pattern( tableName ), null )
-                    .forEach( c -> columns.add( QueryColumn.fromCatalogColumn( c ) ) );
-            transaction.commit();
-
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-        }
         return columns;
 
     }
@@ -217,15 +193,11 @@ public class StatisticQueryProcessor {
      * Method to get the type of a specific column
      */
     public PolyType getColumnType( String schema, String table, String column ) {
-        Transaction transaction = getTransaction();
-        // TODO: fix possible NullPointer
         PolyType type = null;
 
         try {
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
             type = catalog.getColumn( databaseName, schema, table, column ).type;
-            transaction.commit();
-        } catch ( GenericCatalogException | TransactionException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             log.error( "Caught exception", e );
         }
         return type;

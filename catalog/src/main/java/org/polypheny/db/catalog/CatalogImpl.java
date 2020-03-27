@@ -1131,6 +1131,9 @@ public class CatalogImpl extends Catalog {
 
 
     private void updateCombinedKeys( Long keyId ) {
+        if ( keyId == null ) {
+            return;
+        }
         try {
             CatalogKey key = keys.get( keyId );
             combinedKeys.replace( keyId, buildCombinedKey( key ) );

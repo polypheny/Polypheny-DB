@@ -31,7 +31,6 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -65,7 +64,6 @@ public class TransactionImpl implements Transaction {
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     private QueryProcessor queryProcessor;
-    private Catalog catalog;
 
     @Getter
     private CatalogUser user;
@@ -191,24 +189,12 @@ public class TransactionImpl implements Transaction {
 
 
     @Override
-    public void rollback() throws TransactionException {
-        //  rollback changes to the stores
+    public void rollback() {
+
         for ( Store store : involvedStores ) {
             store.rollback( xid );
         }
-        catalog.validateColumns();
-
-        /*
-        // Rollback changes to the catalog
-        try {
-            if ( catalog != null ) {
-                catalog.rollback();
-            }
-        } catch ( CatalogTransactionException e ) {
-            throw new TransactionException( e );
-        } finally {
-            cachedSchema = null;
-        }*/
+        CatalogManager.getInstance().getCatalog().validateColumns();
     }
 
 

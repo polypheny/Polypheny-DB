@@ -121,7 +121,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
-import org.polypheny.db.statistic.StatisticColumn;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -299,7 +298,6 @@ public class Crud implements InformationObserver {
             return new ArrayList<>();
         }
 
-        Transaction transaction = getTransaction();
         try {
             List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
             for ( CatalogSchema schema : schemas ) {
@@ -331,14 +329,8 @@ public class Crud implements InformationObserver {
                 }
                 result.add( schemaTree );
             }
-            transaction.commit();
-        } catch ( GenericCatalogException | TransactionException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
 
         return result;
@@ -350,7 +342,6 @@ public class Crud implements InformationObserver {
      */
     Result getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        Transaction transaction = getTransaction();
 
         Result result;
         try {
@@ -360,15 +351,9 @@ public class Crud implements InformationObserver {
                 tableNames.add( catalogTable.name );
             }
             result = new Result( new Debug().setAffectedRows( tableNames.size() ) ).setTables( tableNames );
-            transaction.commit();
-        } catch ( GenericCatalogException | TransactionException e ) {
+        } catch ( GenericCatalogException e ) {
             log.error( "Caught exception while fetching tables", e );
             result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return result;
     }
@@ -702,7 +687,7 @@ public class Crud implements InformationObserver {
     /**
      * Return all available statistics to the client
      */
-    ConcurrentHashMap<String, HashMap<String, HashMap<String, StatisticColumn>>> getStatistics( final Request req, final Response res ) {
+    ConcurrentHashMap<?, ?> getStatistics( final Request req, final Response res ) {
         if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
             return store.getStatisticSchemaMap();
         } else {
@@ -830,7 +815,6 @@ public class Crud implements InformationObserver {
      */
     Result getColumns( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        Transaction transaction = getTransaction();
         Result result;
 
         String[] t = request.tableId.split( "\\." );
@@ -857,15 +841,9 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-            transaction.commit();
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException | TransactionException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
             log.error( "Caught exception while getting a column", e );
             result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
 
         return result;
@@ -1066,7 +1044,6 @@ public class Crud implements InformationObserver {
      */
     Result getConstraints( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        Transaction transaction = getTransaction();
         Result result;
 
         String[] t = request.tableId.split( "\\." );
@@ -1118,15 +1095,9 @@ public class Crud implements InformationObserver {
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-            transaction.commit();
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException | TransactionException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
 
         return result;
@@ -1245,7 +1216,6 @@ public class Crud implements InformationObserver {
      */
     Result getIndexes( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        Transaction transaction = getTransaction();
         Result result;
         try {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
@@ -1263,15 +1233,10 @@ public class Crud implements InformationObserver {
             }
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-            transaction.commit();
-        } catch ( UnknownTableException | GenericCatalogException | TransactionException e ) {
+
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return result;
     }
@@ -1342,7 +1307,6 @@ public class Crud implements InformationObserver {
         Index index = gson.fromJson( req.body(), Index.class );
         String schemaName = index.getSchema();
         String tableName = index.getTable();
-        Transaction transaction = getTransaction();
         Result result;
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
@@ -1361,7 +1325,7 @@ public class Crud implements InformationObserver {
                 if ( placements.size() == 0 ) {
                     continue;
                 }
-                String[] arr = new String[3];
+                String[] arr = new String[5];
                 arr[0] = store.getUniqueName();
                 arr[1] = store.getAdapterName();
                 arr[2] = String.valueOf( store.isDataReadOnly() );
@@ -1386,15 +1350,10 @@ public class Crud implements InformationObserver {
             }
 
             result = new Result( header, data.toArray( new String[0][4] ) );
-            transaction.commit();
-        } catch ( GenericCatalogException | UnknownTableException | TransactionException e ) {
+
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             log.error( "Caught exception while getting placements", e );
             result = new Result( e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
         }
         return result;
     }
@@ -1503,20 +1462,11 @@ public class Crud implements InformationObserver {
     boolean addStore( final Request req, final Response res ) {
         String body = req.body();
         Adapter a = this.gson.fromJson( body, Adapter.class );
-        Transaction trx = null;
+
         try {
-            trx = getTransaction();
             StoreManager.getInstance().addStore( catalog, a.clazzName, a.uniqueName, a.settings );
-            trx.commit();
-        } catch ( Exception | TransactionException e ) {
+        } catch ( Exception e ) {
             log.error( "Could not deploy store", e );
-            try {
-                if ( trx != null ) {
-                    trx.rollback();
-                }
-            } catch ( TransactionException ex ) {
-                log.error( "Error while rolling back the transaction", e );
-            }
             return false;
         }
         return true;
@@ -1528,20 +1478,13 @@ public class Crud implements InformationObserver {
      */
     Result removeStore( final Request req, final Response res ) {
         String uniqueName = req.body();
-        Transaction trx = null;
+
         try {
-            trx = getTransaction();
+
             StoreManager.getInstance().removeStore( catalog, uniqueName );
-            trx.commit();
-        } catch ( Exception | TransactionException e ) {
+
+        } catch ( Exception e ) {
             log.error( "Could not remove store {}", req.body(), e );
-            try {
-                if ( trx != null ) {
-                    trx.rollback();
-                }
-            } catch ( TransactionException ex ) {
-                log.error( "Error while rolling back the transaction", e );
-            }
             return new Result( e );
         }
         return new Result( new Debug().setAffectedRows( 1 ) );
@@ -1553,7 +1496,6 @@ public class Crud implements InformationObserver {
      */
     Uml getUml( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-        Transaction transaction = getTransaction();
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
@@ -1621,14 +1563,8 @@ public class Crud implements InformationObserver {
                     tables.add( table );
                 }
             }
-            transaction.commit();
-        } catch ( GenericCatalogException | TransactionException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException e ) {
             log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
 
         return new Uml( tables, fKeys );
