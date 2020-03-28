@@ -23,10 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -43,7 +40,6 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable schemaInformation;
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
-    private final InformationTable combinedKeyInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -60,8 +56,6 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.tableInformation = addCatalogInformationTable( page, "tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
 
         this.columnInformation = addCatalogInformationTable( page, "columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
-
-        this.combinedKeyInformation = addCatalogInformationTable( page, "Combined Keys", Arrays.asList( "ID", "Columns" ) );
 
         addPersistentInfo( page );
 
@@ -101,7 +95,6 @@ public class CatalogInfoPage implements PropertyChangeListener {
         schemaInformation.reset();
         tableInformation.reset();
         columnInformation.reset();
-        combinedKeyInformation.reset();
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
@@ -120,13 +113,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
             } );
 
-            for ( CatalogKey k : catalog.getKeys() ) {
-                CatalogCombinedKey combinedKey = catalog.getCombinedKey( k.id );
-                combinedKeyInformation.addRow( combinedKey.getKey().id, combinedKey.toString() );
-            }
 
-
-        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException | UnknownKeyException e ) {
+        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
             e.printStackTrace();
         }
     }

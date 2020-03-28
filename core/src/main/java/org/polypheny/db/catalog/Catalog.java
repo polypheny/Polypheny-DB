@@ -36,7 +36,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -584,6 +583,15 @@ public abstract class Catalog {
      */
     public abstract CatalogPrimaryKey getPrimaryKey( long key ) throws GenericCatalogException, UnknownKeyException;
 
+
+    public abstract boolean isPrimaryKey( long key );
+
+    public abstract boolean isForeignKey( long keyId );
+
+    public abstract boolean isIndex( long keyId );
+
+    public abstract boolean isConstraint( long keyId );
+
     /**
      * Adds a primary key
      *
@@ -615,6 +623,13 @@ public abstract class Catalog {
      * @return List of constraints
      */
     public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
+
+
+    public abstract List<CatalogIndex> getIndices( CatalogKey key );
+
+    public abstract List<CatalogIndex> getForeignKeys( CatalogKey key );
+
+    public abstract List<CatalogConstraint> getConstraints( CatalogKey key );
 
     /**
      * Returns the constraint with the specified name in the specified table.
@@ -760,8 +775,8 @@ public abstract class Catalog {
      *
      */
 
+    // public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
-    public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
     public abstract void close();
 

@@ -22,15 +22,14 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -98,19 +97,18 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                             RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( dp.storeId ).getUniqueName() ) );
                 }
             }
-
+            Catalog catalog = CatalogManager.getInstance().getCatalog();
             // Check if column is part of an key
-            for ( CatalogKey key : CatalogManager.getInstance().getCatalog().getTableKeys( catalogTable.id ) ) {
+            for ( CatalogKey key : catalog.getTableKeys( catalogTable.id ) ) {
                 if ( key.columnIds.contains( catalogColumn.id ) ) {
-                    CatalogCombinedKey combinedKey = CatalogManager.getInstance().getCatalog().getCombinedKey( key.id );
-                    if ( combinedKey.isPrimaryKey() ) {
+                    if ( catalog.isPrimaryKey( key.id ) ) {
                         throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the primary key." );
-                    } else if ( combinedKey.getIndexes().size() > 0 ) {
-                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the index with the name: '" + combinedKey.getIndexes().get( 0 ).name + "'." );
-                    } else if ( combinedKey.getForeignKeys().size() > 0 ) {
-                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the foreign key with the name: '" + combinedKey.getForeignKeys().get( 0 ).name + "'." );
-                    } else if ( combinedKey.getConstraints().size() > 0 ) {
-                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the constraint with the name: '" + combinedKey.getConstraints().get( 0 ).name + "'." );
+                    } else if ( catalog.isIndex( key.id ) ) {
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the index with the name: '" + catalog.getIndices( key ).get( 0 ).name + "'." );
+                    } else if ( catalog.isForeignKey( key.id ) ) {
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the foreign key with the name: '" + catalog.getForeignKeys( key ).get( 0 ).name + "'." );
+                    } else if ( catalog.isConstraint( key.id ) ) {
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the constraint with the name: '" + catalog.getConstraints( key ).get( 0 ).name + "'." );
                     }
                     throw new PolyphenyDbException( "Ok, strange... Something is going wrong here!" );
                 }
@@ -132,7 +130,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 }
             }
 
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -17,11 +17,7 @@
 package org.polypheny.db.catalog;
 
 
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.transaction.PolyXid;
 
 
 /**
@@ -29,12 +25,6 @@ import org.polypheny.db.transaction.PolyXid;
  */
 @Slf4j
 public class CatalogManagerImpl extends CatalogManager {
-
-    private static final boolean CREATE_SCHEMA = true;
-
-    //private static CatalogManagerImpl INSTANCE = new CatalogManagerImpl();
-
-    private final ConcurrentHashMap<PolyXid, CatalogImpl> catalogs = new ConcurrentHashMap<>();
 
     private static CatalogImpl catalog = null;
 
@@ -54,19 +44,10 @@ public class CatalogManagerImpl extends CatalogManager {
     }
 
 
-    @Override
-    public Catalog getCatalog( PolyXid xid ) {
-        return catalog;
-    }
-
 
     @Override
     public Catalog getCatalog() {
         return catalog;
     }
 
-
-    void removeCatalog( PolyXid xid ) {
-        log.error( "removing store" );
-    }
 }

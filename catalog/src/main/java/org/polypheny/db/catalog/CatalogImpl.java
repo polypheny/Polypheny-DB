@@ -55,10 +55,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -91,19 +87,16 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, CatalogDatabase> databases;
     private static HTreeMap<String, CatalogDatabase> databaseNames;
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
-    private static HTreeMap<Long, CatalogCombinedDatabase> combinedDatabases;
 
 
     private static HTreeMap<Long, CatalogSchema> schemas;
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
-    private static HTreeMap<Long, CatalogCombinedSchema> combinedSchemas;
 
 
     private static HTreeMap<Long, CatalogTable> tables;
     private static BTreeMap<Object[], CatalogTable> tableNames;
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
-    private static HTreeMap<Long, CatalogCombinedTable> combinedTables;
 
     private static HTreeMap<Long, CatalogColumn> columns;
     private static BTreeMap<Object[], CatalogColumn> columnNames;
@@ -114,7 +107,6 @@ public class CatalogImpl extends Catalog {
 
     private static HTreeMap<Long, CatalogKey> keys;
     private static HTreeMap<long[], Long> keyColumns;
-    private static HTreeMap<Long, CatalogCombinedKey> combinedKeys;
 
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
     private static HTreeMap<Long, CatalogForeignKey> foreignKeys;
@@ -326,7 +318,6 @@ public class CatalogImpl extends Catalog {
 
 
     private void initKeysAndConstraintsInfo( DB db ) {
-        combinedKeys = db.hashMap( "combinedKeys", Serializer.LONG, new GenericSerializer<CatalogCombinedKey>() ).createOrOpen();
         keyColumns = db.hashMap( "keyColumns", Serializer.LONG_ARRAY, Serializer.LONG ).createOrOpen();
         keys = db.hashMap( "keys", Serializer.LONG, new GenericSerializer<CatalogKey>() ).createOrOpen();
         primaryKeys = db.hashMap( "primaryKeys", Serializer.LONG, new GenericSerializer<CatalogPrimaryKey>() ).createOrOpen();
@@ -362,7 +353,6 @@ public class CatalogImpl extends Catalog {
 
     private void initTableInfo( DB db ) {
         tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
-        combinedTables = db.hashMap( "combinedTables", Serializer.LONG, new GenericSerializer<CatalogCombinedTable>() ).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         tableNames = db.treeMap( "tableNames" )
@@ -374,7 +364,6 @@ public class CatalogImpl extends Catalog {
 
     private void initSchemaInfo( DB db ) {
         schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
-        combinedSchemas = db.hashMap( "combinedSchemas", Serializer.LONG, new GenericSerializer<CatalogCombinedSchema>() ).createOrOpen();
         schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
@@ -383,7 +372,6 @@ public class CatalogImpl extends Catalog {
 
     private void initDatabaseInfo( DB db ) {
         databases = db.hashMap( "databases", Serializer.LONG, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
-        combinedDatabases = db.hashMap( "combined", Serializer.LONG, new GenericSerializer<CatalogCombinedDatabase>() ).createOrOpen();
         databaseNames = db.hashMap( "databaseNames", Serializer.STRING, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
         databaseChildren = db.hashMap( "databaseChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
     }
@@ -1122,23 +1110,8 @@ public class CatalogImpl extends Catalog {
                 primaryKeys.put( keyId, new CatalogPrimaryKey( Objects.requireNonNull( keys.get( keyId ) ) ) );
             }
 
-            updateCombinedKeys( keyId );
-
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
-        }
-    }
-
-
-    private void updateCombinedKeys( Long keyId ) {
-        if ( keyId == null ) {
-            return;
-        }
-        try {
-            CatalogKey key = keys.get( keyId );
-            combinedKeys.replace( keyId, buildCombinedKey( key ) );
-        } catch ( GenericCatalogException e ) {
-            e.printStackTrace();
         }
     }
 
@@ -1650,6 +1623,18 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public boolean isPrimaryKey( long key ) {
+        try {
+            return getTable( Objects.requireNonNull( keys.get( key ) ).tableId ).primaryKey == key;
+        } catch ( UnknownTableException e ) {
+            e.printStackTrace();
+        }
+        return false;
+
+    }
+
+
     /**
      * Adds a primary key to a specified table. If there is already a primary key defined for this table it is replaced.
      *
@@ -1671,8 +1656,8 @@ public class CatalogImpl extends Catalog {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
 
             if ( table.primaryKey != null ) {
-                CatalogCombinedKey combinedKey = getCombinedKey( table.primaryKey );
-                if ( combinedKey.getUniqueCount() == 1 && combinedKey.getReferencedBy().size() > 0 ) {
+                // CatalogCombinedKey combinedKey = getCombinedKey( table.primaryKey );
+                if ( getKeyUniqueCount( table.primaryKey ) == 1 && isForeignKey( tableId ) ) {
                     // This primary key is the only constraint for the uniqueness of this key.
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
                 }
@@ -1685,6 +1670,29 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
+    }
+
+
+    private int getKeyUniqueCount( long keyId ) {
+        CatalogKey key = keys.get( keyId );
+        int count = 0;
+        if ( isPrimaryKey( keyId ) ) {
+            count++;
+        }
+
+        for ( CatalogConstraint constraint : getConstraints( key ) ) {
+            if ( constraint.type == ConstraintType.UNIQUE ) {
+                count++;
+            }
+        }
+
+        for ( CatalogIndex index : getIndices( key ) ) {
+            if ( index.unique ) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
 
@@ -1779,17 +1787,18 @@ public class CatalogImpl extends Catalog {
             for ( CatalogKey refKey : childKeys ) {
                 if ( refKey.columnIds.size() == referencesIds.size() && refKey.columnIds.containsAll( referencesIds ) && referencesIds.containsAll( refKey.columnIds ) ) {
 
-                    CatalogCombinedKey combinedKey = getCombinedKey( refKey.id );
+                    // CatalogKey combinedKey = getCombinedKey( refKey.id );
 
                     int i = 0;
-                    for ( CatalogColumn referencedColumn : combinedKey.getColumns() ) {
-                        CatalogColumn referencingColumn = Objects.requireNonNull( columns.get( columnIds.get( i++ ) ) );
+                    for ( long referencedColumnId : refKey.columnIds ) {
+                        CatalogColumn referencingColumn = getColumn( columnIds.get( i++ ) );
+                        CatalogColumn referencedColumn = getColumn( referencedColumnId );
                         if ( referencedColumn.type != referencingColumn.type ) {
                             throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
                         }
                     }
                     // TODO same keys for key and foreignkey
-                    if ( combinedKey.getUniqueCount() > 0 ) {
+                    if ( getKeyUniqueCount( refKey.id ) > 0 ) {
                         long keyId = getOrAddKey( tableId, columnIds );
                         List<String> keyColumnNames = columnIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
                         List<String> referencesNames = referencesIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
@@ -1797,15 +1806,13 @@ public class CatalogImpl extends Catalog {
 
                         foreignKeys.put( keyId, key );
 
-                        updateCombinedKeys( keyId );
-
                         return;
                     }
 
                 }
 
             }
-        } catch ( NullPointerException e ) {
+        } catch ( NullPointerException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1831,7 +1838,6 @@ public class CatalogImpl extends Catalog {
             long id = constraintIdBuilder.getAndIncrement();
             constraints.put( id, new CatalogConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
 
-            updateCombinedKeys( keyId );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1890,7 +1896,6 @@ public class CatalogImpl extends Catalog {
         }
         long id = indexIdBuilder.getAndIncrement();
         indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
-        updateCombinedKeys( keyId );
         return id;
     }
 
@@ -1905,8 +1910,8 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogIndex index = Objects.requireNonNull( indices.get( indexId ) );
             if ( index.unique ) {
-                CatalogCombinedKey combinedKey = getCombinedKey( index.keyId );
-                if ( combinedKey.getUniqueCount() == 1 && combinedKey.getReferencedBy().size() > 0 ) {
+                // CatalogCombinedKey combinedKey = getCombinedKey( index.keyId );
+                if ( getKeyUniqueCount( index.keyId ) == 1 && isForeignKey( index.keyId ) ) {
                     // This unique index is the only constraint for the uniqueness of this key.
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To delete this index, first add a unique constraint." );
                 }
@@ -1933,9 +1938,9 @@ public class CatalogImpl extends Catalog {
             // TODO: Check if the currently stored values are unique
             if ( table.primaryKey != null ) {
                 // Check if this primary key is required to maintain to uniqueness
-                CatalogCombinedKey key = getCombinedKey( table.primaryKey );
-                if ( key.getReferencedBy().size() > 0 ) {
-                    if ( key.getUniqueCount() < 2 ) {
+                // CatalogCombinedKey key = getCombinedKey( table.primaryKey );
+                if ( isForeignKey( table.primaryKey ) ) {
+                    if ( getKeyUniqueCount( table.primaryKey ) < 2 ) {
                         throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key either drop the foreign key or create an unique constraint." );
                     }
                 }
@@ -1977,14 +1982,14 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogConstraint catalogConstraint = Objects.requireNonNull( constraints.get( constraintId ) );
 
-            CatalogCombinedKey key = getCombinedKey( catalogConstraint.keyId );
-            if ( catalogConstraint.type == ConstraintType.UNIQUE && key.getReferencedBy().size() > 0 ) {
-                if ( key.getUniqueCount() < 2 ) {
+            //CatalogCombinedKey key = getCombinedKey( catalogConstraint.keyId );
+            if ( catalogConstraint.type == ConstraintType.UNIQUE && isForeignKey( catalogConstraint.keyId ) ) {
+                if ( getKeyUniqueCount( catalogConstraint.keyId ) < 2 ) {
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. Unable to drop unique constraint." );
                 }
             }
             constraints.remove( catalogConstraint.id );
-            deleteKeyIfNoLongerUsed( key.getKey().id );
+            deleteKeyIfNoLongerUsed( catalogConstraint.keyId );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -2094,26 +2099,33 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    @Override
-    public CatalogCombinedKey getCombinedKey( long keyId ) {
-        return combinedKeys.get( keyId );
+    public List<CatalogIndex> getIndices( CatalogKey key ) {
+        return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
-    public CatalogCombinedKey buildCombinedKey( CatalogKey key ) throws GenericCatalogException {
-        try {
-            List<CatalogColumn> childColumns = key.columnIds.stream().map( columns::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
-            CatalogTable table = Objects.requireNonNull( tables.get( key.tableId ) );
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( key.schemaId ) );
-            CatalogDatabase database = Objects.requireNonNull( databases.get( key.databaseId ) );
-            List<CatalogForeignKey> childForeignKeys = foreignKeys.values().stream().filter( f -> f.referencedKeyId == key.id ).collect( Collectors.toList() );
-            List<CatalogIndex> childIndices = indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
-            List<CatalogConstraint> childConstraints = constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
+    public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
+        return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
+    }
 
-            return new CatalogCombinedKey( key, childColumns, table, schema, database, childForeignKeys, childIndices, childConstraints, childForeignKeys );
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
-        }
+
+    public List<CatalogConstraint> getConstraints( CatalogKey key ) {
+        return constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
+    }
+
+
+    public boolean isIndex( long keyId ) {
+        return indices.values().stream().anyMatch( i -> i.keyId == keyId );
+    }
+
+
+    public boolean isConstraint( long keyId ) {
+        return constraints.values().stream().anyMatch( c -> c.keyId == keyId );
+    }
+
+
+    public boolean isForeignKey( long keyId ) {
+        return foreignKeys.values().stream().anyMatch( f -> f.referencedKeyId == keyId );
     }
 
 
@@ -2140,7 +2152,6 @@ public class CatalogImpl extends Catalog {
                 return;
             }
             keys.remove( keyId );
-            combinedKeys.remove( keyId );
             keyColumns.remove( key.columnIds.stream().mapToLong( Long::longValue ).toArray() );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -2173,12 +2184,11 @@ public class CatalogImpl extends Catalog {
             List<String> names = columnIds.stream().map( columns::get ).filter( Objects::nonNull ).map( c -> c.name ).collect( Collectors.toList() );
             CatalogKey key = new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names );
             keys.put( id, key );
-            combinedKeys.put( id, buildCombinedKey( key ) );
             keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
 
             listeners.firePropertyChange( "addKey", null, key );
             return id;
-        } catch ( NullPointerException | GenericCatalogException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }

@@ -17,13 +17,6 @@
 package org.polypheny.db.catalog;
 
 
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.information.Information;
-import org.polypheny.db.transaction.PolyXid;
-
-
 public abstract class CatalogManager {
 
     public static CatalogManager INSTANCE = null;
@@ -43,8 +36,6 @@ public abstract class CatalogManager {
         return INSTANCE;
     }
 
-
-    public abstract Catalog getCatalog( PolyXid xid );
 
     public abstract Catalog getCatalog();
 
