@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -330,12 +329,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             throw new RuntimeException( e );
         }
         return catalogTable;
-    }
-
-    @Deprecated
-    private CatalogCombinedTable getCatalogCombinedTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
-        //return CatalogManager.getInstance().getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
-        return null;
     }
 
 
