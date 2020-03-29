@@ -749,7 +749,7 @@ public class Crud implements InformationObserver {
             }
 
         } catch (  QueryExecutionException | RuntimeException e ) {
-            e.printStackTrace();
+            log.error("Caught exception while executing a query for Exploration", e );
         }
 
         Explore explore = exploreManager.createSqlQuery(null, queryExplorationRequest.query, group);

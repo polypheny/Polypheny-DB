@@ -197,22 +197,19 @@ public class Explore {
         try {
             tree.setOptions( options );
         } catch ( Exception e ) {
-            log.error("setting options for Classification not possible");
-            e.printStackTrace();
+            log.error("Caught exception while setting options for Classification", e);
         }
 
         try {
             tree.buildClassifier( classifiedData );
         } catch ( Exception e ) {
-            log.error("build Classifier for tree not possible");
-            e.printStackTrace();
+            log.error("Caught exception while building Classifier", e);
         }
 
         try {
             this.buildGraph = tree.graph();
         } catch ( Exception e ) {
-            log.error("build graph tree not possible");
-            e.printStackTrace();
+            log.error("Caught exception while building tree graph", e);
         }
 
         return tree;
@@ -231,8 +228,7 @@ public class Explore {
             try {
                 clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
             } catch ( Exception e ) {
-                log.error("classification of unlabeled data not possible");
-                e.printStackTrace();
+                log.error("Caught exception while classifying unlabeled data", e);
             }
 
             labeled.instance( i ).setClassValue( clsLabel );
@@ -261,8 +257,7 @@ public class Explore {
             try {
                 clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
             } catch ( Exception e ) {
-                log.error("classification of unlabeled data not possible");
-                e.printStackTrace();
+                log.error("Caught exception while classifying all unlabeled data", e);
             }
 
             labeled.instance( i ).setClassValue( clsLabel );
