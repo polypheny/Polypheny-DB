@@ -142,9 +142,7 @@ public class CatalogImpl extends Catalog {
     public CatalogImpl( String path, boolean doInitSchema, boolean doInitInformationPage ) {
         super();
 
-        if ( db != null && !db.isClosed() ) {
-            return;
-        } else if ( db != null ) {
+        if ( db != null ) {
             db.close();
         }
         synchronized ( this ) {
