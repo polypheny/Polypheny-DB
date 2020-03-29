@@ -19,25 +19,19 @@ package org.polypheny.db.adapter.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.BatchType;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.RelationMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
-import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
-import com.datastax.oss.driver.api.querybuilder.update.Assignment;
+import com.github.nosan.embedded.cassandra.EmbeddedCassandraFactory;
+import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
@@ -64,12 +58,17 @@ public class CassandraStore extends Store {
     public static final String DESCRIPTION = "Apache Cassandra is an open-source key-value store designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Standalone", "Embedded" ) ),
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 9042 ),
             new AdapterSettingString( "keyspace", false, true, false, "cassandra" ),
             new AdapterSettingString( "username", false, true, false, "cassandra" ),
             new AdapterSettingString( "password", false, true, false, "" )
     );
+
+    // Running embedded
+    private final boolean isEmbedded;
+    private final Cassandra embeddedCassandra;
 
     // Connection information
     private String dbHostname;
@@ -92,6 +91,21 @@ public class CassandraStore extends Store {
         this.dbKeyspace = settings.get( "keyspace" );
         this.dbUsername = settings.get( "username" );
         this.dbPassword = settings.get( "password" );
+        this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
+
+        if ( this.isEmbedded ) {
+            // Setting up the embedded instance of cassandra.
+            EmbeddedCassandraFactory cassandraFactory = new EmbeddedCassandraFactory();
+//            cassandraFactory.setJavaHome( Paths.get( System.getenv( "JAVA_HOME" ) ) );
+            this.embeddedCassandra = cassandraFactory.create();
+            this.embeddedCassandra.start();
+
+            this.dbHostname = this.embeddedCassandra.getAddress().getHostAddress();
+            this.dbPort = this.embeddedCassandra.getPort();
+
+        } else {
+            this.embeddedCassandra = null;
+        }
 
         try {
             CqlSessionBuilder cluster = CqlSession.builder();
@@ -130,7 +144,7 @@ public class CassandraStore extends Store {
     @Override
     public Table createTableSchema( CatalogCombinedTable combinedTable ) {
         String physicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( combinedTable.getTable().id );
-        return new CassandraTable( this.currentSchema, combinedTable.getTable().name, physicalTableName,false );
+        return new CassandraTable( this.currentSchema, combinedTable.getTable().name, physicalTableName, false );
     }
 
 
@@ -150,7 +164,7 @@ public class CassandraStore extends Store {
         long primaryKeyColumn = -1;
         List<Long> keyColumns = new ArrayList<>();
 
-        for ( CatalogKey catalogKey: combinedTable.getKeys() ) {
+        for ( CatalogKey catalogKey : combinedTable.getKeys() ) {
             keyColumns.addAll( catalogKey.columnIds );
             // TODO JS: make sure there's only one primary key!
             if ( primaryKeyColumn == -1 ) {
@@ -185,7 +199,7 @@ public class CassandraStore extends Store {
                 throw new RuntimeException( e );
             }
             if ( keyColumns.contains( placement.columnId ) ) {
-                if ( placement.columnId!= primaryKeyColumn ) {
+                if ( placement.columnId != primaryKeyColumn ) {
                     createTable = createTable.withClusteringColumn( physicalNameProvider.generatePhysicalColumnName( placement.columnId ), CassandraTypesUtils.getDataType( catalogColumn.type ) );
                 }
             } else {
@@ -197,8 +211,7 @@ public class CassandraStore extends Store {
         context.getTransaction().registerInvolvedStore( this );
         this.session.execute( createTable.build() );
 
-
-        for ( CatalogColumnPlacement placement: combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
+        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
             try {
                 context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
                         getStoreId(),
@@ -381,6 +394,10 @@ public class CassandraStore extends Store {
     public void shutdown() {
         try {
             this.session.close();
+
+            if ( this.isEmbedded ) {
+                this.embeddedCassandra.stop();
+            }
         } catch ( RuntimeException e ) {
             log.warn( "Exception while shutting down " + getUniqueName(), e );
         }
