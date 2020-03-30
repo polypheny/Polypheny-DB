@@ -774,7 +774,7 @@ public class Crud implements InformationObserver {
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
+                log.error( "Caught exception while rollback", ex );
             }
         }
 
