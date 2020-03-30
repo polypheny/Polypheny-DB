@@ -22,7 +22,6 @@ import static org.junit.Assert.assertEquals;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -37,6 +36,7 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.type.PolyType;
 
 
 public class CatalogTest {
@@ -76,7 +76,7 @@ public class CatalogTest {
         CatalogTable table = catalog.getTable( tableId, "test_table" );
         assertEquals( tableId, table.id );
 
-        long columnId = catalog.addColumn( "test_column", tableId, 0, PolySqlType.BIGINT, null, null, false, null );
+        long columnId = catalog.addColumn( "test_column", tableId, 0, PolyType.BIGINT, null, null, false, null );
         CatalogColumn column = catalog.getColumn( tableId, "test_column" );
         assertEquals( columnId, column.id );
     }
