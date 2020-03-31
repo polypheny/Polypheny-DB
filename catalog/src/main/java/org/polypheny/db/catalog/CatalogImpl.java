@@ -517,8 +517,8 @@ public class CatalogImpl extends Catalog {
         databaseNames.put( name, database );
         databaseChildren.put( id, ImmutableList.<Long>builder().build() );
 
-        listeners.firePropertyChange( "database", null, database );
         db.commit();
+        listeners.firePropertyChange( "database", null, database );
         return id;
     }
 
@@ -538,6 +538,7 @@ public class CatalogImpl extends Catalog {
             userNames.put( user.name, user );
             db.commit();
         }
+        listeners.firePropertyChange( "user", null, user );
         return user.id;
     }
 
@@ -699,11 +700,11 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException {
         try {
-            CatalogDatabase database = databases.get( databaseId );
-            CatalogUser owner = users.get( ownerId );
+            CatalogDatabase database = Objects.requireNonNull( databases.get( databaseId ) );
+            CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
             long id = schemaIdBuilder.getAndIncrement();
+            CatalogSchema schema = new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType );
             synchronized ( this ) {
-                CatalogSchema schema = new CatalogSchema( id, name, databaseId, Objects.requireNonNull( database ).name, ownerId, Objects.requireNonNull( owner ).name, schemaType );
                 schemas.put( id, schema );
                 schemaNames.put( new Object[]{ databaseId, name }, schema );
                 schemaChildren.put( id, ImmutableList.<Long>builder().build() );
@@ -712,8 +713,8 @@ public class CatalogImpl extends Catalog {
                 databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
 
                 db.commit();
-                listeners.firePropertyChange( "schema", null, schema );
             }
+            listeners.firePropertyChange( "schema", null, schema );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -753,6 +754,7 @@ public class CatalogImpl extends Catalog {
 
                 db.commit();
             }
+            listeners.firePropertyChange( "schema", old, schema );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -773,9 +775,10 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
+                db.commit();
             }
+            listeners.firePropertyChange( "schema", old, schema );
 
-            db.commit();
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -801,13 +804,11 @@ public class CatalogImpl extends Catalog {
                 for ( Long id : Objects.requireNonNull( schemaChildren.get( schemaId ) ) ) {
                     deleteTable( id );
                 }
-
                 schemaChildren.remove( schemaId );
                 schemas.remove( schemaId );
-
                 db.commit();
-                listeners.firePropertyChange( "deleteSchema", null, schema );
             }
+            listeners.firePropertyChange( "Schema", schema, null );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -996,8 +997,8 @@ public class CatalogImpl extends Catalog {
                 schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
 
                 db.commit();
-                listeners.firePropertyChange( "addTable", null, table );
             }
+            listeners.firePropertyChange( "table", null, table );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -1032,7 +1033,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameTable( long tableId, String name ) throws GenericCatalogException {
         try {
-            CatalogTable table = CatalogTable.rename( Objects.requireNonNull( tables.get( tableId ) ), name );
+            CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
+            CatalogTable table = CatalogTable.rename( old, name );
             synchronized ( this ) {
                 tables.replace( tableId, table );
                 tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
@@ -1040,6 +1042,7 @@ public class CatalogImpl extends Catalog {
 
                 db.commit();
             }
+            listeners.firePropertyChange( "table", old, table );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1060,8 +1063,8 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
 
-                for ( Long columId : Objects.requireNonNull( tableChildren.get( tableId ) ) ) {
-                    deleteColumn( columId );
+                for ( Long columnId : Objects.requireNonNull( tableChildren.get( tableId ) ) ) {
+                    deleteColumn( columnId );
                 }
 
                 tableChildren.remove( tableId );
@@ -1069,8 +1072,8 @@ public class CatalogImpl extends Catalog {
                 tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
 
                 db.commit();
-                listeners.firePropertyChange( "deleteTable", null, table );
             }
+            listeners.firePropertyChange( "table", table, null );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1086,13 +1089,15 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
         try {
-            CatalogTable table = CatalogTable.replaceOwner( Objects.requireNonNull( tables.get( tableId ) ), ownerId );
+            CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
+            CatalogTable table = CatalogTable.replaceOwner( old, ownerId );
             synchronized ( this ) {
                 tables.replace( tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
                 db.commit();
             }
+            listeners.firePropertyChange( "table", old, table );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1109,7 +1114,8 @@ public class CatalogImpl extends Catalog {
     public void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException {
 
         try {
-            CatalogTable table = CatalogTable.replacePrimary( Objects.requireNonNull( tables.get( tableId ) ), keyId );
+            CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
+            CatalogTable table = CatalogTable.replacePrimary( old, keyId );
             synchronized ( this ) {
                 tables.replace( tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1118,6 +1124,7 @@ public class CatalogImpl extends Catalog {
                 }
                 db.commit();
             }
+            listeners.firePropertyChange( "table", old, table );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1140,16 +1147,17 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
             CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
+            CatalogColumnPlacement placement = new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName );
 
             synchronized ( this ) {
-                columnPlacements.put( new Object[]{ storeId, columnId }, new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName ) );
+                columnPlacements.put( new Object[]{ storeId, columnId }, placement );
                 CatalogTable table = CatalogTable.addColumnPlacement( Objects.requireNonNull( tables.get( column.tableId ) ), columnId, storeId );
                 tables.replace( column.tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
                 db.commit();
-                listeners.firePropertyChange( "addColumnPlacement", null, column );
             }
+            listeners.firePropertyChange( "columnPlacement", null, placement );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1173,8 +1181,8 @@ public class CatalogImpl extends Catalog {
                 columnPlacements.remove( new Object[]{ storeId, columnId } );
 
                 db.commit();
-                listeners.firePropertyChange( "deleteColumnPlacement", null, columnId );
             }
+            listeners.firePropertyChange( "columnPlacement", table, null );
         } catch ( UnknownTableException | UnknownColumnException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1248,6 +1256,7 @@ public class CatalogImpl extends Catalog {
 
                 db.commit();
             }
+            listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnPlacementException( storeId, columnId );
         }
@@ -1386,7 +1395,7 @@ public class CatalogImpl extends Catalog {
             long id = columnIdBuilder.getAndIncrement();
             CatalogColumn column = new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null );
 
-            synchronized ( this ){
+            synchronized ( this ) {
                 columns.put( id, column );
                 columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, name }, column );
                 List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( tableId ) ) );
@@ -1397,8 +1406,8 @@ public class CatalogImpl extends Catalog {
                 tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
 
                 db.commit();
-                listeners.firePropertyChange( "addColumn", null, column );
             }
+            listeners.firePropertyChange( "column", null, column );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -1427,6 +1436,7 @@ public class CatalogImpl extends Catalog {
 
                 db.commit();
             }
+            listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1450,6 +1460,7 @@ public class CatalogImpl extends Catalog {
 
                 db.commit();
             }
+            listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( columnId );
         }
@@ -1466,17 +1477,18 @@ public class CatalogImpl extends Catalog {
     public void setColumnType( long columnId, PolyType type, Integer length, Integer scale ) throws GenericCatalogException {
         try {
 
-            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
 
             if ( scale != null && scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
             Collation collation = type.getFamily() == PolyTypeFamily.CHARACTER ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
+            CatalogColumn column = CatalogColumn.replaceColumnType( old, type, length, scale, collation );
             synchronized ( this ) {
-                columns.replace( columnId, CatalogColumn.replaceColumnType( column, type, length, scale, collation ) );
-
+                columns.replace( columnId, column );
                 db.commit();
             }
+            listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException | UnknownCollationException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1512,6 +1524,7 @@ public class CatalogImpl extends Catalog {
                 columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
                 db.commit();
             }
+            listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException | UnknownKeyException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1528,16 +1541,17 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setCollation( long columnId, Collation collation ) throws UnknownColumnException {
         try {
-            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
 
-            if ( column.type.getFamily() != PolyTypeFamily.CHARACTER ) {
+            if ( old.type.getFamily() != PolyTypeFamily.CHARACTER ) {
                 throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
             }
-
+            CatalogColumn column = CatalogColumn.replaceCollation( old, collation );
             synchronized ( this ) {
-                columns.replace( columnId, CatalogColumn.replaceCollation( column, collation ) );
+                columns.replace( columnId, column );
                 db.commit();
             }
+            listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( columnId );
         }
@@ -1575,6 +1589,8 @@ public class CatalogImpl extends Catalog {
 
             List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( column.tableId ) ) );
             children.remove( columnId );
+            CatalogTable table = CatalogTable.removeColumn( getTable( column.tableId ), columnId, column.name );
+
             synchronized ( this ) {
                 columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
                 tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
@@ -1583,15 +1599,14 @@ public class CatalogImpl extends Catalog {
                 for ( CatalogColumnPlacement p : getColumnPlacements( columnId ) ) {
                     deleteColumnPlacement( p.storeId, p.columnId );
                 }
-                CatalogTable table = CatalogTable.removeColumn( getTable( column.tableId ), columnId, column.name );
                 tables.replace( column.tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
                 columns.remove( columnId );
 
                 db.commit();
-                listeners.firePropertyChange( "deleteColumn", null, column );
             }
+            listeners.firePropertyChange( "column", column, null );
         } catch ( NullPointerException | UnknownColumnException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1611,7 +1626,6 @@ public class CatalogImpl extends Catalog {
     public void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws UnknownColumnException {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
-            // TODO DL also fix call
             CatalogColumn column = CatalogColumn.replaceDefaultValue( old, new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) );
             synchronized ( this ) {
                 columns.replace( columnId, column );
@@ -1619,6 +1633,7 @@ public class CatalogImpl extends Catalog {
 
                 db.commit();
             }
+            listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( columnId );
         }
@@ -1633,12 +1648,14 @@ public class CatalogImpl extends Catalog {
     @Override
     public void deleteDefaultValue( long columnId ) throws UnknownColumnException {
         try {
-            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn column = CatalogColumn.replaceDefaultValue( old, null );
             if ( column.defaultValue != null ) {
                 synchronized ( this ) {
-                    columns.replace( columnId, CatalogColumn.replaceDefaultValue( column, null ) );
+                    columns.replace( columnId, column );
                     db.commit();
                 }
+                listeners.firePropertyChange( "column", old, column );
             }
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( columnId );
@@ -1699,8 +1716,10 @@ public class CatalogImpl extends Catalog {
                     // This primary key is the only constraint for the uniqueness of this key.
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
                 }
-                setPrimaryKey( tableId, null );
-                deleteKeyIfNoLongerUsed( table.primaryKey );
+                synchronized ( this ) {
+                    setPrimaryKey( tableId, null );
+                    deleteKeyIfNoLongerUsed( table.primaryKey );
+                }
             }
             long keyId = getOrAddKey( tableId, columnIds );
             setPrimaryKey( tableId, keyId );
@@ -1844,6 +1863,7 @@ public class CatalogImpl extends Catalog {
                             foreignKeys.put( keyId, key );
                             db.commit();
                         }
+                        listeners.firePropertyChange( "foreignKey", null, key );
                         return;
                     }
 
@@ -1878,6 +1898,7 @@ public class CatalogImpl extends Catalog {
                 constraints.put( id, new CatalogConstraint( id, keyId, ConstraintType.UNIQUE, constraintName, Objects.requireNonNull( keys.get( keyId ) ) ) );
                 db.commit();
             }
+            listeners.firePropertyChange( "constraint", null, keyId );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -1939,6 +1960,7 @@ public class CatalogImpl extends Catalog {
             indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
             db.commit();
         }
+        listeners.firePropertyChange( "index", null, keyId );
         return id;
     }
 
@@ -1963,6 +1985,7 @@ public class CatalogImpl extends Catalog {
                 indices.remove( indexId );
                 db.commit();
             }
+            listeners.firePropertyChange( "index", index.key, null );
             deleteKeyIfNoLongerUsed( index.keyId );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -2014,6 +2037,7 @@ public class CatalogImpl extends Catalog {
                 db.commit();
                 deleteKeyIfNoLongerUsed( catalogForeignKey.id );
             }
+            listeners.firePropertyChange( "foreignKey", foreignKeyId, null );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -2041,6 +2065,7 @@ public class CatalogImpl extends Catalog {
                 constraints.remove( catalogConstraint.id );
                 db.commit();
             }
+            listeners.firePropertyChange( "constraint", catalogConstraint, null );
             deleteKeyIfNoLongerUsed( catalogConstraint.keyId );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -2120,6 +2145,7 @@ public class CatalogImpl extends Catalog {
             storeNames.put( uniqueName, store );
             db.commit();
         }
+        listeners.firePropertyChange( "store", null, store );
         return id;
     }
 
@@ -2139,6 +2165,7 @@ public class CatalogImpl extends Catalog {
                 storeNames.remove( store.uniqueName );
                 db.commit();
             }
+            listeners.firePropertyChange( "store", store, null );
         } catch ( NullPointerException e ) {
             throw new UnknownStoreException( storeId );
         }
@@ -2214,6 +2241,7 @@ public class CatalogImpl extends Catalog {
                 keyColumns.remove( key.columnIds.stream().mapToLong( Long::longValue ).toArray() );
                 db.commit();
             }
+            listeners.firePropertyChange( "key", key, null );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
@@ -2244,11 +2272,13 @@ public class CatalogImpl extends Catalog {
             long id = keyIdBuilder.getAndIncrement();
             List<String> names = columnIds.stream().map( columns::get ).filter( Objects::nonNull ).map( c -> c.name ).collect( Collectors.toList() );
             CatalogKey key = new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names );
-            keys.put( id, key );
-            keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
+            synchronized ( this ) {
+                keys.put( id, key );
+                keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
 
-            listeners.firePropertyChange( "addKey", null, key );
-            db.commit();
+                db.commit();
+            }
+            listeners.firePropertyChange( "key", null, key );
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
