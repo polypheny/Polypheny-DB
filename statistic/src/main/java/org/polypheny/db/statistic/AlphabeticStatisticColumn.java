@@ -19,8 +19,8 @@ package org.polypheny.db.statistic;
 
 import com.google.gson.annotations.Expose;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -34,12 +34,12 @@ public class AlphabeticStatisticColumn<T extends Comparable<T>> extends Statisti
     private final String columnType = "alphabetic";
 
 
-    public AlphabeticStatisticColumn( String schema, String table, String column, PolySqlType type ) {
+    public AlphabeticStatisticColumn( String schema, String table, String column, PolyType type ) {
         super( schema, table, column, type );
     }
 
 
-    public AlphabeticStatisticColumn( String[] splitColumn, PolySqlType type ) {
+    public AlphabeticStatisticColumn( String[] splitColumn, PolyType type ) {
         super( splitColumn[0], splitColumn[1], splitColumn[2], type );
     }
 

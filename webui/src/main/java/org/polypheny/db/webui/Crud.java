@@ -73,9 +73,7 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
-import org.polypheny.db.PolySqlType;
 import org.polypheny.db.SqlProcessor;
-import org.polypheny.db.UnknownTypeException;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
 import org.polypheny.db.adapter.StoreManager;
@@ -85,6 +83,7 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -131,6 +130,9 @@ import org.polypheny.db.statistic.exploreByExample.ExploreManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.UnknownTypeException;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
@@ -462,6 +464,9 @@ public class Crud implements InformationObserver {
         }
         query.append( colJoiner.toString() );
         query.append( ")" );
+        if ( request.store != null && !request.store.equals( "" ) ) {
+            query.append( String.format( " ON STORE \"%s\"", request.store ) );
+        }
 
         try {
             int a = executeSqlUpdate( transaction, query.toString() );
@@ -495,19 +500,19 @@ public class Crud implements InformationObserver {
         query.append( "INSERT INTO " ).append( tableId );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
+        Map<String, PolyType> dataTypes = getColumnTypes( t[0], t[1] );
         for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
             cols.add( "\"" + entry.getKey() + "\"" );
             String value = entry.getValue();
             if ( value == null ) {
                 value = "NULL";
-            } else if ( dataTypes.get( entry.getKey() ).isCharType() ) {
+            } else if ( dataTypes.get( entry.getKey() ).getFamily() == PolyTypeFamily.CHARACTER ) {
                 value = "'" + StringEscapeUtils.escapeSql( value ) + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.DATE ) {
+            } else if ( dataTypes.get( entry.getKey() ) == PolyType.DATE ) {
                 value = "DATE '" + value + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIME ) {
+            } else if ( dataTypes.get( entry.getKey() ) == PolyType.TIME ) {
                 value = "TIME '" + value + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolySqlType.TIMESTAMP ) {
+            } else if ( dataTypes.get( entry.getKey() ) == PolyType.TIMESTAMP ) {
                 value = "TIMESTAMP '" + value + "'";
             }
             values.add( value );
@@ -547,7 +552,8 @@ public class Crud implements InformationObserver {
         ArrayList<Result> results = new ArrayList<>();
         boolean autoCommit = true;
 
-        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed and in case of auto commit of, the information is overwritten
+        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
+        // and in case of auto commit of, the information is overwritten
         InformationManager queryAnalyzer = null;
         if ( request.analyze ) {
             queryAnalyzer = transaction.getQueryAnalyzer().observe( this );
@@ -573,6 +579,7 @@ public class Crud implements InformationObserver {
         //remove whitespace at the end
         allQueries = allQueries.replaceAll( "(\\s*)$", "" );
         String[] queries = allQueries.split( ";", 0 );
+        boolean noLimit = false;
         for ( String query : queries ) {
             Result result;
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
@@ -604,8 +611,12 @@ public class Crud implements InformationObserver {
                 if ( !p2.matcher( query ).find() ) {
                     query = query + " LIMIT " + getPageSize();
                 }
-                // decrease limit if it is too large
+                //If the user specifies a limit
                 else {
+                    noLimit = true;
+                }
+                // decrease limit if it is too large
+                /*else {
                     Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
                     Matcher limitMatcher = pattern.matcher( query );
                     if ( limitMatcher.find() ) {
@@ -615,10 +626,10 @@ public class Crud implements InformationObserver {
                             query = limitMatcher.replaceFirst( "$1 " + getPageSize() );
                         }
                     }
-                }
+                }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction, request, query ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = executeSqlSelect( transaction, request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
@@ -800,8 +811,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Delete a row from a table.
-     * The row is determined by the value of every column in that row (conjunction).
+     * Delete a row from a table. The row is determined by the value of every column in that row (conjunction).
      * The transaction is being rolled back, if more that one row would be deleted.
      * TODO: This is not a nice solution
      */
@@ -814,13 +824,13 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
         builder.append( "DELETE FROM " ).append( tableId ).append( " WHERE " );
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
-        Map<String, PolySqlType> dataTypes = getColumnTypes( t[0], t[1] );
+        Map<String, PolyType> dataTypes = getColumnTypes( t[0], t[1] );
         String column = "";
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             String condition;
             if ( entry.getValue() == null ) {
                 condition = String.format( "\"%s\" IS NULL", entry.getKey() );
-            } else if ( !dataTypes.get( entry.getKey() ).isCharType() ) {
+            } else if ( dataTypes.get( entry.getKey() ).getFamily() != PolyTypeFamily.CHARACTER ) {
                 condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
             } else {
                 condition = String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) );
@@ -842,7 +852,8 @@ public class Crud implements InformationObserver {
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
                 transaction.rollback();
-                result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+                result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." );
+                result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while deleting a row", e );
@@ -896,7 +907,8 @@ public class Crud implements InformationObserver {
                 result = new Result( new Debug().setAffectedRows( numOfRows ) );
             } else {
                 transaction.rollback();
-                result = new Result( "Attempt to update " + numOfRows + " rows was blocked." ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+                result = new Result( "Attempt to update " + numOfRows + " rows was blocked." );
+                result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while updating a row", e );
@@ -1133,6 +1145,18 @@ public class Crud implements InformationObserver {
             }
         }
         return result;
+    }
+
+
+    /**
+     * Get artificially generated index/foreign key/constraint names for placeholders in the UI
+     */
+    Result getGeneratedNames( final Request req, final Response res ) {
+        String[] data = new String[3];
+        data[0] = NameGenerator.generateConstraintName();
+        data[1] = NameGenerator.generateForeignKeyName();
+        data[2] = NameGenerator.generateIndexName();
+        return new Result( new DbColumn[0], new String[][]{ data } );
     }
 
 
@@ -1423,16 +1447,24 @@ public class Crud implements InformationObserver {
             CatalogTable table = transaction.getCatalog().getTable( databaseName, schemaName, tableName );
             CatalogCombinedTable combinedTable = transaction.getCatalog().getCombinedTable( table.id );
             Map<Integer, List<CatalogColumnPlacement>> placementsByStore = combinedTable.getColumnPlacementsByStore();
-            DbColumn[] header = { new DbColumn( "Store" ), new DbColumn( "Adapter" ), new DbColumn( "Columns" ) };
+            DbColumn[] header = {
+                    new DbColumn( "Store" ),
+                    new DbColumn( "Adapter" ),
+                    new DbColumn( "DataReadOnly" ),
+                    new DbColumn( "SchemaReadOnly" ),
+                    new DbColumn( "Columns" )
+            };
 
             ArrayList<String[]> data = new ArrayList<>();
             for ( Entry<Integer, List<CatalogColumnPlacement>> entrySet : placementsByStore.entrySet() ) {
                 Store store = StoreManager.getInstance().getStore( entrySet.getKey() );
                 List<CatalogColumnPlacement> placements = entrySet.getValue();
-                String[] arr = new String[3];
+                String[] arr = new String[5];
                 arr[0] = store.getUniqueName();
                 arr[1] = store.getAdapterName();
-                arr[2] = "";
+                arr[2] = String.valueOf( store.isDataReadOnly() );
+                arr[3] = String.valueOf( store.isSchemaReadOnly() );
+                arr[4] = "";
                 boolean first = true;
                 for ( CatalogColumnPlacement p : placements ) {
                     String prefix = ", ";
@@ -1445,13 +1477,13 @@ public class Crud implements InformationObserver {
                         prefix += "<b>";
                         suffix += "</b>";
                     }
-                    arr[2] += prefix + p.columnName + suffix;
+                    arr[4] += prefix + p.columnName + suffix;
                 }
 
                 data.add( arr );
             }
 
-            result = new Result( header, data.toArray( new String[0][2] ) );
+            result = new Result( header, data.toArray( new String[0][4] ) );
             transaction.commit();
         } catch ( GenericCatalogException | UnknownTableException | TransactionException e ) {
             log.error( "Caught exception while getting placements", e );
@@ -1463,6 +1495,29 @@ public class Crud implements InformationObserver {
             }
         }
         return result;
+    }
+
+
+    /**
+     * Add or drop a data placement.
+     * Parameter of type models.Index: index name corresponds to storeUniqueName
+     * Index method: either 'ADD' or 'DROP'
+     */
+    Result addDropPlacement( final Request req, final Response res ) {
+        Index index = gson.fromJson( req.body(), Index.class );
+        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+            return new Result( "Invalid request" );
+        }
+        String query = String.format( "ALTER TABLE %s.%s %s PLACEMENT %s", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
+        Transaction transaction = getTransaction();
+        int affectedRows = 0;
+        try {
+            affectedRows = executeSqlUpdate( transaction, query );
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
+            return new Result( e );
+        }
+        return new Result( new Debug().setAffectedRows( affectedRows ) );
     }
 
 
@@ -1488,6 +1543,8 @@ public class Crud implements InformationObserver {
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
+            jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
+            jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
             return jsonStore;
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
@@ -1567,7 +1624,7 @@ public class Crud implements InformationObserver {
     /**
      * Remove an existing store
      */
-    boolean removeStore( final Request req, final Response res ) {
+    Result removeStore( final Request req, final Response res ) {
         String uniqueName = req.body();
         Transaction trx = null;
         try {
@@ -1583,16 +1640,14 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Error while rolling back the transaction", e );
             }
-            return false;
+            return new Result( e );
         }
-        return true;
+        return new Result( new Debug().setAffectedRows( 1 ) );
     }
 
 
     /**
-     * Get the required information for the uml view:
-     * Foreign keys
-     * Tables with its columns
+     * Get the required information for the uml view: Foreign keys, Tables with its columns
      */
     Uml getUml( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
@@ -1720,6 +1775,8 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction( true );
         transaction.resetQueryProcessor();
 
+        transaction.getQueryAnalyzer().observe( this );
+
         RelNode result;
         try {
             result = QueryPlanBuilder.buildFromTree( topNode, transaction );
@@ -1838,22 +1895,22 @@ public class Crud implements InformationObserver {
         ArrayList<String[]> data = new ArrayList<>();
 
         /*
-        for ( SqlTypeName sqlTypeName : SqlTypeName.values() ) {
+        for ( PolyType polyType : PolyType.values() ) {
             // ignore types that are not relevant
-            if ( sqlTypeName.getJdbcOrdinal() < -500 || sqlTypeName.getJdbcOrdinal() > 500 ) {
+            if ( polyType.getJdbcOrdinal() < -500 || polyType.getJdbcOrdinal() > 500 ) {
                 continue;
             }
             String[] row = new String[1];
             for ( int i = 1; i <= 18; i++ ) {
-                row[0] = sqlTypeName.name();
+                row[0] = polyType.name();
             }
             data.add( row );
         }
          */
 
-        for ( PolySqlType polySqlType : PolySqlType.values() ) {
+        for ( PolyType polyType : PolyType.availableTypes() ) {
             String[] row = new String[1];
-            row[0] = polySqlType.name();
+            row[0] = polyType.name();
             data.add( row );
         }
 
@@ -2027,13 +2084,13 @@ public class Crud implements InformationObserver {
                 while ( (nextRecord = csvReader.readNext()) != null ) {
                     rowJoiner = new StringJoiner( ",", "(", ")" );
                     for ( int i = 0; i < table.getColumns().size(); i++ ) {
-                        if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ).isCharType() ) {
+                        if ( PolyType.get( table.getColumns().get( i ).type ).getFamily() == PolyTypeFamily.CHARACTER ) {
                             rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.DATE ) {
+                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.DATE ) {
                             rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIME ) {
+                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIME ) {
                             rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolySqlType.getPolySqlTypeFromSting( table.getColumns().get( i ).type ) == PolySqlType.TIMESTAMP ) {
+                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIMESTAMP ) {
                             rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
                         } else {
                             rowJoiner.add( nextRecord[i] );
@@ -2497,11 +2554,11 @@ public class Crud implements InformationObserver {
      * Get the data types of each column of a table
      *
      * @param schemaName name of the schema
-     * @param tableName name of the table
+     * @param tableName  name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
-    private Map<String, PolySqlType> getColumnTypes( String schemaName, String tableName ) {
-        Map<String, PolySqlType> dataTypes = new HashMap<>();
+    private Map<String, PolyType> getColumnTypes( String schemaName, String tableName ) {
+        Map<String, PolyType> dataTypes = new HashMap<>();
         Transaction transaction = getTransaction();
         try {
             CatalogTable table = transaction.getCatalog().getTable( this.databaseName, schemaName, tableName );
@@ -2517,8 +2574,8 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Helper function to delete a directory
-     * from https://www.baeldung.com/java-delete-directory
+     * Helper function to delete a directory.
+     * Taken from https://www.baeldung.com/java-delete-directory
      */
     boolean deleteDirectory( final File directoryToBeDeleted ) {
         File[] allContents = directoryToBeDeleted.listFiles();

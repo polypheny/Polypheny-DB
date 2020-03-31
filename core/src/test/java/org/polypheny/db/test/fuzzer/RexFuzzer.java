@@ -44,8 +44,8 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.test.RexProgramBuilderBase;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -121,7 +121,7 @@ public class RexFuzzer extends RexProgramBuilderBase {
         this.rexBuilder = rexBuilder;
         this.typeFactory = typeFactory;
 
-        intType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+        intType = typeFactory.createPolyType( PolyType.INTEGER );
         nullableIntType = typeFactory.createTypeWithNullability( intType, true );
     }
 

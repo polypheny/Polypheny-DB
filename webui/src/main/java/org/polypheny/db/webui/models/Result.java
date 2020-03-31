@@ -64,6 +64,10 @@ public class Result {
      */
     private String error;
     /**
+     * Exception with additional information
+     */
+    private Throwable exception;
+    /**
      * Info about a query
      */
     private Debug info;
@@ -103,6 +107,7 @@ public class Result {
      * @param e exception
      */
     public Result( Throwable e ) {
+        this.exception = e;
         if ( e.getMessage() != null ) {
             this.error = e.getMessage();
         } else {

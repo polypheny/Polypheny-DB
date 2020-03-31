@@ -60,7 +60,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
@@ -333,8 +333,8 @@ public class CassandraFilter extends Filter implements CassandraRel {
             Object value = literalValue( right );
             String valueString = value.toString();
             if ( value instanceof String ) {
-                SqlTypeName typeName = rowType.getField( name, true, false ).getType().getSqlTypeName();
-                if ( typeName != SqlTypeName.CHAR ) {
+                PolyType typeName = rowType.getField( name, true, false ).getType().getPolyType();
+                if ( typeName != PolyType.CHAR ) {
                     valueString = "'" + valueString + "'";
                 }
             }

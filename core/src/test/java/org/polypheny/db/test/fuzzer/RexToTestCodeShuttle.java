@@ -45,7 +45,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -120,19 +120,19 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
     public String visitLiteral( RexLiteral literal ) {
         RelDataType type = literal.getType();
 
-        if ( type.getSqlTypeName() == SqlTypeName.BOOLEAN ) {
+        if ( type.getPolyType() == PolyType.BOOLEAN ) {
             if ( literal.isNull() ) {
                 return "nullBool";
             }
             return literal.toString() + "Literal";
         }
-        if ( type.getSqlTypeName() == SqlTypeName.INTEGER ) {
+        if ( type.getPolyType() == PolyType.INTEGER ) {
             if ( literal.isNull() ) {
                 return "nullInt";
             }
             return "literal(" + literal.getValue() + ")";
         }
-        if ( type.getSqlTypeName() == SqlTypeName.VARCHAR ) {
+        if ( type.getPolyType() == PolyType.VARCHAR ) {
             if ( literal.isNull() ) {
                 return "nullVarchar";
             }
@@ -146,7 +146,7 @@ public class RexToTestCodeShuttle extends RexVisitorImpl<String> {
         StringBuilder sb = new StringBuilder();
         sb.append( "v" );
         RelDataType type = fieldAccess.getType();
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case BOOLEAN:
                 sb.append( "Bool" );
                 break;

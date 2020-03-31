@@ -130,15 +130,15 @@ import org.polypheny.db.sql.SqlWithItem;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.AssignableOperandTypeChecker;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeInference;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlShuttle;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql2rel.InitializerContext;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.AssignableOperandTypeChecker;
+import org.polypheny.db.type.inference.PolyOperandTypeInference;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.BitString;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -289,7 +289,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         this.conformance = Objects.requireNonNull( conformance );
 
         unknownType = typeFactory.createUnknownType();
-        booleanType = typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+        booleanType = typeFactory.createPolyType( PolyType.BOOLEAN );
 
         rewriteCalls = true;
         expandColumnReferences = true;
@@ -561,7 +561,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private SqlNode maybeCast( SqlNode node, RelDataType currentType, RelDataType desiredType ) {
         return currentType.equals( desiredType ) || (currentType.isNullable() != desiredType.isNullable() && typeFactory.createTypeWithNullability( currentType, desiredType.isNullable() ).equals( desiredType ))
                 ? node
-                : SqlStdOperatorTable.CAST.createCall( SqlParserPos.ZERO, node, SqlTypeUtil.convertTypeToSpec( desiredType ) );
+                : SqlStdOperatorTable.CAST.createCall( SqlParserPos.ZERO, node, PolyTypeUtil.convertTypeToSpec( desiredType ) );
     }
 
 
@@ -1031,10 +1031,10 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     private void handleOffsetFetch( SqlNode offset, SqlNode fetch ) {
         if ( offset instanceof SqlDynamicParam ) {
-            setValidatedNodeType( offset, typeFactory.createSqlType( SqlTypeName.INTEGER ) );
+            setValidatedNodeType( offset, typeFactory.createPolyType( PolyType.INTEGER ) );
         }
         if ( fetch instanceof SqlDynamicParam ) {
-            setValidatedNodeType( fetch, typeFactory.createSqlType( SqlTypeName.INTEGER ) );
+            setValidatedNodeType( fetch, typeFactory.createPolyType( PolyType.INTEGER ) );
         }
     }
 
@@ -1676,7 +1676,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             // REVIEW:  should dynamic parameter types always be nullable?
             RelDataType newInferredType = typeFactory.createTypeWithNullability( inferredType, true );
-            if ( SqlTypeUtil.inCharFamily( inferredType ) ) {
+            if ( PolyTypeUtil.inCharFamily( inferredType ) ) {
                 newInferredType = typeFactory.createTypeWithCharsetAndCollation( newInferredType, inferredType.getCharset(), inferredType.getCollation() );
             }
             setValidatedNodeType( node, newInferredType );
@@ -1723,7 +1723,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             inferUnknownTypes( inferredType, scope, ((SqlCall) node).operand( 0 ) );
         } else if ( node instanceof SqlCall ) {
             final SqlCall call = (SqlCall) node;
-            final SqlOperandTypeInference operandTypeInference = call.getOperator().getOperandTypeInference();
+            final PolyOperandTypeInference operandTypeInference = call.getOperator().getOperandTypeInference();
             final SqlCallBinding callBinding = new SqlCallBinding( this, scope, call );
             final List<SqlNode> operands = callBinding.operands();
             final RelDataType[] operandTypes = new RelDataType[operands.size()];
@@ -3015,7 +3015,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     SqlIdentifier id = (SqlIdentifier) node;
                     final RelDataType leftColType = validateUsingCol( id, left );
                     final RelDataType rightColType = validateUsingCol( id, right );
-                    if ( !SqlTypeUtil.isComparable( leftColType, rightColType ) ) {
+                    if ( !PolyTypeUtil.isComparable( leftColType, rightColType ) ) {
                         throw newValidationError(
                                 id,
                                 RESOURCE.naturalOrUsingColumnNotCompatible(
@@ -3047,7 +3047,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             for ( String name : naturalColumnNames ) {
                 final RelDataType leftColType = nameMatcher.field( leftRowType, name ).getType();
                 final RelDataType rightColType = nameMatcher.field( rightRowType, name ).getType();
-                if ( !SqlTypeUtil.isComparable( leftColType, rightColType ) ) {
+                if ( !PolyTypeUtil.isComparable( leftColType, rightColType ) ) {
                     throw newValidationError( join, RESOURCE.naturalOrUsingColumnNotCompatible( name, leftColType.toString(), rightColType.toString() ) );
                 }
             }
@@ -3859,7 +3859,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         condition.validate( this, scope );
 
         final RelDataType type = deriveType( scope, condition );
-        if ( !SqlTypeUtil.inBooleanFamily( type ) ) {
+        if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
             throw newValidationError( condition, RESOURCE.condMustBeBoolean( clause ) );
         }
     }
@@ -3884,7 +3884,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         inferUnknownTypes( booleanType, havingScope, having );
         having.validate( this, havingScope );
         final RelDataType type = deriveType( havingScope, having );
-        if ( !SqlTypeUtil.inBooleanFamily( type ) ) {
+        if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
             throw newValidationError( having, RESOURCE.havingMustBeBoolean() );
         }
     }
@@ -4281,7 +4281,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         for ( int i = 0; i < sourceCount; ++i ) {
             RelDataType sourceType = sourceFields.get( i ).getType();
             RelDataType targetType = targetFields.get( i ).getType();
-            if ( !SqlTypeUtil.canAssignFrom( targetType, sourceType ) ) {
+            if ( !PolyTypeUtil.canAssignFrom( targetType, sourceType ) ) {
                 // FRG-255:  account for UPDATE rewrite; there's probably a better way to do this.
                 int iAdjusted = i;
                 if ( query instanceof SqlUpdate ) {
@@ -4292,7 +4292,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 SqlNode node = getNthExpr( query, iAdjusted, sourceCount );
                 String targetTypeString;
                 String sourceTypeString;
-                if ( SqlTypeUtil.areCharacterSetsMismatched( sourceType, targetType ) ) {
+                if ( PolyTypeUtil.areCharacterSetsMismatched( sourceType, targetType ) ) {
                     sourceTypeString = sourceType.getFullTypeString();
                     targetTypeString = targetType.getFullTypeString();
                 } else {
@@ -4771,7 +4771,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 identifier = (SqlIdentifier) firstOrderByColumn;
             }
             RelDataType firstOrderByColumnType = deriveType( scope, identifier );
-            if ( firstOrderByColumnType.getSqlTypeName() != SqlTypeName.TIMESTAMP ) {
+            if ( firstOrderByColumnType.getPolyType() != PolyType.TIMESTAMP ) {
                 throw newValidationError( interval, RESOURCE.firstColumnOfOrderByMustBeTimestamp() );
             }
 
@@ -4912,7 +4912,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                             new SqlIdentifier( alias, SqlParserPos.ZERO ) ) );
 
             final RelDataType type = deriveType( scope, expand );
-            if ( !SqlTypeUtil.inBooleanFamily( type ) ) {
+            if ( !PolyTypeUtil.inBooleanFamily( type ) ) {
                 throw newValidationError( expand, RESOURCE.condMustBeBoolean( "DEFINE" ) );
             }
             setValidatedNodeType( item, type );
@@ -5456,7 +5456,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 }
                 type = field.getType();
             }
-            type = SqlTypeUtil.addCharsetAndCollation( type, getTypeFactory() );
+            type = PolyTypeUtil.addCharsetAndCollation( type, getTypeFactory() );
             return type;
         }
 
@@ -6192,7 +6192,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                     final RelDataType type1 = field1.getValue();
                     // output is nullable only if both inputs are
                     final boolean nullable = type.isNullable() && type1.isNullable();
-                    final RelDataType type2 = SqlTypeUtil.leastRestrictiveForComparison( typeFactory, type, type1 );
+                    final RelDataType type2 = PolyTypeUtil.leastRestrictiveForComparison( typeFactory, type, type1 );
                     selectItem =
                             SqlStdOperatorTable.AS.createCall(
                                     SqlParserPos.ZERO,

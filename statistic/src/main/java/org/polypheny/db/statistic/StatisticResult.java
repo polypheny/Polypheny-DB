@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
-import org.polypheny.db.PolySqlType;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -49,7 +49,7 @@ public class StatisticResult {
      *
      * @param data answer per stat as a two-dimensional array
      */
-    public StatisticResult( List<String> names, List<PolySqlType> type, String[][] data ) {
+    public StatisticResult( List<String> names, List<PolyType> type, String[][] data ) {
         if ( data.length == 0 || data[0].length == 0 ) {
             this.columns = new StatisticQueryColumn[0];
         } else {

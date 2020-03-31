@@ -54,7 +54,6 @@ import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.parser.SqlParserUtil;
 import org.polypheny.db.sql.parser.SqlParserUtil.StringAndPos;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.util.SqlShuttle;
 import org.polypheny.db.sql.utils.SqlValidatorTestCase.Tester;
 import org.polypheny.db.sql.validate.SqlConformance;
@@ -64,6 +63,7 @@ import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.test.SqlTestFactory;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TestUtil;
 import org.polypheny.db.util.Util;
@@ -587,7 +587,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
                     @Override
                     public SqlNode visit( SqlLiteral literal ) {
-                        if ( !isNull( literal ) && literal.getTypeName() != SqlTypeName.SYMBOL ) {
+                        if ( !isNull( literal ) && literal.getTypeName() != PolyType.SYMBOL ) {
                             literalSet.add( literal );
                         }
                         return literal;
@@ -611,7 +611,7 @@ public abstract class AbstractSqlTester implements SqlTester, AutoCloseable {
 
                     private boolean isNull( SqlNode sqlNode ) {
                         return sqlNode instanceof SqlLiteral &&
-                                ((SqlLiteral) sqlNode).getTypeName() == SqlTypeName.NULL;
+                                ((SqlLiteral) sqlNode).getTypeName() == PolyType.NULL;
                     }
                 } );
         final List<SqlNode> nodes = new ArrayList<>( literalSet );

@@ -41,12 +41,12 @@ import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlSplittableAggFunction;
 import org.polypheny.db.sql.SqlSyntax;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Optionality;
 
 
@@ -63,14 +63,14 @@ public class SqlCountAggFunction extends SqlAggFunction {
     }
 
 
-    public SqlCountAggFunction( String name, SqlOperandTypeChecker sqlOperandTypeChecker ) {
+    public SqlCountAggFunction( String name, PolyOperandTypeChecker polyOperandTypeChecker ) {
         super(
                 name,
                 null,
                 SqlKind.COUNT,
                 ReturnTypes.BIGINT,
                 null,
-                sqlOperandTypeChecker,
+                polyOperandTypeChecker,
                 SqlFunctionCategory.NUMERIC,
                 false,
                 false,
@@ -88,7 +88,7 @@ public class SqlCountAggFunction extends SqlAggFunction {
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         // Check for COUNT(*) function.  If it is we don't want to try and derive the "*"
         if ( call.isCountStar() ) {
-            return validator.getTypeFactory().createSqlType( SqlTypeName.BIGINT );
+            return validator.getTypeFactory().createPolyType( PolyType.BIGINT );
         }
         return super.deriveType( validator, scope, call );
     }

@@ -45,7 +45,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorTable;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.OverScope;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql.validate.SqlModality;
@@ -53,6 +52,7 @@ import org.polypheny.db.sql.validate.SqlValidatorCatalogReader;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
 import org.polypheny.db.sql.validate.SqlValidatorNamespace;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Util;
 
 
@@ -64,7 +64,7 @@ public class SqlAdvisorValidator extends SqlValidatorImpl {
 
     private final Set<SqlValidatorNamespace> activeNamespaces = new HashSet<>();
 
-    private final RelDataType emptyStructType = SqlTypeUtil.createEmptyStructType( typeFactory );
+    private final RelDataType emptyStructType = PolyTypeUtil.createEmptyStructType( typeFactory );
 
 
     /**

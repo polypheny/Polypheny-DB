@@ -55,8 +55,8 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexChecker;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Util;
 
@@ -137,7 +137,7 @@ public abstract class Join extends BiRel {
             return litmus.fail( "field count mismatch" );
         }
         if ( condition != null ) {
-            if ( condition.getType().getSqlTypeName() != SqlTypeName.BOOLEAN ) {
+            if ( condition.getType().getPolyType() != PolyType.BOOLEAN ) {
                 return litmus.fail( "condition must be boolean: {}", condition.getType() );
             }
             // The input to the condition is a row type consisting of system fields, left fields, and right fields. Very similar to the output row type, except that fields

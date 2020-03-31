@@ -60,7 +60,7 @@ import org.polypheny.db.schema.ProjectableFilterableTable;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.impl.AbstractTable;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -438,7 +438,7 @@ public class ScannableTableTest {
 
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            return typeFactory.builder().add( "i", null, SqlTypeName.INTEGER ).build();
+            return typeFactory.builder().add( "i", null, PolyType.INTEGER ).build();
         }
 
 
@@ -463,8 +463,8 @@ public class ScannableTableTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "i", null, SqlTypeName.INTEGER )
-                    .add( "j", null, SqlTypeName.VARCHAR )
+                    .add( "i", null, PolyType.INTEGER )
+                    .add( "j", null, PolyType.VARCHAR )
                     .build();
         }
 
@@ -499,9 +499,9 @@ public class ScannableTableTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "i", null, SqlTypeName.INTEGER )
-                    .add( "j", null, SqlTypeName.VARCHAR )
-                    .add( "k", null, SqlTypeName.INTEGER )
+                    .add( "i", null, PolyType.INTEGER )
+                    .add( "j", null, PolyType.VARCHAR )
+                    .add( "k", null, PolyType.INTEGER )
                     .build();
         }
 
@@ -537,9 +537,9 @@ public class ScannableTableTest {
         @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             return typeFactory.builder()
-                    .add( "i", null, SqlTypeName.INTEGER )
-                    .add( "j", null, SqlTypeName.VARCHAR )
-                    .add( "k", null, SqlTypeName.INTEGER )
+                    .add( "i", null, PolyType.INTEGER )
+                    .add( "j", null, PolyType.VARCHAR )
+                    .add( "k", null, PolyType.INTEGER )
                     .build();
         }
 

@@ -37,8 +37,8 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -62,8 +62,8 @@ public class SqlOperatorBindingTest {
     @Before
     public void setUp() {
         JavaTypeFactory typeFactory = new JavaTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-        integerDataType = typeFactory.createSqlType( SqlTypeName.INTEGER );
-        integerType = SqlTypeUtil.convertTypeToSpec( integerDataType );
+        integerDataType = typeFactory.createPolyType( PolyType.INTEGER );
+        integerType = PolyTypeUtil.convertTypeToSpec( integerDataType );
         rexBuilder = new RexBuilder( typeFactory );
     }
 

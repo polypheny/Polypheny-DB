@@ -66,12 +66,12 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.fun.SqlCountAggFunction;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.ArraySqlType;
-import org.polypheny.db.sql.type.MapSqlType;
-import org.polypheny.db.sql.type.MultisetSqlType;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.MapPolyType;
+import org.polypheny.db.type.MultisetPolyType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
@@ -122,23 +122,23 @@ public class RexBuilder {
         this.booleanTrue =
                 makeLiteral(
                         Boolean.TRUE,
-                        typeFactory.createSqlType( SqlTypeName.BOOLEAN ),
-                        SqlTypeName.BOOLEAN );
+                        typeFactory.createPolyType( PolyType.BOOLEAN ),
+                        PolyType.BOOLEAN );
         this.booleanFalse =
                 makeLiteral(
                         Boolean.FALSE,
-                        typeFactory.createSqlType( SqlTypeName.BOOLEAN ),
-                        SqlTypeName.BOOLEAN );
+                        typeFactory.createPolyType( PolyType.BOOLEAN ),
+                        PolyType.BOOLEAN );
         this.charEmpty =
                 makeLiteral(
                         new NlsString( "", null, null ),
-                        typeFactory.createSqlType( SqlTypeName.CHAR, 0 ),
-                        SqlTypeName.CHAR );
+                        typeFactory.createPolyType( PolyType.CHAR, 0 ),
+                        PolyType.CHAR );
         this.constantNull =
                 makeLiteral(
                         null,
-                        typeFactory.createSqlType( SqlTypeName.NULL ),
-                        SqlTypeName.NULL );
+                        typeFactory.createPolyType( PolyType.NULL ),
+                        PolyType.NULL );
     }
 
 
@@ -242,8 +242,8 @@ public class RexBuilder {
 
     /**
      * Creates a call with an array of arguments.
-     *
-     * If you already know the return type of the call, then {@link #makeCall(RelDataType, SqlOperator, java.util.List)} is preferred.<
+     * <p>
+     * If you already know the return type of the call, then {@link #makeCall(RelDataType, SqlOperator, java.util.List)} is preferred.
      */
     public RexNode makeCall( SqlOperator op, List<? extends RexNode> exprs ) {
         final RelDataType type = deriveReturnType( op, exprs );
@@ -332,7 +332,7 @@ public class RexBuilder {
         // This should be correct but need time to go over test results.
         // Also want to look at combing with section below.
         if ( nullWhenCountZero ) {
-            final RelDataType bigintType = getTypeFactory().createSqlType( SqlTypeName.BIGINT );
+            final RelDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
             result = makeCall(
                     SqlStdOperatorTable.CASE,
                     makeCall(
@@ -346,7 +346,7 @@ public class RexBuilder {
                             makeLiteral(
                                     BigDecimal.ZERO,
                                     bigintType,
-                                    SqlTypeName.DECIMAL ) ),
+                                    PolyType.DECIMAL ) ),
                     ensureType(
                             type, // SUM0 is non-nullable, thus need a cast
                             new RexOver(
@@ -360,7 +360,7 @@ public class RexBuilder {
         }
         if ( !allowPartial ) {
             Preconditions.checkArgument( physical, "DISALLOW PARTIAL over RANGE" );
-            final RelDataType bigintType = getTypeFactory().createSqlType( SqlTypeName.BIGINT );
+            final RelDataType bigintType = getTypeFactory().createPolyType( PolyType.BIGINT );
             // todo: read bound
             result =
                     makeCall(
@@ -376,7 +376,7 @@ public class RexBuilder {
                                     makeLiteral(
                                             BigDecimal.valueOf( 2 ),
                                             bigintType,
-                                            SqlTypeName.DECIMAL ) ),
+                                            PolyType.DECIMAL ) ),
                             result,
                             constantNull );
         }
@@ -454,11 +454,11 @@ public class RexBuilder {
      * @return Call to CAST operator
      */
     public RexNode makeCast( RelDataType type, RexNode exp, boolean matchNullability ) {
-        final SqlTypeName sqlType = type.getSqlTypeName();
+        final PolyType sqlType = type.getPolyType();
         if ( exp instanceof RexLiteral ) {
             RexLiteral literal = (RexLiteral) exp;
             Comparable value = literal.getValueAs( Comparable.class );
-            SqlTypeName typeName = literal.getTypeName();
+            PolyType typeName = literal.getTypeName();
             if ( canRemoveCastFromLiteral( type, value, typeName ) ) {
                 switch ( typeName ) {
                     case INTERVAL_YEAR:
@@ -475,7 +475,7 @@ public class RexBuilder {
                     case INTERVAL_MINUTE_SECOND:
                     case INTERVAL_SECOND:
                         assert value instanceof BigDecimal;
-                        typeName = type.getSqlTypeName();
+                        typeName = type.getPolyType();
                         switch ( typeName ) {
                             case BIGINT:
                             case INTEGER:
@@ -493,7 +493,7 @@ public class RexBuilder {
                         // Not all types are allowed for literals
                         switch ( typeName ) {
                             case INTEGER:
-                                typeName = SqlTypeName.BIGINT;
+                                typeName = PolyType.BIGINT;
                         }
                 }
                 final RexLiteral literal2 = makeLiteral( value, type, typeName );
@@ -504,11 +504,11 @@ public class RexBuilder {
                 }
                 return literal2;
             }
-        } else if ( SqlTypeUtil.isExactNumeric( type ) && SqlTypeUtil.isInterval( exp.getType() ) ) {
+        } else if ( PolyTypeUtil.isExactNumeric( type ) && PolyTypeUtil.isInterval( exp.getType() ) ) {
             return makeCastIntervalToExact( type, exp );
-        } else if ( sqlType == SqlTypeName.BOOLEAN && SqlTypeUtil.isExactNumeric( exp.getType() ) ) {
+        } else if ( sqlType == PolyType.BOOLEAN && PolyTypeUtil.isExactNumeric( exp.getType() ) ) {
             return makeCastExactToBoolean( type, exp );
-        } else if ( exp.getType().getSqlTypeName() == SqlTypeName.BOOLEAN && SqlTypeUtil.isExactNumeric( type ) ) {
+        } else if ( exp.getType().getPolyType() == PolyType.BOOLEAN && PolyTypeUtil.isExactNumeric( type ) ) {
             return makeCastBooleanToExact( type, exp );
         }
         return makeAbstractCast( type, exp );
@@ -519,7 +519,7 @@ public class RexBuilder {
      * Returns the lowest granularity unit for the given unit.
      * YEAR and MONTH intervals are stored as months; HOUR, MINUTE, SECOND intervals are stored as milliseconds.
      */
-    protected static TimeUnit baseUnit( SqlTypeName unit ) {
+    protected static TimeUnit baseUnit( PolyType unit ) {
         if ( unit.isYearMonth() ) {
             return TimeUnit.MONTH;
         } else {
@@ -528,32 +528,32 @@ public class RexBuilder {
     }
 
 
-    boolean canRemoveCastFromLiteral( RelDataType toType, Comparable value, SqlTypeName fromTypeName ) {
-        final SqlTypeName sqlType = toType.getSqlTypeName();
+    boolean canRemoveCastFromLiteral( RelDataType toType, Comparable value, PolyType fromTypeName ) {
+        final PolyType sqlType = toType.getPolyType();
         if ( !RexLiteral.valueMatchesType( value, sqlType, false ) ) {
             return false;
         }
-        if ( toType.getSqlTypeName() != fromTypeName && SqlTypeFamily.DATETIME.getTypeNames().contains( fromTypeName ) ) {
+        if ( toType.getPolyType() != fromTypeName && PolyTypeFamily.DATETIME.getTypeNames().contains( fromTypeName ) ) {
             return false;
         }
         if ( value instanceof NlsString ) {
             final int length = ((NlsString) value).getValue().length();
-            switch ( toType.getSqlTypeName() ) {
+            switch ( toType.getPolyType() ) {
                 case CHAR:
-                    return SqlTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
+                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
                 case VARCHAR:
-                    return SqlTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
+                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
                 default:
                     throw new AssertionError( toType );
             }
         }
         if ( value instanceof ByteString ) {
             final int length = ((ByteString) value).length();
-            switch ( toType.getSqlTypeName() ) {
+            switch ( toType.getPolyType() ) {
                 case BINARY:
-                    return SqlTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
+                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) == 0;
                 case VARBINARY:
-                    return SqlTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
+                    return PolyTypeUtil.comparePrecision( toType.getPrecision(), length ) >= 0;
                 default:
                     throw new AssertionError( toType );
             }
@@ -587,16 +587,16 @@ public class RexBuilder {
 
 
     private RexNode makeCastIntervalToExact( RelDataType toType, RexNode exp ) {
-        final TimeUnit endUnit = exp.getType().getSqlTypeName().getEndUnit();
-        final TimeUnit baseUnit = baseUnit( exp.getType().getSqlTypeName() );
+        final TimeUnit endUnit = exp.getType().getPolyType().getEndUnit();
+        final TimeUnit baseUnit = baseUnit( exp.getType().getPolyType() );
         final BigDecimal multiplier = baseUnit.multiplier;
         final int scale = 0;
         BigDecimal divider = endUnit.multiplier.scaleByPowerOfTen( -scale );
         RexNode value = multiplyDivide( decodeIntervalOrDecimal( exp ), multiplier, divider );
         if ( scale > 0 ) {
             RelDataType decimalType =
-                    getTypeFactory().createSqlType(
-                            SqlTypeName.DECIMAL,
+                    getTypeFactory().createPolyType(
+                            PolyType.DECIMAL,
                             scale + exp.getType().getPrecision(),
                             scale );
             value = encodeIntervalOrDecimal( value, decimalType, false );
@@ -634,7 +634,7 @@ public class RexBuilder {
      * @return the integer reinterpreted as an opaque decimal type
      */
     public RexNode encodeIntervalOrDecimal( RexNode value, RelDataType type, boolean checkOverflow ) {
-        RelDataType bigintType = typeFactory.createSqlType( SqlTypeName.BIGINT );
+        RelDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
         RexNode cast = ensureType( bigintType, value, true );
         return makeReinterpretCast( type, cast, makeLiteral( checkOverflow ) );
     }
@@ -647,8 +647,8 @@ public class RexBuilder {
      * @return an integer representation of the decimal value
      */
     public RexNode decodeIntervalOrDecimal( RexNode node ) {
-        assert SqlTypeUtil.isDecimal( node.getType() ) || SqlTypeUtil.isInterval( node.getType() );
-        RelDataType bigintType = typeFactory.createSqlType( SqlTypeName.BIGINT );
+        assert PolyTypeUtil.isDecimal( node.getType() ) || PolyTypeUtil.isInterval( node.getType() );
+        RelDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
         return makeReinterpretCast( matchNullability( bigintType, node ), node, makeLiteral( false ) );
     }
 
@@ -732,7 +732,7 @@ public class RexBuilder {
      * @return Reference to field
      */
     public RexInputRef makeInputRef( RelDataType type, int i ) {
-        type = SqlTypeUtil.addCharsetAndCollation( type, typeFactory );
+        type = PolyTypeUtil.addCharsetAndCollation( type, typeFactory );
         return new RexInputRef( i, type );
     }
 
@@ -759,7 +759,7 @@ public class RexBuilder {
      * @return Reference to field of pattern
      */
     public RexPatternFieldRef makePatternFieldRef( String alpha, RelDataType type, int i ) {
-        type = SqlTypeUtil.addCharsetAndCollation( type, typeFactory );
+        type = PolyTypeUtil.addCharsetAndCollation( type, typeFactory );
         return new RexPatternFieldRef( alpha, i, type );
     }
 
@@ -771,7 +771,7 @@ public class RexBuilder {
      */
     public RexLiteral makeFlag( Enum flag ) {
         assert flag != null;
-        return makeLiteral( flag, typeFactory.createSqlType( SqlTypeName.SYMBOL ), SqlTypeName.SYMBOL );
+        return makeLiteral( flag, typeFactory.createPolyType( PolyType.SYMBOL ), PolyType.SYMBOL );
     }
 
 
@@ -779,12 +779,12 @@ public class RexBuilder {
      * Internal method to create a call to a literal. Code outside this package should call one of the type-specific methods such as {@link #makeDateLiteral(DateString)}, {@link #makeLiteral(boolean)},
      * {@link #makeLiteral(String)}.
      *
-     * @param o Value of literal, must be appropriate for the type
-     * @param type Type of literal
+     * @param o        Value of literal, must be appropriate for the type
+     * @param type     Type of literal
      * @param typeName SQL type of literal
      * @return Literal
      */
-    protected RexLiteral makeLiteral( Comparable o, RelDataType type, SqlTypeName typeName ) {
+    protected RexLiteral makeLiteral( Comparable o, RelDataType type, PolyType typeName ) {
         // All literals except NULL have NOT NULL types.
         type = typeFactory.createTypeWithNullability( type, o == null );
         int p;
@@ -794,7 +794,7 @@ public class RexBuilder {
                 assert o instanceof NlsString;
                 NlsString nlsString = (NlsString) o;
                 if ( (nlsString.getCollation() == null) || (nlsString.getCharset() == null) ) {
-                    assert type.getSqlTypeName() == SqlTypeName.CHAR;
+                    assert type.getPolyType() == PolyType.CHAR;
                     assert type.getCharset().name() != null;
                     assert type.getCollation() != null;
                     o = new NlsString( nlsString.getValue(), type.getCharset().name(), type.getCollation() );
@@ -854,18 +854,18 @@ public class RexBuilder {
         assert scale <= typeFactory.getTypeSystem().getMaxNumericScale() : scale;
         if ( scale == 0 ) {
             if ( bd.compareTo( INT_MIN ) >= 0 && bd.compareTo( INT_MAX ) <= 0 ) {
-                relType = typeFactory.createSqlType( SqlTypeName.INTEGER );
+                relType = typeFactory.createPolyType( PolyType.INTEGER );
             } else {
-                relType = typeFactory.createSqlType( SqlTypeName.BIGINT );
+                relType = typeFactory.createPolyType( PolyType.BIGINT );
             }
         } else {
             int precision = bd.unscaledValue().abs().toString().length();
             if ( precision > scale ) {
                 // bd is greater than or equal to 1
-                relType = typeFactory.createSqlType( SqlTypeName.DECIMAL, precision, scale );
+                relType = typeFactory.createPolyType( PolyType.DECIMAL, precision, scale );
             } else {
                 // bd is less than 1
-                relType = typeFactory.createSqlType( SqlTypeName.DECIMAL, scale + 1, scale );
+                relType = typeFactory.createPolyType( PolyType.DECIMAL, scale + 1, scale );
             }
         }
         return makeExactLiteral( bd, relType );
@@ -876,8 +876,8 @@ public class RexBuilder {
      * Creates a BIGINT literal.
      */
     public RexLiteral makeBigintLiteral( BigDecimal bd ) {
-        RelDataType bigintType = typeFactory.createSqlType( SqlTypeName.BIGINT );
-        return makeLiteral( bd, bigintType, SqlTypeName.DECIMAL );
+        RelDataType bigintType = typeFactory.createPolyType( PolyType.BIGINT );
+        return makeLiteral( bd, bigintType, PolyType.DECIMAL );
     }
 
 
@@ -885,7 +885,7 @@ public class RexBuilder {
      * Creates a numeric literal.
      */
     public RexLiteral makeExactLiteral( BigDecimal bd, RelDataType type ) {
-        return makeLiteral( bd, type, SqlTypeName.DECIMAL );
+        return makeLiteral( bd, type, PolyType.DECIMAL );
     }
 
 
@@ -895,8 +895,8 @@ public class RexBuilder {
     public RexLiteral makeBinaryLiteral( ByteString byteString ) {
         return makeLiteral(
                 byteString,
-                typeFactory.createSqlType( SqlTypeName.BINARY, byteString.length() ),
-                SqlTypeName.BINARY );
+                typeFactory.createPolyType( PolyType.BINARY, byteString.length() ),
+                PolyType.BINARY );
     }
 
 
@@ -909,7 +909,7 @@ public class RexBuilder {
         if ( bd.doubleValue() == 0 ) {
             bd = BigDecimal.ZERO;
         }
-        return makeApproxLiteral( bd, typeFactory.createSqlType( SqlTypeName.DOUBLE ) );
+        return makeApproxLiteral( bd, typeFactory.createPolyType( PolyType.DOUBLE ) );
     }
 
 
@@ -921,8 +921,8 @@ public class RexBuilder {
      * @return new literal
      */
     public RexLiteral makeApproxLiteral( BigDecimal bd, RelDataType type ) {
-        assert SqlTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( type.getSqlTypeName() );
-        return makeLiteral( bd, type, SqlTypeName.DOUBLE );
+        assert PolyTypeFamily.APPROXIMATE_NUMERIC.getTypeNames().contains( type.getPolyType() );
+        return makeLiteral( bd, type, PolyType.DOUBLE );
     }
 
 
@@ -977,7 +977,7 @@ public class RexBuilder {
             targetType = matchNullability( type, node );
         }
 
-        if ( targetType.getSqlTypeName() == SqlTypeName.ANY && (!matchNullability || targetType.isNullable() == node.getType().isNullable()) ) {
+        if ( targetType.getPolyType() == PolyType.ANY && (!matchNullability || targetType.isNullable() == node.getType().isNullable()) ) {
             return node;
         }
 
@@ -1011,7 +1011,7 @@ public class RexBuilder {
     public RexLiteral makeCharLiteral( NlsString str ) {
         assert str != null;
         RelDataType type = SqlUtil.createNlsStringType( typeFactory, str );
-        return makeLiteral( str, type, SqlTypeName.CHAR );
+        return makeLiteral( str, type, PolyType.CHAR );
     }
 
 
@@ -1019,7 +1019,7 @@ public class RexBuilder {
      * Creates a Date literal.
      */
     public RexLiteral makeDateLiteral( DateString date ) {
-        return makeLiteral( Objects.requireNonNull( date ), typeFactory.createSqlType( SqlTypeName.DATE ), SqlTypeName.DATE );
+        return makeLiteral( Objects.requireNonNull( date ), typeFactory.createPolyType( PolyType.DATE ), PolyType.DATE );
     }
 
 
@@ -1029,8 +1029,8 @@ public class RexBuilder {
     public RexLiteral makeTimeLiteral( TimeString time, int precision ) {
         return makeLiteral(
                 Objects.requireNonNull( time ),
-                typeFactory.createSqlType( SqlTypeName.TIME, precision ),
-                SqlTypeName.TIME );
+                typeFactory.createPolyType( PolyType.TIME, precision ),
+                PolyType.TIME );
     }
 
 
@@ -1040,8 +1040,8 @@ public class RexBuilder {
     public RexLiteral makeTimeWithLocalTimeZoneLiteral( TimeString time, int precision ) {
         return makeLiteral(
                 Objects.requireNonNull( time ),
-                typeFactory.createSqlType( SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE, precision ),
-                SqlTypeName.TIME_WITH_LOCAL_TIME_ZONE );
+                typeFactory.createPolyType( PolyType.TIME_WITH_LOCAL_TIME_ZONE, precision ),
+                PolyType.TIME_WITH_LOCAL_TIME_ZONE );
     }
 
 
@@ -1051,8 +1051,8 @@ public class RexBuilder {
     public RexLiteral makeTimestampLiteral( TimestampString timestamp, int precision ) {
         return makeLiteral(
                 Objects.requireNonNull( timestamp ),
-                typeFactory.createSqlType( SqlTypeName.TIMESTAMP, precision ),
-                SqlTypeName.TIMESTAMP );
+                typeFactory.createPolyType( PolyType.TIMESTAMP, precision ),
+                PolyType.TIMESTAMP );
     }
 
 
@@ -1062,8 +1062,8 @@ public class RexBuilder {
     public RexLiteral makeTimestampWithLocalTimeZoneLiteral( TimestampString timestamp, int precision ) {
         return makeLiteral(
                 Objects.requireNonNull( timestamp ),
-                typeFactory.createSqlType( SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
-                SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+                typeFactory.createPolyType( PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE, precision ),
+                PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
     }
 
 
@@ -1150,7 +1150,7 @@ public class RexBuilder {
 
 
     private static Comparable zeroValue( RelDataType type ) {
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case CHAR:
                 return new NlsString( Spaces.of( type.getPrecision() ), null, null );
             case VARCHAR:
@@ -1179,7 +1179,7 @@ public class RexBuilder {
             case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return new TimestampString( 0, 0, 0, 0, 0, 0 );
             default:
-                throw Util.unexpected( type.getSqlTypeName() );
+                throw Util.unexpected( type.getPolyType() );
         }
     }
 
@@ -1204,7 +1204,7 @@ public class RexBuilder {
         value = clean( value, type );
         RexLiteral literal;
         final List<RexNode> operands;
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case CHAR:
                 return makeCharLiteral( padRight( (NlsString) value, type.getPrecision() ) );
             case VARCHAR:
@@ -1260,7 +1260,7 @@ public class RexBuilder {
             case INTERVAL_SECOND:
                 return makeIntervalLiteral( (BigDecimal) value, type.getIntervalQualifier() );
             case MAP:
-                final MapSqlType mapType = (MapSqlType) type;
+                final MapPolyType mapType = (MapPolyType) type;
                 @SuppressWarnings("unchecked") final Map<Object, Object> map = (Map) value;
                 operands = new ArrayList<>();
                 for ( Map.Entry<Object, Object> entry : map.entrySet() ) {
@@ -1269,7 +1269,7 @@ public class RexBuilder {
                 }
                 return makeCall( SqlStdOperatorTable.MAP_VALUE_CONSTRUCTOR, operands );
             case ARRAY:
-                final ArraySqlType arrayType = (ArraySqlType) type;
+                final ArrayType arrayType = (ArrayType) type;
                 @SuppressWarnings("unchecked") final List<Object> listValue = (List) value;
                 operands = new ArrayList<>();
                 for ( Object entry : listValue ) {
@@ -1277,7 +1277,7 @@ public class RexBuilder {
                 }
                 return makeCall( SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR, operands );
             case MULTISET:
-                final MultisetSqlType multisetType = (MultisetSqlType) type;
+                final MultisetPolyType multisetType = (MultisetPolyType) type;
                 operands = new ArrayList<>();
                 for ( Object entry : (List) value ) {
                     final RexNode e =
@@ -1289,7 +1289,7 @@ public class RexBuilder {
                 if ( allowCast ) {
                     return makeCall( SqlStdOperatorTable.MULTISET_VALUE, operands );
                 } else {
-                    return new RexLiteral( (Comparable) FlatLists.of( operands ), type, type.getSqlTypeName() );
+                    return new RexLiteral( (Comparable) FlatLists.of( operands ), type, type.getPolyType() );
                 }
             case ROW:
                 operands = new ArrayList<>();
@@ -1301,11 +1301,11 @@ public class RexBuilder {
                                     : makeLiteral( pair.right, pair.left.getType(), allowCast );
                     operands.add( e );
                 }
-                return new RexLiteral( (Comparable) FlatLists.of( operands ), type, type.getSqlTypeName() );
+                return new RexLiteral( (Comparable) FlatLists.of( operands ), type, type.getPolyType() );
             case ANY:
                 return makeLiteral( value, guessType( value ), allowCast );
             default:
-                throw Util.unexpected( type.getSqlTypeName() );
+                throw Util.unexpected( type.getPolyType() );
         }
     }
 
@@ -1317,7 +1317,7 @@ public class RexBuilder {
         if ( o == null ) {
             return null;
         }
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case TINYINT:
             case SMALLINT:
             case INTEGER:
@@ -1410,22 +1410,22 @@ public class RexBuilder {
 
     private RelDataType guessType( Object value ) {
         if ( value == null ) {
-            return typeFactory.createSqlType( SqlTypeName.NULL );
+            return typeFactory.createPolyType( PolyType.NULL );
         }
         if ( value instanceof Float || value instanceof Double ) {
-            return typeFactory.createSqlType( SqlTypeName.DOUBLE );
+            return typeFactory.createPolyType( PolyType.DOUBLE );
         }
         if ( value instanceof Number ) {
-            return typeFactory.createSqlType( SqlTypeName.BIGINT );
+            return typeFactory.createPolyType( PolyType.BIGINT );
         }
         if ( value instanceof Boolean ) {
-            return typeFactory.createSqlType( SqlTypeName.BOOLEAN );
+            return typeFactory.createPolyType( PolyType.BOOLEAN );
         }
         if ( value instanceof String ) {
-            return typeFactory.createSqlType( SqlTypeName.CHAR, ((String) value).length() );
+            return typeFactory.createPolyType( PolyType.CHAR, ((String) value).length() );
         }
         if ( value instanceof ByteString ) {
-            return typeFactory.createSqlType( SqlTypeName.BINARY, ((ByteString) value).length() );
+            return typeFactory.createPolyType( PolyType.BINARY, ((ByteString) value).length() );
         }
         throw new AssertionError( "unknown type " + value.getClass() );
     }

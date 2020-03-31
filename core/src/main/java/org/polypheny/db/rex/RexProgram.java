@@ -56,7 +56,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Permutation;
@@ -411,7 +411,7 @@ public class RexProgram {
         }
         final Checker checker = new Checker( inputRowType, RexUtil.types( exprs ), null, litmus );
         if ( condition != null ) {
-            if ( !SqlTypeUtil.inBooleanFamily( condition.getType() ) ) {
+            if ( !PolyTypeUtil.inBooleanFamily( condition.getType() ) ) {
                 return litmus.fail( "condition must be boolean" );
             }
             condition.accept( checker );

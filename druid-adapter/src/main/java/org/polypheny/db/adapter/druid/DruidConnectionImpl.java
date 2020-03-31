@@ -75,7 +75,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.interpreter.Row.RowBuilder;
 import org.polypheny.db.interpreter.Sink;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.Util;
 
@@ -541,7 +541,7 @@ class DruidConnectionImpl implements DruidConnection {
     /**
      * Reads segment metadata, and populates a list of columns and metrics.
      */
-    void metadata( String dataSourceName, String timestampColumnName, List<Interval> intervals, Map<String, SqlTypeName> fieldBuilder, Set<String> metricNameBuilder, Map<String, List<ComplexMetric>> complexMetrics ) {
+    void metadata( String dataSourceName, String timestampColumnName, List<Interval> intervals, Map<String, PolyType> fieldBuilder, Set<String> metricNameBuilder, Map<String, List<ComplexMetric>> complexMetrics ) {
         final String url = this.url + "/druid/v2/?pretty";
         final Map<String, String> requestHeaders = ImmutableMap.of( "Content-Type", "application/json" );
         final String data = DruidQuery.metadataQuery( dataSourceName, intervals );
@@ -553,7 +553,7 @@ class DruidConnectionImpl implements DruidConnection {
             final CollectionType listType = mapper.getTypeFactory().constructCollectionType( List.class, JsonSegmentMetadata.class );
             final List<JsonSegmentMetadata> list = mapper.readValue( in, listType );
             in.close();
-            fieldBuilder.put( timestampColumnName, SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+            fieldBuilder.put( timestampColumnName, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
             for ( JsonSegmentMetadata o : list ) {
                 for ( Map.Entry<String, JsonColumn> entry : o.columns.entrySet() ) {
                     if ( entry.getKey().equals( DruidTable.DEFAULT_TIMESTAMP_COLUMN ) ) {

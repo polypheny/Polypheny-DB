@@ -126,6 +126,8 @@ public class HttpServer extends QueryInterface {
 
         post( "/createTable", crud::createTable, gson::toJson );
 
+        get( "/getGeneratedNames", crud::getGeneratedNames, gson::toJson );
+
         post( "/getConstraints", crud::getConstraints, gson::toJson );
 
         post( "/dropConstraint", crud::dropConstraint, gson::toJson );
@@ -145,6 +147,8 @@ public class HttpServer extends QueryInterface {
         post( "/createIndex", crud::createIndex, gson::toJson );
 
         post( "/getPlacements", crud::getPlacements, gson::toJson );
+
+        post( "/addDropPlacement", crud::addDropPlacement, gson::toJson );
 
         post( "/getAnalyzerPage", crud::getAnalyzerPage );
 

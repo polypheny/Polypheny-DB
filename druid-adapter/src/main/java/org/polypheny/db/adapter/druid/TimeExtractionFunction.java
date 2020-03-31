@@ -47,7 +47,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -214,14 +214,14 @@ public class TimeExtractionFunction implements ExtractionFunction {
     public static TimeExtractionFunction translateCastToTimeExtract( RexNode rexNode, TimeZone timeZone ) {
         assert rexNode.getKind() == SqlKind.CAST;
         final RexCall rexCall = (RexCall) rexNode;
-        final String castFormat = DruidSqlCastConverter.dateTimeFormatString( rexCall.getType().getSqlTypeName() );
+        final String castFormat = DruidSqlCastConverter.dateTimeFormatString( rexCall.getType().getPolyType() );
         final String timeZoneId = timeZone == null ? null : timeZone.getID();
         if ( castFormat == null ) {
             // unknown format
             return null;
         }
-        SqlTypeName fromType = rexCall.getOperands().get( 0 ).getType().getSqlTypeName();
-        SqlTypeName toType = rexCall.getType().getSqlTypeName();
+        PolyType fromType = rexCall.getOperands().get( 0 ).getType().getPolyType();
+        PolyType toType = rexCall.getType().getPolyType();
         String granularityTZId;
         switch ( fromType ) {
             case DATE:

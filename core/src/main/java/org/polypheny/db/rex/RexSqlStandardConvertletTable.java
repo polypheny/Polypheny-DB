@@ -47,7 +47,7 @@ import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlCaseOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeUtil;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 /**
@@ -203,7 +203,7 @@ public class RexSqlStandardConvertletTable extends RexSqlReflectiveConvertletTab
                         return null;
                     }
                     List<SqlNode> operandList = new ArrayList<>( Arrays.asList( operands ) );
-                    SqlDataTypeSpec typeSpec = SqlTypeUtil.convertTypeToSpec( call.getType() );
+                    SqlDataTypeSpec typeSpec = PolyTypeUtil.convertTypeToSpec( call.getType() );
                     operandList.add( typeSpec );
                     return new SqlBasicCall(
                             op,

@@ -45,11 +45,11 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlOperandTypeChecker;
 import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.checker.PolyOperandTypeChecker;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -70,12 +70,12 @@ public class SqlJsonArrayFunction extends SqlFunction {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.from( 1 );
+        return PolyOperandCountRanges.from( 1 );
     }
 
 
     @Override
-    protected void checkOperandCount( SqlValidator validator, SqlOperandTypeChecker argType, SqlCall call ) {
+    protected void checkOperandCount( SqlValidator validator, PolyOperandTypeChecker argType, SqlCall call ) {
         assert call.operandCount() >= 1;
     }
 

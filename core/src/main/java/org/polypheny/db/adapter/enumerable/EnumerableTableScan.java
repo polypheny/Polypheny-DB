@@ -210,7 +210,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
     private Expression fieldExpression( ParameterExpression row_, int i, PhysType physType, JavaRowFormat format ) {
         final Expression e = format.field( row_, i, null, physType.getJavaFieldType( i ) );
         final RelDataType relFieldType = physType.getRowType().getFieldList().get( i ).getType();
-        switch ( relFieldType.getSqlTypeName() ) {
+        switch ( relFieldType.getPolyType() ) {
             case ARRAY:
             case MULTISET:
                 // We can't represent a multiset or array as a List<Employee>, because the consumer does not know the element type.
@@ -249,7 +249,7 @@ public class EnumerableTableScan extends TableScan implements EnumerableRel {
 
     private boolean hasCollectionField( RelDataType rowType ) {
         for ( RelDataTypeField field : rowType.getFieldList() ) {
-            switch ( field.getType().getSqlTypeName() ) {
+            switch ( field.getType().getPolyType() ) {
                 case ARRAY:
                 case MULTISET:
                     return true;

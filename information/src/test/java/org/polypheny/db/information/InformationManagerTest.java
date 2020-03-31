@@ -17,6 +17,7 @@
 package org.polypheny.db.information;
 
 
+import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -88,6 +89,21 @@ public class InformationManagerTest {
         GraphData[] graphData = { new GraphData<>( "data1", graphData1 ), new GraphData<>( "data2", graphData2 ) };
         InformationGraph i1 = new InformationGraph( g, GraphType.LINE, labels, graphData );
         i1.updateType( GraphType.RADAR );
+    }
+
+    @Test
+    public void informationAction() {
+        final String[] test = { "", "" };
+        InformationAction action = new InformationAction( g, "btnLabel", ( params ) -> {
+            test[0] = "a";
+            test[1] = params.get( "param1" );
+            return "done";
+        } );
+        HashMap<String, String> params = new HashMap<>();
+        params.put( "param1", "b" );
+        action.executeAction( params );
+        Assert.assertEquals( test[0], "a" );
+        Assert.assertEquals( test[1], "b" );
     }
 
 }

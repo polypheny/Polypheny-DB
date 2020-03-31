@@ -49,14 +49,14 @@ import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.ReturnTypes;
-import org.polypheny.db.sql.type.SqlOperandCountRanges;
-import org.polypheny.db.sql.type.SqlTypeName;
-import org.polypheny.db.sql.type.SqlTypeUtil;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.PolyOperandCountRanges;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.ReturnTypes;
 
 
 /**
@@ -94,7 +94,7 @@ public class SqlSubstringFunction extends SqlFunction {
     @Override
     public String getAllowedSignatures( String opName ) {
         StringBuilder ret = new StringBuilder();
-        for ( Ord<SqlTypeName> typeName : Ord.zip( SqlTypeName.STRING_TYPES ) ) {
+        for ( Ord<PolyType> typeName : Ord.zip( PolyType.STRING_TYPES ) ) {
             if ( typeName.i > 0 ) {
                 ret.append( NL );
             }
@@ -102,13 +102,13 @@ public class SqlSubstringFunction extends SqlFunction {
                     SqlUtil.getAliasedSignature(
                             this,
                             opName,
-                            ImmutableList.of( typeName.e, SqlTypeName.INTEGER ) ) );
+                            ImmutableList.of( typeName.e, PolyType.INTEGER ) ) );
             ret.append( NL );
             ret.append(
                     SqlUtil.getAliasedSignature(
                             this,
                             opName,
-                            ImmutableList.of( typeName.e, SqlTypeName.INTEGER, SqlTypeName.INTEGER ) ) );
+                            ImmutableList.of( typeName.e, PolyType.INTEGER, PolyType.INTEGER ) ) );
         }
         return ret.toString();
     }
@@ -133,7 +133,7 @@ public class SqlSubstringFunction extends SqlFunction {
             RelDataType t1 = validator.deriveType( scope, operands.get( 1 ) );
             RelDataType t2 = validator.deriveType( scope, operands.get( 2 ) );
 
-            if ( SqlTypeUtil.inCharFamily( t1 ) ) {
+            if ( PolyTypeUtil.inCharFamily( t1 ) ) {
                 if ( !OperandTypes.STRING.checkSingleOperandType( callBinding, operands.get( 1 ), 0, throwOnFailure ) ) {
                     return false;
                 }
@@ -141,7 +141,7 @@ public class SqlSubstringFunction extends SqlFunction {
                     return false;
                 }
 
-                if ( !SqlTypeUtil.isCharTypeComparable( callBinding, operands, throwOnFailure ) ) {
+                if ( !PolyTypeUtil.isCharTypeComparable( callBinding, operands, throwOnFailure ) ) {
                     return false;
                 }
             } else {
@@ -153,7 +153,7 @@ public class SqlSubstringFunction extends SqlFunction {
                 }
             }
 
-            if ( !SqlTypeUtil.inSameFamily( t1, t2 ) ) {
+            if ( !PolyTypeUtil.inSameFamily( t1, t2 ) ) {
                 if ( throwOnFailure ) {
                     throw callBinding.newValidationSignatureError();
                 }
@@ -166,7 +166,7 @@ public class SqlSubstringFunction extends SqlFunction {
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return SqlOperandCountRanges.between( 2, 3 );
+        return PolyOperandCountRanges.between( 2, 3 );
     }
 
 

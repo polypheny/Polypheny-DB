@@ -234,7 +234,7 @@ public class EnumUtils {
 
 
     static Type toInternal( RelDataType type ) {
-        switch ( type.getSqlTypeName() ) {
+        switch ( type.getPolyType() ) {
             case DATE:
             case TIME:
                 return type.isNullable() ? Integer.class : int.class;

@@ -55,16 +55,17 @@ import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.SemiStrict;
 import org.apache.calcite.linq4j.function.Strict;
+import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.util.Util;
 
 
 /**
  * Helper methods to implement Geo-spatial functions in generated code.
- *
+ * <p>
  * Remaining tasks:
  *
  * <ul>
- * <li>Determine type code for {@link org.polypheny.db.sql.type.ExtraSqlTypes#GEOMETRY}</li>
+ * <li>Determine type code for {@link ExtraPolyTypes#GEOMETRY}</li>
  * <li>Should we create aliases for functions in upper-case? Without ST_ prefix?</li>
  * <li>Consider adding spatial literals, e.g. `GEOMETRY 'POINT (30 10)'`</li>
  * <li>Integer arguments, e.g. SELECT ST_MakePoint(1, 2, 1.5), ST_MakePoint(1, 2)</li>

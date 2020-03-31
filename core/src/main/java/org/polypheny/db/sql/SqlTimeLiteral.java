@@ -36,7 +36,7 @@ package org.polypheny.db.sql;
 
 import com.google.common.base.Preconditions;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.TimeString;
 
 
@@ -49,7 +49,7 @@ public class SqlTimeLiteral extends SqlAbstractDateTimeLiteral {
 
 
     SqlTimeLiteral( TimeString t, int precision, boolean hasTimeZone, SqlParserPos pos ) {
-        super( t, hasTimeZone, SqlTypeName.TIME, precision, pos );
+        super( t, hasTimeZone, PolyType.TIME, precision, pos );
         Preconditions.checkArgument( this.precision >= 0 );
     }
 

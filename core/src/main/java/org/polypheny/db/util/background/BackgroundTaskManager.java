@@ -29,6 +29,7 @@ public class BackgroundTaskManager {
 
     private BackgroundTaskManager() {
         informationPage = new InformationPage( "BackgroundTaskManagerPage", "Background Tasks" );
+        informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Overview" );
 
         InformationManager im = InformationManager.getInstance();

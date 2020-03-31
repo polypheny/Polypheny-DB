@@ -932,7 +932,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
      * </ul>
      */
     private boolean isWidening( RelDataType type, RelDataType type1 ) {
-        return type.getSqlTypeName() == type1.getSqlTypeName() && type.getPrecision() >= type1.getPrecision();
+        return type.getPolyType() == type1.getPolyType() && type.getPrecision() >= type1.getPrecision();
     }
 
 

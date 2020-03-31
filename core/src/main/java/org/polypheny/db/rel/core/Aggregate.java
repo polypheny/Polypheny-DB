@@ -65,8 +65,8 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql.type.SqlTypeName;
 import org.polypheny.db.sql.validate.SqlValidatorException;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Litmus;
@@ -162,7 +162,7 @@ public abstract class Aggregate extends SingleRel {
 
     private boolean isPredicate( RelNode input, int index ) {
         final RelDataType type = input.getRowType().getFieldList().get( index ).getType();
-        return type.getSqlTypeName() == SqlTypeName.BOOLEAN && !type.isNullable();
+        return type.getPolyType() == PolyType.BOOLEAN && !type.isNullable();
     }
 
 
@@ -345,7 +345,7 @@ public abstract class Aggregate extends SingleRel {
         }
         if ( indicator ) {
             for ( int groupKey : groupList ) {
-                final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createSqlType( SqlTypeName.BOOLEAN ), false );
+                final RelDataType booleanType = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.BOOLEAN ), false );
                 final String base = "i$" + fieldList.get( groupKey ).getName();
                 String name = base;
                 int i = 0;

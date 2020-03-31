@@ -153,8 +153,9 @@ public class JaninoRexCompiler implements Interpreter.ScalarCompiler {
         if ( dataContext != null && dataContext.getTransaction() != null && dataContext.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
+            page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Generated Code" );
-            queryAnalyzer.addPage( new InformationPage( "informationPageGeneratedCode", "Generated Code" ) );
+            queryAnalyzer.addPage( page );
             queryAnalyzer.addGroup( group );
             InformationCode informationCode = new InformationCode( group, s );
             queryAnalyzer.registerInformation( informationCode );

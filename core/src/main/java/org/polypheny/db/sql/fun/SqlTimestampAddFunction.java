@@ -40,10 +40,10 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlFunctionCategory;
 import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.sql.type.OperandTypes;
-import org.polypheny.db.sql.type.SqlReturnTypeInference;
-import org.polypheny.db.sql.type.SqlTypeFamily;
-import org.polypheny.db.sql.type.SqlTypeName;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.checker.OperandTypes;
+import org.polypheny.db.type.inference.PolyReturnTypeInference;
 
 
 /**
@@ -76,7 +76,7 @@ public class SqlTimestampAddFunction extends SqlFunction {
     private static final int MILLISECOND_PRECISION = 3;
     private static final int MICROSECOND_PRECISION = 6;
 
-    private static final SqlReturnTypeInference RETURN_TYPE_INFERENCE =
+    private static final PolyReturnTypeInference RETURN_TYPE_INFERENCE =
             opBinding -> {
                 final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 return deduceType(
@@ -97,16 +97,16 @@ public class SqlTimestampAddFunction extends SqlFunction {
             case MICROSECOND:
                 switch ( timeUnit ) {
                     case MILLISECOND:
-                        type = typeFactory.createSqlType( SqlTypeName.TIMESTAMP, MILLISECOND_PRECISION );
+                        type = typeFactory.createPolyType( PolyType.TIMESTAMP, MILLISECOND_PRECISION );
                         break;
                     case MICROSECOND:
-                        type = typeFactory.createSqlType( SqlTypeName.TIMESTAMP, MICROSECOND_PRECISION );
+                        type = typeFactory.createPolyType( PolyType.TIMESTAMP, MICROSECOND_PRECISION );
                         break;
                     default:
-                        if ( operandType2.getSqlTypeName() == SqlTypeName.TIME ) {
-                            type = typeFactory.createSqlType( SqlTypeName.TIME );
+                        if ( operandType2.getPolyType() == PolyType.TIME ) {
+                            type = typeFactory.createPolyType( PolyType.TIME );
                         } else {
-                            type = typeFactory.createSqlType( SqlTypeName.TIMESTAMP );
+                            type = typeFactory.createPolyType( PolyType.TIMESTAMP );
                         }
                 }
                 break;
@@ -126,7 +126,7 @@ public class SqlTimestampAddFunction extends SqlFunction {
                 SqlKind.TIMESTAMP_ADD,
                 RETURN_TYPE_INFERENCE,
                 null,
-                OperandTypes.family( SqlTypeFamily.ANY, SqlTypeFamily.INTEGER, SqlTypeFamily.DATETIME ),
+                OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.INTEGER, PolyTypeFamily.DATETIME ),
                 SqlFunctionCategory.TIMEDATE );
     }
 }
