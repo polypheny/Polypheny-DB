@@ -176,7 +176,7 @@ public class CatalogImpl extends Catalog {
                 }
 
             } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException e ) {
-                e.printStackTrace();
+                throw new RuntimeException( e );
             }
             if ( doInitInformationPage ) {
                 new CatalogInfoPage( this );
@@ -485,9 +485,9 @@ public class CatalogImpl extends Catalog {
         CatalogValidator validator = new CatalogValidator();
         db.rollback();
         try {
-            validator.validateColumns();
+            validator.validate();
         } catch ( GenericCatalogException e ) {
-            // TODO DL should this happen?  maybe repair
+            throw new RuntimeException( e );
         }
     }
 
@@ -1273,9 +1273,8 @@ public class CatalogImpl extends Catalog {
     public List<CatalogColumn> getColumns( long tableId ) {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            List<CatalogColumn> columns = new ArrayList<>( columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values() );
-            columns.sort( columnComparator );
-            return columns;
+            return columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values().stream().sorted( columnComparator ).collect( Collectors.toList() );
+
         } catch ( NullPointerException e ) {
             return new ArrayList<>();
         }
@@ -2288,23 +2287,8 @@ public class CatalogImpl extends Catalog {
 
     class CatalogValidator {
 
-        public void validateColumns() throws GenericCatalogException {
-            for ( CatalogColumn c : columns.values() ) {
-                List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
-                if ( placements.size() == 0 ) {
-                    deleteColumn( c.id );
+        public void validate() throws GenericCatalogException {
 
-                } else if ( placements.size() == 1 ) {
-                    StoreManager storeManager = StoreManager.getInstance();
-                    CatalogColumnPlacement placement = placements.get( 0 );
-                    if ( storeManager.getStore( placement.storeId ).getCurrentSchema().getTable( placement.physicalSchemaName + "." + placement.physicalTableName ) == null ) {
-                        deleteColumn( placement.columnId );
-                        deleteColumnPlacement( placement.storeId, placement.columnId );
-                    }
-                } else {
-                    // multiple Placements
-                }
-            }
         }
     }
 }
