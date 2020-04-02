@@ -19,11 +19,19 @@ package org.polypheny.db.adapter.cassandra;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BatchType;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.RelationMetadata;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateKeyspace;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
+import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.github.nosan.embedded.cassandra.EmbeddedCassandraFactory;
 import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.google.common.collect.ImmutableList;
@@ -32,6 +40,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
@@ -47,6 +56,8 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeAssignmentRules;
 
 
 @Slf4j
@@ -94,7 +105,17 @@ public class CassandraStore extends Store {
         this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
 
         if ( this.isEmbedded ) {
+            // Making sure we are on java 8, as cassandra does not support anything newer!
+            // This is a cassandra issue. It is also marked as "won't fix"...
+            // See: https://issues.apache.org/jira/browse/CASSANDRA-13107
+
+            if ( ! System.getProperty("java.version").startsWith( "1.8" ) ) {
+                log.error( "Embedded cassandra requires Java 8 to work. Currently using: {}. Aborting!", System.getProperty( "java.version" ) );
+                throw new RuntimeException( "Embedded cassandra requires Java 8 to be used!" );
+            }
+
             // Setting up the embedded instance of cassandra.
+            log.debug( "Attempting to create embedded cassandra instance." );
             EmbeddedCassandraFactory cassandraFactory = new EmbeddedCassandraFactory();
 //            cassandraFactory.setJavaHome( Paths.get( System.getenv( "JAVA_HOME" ) ) );
             this.embeddedCassandra = cassandraFactory.create();
@@ -103,6 +124,7 @@ public class CassandraStore extends Store {
             this.dbHostname = this.embeddedCassandra.getAddress().getHostAddress();
             this.dbPort = this.embeddedCassandra.getPort();
 
+            log.warn( "Embedded cassandra address: {}:{}", this.dbHostname, this.dbPort );
         } else {
             this.embeddedCassandra = null;
         }
@@ -319,11 +341,12 @@ public class CassandraStore extends Store {
     public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
 //    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         // FIXME JS: Cassandra transaction hotfix
-        /*context.getTransaction().registerInvolvedStore( this );
+        context.getTransaction().registerInvolvedStore( this );
 
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogColumn.schemaName, catalogColumn.tableName );
 
+//        SimpleStatement selectData = QueryBuilder.selectFrom( this.dbKeyspace, physicalTableName ).all().build();
         SimpleStatement selectData = QueryBuilder.selectFrom( this.dbKeyspace, physicalTableName ).all().build();
         ResultSet rs = this.session.execute( selectData );
 
@@ -343,9 +366,14 @@ public class CassandraStore extends Store {
         RelationMetadata relationMetadata = session.getMetadata().getKeyspace( dbKeyspace ).get().getTable( physicalTableName ).get();
         List<ColumnMetadata> primaryKeys = relationMetadata.getPrimaryKey();
         ColumnMetadata oldColumn = relationMetadata.getColumn( physicalColumnName ).get();
-        PolySqlType oldType = CassandraTypesUtils.getPolySqlType( oldColumn.getType() );
+        PolyType oldType = CassandraTypesUtils.getPolyType( oldColumn.getType() );
 
-        Function<Object, Object> converter = PolySqlType.convertFromTo( oldType, catalogColumn.type );
+        PolyTypeAssignmentRules rules = PolyTypeAssignmentRules.instance( true );
+//        if ( ! rules.canCastFrom( catalogColumn.type, oldType )) {
+//            throw new RuntimeException( "Unable to change column type. Unable to cast " + oldType.getName() + " to " + catalogColumn.type.getName() + "." );
+//        }
+
+        Function<Object, Object> converter = CassandraTypesUtils.convertToFrom( catalogColumn.type, oldType );
 
         session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .dropColumn( physicalColumnName ).build() );
@@ -355,12 +383,14 @@ public class CassandraStore extends Store {
             List<Relation> whereClause = new ArrayList<>();
             for ( ColumnMetadata cm: primaryKeys ) {
                 Relation rl = Relation.column( cm.getName() ).isEqualTo(
-                        QueryBuilder.literal( r.get( cm.getName(), CassandraTypesUtils.getPolySqlType( cm.getType() ).getTypeJavaClass() ) )
+                        QueryBuilder.literal( r.get( cm.getName(), CassandraTypesUtils.getJavaType( cm.getType() ) ) )
+//                        QueryBuilder.literal( r.get( cm.getName(), CassandraTypesUtils.getPolyType( cm.getType() ).getTypeJavaClass() ) )
                 );
                 whereClause.add( rl );
             }
 
-            Object oldValue = r.get( physicalColumnName, oldType.getTypeJavaClass() );
+            Object oldValue = r.get( physicalColumnName, CassandraTypesUtils.getJavaType( oldColumn.getType() ) );
+//            Object oldValue = r.get( physicalColumnName, oldType.getTypeJavaClass() );
 
             builder.addStatement(
                     QueryBuilder.update( this.dbKeyspace, physicalTableName )
@@ -374,7 +404,7 @@ public class CassandraStore extends Store {
 
         this.session.execute( builder.build() );
 
-        physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );*/
+        physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );
     }
 
 
@@ -392,15 +422,18 @@ public class CassandraStore extends Store {
 
     @Override
     public void shutdown() {
+
         try {
             this.session.close();
-
-            if ( this.isEmbedded ) {
-                this.embeddedCassandra.stop();
-            }
         } catch ( RuntimeException e ) {
             log.warn( "Exception while shutting down " + getUniqueName(), e );
         }
+
+        if ( this.isEmbedded ) {
+            this.embeddedCassandra.stop();
+        }
+
+        log.info( "Shut down Cassandra store: {}", this.getUniqueName() );
     }
 
 

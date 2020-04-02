@@ -19,6 +19,8 @@ package org.polypheny.db.adapter.cassandra.util;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import java.util.UUID;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.type.PolyType;
 
@@ -75,10 +77,289 @@ public class CassandraTypesUtils {
             return PolyType.TIMESTAMP;
         } else if ( dataType == DataTypes.BLOB ) {
             return PolyType.VARBINARY;
+        } else if ( dataType == DataTypes.BOOLEAN ) {
+            return PolyType.BOOLEAN;
         } else {
             log.warn( "Unable to find type for cql type: {}. Returning ANY.", dataType );
             return PolyType.ANY;
         }
     }
 
+
+    public static Class<?> getJavaType( DataType dataType ) {
+        if ( dataType == DataTypes.UUID || dataType == DataTypes.TIMEUUID ) {
+            return UUID.class;
+        } else if ( dataType == DataTypes.ASCII || dataType == DataTypes.TEXT ) {
+            return String.class;
+        } else if ( dataType == DataTypes.INT || dataType == DataTypes.VARINT ) {
+            return Integer.class;
+        } else if ( dataType == DataTypes.BIGINT ) {
+            return Long.class;
+        } else if ( dataType == DataTypes.DOUBLE ) {
+            return Double.class;
+        } else if ( dataType == DataTypes.FLOAT ) {
+            // TODO JS: Float vs real?
+            return Double.class;
+        } else if ( dataType == DataTypes.TIME ) {
+            // FIXME JS: idk anymore
+            return Object.class;
+        } else if ( dataType == DataTypes.DATE ) {
+            // FIXME JS: I have developed a strong disliking for this type whatever
+            return Object.class;
+        } else if ( dataType == DataTypes.TIMESTAMP ) {
+            // FIXME JS: Send help
+            return Object.class;
+        } else if ( dataType == DataTypes.BLOB ) {
+            // FIXME JS: Just no
+            return Object.class;
+        } else if ( dataType == DataTypes.BOOLEAN ) {
+            return Boolean.class;
+        } else {
+            log.warn( "Unable to find type for cql type: {}. Returning ANY.", dataType );
+            return Object.class;
+        }
+    }
+
+
+    static boolean canCastInternally( PolyType to, PolyType from ) {
+        switch ( from ) {
+            case BOOLEAN:
+                switch ( to ) {
+                    case CHAR:
+                    case VARCHAR:
+                        return true;
+                    default:
+                        return false;
+                }
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+            case BIGINT:
+            case DECIMAL:
+            case FLOAT:
+            case REAL:
+            case DOUBLE:
+                switch ( to ) {
+                    case TINYINT:
+                    case SMALLINT:
+                    case INTEGER:
+                    case BIGINT:
+                    case FLOAT:
+                    case DOUBLE:
+                    case DECIMAL:
+                    case CHAR:
+                    case VARCHAR:
+                        return true;
+                    default:
+                        return false;
+                }
+            case DATE:
+                break;
+            case TIME:
+                break;
+            case TIME_WITH_LOCAL_TIME_ZONE:
+                break;
+            case TIMESTAMP:
+                break;
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                break;
+            case INTERVAL_YEAR:
+                break;
+            case INTERVAL_YEAR_MONTH:
+                break;
+            case INTERVAL_MONTH:
+                break;
+            case INTERVAL_DAY:
+                break;
+            case INTERVAL_DAY_HOUR:
+                break;
+            case INTERVAL_DAY_MINUTE:
+                break;
+            case INTERVAL_DAY_SECOND:
+                break;
+            case INTERVAL_HOUR:
+                break;
+            case INTERVAL_HOUR_MINUTE:
+                break;
+            case INTERVAL_HOUR_SECOND:
+                break;
+            case INTERVAL_MINUTE:
+                break;
+            case INTERVAL_MINUTE_SECOND:
+                break;
+            case INTERVAL_SECOND:
+                break;
+            case CHAR:
+                break;
+            case VARCHAR:
+                break;
+            case BINARY:
+                break;
+            case VARBINARY:
+                break;
+            case NULL:
+                break;
+            case ANY:
+                break;
+            case SYMBOL:
+                break;
+            case MULTISET:
+                break;
+            case ARRAY:
+                break;
+            case MAP:
+                break;
+            case DISTINCT:
+                break;
+            case STRUCTURED:
+                break;
+            case ROW:
+                break;
+            case OTHER:
+                break;
+            case CURSOR:
+                break;
+            case COLUMN_LIST:
+                break;
+            case DYNAMIC_STAR:
+                break;
+            case GEOMETRY:
+                break;
+        }
+
+        return false;
+    }
+
+
+    public static Function<Object, Object> convertToFrom( PolyType to, PolyType from ) {
+        Function<Object, Object> f = null;
+
+        if ( to == from ) {
+            return Function.identity();
+        }
+
+        switch ( from ) {
+            case BOOLEAN:
+                switch ( to ) {
+                    case BOOLEAN:
+                        f = Function.identity();
+                        break;
+                    case INTEGER:
+                        f = boolIn -> (((Boolean) boolIn) ? 1 : 0);
+                        break;
+                    case CHAR:
+                    case VARCHAR:
+                        f = boolIn -> (((Boolean) boolIn) ? "true" : "false");
+                        break;
+                }
+                break;
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+            case BIGINT:
+                switch ( to ) {
+                    case BOOLEAN:
+                        f = intInt -> (((Integer) intInt) != 0);
+                        break;
+                    case FLOAT:
+                    case DOUBLE:
+                        f = intInt -> (((Integer) intInt).doubleValue());
+                        break;
+                    case CHAR:
+                    case VARCHAR:
+                        f = intInt -> (((Integer) intInt).toString());
+                        break;
+                }
+                break;
+            case DECIMAL:
+                break;
+            case FLOAT:
+            case REAL:
+            case DOUBLE:
+                switch ( to ) {
+                    case TINYINT:
+                    case SMALLINT:
+                    case INTEGER:
+                    case BIGINT:
+                        f = doubleVal -> (((Double) doubleVal).intValue());
+                        break;
+                    case CHAR:
+                    case VARCHAR:
+                        f = doubleVal -> (((Double) doubleVal).toString());
+                        break;
+                }
+                break;
+            case DATE:
+                break;
+            case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
+            case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                break;
+            case INTERVAL_YEAR:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_SECOND:
+                break;
+            case CHAR:
+            case VARCHAR:
+                switch ( to ) {
+                    case BOOLEAN:
+                        f = stringVal -> {
+                            String string = (String) stringVal;
+                            if ( "true".equalsIgnoreCase( string ) ) {
+                                return true;
+                            } else if ( "false".equalsIgnoreCase( string ) ) {
+                                return false;
+                            } else {
+                                throw new IllegalArgumentException( "Unable to converter string \"" + string + "\" to boolean.");
+                            }
+                        };
+                        break;
+                    case TINYINT:
+                    case SMALLINT:
+                    case INTEGER:
+                    case BIGINT:
+                        f = stringVal -> Integer.valueOf( (String) stringVal );
+                        break;
+                    case FLOAT:
+                    case DOUBLE:
+                        f = stringVal -> Double.parseDouble( (String) stringVal );
+                        break;
+                }
+                break;
+            case BINARY:
+            case VARBINARY:
+                break;
+            case ANY:
+            case SYMBOL:
+            case MULTISET:
+            case ARRAY:
+            case MAP:
+            case DISTINCT:
+            case STRUCTURED:
+            case ROW:
+            case OTHER:
+            case CURSOR:
+            case COLUMN_LIST:
+            case DYNAMIC_STAR:
+            case GEOMETRY:
+                break;
+        }
+
+        if ( f != null ) {
+            return f;
+        } else {
+            throw new RuntimeException( "Unable to cast from " + from.getName() + " to " + to.getName() + "." );
+        }
+    }
 }
