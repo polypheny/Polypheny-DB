@@ -282,6 +282,13 @@ public enum PolyType {
             Types.ARRAY,
             PolyTypeFamily.ARRAY ),
 
+    VECTOR(
+            PrecScale.NO_NO | PrecScale.YES_NO,
+            false,
+            Types.ARRAY,
+            PolyTypeFamily.ARRAY
+    ),
+
     MAP(
             PrecScale.NO_NO,
             false,
@@ -361,7 +368,7 @@ public enum PolyType {
                     SMALLINT, BIGINT, REAL, DOUBLE, SYMBOL, INTERVAL_YEAR, INTERVAL_YEAR_MONTH, INTERVAL_MONTH, INTERVAL_DAY,
                     INTERVAL_DAY_HOUR, INTERVAL_DAY_MINUTE, INTERVAL_DAY_SECOND, INTERVAL_HOUR, INTERVAL_HOUR_MINUTE,
                     INTERVAL_HOUR_SECOND, INTERVAL_MINUTE, INTERVAL_MINUTE_SECOND, INTERVAL_SECOND, TIME_WITH_LOCAL_TIME_ZONE,
-                    TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST );
+                    TIMESTAMP_WITH_LOCAL_TIME_ZONE, FLOAT, MULTISET, DISTINCT, STRUCTURED, ROW, CURSOR, COLUMN_LIST, VECTOR );
 
     public static final List<PolyType> BOOLEAN_TYPES = ImmutableList.of( BOOLEAN );
 
@@ -1139,7 +1146,7 @@ public enum PolyType {
 
 
     public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, VARCHAR, VARBINARY );
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, VARCHAR, VARBINARY, VECTOR );
     }
 
 

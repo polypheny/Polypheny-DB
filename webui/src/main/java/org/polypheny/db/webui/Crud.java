@@ -2343,10 +2343,14 @@ public class Crud implements InformationObserver {
 
     private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         // Parser Config
+        //TODO: "VECTOR" is parsed as "vector" if the configs are not changed.
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
+        //configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setCaseSensitive( false );
+        //configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setUnquotedCasing( Casing.TO_UPPER );
+        //configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setQuotedCasing( Casing.TO_UPPER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
 
         PolyphenyDbSignature signature;
