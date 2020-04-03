@@ -83,7 +83,7 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.TableAccessMap;
 import org.polypheny.db.transaction.TableAccessMap.Mode;
-import org.polypheny.db.transaction.TableAccessMap.TableName;
+import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.ExtraPolyTypes;
@@ -127,8 +127,28 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
+        // Locking
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().start( "Locking" );
+
+        }
+        TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+        try {
+            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                if ( mode == Mode.READ_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.SHARED );
+                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                }
+            }
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( e );
+        }
+
         // Route
         if ( transaction.isAnalyze() ) {
+            transaction.getDuration().stop( "Locking" );
             transaction.getDuration().start( "Routing" );
         }
         RelRoot routedRoot = route( logicalRoot, transaction );
@@ -158,25 +178,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         if ( transaction.isAnalyze() ) {
             transaction.getDuration().stop( "Optimization" );
-            transaction.getDuration().start( "Locking" );
-        }
-
-        TableAccessMap accessMap = new TableAccessMap( optimalRoot.rel );
-        try {
-            for ( TableName tableName : accessMap.getTablesAccessed() ) {
-                Mode mode = accessMap.getTableAccessMode( tableName );
-                if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableName, (TransactionImpl) transaction, LockMode.SHARED );
-                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableName, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
-                }
-            }
-        } catch ( DeadlockException e ) {
-            throw new RuntimeException( e );
-        }
-
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Locking" );
             transaction.getDuration().start( "Implementation" );
         }
 

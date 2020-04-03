@@ -20,14 +20,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.transaction.TableAccessMap.TableName;
+import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 
 // Based on code taken from https://github.com/dstibrany/LockManager
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
 
-    private final ConcurrentHashMap<TableName, Lock> lockTable;
+    private final ConcurrentHashMap<TableIdentifier, Lock> lockTable;
     @Getter
     private final WaitForGraph waitForGraph;
 
@@ -38,17 +38,17 @@ public class LockManager {
     }
 
 
-    public void lock( TableName tableName, TransactionImpl transaction, Lock.LockMode requestedMode ) throws DeadlockException {
-        lockTable.putIfAbsent( tableName, new Lock( waitForGraph ) );
+    public void lock( TableIdentifier tableIdentifier, TransactionImpl transaction, Lock.LockMode requestedMode ) throws DeadlockException {
+        lockTable.putIfAbsent( tableIdentifier, new Lock( waitForGraph ) );
 
-        Lock lock = lockTable.get( tableName );
+        Lock lock = lockTable.get( tableIdentifier );
 
         try {
-            if ( hasLock( transaction, tableName ) && (requestedMode == lock.getMode()) ) {
+            if ( hasLock( transaction, tableIdentifier ) && (requestedMode == lock.getMode()) ) {
                 return;
-            } else if ( requestedMode == Lock.LockMode.SHARED && hasLock( transaction, tableName ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
+            } else if ( requestedMode == Lock.LockMode.SHARED && hasLock( transaction, tableIdentifier ) && lock.getMode() == Lock.LockMode.EXCLUSIVE ) {
                 return;
-            } else if ( requestedMode == Lock.LockMode.EXCLUSIVE && hasLock( transaction, tableName ) && lock.getMode() == Lock.LockMode.SHARED ) {
+            } else if ( requestedMode == Lock.LockMode.EXCLUSIVE && hasLock( transaction, tableIdentifier ) && lock.getMode() == Lock.LockMode.SHARED ) {
                 lock.upgrade( transaction );
             } else {
                 lock.acquire( transaction, requestedMode );
@@ -62,8 +62,8 @@ public class LockManager {
     }
 
 
-    public void unlock( TableName tableName, TransactionImpl transaction ) {
-        Lock lock = lockTable.get( tableName );
+    public void unlock( TableIdentifier tableIdentifier, TransactionImpl transaction ) {
+        Lock lock = lockTable.get( tableIdentifier );
         if ( lock != null ) {
             lock.release( transaction );
         }
@@ -79,13 +79,13 @@ public class LockManager {
     }
 
 
-    public boolean hasLock( @NonNull TransactionImpl transaction, TableName tableName ) {
+    public boolean hasLock( @NonNull TransactionImpl transaction, TableIdentifier tableIdentifier ) {
         Set<Lock> lockList = transaction.getLocks();
         if ( lockList == null ) {
             return false;
         }
         for ( Lock txnLock : lockList ) {
-            if ( txnLock == lockTable.get( tableName ) ) {
+            if ( txnLock == lockTable.get( tableIdentifier ) ) {
                 return true;
             }
         }
@@ -93,8 +93,8 @@ public class LockManager {
     }
 
 
-    Lock.LockMode getLockMode( TableName tableName ) {
-        return lockTable.get( tableName ).getMode();
+    Lock.LockMode getLockMode( TableIdentifier tableIdentifier ) {
+        return lockTable.get( tableIdentifier ).getMode();
     }
 
 
