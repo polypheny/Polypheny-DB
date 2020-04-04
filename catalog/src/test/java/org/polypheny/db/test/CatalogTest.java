@@ -19,7 +19,11 @@ package org.polypheny.db.test;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.catalog.Catalog.SchemaType;
@@ -48,6 +52,11 @@ public class CatalogTest {
     public void setup() {
         catalog = new CatalogImpl( "testDB", false, false );
         catalog.clear();
+    }
+
+    @After
+    public void cleanup() {
+        catalog.closeAndDelete();
     }
 
 
@@ -79,6 +88,22 @@ public class CatalogTest {
         long columnId = catalog.addColumn( "test_column", tableId, 0, PolyType.BIGINT, null, null, false, null );
         CatalogColumn column = catalog.getColumn( tableId, "test_column" );
         assertEquals( columnId, column.id );
+    }
+
+
+    @Test
+    public void testDatabase() throws UnknownUserException {
+        int userId = catalog.addUser( "tester", "" );
+        CatalogUser user = catalog.getUser( userId );
+
+        List<String> names = Arrays.asList("database1", "database2", "database3");
+        for( String name: names){
+            catalog.addDatabase( name, userId, user.name, 0, "" );
+        }
+
+        // Assert.assertEquals( catalog.getDatabases( null ).stream().map( d -> d.name).collect( Collectors.toList()), names );
+
+
     }
 
 

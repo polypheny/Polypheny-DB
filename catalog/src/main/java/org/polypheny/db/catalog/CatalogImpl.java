@@ -126,6 +126,7 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong constraintIdBuilder = new AtomicLong();
     private static final AtomicLong indexIdBuilder = new AtomicLong();
     private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
+    private final String path;
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
     // TODO DL check solution for all
 
@@ -141,6 +142,7 @@ public class CatalogImpl extends Catalog {
      */
     public CatalogImpl( String path, boolean doInitSchema, boolean doInitInformationPage ) {
         super();
+        this.path = path;
 
         if ( db != null ) {
             db.close();
@@ -497,6 +499,10 @@ public class CatalogImpl extends Catalog {
         db.close();
     }
 
+   public void closeAndDelete() {
+        db.close();
+        new File( this.path ).delete();
+   }
 
     @Override
     public void clear() {
