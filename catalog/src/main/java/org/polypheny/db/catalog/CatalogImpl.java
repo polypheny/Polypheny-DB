@@ -499,10 +499,12 @@ public class CatalogImpl extends Catalog {
         db.close();
     }
 
-   public void closeAndDelete() {
+
+    public void closeAndDelete() {
         db.close();
         new File( this.path ).delete();
-   }
+    }
+
 
     @Override
     public void clear() {
@@ -516,16 +518,36 @@ public class CatalogImpl extends Catalog {
      *
      * @return the id of the newly inserted database
      */
+    @Override
     public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
         long id = databaseIdBuilder.getAndIncrement();
         CatalogDatabase database = new CatalogDatabase( id, name, ownerId, ownerName, defaultSchemaId, defaultSchemaName );
-        databases.put( id, database );
-        databaseNames.put( name, database );
-        databaseChildren.put( id, ImmutableList.<Long>builder().build() );
+        synchronized ( this ) {
+            databases.put( id, database );
+            databaseNames.put( name, database );
+            databaseChildren.put( id, ImmutableList.<Long>builder().build() );
 
-        db.commit();
+            db.commit();
+        }
         listeners.firePropertyChange( "database", null, database );
         return id;
+    }
+
+
+    @Override
+    public boolean removeDatabase( long databaseId ) throws UnknownDatabaseException {
+        CatalogDatabase database = getDatabase( databaseId );
+        if( database != null) {
+            synchronized ( this ) {
+                databases.remove( databaseId );
+                databaseNames.remove( database.name );
+                databaseChildren.remove( databaseId );
+                db.commit();
+
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -560,7 +582,7 @@ public class CatalogImpl extends Catalog {
     public List<CatalogDatabase> getDatabases( Pattern pattern ) {
         if ( pattern != null ) {
             if ( pattern.containsWildcards ) {
-                return databaseNames.entrySet().stream().filter( e -> e.getKey().matches( pattern.toRegex() ) ).map( Entry::getValue ).collect( Collectors.toList() );
+                return databaseNames.entrySet().stream().filter( e -> e.getKey().matches( pattern.toRegex() ) ).map( Entry::getValue ).sorted().collect( Collectors.toList() );
             } else {
                 if ( databaseNames.containsKey( pattern.pattern ) ) {
                     return Collections.singletonList( databaseNames.get( pattern.pattern ) );
@@ -569,7 +591,7 @@ public class CatalogImpl extends Catalog {
                 }
             }
         } else {
-            return new ArrayList<>( databases.values() );
+            return databases.values().stream().sorted().collect( Collectors.toList() );
         }
     }
 

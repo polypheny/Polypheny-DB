@@ -117,6 +117,10 @@ public abstract class Catalog {
     }
 
 
+    public abstract long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName );
+
+    public abstract boolean removeDatabase( long databaseId ) throws UnknownDatabaseException;
+
     /**
      * Get all databases
      *

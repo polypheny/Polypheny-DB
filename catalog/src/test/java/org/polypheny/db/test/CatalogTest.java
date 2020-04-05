@@ -18,8 +18,11 @@ package org.polypheny.db.test;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.After;
@@ -53,6 +56,7 @@ public class CatalogTest {
         catalog = new CatalogImpl( "testDB", false, false );
         catalog.clear();
     }
+
 
     @After
     public void cleanup() {
@@ -92,20 +96,75 @@ public class CatalogTest {
 
 
     @Test
-    public void testDatabase() throws UnknownUserException {
+    public void testDatabase() throws UnknownUserException, UnknownDatabaseException {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
 
-        List<String> names = Arrays.asList("database1", "database2", "database3");
-        for( String name: names){
-            catalog.addDatabase( name, userId, user.name, 0, "" );
+        List<String> names = Arrays.asList( "database1", "database2", "database3" );
+        List<Long> ids = new ArrayList<>();
+        for ( String name : names ) {
+            ids.add( catalog.addDatabase( name, userId, user.name, 0, "" ) );
         }
 
-        // Assert.assertEquals( catalog.getDatabases( null ).stream().map( d -> d.name).collect( Collectors.toList()), names );
+        assertEquals( catalog.getDatabases( null ).stream().map( d -> d.name ).collect( Collectors.toList() ), names );
 
+        for ( Long id : ids ) {
+            catalog.removeDatabase( id );
+        }
+
+        assertEquals( catalog.getDatabases( null ), Collections.emptyList() );
 
     }
 
+
+    @Test
+    public void testSchema() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownSchemaException {
+        int userId = catalog.addUser( "tester", "" );
+        CatalogUser user = catalog.getUser( userId );
+
+        long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
+        CatalogDatabase database = catalog.getDatabase( databaseId );
+
+        List<String> names = new ArrayList<>( Arrays.asList( "schema1", "schema2", "schema3" ) );
+        List<Long> ids = new ArrayList<>();
+
+        // test adding of schema
+
+        for ( String name : names ) {
+            ids.add( catalog.addSchema( name, databaseId, userId, SchemaType.RELATIONAL ) );
+        }
+        assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
+
+        // test renaming of schema
+        String replacedName = "newName";
+        Long id = ids.get( 0 );
+        catalog.renameSchema( id, replacedName );
+        names.remove( 0 );
+        names.add( 0, replacedName );
+
+        assertEquals( catalog.getSchemas( databaseId, null ).stream().map( s -> s.name ).collect( Collectors.toList() ), names );
+
+        // test changing owner of schema
+        int newUserId = catalog.addUser( "newUser", "" );
+        catalog.setSchemaOwner( 0, newUserId );
+
+        assertEquals( catalog.getSchema( 0, replacedName ).ownerId, newUserId );
+    }
+
+    @Test
+    public void testTable() {
+
+    }
+
+    @Test
+    public void testColumn() {
+
+    }
+
+    @Test
+    public void testColumnPlacement() {
+
+    }
 
     @After
     public void close() {

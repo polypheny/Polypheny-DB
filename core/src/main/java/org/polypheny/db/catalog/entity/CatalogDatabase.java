@@ -18,6 +18,7 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
+import java.util.Comparator;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ import lombok.RequiredArgsConstructor;
  *
  */
 @EqualsAndHashCode
-public final class CatalogDatabase implements CatalogEntity {
+public final class CatalogDatabase implements CatalogEntity, Comparable {
 
     private static final long serialVersionUID = 4711611630126858410L;
 
@@ -62,8 +63,18 @@ public final class CatalogDatabase implements CatalogEntity {
     }
 
 
+    @Override
+    public int compareTo( Object o ) {
+        if ( o instanceof CatalogDatabase ) {
+            return (int) (this.id - ((CatalogDatabase) o).id);
+        }
+        return 0;
+    }
+
+
     @RequiredArgsConstructor
     public static class PrimitiveCatalogDatabase {
+
         public final String tableCat;
         public final String owner;
         public final String defaultSchema;
