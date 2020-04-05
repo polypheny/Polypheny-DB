@@ -34,7 +34,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
  *
  */
 @EqualsAndHashCode
-public final class CatalogTable implements CatalogEntity {
+public final class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
     private static final long serialVersionUID = 5426944084650275437L;
 
@@ -102,6 +102,26 @@ public final class CatalogTable implements CatalogEntity {
                 null,
                 ownerName,
                 definition };
+    }
+
+
+    @Override
+    public int compareTo( CatalogTable o ) {
+        if ( o != null ) {
+            int comp = (int) (this.databaseId - o.databaseId);
+            if ( comp == 0 ) {
+                comp = (int) (this.schemaId - o.schemaId);
+                if ( comp == 0 ) {
+                    return (int) (this.id - o.id);
+                } else {
+                    return comp;
+                }
+
+            } else {
+                return comp;
+            }
+        }
+        return -1;
     }
 
 
@@ -182,12 +202,11 @@ public final class CatalogTable implements CatalogEntity {
         Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( table.placementsByStore );
         List<Long> placements = new ArrayList<>( placementsByStore.get( storeId ) );
         placements.remove( columnId );
-        if( placements.size() != 0){
+        if ( placements.size() != 0 ) {
             placementsByStore.put( storeId, ImmutableList.copyOf( placements ) );
-        }else {
+        } else {
             placementsByStore.remove( storeId );
         }
-
 
         return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
     }

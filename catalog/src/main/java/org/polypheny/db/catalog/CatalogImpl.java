@@ -591,7 +591,7 @@ public class CatalogImpl extends Catalog {
                 }
             }
         } else {
-            return databases.values().stream().sorted().collect( Collectors.toList() );
+            return new ArrayList<>( databases.values() );
         }
     }
 
