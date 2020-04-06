@@ -84,21 +84,21 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Integer, CatalogUser> users;
     private static HTreeMap<String, CatalogUser> userNames;
 
-    private static HTreeMap<Long, CatalogDatabase> databases;
-    private static HTreeMap<String, CatalogDatabase> databaseNames;
+    private static BTreeMap<Long, CatalogDatabase> databases;
+    private static BTreeMap<String, CatalogDatabase> databaseNames;
     private static HTreeMap<Long, ImmutableList<Long>> databaseChildren;
 
 
-    private static HTreeMap<Long, CatalogSchema> schemas;
+    private static BTreeMap<Long, CatalogSchema> schemas;
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
 
 
-    private static HTreeMap<Long, CatalogTable> tables;
+    private static BTreeMap<Long, CatalogTable> tables;
     private static BTreeMap<Object[], CatalogTable> tableNames;
     private static HTreeMap<Long, ImmutableList<Long>> tableChildren;
 
-    private static HTreeMap<Long, CatalogColumn> columns;
+    private static BTreeMap<Long, CatalogColumn> columns;
     private static BTreeMap<Object[], CatalogColumn> columnNames;
     private static BTreeMap<Object[], CatalogColumnPlacement> columnPlacements;
 
@@ -348,8 +348,8 @@ public class CatalogImpl extends Catalog {
      * @param db the MapDB database object on which the maps are generated from
      */
     private void initColumnInfo( DB db ) {
-
-        columns = db.hashMap( "columns", Serializer.LONG, new GenericSerializer<CatalogColumn>() ).createOrOpen();
+        //noinspection unchecked
+        columns = db.treeMap( "columns", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         //noinspection unchecked
         columnNames = db.treeMap( "columnNames", new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
         //noinspection unchecked
@@ -358,7 +358,8 @@ public class CatalogImpl extends Catalog {
 
 
     private void initTableInfo( DB db ) {
-        tables = db.hashMap( "tables", Serializer.LONG, new GenericSerializer<CatalogTable>() ).createOrOpen();
+        //noinspection unchecked
+        tables = db.treeMap( "tables", Serializer.LONG, Serializer.JAVA).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         tableNames = db.treeMap( "tableNames" )
@@ -369,7 +370,8 @@ public class CatalogImpl extends Catalog {
 
 
     private void initSchemaInfo( DB db ) {
-        schemas = db.hashMap( "schemas", Serializer.LONG, new GenericSerializer<CatalogSchema>() ).createOrOpen();
+        //noinspection unchecked
+        schemas = db.treeMap( "schemas", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         schemaChildren = db.hashMap( "schemaChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         schemaNames = db.treeMap( "schemaNames", new SerializerArrayTuple( Serializer.LONG, Serializer.STRING ), Serializer.JAVA ).createOrOpen();
@@ -377,8 +379,10 @@ public class CatalogImpl extends Catalog {
 
 
     private void initDatabaseInfo( DB db ) {
-        databases = db.hashMap( "databases", Serializer.LONG, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
-        databaseNames = db.hashMap( "databaseNames", Serializer.STRING, new GenericSerializer<CatalogDatabase>() ).createOrOpen();
+        //noinspection unchecked
+        databases = db.treeMap( "databases", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        //noinspection unchecked
+        databaseNames = db.treeMap( "databaseNames", Serializer.STRING, Serializer.JAVA ).createOrOpen();
         databaseChildren = db.hashMap( "databaseChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
     }
 

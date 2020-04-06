@@ -146,14 +146,18 @@ public class CatalogTest {
 
         // test changing owner of schema
         int newUserId = catalog.addUser( "newUser", "" );
-        catalog.setSchemaOwner( 0, newUserId );
+        catalog.setSchemaOwner( id, newUserId );
 
-        assertEquals( catalog.getSchema( 0, replacedName ).ownerId, newUserId );
+        assertEquals( catalog.getSchema( databaseId, replacedName ).ownerId, newUserId );
     }
 
     @Test
-    public void testTable() {
+    public void testTable() throws UnknownUserException, UnknownDatabaseException {
+        int userId = catalog.addUser( "tester", "" );
+        CatalogUser user = catalog.getUser( userId );
 
+        long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
+        CatalogDatabase database = catalog.getDatabase( databaseId );
     }
 
     @Test
