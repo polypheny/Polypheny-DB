@@ -741,21 +741,22 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction( queryExplorationRequest.analyze );
         boolean autoCommit = true;
 
-        ArrayList<Result> results = new ArrayList<>();
+        //ArrayList<Result> results = new ArrayList<>();
         Result result;
         long executionTime = 0;
         long temp = 0;
 
         String query = queryExplorationRequest.query;
+        System.out.println( query );
         List<String> group = new ArrayList<>(  );
 
-        Map<String, String> typeInfo = new HashMap<>(  );
+        //Map<String, String> typeInfo = new HashMap<>(  );
 
         try {
             Result r = executeSqlSelect( transaction, queryExplorationRequest, query ).setInfo( new Debug().setGeneratedQuery( query ) );
 
             for ( int i = 0; i < r.getHeader().length; i++ ){
-                typeInfo.put( r.getHeader()[i].name, r.getHeader()[i].dataType );
+                //typeInfo.put( r.getHeader()[i].name, r.getHeader()[i].dataType );
                group.add( r.getHeader()[i].dataType );
             }
 
@@ -763,16 +764,16 @@ public class Crud implements InformationObserver {
             log.error("Caught exception while executing a query for Exploration", e );
         }
 
+
         Explore explore = exploreManager.createSqlQuery(null, queryExplorationRequest.query, group);
         query = explore.getSqlStatment();
 
-        //query = query.replace( "SELECT", "SELECT DISTINCT" );
 
         try {
             temp = System.nanoTime();
             result = executeSqlSelect( transaction, queryExplorationRequest, query, false, 200 ).setInfo( new Debug().setGeneratedQuery( query ) );
             executionTime += System.nanoTime() - temp;
-            results.add( result );
+            //results.add( result );
             if ( autoCommit ) {
                 transaction.commit();
                 transaction = getTransaction( queryExplorationRequest.analyze );
@@ -781,7 +782,7 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception while executing a query from the console", e );
             executionTime += System.nanoTime() - temp;
             result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
-            results.add( result );
+            //results.add( result );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -790,6 +791,12 @@ public class Crud implements InformationObserver {
         }
 
         result.setExplorerId( explore.getId() );
+        if(!explore.isClassificationPossible()){
+            result.setClassificationInfo( "NoClassificationPossible" );
+        }else{
+            result.setClassificationInfo( "ClassificationPossible" );
+        }
+
         return result;
     }
 

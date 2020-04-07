@@ -77,6 +77,9 @@ public class Result {
     private ResultType type;
 
     @Setter
+    private String classificationInfo;
+
+    @Setter
     private int explorerId;
 
     /**

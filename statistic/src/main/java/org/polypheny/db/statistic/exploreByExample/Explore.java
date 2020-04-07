@@ -20,6 +20,7 @@ package org.polypheny.db.statistic.exploreByExample;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -31,6 +32,7 @@ import weka.core.DenseInstance;
 import weka.core.FastVector;
 import weka.core.Instances;
 import weka.core.Utils;
+
 
 @Slf4j
 public class Explore {
@@ -57,10 +59,16 @@ public class Explore {
     @Getter
     private String query;
     Map<String, List<String>> sqlValues;
-    private String [][] classifiedData;
+    private String[][] classifiedData;
     List<String> typeInfo;
     @Getter
     private String sqlStatment;
+    private String joinCondition;
+    @Getter
+    private boolean classificationPossible = true;
+
+    private ExploreQueryProcessor exploreQueryProcessor;
+
 
     @Getter
     private List<String[]> dataAfterClassification;
@@ -74,55 +82,126 @@ public class Explore {
         this.dataType = dataType;
     }
 
-    public Explore(int identifier, String query, List<String> typeInfo){
+
+    public Explore( int identifier, String query, List<String> typeInfo, ExploreQueryProcessor exploreQueryProcessor ) {
         this.id = identifier;
         this.query = query;
         this.sqlStatment = query;
         this.typeInfo = typeInfo;
+        this.exploreQueryProcessor = exploreQueryProcessor;
     }
 
-    public void updateExploration( List<String[]> labeled) {
-        dataAfterClassification = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+
+    public void updateExploration( List<String[]> labeled ) {
+        dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
+
 
     public void exploreUserInput() {
-        unlabledData = createInstance(rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues);
-        dataAfterClassification = classifyUnlabledData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+        unlabledData = createInstance( rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues );
+        dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
+
 
     public void classifyAllData( List<String[]> labeled, List<String[]> allData ) {
-        unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues);
-        data = classifyData( trainData(createInstance(rotate2dArray( labeled ), labeled, dataType, uniqueValues)), unlabledData );
+        unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues );
+        data = classifyData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
-    //TODO: Isabel change SQL Statment, now really ugly and min missing
-    public void createSQLStatement(){
 
-        List<String> q = new ArrayList<>(  );
-        List<String> list = new ArrayList<>(  );
-        List<String> list2= new ArrayList<>(  );
+    public void createSQLStatement() {
+
+        List<String> selecdedCols = new ArrayList<>();
+        List<String> list = new ArrayList<>();
+        List<String> list2 = new ArrayList<>();
+        List<String> list3 = new ArrayList<>();
+        List<String> list4 = new ArrayList<>();
+        List<String> list5 = new ArrayList<>();
+
+        System.out.println( sqlStatment );
+
+        int rowCount = getSQLCount( sqlStatment + "\nLIMIT 200" );
+
+        if ( rowCount < 10 ) {
+            classificationPossible = false;
+        } else if ( rowCount > 10 && rowCount < 40 ) {
+            sqlStatment = sqlStatment;
+        } else if ( rowCount > 40 ) {
+            String selectDistinct = sqlStatment.replace( "SELECT", "SELECT DISTINCT" ) + "\nLIMIT 200";
+            rowCount = getSQLCount( selectDistinct );
+            if ( rowCount < 10 ) {
+                classificationPossible = false;
+            } else if ( rowCount > 10 && rowCount < 40 ) {
+                sqlStatment = selectDistinct;
+            } else if ( rowCount > 40 ) {
+
+                selecdedCols = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
+                Map<String, Integer> infos = getUniqueValuesCount( selecdedCols );
+
+                for ( int i = 0; i < selecdedCols.size(); i++ ) {
+                    if ( typeInfo.get( i ).equals( "VARCHAR" ) ) {
+                        list.add( selecdedCols.get( i ) );
+                        list2.add( selecdedCols.get( i ) );
+                        list5.add( selecdedCols.get( i ) );
+                    }
+                    if ( typeInfo.get( i ).equals( "INTEGER" ) ) {
+                        list.add( "AVG(" + selecdedCols.get( i ) + ")");
+                        list3.add(selecdedCols.get(i));
+                        list5.add( selecdedCols.get( i ) );
+                    }
+                }
+
+                if(typeInfo.contains( "INTEGER" )){
+                    getMins(list3).forEach( (s, min) ->  list4.add( "\nUNION \nSELECT " + String.join(",", list5) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min ));
+                    getMaxs(list3).forEach( (s, max) ->  list4.add( "\nUNION \nSELECT " + String.join(",", list5) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max ));
+                }
 
 
-        q = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
+                sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", list2 ) + String.join("", list4);
 
-
-        for ( int i = 0; i < q.size(); i ++){
-            if(typeInfo.get( i ).equals( "INTEGER" )){
-                list2.add( "MAX(" + q.get( i ) + ") AS MAXi" + i + " " );
-                //list2.add( "MIN(" + q.get( i ) + ") AS MINi" + i + " " );
-            }
-            if(typeInfo.get( i ).equals( "VARCHAR" )){
-                list.add( q.get( i ) );
-                list2.add( q.get( i ) );
+                System.out.println( "show me the count" + getSQLCount( sqlStatment ) );
+                //System.out.println( "show me the sql statement" + sqlStatment );
             }
         }
-
-        String listString = String.join(",", list);
-        String listString2 = String.join(",", list2);
-
-        sqlStatment = sqlStatment.split( "\nFROM" )[1];
-        sqlStatment = "SELECT " + listString2 + "\nFROM" + sqlStatment + "\nGROUP BY " + listString + " LIMIT 200";
     }
+
+
+    private int getSQLCount( String sql ) {
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( sql );
+        return (exploreQueryResult.count);
+    }
+
+
+    private Map<String, Integer> getUniqueValuesCount( List<String> cols ) {
+        Map<String, Integer> counts = new HashMap<>();
+        cols.forEach( s -> counts.put( s, getUniqueValueCount( "SELECT DISTINCT" + s + "\nFROM " + s.replaceAll( "\\.[^.]*$", "" ) + "\nLIMIT 200" ) ) );
+        return counts;
+    }
+
+
+    private Map<String, Integer> getMins( List<String> cols ) {
+        Map<String, Integer> mins = new HashMap<>();
+        cols.forEach(s -> mins.put( s, Integer.parseInt( getMin("SELECT MIN(" + s + ") \nFROM " + s.replaceAll( "\\.[^.]*$", "" ) + "\nLIMIT 200 "))));
+        return mins;
+    }
+
+    private Map<String, Integer> getMaxs( List<String> cols ) {
+        Map<String, Integer> maxs = new HashMap<>();
+        cols.forEach(s -> maxs.put( s, Integer.parseInt( getMin("SELECT MAX(" + s + ") \nFROM " + s.replaceAll( "\\.[^.]*$", "" ) + "\nLIMIT 200 "))));
+        return maxs;
+    }
+
+    private String getMin( String sql ) {
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( sql );
+        return (exploreQueryResult.col);
+    }
+
+
+    private int getUniqueValueCount( String sql ) {
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( sql );
+        return (exploreQueryResult.count);
+    }
+
 
     private List<String[]> rotate2dArray( List<String[]> table ) {
         int width = table.get( 0 ).length;
@@ -135,12 +214,13 @@ public class Explore {
                 rotatedTable[x][y] = table.get( y )[x];
             }
         }
-        List<String[]> tab = new ArrayList<>(  );
+        List<String[]> tab = new ArrayList<>();
         Collections.addAll( tab, rotatedTable );
         return tab;
     }
 
-    public Instances createInstance( List<String[]> rotatedTable, List<String[]> table, String[] dataType, List<List<String>> uniqueValues ){
+
+    public Instances createInstance( List<String[]> rotatedTable, List<String[]> table, String[] dataType, List<List<String>> uniqueValues ) {
 
         int numInstances = rotatedTable.get( 0 ).length;
         int dimLength = table.get( 0 ).length;
@@ -174,10 +254,9 @@ public class Explore {
 
             for ( int dim = 0; dim < dimLength; dim++ ) {
                 if ( dataType[dim].equals( "VARCHAR" ) ) {
-                    if (attValsEl[dim].contains( table.get( obj )[dim] )){
+                    if ( attValsEl[dim].contains( table.get( obj )[dim] ) ) {
                         vals[dim] = attValsEl[dim].indexOf( table.get( obj )[dim] );
-                    }
-                    else {
+                    } else {
                         vals[dim] = Utils.missingValue();
                     }
                 } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
@@ -189,7 +268,8 @@ public class Explore {
         return classifiedData;
     }
 
-    public J48 trainData( Instances classifiedData){
+
+    public J48 trainData( Instances classifiedData ) {
         classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
         J48 tree = new J48();
 
@@ -197,25 +277,26 @@ public class Explore {
         try {
             tree.setOptions( options );
         } catch ( Exception e ) {
-            log.error("Caught exception while setting options for Classification", e);
+            log.error( "Caught exception while setting options for Classification", e );
         }
 
         try {
             tree.buildClassifier( classifiedData );
         } catch ( Exception e ) {
-            log.error("Caught exception while building Classifier", e);
+            log.error( "Caught exception while building Classifier", e );
         }
 
         try {
             this.buildGraph = tree.graph();
         } catch ( Exception e ) {
-            log.error("Caught exception while building tree graph", e);
+            log.error( "Caught exception while building tree graph", e );
         }
 
         return tree;
     }
 
-    public List<String[]> classifyUnlabledData( J48 tree, Instances unlabeled ){
+
+    public List<String[]> classifyUnlabledData( J48 tree, Instances unlabeled ) {
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
         Instances labeled = new Instances( unlabeled );
@@ -228,7 +309,7 @@ public class Explore {
             try {
                 clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
             } catch ( Exception e ) {
-                log.error("Caught exception while classifying unlabeled data", e);
+                log.error( "Caught exception while classifying unlabeled data", e );
             }
 
             labeled.instance( i ).setClassValue( clsLabel );
@@ -242,11 +323,12 @@ public class Explore {
 
     /**
      * Classify all Data with tree built before
+     *
      * @param tree J48 Weka Tree
      * @param unlabeled all selected unlabeled Data
      * @return only the data labeled as true
      */
-    public String[][] classifyData( J48 tree, Instances unlabeled ){
+    public String[][] classifyData( J48 tree, Instances unlabeled ) {
         List<String[]> labledData = new ArrayList<>();
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
         Instances labeled = new Instances( unlabeled );
@@ -257,13 +339,13 @@ public class Explore {
             try {
                 clsLabel = tree.classifyInstance( unlabeled.instance( i ) );
             } catch ( Exception e ) {
-                log.error("Caught exception while classifying all unlabeled data", e);
+                log.error( "Caught exception while classifying all unlabeled data", e );
             }
 
             labeled.instance( i ).setClassValue( clsLabel );
 
             if ( "true".equals( unlabeled.classAttribute().value( (int) clsLabel ) ) ) {
-                 labledData.add(Arrays.copyOf( labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length - 1 ));
+                labledData.add( Arrays.copyOf( labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length - 1 ) );
             }
         }
         return labledData.toArray( new String[0][] );
