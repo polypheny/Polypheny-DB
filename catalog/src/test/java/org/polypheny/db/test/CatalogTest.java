@@ -19,6 +19,7 @@ package org.polypheny.db.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,12 +35,15 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -151,24 +155,79 @@ public class CatalogTest {
         assertEquals( catalog.getSchema( databaseId, replacedName ).ownerId, newUserId );
     }
 
+
     @Test
-    public void testTable() throws UnknownUserException, UnknownDatabaseException {
+    public void testTable() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownTableException, UnknownKeyException {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
         CatalogDatabase database = catalog.getDatabase( databaseId );
+
+        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
+        CatalogSchema schema = catalog.getSchema( schemaId );
+
+        List<String> names = new ArrayList<>( Arrays.asList( "table1", "table2", "table3", "table4", "table5" ) );
+        List<Long> ids = new ArrayList<>();
+
+        for ( String name : names ) {
+            ids.add( catalog.addTable( name, schemaId, userId, TableType.TABLE, null ) );
+        }
+
+        // test renaming table
+        String newTable = "newTable";
+        Long id = ids.get( 3 );
+
+        names.remove( 3 );
+        names.add( 3, newTable );
+
+        catalog.renameTable( id, newTable );
+        assertEquals( catalog.getTables( null, null, null ).stream().sorted().map( s -> s.name ).collect( Collectors.toList() ), names );
+
+        // test change owner
+        String newUserName = "newUser";
+        int newUserId = catalog.addUser( newUserName, "" );
+        catalog.setTableOwner( id, newUserId );
+
+        assertEquals( catalog.getTable( id ).ownerId, newUserId );
+        assertEquals( catalog.getTable( id ).ownerName, newUserName );
+
+        // test change primary
+        List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2" ) );
+        List<Long> columnIds = new ArrayList<>();
+        int counter = 0;
+        for ( String name : columnNames ) {
+            columnIds.add( catalog.addColumn( name, id, counter++, PolyType.BIGINT, null, null, false, null ) );
+        }
+
+        Long columnId = columnIds.get( 0 );
+        catalog.addPrimaryKey( id, new ArrayList<>( Collections.singleton( columnId ) ) );
+
+        CatalogPrimaryKey key = catalog.getPrimaryKey( catalog.getTable( id ).primaryKey );
+        assertEquals( key.columnIds.get( 0 ), columnId );
+
+        catalog.deletePrimaryKey( id );
+        assertNull( catalog.getTable( id ).primaryKey );
+
+        catalog.addPrimaryKey( id, columnIds );
+        key = catalog.getPrimaryKey( catalog.getTable( id ).primaryKey );
+        assertEquals(  key.columnIds, columnIds);
+
+
     }
+
 
     @Test
     public void testColumn() {
 
     }
 
+
     @Test
     public void testColumnPlacement() {
 
     }
+
 
     @After
     public void close() {

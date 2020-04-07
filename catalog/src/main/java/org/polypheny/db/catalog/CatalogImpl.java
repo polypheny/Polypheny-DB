@@ -171,8 +171,9 @@ public class CatalogImpl extends Catalog {
             initDBLayout( db );
 
             // mirrors default data from old sql file
+            restoreAllIdBuilders();
             try {
-                restoreAllIdBuilders();
+
                 if ( doInitSchema ) {
                     insertDefaultData();
                 }
@@ -359,7 +360,7 @@ public class CatalogImpl extends Catalog {
 
     private void initTableInfo( DB db ) {
         //noinspection unchecked
-        tables = db.treeMap( "tables", Serializer.LONG, Serializer.JAVA).createOrOpen();
+        tables = db.treeMap( "tables", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         tableNames = db.treeMap( "tableNames" )
@@ -391,6 +392,7 @@ public class CatalogImpl extends Catalog {
      * Fills the catalog database with default data, skips if data is already inserted
      */
     private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownStoreException {
+
         //////////////
         // init users
         int systemId;
@@ -457,7 +459,7 @@ public class CatalogImpl extends Catalog {
         CatalogStore csv = getStore( "csv" );
         // TODO temporary change
 
-        addDefaultCsvColumns( csv );
+        // addDefaultCsvColumns( csv );
 
     }
 
@@ -541,7 +543,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean removeDatabase( long databaseId ) throws UnknownDatabaseException {
         CatalogDatabase database = getDatabase( databaseId );
-        if( database != null) {
+        if ( database != null ) {
             synchronized ( this ) {
                 databases.remove( databaseId );
                 databaseNames.remove( database.name );
@@ -680,6 +682,12 @@ public class CatalogImpl extends Catalog {
         }
 
         return new ArrayList<>( schemaNames.prefixSubMap( new Object[]{ databaseId } ).values() );
+    }
+
+
+    @Override
+    public CatalogSchema getSchema( long schemaId ) {
+        return schemas.get( schemaId );
     }
 
 
@@ -1122,7 +1130,8 @@ public class CatalogImpl extends Catalog {
     public void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
         try {
             CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
-            CatalogTable table = CatalogTable.replaceOwner( old, ownerId );
+            CatalogUser user = Objects.requireNonNull( users.get( ownerId ) );
+            CatalogTable table = CatalogTable.replaceOwner( old, ownerId, user.name );
             synchronized ( this ) {
                 tables.replace( tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );

@@ -148,8 +148,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     }
 
 
-    public static CatalogTable replaceOwner( CatalogTable table, int ownerId ) {
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
+    public static CatalogTable replaceOwner( CatalogTable table, int ownerId, String ownerName ) {
+        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
     }
 
 
