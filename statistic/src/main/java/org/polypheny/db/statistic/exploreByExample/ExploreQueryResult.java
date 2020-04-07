@@ -17,23 +17,32 @@
 package org.polypheny.db.statistic.exploreByExample;
 
 
+import java.util.List;
+
+
 public class ExploreQueryResult {
 
     public String[][] data;
     public String col;
     public int count;
+    List<String> typeInfo;
+    List<String> name;
 
     public ExploreQueryResult(){
 
     }
 
-    public ExploreQueryResult( String[][] data, int count ) {
+    public ExploreQueryResult( String[][] data, int count,  List<String> colInfo,  List<String> name ) {
         this.data = data;
         this.count = count;
+        this.typeInfo = colInfo;
+        this.name = name;
     }
 
-    public ExploreQueryResult (String col, int count){
+    public ExploreQueryResult (String col, int count,  List<String> colInfo,  List<String> name ){
         this.col = col;
         this.count = count;
+        this.typeInfo = colInfo;
+        this.name = name;
     }
 }

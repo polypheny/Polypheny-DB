@@ -746,32 +746,12 @@ public class Crud implements InformationObserver {
         long executionTime = 0;
         long temp = 0;
 
-        String query = queryExplorationRequest.query;
-        System.out.println( query );
-        List<String> group = new ArrayList<>(  );
-
-        //Map<String, String> typeInfo = new HashMap<>(  );
-
-        try {
-            Result r = executeSqlSelect( transaction, queryExplorationRequest, query ).setInfo( new Debug().setGeneratedQuery( query ) );
-
-            for ( int i = 0; i < r.getHeader().length; i++ ){
-                //typeInfo.put( r.getHeader()[i].name, r.getHeader()[i].dataType );
-               group.add( r.getHeader()[i].dataType );
-            }
-
-        } catch (  QueryExecutionException | RuntimeException e ) {
-            log.error("Caught exception while executing a query for Exploration", e );
-        }
-
-
-        Explore explore = exploreManager.createSqlQuery(null, queryExplorationRequest.query, group);
-        query = explore.getSqlStatment();
-
+        Explore explore = exploreManager.createSqlQuery(null, queryExplorationRequest.query);
+        String query = explore.getSqlStatment();
 
         try {
             temp = System.nanoTime();
-            result = executeSqlSelect( transaction, queryExplorationRequest, query, false, 200 ).setInfo( new Debug().setGeneratedQuery( query ) );
+            result = executeSqlSelect( transaction, queryExplorationRequest, query, false, 60 ).setInfo( new Debug().setGeneratedQuery( query ) );
             executionTime += System.nanoTime() - temp;
             //results.add( result );
             if ( autoCommit ) {

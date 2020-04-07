@@ -67,11 +67,11 @@ public class ExploreManager {
     }
 
 
-    public Explore createSqlQuery( Integer id, String query, List<String> typeInfo ) {
+    public Explore createSqlQuery( Integer id, String query) {
 
         if ( id == null ) {
             int identifier = atomicId.getAndIncrement();
-            explore.put( identifier, new Explore( identifier, query, typeInfo, this.exploreQueryProcessor ) );
+            explore.put( identifier, new Explore( identifier, query, this.exploreQueryProcessor ) );
             explore.get( identifier ).createSQLStatement();
             return explore.get( identifier );
         }

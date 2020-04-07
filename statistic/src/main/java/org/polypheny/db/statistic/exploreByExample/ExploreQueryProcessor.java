@@ -18,8 +18,10 @@ package org.polypheny.db.statistic.exploreByExample;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
@@ -52,7 +54,7 @@ public class ExploreQueryProcessor {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final int pagnation = 200;
+    private final int pagnation = 60;
 
 
 
@@ -133,32 +135,19 @@ public class ExploreQueryProcessor {
             throw new ExploreQueryProcessor.QueryExecutionException( t );
         }
 
-        try {/*
-            List<PolyType> types = new ArrayList<>();
-            List<String> names = new ArrayList<>();
+        try {
+            List<String> typeInfo = new ArrayList<>(  );
+            List<String> name = new ArrayList<>(  );
             for ( ColumnMetaData metaData : signature.columns ) {
-
-                types.add( PolyType.get( metaData.type.name ) );
-                names.add( metaData.schemaName + "." + metaData.tableName + "." + metaData.columnName );
-            }*/
-
-            for ( ColumnMetaData metaData : signature.columns ) {
-                String columnName = metaData.columnName;
-
-                /*metaData.columnName
-                metaData.type.name,
-                metaData.schemaName
-                metaData.tableName
-
-
-                 */
+                typeInfo.add( metaData.type.name );
+                name.add( metaData.columnName );
             }
 
             if(rows.size() == 1){
                 for(List<Object> row : rows){
                     if (row.size() == 1){
                         for(Object o : row){
-                            return new ExploreQueryResult( o.toString(), rows.size() );
+                            return new ExploreQueryResult( o.toString(), rows.size(), typeInfo, name );
                         }
                     }
                 }
@@ -181,7 +170,7 @@ public class ExploreQueryProcessor {
 
             String[][] d = data.toArray( new String[0][] );
 
-            return new ExploreQueryResult( d, rows.size() );
+            return new ExploreQueryResult( d, rows.size(), typeInfo, name );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();

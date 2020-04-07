@@ -60,7 +60,7 @@ public class Explore {
     private String query;
     Map<String, List<String>> sqlValues;
     private String[][] classifiedData;
-    List<String> typeInfo;
+    Map<String, String> typeInfo;
     @Getter
     private String sqlStatment;
     private String joinCondition;
@@ -83,12 +83,12 @@ public class Explore {
     }
 
 
-    public Explore( int identifier, String query, List<String> typeInfo, ExploreQueryProcessor exploreQueryProcessor ) {
+    public Explore( int identifier, String query, ExploreQueryProcessor exploreQueryProcessor ) {
         this.id = identifier;
         this.query = query;
         this.sqlStatment = query;
-        this.typeInfo = typeInfo;
         this.exploreQueryProcessor = exploreQueryProcessor;
+        this.typeInfo = getTypeInfo( query );
     }
 
 
@@ -109,6 +109,21 @@ public class Explore {
     }
 
 
+    public Map<String, String> getTypeInfo( String query ) {
+        Map<String, String> typeInfo = new HashMap<>();
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( query );
+
+        String[] fullNames = query.split( "SELECT " )[1].split( "\nFROM" )[0].toLowerCase().split( "," );
+        for ( int i = 0; i < exploreQueryResult.typeInfo.size(); i++ ) {
+            if ( fullNames[i].contains( exploreQueryResult.name.get( i ) ) ) {
+                typeInfo.put( fullNames[i], exploreQueryResult.typeInfo.get( i ) );
+            }
+        }
+
+        return typeInfo;
+    }
+
+
     public void createSQLStatement() {
 
         List<String> selecdedCols = new ArrayList<>();
@@ -118,16 +133,14 @@ public class Explore {
         List<String> list4 = new ArrayList<>();
         List<String> list5 = new ArrayList<>();
 
-        System.out.println( sqlStatment );
-
-        int rowCount = getSQLCount( sqlStatment + "\nLIMIT 200" );
+        int rowCount = getSQLCount( sqlStatment + "\nLIMIT 60" );
 
         if ( rowCount < 10 ) {
             classificationPossible = false;
         } else if ( rowCount > 10 && rowCount < 40 ) {
             sqlStatment = sqlStatment;
         } else if ( rowCount > 40 ) {
-            String selectDistinct = sqlStatment.replace( "SELECT", "SELECT DISTINCT" ) + "\nLIMIT 200";
+            String selectDistinct = sqlStatment.replace( "SELECT", "SELECT DISTINCT" ) + "\nLIMIT 60";
             rowCount = getSQLCount( selectDistinct );
             if ( rowCount < 10 ) {
                 classificationPossible = false;
@@ -136,28 +149,27 @@ public class Explore {
             } else if ( rowCount > 40 ) {
 
                 selecdedCols = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
-                Map<String, Integer> infos = getUniqueValuesCount( selecdedCols );
+                //Map<String, Integer> infos = getUniqueValuesCount( selecdedCols );
 
-                for ( int i = 0; i < selecdedCols.size(); i++ ) {
-                    if ( typeInfo.get( i ).equals( "VARCHAR" ) ) {
-                        list.add( selecdedCols.get( i ) );
-                        list2.add( selecdedCols.get( i ) );
-                        list5.add( selecdedCols.get( i ) );
+                typeInfo.forEach( ( name, type ) -> {
+                    if ( type.equals( "VARCHAR" ) ) {
+                        list.add( name );
+                        list2.add( name );
+                        list5.add( name );
                     }
-                    if ( typeInfo.get( i ).equals( "INTEGER" ) ) {
-                        list.add( "AVG(" + selecdedCols.get( i ) + ")");
-                        list3.add(selecdedCols.get(i));
-                        list5.add( selecdedCols.get( i ) );
+                    if ( type.equals( "INTEGER" ) ) {
+                        list.add( "AVG(" + name + ")" );
+                        list3.add( name );
+                        list5.add( name );
                     }
+                } );
+
+                if ( typeInfo.containsValue( "INTEGER" ) ) {
+                    getMins( list3 ).forEach( ( s, min ) -> list4.add( "\nUNION \nSELECT " + String.join( ",", list5 ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min ) );
+                    getMaxs( list3 ).forEach( ( s, max ) -> list4.add( "\nUNION \nSELECT " + String.join( ",", list5 ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max ) );
                 }
 
-                if(typeInfo.contains( "INTEGER" )){
-                    getMins(list3).forEach( (s, min) ->  list4.add( "\nUNION \nSELECT " + String.join(",", list5) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min ));
-                    getMaxs(list3).forEach( (s, max) ->  list4.add( "\nUNION \nSELECT " + String.join(",", list5) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max ));
-                }
-
-
-                sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", list2 ) + String.join("", list4);
+                sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", list2 ) + String.join( "", list4 );
 
                 System.out.println( "show me the count" + getSQLCount( sqlStatment ) );
                 //System.out.println( "show me the sql statement" + sqlStatment );
@@ -181,15 +193,17 @@ public class Explore {
 
     private Map<String, Integer> getMins( List<String> cols ) {
         Map<String, Integer> mins = new HashMap<>();
-        cols.forEach(s -> mins.put( s, Integer.parseInt( getMin("SELECT MIN(" + s + ") \nFROM " + s.replaceAll( "\\.[^.]*$", "" ) + "\nLIMIT 200 "))));
+        cols.forEach( s -> mins.put( s, Integer.parseInt( getMin( "SELECT MIN(" + s + ") \nFROM " + s.replaceAll( "\\.[^.]*$", "" ) + "\nLIMIT 200 " ) ) ) );
         return mins;
     }
 
+
     private Map<String, Integer> getMaxs( List<String> cols ) {
         Map<String, Integer> maxs = new HashMap<>();
-        cols.forEach(s -> maxs.put( s, Integer.parseInt( getMin("SELECT MAX(" + s + ") \nFROM " + s.replaceAll( "\\.[^.]*$", "" ) + "\nLIMIT 200 "))));
+        cols.forEach( s -> maxs.put( s, Integer.parseInt( getMin( "SELECT MAX(" + s + ") \nFROM " + s.replaceAll( "\\.[^.]*$", "" ) + "\nLIMIT 200 " ) ) ) );
         return maxs;
     }
+
 
     private String getMin( String sql ) {
         ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( sql );
