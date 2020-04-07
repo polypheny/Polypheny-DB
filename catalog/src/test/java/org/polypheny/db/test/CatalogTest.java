@@ -18,8 +18,10 @@ package org.polypheny.db.test;
 
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +32,7 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -90,7 +93,7 @@ public class CatalogTest {
         assertEquals( schemaId, schema.id );
 
         long tableId = catalog.addTable( "test_table", schemaId, userId, TableType.TABLE, null );
-        CatalogTable table = catalog.getTable( tableId, "test_table" );
+        CatalogTable table = catalog.getTable( schemaId, "test_table" );
         assertEquals( tableId, table.id );
 
         long columnId = catalog.addColumn( "test_column", tableId, 0, PolyType.BIGINT, null, null, false, null );
@@ -176,50 +179,112 @@ public class CatalogTest {
 
         // test renaming table
         String newTable = "newTable";
-        Long id = ids.get( 3 );
+        Long tableId = ids.get( 3 );
 
         names.remove( 3 );
         names.add( 3, newTable );
 
-        catalog.renameTable( id, newTable );
-        assertEquals( catalog.getTables( null, null, null ).stream().sorted().map( s -> s.name ).collect( Collectors.toList() ), names );
+        catalog.renameTable( tableId, newTable );
+        assertEquals( names, catalog.getTables( null, null, null ).stream().sorted().map( s -> s.name ).collect( Collectors.toList() ) );
 
         // test change owner
         String newUserName = "newUser";
         int newUserId = catalog.addUser( newUserName, "" );
-        catalog.setTableOwner( id, newUserId );
+        catalog.setTableOwner( tableId, newUserId );
 
-        assertEquals( catalog.getTable( id ).ownerId, newUserId );
-        assertEquals( catalog.getTable( id ).ownerName, newUserName );
+        assertEquals( catalog.getTable( tableId ).ownerId, newUserId );
+        assertEquals( catalog.getTable( tableId ).ownerName, newUserName );
 
         // test change primary
         List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2" ) );
         List<Long> columnIds = new ArrayList<>();
         int counter = 0;
         for ( String name : columnNames ) {
-            columnIds.add( catalog.addColumn( name, id, counter++, PolyType.BIGINT, null, null, false, null ) );
+            columnIds.add( catalog.addColumn( name, tableId, counter++, PolyType.BIGINT, null, null, false, null ) );
         }
 
         Long columnId = columnIds.get( 0 );
-        catalog.addPrimaryKey( id, new ArrayList<>( Collections.singleton( columnId ) ) );
+        catalog.addPrimaryKey( tableId, new ArrayList<>( Collections.singleton( columnId ) ) );
 
-        CatalogPrimaryKey key = catalog.getPrimaryKey( catalog.getTable( id ).primaryKey );
+        CatalogPrimaryKey key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
         assertEquals( key.columnIds.get( 0 ), columnId );
 
-        catalog.deletePrimaryKey( id );
-        assertNull( catalog.getTable( id ).primaryKey );
+        catalog.deletePrimaryKey( tableId );
+        assertNull( catalog.getTable( tableId ).primaryKey );
 
-        catalog.addPrimaryKey( id, columnIds );
-        key = catalog.getPrimaryKey( catalog.getTable( id ).primaryKey );
-        assertEquals(  key.columnIds, columnIds);
+        catalog.addPrimaryKey( tableId, columnIds );
+        key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
+        assertEquals( key.columnIds, columnIds );
 
+        catalog.deleteTable( tableId );
+        ids.remove( tableId );
 
+        List<Long> collect = catalog.getTables( schemaId, null ).stream().map( t -> t.id ).collect( Collectors.toList() );
+        assertEquals( collect, ids );
     }
 
 
     @Test
-    public void testColumn() {
+    public void testColumn() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownTableException, UnknownColumnException {
+        int userId = catalog.addUser( "tester", "" );
+        CatalogUser user = catalog.getUser( userId );
 
+        long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
+        CatalogDatabase database = catalog.getDatabase( databaseId );
+
+        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
+        CatalogSchema schema = catalog.getSchema( schemaId );
+
+        long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, null );
+        CatalogTable table = catalog.getTable( tableId );
+
+        List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2", "column3", "column4", "column5" ) );
+        List<Long> columnIds = new ArrayList<>();
+        int counter = 0;
+        for ( String name : columnNames ) {
+            columnIds.add( catalog.addColumn( name, tableId, counter++, PolyType.BIGINT, null, null, false, null ) );
+        }
+
+        // test rename of column
+        long columnId = columnIds.get( 0 );
+        String newColumnName = "newColumn";
+        catalog.renameColumn( columnId, newColumnName );
+
+        columnNames.remove( 0 );
+        columnNames.add( 0, newColumnName );
+
+        assertEquals( catalog.getColumns( tableId ).stream().map( c -> c.name ).collect( Collectors.toList() ), columnNames );
+
+        // test replacing ColumnType
+        catalog.setColumnType( columnId, PolyType.CHAR, null, null );
+
+        assertEquals( PolyType.CHAR, catalog.getColumn( columnId ).type );
+
+        // test replacing collation
+        catalog.setCollation( columnId, Collation.CASE_INSENSITIVE );
+
+        assertEquals( Collation.CASE_INSENSITIVE, catalog.getColumn( columnId ).collation );
+
+        // test replacing position
+        long otherColumnId = columnIds.get( 1 );
+        CatalogColumn column = catalog.getColumn( columnId );
+        CatalogColumn otherColumn = catalog.getColumn( otherColumnId );
+
+        catalog.setColumnPosition( columnId, otherColumn.position );
+        catalog.setColumnPosition( otherColumnId, column.position );
+
+        assertEquals( otherColumn.position, catalog.getColumn( columnId ).position );
+        assertEquals( column.position, catalog.getColumn( otherColumnId ).position );
+
+        // test replacing defaultvalue
+        catalog.setDefaultValue( columnId, PolyType.CHAR, "i" );
+        assertEquals( "i", catalog.getColumn( columnId ).defaultValue.value );
+
+        // test setting nullable
+        catalog.setNullable( columnId, true );
+        assertTrue( catalog.getColumn( columnId ).nullable );
+        catalog.setNullable( columnId, false );
+        assertFalse( catalog.getColumn( columnId ).nullable );
     }
 
 

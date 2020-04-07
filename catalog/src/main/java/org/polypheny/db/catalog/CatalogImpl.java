@@ -1077,7 +1077,7 @@ public class CatalogImpl extends Catalog {
             CatalogTable table = CatalogTable.rename( old, name );
             synchronized ( this ) {
                 tables.replace( tableId, table );
-                tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
+                tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
                 tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
 
                 db.commit();
