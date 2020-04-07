@@ -132,7 +132,7 @@ public class CatalogImpl extends Catalog {
 
 
     public CatalogImpl() {
-        this( FILE_PATH, true, true );
+        this( FILE_PATH, true, true, false );
     }
 
 
@@ -140,7 +140,7 @@ public class CatalogImpl extends Catalog {
      * MapDB Catalog; idea is to only need a minimal amount( max 2-3 ) map lookups for each get
      * most maps should work with ids to prevent overhead when renaming
      */
-    public CatalogImpl( String path, boolean doInitSchema, boolean doInitInformationPage ) {
+    public CatalogImpl( String path, boolean doInitSchema, boolean doInitInformationPage, boolean deleteAfter ) {
         super();
         this.path = path;
 
@@ -152,13 +152,25 @@ public class CatalogImpl extends Catalog {
             isPersistent = isPersistent();
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
-                db = DBMaker
-                        .fileDB( new File( "./" + path ) )
-                        .closeOnJvmShutdown()
-                        .transactionEnable()
-                        .fileMmapEnableIfSupported()
-                        .fileMmapPreclearDisable()
-                        .make();
+                if ( !deleteAfter ) {
+                    db = DBMaker
+                            .fileDB( new File( "./" + path ) )
+                            .closeOnJvmShutdown()
+                            .transactionEnable()
+                            .fileMmapEnableIfSupported()
+                            .fileMmapPreclearDisable()
+                            .make();
+                }else {
+                    db = DBMaker
+                            .fileDB( new File( "./" + path ) )
+                            .closeOnJvmShutdown()
+                            .fileDeleteAfterClose()
+                            .transactionEnable()
+                            .fileMmapEnableIfSupported()
+                            .fileMmapPreclearDisable()
+                            .make();
+                }
+
             } else {
                 log.info( "Making the catalog not persistent." );
                 db = DBMaker
@@ -459,7 +471,7 @@ public class CatalogImpl extends Catalog {
         CatalogStore csv = getStore( "csv" );
         // TODO temporary change
 
-        // addDefaultCsvColumns( csv );
+        addDefaultCsvColumns( csv );
 
     }
 
@@ -1218,7 +1230,7 @@ public class CatalogImpl extends Catalog {
             CatalogTable table = CatalogTable.removeColumnPlacement( getTable( getColumn( columnId ).tableId ), columnId, storeId );
             synchronized ( this ) {
                 tables.replace( table.id, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.id }, table );
+                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
                 columnPlacements.remove( new Object[]{ storeId, columnId } );
 
                 db.commit();

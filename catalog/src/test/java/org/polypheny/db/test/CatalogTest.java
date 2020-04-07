@@ -26,13 +26,16 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -41,6 +44,7 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -48,6 +52,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.type.PolyType;
@@ -60,14 +65,14 @@ public class CatalogTest {
 
     @Before
     public void setup() {
-        catalog = new CatalogImpl( "testDB", false, false );
+        catalog = new CatalogImpl( "testDB", false, false, true );
         catalog.clear();
     }
 
 
     @After
     public void cleanup() {
-        catalog.closeAndDelete();
+        catalog.close();
     }
 
 
@@ -125,12 +130,11 @@ public class CatalogTest {
 
 
     @Test
-    public void testSchema() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownSchemaException {
+    public void testSchema() throws UnknownUserException, GenericCatalogException, UnknownSchemaException {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        CatalogDatabase database = catalog.getDatabase( databaseId );
 
         List<String> names = new ArrayList<>( Arrays.asList( "schema1", "schema2", "schema3" ) );
         List<Long> ids = new ArrayList<>();
@@ -160,15 +164,13 @@ public class CatalogTest {
 
 
     @Test
-    public void testTable() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownTableException, UnknownKeyException {
+    public void testTable() throws UnknownUserException, GenericCatalogException, UnknownTableException, UnknownKeyException {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        CatalogDatabase database = catalog.getDatabase( databaseId );
 
         long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
-        CatalogSchema schema = catalog.getSchema( schemaId );
 
         List<String> names = new ArrayList<>( Arrays.asList( "table1", "table2", "table3", "table4", "table5" ) );
         List<Long> ids = new ArrayList<>();
@@ -225,18 +227,15 @@ public class CatalogTest {
 
 
     @Test
-    public void testColumn() throws UnknownUserException, UnknownDatabaseException, GenericCatalogException, UnknownTableException, UnknownColumnException {
+    public void testColumn() throws UnknownUserException, GenericCatalogException, UnknownColumnException {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
 
         long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
-        CatalogDatabase database = catalog.getDatabase( databaseId );
 
         long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
-        CatalogSchema schema = catalog.getSchema( schemaId );
 
         long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, null );
-        CatalogTable table = catalog.getTable( tableId );
 
         List<String> columnNames = new ArrayList<>( Arrays.asList( "column1", "column2", "column3", "column4", "column5" ) );
         List<Long> columnIds = new ArrayList<>();
@@ -285,11 +284,71 @@ public class CatalogTest {
         assertTrue( catalog.getColumn( columnId ).nullable );
         catalog.setNullable( columnId, false );
         assertFalse( catalog.getColumn( columnId ).nullable );
+
+        for ( long id : columnIds ) {
+            catalog.deleteColumn( id );
+        }
+        assertTrue( catalog.getColumns( tableId ).isEmpty() );
+
+    }
+
+
+    public void addStores() {
+
+        Map<String, String> hsqldbSettings = new HashMap<>();
+        hsqldbSettings.put( "type", "Memory" );
+        hsqldbSettings.put( "path", "maxConnections" );
+        hsqldbSettings.put( "maxConnections", "25" );
+        hsqldbSettings.put( "trxControlMode", "mvcc" );
+        hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
+
+        catalog.addStore( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", hsqldbSettings );
+
+        Map<String, String> csvSetttings = new HashMap<>();
+        csvSetttings.put( "directory", "classpath://hr" );
+        csvSetttings.put( "persistent", "true" );
+
+        catalog.addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );
+
     }
 
 
     @Test
-    public void testColumnPlacement() {
+    public void testColumnPlacement() throws UnknownUserException, GenericCatalogException, UnknownStoreException, UnknownColumnException {
+        addStores();
+
+        int userId = catalog.addUser( "tester", "" );
+        CatalogUser user = catalog.getUser( userId );
+
+        long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
+        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
+        long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, null );
+
+        long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, false, null );
+        CatalogColumn column = catalog.getColumn( columnId );
+
+        CatalogStore csv = catalog.getStore( "csv" );
+        CatalogStore hsqldb = catalog.getStore( "hsqldb" );
+
+        catalog.addColumnPlacement( csv.id, columnId, PlacementType.AUTOMATIC, null,  "table1", column.name );
+
+        assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
+        assertEquals( columnId, catalog.getColumnPlacements( columnId ).get( 0 ).columnId );
+
+        catalog.addColumnPlacement( hsqldb.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name );
+
+        assertEquals( 2, catalog.getColumnPlacements( columnId ).size() );
+        assertTrue( catalog.getColumnPlacements( columnId ).stream().map( p -> p.storeId ).collect( Collectors.toList() ).containsAll( Arrays.asList( hsqldb.id, csv.id )));
+
+        catalog.deleteColumnPlacement( csv.id, columnId );
+        assertEquals( 1, catalog.getColumnPlacements( columnId ).size());
+        assertEquals( hsqldb.id, catalog.getColumnPlacements( columnId ).get( 0 ).storeId);
+
+    }
+
+
+    @Test
+    public void testKey() {
 
     }
 
