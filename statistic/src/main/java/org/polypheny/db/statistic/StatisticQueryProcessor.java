@@ -255,15 +255,12 @@ public class StatisticQueryProcessor {
         return type;
     }
 
-    StatisticResult executeSqlSelect( String query) {
-        return executeSqlSelect( query, getPageSize() );
-    }
 
-    StatisticResult executeSqlSelect( String query, final int pagnation ) {
+    StatisticResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
         StatisticResult result = new StatisticResult();
         try {
-            result = executeSqlSelect( transaction, query, pagnation );
+            result = executeSqlSelect( transaction, query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
@@ -288,11 +285,9 @@ public class StatisticQueryProcessor {
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
-    private StatisticResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
-        return executeSqlSelect( transaction, sqlSelect, getPageSize() );
-    }
 
-    private StatisticResult executeSqlSelect( final Transaction transaction, final String sqlSelect, final int pagnation ) throws QueryExecutionException {
+
+    private StatisticResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -311,7 +306,7 @@ public class StatisticQueryProcessor {
 
             iterator = enumerable.iterator();
 
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, pagnation ), new ArrayList<>() );
+            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
 
         } catch ( Throwable t ) {
             if ( iterator != null ) {

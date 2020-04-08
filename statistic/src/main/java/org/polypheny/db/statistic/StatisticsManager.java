@@ -137,7 +137,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Adds a new column to the tracked columns and sorts it correctly
      *
      * @param qualifiedColumn column name
-     * @param type            the type of the new column
+     * @param type the type of the new column
      */
     private void addColumn( String qualifiedColumn, PolyType type ) {
         String[] splits = QueryColumn.getSplitColumn( qualifiedColumn );
@@ -362,28 +362,6 @@ public class StatisticsManager<T extends Comparable<T>> {
     }
 
 
-
-    /**
-     * Gets all Unique Values for Classification
-     * @param qualifiedColumnNames all columns
-     * TODO Isabel change string spliting now depending on Limit
-     */
-
-    public List<StatisticQueryColumn> getAllUniqueValues( List<String> qualifiedColumnNames, String qualifiedTableName  ) {
-        String tables = qualifiedTableName.split( "\nFROM ")[1].split( " LIMIT")[0];
-        return qualifiedColumnNames.stream().map( c -> getAllUniqueValuesMethod( c, tables ) ).collect( Collectors.toList() );
-    }
-
-    private StatisticQueryColumn getAllUniqueValuesMethod( String qualifiedColumn, String qualifiedTableName ) {
-        String query = "SELECT " + qualifiedColumn + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumn + " LIMIT 200";
-        return this.sqlQueryInterface.selectOneStat( query );
-    }
-
-    public StatisticResult getTable(String q){
-        String query = q.split( "LIMIT" )[0].replace( "\n", " " ) + " LIMIT 5000";
-        return this.sqlQueryInterface.executeSqlSelect( query, 5000);
-    }
-
     /**
      * Gets the amount of entries for a column
      */
@@ -513,6 +491,7 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void applyTable( String changedQualifiedTable ) {
         this.reevaluateTable( changedQualifiedTable );
     }
+
 
     /**
      * This class reevaluates if background tracking should be stopped or restarted depending on the state of the ConfigManager

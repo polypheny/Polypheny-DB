@@ -776,7 +776,6 @@ public class Crud implements InformationObserver {
         }else{
             result.setClassificationInfo( "ClassificationPossible" );
         }
-
         return result;
     }
 

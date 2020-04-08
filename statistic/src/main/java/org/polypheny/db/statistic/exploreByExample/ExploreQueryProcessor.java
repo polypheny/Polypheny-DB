@@ -18,10 +18,9 @@ package org.polypheny.db.statistic.exploreByExample;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
@@ -54,8 +53,6 @@ public class ExploreQueryProcessor {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final int pagnation = 60;
-
 
 
     public ExploreQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName) {
@@ -77,11 +74,26 @@ public class ExploreQueryProcessor {
         }
     }
 
-    public ExploreQueryResult executeCountSQL(String query){
+
+    public List<ExploreQueryResult> getAllUniqueValues( List<String> qualifiedColumnNames, String qualifiedTableName  ) {
+        String tables = qualifiedTableName.split( "\nFROM ")[1].split( " LIMIT")[0];
+        return qualifiedColumnNames.stream().map( c -> getAllUniqueValuesMethod( c, tables ) ).collect( Collectors.toList() );
+    }
+
+    private ExploreQueryResult getAllUniqueValuesMethod( String qualifiedColumn, String qualifiedTableName ) {
+        String query = "SELECT " + qualifiedColumn + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumn + " LIMIT 200";
+        return this.executeSQL( query );
+    }
+
+    public ExploreQueryResult executeSQL(String query){
+        return executeSQL( query, getPageSize() );
+    }
+
+    public ExploreQueryResult executeSQL(String query, int pagination){
         ExploreQueryResult result = new ExploreQueryResult(  );
         Transaction transaction = getTransaction();
         try {
-            result = executeSqlSelect( transaction, query, pagnation );
+            result = executeSqlSelect( transaction, query, pagination );
             transaction.commit();
         } catch ( ExploreQueryProcessor.QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
@@ -103,7 +115,7 @@ public class ExploreQueryProcessor {
         return executeSqlSelect( transaction, sqlSelect, getPageSize() );
     }
 
-    private ExploreQueryResult executeSqlSelect( final Transaction transaction, final String sqlSelect, final int pagnation ) throws ExploreQueryProcessor.QueryExecutionException {
+    private ExploreQueryResult executeSqlSelect( final Transaction transaction, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -122,7 +134,7 @@ public class ExploreQueryProcessor {
 
             iterator = enumerable.iterator();
 
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, pagnation ), new ArrayList<>() );
+            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 100 ), new ArrayList<>() );
 
         } catch ( Throwable t ) {
             if ( iterator != null ) {

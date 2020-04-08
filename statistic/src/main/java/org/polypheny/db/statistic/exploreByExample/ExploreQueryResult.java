@@ -18,10 +18,12 @@ package org.polypheny.db.statistic.exploreByExample;
 
 
 import java.util.List;
+import lombok.Getter;
 
 
 public class ExploreQueryResult {
 
+    @Getter
     public String[][] data;
     public String col;
     public int count;
@@ -45,4 +47,5 @@ public class ExploreQueryResult {
         this.typeInfo = colInfo;
         this.name = name;
     }
+
 }

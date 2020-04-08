@@ -41,6 +41,7 @@ public class Explore {
     private int id;
     @Setter
     List<List<String>> uniqueValues;
+    @Getter
     @Setter
     private List<String[]> labeled;
     @Setter
@@ -58,29 +59,13 @@ public class Explore {
     private String[][] data;
     @Getter
     private String query;
-    Map<String, List<String>> sqlValues;
-    private String[][] classifiedData;
-    Map<String, String> typeInfo;
     @Getter
     private String sqlStatment;
-    private String joinCondition;
     @Getter
     private boolean classificationPossible = true;
-
     private ExploreQueryProcessor exploreQueryProcessor;
-
-
     @Getter
     private List<String[]> dataAfterClassification;
-
-
-    public Explore( int identifier, List<List<String>> uniqueValues, List<String[]> labeled, List<String[]> unlabeled, String[] dataType ) {
-        this.id = identifier;
-        this.uniqueValues = uniqueValues;
-        this.labeled = labeled;
-        this.unlabeled = unlabeled;
-        this.dataType = dataType;
-    }
 
 
     public Explore( int identifier, String query, ExploreQueryProcessor exploreQueryProcessor ) {
@@ -88,7 +73,7 @@ public class Explore {
         this.query = query;
         this.sqlStatment = query;
         this.exploreQueryProcessor = exploreQueryProcessor;
-        this.typeInfo = getTypeInfo( query );
+        this.dataType = getTypeInfo( query );
     }
 
 
@@ -103,24 +88,26 @@ public class Explore {
     }
 
 
-    public void classifyAllData( List<String[]> labeled, List<String[]> allData ) {
+    public void classifyAllData( List<String[]> labeled ) {
+        List<String[]> allData = getAllData( this.query );
         unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues );
         data = classifyData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
 
-    public Map<String, String> getTypeInfo( String query ) {
-        Map<String, String> typeInfo = new HashMap<>();
-        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( query );
+    public String[] getTypeInfo( String query ) {
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( query );
 
         String[] fullNames = query.split( "SELECT " )[1].split( "\nFROM" )[0].toLowerCase().split( "," );
+        String[] dataType = new String[fullNames.length];
+
         for ( int i = 0; i < exploreQueryResult.typeInfo.size(); i++ ) {
             if ( fullNames[i].contains( exploreQueryResult.name.get( i ) ) ) {
-                typeInfo.put( fullNames[i], exploreQueryResult.typeInfo.get( i ) );
+                dataType[i] = exploreQueryResult.typeInfo.get( i );
             }
         }
 
-        return typeInfo;
+        return dataType;
     }
 
 
@@ -149,37 +136,85 @@ public class Explore {
             } else if ( rowCount > 40 ) {
 
                 selecdedCols = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
-                //Map<String, Integer> infos = getUniqueValuesCount( selecdedCols );
 
-                typeInfo.forEach( ( name, type ) -> {
-                    if ( type.equals( "VARCHAR" ) ) {
-                        list.add( name );
-                        list2.add( name );
-                        list5.add( name );
+                boolean includesInteger = false;
+                for ( int i = 0; i < selecdedCols.size(); i++ ) {
+                    if ( dataType[i].equals( "VARCHAR" ) ) {
+                        list.add( selecdedCols.get( i ) );
+                        list2.add( selecdedCols.get( i ) );
+                        list5.add( selecdedCols.get( i ) );
                     }
-                    if ( type.equals( "INTEGER" ) ) {
-                        list.add( "AVG(" + name + ")" );
-                        list3.add( name );
-                        list5.add( name );
+                    if ( dataType[i].equals( "INTEGER" ) ) {
+                        includesInteger = true;
+                        list.add( "AVG(" + selecdedCols.get( i ) + ")" );
+                        list3.add( selecdedCols.get( i ) );
+                        list5.add( selecdedCols.get( i ) );
                     }
-                } );
+                }
 
-                if ( typeInfo.containsValue( "INTEGER" ) ) {
+                if ( includesInteger ) {
                     getMins( list3 ).forEach( ( s, min ) -> list4.add( "\nUNION \nSELECT " + String.join( ",", list5 ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min ) );
                     getMaxs( list3 ).forEach( ( s, max ) -> list4.add( "\nUNION \nSELECT " + String.join( ",", list5 ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max ) );
                 }
 
                 sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", list2 ) + String.join( "", list4 );
 
-                System.out.println( "show me the count" + getSQLCount( sqlStatment ) );
-                //System.out.println( "show me the sql statement" + sqlStatment );
             }
         }
     }
 
 
+    public List<List<String>> getStatistics( String query ) {
+
+        List<List<String>> uniqueValues = new ArrayList<>();
+        ExploreQueryResult exploreQueryResult;
+        List<ExploreQueryResult> values = this.exploreQueryProcessor.getAllUniqueValues( prepareColInfo( query ), query );
+
+        for ( ExploreQueryResult uniqueValue : values ) {
+            List<String> data = new ArrayList<>();
+            for ( int i = 0; i < uniqueValue.data.length; i++ ) {
+                List<String> cols = new ArrayList<>();
+                for ( int j = 0; j < uniqueValue.data[i].length; j++ ) {
+                    cols.add( uniqueValue.data[i][j] );
+                }
+                data.add( String.join( ",", cols ) );
+            }
+            uniqueValues.add( data );
+        }
+
+        List<String> trueFalse = new ArrayList<>();
+        trueFalse.add( "true" );
+        trueFalse.add( "false" );
+        uniqueValues.add( trueFalse );
+
+        return uniqueValues;
+    }
+
+
+    private List<String[]> getAllData( String query ) {
+        String queryLimit = query.split( "\nLIMIT" )[0] + "\nLIMIT 500";
+
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( queryLimit );
+        List<String[]> allDataTable = new ArrayList<>( Arrays.asList( exploreQueryResult.data ) );
+        allDataTable = rotate2dArray( allDataTable );
+
+        String[] questionMark = new String[exploreQueryResult.count];
+        for ( int j = 0; j < exploreQueryResult.count; j++ ) {
+            questionMark[j] = "?";
+        }
+        allDataTable.add( questionMark );
+
+        return allDataTable;
+    }
+
+
+    private List<String> prepareColInfo( String query ) {
+        return Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
+    }
+
+
     private int getSQLCount( String sql ) {
-        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( sql );
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( sql );
         return (exploreQueryResult.count);
     }
 
@@ -206,13 +241,13 @@ public class Explore {
 
 
     private String getMin( String sql ) {
-        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( sql );
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( sql );
         return (exploreQueryResult.col);
     }
 
 
     private int getUniqueValueCount( String sql ) {
-        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeCountSQL( sql );
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( sql );
         return (exploreQueryResult.count);
     }
 
