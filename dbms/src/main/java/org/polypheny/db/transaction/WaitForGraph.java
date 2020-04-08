@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-// Taken from https://github.com/dstibrany/LockManager
+// Based on code taken from https://github.com/dstibrany/LockManager
 public class WaitForGraph {
 
     private final ConcurrentMap<TransactionImpl, Set<TransactionImpl>> adjacencyList = new ConcurrentHashMap<>();

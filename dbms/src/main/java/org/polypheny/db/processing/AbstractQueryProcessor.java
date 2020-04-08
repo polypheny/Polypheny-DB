@@ -273,7 +273,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 resultConvention == BindableConvention.INSTANCE
                         ? CursorFactory.ARRAY
                         : CursorFactory.deduce( columns, resultClazz );
-        //noinspection unchecked
         final Bindable bindable = preparedResult.getBindable( cursorFactory );
 
         return new PolyphenyDbSignature<Object[]>(

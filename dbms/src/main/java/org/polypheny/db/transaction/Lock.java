@@ -22,7 +22,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-// Taken from https://github.com/dstibrany/LockManager
+// Based on code taken from https://github.com/dstibrany/LockManager
 public class Lock {
 
     private final Set<TransactionImpl> owners = new HashSet<>();
