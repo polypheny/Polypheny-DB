@@ -85,7 +85,7 @@ public class JdbcImplementor extends RelToSqlConverter {
             throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
         }
         if ( table == null ) {
-            throw new RuntimeException( "Unknown table: [ " + String.join( ", ", tableNames ) + " ]" );
+            throw new RuntimeException( "Unknown table: [ " + String.join( ", ", tableNames ) + " ] | Table Map Size: " + schema.getTableMap().size() );
         }
         return table.physicalTableName();
     }
