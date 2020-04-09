@@ -129,8 +129,9 @@ public class WaitForGraph {
             visited.add( node );
             path.add( node );
 
-            if ( adjacencyList.containsKey( node ) ) {
-                for ( TransactionImpl neighbour : adjacencyList.get( node ) ) {
+            Set<TransactionImpl> set = adjacencyList.get( node );
+            if ( set != null ) {
+                for ( TransactionImpl neighbour : set ) {
                     if ( !visited.contains( neighbour ) ) {
                         visit( neighbour, new ArrayList<>( path ) );
                     } else {
