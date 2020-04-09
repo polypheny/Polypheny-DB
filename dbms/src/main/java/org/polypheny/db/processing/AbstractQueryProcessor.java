@@ -132,8 +132,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             transaction.getDuration().start( "Locking" );
 
         }
-        TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
         try {
+            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.SHARED );
+            // Get locks for individual tables
+            TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
             for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                 Mode mode = accessMap.getTableAccessMode( tableIdentifier );
                 if ( mode == Mode.READ_ACCESS ) {

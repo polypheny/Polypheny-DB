@@ -224,10 +224,9 @@ public class TransactionImpl implements Transaction, Comparable {
                 }
             } catch ( CatalogTransactionException e ) {
                 throw new TransactionException( e );
-            } finally {
-                cachedSchema = null;
             }
         } finally {
+            cachedSchema = null;
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );
         }

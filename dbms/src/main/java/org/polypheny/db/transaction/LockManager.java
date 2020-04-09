@@ -26,6 +26,7 @@ import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
+    public static final TableIdentifier GLOBAL_LOCK = new TableIdentifier( -1 ); // For locking whole schema
 
     private final ConcurrentHashMap<TableIdentifier, Lock> lockTable;
     @Getter
