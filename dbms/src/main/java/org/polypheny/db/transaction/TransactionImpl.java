@@ -211,20 +211,25 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Override
     public void rollback() throws TransactionException {
-        //  rollback changes to the stores
-        for ( Store store : involvedStores ) {
-            store.rollback( xid );
-        }
-
-        // Rollback changes to the catalog
         try {
-            if ( catalog != null ) {
-                catalog.rollback();
+            //  Rollback changes to the stores
+            for ( Store store : involvedStores ) {
+                store.rollback( xid );
             }
-        } catch ( CatalogTransactionException e ) {
-            throw new TransactionException( e );
+
+            // Rollback changes to the catalog
+            try {
+                if ( catalog != null ) {
+                    catalog.rollback();
+                }
+            } catch ( CatalogTransactionException e ) {
+                throw new TransactionException( e );
+            } finally {
+                cachedSchema = null;
+            }
         } finally {
-            cachedSchema = null;
+            // Release locks
+            LockManager.INSTANCE.removeTransaction( this );
         }
     }
 
