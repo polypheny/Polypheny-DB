@@ -170,6 +170,7 @@ public class CatalogImpl extends Catalog {
                             .fileMmapPreclearDisable()
                             .make();
                 }
+                db.getStore().fileLoad();
 
             } else {
                 log.info( "Making the catalog not persistent." );
@@ -196,6 +197,8 @@ public class CatalogImpl extends Catalog {
             if ( doInitInformationPage ) {
                 new CatalogInfoPage( this );
             }
+
+            new CatalogValidator().startCheck();
 
         }
     }
@@ -2342,6 +2345,30 @@ public class CatalogImpl extends Catalog {
 
         public void validate() throws GenericCatalogException {
 
+        }
+
+
+        public void startCheck() {
+            columns.forEach( ( key, column ) -> {
+                assert (databases.containsKey( column.databaseId ));
+                assert (Objects.requireNonNull( databaseChildren.get( column.databaseId ) ).contains( column.schemaId ));
+                assert (databaseNames.containsKey( column.databaseName ));
+
+                assert (schemas.containsKey( column.schemaId ));
+                assert (Objects.requireNonNull( schemaChildren.get( column.schemaId ) ).contains( column.tableId ));
+                assert (schemaNames.containsKey( new Object[]{ column.databaseId, column.schemaName } ));
+
+                assert (tables.containsKey( column.tableId ));
+                assert (Objects.requireNonNull( tableChildren.get( column.tableId ) ).contains( column.id ));
+                assert (tableNames.containsKey( new Object[]{ column.databaseId, column.schemaId, column.tableName } ));
+
+                assert (columnNames.containsKey( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } ));
+            } );
+
+            columnPlacements.forEach( ( key, placement ) -> {
+                assert (columns.containsKey( placement.columnId ));
+                assert (stores.containsKey( placement.storeId ));
+            } );
         }
     }
 }

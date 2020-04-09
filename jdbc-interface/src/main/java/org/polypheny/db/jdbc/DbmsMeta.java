@@ -166,6 +166,7 @@ public class DbmsMeta implements ProtobufMeta {
         } );
     }
 
+
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
         Object propertyValue;
         if ( p.isJdbc ) {
