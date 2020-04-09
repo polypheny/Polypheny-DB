@@ -17,7 +17,13 @@
 package org.polypheny.db;
 
 
+import com.github.rvesse.airline.HelpOption;
+import com.github.rvesse.airline.SingleCommand;
+import com.github.rvesse.airline.annotations.Command;
+import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
+import javax.inject.Inject;
+import jdk.nashorn.internal.objects.annotations.Optimistic;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -45,6 +51,7 @@ import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
 
 
+@Command(name = "polypheny-db", description = "Polypheny-DB command line hook.")
 @Slf4j
 public class PolyphenyDb {
 
@@ -53,14 +60,24 @@ public class PolyphenyDb {
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
 
+    @Option(name = { "-resetCatalog" }, description = "catalog reset flag")
+    private boolean resetCatalog = false;
+
+    @Option(name = {"-memoryCatalog"}, description = "in-memory catalog flag")
+    private boolean memoryCatalog = false;
+
+
+
     @SuppressWarnings("unchecked")
     public static void main( final String[] args ) {
         try {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
+            final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
+            final  PolyphenyDb polyphenyDb = parser.parse( args );
 
-            new PolyphenyDb().runPolyphenyDb();
+            polyphenyDb.runPolyphenyDb();
 
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
@@ -75,7 +92,7 @@ public class PolyphenyDb {
         Catalog catalog;
         Transaction trx = null;
         try {
-            catalog = CatalogManager.setAndGetInstance( new CatalogManagerImpl() ).getCatalog();
+            catalog = CatalogManager.setAndGetInstance( new CatalogManagerImpl(resetCatalog, memoryCatalog) ).getCatalog();
             trx = transactionManager.startTransaction( "pa", "APP", false );
             StoreManager.getInstance().restoreStores( catalog );
             trx.commit();
@@ -169,9 +186,6 @@ public class PolyphenyDb {
 
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
-
-
-
 
         try {
             jdbcInterfaceThread.join();

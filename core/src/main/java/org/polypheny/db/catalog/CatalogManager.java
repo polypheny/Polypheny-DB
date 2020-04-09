@@ -20,6 +20,8 @@ package org.polypheny.db.catalog;
 public abstract class CatalogManager {
 
     public static CatalogManager INSTANCE = null;
+    public static boolean resetCatalog;
+    public static boolean memoryCatalog;
 
     public static CatalogManager setAndGetInstance( CatalogManager catalogManager ) {
         if( INSTANCE != null ){

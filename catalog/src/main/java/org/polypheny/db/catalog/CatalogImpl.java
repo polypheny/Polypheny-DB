@@ -148,8 +148,20 @@ public class CatalogImpl extends Catalog {
             db.close();
         }
         synchronized ( this ) {
+            if ( CatalogManager.resetCatalog ) {
+                log.info( "Reseting catalog on startup." );
+                if ( new File( "./" + path ).exists() ) {
+                    new File( "./" + path ).delete();
+                }
+            }
 
-            isPersistent = isPersistent();
+            if( CatalogManager.memoryCatalog ){
+                isPersistent = false;
+            }else {
+                isPersistent = isPersistent();
+            }
+
+
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
                 if ( !deleteAfter ) {
@@ -160,7 +172,7 @@ public class CatalogImpl extends Catalog {
                             .fileMmapEnableIfSupported()
                             .fileMmapPreclearDisable()
                             .make();
-                }else {
+                } else {
                     db = DBMaker
                             .fileDB( new File( "./" + path ) )
                             .closeOnJvmShutdown()
@@ -173,7 +185,7 @@ public class CatalogImpl extends Catalog {
                 db.getStore().fileLoad();
 
             } else {
-                log.info( "Making the catalog not persistent." );
+                log.info( "Making the catalog in-memory." );
                 db = DBMaker
                         .memoryDB()
                         .transactionEnable()

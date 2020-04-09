@@ -29,16 +29,11 @@ public class CatalogManagerImpl extends CatalogManager {
     private static CatalogImpl catalog = null;
 
 
-    public static CatalogManager getInstance() {
-        if ( INSTANCE == null ) {
-            INSTANCE = new CatalogManagerImpl();
-        }
-        return INSTANCE;
-    }
-
-
-    public CatalogManagerImpl() {
+    public CatalogManagerImpl( boolean resetCatalog, boolean memoryCatalog) {
         if ( catalog == null ) {
+            CatalogManager.resetCatalog = resetCatalog;
+            CatalogManager.memoryCatalog = memoryCatalog;
+
             catalog = new CatalogImpl();
         }
     }
