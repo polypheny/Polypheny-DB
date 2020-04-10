@@ -20,7 +20,6 @@ package org.polypheny.db.catalog;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import lombok.NonNull;

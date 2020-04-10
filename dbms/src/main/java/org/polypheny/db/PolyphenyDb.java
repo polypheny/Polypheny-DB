@@ -17,13 +17,10 @@
 package org.polypheny.db;
 
 
-import com.github.rvesse.airline.HelpOption;
 import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
-import javax.inject.Inject;
-import jdk.nashorn.internal.objects.annotations.Optimistic;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;

@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
-import java.util.Comparator;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
