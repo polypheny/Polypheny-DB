@@ -70,6 +70,12 @@ public class ExploreManager {
         return null;
     }
 
+    public Explore getExploreInformation(Integer id){
+
+        return explore.get( id );
+
+    }
+
 
     public Explore exploreData( Integer id, String[][] classified, String[] dataType ) {
         List<String[]> labeled = new ArrayList<>();

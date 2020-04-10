@@ -134,7 +134,7 @@ public class ExploreQueryProcessor {
 
             iterator = enumerable.iterator();
 
-            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 100 ), new ArrayList<>() );
+            rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 200 ), new ArrayList<>() );
 
         } catch ( Throwable t ) {
             if ( iterator != null ) {

@@ -66,6 +66,8 @@ public class Explore {
     private ExploreQueryProcessor exploreQueryProcessor;
     @Getter
     private List<String[]> dataAfterClassification;
+    @Getter
+    private int tableSize;
 
 
     public Explore( int identifier, String query, ExploreQueryProcessor exploreQueryProcessor ) {
@@ -124,14 +126,18 @@ public class Explore {
 
         if ( rowCount < 10 ) {
             classificationPossible = false;
+            tableSize = rowCount;
         } else if ( rowCount > 10 && rowCount < 40 ) {
+            tableSize = rowCount;
             sqlStatment = sqlStatment;
         } else if ( rowCount > 40 ) {
             String selectDistinct = sqlStatment.replace( "SELECT", "SELECT DISTINCT" ) + "\nLIMIT 60";
             rowCount = getSQLCount( selectDistinct );
             if ( rowCount < 10 ) {
+                tableSize = rowCount;
                 classificationPossible = false;
             } else if ( rowCount > 10 && rowCount < 40 ) {
+                tableSize = rowCount;
                 sqlStatment = selectDistinct;
             } else if ( rowCount > 40 ) {
 
@@ -158,7 +164,7 @@ public class Explore {
                 }
 
                 sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", list2 ) + String.join( "", list4 );
-
+                tableSize = getSQLCount(sqlStatment + "\nLIMIT 200");
             }
         }
     }

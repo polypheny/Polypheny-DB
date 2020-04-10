@@ -163,6 +163,7 @@ import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ExploreData;
+import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -734,6 +735,48 @@ public class Crud implements InformationObserver {
         return new Result( classifyAllData.header, explor.getData() );
     }
 
+    public Result getExploreTables(Request request, Response response){
+
+        ExploreTables exploreTables = this.gson.fromJson( request.body(), ExploreTables.class );
+        Transaction transaction = getTransaction();
+        Result result;
+        ExploreManager exploreManager = ExploreManager.getInstance();
+        Explore explore = exploreManager.getExploreInformation(exploreTables.id);
+
+        String query = explore.getSqlStatment() + " OFFSET " + ( (Math.max( 0, exploreTables.cPage - 1 )) * getExplorePageSize() );
+
+        try {
+            result = executeSqlSelect( transaction, exploreTables, query );
+        } catch ( QueryExecutionException e ) {
+            //result = new Result( e.getMessage() );
+            log.error( "Caught exception while fetching a table", e );
+            result = new Result( "Could not fetch table " + exploreTables.tableId );
+            try {
+                transaction.rollback();
+                return result;
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+
+
+        result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
+        int tableSize = 0;
+
+        tableSize = explore.getTableSize();
+        System.out.println( getExplorePageSize() );
+        result.setHighestPage( (int) Math.ceil( (double) tableSize / getExplorePageSize() ) );
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception while committing transaction", e );
+        }
+
+        return result;
+
+    }
+
     public Result createQuery(Request req, Response res){
 
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
@@ -751,7 +794,7 @@ public class Crud implements InformationObserver {
 
         try {
             temp = System.nanoTime();
-            result = executeSqlSelect( transaction, queryExplorationRequest, query, false, 60 ).setInfo( new Debug().setGeneratedQuery( query ) );
+            result = executeSqlSelect( transaction, queryExplorationRequest, query, false, getExplorePageSize() ).setInfo( new Debug().setGeneratedQuery( query ) );
             executionTime += System.nanoTime() - temp;
             //results.add( result );
             if ( autoCommit ) {
@@ -776,6 +819,14 @@ public class Crud implements InformationObserver {
         }else{
             result.setClassificationInfo( "ClassificationPossible" );
         }
+
+        result.setCurrentPage( queryExplorationRequest.currentPage ).setTable( queryExplorationRequest.tableId );
+        int tableSize = 0;
+
+        tableSize = explore.getTableSize();
+        System.out.println( tableSize );
+        result.setHighestPage( (int) Math.ceil( (double) tableSize / getExplorePageSize() ) );
+
         return result;
     }
 
@@ -2482,6 +2533,10 @@ public class Crud implements InformationObserver {
      */
     private int getPageSize() {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
+    }
+
+    private int getExplorePageSize(){
+        return  RuntimeConfig.UI_Explore_PAGE_SIZE.getInteger();
     }
 
 
