@@ -80,6 +80,11 @@ public abstract class Catalog {
     }
 
 
+    public abstract void commit();
+
+    public abstract void rollback();
+
+
     /**
      * Adds a listener which gets notified on store update
      *

@@ -221,6 +221,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     public PolyphenyDbSignature prepareDdl( SqlNode parsed ) {
         if ( parsed instanceof SqlExecutableStatement ) {
             ((SqlExecutableStatement) parsed).execute( transaction.getPrepareContext(), transaction );
+            CatalogManager.getInstance().getCatalog().commit();
             return new PolyphenyDbSignature<>(
                     parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
                     ImmutableList.of(),
