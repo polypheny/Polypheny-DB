@@ -79,12 +79,12 @@ public class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
-        // TODO DL change
+
         Catalog catalog = CatalogManagerImpl.getInstance().getCatalog();
         CatalogUser catalogUser = catalog.getUser( user );
 
         CatalogDatabase catalogDatabase = catalog.getDatabase( database );
-        // TODO why ask for default schema?
+
         CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
 
         return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze );

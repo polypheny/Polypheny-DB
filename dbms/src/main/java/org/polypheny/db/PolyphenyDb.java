@@ -59,7 +59,6 @@ public class PolyphenyDb {
 
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
-
     @Option(name = { "-resetCatalog" }, description = "catalog reset flag")
     private boolean resetCatalog = false;
 

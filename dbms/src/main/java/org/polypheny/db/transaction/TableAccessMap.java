@@ -12,38 +12,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * This file incorporates code covered by the following terms:
- *
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to you under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
  */
 
-package org.polypheny.db.plan;
+package org.polypheny.db.transaction;
 
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.polypheny.db.plan.RelOptTable;
+import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelVisitor;
 import org.polypheny.db.rel.core.TableModify;
-
-// TODO jvs 9-Mar-2006:  move this class to another package; it doesn't really belong here.  Also, use a proper class for table names instead of List<String>.
+import org.polypheny.db.schema.LogicalTable;
 
 
 /**
@@ -77,14 +64,14 @@ public class TableAccessMap {
     }
 
 
-    private final Map<List<String>, Mode> accessMap;
+    private final Map<TableIdentifier, Mode> accessMap;
 
 
     /**
      * Constructs a permanently empty TableAccessMap.
      */
     public TableAccessMap() {
-        accessMap = Collections.EMPTY_MAP;
+        accessMap = Collections.emptyMap();
     }
 
 
@@ -94,8 +81,8 @@ public class TableAccessMap {
      * @param rel the RelNode for which to build the map
      */
     public TableAccessMap( RelNode rel ) {
-        // NOTE jvs 9-Mar-2006: This method must NOT retain a reference to the input rel, because we use it for cached statements, and we don't want to retain
-        // any rel references after preparation completes.
+        // NOTE: This method must NOT retain a reference to the input rel, because we use it for cached statements, and we
+        // don't want to retain any rel references after preparation completes.
         accessMap = new HashMap<>();
         RelOptUtil.go( new TableRelVisitor(), rel );
     }
@@ -104,19 +91,19 @@ public class TableAccessMap {
     /**
      * Constructs a TableAccessMap for a single table
      *
-     * @param table fully qualified name of the table, represented as a list
-     * @param mode access mode for the table
+     * @param tableIdentifier fully qualified name of the table, represented as a list
+     * @param mode            access mode for the table
      */
-    public TableAccessMap( List<String> table, Mode mode ) {
+    public TableAccessMap( TableIdentifier tableIdentifier, Mode mode ) {
         accessMap = new HashMap<>();
-        accessMap.put( table, mode );
+        accessMap.put( tableIdentifier, mode );
     }
 
 
     /**
      * @return set of qualified names for all tables accessed
      */
-    public Set<List<String>> getTablesAccessed() {
+    public Set<TableIdentifier> getTablesAccessed() {
         return accessMap.keySet();
     }
 
@@ -124,22 +111,22 @@ public class TableAccessMap {
     /**
      * Determines whether a table is accessed at all.
      *
-     * @param tableName qualified name of the table of interest
+     * @param tableIdentifier qualified name of the table of interest
      * @return true if table is accessed
      */
-    public boolean isTableAccessed( List<String> tableName ) {
-        return accessMap.containsKey( tableName );
+    public boolean isTableAccessed( TableIdentifier tableIdentifier ) {
+        return accessMap.containsKey( tableIdentifier );
     }
 
 
     /**
      * Determines whether a table is accessed for read.
      *
-     * @param tableName qualified name of the table of interest
+     * @param tableIdentifier qualified name of the table of interest
      * @return true if table is accessed for read
      */
-    public boolean isTableAccessedForRead( List<String> tableName ) {
-        Mode mode = getTableAccessMode( tableName );
+    public boolean isTableAccessedForRead( TableIdentifier tableIdentifier ) {
+        Mode mode = getTableAccessMode( tableIdentifier );
         return (mode == Mode.READ_ACCESS) || (mode == Mode.READWRITE_ACCESS);
     }
 
@@ -147,11 +134,11 @@ public class TableAccessMap {
     /**
      * Determines whether a table is accessed for write.
      *
-     * @param tableName qualified name of the table of interest
+     * @param tableIdentifier qualified name of the table of interest
      * @return true if table is accessed for write
      */
-    public boolean isTableAccessedForWrite( List<String> tableName ) {
-        Mode mode = getTableAccessMode( tableName );
+    public boolean isTableAccessedForWrite( TableIdentifier tableIdentifier ) {
+        Mode mode = getTableAccessMode( tableIdentifier );
         return (mode == Mode.WRITE_ACCESS) || (mode == Mode.READWRITE_ACCESS);
     }
 
@@ -159,11 +146,11 @@ public class TableAccessMap {
     /**
      * Determines the access mode of a table.
      *
-     * @param tableName qualified name of the table of interest
+     * @param tableIdentifier qualified name of the table of interest
      * @return access mode
      */
-    public Mode getTableAccessMode( List<String> tableName ) {
-        Mode mode = accessMap.get( tableName );
+    public Mode getTableAccessMode( TableIdentifier tableIdentifier ) {
+        Mode mode = accessMap.get( tableIdentifier );
         if ( mode == null ) {
             return Mode.NO_ACCESS;
         }
@@ -177,8 +164,14 @@ public class TableAccessMap {
      * @param table table of interest
      * @return qualified name
      */
-    public List<String> getQualifiedName( RelOptTable table ) {
-        return table.getQualifiedName();
+    public TableIdentifier getQualifiedName( RelOptTable table ) {
+        if ( !(table instanceof RelOptTableImpl) ) {
+            throw new RuntimeException( "Unexpected table type: " + table.getClass() );
+        }
+        if ( !(((RelOptTableImpl) table).getTable() instanceof LogicalTable) ) {
+            throw new RuntimeException( "Unexpected table type: " + ((RelOptTableImpl) table).getTable().getClass() );
+        }
+        return new TableIdentifier( ((LogicalTable) ((RelOptTableImpl) table).getTable()).getTableId() );
     }
 
 
@@ -196,18 +189,29 @@ public class TableAccessMap {
             }
             Mode newAccess;
 
-            // FIXME jvs 1-Feb-2006:  Don't rely on object type here; eventually someone is going to write a rule which transforms to something which doesn't inherit TableModify, and this will break. Need to make this explicit in the RelNode interface.
+            // FIXME: Don't rely on object type here; eventually someone is going to write a rule which transforms to
+            //  something which doesn't inherit TableModify, and this will break. Need to make this explicit in the
+            //  RelNode interface.
             if ( p instanceof TableModify ) {
                 newAccess = Mode.WRITE_ACCESS;
             } else {
                 newAccess = Mode.READ_ACCESS;
             }
-            List<String> key = getQualifiedName( table );
+            TableIdentifier key = getQualifiedName( table );
             Mode oldAccess = accessMap.get( key );
             if ( (oldAccess != null) && (oldAccess != newAccess) ) {
                 newAccess = Mode.READWRITE_ACCESS;
             }
             accessMap.put( key, newAccess );
         }
+    }
+
+
+    @Data
+    @AllArgsConstructor
+    @EqualsAndHashCode
+    public static class TableIdentifier {
+
+        long tableId;
     }
 }
