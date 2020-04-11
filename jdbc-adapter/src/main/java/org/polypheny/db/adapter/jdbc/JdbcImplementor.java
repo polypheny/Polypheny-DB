@@ -74,15 +74,23 @@ public class JdbcImplementor extends RelToSqlConverter {
 
     @Override
     public SqlIdentifier getPhysicalTableName( List<String> tableNames ) {
+        JdbcTable table;
         if ( tableNames.size() == 1 ) {
             // only table name
-            return schema.getTableMap().get( tableNames.get( 0 ) ).physicalTableName();
+            // NOTICE MV: I think, this case should no longer happen because there should always be a schema in the form
+            //  <storeUniqueName>_<logicalSchema>_<physicalSchema> be set.
+            // TODO MV: Consider removing this case
+            table = schema.getTableMap().get( tableNames.get( 0 ) );
         } else if ( tableNames.size() == 2 ) {
             // schema name and table name
-            return schema.getTableMap().get( tableNames.get( 1 ) ).physicalTableName();
+            table = schema.getTableMap().get( tableNames.get( 1 ) );
         } else {
             throw new RuntimeException( "Unexpected number of names: " + tableNames.size() );
         }
+        if ( table == null ) {
+            throw new RuntimeException( "Unknown table: [ " + String.join( ", ", tableNames ) + " ] | Table Map : [ " + String.join( ", ", schema.getTableMap().keySet() ) );
+        }
+        return table.physicalTableName();
     }
 
 
