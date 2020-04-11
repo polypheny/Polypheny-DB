@@ -24,6 +24,7 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NonNull;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.RelOptTableImpl;
@@ -149,7 +150,7 @@ public class TableAccessMap {
      * @param tableIdentifier qualified name of the table of interest
      * @return access mode
      */
-    public Mode getTableAccessMode( TableIdentifier tableIdentifier ) {
+    public Mode getTableAccessMode( @NonNull TableIdentifier tableIdentifier ) {
         Mode mode = accessMap.get( tableIdentifier );
         if ( mode == null ) {
             return Mode.NO_ACCESS;

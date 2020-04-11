@@ -26,6 +26,7 @@ import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 public class LockManager {
 
     public static final LockManager INSTANCE = new LockManager();
+    public static final TableIdentifier GLOBAL_LOCK = new TableIdentifier( -1 ); // For locking whole schema
 
     private final ConcurrentHashMap<TableIdentifier, Lock> lockTable;
     @Getter
@@ -38,7 +39,7 @@ public class LockManager {
     }
 
 
-    public void lock( TableIdentifier tableIdentifier, TransactionImpl transaction, Lock.LockMode requestedMode ) throws DeadlockException {
+    public void lock( @NonNull TableIdentifier tableIdentifier, @NonNull TransactionImpl transaction, @NonNull Lock.LockMode requestedMode ) throws DeadlockException {
         lockTable.putIfAbsent( tableIdentifier, new Lock( waitForGraph ) );
 
         Lock lock = lockTable.get( tableIdentifier );
@@ -62,7 +63,7 @@ public class LockManager {
     }
 
 
-    public void unlock( TableIdentifier tableIdentifier, TransactionImpl transaction ) {
+    public void unlock( @NonNull TableIdentifier tableIdentifier, @NonNull TransactionImpl transaction ) {
         Lock lock = lockTable.get( tableIdentifier );
         if ( lock != null ) {
             lock.release( transaction );
@@ -79,7 +80,7 @@ public class LockManager {
     }
 
 
-    public boolean hasLock( @NonNull TransactionImpl transaction, TableIdentifier tableIdentifier ) {
+    public boolean hasLock( @NonNull TransactionImpl transaction, @NonNull TableIdentifier tableIdentifier ) {
         Set<Lock> lockList = transaction.getLocks();
         if ( lockList == null ) {
             return false;
@@ -93,7 +94,7 @@ public class LockManager {
     }
 
 
-    Lock.LockMode getLockMode( TableIdentifier tableIdentifier ) {
+    Lock.LockMode getLockMode( @NonNull TableIdentifier tableIdentifier ) {
         return lockTable.get( tableIdentifier ).getMode();
     }
 
