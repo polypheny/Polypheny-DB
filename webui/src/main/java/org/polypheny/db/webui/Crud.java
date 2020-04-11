@@ -729,10 +729,67 @@ public class Crud implements InformationObserver {
 
     public Result classifyData( Request req, Response res ) {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
-        ExploreManager e = ExploreManager.getInstance();
+        ExploreManager exploreManager = ExploreManager.getInstance();
 
-        Explore explor = e.classifyData( classifyAllData.id, classifyAllData.classified );
-        return new Result( classifyAllData.header, explor.getData() );
+        boolean isConvertedToSql = true;
+
+        Explore explore = exploreManager.classifyData( classifyAllData.id, classifyAllData.classified, isConvertedToSql );
+
+        if(isConvertedToSql){
+
+            long executionTime = 0;
+            long temp = 0;
+            Transaction transaction = getTransaction();
+            Result result;
+            System.out.println( explore.getClassifiedSqlStatement() );
+
+            try {
+                temp = System.nanoTime();
+                result = executeSqlSelect( transaction, classifyAllData, explore.getClassifiedSqlStatement(), false, getExplorePageSize() ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
+                executionTime += System.nanoTime() - temp;
+                transaction.commit();
+                transaction = getTransaction( classifyAllData.analyze );
+
+            } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+                log.error( "Caught exception while executing a query from the console", e );
+                executionTime += System.nanoTime() - temp;
+                result = new Result( e ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
+                //results.add( result );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", ex );
+                }
+            }
+
+            result.setExplorerId( explore.getId() );
+            if(!explore.isClassificationPossible()){
+                result.setClassificationInfo( "NoClassificationPossible" );
+            }else{
+                result.setClassificationInfo( "ClassificationPossible" );
+            }
+
+            result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
+            int tableSize = 0;
+
+            tableSize = explore.getTableSize();
+            System.out.println( tableSize );
+            result.setHighestPage( (int) Math.ceil( (double) tableSize / getExplorePageSize() ) );
+
+            return result;
+        }else {
+            Result result = new Result( classifyAllData.header, explore.getData() );
+
+            result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
+            int tableSize = 0;
+
+            tableSize = explore.getData().length;
+            System.out.println( tableSize );
+            result.setHighestPage( (int) Math.ceil( (double) tableSize / getExplorePageSize() ) );
+
+            return result;
+        }
+
     }
 
     public Result getExploreTables(Request request, Response response){

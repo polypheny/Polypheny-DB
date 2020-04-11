@@ -45,7 +45,7 @@ public class ExploreManager {
     }
 
 
-    public Explore classifyData( Integer id, String[][] classified ) {
+    public Explore classifyData( Integer id, String[][] classified, boolean returnsSql ) {
         List<String[]> labeled = new ArrayList<>();
 
         for ( String[] data : classified ) {
@@ -54,7 +54,7 @@ public class ExploreManager {
             }
         }
 
-        explore.get( id ).classifyAllData( labeled );
+        explore.get( id ).classifyAllData( labeled, returnsSql );
         return explore.get( id );
     }
 

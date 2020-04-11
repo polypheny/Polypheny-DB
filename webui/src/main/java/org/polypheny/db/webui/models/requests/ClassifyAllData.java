@@ -20,9 +20,13 @@ package org.polypheny.db.webui.models.requests;
 import org.polypheny.db.webui.models.DbColumn;
 
 
-public class ClassifyAllData {
+public class ClassifyAllData extends UIRequest {
 
     public Integer id;
     public DbColumn[] header;
     public String[][] classified;
+    /**
+     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
+     */
+    public boolean analyze;
 }

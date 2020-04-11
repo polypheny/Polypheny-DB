@@ -68,6 +68,9 @@ public class Explore {
     private List<String[]> dataAfterClassification;
     @Getter
     private int tableSize;
+    private List<String> qualifiedNames = new ArrayList<>();
+    @Getter
+    private String classifiedSqlStatement;
 
 
     public Explore( int identifier, String query, ExploreQueryProcessor exploreQueryProcessor ) {
@@ -90,10 +93,15 @@ public class Explore {
     }
 
 
-    public void classifyAllData( List<String[]> labeled ) {
+    public void classifyAllData( List<String[]> labeled, boolean isConvertedToSql ) {
         List<String[]> allData = getAllData( this.query );
-        unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues );
-        data = classifyData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
+
+        if ( isConvertedToSql ) {
+            classifiedSqlStatement = sqlClassifiedData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ) );
+        } else {
+            unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues );
+            data = classifyData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
+        }
     }
 
 
@@ -108,6 +116,9 @@ public class Explore {
                 dataType[i] = exploreQueryResult.typeInfo.get( i );
             }
         }
+
+        Collections.addAll( qualifiedNames, fullNames );
+        qualifiedNames.add( "classifications" );
 
         return dataType;
     }
@@ -164,7 +175,7 @@ public class Explore {
                 }
 
                 sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", list2 ) + String.join( "", list4 );
-                tableSize = getSQLCount(sqlStatment + "\nLIMIT 200");
+                tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
             }
         }
     }
@@ -283,8 +294,8 @@ public class Explore {
         FastVector attVals;
         FastVector attValsEl[] = new FastVector[dimLength];
         Instances classifiedData;
-        Instances allData;
         double[] vals;
+        //fullNames.add("classification");
 
         // attributes
         for ( int dim = 0; dim < dimLength; dim++ ) {
@@ -294,10 +305,11 @@ public class Explore {
                 for ( int i = 0; i < uniqueValues.get( dim ).size(); i++ ) {
                     attVals.addElement( uniqueValues.get( dim ).get( i ) );
                 }
-                atts.addElement( new Attribute( "attr" + dim, attVals ) );
+                atts.addElement( new Attribute( qualifiedNames.get( dim ), attVals ) );
+                System.out.println( qualifiedNames.get( dim ) );
                 attValsEl[dim] = attVals;
             } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
-                atts.addElement( new Attribute( "attr" + dim ) );
+                atts.addElement( new Attribute( qualifiedNames.get( dim ) ) );
             }
         }
         // instances object
@@ -337,17 +349,22 @@ public class Explore {
 
         try {
             tree.buildClassifier( classifiedData );
-        } catch ( Exception e ) {
-            log.error( "Caught exception while building Classifier", e );
-        }
-
-        try {
             this.buildGraph = tree.graph();
         } catch ( Exception e ) {
-            log.error( "Caught exception while building tree graph", e );
+            log.error( "Caught exception while building Classifier and tree graph", e );
         }
 
         return tree;
+    }
+
+
+    public String sqlClassifiedData( J48 tree ) {
+        System.out.println( tree.toString() );
+        String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString() );
+        System.out.println( classifiedSqlStatement );
+        System.out.println( query );
+
+        return classifiedSqlStatement;
     }
 
 
