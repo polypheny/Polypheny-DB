@@ -79,7 +79,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         infoManager.addGroup( catalogGroup );
         InformationTable table = new InformationTable( catalogGroup, Collections.singletonList( "is persistent" ) );
         infoManager.registerInformation( table );
-        table.addRow( catalog.isPersistent ? "✔️" : "❌" );
+        table.addRow( catalog.isPersistent ? "✔" : "X" );
         return table;
     }
 

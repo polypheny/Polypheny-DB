@@ -59,9 +59,8 @@ public class PolyphenyDb {
     @Option(name = { "-resetCatalog" }, description = "catalog reset flag")
     private boolean resetCatalog = false;
 
-    @Option(name = {"-memoryCatalog"}, description = "in-memory catalog flag")
+    @Option(name = { "-memoryCatalog" }, description = "in-memory catalog flag")
     private boolean memoryCatalog = false;
-
 
 
     @SuppressWarnings("unchecked")
@@ -71,7 +70,7 @@ public class PolyphenyDb {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
             final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
-            final  PolyphenyDb polyphenyDb = parser.parse( args );
+            final PolyphenyDb polyphenyDb = parser.parse( args );
 
             polyphenyDb.runPolyphenyDb();
 
@@ -88,7 +87,7 @@ public class PolyphenyDb {
         Catalog catalog;
         Transaction trx = null;
         try {
-            catalog = CatalogManager.setAndGetInstance( new CatalogManagerImpl(resetCatalog, memoryCatalog) ).getCatalog();
+            catalog = CatalogManager.setAndGetInstance( new CatalogManagerImpl( resetCatalog, memoryCatalog ) ).getCatalog();
             trx = transactionManager.startTransaction( "pa", "APP", false );
             StoreManager.getInstance().restoreStores( catalog );
             trx.commit();
