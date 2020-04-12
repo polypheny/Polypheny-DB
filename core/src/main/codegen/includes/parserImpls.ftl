@@ -324,13 +324,26 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
                 <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
             )
         |
-            <SET> <DEFAULT_>
-            defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
+            <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
         |
-            <DROP> <DEFAULT_>
-            { dropDefault = true; }
+        <DROP> <DEFAULT_> { dropDefault = true; }
     )
     {
         return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
     }
 }
+
+
+SqlAlterConfig SqlAlterConfig(Span s) :
+{
+    final SqlNode key;
+    final SqlNode value;
+}
+{
+    <CONFIG> key = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <SET> value = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterConfig(s.end(this), key, value);
+    }
+}
+
