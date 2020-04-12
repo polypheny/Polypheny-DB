@@ -775,18 +775,13 @@ public class Crud implements InformationObserver {
             tableSize = explore.getTableSize();
             System.out.println( tableSize );
             result.setHighestPage( (int) Math.ceil( (double) tableSize / getExplorePageSize() ) );
+            result.setClassificationInfo( "NoClassificationPossible" );
 
             return result;
         }else {
             Result result = new Result( classifyAllData.header, explore.getData() );
 
-            result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
-            int tableSize = 0;
-
-            tableSize = explore.getData().length;
-            System.out.println( tableSize );
-            result.setHighestPage( (int) Math.ceil( (double) tableSize / getExplorePageSize() ) );
-
+            result.setClassificationInfo( "NoClassificationPossible" );
             return result;
         }
 
