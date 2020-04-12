@@ -327,7 +327,7 @@ public class CatalogTest {
         CatalogStore csv = catalog.getStore( "csv" );
         CatalogStore hsqldb = catalog.getStore( "hsqldb" );
 
-        catalog.addColumnPlacement( csv.id, columnId, PlacementType.AUTOMATIC, null,  "table1", column.name );
+        catalog.addColumnPlacement( csv.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name );
 
         assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
         assertEquals( columnId, catalog.getColumnPlacements( columnId ).get( 0 ).columnId );
@@ -335,18 +335,49 @@ public class CatalogTest {
         catalog.addColumnPlacement( hsqldb.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name );
 
         assertEquals( 2, catalog.getColumnPlacements( columnId ).size() );
-        assertTrue( catalog.getColumnPlacements( columnId ).stream().map( p -> p.storeId ).collect( Collectors.toList() ).containsAll( Arrays.asList( hsqldb.id, csv.id )));
+        assertTrue( catalog.getColumnPlacements( columnId ).stream().map( p -> p.storeId ).collect( Collectors.toList() ).containsAll( Arrays.asList( hsqldb.id, csv.id ) ) );
 
         catalog.deleteColumnPlacement( csv.id, columnId );
-        assertEquals( 1, catalog.getColumnPlacements( columnId ).size());
-        assertEquals( hsqldb.id, catalog.getColumnPlacements( columnId ).get( 0 ).storeId);
+        assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
+        assertEquals( hsqldb.id, catalog.getColumnPlacements( columnId ).get( 0 ).storeId );
 
     }
 
 
     @Test
-    public void testKey() {
+    public void testKey() throws UnknownUserException, GenericCatalogException, UnknownColumnException, UnknownTableException, UnknownKeyException {
+        int userId = catalog.addUser( "tester", "" );
+        CatalogUser user = catalog.getUser( userId );
 
+        long databaseId = catalog.addDatabase( "APP", userId, user.name, 0, "" );
+        long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
+        long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, null );
+
+        long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, false, null );
+        CatalogColumn column1 = catalog.getColumn( columnId1 );
+
+        long columnId2 = catalog.addColumn( "column2", tableId, 0, PolyType.BIGINT, null, null, false, null );
+        CatalogColumn column2 = catalog.getColumn( columnId2 );
+
+        catalog.addPrimaryKey( tableId, Collections.singletonList( column1.id ) );
+
+        assertEquals( 1, catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.size() );
+        assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId1 ) );
+
+        catalog.deletePrimaryKey( tableId );
+
+        assertNull( catalog.getTable( tableId ).primaryKey );
+
+        catalog.addPrimaryKey( tableId, Arrays.asList( columnId1, columnId2 ) );
+
+        assertEquals( 2, catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.size() );
+        assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId1 ) );
+        assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId2 ) );
+
+
+        // test constraints
+
+        // test foreignkey
     }
 
 
