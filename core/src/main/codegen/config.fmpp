@@ -27,6 +27,7 @@ data: {
             "org.polypheny.db.sql.SqlDrop"
             "org.polypheny.db.sql.ddl.SqlDdlNodes"
             "org.polypheny.db.sql.ddl.SqlTruncate"
+            "org.polypheny.db.sql.ddl.SqlAlterConfig"
             "org.polypheny.db.sql.ddl.SqlAlterSchema"
             "org.polypheny.db.sql.ddl.alterschema.*"
             "org.polypheny.db.sql.ddl.SqlAlterTable"
@@ -70,6 +71,7 @@ data: {
             "CATALOG"
             "CATALOG_NAME"
             "CENTURY"
+            "CONFIG"
             "CHAIN"
             "CHARACTER_SET_CATALOG"
             "CHARACTER_SET_NAME"
@@ -383,6 +385,7 @@ data: {
             "SqlSetOption"
             "SqlAlterSchema"
             "SqlAlterTable"
+            "SqlAlterConfig"
         ]
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".

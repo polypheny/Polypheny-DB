@@ -105,6 +105,7 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT storeUniqueName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT storeUniqueName
+     | ALTER CONFIG key SET value
 
 explain:
       EXPLAIN PLAN
@@ -391,6 +392,7 @@ COMMITTED,
 **CONDITION**,
 CONDITIONAL,
 CONDITION_NUMBER,
+CONFIG,
 **CONNECT**,
 CONNECTION,
 CONNECTION_NAME,
