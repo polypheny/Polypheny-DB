@@ -38,6 +38,7 @@ public class Result {
      * The rows containing the fetched data
      */
     @Getter
+    @Setter
     private String[][] data;
     /**
      * Information for the pagination: what current page is being displayed
@@ -81,6 +82,12 @@ public class Result {
 
     @Setter
     private int explorerId;
+
+    @Setter
+    private boolean includesClassificationInfo;
+
+    @Setter
+    private String[][] classifedData;
 
     /**
      * Build a Result object containing the data from the ResultSet, including the headers of the columns

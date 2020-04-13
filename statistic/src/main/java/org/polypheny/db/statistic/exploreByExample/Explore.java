@@ -73,6 +73,8 @@ public class Explore {
     private String classifiedSqlStatement;
     private Map<String, String> nameAndType = new HashMap<>();
 
+    public boolean isDataAfterClassification;
+
 
     public Explore( int identifier, String query, ExploreQueryProcessor exploreQueryProcessor ) {
         this.id = identifier;
@@ -89,14 +91,18 @@ public class Explore {
 
 
     public void exploreUserInput() {
-        unlabledData = createInstance( rotate2dArray( unlabeled ), unlabeled, dataType, uniqueValues );
+        isDataAfterClassification = true;
+
+        List<String[]> initialDataClassification = getAllData( sqlStatment );
+
+        unlabledData = createInstance( initialDataClassification, rotate2dArray( initialDataClassification ),  dataType, uniqueValues );
         dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
 
     public void classifyAllData( List<String[]> labeled, boolean isConvertedToSql ) {
         List<String[]> allData = getAllData( this.query );
-
+        isDataAfterClassification = false;
         if ( isConvertedToSql ) {
             classifiedSqlStatement = sqlClassifiedData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), nameAndType );
         } else {
