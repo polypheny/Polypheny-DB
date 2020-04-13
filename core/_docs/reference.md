@@ -106,6 +106,8 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT storeUniqueName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT storeUniqueName
      | ALTER CONFIG key SET value
+     | ALTER STORES ADD storeName USING adapterClass WITH config 
+     | ALTER STORES DROP storeName
 
 explain:
       EXPLAIN PLAN
@@ -876,6 +878,7 @@ STATEMENT,
 **STDDEV_SAMP**,
 STORE,
 **STORED**,
+STORES,
 **STREAM**,
 STRUCTURE,
 STYLE,

@@ -6539,6 +6539,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < STDDEV_POP: "STDDEV_POP" >
 |   < STDDEV_SAMP: "STDDEV_SAMP" >
 |   < STORE: "STORE" >
+|   < STORES: "STORES" >
 |   < STREAM: "STREAM" >
 |   < STRUCTURE: "STRUCTURE" >
 |   < STYLE: "STYLE" >

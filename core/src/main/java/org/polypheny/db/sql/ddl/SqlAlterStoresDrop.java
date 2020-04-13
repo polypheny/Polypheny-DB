@@ -19,9 +19,9 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.config.Config;
-import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
@@ -35,60 +35,54 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER CONFIG key SET value} statement.
+ * Parse tree for {@code ALTER STORES DROP storeName} statement.
  */
-public class SqlAlterConfig extends SqlAlter {
+@Slf4j
+public class SqlAlterStoresDrop extends SqlAlter {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER CONFIG", SqlKind.OTHER_DDL );
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER STORES DROP", SqlKind.OTHER_DDL );
 
-    private final SqlNode key;
-    private final SqlNode value;
+    private final SqlNode storeName;
 
 
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterConfig( SqlParserPos pos, SqlNode key, SqlNode value ) {
+    public SqlAlterStoresDrop( SqlParserPos pos, SqlNode storeName ) {
         super( OPERATOR, pos );
-        this.key = Objects.requireNonNull( key );
-        this.value = Objects.requireNonNull( value );
+        this.storeName = Objects.requireNonNull( storeName );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( key, value );
+        return ImmutableNullableList.of( storeName );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "CONFIG" );
-        key.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "SET" );
-        value.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "STORES" );
+        writer.keyword( "DROP" );
+        storeName.unparse( writer, leftPrec, rightPrec );
     }
 
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        String keyStr = key.toString();
-        String valueStr = value.toString();
-        if ( keyStr.startsWith( "'" ) ) {
-            keyStr = keyStr.substring( 1 );
+        String storeNameStr = storeName.toString();
+        if ( storeNameStr.startsWith( "'" ) ) {
+            storeNameStr = storeNameStr.substring( 1 );
         }
-        if ( keyStr.endsWith( "'" ) ) {
-            keyStr = StringUtils.chop( keyStr );
+        if ( storeNameStr.endsWith( "'" ) ) {
+            storeNameStr = StringUtils.chop( storeNameStr );
         }
-        if ( valueStr.startsWith( "'" ) ) {
-            valueStr = valueStr.substring( 1 );
+        try {
+            StoreManager.getInstance().removeStore( transaction.getCatalog(), storeNameStr );
+        } catch ( Exception e ) {
+            log.error( "Could not remove store {}", storeNameStr, e );
         }
-        if ( valueStr.endsWith( "'" ) ) {
-            valueStr = StringUtils.chop( valueStr );
-        }
-        Config config = ConfigManager.getInstance().getConfig( keyStr );
-        config.parseStringAndSetValue( valueStr );
     }
 
 }

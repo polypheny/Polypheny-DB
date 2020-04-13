@@ -28,6 +28,8 @@ data: {
             "org.polypheny.db.sql.ddl.SqlDdlNodes"
             "org.polypheny.db.sql.ddl.SqlTruncate"
             "org.polypheny.db.sql.ddl.SqlAlterConfig"
+            "org.polypheny.db.sql.ddl.SqlAlterStoresAdd"
+            "org.polypheny.db.sql.ddl.SqlAlterStoresDrop"
             "org.polypheny.db.sql.ddl.SqlAlterSchema"
             "org.polypheny.db.sql.ddl.alterschema.*"
             "org.polypheny.db.sql.ddl.SqlAlterTable"
@@ -313,6 +315,7 @@ data: {
             "SQL_VARBINARY"
             "SQL_VARCHAR"
             "STORE"
+            "STORES"
             "STATE"
             "STATEMENT"
             "STRUCTURE"
@@ -386,6 +389,8 @@ data: {
             "SqlAlterSchema"
             "SqlAlterTable"
             "SqlAlterConfig"
+            "SqlAlterStoresAdd"
+            "SqlAlterStoresDrop"
         ]
 
         # List of methods for parsing extensions to "CREATE [OR REPLACE]" calls. Each must accept arguments "(SqlParserPos pos, boolean replace)".
