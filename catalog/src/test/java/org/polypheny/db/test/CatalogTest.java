@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.StopWatch;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +58,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.type.PolyType;
 
-
+@Slf4j
 public class CatalogTest {
 
     CatalogImpl catalog;
@@ -120,7 +122,7 @@ public class CatalogTest {
         assertEquals( catalog.getDatabases( null ).stream().map( d -> d.name ).collect( Collectors.toList() ), names );
 
         for ( Long id : ids ) {
-            catalog.removeDatabase( id );
+            catalog.deleteDatabase( id );
         }
 
         assertEquals( catalog.getDatabases( null ), Collections.emptyList() );
@@ -436,6 +438,22 @@ public class CatalogTest {
         catalog.deleteIndex( catalog.getIndexes( tableId, false ).get( 0 ).id );
         assertEquals( 0, catalog.getIndexes( tableId, false ).size() );
 
+    }
+
+    @Test
+    public void performanceTests() throws UnknownUserException, UnknownDatabaseException {
+        int iterations = 1000;
+        int userId = catalog.addUser( "tester", "" );
+        CatalogUser user = catalog.getUser( userId );
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        for( int i = 0; i < iterations; i++ ) {
+            long id = catalog.addDatabase( "APP", userId, user.name, 0, "" );
+            catalog.deleteDatabase( id );
+        }
+        stopWatch.stop();
+        log.warn( "{}ms iterations needed, means 1 needed {}ms", stopWatch.getTime(), stopWatch.getTime()/1000 );
     }
 
 

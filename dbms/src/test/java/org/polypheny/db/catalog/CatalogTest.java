@@ -42,6 +42,7 @@ public class CatalogTest {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
+        //deleteOldData();
         addTestData();
     }
 
@@ -59,7 +60,7 @@ public class CatalogTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE SCHEMA schema1" );
                 statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL )" );
-                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX i_foo ON id USING BTREE" );
+                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id USING BTREE" );
                 connection.commit();
             }
         } catch ( SQLException e ) {
@@ -73,9 +74,9 @@ public class CatalogTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection() ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER TABLE schema1.table1 DROP INDEX i_foo" );
-                statement.executeUpdate( "DROP TABLE IF EXISTS schema1.table1" );
-                statement.executeUpdate( "DROP SCHEMA IF EXISTS schema1" );
+                statement.executeUpdate( "ALTER TABLE schema1.table1 DROP INDEX index1" );
+                statement.executeUpdate( "DROP TABLE schema1.table1" );
+                statement.executeUpdate( "DROP SCHEMA schema1" );
                 connection.commit();
             }
         } catch ( SQLException e ) {
@@ -178,7 +179,7 @@ public class CatalogTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "i_foo", 0, 1, "id", null, -1, null, null, null, 1 };
+            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, null, 1 };
 
             checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),

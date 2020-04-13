@@ -579,7 +579,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public boolean removeDatabase( long databaseId ) throws UnknownDatabaseException {
+    public void deleteDatabase( long databaseId ) throws UnknownDatabaseException {
         CatalogDatabase database = getDatabase( databaseId );
         if ( database != null ) {
             synchronized ( this ) {
@@ -588,10 +588,8 @@ public class CatalogImpl extends Catalog {
                 databaseChildren.remove( databaseId );
                 // db.commit();
 
-                return true;
             }
         }
-        return false;
     }
 
 
@@ -1760,7 +1758,8 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean isPrimaryKey( long key ) {
         try {
-            return getTable( Objects.requireNonNull( keys.get( key ) ).tableId ).primaryKey == key;
+            Long primary = getTable( Objects.requireNonNull( keys.get( key ) ).tableId ).primaryKey;
+            return primary != null && primary == key;
         } catch ( UnknownTableException e ) {
             throw new RuntimeException( e );
         }
@@ -2053,7 +2052,6 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogIndex index = Objects.requireNonNull( indices.get( indexId ) );
             if ( index.unique ) {
-                // CatalogCombinedKey combinedKey = getCombinedKey( index.keyId );
                 if ( getKeyUniqueCount( index.keyId ) == 1 && isForeignKey( index.keyId ) ) {
                     // This unique index is the only constraint for the uniqueness of this key.
                     throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To delete this index, first add a unique constraint." );
