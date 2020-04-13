@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.cassandra.util;
 
 
+import com.datastax.oss.driver.api.core.data.CqlDuration;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.util.UUID;
@@ -32,34 +33,83 @@ public class CassandraTypesUtils {
         switch ( polyType ) {
             case BOOLEAN:
                 return DataTypes.BOOLEAN;
+            case TINYINT:
+                return DataTypes.TINYINT;
+            case SMALLINT:
+                return DataTypes.SMALLINT;
+            case INTEGER:
+                return DataTypes.INT;
+            case BIGINT:
+                return DataTypes.BIGINT;
+            case DECIMAL:
+                return DataTypes.DECIMAL;
+            case FLOAT:
+            case REAL:
+                // TODO: What to return for real?
+                return DataTypes.FLOAT;
+            case DOUBLE:
+                return DataTypes.DOUBLE;
             case DATE:
                 return DataTypes.DATE;
             case TIME:
+            case TIME_WITH_LOCAL_TIME_ZONE:
                 return DataTypes.TIME;
             case TIMESTAMP:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
                 return DataTypes.TIMESTAMP;
-            case INTEGER:
-                return DataTypes.INT;
-            case DOUBLE:
-                return DataTypes.DOUBLE;
-            case FLOAT:
-            case REAL:
-                return DataTypes.FLOAT;
+            case INTERVAL_YEAR:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MINUTE_SECOND:
+            case INTERVAL_SECOND:
+                throw new RuntimeException( "Intervals are WIP." );
+//                return DataTypes.DURATION;
+            case CHAR:
+                // TODO: What to return for char?
             case VARCHAR:
                 return DataTypes.TEXT;
+            case BINARY:
             case VARBINARY:
                 return DataTypes.BLOB;
-            default:
-                throw new RuntimeException( "Unable to convert sql type: " + polyType.getName() );
+            case NULL:
+            case ANY:
+            case SYMBOL:
+            case MULTISET:
+            case ARRAY:
+            case MAP:
+            case DISTINCT:
+            case STRUCTURED:
+            case ROW:
+            case OTHER:
+            case CURSOR:
+            case COLUMN_LIST:
+            case DYNAMIC_STAR:
+            case GEOMETRY:
+                break;
         }
+
+        throw new RuntimeException( "Unable to convert sql type: " + polyType.getName() );
     }
 
 
     public static PolyType getPolyType( DataType dataType ) {
+
         if ( dataType == DataTypes.UUID || dataType == DataTypes.TIMEUUID ) {
             return PolyType.CHAR;
         } else if ( dataType == DataTypes.ASCII || dataType == DataTypes.TEXT ) {
             return PolyType.VARCHAR;
+        } else if ( dataType == DataTypes.TINYINT ) {
+            return PolyType.TINYINT;
+        } else if ( dataType == DataTypes.SMALLINT ) {
+            return PolyType.SMALLINT;
         } else if ( dataType == DataTypes.INT || dataType == DataTypes.VARINT ) {
             return PolyType.INTEGER;
         } else if ( dataType == DataTypes.BIGINT ) {
@@ -68,7 +118,9 @@ public class CassandraTypesUtils {
             return PolyType.DOUBLE;
         } else if ( dataType == DataTypes.FLOAT ) {
             // TODO JS: Float vs real?
-            return PolyType.REAL;
+            return PolyType.FLOAT;
+        } else if ( dataType == DataTypes.DECIMAL ) {
+            return PolyType.DECIMAL;
         } else if ( dataType == DataTypes.TIME ) {
             return PolyType.TIME;
         } else if ( dataType == DataTypes.DATE ) {
@@ -87,33 +139,47 @@ public class CassandraTypesUtils {
 
 
     public static Class<?> getJavaType( DataType dataType ) {
-        if ( dataType == DataTypes.UUID || dataType == DataTypes.TIMEUUID ) {
-            return UUID.class;
-        } else if ( dataType == DataTypes.ASCII || dataType == DataTypes.TEXT ) {
+
+        if ( dataType == DataTypes.ASCII ) {
             return String.class;
-        } else if ( dataType == DataTypes.INT || dataType == DataTypes.VARINT ) {
-            return Integer.class;
         } else if ( dataType == DataTypes.BIGINT ) {
             return Long.class;
-        } else if ( dataType == DataTypes.DOUBLE ) {
-            return Double.class;
-        } else if ( dataType == DataTypes.FLOAT ) {
-            // TODO JS: Float vs real?
-            return Double.class;
-        } else if ( dataType == DataTypes.TIME ) {
-            // FIXME JS: idk anymore
-            return Object.class;
-        } else if ( dataType == DataTypes.DATE ) {
-            // FIXME JS: I have developed a strong disliking for this type whatever
-            return Object.class;
-        } else if ( dataType == DataTypes.TIMESTAMP ) {
-            // FIXME JS: Send help
-            return Object.class;
         } else if ( dataType == DataTypes.BLOB ) {
-            // FIXME JS: Just no
-            return Object.class;
+            return java.nio.ByteBuffer.class;
         } else if ( dataType == DataTypes.BOOLEAN ) {
             return Boolean.class;
+        } else if ( dataType == DataTypes.COUNTER ) {
+            return Long.class;
+        } else if ( dataType == DataTypes.DATE ) {
+            return java.time.LocalDate.class;
+        } else if ( dataType == DataTypes.DECIMAL ) {
+            return java.math.BigDecimal.class;
+        } else if ( dataType == DataTypes.DOUBLE ) {
+            return Double.class;
+        } else if ( dataType == DataTypes.DURATION ) {
+            return CqlDuration.class;
+        } else if ( dataType == DataTypes.FLOAT ) {
+            return Float.class;
+        } else if ( dataType == DataTypes.INET ) {
+            return java.net.InetAddress.class;
+        } else if ( dataType == DataTypes.INT ) {
+            return Integer.class;
+        } else if ( dataType == DataTypes.SMALLINT ) {
+            return Short.class;
+        } else if ( dataType == DataTypes.TEXT ) {
+            return String.class;
+        } else if ( dataType == DataTypes.TIME ) {
+            return java.time.LocalTime.class;
+        } else if ( dataType == DataTypes.TIMESTAMP ) {
+            return java.time.Instant.class;
+        } else if ( dataType == DataTypes.TIMEUUID ) {
+            return java.util.UUID.class;
+        } else if ( dataType == DataTypes.TINYINT ) {
+            return Byte.class;
+        } else if ( dataType == DataTypes.UUID ) {
+            return java.util.UUID.class;
+        } else if ( dataType == DataTypes.VARINT ) {
+            return java.math.BigInteger.class;
         } else {
             log.warn( "Unable to find type for cql type: {}. Returning ANY.", dataType );
             return Object.class;
