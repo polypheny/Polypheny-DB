@@ -34,6 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
+import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -426,6 +427,14 @@ public class CatalogTest {
         catalog.deletePrimaryKey( tableId );
 
         assertEquals( 0, catalog.getForeignKeys( tableId ).size() );
+
+        // test index
+        assertEquals( 0, catalog.getIndexes( tableId, false ).size() );
+        catalog.addIndex( tableId, Collections.singletonList( columnId1 ), false, IndexType.BTREE, "index" );
+        assertEquals( 1, catalog.getIndexes( tableId, false ).size() );
+        assertEquals( 0, catalog.getIndexes( tableId, true ).size() );
+        catalog.deleteIndex( catalog.getIndexes( tableId, false ).get( 0 ).id );
+        assertEquals( 0, catalog.getIndexes( tableId, false ).size() );
 
     }
 
