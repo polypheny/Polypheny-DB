@@ -33,6 +33,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
@@ -374,10 +375,58 @@ public class CatalogTest {
         assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId1 ) );
         assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId2 ) );
 
+        catalog.deletePrimaryKey( tableId );
 
         // test constraints
+        String constraint1 = "unique constraint";
+        catalog.addUniqueConstraint( tableId, constraint1, Collections.singletonList( columnId1 ) );
+
+        String constraint2 = "other constraint";
+        catalog.addUniqueConstraint( tableId, constraint2, Arrays.asList( columnId1, columnId2 ) );
+
+        assertEquals( 2, catalog.getConstraints( tableId ).size() );
+        assertTrue( catalog.getConstraints( tableId ).stream().map( c -> c.name ).collect( Collectors.toList() ).containsAll( Arrays.asList( constraint1, constraint2 ) ) );
+
+        if ( catalog.getConstraints( tableId ).get( 0 ).key.columnIds.size() == 1 ) {
+            assertTrue( catalog.getConstraints( tableId ).get( 0 ).key.columnIds.contains( columnId1 ) );
+            assertTrue( catalog.getConstraints( tableId ).get( 1 ).key.columnIds.containsAll( Arrays.asList( column1.id, column2.id ) ) );
+
+            catalog.deleteConstraint( catalog.getConstraints( tableId ).get( 0 ).id );
+
+            assertEquals( 1, catalog.getConstraints( tableId ).size() );
+            assertTrue( catalog.getConstraints( tableId ).get( 0 ).key.columnIds.containsAll( Arrays.asList( column1.id, column2.id ) ) );
+
+            catalog.deleteConstraint( catalog.getConstraints( tableId ).get( 0 ).id );
+
+        } else {
+            assertTrue( catalog.getConstraints( tableId ).get( 1 ).key.columnIds.contains( columnId1 ) );
+            assertTrue( catalog.getConstraints( tableId ).get( 0 ).key.columnIds.containsAll( Arrays.asList( column1.id, column2.id ) ) );
+
+            catalog.deleteConstraint( catalog.getConstraints( tableId ).get( 0 ).id );
+
+            assertEquals( 1, catalog.getConstraints( tableId ).size() );
+            assertTrue( catalog.getConstraints( tableId ).get( 0 ).key.columnIds.contains( column1.id ) );
+
+            catalog.deleteConstraint( catalog.getConstraints( tableId ).get( 0 ).id );
+        }
 
         // test foreignkey
+        long tableId2 = catalog.addTable( "table2", schemaId, userId, TableType.TABLE, null );
+        long columnId3 = catalog.addColumn( "column3", tableId2, 0, PolyType.BIGINT, null, null, false, null );
+        CatalogColumn column3 = catalog.getColumn( columnId3 );
+
+        catalog.addPrimaryKey( tableId, Collections.singletonList( columnId1 ) );
+        catalog.addForeignKey( tableId2, Collections.singletonList( columnId3 ), tableId, Collections.singletonList( columnId1 ), "name", ForeignKeyOption.CASCADE, ForeignKeyOption.SET_NULL );
+        assertEquals( 1, catalog.getForeignKeys( tableId2 ).size() );
+        assertEquals( 1, catalog.getForeignKeys( tableId2 ).get( 0 ).columnIds.size() );
+        assertEquals( columnId3, (long) catalog.getForeignKeys( tableId2 ).get( 0 ).columnIds.get( 0 ) );
+        assertEquals( columnId1, (long) catalog.getForeignKeys( tableId2 ).get( 0 ).referencedKeyColumnIds.get( 0 ) );
+
+        catalog.deleteForeignKey( catalog.getForeignKeys( tableId2 ).get( 0 ).id );
+        catalog.deletePrimaryKey( tableId );
+
+        assertEquals( 0, catalog.getForeignKeys( tableId ).size() );
+
     }
 
 
