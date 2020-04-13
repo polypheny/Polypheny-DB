@@ -347,3 +347,30 @@ SqlAlterConfig SqlAlterConfig(Span s) :
     }
 }
 
+
+SqlAlterStoresAdd SqlAlterStoresAdd(Span s) :
+{
+    final SqlNode storeName;
+    final SqlNode adapterName;
+    final SqlNode config;
+}
+{
+    <STORES> <ADD> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterStoresAdd(s.end(this), storeName, adapterName, config);
+    }
+}
+
+
+SqlAlterStoresDrop SqlAlterStoresDrop(Span s) :
+{
+    final SqlNode storeName;
+}
+{
+    <STORES> <DROP> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterStoresDrop(s.end(this), storeName);
+    }
+}
