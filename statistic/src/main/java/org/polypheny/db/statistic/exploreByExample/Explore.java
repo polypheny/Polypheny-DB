@@ -72,6 +72,8 @@ public class Explore {
     @Getter
     private String classifiedSqlStatement;
     private Map<String, String> nameAndType = new HashMap<>();
+    @Getter
+    private boolean isConvertedToSql;
 
     public boolean isDataAfterClassification;
 
@@ -103,8 +105,11 @@ public class Explore {
     public void classifyAllData( List<String[]> labeled, boolean isConvertedToSql ) {
         List<String[]> allData = getAllData( this.query );
         isDataAfterClassification = false;
+        classificationPossible = false;
+        this.isConvertedToSql = isConvertedToSql;
         if ( isConvertedToSql ) {
             classifiedSqlStatement = sqlClassifiedData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), nameAndType );
+            tableSize = getSQLCount(classifiedSqlStatement);
         } else {
             unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues );
             data = classifyData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );

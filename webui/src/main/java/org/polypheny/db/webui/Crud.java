@@ -730,7 +730,7 @@ public class Crud implements InformationObserver {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
 
-        boolean isConvertedToSql = true;
+        boolean isConvertedToSql = false;
 
         Explore explore = exploreManager.classifyData( classifyAllData.id, classifyAllData.classified, isConvertedToSql );
 
@@ -762,25 +762,30 @@ public class Crud implements InformationObserver {
             }
 
             result.setExplorerId( explore.getId() );
-            if ( !explore.isClassificationPossible() ) {
-                result.setClassificationInfo( "NoClassificationPossible" );
-            } else {
-                result.setClassificationInfo( "ClassificationPossible" );
-            }
-
             result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
             int tableSize = 0;
 
             tableSize = explore.getTableSize();
             System.out.println( tableSize );
+            System.out.println( (int) Math.ceil( (double) tableSize / getPageSize() ) );
             result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
             result.setClassificationInfo( "NoClassificationPossible" );
 
             return result;
         } else {
-            Result result = new Result( classifyAllData.header, explore.getData() );
+            Result result = new Result( classifyAllData.header, Arrays.copyOfRange(explore.getData(), 0, 9) );
 
             result.setClassificationInfo( "NoClassificationPossible" );
+            result.setExplorerId( explore.getId() );
+
+            result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
+            int tableSize = 0;
+
+            tableSize = explore.getData().length;
+            System.out.println( tableSize );
+            result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+            System.out.println( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+
             return result;
         }
 
@@ -797,6 +802,24 @@ public class Crud implements InformationObserver {
         String[][] paginationData;
 
         String query = explore.getSqlStatment() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
+
+        if(!explore.isConvertedToSql()){
+            int tablesize = explore.getData().length;
+
+            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize())) {
+                paginationData = Arrays.copyOfRange( explore.getData(),  ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
+            } else {
+                paginationData = Arrays.copyOfRange( explore.getData(),  ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize() ));
+            }
+            result = new Result( exploreTables.columns, paginationData );
+            result.setClassificationInfo( "NoClassificationPossible" );
+            result.setExplorerId( explore.getId() );
+
+            result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
+            result.setHighestPage( (int) Math.ceil( (double) tablesize / getPageSize() ) );
+
+            return result;
+        }
 
         try {
             result = executeSqlSelect( transaction, exploreTables, query );
@@ -817,7 +840,7 @@ public class Crud implements InformationObserver {
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing transaction", e );
         }
-
+        result.setExplorerId( explore.getId() );
         result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
         int tableSize = 0;
         tableSize = explore.getTableSize();
@@ -900,7 +923,6 @@ public class Crud implements InformationObserver {
         int tableSize = 0;
 
         tableSize = explore.getTableSize();
-        System.out.println( tableSize );
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
 
         return result;
@@ -2611,11 +2633,6 @@ public class Crud implements InformationObserver {
      */
     private int getPageSize() {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
-    }
-
-
-    private int getExplorePageSize() {
-        return RuntimeConfig.UI_Explore_PAGE_SIZE.getInteger();
     }
 
 
