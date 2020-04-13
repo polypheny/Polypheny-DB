@@ -18,13 +18,17 @@ package org.polypheny.db.transaction;
 
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.QueryProcessor;
 import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.adapter.DataContext;
@@ -57,7 +61,7 @@ import org.polypheny.db.statistic.StatisticsManager;
 
 
 @Slf4j
-public class TransactionImpl implements Transaction {
+public class TransactionImpl implements Transaction, Comparable {
 
     @Getter
     private final PolyXid xid;
@@ -90,8 +94,16 @@ public class TransactionImpl implements Transaction {
 
     private InformationDuration duration = null;
 
+    private Set<Lock> lockList = new HashSet<>();
 
-    TransactionImpl( PolyXid xid, TransactionManagerImpl transactionManager, CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
+
+    TransactionImpl(
+            PolyXid xid,
+            TransactionManagerImpl transactionManager,
+            CatalogUser user,
+            CatalogSchema defaultSchema,
+            CatalogDatabase database,
+            boolean analyze ) {
         this.xid = xid;
         this.transactionManager = transactionManager;
         this.user = user;
@@ -180,6 +192,10 @@ public class TransactionImpl implements Transaction {
                 rollback();
                 throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
             }
+
+            // Release locks
+            LockManager.INSTANCE.removeTransaction( this );
+
             transactionManager.removeTransaction( xid );
         } catch ( CatalogTransactionException e ) {
             log.error( "Exception while committing changes. Execution rollback!" );
@@ -195,20 +211,24 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void rollback() throws TransactionException {
-        //  rollback changes to the stores
-        for ( Store store : involvedStores ) {
-            store.rollback( xid );
-        }
-
-        // Rollback changes to the catalog
         try {
-            if ( catalog != null ) {
-                catalog.rollback();
+            //  Rollback changes to the stores
+            for ( Store store : involvedStores ) {
+                store.rollback( xid );
             }
-        } catch ( CatalogTransactionException e ) {
-            throw new TransactionException( e );
+
+            // Rollback changes to the catalog
+            try {
+                if ( catalog != null ) {
+                    catalog.rollback();
+                }
+            } catch ( CatalogTransactionException e ) {
+                throw new TransactionException( e );
+            }
         } finally {
             cachedSchema = null;
+            // Release locks
+            LockManager.INSTANCE.removeTransaction( this );
         }
     }
 
@@ -244,7 +264,13 @@ public class TransactionImpl implements Transaction {
     @Override
     public ContextImpl getPrepareContext() {
         if ( prepareContext == null ) {
-            prepareContext = new ContextImpl( getSchema(), getDataContext(), defaultSchema.name, database.id, user.id, this );
+            prepareContext = new ContextImpl(
+                    getSchema(),
+                    getDataContext(),
+                    defaultSchema.name,
+                    database.id,
+                    user.id,
+                    this );
         }
         return prepareContext;
     }
@@ -296,6 +322,54 @@ public class TransactionImpl implements Transaction {
             im.registerInformation( duration );
         }
         return duration;
+    }
+
+
+    @Override
+    public int compareTo( @NotNull Object o ) {
+        Transaction that = (Transaction) o;
+        return this.xid.hashCode() - that.getXid().hashCode();
+    }
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( xid );
+    }
+
+
+    @Override
+    public boolean equals( Object o ) {
+        if ( this == o ) {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() ) {
+            return false;
+        }
+        Transaction that = (Transaction) o;
+        return xid.equals( that.getXid() );
+    }
+
+    // For locking
+
+
+    Set<Lock> getLocks() {
+        return lockList;
+    }
+
+
+    void addLock( Lock lock ) {
+        lockList.add( lock );
+    }
+
+
+    void removeLock( Lock lock ) {
+        lockList.remove( lock );
+    }
+
+
+    void abort() {
+        Thread.currentThread().interrupt();
     }
 
 }

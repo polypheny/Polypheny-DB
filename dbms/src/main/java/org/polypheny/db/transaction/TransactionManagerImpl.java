@@ -37,9 +37,6 @@ import org.polypheny.db.transaction.PUID.ConnectionId;
 import org.polypheny.db.transaction.PUID.NodeId;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PUID.UserId;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 public class TransactionManagerImpl implements TransactionManager {
@@ -84,8 +81,9 @@ public class TransactionManagerImpl implements TransactionManager {
         CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( user );
 
         // TODO MV: This is not nice and should be replaced
-        // Because of the current implementation of the catalog requiring a transaction id for schema requests we first  need to create a "dummy" transaction for accessing the catalog
-        // to get the actual information required for starting the actual transaction.
+        // Because of the current implementation of the catalog requiring a transaction id for schema requests we first
+        // need to create a "dummy" transaction for accessing the catalog to get the actual information required for starting
+        // the actual transaction.
         Transaction transaction = startTransaction( catalogUser, null, null, false );
         CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
         CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
