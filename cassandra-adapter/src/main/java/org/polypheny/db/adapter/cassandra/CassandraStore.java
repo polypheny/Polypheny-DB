@@ -358,9 +358,7 @@ public class CassandraStore extends Store {
 
         String newPhysicalColumnName = CassandraPhysicalNameProvider.incrementNameRevision( physicalColumnName );
 
-        session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
-                .addColumn( newPhysicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) )
-                .build() );
+
 
         BatchStatementBuilder builder = new BatchStatementBuilder( BatchType.LOGGED );
         RelationMetadata relationMetadata = session.getMetadata().getKeyspace( dbKeyspace ).get().getTable( physicalTableName ).get();
@@ -368,7 +366,7 @@ public class CassandraStore extends Store {
         ColumnMetadata oldColumn = relationMetadata.getColumn( physicalColumnName ).get();
         PolyType oldType = CassandraTypesUtils.getPolyType( oldColumn.getType() );
 
-        PolyTypeAssignmentRules rules = PolyTypeAssignmentRules.instance( true );
+//        PolyTypeAssignmentRules rules = PolyTypeAssignmentRules.instance( true );
 //        if ( ! rules.canCastFrom( catalogColumn.type, oldType )) {
 //            throw new RuntimeException( "Unable to change column type. Unable to cast " + oldType.getName() + " to " + catalogColumn.type.getName() + "." );
 //        }
@@ -376,7 +374,8 @@ public class CassandraStore extends Store {
         Function<Object, Object> converter = CassandraTypesUtils.convertToFrom( catalogColumn.type, oldType );
 
         session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
-                .dropColumn( physicalColumnName ).build() );
+                .addColumn( newPhysicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) )
+                .build() );
 
 
         for ( Row r: rs ) {
@@ -403,6 +402,11 @@ public class CassandraStore extends Store {
         }
 
         this.session.execute( builder.build() );
+
+
+        session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
+                .dropColumn( physicalColumnName ).build() );
+
 
         physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );
     }
