@@ -26,7 +26,7 @@ import java.util.Map;
 public class WekaToSql {
 
 
-    public static String translate( String tree, Map<String, String> nameAndType ) {
+    public static String translate( String tree, Map<String, String> nameAndType, boolean includesJoin ) {
         List<String> splitedTree = new ArrayList<>( Arrays.asList( tree.replace( "   ", " " ).replace( "  ", " " ).split( "Number of Leaves" )[0].split( "\\n" ) ) );
         splitedTree.remove( 0 );
         splitedTree.remove( 0 );
@@ -60,8 +60,11 @@ public class WekaToSql {
                     splitedTree.add( element );
                 }
             }
+        }if(includesJoin){
+            return "\nAND " + WekaToSql.iterateTee( splitedTree );
+        }else{
+            return "\nWHERE " + WekaToSql.iterateTee( splitedTree );
         }
-        return "\nWHERE " + WekaToSql.iterateTee( splitedTree );
     }
 
 
@@ -121,7 +124,6 @@ public class WekaToSql {
             } else {
                 res.add( element );
             }
-
         }
         return "((" + String.join( ") OR (", res ) + "))";
     }

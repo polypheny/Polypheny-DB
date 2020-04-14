@@ -47,20 +47,17 @@ public class ExploreManager {
 
     public Explore classifyData( Integer id, String[][] classified, boolean returnsSql ) {
         List<String[]> labeled = new ArrayList<>();
-
         for ( String[] data : classified ) {
             if ( !(data[data.length - 1].equals( "?" )) ) {
                 labeled.add( data );
             }
         }
-
         explore.get( id ).classifyAllData( labeled, returnsSql );
         return explore.get( id );
     }
 
 
     public Explore createSqlQuery( Integer id, String query ) {
-
         if ( id == null ) {
             int identifier = atomicId.getAndIncrement();
             explore.put( identifier, new Explore( identifier, query, this.exploreQueryProcessor ) );
@@ -70,23 +67,18 @@ public class ExploreManager {
         return null;
     }
 
-    public Explore getExploreInformation(Integer id){
 
+    public Explore getExploreInformation( Integer id ) {
         return explore.get( id );
-
     }
 
 
     public Explore exploreData( Integer id, String[][] classified, String[] dataType ) {
         List<String[]> labeled = new ArrayList<>();
-        List<String[]> unlabeled = new ArrayList<>();
 
         for ( String[] data : classified ) {
             if ( !(data[data.length - 1].equals( "?" )) ) {
                 labeled.add( data );
-                unlabeled.add( data );
-            } else if ( data[data.length - 1].equals( "?" ) ) {
-                unlabeled.add( data );
             }
         }
 
@@ -94,7 +86,6 @@ public class ExploreManager {
             explore.get( id ).updateExploration( labeled );
         } else {
             explore.get( id ).setLabeled( labeled );
-            explore.get( id ).setUnlabeled( unlabeled );
             explore.get( id ).setUniqueValues( explore.get( id ).getStatistics( explore.get( id ).getQuery() ) );
             explore.get( id ).setDataType( dataType );
             explore.get( id ).exploreUserInput();

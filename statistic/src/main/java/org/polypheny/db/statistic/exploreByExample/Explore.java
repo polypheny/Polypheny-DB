@@ -44,8 +44,6 @@ public class Explore {
     @Getter
     @Setter
     private List<String[]> labeled;
-    @Setter
-    private List<String[]> unlabeled;
     @Getter
     @Setter
     private String[] dataType;
@@ -74,7 +72,8 @@ public class Explore {
     private Map<String, String> nameAndType = new HashMap<>();
     @Getter
     private boolean isConvertedToSql;
-
+    @Getter
+    private boolean includesJoin;
     public boolean isDataAfterClassification;
 
 
@@ -94,9 +93,7 @@ public class Explore {
 
     public void exploreUserInput() {
         isDataAfterClassification = true;
-
         List<String[]> initialDataClassification = getAllData( sqlStatment );
-
         unlabledData = createInstance( initialDataClassification, rotate2dArray( initialDataClassification ),  dataType, uniqueValues );
         dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
@@ -124,7 +121,8 @@ public class Explore {
         String[] dataType = new String[fullNames.length];
 
         for ( int i = 0; i < exploreQueryResult.typeInfo.size(); i++ ) {
-            if ( fullNames[i].contains( exploreQueryResult.name.get( i ) ) ) {
+            String name = fullNames[i].substring( fullNames[i].lastIndexOf( "." ) + 1 );
+            if ( exploreQueryResult.name.get( i ).startsWith( name ) ) {
                 dataType[i] = exploreQueryResult.typeInfo.get( i );
                 nameAndType.put( fullNames[i], dataType[i] );
             }
@@ -141,12 +139,12 @@ public class Explore {
 
         List<String> selecdedCols = new ArrayList<>();
         List<String> whereClause = new ArrayList<>();
-        List<String> list = new ArrayList<>();
-        List<String> list2 = new ArrayList<>();
-        List<String> list3 = new ArrayList<>();
-        List<String> list4 = new ArrayList<>();
-        List<String> list5 = new ArrayList<>();
-
+        List<String> allCols = new ArrayList<>();
+        List<String> goupByList = new ArrayList<>();
+        List<String> intCols = new ArrayList<>();
+        List<String> unionList = new ArrayList<>();
+        List<String> allBlankCols = new ArrayList<>();
+        includesJoin = false;
         int rowCount = getSQLCount( sqlStatment + "\nLIMIT 60" );
 
         if ( rowCount < 10 ) {
@@ -157,6 +155,12 @@ public class Explore {
             sqlStatment = sqlStatment;
         } else if ( rowCount > 40 ) {
             String selectDistinct = sqlStatment.replace( "SELECT", "SELECT DISTINCT" ) + "\nLIMIT 60";
+            if ( sqlStatment.contains( "WHERE" ) ) {
+                includesJoin = true;
+                sqlStatment = selectDistinct;
+                tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
+                return;
+            }
             rowCount = getSQLCount( selectDistinct );
             if ( rowCount < 10 ) {
                 tableSize = rowCount;
@@ -167,44 +171,32 @@ public class Explore {
             } else if ( rowCount > 40 ) {
 
                 selecdedCols = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
-                boolean includesWhere = false;
-                if ( sqlStatment.contains( "WHERE" ) ) {
-                    includesWhere = true;
-                    whereClause = Arrays.asList( sqlStatment.split( "WHERE" )[1] );
-                }
 
                 boolean includesInteger = false;
                 boolean includesVarchar = false;
                 for ( int i = 0; i < selecdedCols.size(); i++ ) {
                     if ( dataType[i].equals( "VARCHAR" ) ) {
                         includesVarchar = true;
-                        list.add( selecdedCols.get( i ) );
-                        list2.add( selecdedCols.get( i ) );
-                        list5.add( selecdedCols.get( i ) );
+                        allCols.add( selecdedCols.get( i ) );
+                        goupByList.add( selecdedCols.get( i ) );
+                        allBlankCols.add( selecdedCols.get( i ) );
                     }
                     if ( dataType[i].equals( "INTEGER" ) ) {
                         includesInteger = true;
-                        list.add( "AVG(" + selecdedCols.get( i ) + ")" );
-                        list3.add( selecdedCols.get( i ) );
-                        list5.add( selecdedCols.get( i ) );
+                        allCols.add( "AVG(" + selecdedCols.get( i ) + ")" );
+                        intCols.add( selecdedCols.get( i ) );
+                        allBlankCols.add( selecdedCols.get( i ) );
                     }
                 }
 
                 if ( includesInteger ) {
-                    getMins( list3 ).forEach( ( s, min ) -> list4.add( "\nUNION \nSELECT " + String.join( ",", list5 ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min ) );
-                    getMaxs( list3 ).forEach( ( s, max ) -> list4.add( "\nUNION \nSELECT " + String.join( ",", list5 ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max ) );
+                    getMins( intCols ).forEach( ( s, min ) -> unionList.add( "\nUNION \nSELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min ) );
+                    getMaxs( intCols ).forEach( ( s, max ) -> unionList.add( "\nUNION \nSELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max ) );
                 }
-                if ( includesVarchar && !includesWhere ) {
-                    sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", list2 ) + String.join( "", list4 );
-
-                } else if ( includesVarchar && includesWhere ) {
-                    sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE" + whereClause + "\nGROUP BY " + String.join( ",", list2 ) + String.join( "", list4 );
-
-                } else if ( includesWhere && !includesVarchar ) {
-                    sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE" + whereClause + String.join( "", list4 );
-
+                if ( includesVarchar ) {
+                    sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", goupByList ) + String.join( "", unionList );
                 } else {
-                    sqlStatment = "SELECT " + String.join( ",", list ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + String.join( "", list4 );
+                    sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + String.join( "", unionList );
                 }
 
                 tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
@@ -216,7 +208,6 @@ public class Explore {
     public List<List<String>> getStatistics( String query ) {
 
         List<List<String>> uniqueValues = new ArrayList<>();
-        ExploreQueryResult exploreQueryResult;
         List<ExploreQueryResult> values = this.exploreQueryProcessor.getAllUniqueValues( prepareColInfo( query ), query );
 
         for ( ExploreQueryResult uniqueValue : values ) {
@@ -391,7 +382,7 @@ public class Explore {
 
     public String sqlClassifiedData( J48 tree, Map<String, String> nameAndType ) {
         //System.out.println( tree.toString() );
-        String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString(), nameAndType );
+        String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString(), nameAndType, includesJoin );
         //System.out.println( classifiedSqlStatement );
         return classifiedSqlStatement;
     }

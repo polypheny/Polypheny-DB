@@ -1,0 +1,1471 @@
+﻿EmployeeNumber:int,EducationField:string,JobInvolvement:string,JobLevel:int,JobRole:string,BusinessTravel:string
+1,Life Sciences,High,2,Sales Executive,Travel_Rarely
+2,Life Sciences,Medium,2,Research Scientist,Travel_Frequently
+4,Other,Medium,1,Laboratory Technician,Travel_Rarely
+5,Life Sciences,High,1,Research Scientist,Travel_Frequently
+7,Medical,High,1,Laboratory Technician,Travel_Rarely
+8,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+10,Medical,Very High,1,Laboratory Technician,Travel_Rarely
+11,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+12,Life Sciences,Medium,3,Manufacturing Director,Travel_Frequently
+13,Medical,High,2,Healthcare Representative,Travel_Rarely
+14,Medical,Very High,1,Laboratory Technician,Travel_Rarely
+15,Life Sciences,Medium,2,Laboratory Technician,Travel_Rarely
+16,Life Sciences,High,1,Research Scientist,Travel_Rarely
+18,Medical,High,1,Laboratory Technician,Travel_Rarely
+19,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+20,Life Sciences,Very High,3,Manufacturing Director,Travel_Rarely
+21,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+22,Medical,Very High,1,Laboratory Technician,Non-Travel
+23,Life Sciences,Medium,4,Manager,Travel_Rarely
+24,Life Sciences,High,1,Research Scientist,Travel_Rarely
+26,Other,Very High,2,Manufacturing Director,Non-Travel
+27,Life Sciences,Medium,1,Sales Representative,Travel_Rarely
+28,Life Sciences,High,3,Research Director,Travel_Rarel
+30,Life Sciences,High,1,Research Scientist,Travel_Rarely
+31,Medical,High,1,Research Scientist,Travel_Rarely
+32,Other,High,5,Manager,Travel_Rarely
+33,Life Sciences,Low,1,Research Scientist,Travel_Frequently
+35,Marketing,High,2,Sales Executive,Travel_Rarely
+36,Medical,Medium,3,Healthcare Representative,Travel_Rarely
+38,Marketing,High,5,Manager,Travel_Rarely
+39,Medical,High,1,Laboratory Technician,Travel_Rarely
+40,Other,High,2,Healthcare Representative,Travel_Rarely
+41,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+42,Technical Degree,High,2,Sales Representative,Travel_Rarely
+45,Medical,High,1,Research Scientist,Travel_Rarely
+46,Medical,Very High,1,Research Scientist,Travel_Rarely
+47,Marketing,Medium,1,Sales Representative,Travel_Rarely
+49,Marketing,High,1,Sales Representative,Travel_Rarely
+51,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+52,Life Sciences,Very High,2,Sales Executive,Travel_Frequently
+53,Other,High,1,Laboratory Technician,Travel_Rarely
+54,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+55,Life Sciences,Low,1,Laboratory Technician,Travel_Rarely
+56,Life Sciences,High,3,Sales Executive,Travel_Frequently
+57,Medical,High,2,Laboratory Technician,Travel_Frequently
+58,Technical Degree,High,5,Research Director,Travel_Rarely
+60,Marketing,High,2,Sales Executive,Non-Travel
+61,Life Sciences,High,1,Research Scientist,Travel_Rarely
+62,Marketing,High,2,Sales Executive,Travel_Frequently
+63,Life Sciences,Very High,1,Laboratory Technician,Travel_Rarely
+64,Life Sciences,Medium,3,Laboratory Technician,Travel_Rarely
+65,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+68,Marketing,High,2,Sales Executive,Travel_Rarely
+70,Medical,Medium,3,Healthcare Representative,Non-Travel
+72,Marketing,Medium,2,Sales Executive,Travel_Rarely
+73,Life Sciences,High,3,Research Director,Travel_Frequently
+74,Life Sciences,High,3,Sales Executive,Travel_Frequently
+75,Medical,High,1,Laboratory Technician,Travel_Rarely
+76,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+77,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+78,Medical,High,2,Manufacturing Director,Travel_Rarely
+79,Life Sciences,High,2,Laboratory Technician,Travel_Frequently
+80,Medical,Medium,5,Research Director,Travel_Rarely
+81,Life Sciences,High,3,Sales Executive,Travel_Rarely
+83,Technical Degree,High,3,Healthcare Representative,Travel_Rarely
+84,Medical,High,4,Manager,Travel_Rarely
+85,Life Sciences,Medium,2,Manufacturing Director,Travel_Frequently
+86,Life Sciences,High,3,Research Scientist,Travel_Rarely
+88,Medical,High,1,Research Scientist,Travel_Frequently
+90,Medical,Medium,1,Research Scientist,Travel_Rarely
+91,Life Sciences,Medium,2,Sales Executive,Travel_Frequently
+94,Life Sciences,High,1,Research Scientist,Travel_Rarely
+95,Medical,High,1,Research Scientist,Travel_Rarely
+96,Life Sciences,High,2,Research Scientist,Travel_Rarely
+97,Life Sciences,Very High,1,Laboratory Technician,Travel_Rarely
+98,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+100,Marketing,Medium,2,Sales Executive,Travel_Rarely
+101,Other,High,3,Research Director,Travel_Rarely
+102,Medical,High,3,Research Director,Travel_Rarely
+103,Medical,High,2,Human Resources,Travel_Rarely
+104,Life Sciences,Medium,2,Laboratory Technician,Travel_Rarely
+105,Medical,Medium,1,Research Scientist,Travel_Rarely
+106,Life Sciences,High,3,Sales Executive,Travel_Rarely
+107,Medical,Low,2,Research Scientist,Non-Travel
+110,Medical,High,2,Manufacturing Director,Travel_Rarely
+112,Life Sciences,Low,3,Manufacturing Director,Travel_Rarely
+113,Technical Degree,High,1,Sales Representative,Travel_Rarely
+116,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+117,Life Sciences,Medium,2,Healthcare Representative,Travel_Rarely
+118,Medical,Medium,3,Sales Executive,Travel_Rarely
+119,Life Sciences,Medium,4,Healthcare Representative,Travel_Frequently
+120,Marketing,High,2,Sales Executive,Travel_Rarely
+121,Medical,Medium,2,Sales Executive,Travel_Rarely
+124,Medical,Medium,3,Healthcare Representative,Travel_Frequently
+125,Medical,High,2,Sales Executive,Travel_Rarely
+126,Technical Degree,High,3,Research Director,Travel_Rarely
+128,Other,High,2,Sales Executive,Travel_Rarely
+129,Medical,High,2,Sales Executive,Non-Travel
+131,Medical,High,4,Sales Executive,Travel_Rarely
+132,Medical,High,2,Laboratory Technician,Non-Travel
+133,Human Resources,High,1,Human Resources,Travel_Rarely
+134,Life Sciences,High,1,Research Scientist,Travel_Rarely
+137,Life Sciences,Medium,1,Laboratory Technician,Travel_Frequently
+138,Other,High,2,Research Scientist,Travel_Rarely
+139,Life Sciences,Medium,2,Healthcare Representative,Non-Travel
+140,Human Resources,Medium,5,Manager,Non-Travel
+141,Life Sciences,High,5,Research Director,Travel_Frequently
+142,Marketing,Medium,2,Sales Executive,Travel_Rarely
+143,Medical,Medium,1,Research Scientist,Travel_Rarely
+144,Medical,High,1,Laboratory Technician,Travel_Rarely
+145,Medical,Medium,3,Healthcare Representative,Travel_Frequently
+147,Life Sciences,Low,2,Laboratory Technician,Travel_Frequently
+148,Human Resources,Very High,4,Manager,Non-Travel
+150,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+151,Life Sciences,Medium,2,Research Scientist,Travel_Rarely
+152,Life Sciences,High,3,Sales Executive,Travel_Rarely
+153,Medical,Medium,3,Manager,Travel_Rarely
+154,Technical Degree,High,3,Sales Executive,Travel_Frequently
+155,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+158,Life Sciences,High,4,Manager,Travel_Frequently
+159,Life Sciences,Low,1,Research Scientist,Travel_Frequently
+160,Marketing,High,2,Sales Executive,Non-Travel
+161,Life Sciences,High,1,Research Scientist,Travel_Rarely
+162,Life Sciences,High,5,Research Director,Travel_Rarely
+163,Life Sciences,Low,2,Sales Executive,Travel_Rarely
+164,Other,Medium,1,Research Scientist,Travel_Rarely
+165,Medical,High,3,Healthcare Representative,Travel_Rarely
+167,Marketing,High,1,Sales Representative,Travel_Rarely
+169,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+170,Medical,High,2,Manufacturing Director,Travel_Rarely
+171,Medical,Very High,1,Research Scientist,Travel_Frequently
+174,Marketing,High,3,Sales Executive,Travel_Frequently
+175,Life Sciences,Low,2,Sales Executive,Travel_Rarely
+176,Life Sciences,High,3,Sales Executive,Travel_Rarely
+177,Life Sciences,High,1,Human Resources,Travel_Rarely
+178,Medical,High,2,Manufacturing Director,Travel_Rarely
+179,Life Sciences,Low,3,Manufacturing Director,Travel_Frequently
+182,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+183,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+184,Human Resources,High,2,Human Resources,Travel_Rarely
+190,Medical,High,1,Laboratory Technician,Travel_Rarely
+192,Medical,High,1,Research Scientist,Travel_Rarely
+193,Technical Degree,High,2,Research Scientist,Travel_Rarely
+194,Life Sciences,High,1,Research Scientist,Travel_Rarely
+195,Medical,Low,2,Sales Executive,Travel_Frequently
+197,Technical Degree,High,1,Research Scientist,Travel_Rarely
+198,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+199,Life Sciences,Medium,4,Manager,Travel_Frequently
+200,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+201,Medical,High,1,Laboratory Technician,Travel_Rarely
+202,Medical,High,2,Research Scientist,Travel_Frequently
+204,Marketing,High,3,Sales Executive,Travel_Rarely
+205,Marketing,High,2,Sales Representative,Travel_Rarely
+206,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+207,Marketing,High,3,Sales Executive,Travel_Frequently
+208,Technical Degree,High,2,Manufacturing Director,Non-Travel
+211,Medical,Medium,2,Manufacturing Director,Travel_Rarely
+214,Medical,Medium,1,Research Scientist,Travel_Rarely
+215,Marketing,Medium,3,Sales Executive,Travel_Rarely
+216,Marketing,High,1,Sales Representative,Travel_Frequently
+217,Medical,High,1,Research Scientist,Travel_Rarely
+218,Medical,High,1,Research Scientist,Non-Travel
+221,Medical,High,1,Research Scientist,Travel_Rarely
+223,Life Sciences,Very High,3,Healthcare Representative,Travel_Rarely
+224,Medical,Medium,1,Research Scientist,Non-Travel
+226,Life Sciences,High,5,Manager,Travel_Rarely
+227,Life Sciences,High,1,Research Scientist,Travel_Rarely
+228,Life Sciences,High,3,Sales Executive,Travel_Rarely
+230,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+231,Life Sciences,High,1,Research Scientist,Travel_Rarely
+233,Technical Degree,High,1,Research Scientist,Travel_Rarely
+235,Technical Degree,Low,1,Sales Representative,Travel_Frequently
+238,Medical,High,1,Laboratory Technician,Travel_Frequently
+239,Medical,High,2,Laboratory Technician,Non-Travel
+240,Life Sciences,High,2,Sales Executive,Travel_Rarely
+241,Life Sciences,High,1,Research Scientist,Travel_Rarely
+242,Life Sciences,High,1,Research Scientist,Travel_Rarely
+243,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+244,Marketing,High,3,Sales Executive,Travel_Rarely
+245,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+246,Medical,High,1,Research Scientist,Travel_Rarely
+247,Medical,High,1,Research Scientist,Travel_Rarely
+248,Marketing,High,1,Sales Representative,Travel_Rarely
+249,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+250,Medical,Very High,2,Manufacturing Director,Travel_Rarely
+252,Medical,High,1,Research Scientist,Travel_Rarely
+253,Medical,High,5,Manager,Travel_Rarely
+254,Medical,Very High,5,Research Director,Travel_Rarely
+256,Life Sciences,Medium,2,Manufacturing Director,Travel_Frequently
+258,Medical,High,4,Healthcare Representative,Travel_Rarely
+259,Life Sciences,Medium,5,Manager,Travel_Rarely
+260,Medical,High,1,Research Scientist,Travel_Rarely
+261,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+262,Medical,Very High,1,Research Scientist,Non-Travel
+264,Medical,Medium,4,Manager,Non-Travel
+267,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+269,Medical,High,2,Laboratory Technician,Travel_Frequently
+270,Medical,High,2,Manufacturing Director,Non-Travel
+271,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+273,Technical Degree,High,2,Manufacturing Director,Travel_Rarely
+274,Technical Degree,Medium,2,Manufacturing Director,Travel_Frequently
+275,Life Sciences,High,2,Manufacturing Director,Non-Travel
+277,Medical,High,1,Research Scientist,Travel_Frequently
+281,Medical,High,2,Laboratory Technician,Travel_Rarely
+282,Medical,High,2,Healthcare Representative,Travel_Rarely
+283,Marketing,High,3,Sales Executive,Travel_Rarely
+284,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+286,Medical,High,1,Laboratory Technician,Travel_Frequently
+287,Life Sciences,Medium,2,Healthcare Representative,Non-Travel
+288,Medical,High,3,Healthcare Representative,Travel_Rarely
+291,Medical,Low,3,Sales Executive,Travel_Rarely
+292,Life Sciences,Medium,3,Manufacturing Director,Non-Travel
+293,Life Sciences,High,2,Sales Executive,Travel_Frequently
+296,Life Sciences,Medium,3,Research Director,Travel_Rarely
+297,Technical Degree,High,1,Research Scientist,Travel_Rarely
+298,Life Sciences,High,3,Manager,Travel_Rarely
+299,Marketing,Medium,2,Sales Executive,Travel_Frequently
+300,Technical Degree,High,1,Research Scientist,Travel_Rarely
+302,Medical,Medium,3,Sales Executive,Non-Travel
+303,Marketing,High,2,Sales Executive,Travel_Rarely
+304,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+305,Medical,Medium,1,Research Scientist,Travel_Rarely
+306,Other,High,3,Research Director,Travel_Frequently
+307,Life Sciences,High,3,Sales Executive,Travel_Rarely
+308,Medical,Low,2,Manufacturing Director,Non-Travel
+309,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+311,Marketing,High,1,Sales Representative,Travel_Frequently
+312,Medical,High,3,Sales Executive,Travel_Frequently
+314,Marketing,High,3,Sales Executive,Travel_Frequently
+315,Medical,Medium,1,Research Scientist,Travel_Rarely
+316,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+319,Technical Degree,High,5,Manager,Travel_Rarely
+321,Medical,High,1,Human Resources,Travel_Rarely
+323,Medical,High,5,Manager,Travel_Rarely
+325,Medical,High,1,Laboratory Technician,Travel_Rarely
+327,Marketing,High,4,Manager,Travel_Rarely
+328,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+329,Life Sciences,Medium,5,Manager,Non-Travel
+330,Life Sciences,High,1,Sales Representative,Travel_Rarely
+331,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+332,Medical,High,1,Laboratory Technician,Travel_Rarely
+333,Marketing,High,2,Sales Executive,Non-Travel
+334,Life Sciences,High,2,Research Scientist,Travel_Rarely
+335,Technical Degree,High,2,Research Scientist,Travel_Rarely
+336,Other,Very High,5,Manager,Travel_Rarely
+337,Medical,High,3,Research Director,Travel_Frequently
+338,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+339,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+340,Medical,Medium,1,Research Scientist,Travel_Rarely
+341,Life Sciences,Very High,2,Manufacturing Director,Travel_Frequently
+342,Medical,High,3,Manufacturing Director,Travel_Frequently
+343,Technical Degree,High,3,Healthcare Representative,Travel_Frequently
+346,Life Sciences,High,1,Research Scientist,Travel_Rarely
+347,Life Sciences,Very High,2,Research Scientist,Travel_Rarely
+349,Marketing,High,2,Sales Executive,Travel_Rarely
+350,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+351,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+352,Medical,High,5,Research Director,Travel_Rarely
+353,Life Sciences,High,1,Research Scientist,Travel_Rarely
+355,Medical,Medium,1,Laboratory Technician,Travel_Frequently
+359,Life Sciences,Very High,1,Laboratory Technician,Travel_Frequently
+361,Life Sciences,Medium,2,Sales Executive,Non-Travel
+362,Technical Degree,Medium,2,Laboratory Technician,Travel_Rarely
+363,Technical Degree,Low,4,Manager,Travel_Rarely
+364,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+366,Medical,Medium,2,Sales Executive,Travel_Rarely
+367,Medical,Medium,2,Healthcare Representative,Travel_Rarely
+369,Life Sciences,Very High,2,Healthcare Representative,Non-Travel
+372,Medical,High,4,Healthcare Representative,Travel_Rarely
+373,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+374,Medical,High,5,Manager,Travel_Rarely
+376,Life Sciences,High,3,Manager,Non-Travel
+377,Medical,High,1,Research Scientist,Travel_Rarely
+378,Medical,High,2,Sales Executive,Travel_Rarely
+379,Medical,Medium,1,Research Scientist,Travel_Rarely
+380,Medical,High,3,Research Director,Non-Travel
+381,Life Sciences,Very High,3,Manager,Travel_Rarely
+382,Medical,Very High,2,Sales Executive,Travel_Rarely
+384,Life Sciences,High,2,Manufacturing Director,Travel_Frequently
+385,Life Sciences,High,5,Research Director,Travel_Rarely
+386,Medical,High,4,Research Director,Travel_Rarely
+387,Life Sciences,High,2,Sales Executive,Travel_Rarely
+388,Life Sciences,High,2,Sales Executive,Travel_Frequently
+389,Technical Degree,High,2,Laboratory Technician,Travel_Rarely
+390,Medical,High,2,Healthcare Representative,Travel_Frequently
+391,Life Sciences,High,1,Research Scientist,Travel_Rarely
+392,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+393,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+394,Medical,High,1,Laboratory Technician,Travel_Rarely
+395,Life Sciences,High,1,Research Scientist,Travel_Rarely
+396,Life Sciences,High,5,Research Director,Travel_Frequently
+397,Technical Degree,High,2,Research Scientist,Travel_Rarely
+399,Marketing,High,1,Sales Representative,Travel_Frequently
+401,Marketing,Medium,2,Sales Executive,Travel_Rarely
+403,Medical,High,1,Research Scientist,Travel_Frequently
+404,Marketing,High,4,Sales Executive,Travel_Frequently
+405,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+406,Marketing,High,3,Sales Executive,Travel_Rarely
+407,Life Sciences,Very High,1,Laboratory Technician,Travel_Frequently
+408,Medical,Low,2,Manufacturing Director,Travel_Rarely
+410,Life Sciences,High,4,Manager,Travel_Rarely
+411,Medical,Medium,1,Sales Representative,Travel_Rarely
+412,Medical,Very High,2,Healthcare Representative,Travel_Rarely
+416,Technical Degree,Very High,2,Sales Executive,Travel_Rarely
+417,Medical,Very High,3,Healthcare Representative,Travel_Rarely
+419,Life Sciences,High,2,Laboratory Technician,Non-Travel
+420,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+421,Life Sciences,Medium,3,Research Director,Travel_Rarely
+422,Life Sciences,Low,2,Healthcare Representative,Non-Travel
+423,Technical Degree,High,1,Research Scientist,Travel_Rarely
+424,Human Resources,Medium,2,Human Resources,Travel_Rarely
+425,Life Sciences,High,3,Laboratory Technician,Travel_Frequently
+426,Life Sciences,High,1,Research Scientist,Travel_Rarely
+428,Life Sciences,High,3,Manager,Travel_Frequently
+429,Medical,High,4,Manager,Travel_Rarely
+430,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+431,Technical Degree,Medium,4,Healthcare Representative,Travel_Rarely
+433,Medical,Medium,2,Research Scientist,Travel_Rarely
+434,Life Sciences,High,1,Research Scientist,Travel_Rarely
+436,Technical Degree,Medium,2,Sales Executive,Travel_Rarely
+437,Life Sciences,High,2,Sales Executive,Travel_Rarely
+438,Marketing,High,2,Sales Executive,Travel_Rarely
+439,Medical,Very High,2,Research Scientist,Travel_Rarely
+440,Medical,Low,1,Research Scientist,Travel_Rarely
+441,Medical,High,2,Research Scientist,Travel_Rarely
+442,Life Sciences,Medium,3,Manufacturing Director,Travel_Frequently
+444,Medical,Medium,5,Manager,Travel_Frequently
+445,Medical,High,2,Sales Executive,Travel_Rarely
+446,Marketing,Medium,2,Sales Executive,Travel_Frequently
+447,Life Sciences,High,5,Research Director,Travel_Rarely
+448,Life Sciences,Medium,2,Laboratory Technician,Travel_Frequently
+449,Marketing,High,2,Sales Executive,Non-Travel
+450,Life Sciences,High,2,Research Scientist,Travel_Frequently
+451,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+452,Other,High,2,Research Scientist,Travel_Rarely
+453,Medical,Low,2,Sales Executive,Travel_Rarely
+454,Other,Low,1,Laboratory Technician,Travel_Rarely
+455,Other,Medium,1,Laboratory Technician,Travel_Rarely
+456,Marketing,Medium,2,Sales Executive,Travel_Rarely
+458,Marketing,High,2,Sales Executive,Travel_Rarely
+460,Medical,High,2,Manufacturing Director,Travel_Rarely
+461,Life Sciences,Medium,3,Research Director,Travel_Rarely
+462,Medical,High,3,Manufacturing Director,Travel_Rarely
+463,Marketing,Medium,2,Sales Executive,Travel_Rarely
+464,Technical Degree,High,3,Manufacturing Director,Travel_Rarely
+465,Life Sciences,High,1,Research Scientist,Travel_Rarely
+466,Medical,Medium,2,Manufacturing Director,Travel_Rarely
+467,Medical,High,2,Sales Representative,Travel_Frequently
+468,Life Sciences,High,4,Research Director,Travel_Rarely
+469,Life Sciences,High,2,Sales Executive,Non-Travel
+470,Technical Degree,High,1,Human Resources,Travel_Rarely
+471,Medical,High,1,Laboratory Technician,Travel_Rarely
+473,Medical,High,3,Manager,Travel_Rarely
+474,Medical,Very High,2,Research Scientist,Travel_Rarely
+475,Technical Degree,High,2,Sales Executive,Non-Travel
+476,Life Sciences,High,2,Sales Executive,Travel_Rarely
+477,Other,Medium,2,Healthcare Representative,Travel_Rarely
+478,Technical Degree,Medium,1,Sales Representative,Travel_Frequently
+479,Medical,High,2,Sales Executive,Non-Travel
+481,Medical,Medium,3,Sales Executive,Travel_Frequently
+482,Medical,High,2,Healthcare Representative,Travel_Rarely
+483,Life Sciences,Very High,1,Laboratory Technician,Travel_Rarely
+484,Medical,High,1,Sales Representative,Non-Travel
+485,Marketing,High,1,Sales Representative,Travel_Rarely
+486,Medical,High,1,Laboratory Technician,Travel_Rarely
+487,Medical,High,2,Manufacturing Director,Non-Travel
+488,Marketing,High,2,Sales Executive,Travel_Frequently
+491,Technical Degree,Medium,3,Healthcare Representative,Travel_Rarely
+492,Marketing,Medium,2,Sales Executive,Travel_Rarely
+493,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+494,Life Sciences,Very High,1,Sales Representative,Travel_Rarely
+495,Life Sciences,High,1,Research Scientist,Travel_Rarely
+496,Life Sciences,Medium,2,Healthcare Representative,Travel_Rarely
+497,Medical,High,1,Laboratory Technician,Travel_Rarely
+498,Life Sciences,High,2,Sales Executive,Travel_Rarely
+499,Other,Medium,3,Healthcare Representative,Travel_Rarely
+500,Life Sciences,High,2,Sales Executive,Travel_Rarely
+501,Life Sciences,High,1,Research Scientist,Travel_Rarely
+502,Marketing,Very High,2,Sales Executive,Non-Travel
+505,Life Sciences,High,4,Manager,Travel_Rarely
+507,Marketing,High,2,Sales Executive,Travel_Rarely
+508,Technical Degree,High,1,Sales Representative,Travel_Rarely
+510,Technical Degree,High,1,Research Scientist,Travel_Frequently
+511,Medical,High,1,Research Scientist,Travel_Rarely
+513,Medical,Medium,3,Sales Executive,Travel_Rarely
+514,Technical Degree,High,1,Research Scientist,Travel_Frequently
+515,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+516,Marketing,High,2,Sales Executive,Travel_Rarely
+517,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+518,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+520,Life Sciences,Medium,4,Research Director,Travel_Rarely
+521,Medical,Medium,2,Laboratory Technician,Travel_Rarely
+522,Medical,High,5,Research Director,Travel_Rarely
+523,Marketing,High,2,Sales Executive,Non-Travel
+524,Medical,High,2,Manufacturing Director,Travel_Rarely
+525,Medical,High,1,Laboratory Technician,Travel_Frequently
+526,Other,High,2,Healthcare Representative,Travel_Rarely
+527,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+529,Medical,High,2,Research Scientist,Non-Travel
+530,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+531,Life Sciences,High,5,Manager,Travel_Frequently
+532,Life Sciences,Very High,4,Sales Executive,Travel_Frequently
+533,Technical Degree,High,2,Sales Executive,Travel_Rarely
+534,Marketing,Very High,3,Sales Executive,Travel_Rarely
+536,Medical,High,2,Laboratory Technician,Travel_Rarely
+538,Medical,High,1,Laboratory Technician,Travel_Rarely
+543,Medical,Medium,3,Manufacturing Director,Travel_Rarely
+544,Life Sciences,High,1,Research Scientist,Travel_Rarely
+546,Life Sciences,High,4,Manager,Travel_Rarely
+547,Life Sciences,High,2,Research Scientist,Travel_Frequently
+548,Life Sciences,Low,2,Manufacturing Director,Travel_Rarely
+549,Life Sciences,High,5,Manager,Travel_Rarely
+550,Medical,High,2,Manufacturing Director,Travel_Rarely
+551,Technical Degree,Medium,2,Healthcare Representative,Travel_Frequently
+554,Technical Degree,High,1,Sales Representative,Travel_Rarely
+555,Marketing,Low,1,Sales Representative,Travel_Frequently
+556,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+558,Life Sciences,High,5,Manager,Travel_Rarely
+560,Life Sciences,High,1,Research Scientist,Travel_Rarely
+562,Life Sciences,High,1,Laboratory Technician,Non-Travel
+564,Medical,Medium,3,Research Director,Travel_Rarely
+565,Technical Degree,Medium,1,Research Scientist,Travel_Rarely
+566,Technical Degree,Medium,1,Human Resources,Travel_Rarely
+567,Other,High,3,Sales Executive,Non-Travel
+568,Marketing,Medium,4,Manager,Travel_Rarely
+569,Life Sciences,Medium,4,Manager,Travel_Rarely
+571,Medical,High,1,Laboratory Technician,Non-Travel
+573,Marketing,Medium,3,Sales Executive,Travel_Frequently
+574,Medical,High,2,Manufacturing Director,Travel_Rarely
+575,Life Sciences,High,4,Research Director,Travel_Rarely
+577,Life Sciences,Low,1,Laboratory Technician,Travel_Rarely
+578,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+579,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+580,Marketing,Medium,3,Sales Executive,Travel_Rarely
+581,Life Sciences,High,3,Manufacturing Director,Travel_Rarely
+582,Medical,High,3,Manager,Travel_Rarely
+584,Medical,Low,1,Laboratory Technician,Travel_Rarely
+585,Marketing,High,1,Sales Representative,Travel_Rarely
+586,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+587,Life Sciences,High,3,Healthcare Representative,Travel_Frequently
+590,Human Resources,High,3,Human Resources,Travel_Frequently
+591,Other,High,1,Laboratory Technician,Travel_Frequently
+592,Medical,High,3,Sales Executive,Non-Travel
+593,Technical Degree,Medium,1,Laboratory Technician,Travel_Frequently
+595,Marketing,High,2,Sales Executive,Travel_Rarely
+597,Life Sciences,High,4,Manager,Travel_Rarely
+599,Life Sciences,High,2,Sales Executive,Non-Travel
+600,Marketing,High,2,Sales Executive,Travel_Rarely
+601,Life Sciences,High,4,Manufacturing Director,Travel_Rarely
+602,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+604,Life Sciences,High,2,Sales Executive,Travel_Rarely
+605,Medical,High,3,Manufacturing Director,Travel_Rarely
+606,Other,High,2,Sales Executive,Travel_Rarely
+608,Life Sciences,High,1,Human Resources,Travel_Frequently
+611,Technical Degree,High,2,Manufacturing Director,Travel_Rarely
+612,Medical,Very High,4,Research Director,Travel_Rarely
+613,Life Sciences,Medium,3,Manager,Travel_Rarely
+614,Marketing,High,1,Sales Representative,Travel_Frequently
+615,Other,Low,3,Sales Executive,Non-Travel
+616,Other,Medium,2,Healthcare Representative,Non-Travel
+618,Medical,High,2,Sales Executive,Travel_Rarely
+620,Medical,High,2,Sales Executive,Travel_Rarely
+621,Life Sciences,Very High,2,Sales Executive,Travel_Rarely
+622,Technical Degree,Low,1,Laboratory Technician,Travel_Rarely
+623,Technical Degree,High,3,Manufacturing Director,Travel_Rarely
+624,Medical,High,3,Healthcare Representative,Travel_Frequently
+625,Life Sciences,High,4,Manager,Travel_Rarely
+626,Medical,High,3,Sales Executive,Non-Travel
+630,Technical Degree,High,2,Research Scientist,Travel_Rarely
+631,Other,Very High,2,Sales Executive,Non-Travel
+632,Medical,High,1,Sales Representative,Travel_Frequently
+634,Medical,High,2,Healthcare Representative,Travel_Rarely
+635,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+638,Life Sciences,Medium,5,Research Director,Travel_Rarely
+639,Medical,Very High,1,Research Scientist,Travel_Rarely
+641,Marketing,High,2,Sales Executive,Travel_Rarely
+643,Other,Medium,1,Laboratory Technician,Travel_Rarely
+644,Medical,High,5,Manager,Travel_Frequently
+645,Medical,High,1,Sales Representative,Travel_Rarely
+647,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+648,Life Sciences,Medium,1,Sales Representative,Travel_Frequently
+649,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+650,Medical,High,2,Sales Executive,Travel_Rarely
+652,Other,Medium,2,Laboratory Technician,Travel_Rarely
+653,Medical,Very High,2,Sales Executive,Travel_Rarely
+655,Medical,Medium,1,Research Scientist,Travel_Rarely
+656,Marketing,High,2,Sales Executive,Travel_Rarely
+657,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+659,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+661,Other,Medium,4,Research Director,Travel_Rarely
+662,Life Sciences,High,1,Research Scientist,Travel_Rarely
+663,Medical,High,2,Laboratory Technician,Travel_Frequently
+664,Life Sciences,Medium,4,Manager,Travel_Rarely
+665,Life Sciences,Medium,2,Human Resources,Travel_Rarely
+666,Technical Degree,High,1,Sales Representative,Travel_Rarely
+667,Marketing,High,1,Sales Representative,Travel_Rarely
+669,Technical Degree,High,1,Sales Representative,Travel_Rarely
+671,Other,High,5,Manager,Travel_Rarely
+675,Medical,High,1,Research Scientist,Travel_Rarely
+677,Marketing,High,2,Sales Executive,Travel_Rarely
+679,Life Sciences,High,2,Research Scientist,Travel_Rarely
+680,Medical,High,1,Research Scientist,Travel_Frequently
+682,Medical,High,2,Sales Executive,Travel_Rarely
+683,Life Sciences,High,1,Research Scientist,Travel_Rarely
+684,Life Sciences,High,2,Sales Executive,Travel_Frequently
+686,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+689,Other,High,3,Manufacturing Director,Travel_Rarely
+690,Medical,High,2,Sales Executive,Travel_Rarely
+691,Life Sciences,Low,2,Research Scientist,Travel_Rarely
+692,Life Sciences,High,2,Healthcare Representative,Travel_Frequently
+698,Medical,High,3,Human Resources,Travel_Rarely
+699,Medical,Medium,2,Manufacturing Director,Travel_Rarely
+700,Medical,Medium,1,Research Scientist,Travel_Rarely
+701,Medical,High,1,Research Scientist,Travel_Rarely
+702,Life Sciences,High,1,Research Scientist,Travel_Frequently
+704,Life Sciences,Medium,1,Laboratory Technician,Non-Travel
+705,Medical,Very High,1,Research Scientist,Travel_Rarely
+707,Life Sciences,Very High,2,Sales Executive,Travel_Rarely
+709,Marketing,Medium,2,Sales Executive,Travel_Rarely
+710,Life Sciences,Low,1,Research Scientist,Travel_Frequently
+712,Marketing,Very High,2,Sales Executive,Travel_Rarely
+714,Medical,Very High,2,Sales Executive,Travel_Frequently
+715,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+716,Medical,Very High,1,Laboratory Technician,Travel_Rarely
+717,Medical,Medium,3,Healthcare Representative,Travel_Rarely
+720,Life Sciences,High,2,Sales Executive,Travel_Rarely
+721,Technical Degree,Medium,2,Healthcare Representative,Travel_Rarely
+722,Marketing,High,2,Sales Executive,Travel_Rarely
+723,Technical Degree,High,2,Sales Executive,Travel_Frequently
+724,Life Sciences,Very High,2,Healthcare Representative,Travel_Rarely
+725,Life Sciences,High,3,Manufacturing Director,Travel_Rarely
+727,Life Sciences,High,3,Research Director,Travel_Rarely
+728,Marketing,High,2,Sales Executive,Travel_Rarely
+729,Life Sciences,Medium,3,Sales Executive,Travel_Frequently
+730,Life Sciences,Very High,4,Research Director,Travel_Rarely
+731,Human Resources,Medium,5,Manager,Travel_Rarely
+732,Marketing,High,2,Sales Executive,Travel_Rarely
+733,Life Sciences,High,3,Manufacturing Director,Travel_Frequently
+734,Human Resources,Medium,5,Manager,Travel_Rarely
+738,Marketing,High,1,Sales Representative,Travel_Rarely
+741,Life Sciences,Low,1,Research Scientist,Travel_Rarely
+742,Life Sciences,Very High,3,Research Director,Non-Travel
+743,Life Sciences,High,3,Manufacturing Director,Travel_Rarely
+744,Medical,Low,1,Laboratory Technician,Non-Travel
+746,Medical,High,4,Sales Executive,Travel_Frequently
+747,Marketing,High,2,Sales Executive,Travel_Rarely
+749,Life Sciences,High,1,Sales Representative,Travel_Rarely
+752,Medical,Very High,1,Research Scientist,Travel_Frequently
+754,Life Sciences,Medium,2,Sales Executive,Travel_Frequently
+757,Medical,High,2,Healthcare Representative,Travel_Rarely
+758,Medical,High,1,Laboratory Technician,Travel_Rarely
+760,Human Resources,Very High,2,Human Resources,Travel_Rarely
+762,Medical,High,4,Healthcare Representative,Travel_Rarely
+763,Medical,Medium,1,Research Scientist,Travel_Rarely
+764,Medical,Medium,2,Healthcare Representative,Travel_Rarely
+766,Marketing,High,1,Sales Representative,Travel_Rarely
+769,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+771,Life Sciences,High,2,Healthcare Representative,Non-Travel
+772,Life Sciences,High,2,Laboratory Technician,Travel_Frequently
+773,Medical,High,1,Research Scientist,Travel_Rarely
+775,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+776,Marketing,Medium,4,Manager,Travel_Rarely
+780,Other,High,1,Research Scientist,Travel_Rarely
+781,Medical,High,2,Sales Executive,Travel_Rarely
+783,Technical Degree,Low,2,Sales Representative,Travel_Rarely
+784,Medical,Very High,1,Research Scientist,Travel_Rarely
+785,Life Sciences,Very High,2,Sales Executive,Travel_Frequently
+786,Other,High,2,Sales Executive,Travel_Rarely
+787,Medical,High,5,Manager,Travel_Rarely
+789,Life Sciences,Medium,3,Sales Executive,Non-Travel
+791,Medical,High,1,Research Scientist,Non-Travel
+792,Life Sciences,Low,1,Laboratory Technician,Travel_Frequently
+793,Medical,High,2,Healthcare Representative,Travel_Rarely
+796,Technical Degree,Medium,2,Sales Executive,Travel_Rarely
+797,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+799,Medical,High,2,Manufacturing Director,Travel_Rarely
+800,Marketing,High,2,Sales Executive,Travel_Frequently
+802,Life Sciences,High,1,Research Scientist,Travel_Rarely
+803,Life Sciences,Very High,2,Manufacturing Director,Travel_Frequently
+804,Medical,Medium,1,Research Scientist,Travel_Rarely
+805,Life Sciences,High,1,Sales Representative,Travel_Rarely
+806,Life Sciences,Low,1,Laboratory Technician,Travel_Rarely
+807,Medical,Very High,2,Healthcare Representative,Travel_Frequently
+808,Life Sciences,High,2,Sales Executive,Travel_Rarely
+809,Life Sciences,High,5,Manager,Travel_Frequently
+811,Life Sciences,Very High,1,Laboratory Technician,Travel_Rarely
+812,Life Sciences,Medium,1,Laboratory Technician,Non-Travel
+813,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+815,Medical,High,4,Research Director,Travel_Rarely
+816,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+817,Medical,High,3,Research Director,Travel_Rarely
+819,Marketing,High,2,Sales Executive,Travel_Rarely
+820,Other,High,4,Manager,Travel_Rarely
+823,Other,High,2,Manufacturing Director,Travel_Rarely
+824,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+825,Life Sciences,High,5,Research Director,Travel_Rarely
+826,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+827,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+828,Medical,High,1,Research Scientist,Travel_Rarely
+829,Human Resources,High,1,Human Resources,Travel_Rarely
+830,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+832,Medical,Medium,2,Laboratory Technician,Travel_Frequently
+833,Medical,Medium,2,Manufacturing Director,Travel_Rarely
+834,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+836,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+837,Life Sciences,Medium,2,Healthcare Representative,Travel_Frequently
+838,Life Sciences,Medium,1,Research Scientist,Travel_Frequently
+840,Marketing,High,3,Sales Executive,Travel_Rarely
+842,Medical,High,2,Sales Executive,Travel_Rarely
+843,Life Sciences,High,4,Research Director,Travel_Rarely
+844,Technical Degree,Medium,3,Research Director,Travel_Rarely
+845,Other,High,3,Manufacturing Director,Travel_Rarely
+846,Marketing,High,2,Sales Executive,Travel_Rarely
+847,Human Resources,High,1,Human Resources,Travel_Rarely
+848,Medical,Medium,1,Research Scientist,Travel_Frequently
+850,Medical,High,1,Research Scientist,Non-Travel
+851,Marketing,High,4,Manager,Travel_Rarely
+852,Medical,High,2,Healthcare Representative,Travel_Rarely
+854,Medical,Very High,1,Research Scientist,Travel_Rarely
+855,Medical,Very High,2,Sales Executive,Travel_Rarely
+856,Medical,Medium,1,Research Scientist,Travel_Rarely
+857,Life Sciences,High,2,Sales Executive,Travel_Rarely
+859,Life Sciences,High,2,Sales Executive,Travel_Rarely
+861,Life Sciences,Medium,1,Research Scientist,Travel_Frequently
+862,Marketing,Medium,3,Sales Executive,Travel_Rarely
+864,Marketing,High,3,Sales Executive,Travel_Rarely
+865,Medical,Very High,2,Research Scientist,Travel_Rarely
+867,Medical,Medium,4,Manufacturing Director,Travel_Frequently
+868,Marketing,Medium,2,Sales Executive,Travel_Rarely
+869,Medical,Medium,1,Human Resources,Travel_Rarely
+872,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+874,Life Sciences,Very High,1,Laboratory Technician,Travel_Rarely
+875,Medical,High,1,Research Scientist,Travel_Frequently
+878,Life Sciences,Medium,1,Human Resources,Travel_Rarely
+879,Other,High,2,Sales Executive,Travel_Rarely
+880,Life Sciences,Medium,3,Manufacturing Director,Travel_Rarely
+881,Life Sciences,High,1,Research Scientist,Travel_Frequently
+882,Life Sciences,High,1,Laboratory Technician,Non-Travel
+885,Marketing,Medium,2,Sales Executive,Travel_Rarely
+887,Technical Degree,High,1,Research Scientist,Travel_Rarely
+888,Life Sciences,Medium,1,Laboratory Technician,Non-Travel
+889,Life Sciences,High,2,Sales Executive,Travel_Frequently
+893,Marketing,Medium,1,Sales Representative,Travel_Rarely
+894,Life Sciences,Very High,2,Laboratory Technician,Travel_Rarely
+895,Life Sciences,High,1,Research Scientist,Travel_Rarely
+896,Medical,Medium,1,Sales Representative,Travel_Rarely
+897,Marketing,High,4,Sales Executive,Travel_Rarely
+899,Technical Degree,Medium,3,Manufacturing Director,Travel_Rarely
+900,Medical,High,1,Sales Representative,Travel_Frequently
+901,Life Sciences,High,4,Research Director,Travel_Rarely
+902,Life Sciences,High,2,Healthcare Representative,Travel_Frequently
+903,Marketing,High,2,Sales Executive,Travel_Rarely
+904,Medical,High,3,Sales Executive,Non-Travel
+905,Life Sciences,High,4,Manager,Non-Travel
+909,Life Sciences,Medium,2,Human Resources,Travel_Rarely
+910,Human Resources,High,1,Human Resources,Travel_Rarely
+911,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+912,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+913,Life Sciences,High,1,Research Scientist,Travel_Rarely
+916,Medical,High,2,Sales Executive,Travel_Rarely
+918,Life Sciences,Medium,1,Laboratory Technician,Travel_Frequently
+920,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+922,Medical,Medium,1,Sales Representative,Travel_Rarely
+923,Other,High,1,Research Scientist,Travel_Rarely
+924,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+925,Life Sciences,Medium,1,Sales Representative,Travel_Rarely
+926,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+927,Life Sciences,Low,1,Laboratory Technician,Travel_Rarely
+930,Medical,High,1,Research Scientist,Travel_Rarely
+932,Medical,High,1,Laboratory Technician,Travel_Rarely
+933,Life Sciences,High,1,Research Scientist,Travel_Rarely
+934,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+936,Medical,Medium,2,Sales Executive,Travel_Rarely
+939,Other,Medium,1,Research Scientist,Travel_Rarely
+940,Technical Degree,Medium,3,Healthcare Representative,Travel_Rarely
+941,Life Sciences,Medium,1,Sales Representative,Travel_Rarely
+942,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+944,Other,High,3,Laboratory Technician,Travel_Rarely
+945,Medical,High,1,Research Scientist,Travel_Rarely
+947,Marketing,High,2,Sales Executive,Non-Travel
+949,Other,High,1,Research Scientist,Travel_Rarely
+950,Technical Degree,High,3,Research Director,Travel_Rarely
+951,Life Sciences,Medium,1,Laboratory Technician,Non-Travel
+952,Marketing,Medium,1,Sales Representative,Travel_Rarely
+954,Marketing,Medium,3,Sales Executive,Travel_Rarely
+956,Medical,Medium,2,Sales Executive,Travel_Frequently
+957,Medical,High,1,Laboratory Technician,Travel_Rarely
+958,Medical,High,1,Laboratory Technician,Travel_Rarely
+959,Other,Medium,1,Sales Representative,Travel_Rarely
+960,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+961,Medical,High,2,Healthcare Representative,Travel_Rarely
+964,Medical,High,1,Research Scientist,Travel_Frequently
+966,Medical,High,2,Manufacturing Director,Travel_Rarely
+967,Life Sciences,Medium,3,Sales Executive,Travel_Rarely
+969,Life Sciences,Medium,2,Healthcare Representative,Travel_Rarely
+970,Life Sciences,Medium,3,Sales Executive,Travel_Rarely
+972,Life Sciences,High,2,Laboratory Technician,Non-Travel
+974,Technical Degree,High,1,Sales Representative,Travel_Frequently
+975,Medical,High,2,Sales Executive,Travel_Rarely
+976,Life Sciences,High,4,Manager,Travel_Rarely
+977,Technical Degree,High,1,Research Scientist,Travel_Rarely
+981,Medical,High,4,Manager,Travel_Rarely
+982,Other,High,3,Sales Executive,Travel_Rarely
+983,Technical Degree,High,2,Sales Executive,Non-Travel
+984,Life Sciences,High,3,Sales Executive,Travel_Rarely
+985,Life Sciences,Very High,3,Sales Executive,Travel_Rarely
+986,Life Sciences,Very High,4,Sales Executive,Non-Travel
+987,Medical,Very High,2,Manufacturing Director,Travel_Frequently
+990,Technical Degree,High,2,Sales Executive,Non-Travel
+991,Medical,Medium,1,Research Scientist,Non-Travel
+992,Life Sciences,High,4,Manager,Non-Travel
+994,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+995,Life Sciences,High,1,Research Scientist,Travel_Rarely
+996,Medical,High,1,Laboratory Technician,Travel_Rarely
+997,Medical,High,4,Research Director,Travel_Rarely
+998,Other,Very High,2,Healthcare Representative,Travel_Frequently
+999,Medical,High,5,Research Director,Travel_Frequently
+1001,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+1002,Life Sciences,High,2,Laboratory Technician,Non-Travel
+1003,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1004,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1005,Life Sciences,High,4,Manufacturing Director,Travel_Rarely
+1006,Medical,High,1,Research Scientist,Travel_Frequently
+1007,Medical,High,3,Manufacturing Director,Travel_Rarely
+1009,Medical,Medium,2,Manufacturing Director,Travel_Rarely
+1010,Other,Medium,1,Laboratory Technician,Travel_Rarely
+1011,Life Sciences,High,2,Manufacturing Director,Travel_Frequently
+1012,Life Sciences,High,1,Research Scientist,Non-Travel
+1013,Technical Degree,High,3,Manufacturing Director,Travel_Rarely
+1014,Medical,High,3,Healthcare Representative,Travel_Rarely
+1015,Life Sciences,Very High,3,Research Director,Travel_Rarely
+1016,Medical,Medium,1,Research Scientist,Travel_Rarely
+1017,Medical,High,1,Laboratory Technician,Travel_Frequently
+1018,Medical,Very High,2,Manufacturing Director,Travel_Rarely
+1019,Life Sciences,Low,1,Laboratory Technician,Travel_Rarely
+1022,Life Sciences,Medium,2,Healthcare Representative,Travel_Rarely
+1024,Life Sciences,Medium,3,Healthcare Representative,Travel_Rarely
+1025,Medical,High,2,Manufacturing Director,Travel_Rarely
+1026,Life Sciences,Medium,4,Manufacturing Director,Travel_Rarely
+1027,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+1028,Other,High,1,Laboratory Technician,Travel_Rarely
+1029,Marketing,High,5,Manager,Travel_Rarely
+1030,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1032,Life Sciences,Medium,4,Manufacturing Director,Travel_Rarely
+1033,Medical,Low,2,Healthcare Representative,Travel_Rarely
+1034,Medical,High,2,Healthcare Representative,Travel_Frequently
+1035,Life Sciences,Low,5,Research Director,Non-Travel
+1036,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1037,Medical,Low,2,Sales Executive,Non-Travel
+1038,Marketing,Low,5,Manager,Travel_Rarely
+1039,Medical,Very High,4,Sales Executive,Travel_Rarely
+1040,Life Sciences,High,2,Sales Executive,Non-Travel
+1042,Life Sciences,Very High,1,Laboratory Technician,Travel_Rarely
+1043,Medical,High,3,Manufacturing Director,Travel_Frequently
+1044,Life Sciences,Medium,1,Sales Representative,Non-Travel
+1045,Life Sciences,High,4,Manager,Travel_Rarely
+1046,Medical,High,1,Laboratory Technician,Non-Travel
+1047,Marketing,Very High,2,Sales Executive,Travel_Rarely
+1048,Technical Degree,High,3,Manager,Travel_Rarely
+1049,Medical,High,1,Human Resources,Travel_Rarely
+1050,Marketing,Medium,3,Sales Executive,Travel_Frequently
+1052,Other,High,2,Laboratory Technician,Travel_Rarely
+1053,Life Sciences,High,1,Research Scientist,Travel_Frequently
+1055,Life Sciences,High,1,Sales Representative,Travel_Rarely
+1056,Medical,High,1,Sales Representative,Travel_Rarely
+1060,Other,High,1,Research Scientist,Travel_Frequently
+1061,Medical,High,5,Research Director,Travel_Rarely
+1062,Other,High,2,Healthcare Representative,Travel_Rarely
+1066,Marketing,High,2,Sales Executive,Travel_Rarely
+1068,Medical,Medium,1,Research Scientist,Travel_Frequently
+1069,Medical,High,5,Research Director,Travel_Rarely
+1070,Life Sciences,Medium,3,Sales Executive,Travel_Rarely
+1071,Medical,High,1,Research Scientist,Travel_Frequently
+1073,Medical,Medium,3,Manufacturing Director,Travel_Rarely
+1074,Medical,Medium,4,Manager,Non-Travel
+1076,Medical,Medium,3,Sales Executive,Travel_Rarely
+1077,Marketing,High,1,Sales Representative,Travel_Frequently
+1079,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+1080,Life Sciences,Medium,2,Research Scientist,Travel_Rarely
+1081,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1082,Technical Degree,Medium,3,Healthcare Representative,Non-Travel
+1083,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+1084,Other,High,2,Manufacturing Director,Travel_Rarely
+1085,Technical Degree,Very High,1,Research Scientist,Travel_Rarely
+1088,Life Sciences,Medium,3,Healthcare Representative,Travel_Rarely
+1092,Technical Degree,High,3,Healthcare Representative,Travel_Rarely
+1094,Life Sciences,Low,1,Laboratory Technician,Non-Travel
+1096,Life Sciences,High,3,Manufacturing Director,Travel_Frequently
+1097,Other,High,2,Research Scientist,Travel_Rarely
+1098,Medical,Medium,3,Human Resources,Travel_Rarely
+1099,Life Sciences,Medium,3,Healthcare Representative,Travel_Rarely
+1100,Technical Degree,High,3,Sales Executive,Travel_Rarely
+1101,Medical,Medium,2,Research Scientist,Travel_Frequently
+1102,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1103,Life Sciences,High,2,Healthcare Representative,Travel_Frequently
+1105,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+1106,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+1107,Medical,High,1,Laboratory Technician,Travel_Rarely
+1108,Medical,Medium,1,Research Scientist,Travel_Rarely
+1109,Medical,High,4,Manager,Travel_Rarely
+1111,Medical,Medium,1,Laboratory Technician,Travel_Frequently
+1113,Other,High,2,Sales Executive,Travel_Frequently
+1114,Life Sciences,High,2,Sales Executive,Travel_Frequently
+1115,Life Sciences,Medium,1,Research Scientist,Non-Travel
+1116,Medical,Very High,4,Manager,Non-Travel
+1117,Life Sciences,Medium,2,Sales Executive,Non-Travel
+1118,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+1119,Marketing,Medium,3,Sales Executive,Travel_Rarely
+1120,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1121,Medical,High,3,Manufacturing Director,Travel_Rarely
+1124,Marketing,High,4,Manager,Travel_Rarely
+1125,Marketing,High,3,Sales Executive,Travel_Rarely
+1126,Life Sciences,High,3,Manufacturing Director,Travel_Frequently
+1127,Life Sciences,High,4,Healthcare Representative,Travel_Frequently
+1128,Medical,Medium,5,Research Director,Travel_Rarely
+1131,Technical Degree,Medium,1,Research Scientist,Travel_Rarely
+1132,Life Sciences,High,2,Laboratory Technician,Non-Travel
+1133,Life Sciences,High,2,Manufacturing Director,Non-Travel
+1135,Life Sciences,Very High,1,Sales Representative,Travel_Frequently
+1136,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+1137,Marketing,High,2,Sales Executive,Travel_Frequently
+1138,Technical Degree,Medium,4,Sales Executive,Travel_Rarely
+1140,Life Sciences,High,2,Manufacturing Director,Travel_Frequently
+1143,Life Sciences,High,1,Research Scientist,Travel_Frequently
+1148,Medical,Low,2,Laboratory Technician,Travel_Rarely
+1150,Medical,Medium,2,Manufacturing Director,Travel_Rarely
+1152,Human Resources,Very High,1,Human Resources,Travel_Rarely
+1154,Life Sciences,Medium,1,Research Scientist,Travel_Frequently
+1156,Medical,High,1,Laboratory Technician,Non-Travel
+1157,Marketing,High,2,Sales Executive,Travel_Rarely
+1158,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1160,Medical,High,1,Laboratory Technician,Travel_Frequently
+1161,Medical,Medium,2,Healthcare Representative,Travel_Rarely
+1162,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+1163,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1164,Technical Degree,High,1,Human Resources,Travel_Rarely
+1165,Life Sciences,Medium,3,Sales Executive,Travel_Rarely
+1166,Medical,High,3,Research Director,Travel_Frequently
+1167,Life Sciences,High,4,Sales Executive,Travel_Frequently
+1171,Marketing,High,2,Sales Executive,Travel_Rarely
+1172,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+1173,Medical,High,1,Laboratory Technician,Travel_Rarely
+1175,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1177,Medical,Very High,1,Laboratory Technician,Travel_Rarely
+1179,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1180,Medical,Medium,2,Research Scientist,Travel_Frequently
+1182,Life Sciences,Medium,3,Manufacturing Director,Travel_Rarely
+1184,Medical,Medium,2,Healthcare Representative,Travel_Frequently
+1185,Other,Medium,1,Laboratory Technician,Travel_Frequently
+1188,Marketing,Low,2,Sales Executive,Travel_Rarely
+1190,Life Sciences,High,1,Sales Representative,Non-Travel
+1191,Technical Degree,High,5,Manager,Travel_Rarely
+1192,Medical,High,1,Laboratory Technician,Travel_Rarely
+1193,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1195,Medical,High,1,Research Scientist,Travel_Rarely
+1196,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+1198,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+1200,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1201,Medical,High,5,Manager,Travel_Rarely
+1202,Life Sciences,Low,1,Research Scientist,Travel_Rarely
+1203,Life Sciences,Medium,1,Research Scientist,Travel_Frequently
+1204,Marketing,High,4,Manager,Travel_Rarely
+1206,Life Sciences,Low,1,Research Scientist,Non-Travel
+1207,Human Resources,High,1,Human Resources,Travel_Rarely
+1210,Life Sciences,Medium,1,Research Scientist,Non-Travel
+1211,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1212,Medical,High,2,Sales Executive,Travel_Frequently
+1215,Medical,High,4,Manager,Travel_Frequently
+1216,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+1217,Life Sciences,High,5,Research Director,Travel_Rarely
+1218,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1219,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1220,Medical,High,2,Sales Executive,Travel_Frequently
+1221,Life Sciences,Low,1,Laboratory Technician,Travel_Rarely
+1224,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+1225,Other,High,2,Research Scientist,Travel_Rarely
+1226,Marketing,Very High,1,Sales Representative,Travel_Rarely
+1228,Technical Degree,High,2,Manufacturing Director,Travel_Rarely
+1231,Medical,Very High,2,Human Resources,Non-Travel
+1233,Marketing,Very High,2,Sales Executive,Travel_Rarely
+1234,Other,Medium,1,Laboratory Technician,Travel_Frequently
+1235,Life Sciences,High,2,Research Scientist,Travel_Frequently
+1237,Technical Degree,Low,3,Manufacturing Director,Travel_Rarely
+1238,Medical,High,1,Research Scientist,Travel_Rarely
+1239,Technical Degree,Medium,2,Sales Executive,Travel_Rarely
+1240,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1241,Medical,High,1,Research Scientist,Travel_Rarely
+1242,Medical,High,3,Research Director,Travel_Frequently
+1243,Marketing,Medium,3,Sales Executive,Non-Travel
+1244,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1245,Life Sciences,High,3,Manufacturing Director,Travel_Frequently
+1246,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+1248,Medical,Medium,1,Research Scientist,Non-Travel
+1249,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1250,Life Sciences,High,4,Research Director,Travel_Rarely
+1251,Medical,High,2,Healthcare Representative,Travel_Rarely
+1252,Medical,Medium,2,Healthcare Representative,Travel_Rarely
+1254,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+1255,Life Sciences,Low,5,Research Director,Travel_Rarely
+1256,Medical,Medium,5,Manager,Travel_Rarely
+1257,Technical Degree,High,1,Research Scientist,Travel_Frequently
+1258,Technical Degree,Very High,1,Laboratory Technician,Travel_Rarely
+1259,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1260,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1263,Life Sciences,Medium,5,Research Director,Travel_Rarely
+1264,Life Sciences,Medium,4,Research Director,Travel_Rarely
+1265,Technical Degree,Very High,1,Research Scientist,Travel_Rarely
+1267,Marketing,High,5,Manager,Travel_Rarely
+1268,Marketing,Very High,3,Sales Executive,Travel_Rarely
+1269,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+1270,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1273,Life Sciences,Low,1,Sales Representative,Travel_Frequently
+1275,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1277,Marketing,Low,5,Manager,Travel_Rarely
+1278,Medical,Medium,4,Healthcare Representative,Non-Travel
+1279,Life Sciences,Medium,1,Laboratory Technician,Travel_Frequently
+1280,Marketing,Medium,5,Manager,Travel_Rarely
+1281,Marketing,High,2,Sales Executive,Travel_Rarely
+1282,Life Sciences,High,5,Manager,Travel_Frequently
+1283,Medical,High,3,Manufacturing Director,Travel_Rarely
+1285,Medical,High,2,Laboratory Technician,Travel_Frequently
+1286,Medical,High,1,Laboratory Technician,Travel_Frequently
+1288,Life Sciences,Very High,5,Manager,Travel_Rarely
+1289,Life Sciences,Medium,2,Human Resources,Travel_Frequently
+1291,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1292,Medical,Very High,2,Research Scientist,Travel_Rarely
+1293,Marketing,Medium,3,Sales Executive,Travel_Rarely
+1294,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+1295,Medical,High,3,Healthcare Representative,Travel_Rarely
+1296,Life Sciences,Medium,1,Laboratory Technician,Travel_Frequently
+1297,Medical,Medium,1,Laboratory Technician,Travel_Frequently
+1298,Medical,High,2,Manufacturing Director,Non-Travel
+1299,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+1301,Technical Degree,High,1,Research Scientist,Travel_Rarely
+1303,Medical,High,1,Research Scientist,Travel_Rarely
+1304,Medical,Very High,2,Sales Executive,Travel_Rarely
+1306,Medical,High,5,Manager,Travel_Frequently
+1307,Medical,Medium,4,Manager,Travel_Rarely
+1308,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1309,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+1310,Medical,High,1,Research Scientist,Travel_Rarely
+1311,Technical Degree,Medium,2,Laboratory Technician,Travel_Rarely
+1312,Technical Degree,High,3,Healthcare Representative,Travel_Rarely
+1314,Life Sciences,High,1,Human Resources,Travel_Rarely
+1315,Life Sciences,Low,2,Laboratory Technician,Non-Travel
+1317,Life Sciences,High,4,Research Director,Travel_Rarely
+1318,Marketing,Medium,3,Sales Executive,Travel_Rarely
+1319,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1321,Medical,High,3,Manager,Travel_Rarely
+1322,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+1324,Life Sciences,High,3,Sales Executive,Non-Travel
+1329,Medical,Low,2,Sales Executive,Non-Travel
+1331,Life Sciences,High,1,Sales Representative,Travel_Frequently
+1333,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1334,Life Sciences,High,4,Manager,Non-Travel
+1336,Medical,Low,5,Manager,Travel_Rarely
+1338,Life Sciences,High,5,Manager,Travel_Rarely
+1340,Life Sciences,High,1,Research Scientist,Non-Travel
+1344,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+1346,Life Sciences,High,2,Research Scientist,Travel_Rarely
+1349,Marketing,High,2,Sales Executive,Travel_Frequently
+1350,Life Sciences,High,2,Research Scientist,Travel_Frequently
+1352,Life Sciences,High,4,Manager,Travel_Rarely
+1355,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1356,Medical,High,2,Sales Executive,Travel_Rarely
+1358,Medical,High,1,Laboratory Technician,Travel_Rarely
+1360,Medical,Medium,3,Manufacturing Director,Travel_Rarely
+1361,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1362,Marketing,Very High,2,Sales Executive,Travel_Frequently
+1363,Life Sciences,High,3,Manufacturing Director,Travel_Rarely
+1364,Medical,Very High,1,Sales Representative,Travel_Rarely
+1367,Technical Degree,Medium,4,Manufacturing Director,Travel_Rarely
+1368,Life Sciences,High,1,Laboratory Technician,Non-Travel
+1369,Medical,Medium,2,Laboratory Technician,Travel_Rarely
+1371,Life Sciences,Low,2,Sales Executive,Travel_Frequently
+1372,Marketing,Very High,4,Sales Executive,Travel_Rarely
+1373,Life Sciences,High,4,Manufacturing Director,Travel_Rarely
+1374,Technical Degree,Medium,1,Research Scientist,Non-Travel
+1375,Medical,Very High,2,Healthcare Representative,Travel_Rarely
+1377,Medical,High,2,Laboratory Technician,Travel_Rarely
+1379,Life Sciences,Medium,1,Sales Representative,Travel_Frequently
+1380,Marketing,High,2,Sales Executive,Travel_Frequently
+1382,Life Sciences,Very High,1,Research Scientist,Travel_Frequently
+1383,Technical Degree,High,2,Healthcare Representative,Travel_Rarely
+1387,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+1389,Medical,High,2,Manufacturing Director,Travel_Rarely
+1390,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+1391,Marketing,High,3,Sales Executive,Travel_Frequently
+1392,Life Sciences,High,2,Research Scientist,Travel_Frequently
+1394,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1395,Life Sciences,High,2,Sales Executive,Travel_Frequently
+1396,Marketing,High,2,Sales Executive,Travel_Rarely
+1397,Life Sciences,High,3,Healthcare Representative,Non-Travel
+1399,Life Sciences,Very High,2,Sales Executive,Travel_Rarely
+1401,Medical,Very High,4,Manufacturing Director,Travel_Frequently
+1402,Medical,Medium,2,Research Scientist,Travel_Rarely
+1403,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1405,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1407,Medical,Medium,1,Research Scientist,Travel_Rarely
+1408,Human Resources,High,4,Manager,Travel_Rarely
+1409,Other,High,1,Laboratory Technician,Travel_Rarely
+1411,Medical,High,1,Laboratory Technician,Travel_Rarely
+1412,Life Sciences,High,3,Manufacturing Director,Travel_Frequently
+1415,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+1417,Other,Very High,1,Laboratory Technician,Travel_Rarely
+1419,Other,Medium,3,Human Resources,Travel_Rarely
+1420,Life Sciences,Medium,2,Laboratory Technician,Travel_Frequently
+1421,Other,High,3,Healthcare Representative,Travel_Frequently
+1422,Medical,High,4,Research Director,Travel_Rarely
+1423,Medical,High,5,Research Director,Travel_Rarely
+1424,Medical,Very High,4,Research Director,Travel_Rarely
+1425,Marketing,High,2,Sales Executive,Travel_Rarely
+1427,Life Sciences,Low,1,Sales Representative,Travel_Frequently
+1428,Marketing,High,2,Sales Executive,Travel_Rarely
+1430,Life Sciences,High,4,Research Director,Travel_Rarely
+1431,Other,High,1,Research Scientist,Travel_Frequently
+1433,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+1434,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1435,Life Sciences,Medium,2,Laboratory Technician,Travel_Rarely
+1436,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1438,Technical Degree,High,1,Research Scientist,Travel_Rarely
+1439,Life Sciences,Medium,1,Sales Representative,Travel_Rarely
+1440,Technical Degree,Very High,1,Laboratory Technician,Non-Travel
+1441,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1443,Medical,High,4,Research Director,Travel_Rarely
+1445,Medical,High,2,Sales Executive,Travel_Rarely
+1446,Marketing,High,2,Sales Executive,Travel_Rarely
+1447,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+1448,Medical,Very High,1,Research Scientist,Travel_Rarely
+1449,Other,High,2,Laboratory Technician,Non-Travel
+1453,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1457,Marketing,High,3,Sales Executive,Travel_Rarely
+1458,Life Sciences,Medium,1,Laboratory Technician,Non-Travel
+1459,Life Sciences,Very High,3,Manufacturing Director,Travel_Frequently
+1460,Medical,Low,3,Healthcare Representative,Travel_Rarely
+1461,Medical,Very High,1,Human Resources,Travel_Rarely
+1464,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+1465,Technical Degree,High,3,Manufacturing Director,Travel_Rarely
+1466,Marketing,High,2,Sales Executive,Travel_Rarely
+1467,Technical Degree,High,1,Human Resources,Travel_Rarely
+1468,Medical,Medium,3,Research Director,Non-Travel
+1469,Medical,High,2,Sales Executive,Travel_Rarely
+1471,Life Sciences,Medium,1,Laboratory Technician,Non-Travel
+1472,Medical,Very High,4,Research Director,Travel_Rarely
+1473,Technical Degree,High,2,Healthcare Representative,Travel_Rarely
+1474,Medical,High,1,Research Scientist,Travel_Rarely
+1475,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1477,Medical,High,2,Sales Executive,Travel_Frequently
+1478,Other,Low,2,Sales Executive,Travel_Rarely
+1479,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1480,Medical,High,1,Laboratory Technician,Travel_Frequently
+1481,Marketing,High,2,Sales Executive,Travel_Frequently
+1482,Technical Degree,High,1,Research Scientist,Non-Travel
+1483,Life Sciences,Very High,2,Research Scientist,Travel_Rarely
+1484,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+1485,Medical,High,4,Research Director,Travel_Frequently
+1486,Technical Degree,High,1,Sales Representative,Travel_Frequently
+1487,Technical Degree,High,2,Sales Executive,Travel_Frequently
+1489,Medical,Medium,2,Sales Executive,Travel_Rarely
+1492,Life Sciences,High,1,Sales Representative,Travel_Rarely
+1494,Medical,High,1,Laboratory Technician,Travel_Frequently
+1495,Life Sciences,High,1,Sales Representative,Non-Travel
+1496,Medical,High,3,Manufacturing Director,Travel_Frequently
+1497,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+1499,Life Sciences,High,1,Human Resources,Travel_Rarely
+1501,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1502,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+1503,Medical,High,2,Sales Executive,Travel_Rarely
+1504,Medical,Medium,1,Laboratory Technician,Travel_Frequently
+1506,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+1507,Life Sciences,High,2,Sales Executive,Travel_Frequently
+1509,Medical,Medium,2,Laboratory Technician,Travel_Rarely
+1513,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+1514,Life Sciences,Low,2,Manufacturing Director,Travel_Rarely
+1515,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1516,Medical,High,3,Manager,Travel_Rarely
+1520,Medical,High,4,Manager,Travel_Frequently
+1522,Technical Degree,Medium,1,Research Scientist,Travel_Rarely
+1523,Life Sciences,High,4,Research Director,Travel_Rarely
+1525,Life Sciences,High,3,Manufacturing Director,Travel_Rarely
+1527,Life Sciences,High,4,Manager,Travel_Rarely
+1529,Life Sciences,Medium,3,Healthcare Representative,Travel_Rarely
+1533,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+1534,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1535,Technical Degree,Medium,3,Sales Executive,Travel_Rarely
+1537,Life Sciences,High,1,Research Scientist,Travel_Frequently
+1539,Medical,Low,4,Research Director,Travel_Frequently
+1541,Technical Degree,High,1,Sales Representative,Travel_Rarely
+1542,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+1543,Medical,High,2,Research Scientist,Travel_Rarely
+1544,Other,Low,2,Healthcare Representative,Travel_Rarely
+1545,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+1546,Technical Degree,High,1,Research Scientist,Travel_Rarely
+1547,Life Sciences,High,3,Healthcare Representative,Travel_Frequently
+1548,Medical,High,2,Sales Executive,Travel_Rarely
+1549,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+1550,Medical,High,4,Manager,Travel_Rarely
+1551,Technical Degree,Medium,1,Laboratory Technician,Travel_Rarely
+1552,Life Sciences,High,2,Healthcare Representative,Non-Travel
+1553,Technical Degree,High,3,Healthcare Representative,Travel_Rarely
+1554,Life Sciences,Medium,1,Sales Representative,Travel_Rarely
+1555,Life Sciences,Medium,2,Research Scientist,Travel_Rarely
+1556,Life Sciences,High,1,Sales Representative,Travel_Rarely
+1557,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1558,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+1560,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1562,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+1563,Human Resources,High,2,Human Resources,Travel_Frequently
+1564,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+1568,Technical Degree,High,3,Sales Executive,Travel_Rarely
+1569,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1572,Technical Degree,Medium,3,Manufacturing Director,Travel_Rarely
+1573,Medical,High,2,Manufacturing Director,Travel_Rarely
+1574,Technical Degree,High,2,Research Scientist,Non-Travel
+1576,Other,High,1,Research Scientist,Travel_Rarely
+1577,Medical,High,1,Research Scientist,Travel_Rarely
+1578,Marketing,Medium,5,Manager,Travel_Rarely
+1580,Life Sciences,High,2,Research Scientist,Travel_Rarely
+1581,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1582,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1583,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1585,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1586,Medical,High,1,Laboratory Technician,Travel_Rarely
+1587,Medical,High,2,Healthcare Representative,Travel_Rarely
+1588,Medical,Very High,3,Sales Executive,Travel_Rarely
+1590,Life Sciences,High,2,Healthcare Representative,Travel_Frequently
+1591,Marketing,High,5,Manager,Travel_Rarely
+1592,Technical Degree,Very High,1,Research Scientist,Travel_Rarely
+1594,Life Sciences,Very High,2,Laboratory Technician,Travel_Frequently
+1595,Other,Medium,5,Manager,Travel_Rarely
+1596,Life Sciences,Very High,2,Laboratory Technician,Travel_Rarely
+1597,Technical Degree,Medium,2,Healthcare Representative,Travel_Frequently
+1598,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1599,Technical Degree,Very High,1,Laboratory Technician,Travel_Rarely
+1601,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+1602,Life Sciences,Very High,4,Manager,Travel_Rarely
+1604,Medical,High,1,Laboratory Technician,Travel_Rarely
+1605,Other,Medium,1,Research Scientist,Non-Travel
+1606,Medical,High,4,Healthcare Representative,Travel_Frequently
+1607,Other,Very High,1,Research Scientist,Travel_Rarely
+1608,Medical,High,5,Research Director,Travel_Rarely
+1609,Medical,Medium,1,Research Scientist,Travel_Rarely
+1611,Medical,Low,2,Laboratory Technician,Travel_Rarely
+1612,Marketing,Medium,2,Sales Executive,Non-Travel
+1613,Other,High,2,Sales Executive,Travel_Frequently
+1614,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+1615,Life Sciences,Very High,2,Manufacturing Director,Travel_Frequently
+1617,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1618,Medical,High,2,Manufacturing Director,Travel_Rarely
+1619,Other,Medium,1,Laboratory Technician,Travel_Rarely
+1621,Life Sciences,Very High,2,Research Scientist,Travel_Rarely
+1622,Medical,Low,2,Manufacturing Director,Travel_Rarely
+1623,Medical,High,1,Research Scientist,Travel_Rarely
+1624,Medical,High,1,Sales Representative,Travel_Frequently
+1625,Life Sciences,High,5,Manager,Travel_Rarely
+1627,Medical,Medium,2,Laboratory Technician,Travel_Rarely
+1628,Life Sciences,Medium,3,Manufacturing Director,Travel_Rarely
+1630,Life Sciences,High,2,Healthcare Representative,Non-Travel
+1631,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+1633,Medical,High,2,Manufacturing Director,Travel_Frequently
+1635,Other,Medium,2,Manufacturing Director,Travel_Rarely
+1638,Medical,Medium,3,Manufacturing Director,Travel_Rarely
+1639,Medical,Medium,3,Sales Executive,Travel_Rarely
+1640,Medical,High,1,Research Scientist,Travel_Rarely
+1641,Life Sciences,High,3,Manufacturing Director,Travel_Rarely
+1642,Human Resources,High,2,Human Resources,Travel_Frequently
+1644,Medical,Medium,4,Manager,Travel_Frequently
+1645,Medical,Low,2,Sales Executive,Travel_Rarely
+1646,Technical Degree,High,1,Research Scientist,Travel_Frequently
+1647,Medical,Very High,1,Research Scientist,Travel_Rarely
+1648,Medical,High,1,Research Scientist,Travel_Frequently
+1649,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1650,Medical,Medium,2,Sales Executive,Travel_Rarely
+1651,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+1653,Life Sciences,Very High,2,Manufacturing Director,Travel_Frequently
+1654,Medical,High,2,Manufacturing Director,Travel_Rarely
+1655,Other,High,4,Research Director,Travel_Rarely
+1656,Life Sciences,Medium,3,Research Director,Travel_Rarely
+1657,Medical,High,1,Sales Representative,Travel_Rarely
+1658,Life Sciences,High,2,Research Scientist,Travel_Rarely
+1659,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1661,Life Sciences,Medium,4,Healthcare Representative,Travel_Rarely
+1662,Medical,Medium,2,Manufacturing Director,Non-Travel
+1664,Life Sciences,Very High,2,Healthcare Representative,Travel_Rarely
+1665,Medical,High,4,Manager,Travel_Rarely
+1666,Life Sciences,Medium,4,Research Director,Travel_Rarely
+1667,Other,High,2,Sales Executive,Travel_Frequently
+1668,Life Sciences,High,2,Research Scientist,Travel_Frequently
+1669,Medical,Medium,2,Sales Executive,Travel_Rarely
+1670,Medical,High,2,Sales Executive,Travel_Rarely
+1671,Medical,High,2,Research Scientist,Travel_Rarely
+1673,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1674,Medical,High,1,Laboratory Technician,Travel_Rarely
+1675,Medical,Medium,1,Laboratory Technician,Travel_Frequently
+1676,Life Sciences,Very High,4,Manager,Travel_Rarely
+1677,Life Sciences,High,4,Manager,Travel_Rarely
+1678,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1680,Life Sciences,High,1,Sales Representative,Travel_Rarely
+1681,Life Sciences,High,2,Sales Executive,Non-Travel
+1682,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1683,Life Sciences,High,1,Human Resources,Travel_Rarely
+1684,Medical,Medium,1,Laboratory Technician,Travel_Rarely
+1687,Medical,High,1,Laboratory Technician,Travel_Rarely
+1689,Medical,Very High,3,Healthcare Representative,Travel_Rarely
+1691,Medical,High,1,Sales Representative,Travel_Frequently
+1692,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1693,Medical,High,1,Laboratory Technician,Non-Travel
+1694,Technical Degree,Medium,1,Research Scientist,Travel_Rarely
+1696,Medical,Medium,2,Laboratory Technician,Travel_Rarely
+1697,Medical,Low,3,Healthcare Representative,Travel_Rarely
+1698,Medical,Very High,1,Laboratory Technician,Travel_Rarely
+1700,Medical,Low,2,Sales Executive,Travel_Frequently
+1701,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+1702,Life Sciences,High,1,Sales Representative,Travel_Rarely
+1703,Life Sciences,Very High,3,Healthcare Representative,Travel_Rarely
+1704,Medical,Medium,1,Research Scientist,Travel_Frequently
+1706,Medical,High,2,Sales Executive,Travel_Rarely
+1707,Medical,Very High,1,Research Scientist,Travel_Rarely
+1708,Marketing,High,3,Sales Executive,Travel_Rarely
+1709,Medical,High,1,Laboratory Technician,Travel_Rarely
+1710,Life Sciences,High,2,Sales Representative,Travel_Rarely
+1712,Life Sciences,Medium,3,Healthcare Representative,Non-Travel
+1714,Human Resources,Low,1,Human Resources,Travel_Rarely
+1716,Life Sciences,Low,4,Sales Executive,Travel_Frequently
+1718,Medical,Low,1,Laboratory Technician,Travel_Rarely
+1719,Technical Degree,Medium,4,Research Director,Travel_Rarely
+1720,Life Sciences,High,1,Research Scientist,Travel_Frequently
+1721,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1722,Human Resources,Low,2,Human Resources,Non-Travel
+1724,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+1725,Medical,High,1,Laboratory Technician,Travel_Rarely
+1727,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1728,Life Sciences,High,2,Manufacturing Director,Travel_Rarely
+1729,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1731,Marketing,High,2,Sales Executive,Non-Travel
+1732,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1733,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1734,Life Sciences,Low,2,Sales Executive,Travel_Rarely
+1735,Medical,High,1,Laboratory Technician,Travel_Rarely
+1736,Technical Degree,High,2,Manufacturing Director,Travel_Frequently
+1737,Life Sciences,High,2,Laboratory Technician,Non-Travel
+1739,Life Sciences,Low,3,Sales Executive,Travel_Rarely
+1740,Medical,High,5,Manager,Travel_Rarely
+1744,Life Sciences,Low,3,Human Resources,Travel_Rarely
+1745,Technical Degree,Medium,1,Research Scientist,Travel_Frequently
+1746,Medical,High,1,Human Resources,Travel_Frequently
+1747,Human Resources,Medium,1,Human Resources,Travel_Frequently
+1749,Technical Degree,High,2,Sales Executive,Travel_Rarely
+1751,Medical,High,1,Research Scientist,Travel_Rarely
+1752,Marketing,Low,1,Sales Representative,Travel_Rarely
+1753,Life Sciences,Very High,2,Healthcare Representative,Travel_Frequently
+1754,Marketing,Medium,3,Sales Executive,Travel_Rarely
+1755,Medical,Very High,1,Research Scientist,Travel_Rarely
+1756,Marketing,High,2,Sales Executive,Non-Travel
+1757,Marketing,High,2,Sales Executive,Travel_Rarely
+1758,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1760,Medical,Medium,1,Laboratory Technician,Travel_Frequently
+1761,Marketing,High,3,Sales Executive,Travel_Rarely
+1762,Technical Degree,Medium,1,Research Scientist,Travel_Rarely
+1763,Life Sciences,Very High,2,Healthcare Representative,Travel_Rarely
+1764,Technical Degree,High,1,Research Scientist,Non-Travel
+1766,Medical,Low,2,Healthcare Representative,Travel_Rarely
+1767,Technical Degree,Medium,1,Research Scientist,Travel_Frequently
+1768,Medical,High,1,Laboratory Technician,Travel_Rarely
+1770,Medical,Medium,5,Research Director,Travel_Rarely
+1771,Technical Degree,High,2,Research Scientist,Non-Travel
+1772,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1774,Life Sciences,High,2,Sales Executive,Non-Travel
+1775,Medical,Medium,4,Manufacturing Director,Non-Travel
+1778,Life Sciences,High,1,Human Resources,Travel_Rarely
+1779,Life Sciences,Low,2,Sales Executive,Travel_Rarely
+1780,Marketing,High,1,Sales Representative,Travel_Rarely
+1782,Other,Medium,1,Laboratory Technician,Travel_Rarely
+1783,Medical,High,1,Laboratory Technician,Travel_Rarely
+1784,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1786,Technical Degree,High,3,Manager,Travel_Rarely
+1787,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1789,Medical,High,5,Research Director,Travel_Rarely
+1790,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+1792,Medical,High,1,Research Scientist,Travel_Frequently
+1794,Other,High,2,Human Resources,Travel_Rarely
+1797,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1798,Life Sciences,Very High,1,Research Scientist,Travel_Rarely
+1799,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1800,Medical,High,3,Research Director,Travel_Rarely
+1801,Life Sciences,Medium,2,Sales Executive,Non-Travel
+1802,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1803,Medical,Very High,2,Healthcare Representative,Travel_Rarely
+1804,Medical,High,2,Manufacturing Director,Non-Travel
+1805,Human Resources,High,1,Human Resources,Non-Travel
+1807,Life Sciences,High,2,Laboratory Technician,Travel_Frequently
+1809,Medical,High,2,Manufacturing Director,Travel_Rarely
+1812,Life Sciences,High,2,Sales Executive,Travel_Frequently
+1813,Life Sciences,High,1,Research Scientist,Non-Travel
+1814,Life Sciences,Very High,2,Healthcare Representative,Travel_Rarely
+1815,Marketing,High,3,Sales Executive,Travel_Rarely
+1816,Medical,High,3,Manufacturing Director,Travel_Rarely
+1818,Medical,High,1,Human Resources,Travel_Rarely
+1821,Medical,High,2,Healthcare Representative,Travel_Rarely
+1822,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1823,Technical Degree,Very High,2,Sales Executive,Travel_Rarely
+1824,Medical,High,4,Manager,Non-Travel
+1826,Medical,Low,1,Laboratory Technician,Travel_Rarely
+1827,Life Sciences,Medium,3,Manufacturing Director,Travel_Rarely
+1829,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1830,Medical,High,2,Research Scientist,Travel_Rarely
+1833,Marketing,High,3,Sales Executive,Travel_Frequently
+1834,Medical,High,1,Research Scientist,Travel_Rarely
+1835,Marketing,Low,2,Sales Representative,Travel_Rarely
+1836,Medical,High,2,Sales Executive,Travel_Rarely
+1837,Life Sciences,High,4,Research Director,Travel_Frequently
+1839,Medical,High,1,Research Scientist,Non-Travel
+1842,Human Resources,Very High,1,Human Resources,Travel_Rarely
+1844,Human Resources,Medium,1,Human Resources,Travel_Rarely
+1845,Life Sciences,High,2,Sales Executive,Non-Travel
+1847,Other,High,2,Research Scientist,Travel_Rarely
+1849,Life Sciences,High,2,Sales Executive,Travel_Frequently
+1850,Life Sciences,High,1,Laboratory Technician,Travel_Frequently
+1852,Medical,High,1,Laboratory Technician,Travel_Frequently
+1853,Marketing,High,2,Sales Executive,Travel_Frequently
+1854,Technical Degree,High,1,Research Scientist,Non-Travel
+1856,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1857,Life Sciences,High,3,Manufacturing Director,Travel_Rarely
+1858,Life Sciences,High,1,Human Resources,Non-Travel
+1859,Life Sciences,Low,2,Healthcare Representative,Travel_Rarely
+1860,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1862,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1863,Technical Degree,Very High,4,Sales Executive,Travel_Rarely
+1864,Medical,Medium,2,Sales Representative,Travel_Rarely
+1865,Medical,Medium,1,Human Resources,Travel_Rarely
+1866,Medical,Medium,5,Manager,Travel_Rarely
+1867,Life Sciences,Medium,5,Research Director,Travel_Rarely
+1868,Life Sciences,Medium,1,Research Scientist,Travel_Frequently
+1869,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1870,Life Sciences,Medium,1,Research Scientist,Travel_Frequently
+1871,Other,High,2,Research Scientist,Travel_Rarely
+1873,Technical Degree,Medium,1,Research Scientist,Travel_Rarely
+1875,Medical,High,1,Sales Representative,Travel_Rarely
+1876,Medical,High,1,Sales Representative,Travel_Rarely
+1878,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1880,Technical Degree,Medium,2,Sales Executive,Travel_Rarely
+1881,Life Sciences,High,2,Laboratory Technician,Travel_Rarely
+1882,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1883,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1885,Medical,High,2,Research Scientist,Travel_Rarely
+1886,Other,Medium,2,Manufacturing Director,Travel_Rarely
+1888,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+1890,Human Resources,Medium,2,Human Resources,Travel_Frequently
+1892,Life Sciences,High,4,Manager,Travel_Rarely
+1893,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+1898,Medical,Very High,2,Sales Executive,Travel_Rarely
+1900,Medical,High,4,Manager,Travel_Frequently
+1903,Life Sciences,Very High,2,Healthcare Representative,Travel_Rarely
+1905,Technical Degree,Low,1,Research Scientist,Non-Travel
+1907,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+1908,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1909,Marketing,High,2,Sales Executive,Travel_Rarely
+1911,Medical,High,3,Research Director,Travel_Rarely
+1912,Medical,High,2,Sales Executive,Travel_Rarely
+1915,Medical,Medium,2,Sales Executive,Travel_Rarely
+1916,Medical,Very High,1,Laboratory Technician,Travel_Rarely
+1918,Other,Very High,1,Laboratory Technician,Travel_Frequently
+1922,Medical,High,2,Healthcare Representative,Travel_Frequently
+1924,Marketing,High,2,Sales Executive,Travel_Rarely
+1927,Life Sciences,Medium,2,Sales Executive,Travel_Frequently
+1928,Technical Degree,Very High,1,Sales Representative,Travel_Frequently
+1929,Life Sciences,Low,2,Sales Executive,Non-Travel
+1931,Technical Degree,High,1,Research Scientist,Travel_Rarely
+1932,Other,Medium,2,Research Scientist,Travel_Frequently
+1933,Marketing,High,2,Sales Executive,Travel_Rarely
+1934,Technical Degree,High,2,Research Scientist,Non-Travel
+1935,Marketing,Medium,2,Sales Executive,Travel_Rarely
+1936,Medical,High,2,Manufacturing Director,Travel_Rarely
+1937,Medical,Medium,2,Research Scientist,Travel_Frequently
+1938,Life Sciences,High,4,Manager,Travel_Rarely
+1939,Life Sciences,Very High,1,Research Scientist,Travel_Frequently
+1940,Life Sciences,High,1,Research Scientist,Travel_Rarely
+1941,Life Sciences,High,5,Research Director,Travel_Frequently
+1943,Marketing,High,2,Sales Executive,Travel_Rarely
+1944,Human Resources,Medium,1,Human Resources,Travel_Frequently
+1945,Medical,High,2,Sales Executive,Travel_Rarely
+1947,Medical,High,1,Research Scientist,Non-Travel
+1948,Medical,High,1,Research Scientist,Non-Travel
+1949,Life Sciences,Very High,1,Laboratory Technician,Non-Travel
+1950,Marketing,High,3,Sales Executive,Travel_Rarely
+1951,Medical,High,3,Sales Executive,Travel_Rarely
+1952,Medical,High,1,Laboratory Technician,Travel_Rarely
+1954,Life Sciences,High,2,Healthcare Representative,Travel_Rarely
+1955,Medical,High,2,Healthcare Representative,Non-Travel
+1956,Life Sciences,Low,2,Research Scientist,Travel_Frequently
+1960,Technical Degree,Medium,1,Laboratory Technician,Travel_Rarely
+1961,Life Sciences,Medium,1,Sales Representative,Travel_Rarely
+1962,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1965,Marketing,High,2,Sales Executive,Travel_Rarely
+1966,Life Sciences,Medium,2,Manufacturing Director,Travel_Rarely
+1967,Marketing,High,2,Sales Executive,Travel_Frequently
+1968,Life Sciences,High,3,Sales Executive,Travel_Rarely
+1969,Life Sciences,High,2,Research Scientist,Travel_Rarely
+1970,Life Sciences,High,2,Healthcare Representative,Travel_Frequently
+1971,Life Sciences,High,3,Healthcare Representative,Travel_Rarely
+1972,Other,High,1,Human Resources,Travel_Frequently
+1973,Human Resources,Very High,5,Manager,Travel_Rarely
+1974,Medical,Low,1,Laboratory Technician,Travel_Rarely
+1975,Marketing,High,4,Sales Executive,Travel_Rarely
+1976,Life Sciences,Medium,2,Research Scientist,Non-Travel
+1979,Medical,High,3,Research Director,Non-Travel
+1980,Medical,High,2,Manufacturing Director,Travel_Rarely
+1981,Life Sciences,Medium,2,Healthcare Representative,Travel_Rarely
+1982,Other,High,1,Laboratory Technician,Travel_Rarely
+1985,Technical Degree,High,2,Laboratory Technician,Travel_Frequently
+1986,Marketing,High,2,Sales Executive,Travel_Rarely
+1987,Human Resources,High,1,Human Resources,Travel_Rarely
+1989,Medical,High,1,Laboratory Technician,Travel_Rarely
+1992,Other,High,1,Laboratory Technician,Travel_Rarely
+1993,Medical,High,3,Healthcare Representative,Travel_Rarely
+1994,Medical,Medium,1,Laboratory Technician,Non-Travel
+1995,Life Sciences,High,2,Sales Executive,Travel_Rarely
+1996,Life Sciences,High,1,Sales Representative,Travel_Rarely
+1997,Life Sciences,Medium,2,Manufacturing Director,Travel_Frequently
+1998,Life Sciences,High,2,Research Scientist,Travel_Rarely
+1999,Life Sciences,High,1,Research Scientist,Travel_Rarely
+2000,Medical,High,3,Research Director,Non-Travel
+2003,Medical,High,1,Laboratory Technician,Travel_Rarely
+2007,Life Sciences,High,1,Research Scientist,Travel_Rarely
+2008,Medical,High,2,Research Scientist,Travel_Rarely
+2009,Medical,High,2,Healthcare Representative,Travel_Rarely
+2010,Life Sciences,Medium,1,Laboratory Technician,Travel_Rarely
+2012,Life Sciences,High,1,Laboratory Technician,Travel_Rarely
+2013,Medical,Medium,1,Sales Representative,Travel_Rarely
+2014,Life Sciences,High,2,Research Scientist,Travel_Rarely
+2015,Medical,Low,3,Research Director,Travel_Rarely
+2016,Marketing,High,3,Sales Executive,Travel_Rarely
+2017,Life Sciences,Very High,3,Research Director,Travel_Rarely
+2018,Other,High,2,Sales Executive,Travel_Rarely
+2019,Life Sciences,High,1,Sales Representative,Non-Travel
+2020,Medical,High,1,Research Scientist,Travel_Rarely
+2021,Medical,High,1,Sales Representative,Travel_Rarely
+2022,Life Sciences,High,5,Manager,Non-Travel
+2023,Marketing,High,1,Sales Representative,Travel_Frequently
+2024,Medical,Medium,3,Sales Executive,Travel_Rarely
+2025,Life Sciences,High,2,Manufacturing Director,Travel_Frequently
+2026,Life Sciences,High,2,Healthcare Representative,Non-Travel
+2027,Medical,High,1,Research Scientist,Travel_Rarely
+2031,Life Sciences,High,5,Manager,Travel_Rarely
+2032,Technical Degree,High,1,Laboratory Technician,Travel_Rarely
+2034,Life Sciences,Medium,4,Manufacturing Director,Travel_Rarely
+2035,Marketing,Medium,2,Sales Executive,Travel_Rarely
+2036,Marketing,Low,2,Sales Executive,Non-Travel
+2037,Life Sciences,Medium,2,Sales Executive,Travel_Rarely
+2038,Technical Degree,High,1,Research Scientist,Travel_Rarely
+2040,Life Sciences,High,3,Human Resources,Travel_Rarely
+2041,Life Sciences,High,2,Sales Executive,Travel_Rarely
+2044,Life Sciences,High,2,Sales Executive,Travel_Frequently
+2045,Marketing,Medium,2,Sales Executive,Travel_Rarely
+2046,Life Sciences,High,2,Sales Executive,Travel_Rarely
+2048,Life Sciences,Medium,1,Research Scientist,Travel_Rarely
+2049,Life Sciences,High,2,Healthcare Representative,Travel_Frequently
+2051,Medical,High,1,Research Scientist,Travel_Rarely
+2052,Life Sciences,Low,1,Research Scientist,Travel_Rarely
+2053,Other,Medium,2,Laboratory Technician,Travel_Rarely
+2054,Medical,Medium,1,Research Scientist,Travel_Rarely
+2055,Marketing,Medium,3,Sales Executive,Travel_Rarely
+2056,Marketing,Medium,4,Sales Executive,Travel_Rarely
+2057,Medical,High,2,Manufacturing Director,Non-Travel
+2060,Other,Medium,1,Sales Representative,Travel_Rarely
+2061,Medical,Very High,2,Laboratory Technician,Travel_Frequently
+2062,Medical,Medium,3,Healthcare Representative,Travel_Rarely
+2064,Life Sciences,Very High,2,Manufacturing Director,Travel_Rarely
+2065,Medical,Medium,2,Sales Executive,Travel_Frequently
+2068,Medical,Very High,2,Laboratory Technician,Travel_Rarely

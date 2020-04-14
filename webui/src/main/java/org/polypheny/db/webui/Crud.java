@@ -753,7 +753,6 @@ public class Crud implements InformationObserver {
                 log.error( "Caught exception while executing a query from the console", e );
                 executionTime += System.nanoTime() - temp;
                 result = new Result( e ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
-                //results.add( result );
                 try {
                     transaction.rollback();
                 } catch ( TransactionException ex ) {
@@ -764,7 +763,6 @@ public class Crud implements InformationObserver {
             result.setExplorerId( explore.getId() );
             result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
             int tableSize = 0;
-
             tableSize = explore.getTableSize();
             result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
             result.setClassificationInfo( "NoClassificationPossible" );
@@ -819,7 +817,6 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( transaction, exploreTables, query );
         } catch ( QueryExecutionException e ) {
-            //result = new Result( e.getMessage() );
             log.error( "Caught exception while fetching a table", e );
             result = new Result( "Could not fetch table " + exploreTables.tableId );
             try {
@@ -839,7 +836,6 @@ public class Crud implements InformationObserver {
         result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
         int tableSize = 0;
         tableSize = explore.getTableSize();
-
 
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
 

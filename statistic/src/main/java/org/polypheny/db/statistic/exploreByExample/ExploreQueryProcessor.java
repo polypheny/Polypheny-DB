@@ -220,18 +220,6 @@ public class ExploreQueryProcessor {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
 
-    /*
-    public boolean hasData( String schema, String table, String column ) {
-        String query = "SELECT * FROM " + buildQualifiedName( schema, table ) + " LIMIT 1";
-        StatisticResult res = executeSqlSelect( query );
-        return res.getColumns().length > 0;
-    }
-    */
-
-    public static String buildQualifiedName( String... strings ) {
-        return "\"" + String.join( "\".\"", strings ) + "\"";
-    }
-
 
     static class QueryExecutionException extends Exception {
 
