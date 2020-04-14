@@ -60,7 +60,10 @@ public class CatalogTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE SCHEMA schema1" );
                 statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL )" );
+                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD COLUMN name VARCHAR (255) NOT NULL " );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id USING BTREE" );
+                statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL)" );
+                statement.executeUpdate( "ALTER TABLE schema1.table2 ADD CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES schema1.table1(id) ON UPDATE CASCADE ON DELETE SET NULL" );
                 connection.commit();
             }
         } catch ( SQLException e ) {
@@ -74,8 +77,10 @@ public class CatalogTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection() ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "ALTER TABLE schema1.table2 DROP FOREIGN KEY fk_id" );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 DROP INDEX index1" );
                 statement.executeUpdate( "DROP TABLE schema1.table1" );
+                statement.executeUpdate( "DROP TABLE schema1.table2" );
                 statement.executeUpdate( "DROP SCHEMA schema1" );
                 connection.commit();
             }
@@ -142,10 +147,11 @@ public class CatalogTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             final Object[] table1 = new Object[]{ "APP", "schema1", "table1", "TABLE", "", null, null, null, null, null, "pa", null };
+            final Object[] table2 = new Object[]{ "APP", "schema1", "table2", "TABLE", "", null, null, null, null, null, "pa", null };
 
             checkResultSet(
                     connection.getMetaData().getTables( "APP", "schema1", null, null ),
-                    ImmutableList.of( table1 ) );
+                    ImmutableList.of( table1, table2 ) );
 
 
         } catch ( SQLException e ) {
@@ -160,11 +166,12 @@ public class CatalogTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             // Check data
-            final Object[] column = new Object[]{ "APP", "schema1", "table1", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
+            final Object[] column1 = new Object[]{ "APP", "schema1", "table1", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
+            final Object[] column2 = new Object[]{ "APP", "schema1", "table1", "name", 12, "VARCHAR", 255, null, null, null, 0, "", null, null, null, null, 2, "NO", "CASE_INSENSITIVE" };
 
             checkResultSet(
-                    connection.getMetaData().getColumns( "APP", null, "table1", null ),
-                    ImmutableList.of( column ) );
+                    connection.getMetaData().getColumns( "APP", "schema1", "table1", null ),
+                    ImmutableList.of( column1, column2 ) );
 
 
         } catch ( SQLException e ) {
@@ -193,8 +200,20 @@ public class CatalogTest {
 
 
     @Test
-    public void testGetPrimaryKeys() {
+    public void testGetForeignKeys() {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
+            Connection connection = polyphenyDbConnection.getConnection();
 
+            final Object[] foreignKeys = new Object[]{ "APP", "schema1", "table1", "id", "APP", "schema1", "table2", "id", 1, 0, 2, "fk_id", null, null };
+
+            checkResultSet(
+                    connection.getMetaData().getExportedKeys( "APP", "schema1", "table1" ),
+                    ImmutableList.of( foreignKeys ) );
+
+
+        } catch ( SQLException e ) {
+            log.error( "Exception while testing getTables()", e );
+        }
     }
 
 
@@ -204,16 +223,11 @@ public class CatalogTest {
             Assert.assertTrue( "Result set has more rows than expected", i < expected.size() );
             Object[] expectedRow = expected.get( i++ );
 
-            /*int j = 0;
-            while ( j < 4 ) {
-                j++;
-                System.out.println( resultSet.getObject( j ) );
-            }*/
-
             Assert.assertEquals( "Wrong number of columns", expectedRow.length, resultSet.getMetaData().getColumnCount() );
             int j = 0;
             while ( j < expectedRow.length ) {
                 Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", expectedRow[j++], resultSet.getObject( j ) );
+                // System.out.println( resultSet.getObject( j )  );
             }
         }
         Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );

@@ -151,6 +151,7 @@ public class CatalogImpl extends Catalog {
             if ( CatalogManager.resetCatalog ) {
                 log.info( "Reseting catalog on startup." );
                 if ( new File( "./" + path ).exists() ) {
+                    //noinspection ResultOfMethodCallIgnored
                     new File( "./" + path ).delete();
                 }
             }
@@ -544,15 +545,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    public void closeAndDelete() {
-        db.close();
-        new File( this.path ).delete();
-    }
 
 
     @Override
     public void clear() {
         db.getAll().clear();
+        initDBLayout( db );
+        restoreAllIdBuilders();
     }
 
 
@@ -1836,6 +1835,7 @@ public class CatalogImpl extends Catalog {
      * @return List of foreign keys
      */
     @Override
+
     public List<CatalogForeignKey> getForeignKeys( long tableId ) {
         return foreignKeys.values().stream().filter( f -> f.tableId == tableId ).collect( Collectors.toList() );
     }
