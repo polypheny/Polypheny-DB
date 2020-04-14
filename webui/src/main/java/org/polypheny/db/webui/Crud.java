@@ -730,7 +730,7 @@ public class Crud implements InformationObserver {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
 
-        boolean isConvertedToSql = false;
+        boolean isConvertedToSql = isClassificationToSql();
 
         Explore explore = exploreManager.classifyData( classifyAllData.id, classifyAllData.classified, isConvertedToSql );
 
@@ -766,8 +766,6 @@ public class Crud implements InformationObserver {
             int tableSize = 0;
 
             tableSize = explore.getTableSize();
-            System.out.println( tableSize );
-            System.out.println( (int) Math.ceil( (double) tableSize / getPageSize() ) );
             result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
             result.setClassificationInfo( "NoClassificationPossible" );
 
@@ -780,11 +778,8 @@ public class Crud implements InformationObserver {
 
             result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
             int tableSize = 0;
-
             tableSize = explore.getData().length;
-            System.out.println( tableSize );
             result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
-            System.out.println( (int) Math.ceil( (double) tableSize / getPageSize() ) );
 
             return result;
         }
@@ -803,7 +798,7 @@ public class Crud implements InformationObserver {
 
         String query = explore.getSqlStatment() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
 
-        if(!explore.isConvertedToSql()){
+        if(!explore.isConvertedToSql() && !explore.isClassificationPossible()){
             int tablesize = explore.getData().length;
 
             if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize())) {
@@ -883,7 +878,6 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction( queryExplorationRequest.analyze );
         boolean autoCommit = true;
 
-        //ArrayList<Result> results = new ArrayList<>();
         Result result;
         long executionTime = 0;
         long temp = 0;
@@ -895,7 +889,6 @@ public class Crud implements InformationObserver {
             temp = System.nanoTime();
             result = executeSqlSelect( transaction, queryExplorationRequest, query, false, getPageSize() ).setInfo( new Debug().setGeneratedQuery( query ) );
             executionTime += System.nanoTime() - temp;
-            //results.add( result );
             if ( autoCommit ) {
                 transaction.commit();
                 transaction = getTransaction( queryExplorationRequest.analyze );
@@ -904,7 +897,6 @@ public class Crud implements InformationObserver {
             log.error( "Caught exception while executing a query from the console", e );
             executionTime += System.nanoTime() - temp;
             result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
-            //results.add( result );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -2635,6 +2627,9 @@ public class Crud implements InformationObserver {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
 
+    private boolean isClassificationToSql(){
+        return RuntimeConfig.EXPLORE_BY_EXAMPLE_TO_SQL.getBoolean();
+    }
 
     private String filterTable( final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );

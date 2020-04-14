@@ -390,9 +390,9 @@ public class Explore {
 
 
     public String sqlClassifiedData( J48 tree, Map<String, String> nameAndType ) {
-        System.out.println( tree.toString() );
+        //System.out.println( tree.toString() );
         String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString(), nameAndType );
-        System.out.println( classifiedSqlStatement );
+        //System.out.println( classifiedSqlStatement );
         return classifiedSqlStatement;
     }
 
