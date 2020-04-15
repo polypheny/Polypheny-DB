@@ -89,6 +89,10 @@ public class CassandraStore extends Store {
     private String dbPassword;
 
 
+    // Only display specific logging messages once
+    private static boolean displayedPrepareLoggingMessage = false;
+    private static boolean displayedCommitLoggingMessage = false;
+
     private final CqlSession session;
     private CassandraSchema currentSchema;
 
@@ -306,7 +310,10 @@ public class CassandraStore extends Store {
     @Override
     public boolean prepare( PolyXid xid ) {
         // TODO JS: implement cassandra prepare
-        log.warn( "Prepare is not yet supported." );
+        if ( ! displayedPrepareLoggingMessage ) {
+            log.warn( "Prepare is not yet supported. This warning will not be repeated!" );
+            displayedPrepareLoggingMessage = true;
+        }
         return true;
     }
 
@@ -314,7 +321,10 @@ public class CassandraStore extends Store {
     @Override
     public void commit( PolyXid xid ) {
         // TODO JS: implement cassandra commit
-        log.warn( "Commit is not yet supported." );
+        if ( ! displayedCommitLoggingMessage ) {
+            log.warn( "Commit is not yet supported. This warning will not be repeated!" );
+            displayedCommitLoggingMessage = true;
+        }
     }
 
 
