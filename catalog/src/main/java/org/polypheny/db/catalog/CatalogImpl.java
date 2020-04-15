@@ -164,9 +164,11 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
+                String registeredPath = ResourceManager.getInstance().registerDataFolder( "mapdb" );
                 if ( !deleteAfter ) {
+
                     db = DBMaker
-                            .fileDB( new File( "./" + path ) )
+                            .fileDB( registeredPath + path )
                             .closeOnJvmShutdown()
                             .transactionEnable()
                             .fileMmapEnableIfSupported()
@@ -174,7 +176,7 @@ public class CatalogImpl extends Catalog {
                             .make();
                 } else {
                     db = DBMaker
-                            .fileDB( new File( "./" + path ) )
+                            .fileDB( registeredPath + path )
                             .closeOnJvmShutdown()
                             .fileDeleteAfterClose()
                             .transactionEnable()

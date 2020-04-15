@@ -60,7 +60,7 @@ public class PolyphenyDb {
     private boolean resetCatalog = false;
 
     @Option(name = { "-memoryCatalog" }, description = "in-memory catalog flag")
-    private boolean memoryCatalog = false;
+    public boolean memoryCatalog = false;
 
 
     @SuppressWarnings("unchecked")
