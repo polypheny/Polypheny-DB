@@ -69,6 +69,7 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.filemanagement.FileSystemManagerImpl;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -164,7 +165,7 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
-                File folder = FileSystemManager.getInstance().registerDataFolder( "catalog" );
+                File folder = FileSystemManagerImpl.getInstance().registerDataFolder( "catalog" );
 
                 if ( !deleteAfter ) {
 
