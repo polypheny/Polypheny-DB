@@ -140,9 +140,9 @@ public class CatalogImpl extends Catalog {
      * MapDB Catalog; idea is to only need a minimal amount( max 2-3 ) map lookups for each get
      * most maps should work with ids to prevent overhead when renaming
      */
-    public CatalogImpl( String path, boolean doInitSchema, boolean doInitInformationPage, boolean deleteAfter ) {
+    public CatalogImpl( String fileName, boolean doInitSchema, boolean doInitInformationPage, boolean deleteAfter ) {
         super();
-        this.path = path;
+        this.path = fileName;
 
         if ( db != null ) {
             db.close();
@@ -150,9 +150,9 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             if ( CatalogManager.resetCatalog ) {
                 log.info( "Reseting catalog on startup." );
-                if ( new File( "./" + path ).exists() ) {
+                if ( new File( "./" + fileName ).exists() ) {
                     //noinspection ResultOfMethodCallIgnored
-                    new File( "./" + path ).delete();
+                    new File( "./" + fileName ).delete();
                 }
             }
 
@@ -164,11 +164,12 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
-                String registeredPath = ResourceManager.getInstance().registerDataFolder( "mapdb" );
+                File folder = FileSystemManager.getInstance().registerDataFolder( "catalog" );
+
                 if ( !deleteAfter ) {
 
                     db = DBMaker
-                            .fileDB( registeredPath + path )
+                            .fileDB( new File( folder, fileName ) )
                             .closeOnJvmShutdown()
                             .transactionEnable()
                             .fileMmapEnableIfSupported()
@@ -176,7 +177,7 @@ public class CatalogImpl extends Catalog {
                             .make();
                 } else {
                     db = DBMaker
-                            .fileDB( registeredPath + path )
+                            .fileDB( new File( folder, fileName ) )
                             .closeOnJvmShutdown()
                             .fileDeleteAfterClose()
                             .transactionEnable()
@@ -545,8 +546,6 @@ public class CatalogImpl extends Catalog {
     public void close() {
         db.close();
     }
-
-
 
 
     @Override
