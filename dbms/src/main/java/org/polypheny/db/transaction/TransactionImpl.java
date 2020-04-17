@@ -186,7 +186,6 @@ public class TransactionImpl implements Transaction, Comparable {
                 if ( changedTables.size() > 0 ) {
                     StatisticsManager.getInstance().apply( changedTables );
                 }
-
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
                 rollback();
@@ -204,8 +203,6 @@ public class TransactionImpl implements Transaction, Comparable {
         } finally {
             cachedSchema = null;
         }
-
-
     }
 
 
