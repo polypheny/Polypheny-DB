@@ -149,13 +149,6 @@ public class CatalogImpl extends Catalog {
             db.close();
         }
         synchronized ( this ) {
-            if ( CatalogManager.resetCatalog ) {
-                log.info( "Reseting catalog on startup." );
-                if ( new File( "./" + fileName ).exists() ) {
-                    //noinspection ResultOfMethodCallIgnored
-                    new File( "./" + fileName ).delete();
-                }
-            }
 
             if ( CatalogManager.memoryCatalog ) {
                 isPersistent = false;
@@ -166,6 +159,14 @@ public class CatalogImpl extends Catalog {
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
                 File folder = FileSystemManagerImpl.getInstance().registerDataFolder( "catalog" );
+
+                if ( CatalogManager.resetCatalog ) {
+                    log.info( "Reseting catalog on startup." );
+                    if ( new File( folder, fileName ).exists() ) {
+                        //noinspection ResultOfMethodCallIgnored
+                        new File( folder, fileName ).delete();
+                    }
+                }
 
                 if ( !deleteAfter ) {
 
