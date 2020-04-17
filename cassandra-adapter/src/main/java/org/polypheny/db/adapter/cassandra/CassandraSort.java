@@ -48,9 +48,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.SqlKind;
 
 
 /**

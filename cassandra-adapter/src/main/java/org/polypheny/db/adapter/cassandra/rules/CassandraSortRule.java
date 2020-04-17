@@ -19,15 +19,12 @@ package org.polypheny.db.adapter.cassandra.rules;
 
 import java.util.List;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
-import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraSort;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
-import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;

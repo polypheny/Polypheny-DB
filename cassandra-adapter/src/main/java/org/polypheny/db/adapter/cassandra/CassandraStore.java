@@ -36,7 +36,6 @@ import com.github.nosan.embedded.cassandra.EmbeddedCassandraFactory;
 import com.github.nosan.embedded.cassandra.api.Cassandra;
 import com.google.common.collect.ImmutableList;
 import java.net.InetSocketAddress;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +56,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeAssignmentRules;
 
 
 @Slf4j
