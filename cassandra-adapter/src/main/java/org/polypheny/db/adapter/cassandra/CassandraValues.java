@@ -32,6 +32,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -51,8 +52,12 @@ import org.polypheny.db.util.TimeString;
 @Slf4j
 public class CassandraValues extends Values implements CassandraRel {
 
+    private final RelDataType logicalRowType;
+
+
     public CassandraValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
+        this.logicalRowType = rowType;
     }
 
 
@@ -164,13 +169,26 @@ public class CassandraValues extends Values implements CassandraRel {
     public void implement( CassandraImplementContext context ) {
 
         List<Map<String, Term>> items = new LinkedList<>();
-        final List<RelDataTypeField> fields = rowType.getFieldList();
+        // TODO JS: Is this work around still needed with the fix in CassandraSchema?
+        final List<RelDataTypeField> physicalFields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+        final List<RelDataTypeField> logicalFields = rowType.getFieldList();
+        final List<RelDataTypeField> fields = new ArrayList<>();
+        for ( RelDataTypeField field : logicalFields ) {
+            for ( RelDataTypeField physicalField : physicalFields ) {
+                if ( field.getName().equals( physicalField.getName() ) ) {
+                    fields.add( physicalField );
+                    break;
+                }
+            }
+        }
+//        final List<RelDataTypeField> fields = rowType.getFieldList();
         for ( List<RexLiteral> tuple : tuples ) {
             final List<Expression> literals = new ArrayList<>();
             Map<String, Term> oneInsert = new LinkedHashMap<>();
             for ( Pair<RelDataTypeField, RexLiteral> pair : Pair.zip( fields, tuple ) ) {
                 try {
-                    oneInsert.put( pair.left.getName(), QueryBuilder.literal( literalValue( pair.right ) ) );
+                    oneInsert.put( pair.left.getPhysicalName(), QueryBuilder.literal( literalValue( pair.right ) ) );
+//                    oneInsert.put( pair.left.getName(), QueryBuilder.literal( literalValue( pair.right ) ) );
                 } catch ( Exception e ) {
                     log.error( "Something broke while parsing cql values.", e );
                     throw new RuntimeException( e );

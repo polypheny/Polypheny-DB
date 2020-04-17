@@ -55,6 +55,9 @@ dependencies {
     implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version
     implementation group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version
 
+    // Embedded Cassandra
+    implementation group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version
+
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
