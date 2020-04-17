@@ -19,7 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -71,8 +71,8 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         try {
-            CatalogConstraint constraint = CatalogManager.getInstance().getCatalog().getConstraint( catalogTable.id, constraintName.getSimple() );
-            CatalogManager.getInstance().getCatalog().deleteConstraint( constraint.id );
+            CatalogConstraint constraint = Catalog.getInstance().getConstraint( catalogTable.id, constraintName.getSimple() );
+            Catalog.getInstance().deleteConstraint( constraint.id );
         } catch ( GenericCatalogException | UnknownConstraintException e ) {
             throw new RuntimeException( e );
         }

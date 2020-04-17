@@ -64,7 +64,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.Catalog.TableType.PrimitiveTableType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumn.PrimitiveCatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -128,7 +127,7 @@ public class DbmsMeta implements ProtobufMeta {
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
-    private final Catalog catalog = CatalogManager.getInstance().getCatalog();
+    private final Catalog catalog = Catalog.getInstance();
 
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;

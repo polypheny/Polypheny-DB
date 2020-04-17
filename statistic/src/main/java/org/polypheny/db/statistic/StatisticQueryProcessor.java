@@ -30,7 +30,6 @@ import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -62,7 +61,7 @@ public class StatisticQueryProcessor {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final Catalog catalog = CatalogManager.getInstance().getCatalog();
+    private final Catalog catalog = Catalog.getInstance();
 
 
     /**

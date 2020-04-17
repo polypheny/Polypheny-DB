@@ -83,7 +83,6 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -172,7 +171,7 @@ public class Crud implements InformationObserver {
     private final String userName;
     private final StatisticsManager store = StatisticsManager.getInstance();
     private boolean isActiveTracking = false;
-    private final Catalog catalog = CatalogManager.getInstance().getCatalog();
+    private final Catalog catalog = Catalog.getInstance();
 
 
     /**

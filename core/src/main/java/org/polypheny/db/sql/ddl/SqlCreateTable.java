@@ -55,7 +55,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -166,7 +165,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         if ( query != null ) {
             throw new RuntimeException( "Not supported yet" );
         }
-        Catalog catalog = CatalogManager.getInstance().getCatalog();
+        Catalog catalog = Catalog.getInstance();
         String tableName;
         long schemaId;
         try {

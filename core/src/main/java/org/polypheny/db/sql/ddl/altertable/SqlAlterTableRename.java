@@ -22,7 +22,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -80,7 +79,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
         }
         String newTableName = newName.getSimple();
         try {
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
+            Catalog catalog = Catalog.getInstance();
             if ( catalog.checkIfExistsTable( table.schemaId, newTableName ) ) {
                 throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.tableExists( newTableName ) );
             }

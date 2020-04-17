@@ -24,7 +24,6 @@ import lombok.NonNull;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -141,7 +140,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, tableName );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
-        Catalog catalog = CatalogManager.getInstance().getCatalog();
+        Catalog catalog = Catalog.getInstance();
         try {
             if ( type != null ) {
                 // Check whether all stores support schema changes

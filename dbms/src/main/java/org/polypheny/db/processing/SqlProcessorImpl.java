@@ -28,7 +28,7 @@ import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.SqlProcessor;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -229,7 +229,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
                 // Execute statement
                 ((SqlExecutableStatement) parsed).execute( transaction.getPrepareContext(), transaction );
-                CatalogManager.getInstance().getCatalog().commit();
+                Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
                         parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
                         ImmutableList.of(),
@@ -264,7 +264,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][catalogTable.columnIds.size()];
             int pos = 0;
-            for ( CatalogColumn column : CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id ) ) {
+            for ( CatalogColumn column : Catalog.getInstance().getColumns( catalogTable.id ) ) {
                 // Add column
                 newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
 
@@ -325,16 +325,16 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             long schemaId;
             String tableOldName;
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = CatalogManager.getInstance().getCatalog().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = CatalogManager.getInstance().getCatalog().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
                 tableOldName = tableName.names.get( 1 );
             } else { // TableName
-                schemaId = CatalogManager.getInstance().getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = Catalog.getInstance().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableOldName = tableName.names.get( 0 );
             }
-            catalogTable = CatalogManager.getInstance().getCatalog().getTable( schemaId, tableOldName );
+            catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {

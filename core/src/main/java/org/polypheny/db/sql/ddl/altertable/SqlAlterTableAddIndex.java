@@ -20,8 +20,8 @@ package org.polypheny.db.sql.ddl.altertable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -94,7 +94,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             List<Long> columnIds = new LinkedList<>();
             for ( SqlNode node : columnList.getList() ) {
                 String columnName = node.toString();
-                CatalogColumn catalogColumn = CatalogManager.getInstance().getCatalog().getColumn( catalogTable.id, columnName );
+                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogTable.id, columnName );
                 columnIds.add( catalogColumn.id );
             }
             IndexType type;
@@ -103,7 +103,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             } else {
                 type = IndexType.getById( RuntimeConfig.DEFAULT_INDEX_TYPE.getInteger() );
             }
-            CatalogManager.getInstance().getCatalog().addIndex( catalogTable.id, columnIds, unique, type, indexName.getSimple() );
+            Catalog.getInstance().addIndex( catalogTable.id, columnIds, unique, type, indexName.getSimple() );
         } catch ( GenericCatalogException | UnknownColumnException | UnknownIndexTypeException e ) {
             throw new RuntimeException( e );
         }

@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -87,10 +87,10 @@ public class CsvSchema extends AbstractSchema {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
-        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ) ) {
             CatalogColumn catalogColumn;
             try {
-                catalogColumn = CatalogManager.getInstance().getCatalog().getColumn( placement.columnId );
+                catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             } catch ( UnknownColumnException | GenericCatalogException e ) {
                 throw new RuntimeException( "Column not found." ); // This should not happen
             }
@@ -102,7 +102,7 @@ public class CsvSchema extends AbstractSchema {
         }
 
         // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
-        String csvFileName = CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ).iterator().next().physicalTableName + ".csv";
+        String csvFileName = Catalog.getInstance().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ).iterator().next().physicalTableName + ".csv";
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );

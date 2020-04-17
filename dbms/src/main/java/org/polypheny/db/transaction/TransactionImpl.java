@@ -35,7 +35,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -211,7 +211,7 @@ public class TransactionImpl implements Transaction, Comparable {
             for ( Store store : involvedStores ) {
                 store.rollback( xid );
             }
-            CatalogManager.getInstance().getCatalog().rollback();
+            Catalog.getInstance().rollback();
         } finally {
             cachedSchema = null;
             // Release locks

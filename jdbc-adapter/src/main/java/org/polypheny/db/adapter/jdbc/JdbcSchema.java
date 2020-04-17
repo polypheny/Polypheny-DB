@@ -53,7 +53,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -146,9 +146,9 @@ public class JdbcSchema implements Schema {
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
         String physicalTableName = null;
-        for ( CatalogColumnPlacement placement : CatalogManager.getInstance().getCatalog().getColumnPlacementsOnStore( jdbcStore.getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( jdbcStore.getStoreId(), catalogTable.id ) ) {
             try {
-                CatalogColumn catalogColumn = CatalogManager.getInstance().getCatalog().getColumn( placement.columnId );
+                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
 
                 if ( catalogColumn == null ) {
                     throw new RuntimeException( "Column not found." ); // This should not happen

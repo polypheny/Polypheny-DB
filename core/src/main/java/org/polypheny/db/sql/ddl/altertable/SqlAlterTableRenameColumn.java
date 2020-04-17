@@ -19,7 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -76,7 +76,7 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnOldName );
         try {
-            CatalogManager.getInstance().getCatalog().renameColumn( catalogColumn.id, columnNewName.getSimple() );
+            Catalog.getInstance().renameColumn( catalogColumn.id, columnNewName.getSimple() );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

@@ -150,7 +150,7 @@ public class CatalogImpl extends Catalog {
         }
         synchronized ( this ) {
 
-            if ( CatalogManager.memoryCatalog ) {
+            if ( Catalog.memoryCatalog ) {
                 isPersistent = false;
             } else {
                 isPersistent = isPersistent();
@@ -160,7 +160,7 @@ public class CatalogImpl extends Catalog {
                 log.info( "Making the catalog persistent." );
                 File folder = FileSystemManagerImpl.getInstance().registerDataFolder( "catalog" );
 
-                if ( CatalogManager.resetCatalog ) {
+                if ( Catalog.resetCatalog ) {
                     log.info( "Reseting catalog on startup." );
                     if ( new File( folder, fileName ).exists() ) {
                         //noinspection ResultOfMethodCallIgnored

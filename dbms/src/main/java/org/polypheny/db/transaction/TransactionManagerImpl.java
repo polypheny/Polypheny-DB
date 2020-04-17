@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -80,7 +79,7 @@ public class TransactionManagerImpl implements TransactionManager {
     @Override
     public Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
 
-        Catalog catalog = CatalogManagerImpl.getInstance().getCatalog();
+        Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( user );
 
         CatalogDatabase catalogDatabase = catalog.getDatabase( database );

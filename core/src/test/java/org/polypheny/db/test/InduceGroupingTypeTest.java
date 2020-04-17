@@ -59,7 +59,7 @@ public class InduceGroupingTypeTest {
         // SIMPLE
         List<ImmutableBitSet> groupSets = new ArrayList<>();
         groupSets.add( groupSet );
-        Assert.assertEquals( Aggregate.Group.SIMPLE, Aggregate.Group.induce( groupSet, groupSets ) );
+        assertEquals( Aggregate.Group.SIMPLE, Aggregate.Group.induce( groupSet, groupSets ) );
 
         // CUBE
         groupSets = ImmutableBitSet.ORDERING.sortedCopy( groupSet.powerSet() );

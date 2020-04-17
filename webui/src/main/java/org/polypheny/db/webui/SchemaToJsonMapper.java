@@ -24,7 +24,7 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -41,7 +41,7 @@ public class SchemaToJsonMapper {
 
     public static String exportTableDefinitionAsJson( @NonNull CatalogTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
         List<JsonColumn> columns = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id ) ) {
+        for ( CatalogColumn catalogColumn : Catalog.getInstance().getColumns( catalogTable.id ) ) {
             String defaultValue = null;
             String defaultFunctionName = null;
             if ( exportDefaultValues ) {
@@ -61,7 +61,7 @@ public class SchemaToJsonMapper {
         }
         List<String> primaryKeyColumnNames = null;
         if ( exportPrimaryKey ) {
-            for ( CatalogKey catalogKey : CatalogManager.getInstance().getCatalog().getTableKeys( catalogTable.id ) ) {
+            for ( CatalogKey catalogKey : Catalog.getInstance().getTableKeys( catalogTable.id ) ) {
                 if ( catalogKey.id == catalogTable.primaryKey ) {
                     primaryKeyColumnNames = catalogKey.columnNames;
                     break;

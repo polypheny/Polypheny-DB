@@ -40,7 +40,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -97,7 +96,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     @Override
     public void execute( Context context, Transaction transaction ) {
         try {
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
+            Catalog catalog = Catalog.getInstance();
             // Check if there is a schema with this name
             if ( catalog.checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
                 CatalogSchema catalogSchema = catalog.getSchema( context.getDatabaseId(), name.getSimple() );

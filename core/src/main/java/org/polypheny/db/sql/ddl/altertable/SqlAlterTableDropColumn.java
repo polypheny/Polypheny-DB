@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -90,14 +89,14 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, column );
         try {
             // Check whether all stores support schema changes
-            for ( CatalogColumnPlacement dp : CatalogManager.getInstance().getCatalog().getColumnPlacements( catalogColumn.id ) ) {
+            for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacements( catalogColumn.id ) ) {
                 if ( StoreManager.getInstance().getStore( dp.storeId ).isSchemaReadOnly() ) {
                     throw SqlUtil.newContextException(
                             SqlParserPos.ZERO,
                             RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( dp.storeId ).getUniqueName() ) );
                 }
             }
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
+            Catalog catalog = Catalog.getInstance();
             // Check if column is part of an key
             for ( CatalogKey key : catalog.getTableKeys( catalogTable.id ) ) {
                 if ( key.columnIds.contains( catalogColumn.id ) ) {
@@ -115,18 +114,18 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             }
 
             // Delete column from underlying data stores
-            for ( CatalogColumnPlacement dp : CatalogManager.getInstance().getCatalog().getColumnPlacementsByColumn( catalogColumn.id ) ) {
+            for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacementsByColumn( catalogColumn.id ) ) {
                 StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, dp );
-                CatalogManager.getInstance().getCatalog().deleteColumnPlacement( dp.storeId, dp.columnId );
+                Catalog.getInstance().deleteColumnPlacement( dp.storeId, dp.columnId );
             }
 
             // Delete from catalog
-            List<CatalogColumn> columns = CatalogManager.getInstance().getCatalog().getColumns( catalogTable.id );
-            CatalogManager.getInstance().getCatalog().deleteColumn( catalogColumn.id );
+            List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
+            Catalog.getInstance().deleteColumn( catalogColumn.id );
             if ( catalogColumn.position != columns.size() ) {
                 // Update position of the other columns
                 for ( int i = catalogColumn.position; i < columns.size(); i++ ) {
-                    CatalogManager.getInstance().getCatalog().setColumnPosition( columns.get( i ).id, i );
+                    Catalog.getInstance().setColumnPosition( columns.get( i ).id, i );
                 }
             }
 

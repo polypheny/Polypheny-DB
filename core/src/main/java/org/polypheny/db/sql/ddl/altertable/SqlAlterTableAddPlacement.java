@@ -23,8 +23,8 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
@@ -95,7 +95,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             }
             // Create column placements
             for ( long id : catalogTable.columnIds ) {
-                CatalogManager.getInstance().getCatalog().addColumnPlacement(
+                Catalog.getInstance().addColumnPlacement(
                         storeInstance.getStoreId(),
                         id,
                         PlacementType.MANUAL,

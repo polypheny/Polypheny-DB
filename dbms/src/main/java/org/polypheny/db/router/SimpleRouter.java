@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -92,7 +92,7 @@ public class SimpleRouter extends AbstractRouter {
                 // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
                 List<CatalogColumnPlacement> placements;
 
-                placements = CatalogManager.getInstance().getCatalog().getColumnPlacements( t.getColumnIds().get( 0 ) );
+                placements = Catalog.getInstance().getColumnPlacements( t.getColumnIds().get( 0 ) );
 
                 // Execute on all placements
                 List<TableModify> modifies = new ArrayList<>( placements.size() );
@@ -101,7 +101,7 @@ public class SimpleRouter extends AbstractRouter {
                     CatalogReader catalogReader = transaction.getCatalogReader();
                     CatalogTable catalogTable;
                     try {
-                        catalogTable = CatalogManager.getInstance().getCatalog().getTable( placement.tableId );
+                        catalogTable = Catalog.getInstance().getTable( placement.tableId );
                     } catch ( UnknownTableException | GenericCatalogException e ) {
                         // This should not happen
                         throw new RuntimeException( e );
@@ -180,7 +180,7 @@ public class SimpleRouter extends AbstractRouter {
                 // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
                 List<CatalogColumnPlacement> placements;
 
-                placements = CatalogManager.getInstance().getCatalog().getColumnPlacements( t.getColumnIds().get( 0 ) );
+                placements = Catalog.getInstance().getColumnPlacements( t.getColumnIds().get( 0 ) );
 
                 // Take first
                 CatalogColumnPlacement placement = placements.get( 0 );

@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.cassandra;
 
 import java.util.List;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -31,7 +30,7 @@ public class CassandraPhysicalNameProvider {
 
 
     public CassandraPhysicalNameProvider() {
-        this.catalog = CatalogManager.getInstance().getCatalog();
+        this.catalog = Catalog.getInstance();
     }
 
 

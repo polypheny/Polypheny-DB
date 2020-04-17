@@ -40,7 +40,6 @@ import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -80,7 +79,7 @@ public class SqlDropTable extends SqlDropObject {
     public void execute( Context context, Transaction transaction ) {
         // Get table
         final CatalogTable table;
-        Catalog catalog = CatalogManager.getInstance().getCatalog();
+        Catalog catalog = Catalog.getInstance();
         try {
             table = getCatalogTable( context, name );
         } catch ( PolyphenyDbContextException e ) {

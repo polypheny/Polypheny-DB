@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -49,7 +48,7 @@ public class SchemaToJsonMapperTest {
     @Test
     public void exportTest() {
         CatalogTable catalogTable = new CatalogTable( 4, "stores", ImmutableList.of(), ImmutableList.of(), 1, "public", 1, "APP", 1, "hans", TableType.TABLE, "", 23L, ImmutableMap.of() );
-        Catalog catalog = CatalogManager.getInstance().getCatalog();
+        Catalog catalog = Catalog.getInstance();
         Arrays.asList(
                 new CatalogColumn( 5, "sid", 4, "stores", 1, "public", 1, "APP", 1, PolyType.INTEGER, null, null, false, null, null ),
                 new CatalogColumn( 6, "name", 4, "stores", 1, "public", 1, "APP", 2, PolyType.VARCHAR, 50, null, false, null, null ),

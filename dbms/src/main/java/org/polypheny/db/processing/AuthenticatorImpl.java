@@ -17,7 +17,7 @@
 package org.polypheny.db.processing;
 
 
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -33,7 +33,7 @@ public class AuthenticatorImpl implements Authenticator {
     @Override
     public CatalogUser authenticate( final String username, final String password ) throws AuthenticationException {
         try {
-            CatalogUser catalogUser = CatalogManager.getInstance().getCatalog().getUser( username );
+            CatalogUser catalogUser = Catalog.getInstance().getUser( username );
             if ( catalogUser.password.equals( password ) ) {
                 return catalogUser;
             } else {

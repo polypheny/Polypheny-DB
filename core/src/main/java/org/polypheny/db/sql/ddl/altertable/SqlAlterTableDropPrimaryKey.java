@@ -19,7 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.CatalogManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
@@ -67,7 +67,7 @@ public class SqlAlterTableDropPrimaryKey extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         try {
-            CatalogManager.getInstance().getCatalog().deletePrimaryKey( catalogTable.id );
+            Catalog.getInstance().deletePrimaryKey( catalogTable.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

@@ -55,27 +55,32 @@ import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
 
 public abstract class Catalog {
 
-
-    protected final PolyXid xid;
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
     public boolean isPersistent = false;
+    public static Catalog INSTANCE = null;
+    public static boolean resetCatalog;
+    public static boolean memoryCatalog;
 
 
-    public Catalog( PolyXid xid ) {
-        this.xid = xid;
+    public static Catalog setAndGetInstance( Catalog catalog ) {
+        if ( INSTANCE != null ) {
+            throw new RuntimeException( "Setting the Catalog, when already set is not permitted." );
+        }
+        INSTANCE = catalog;
+        return INSTANCE;
     }
 
-
-    public Catalog() {
-        // TODO DL change this
-        this.xid = null;
+    public static Catalog getInstance() {
+        if( INSTANCE == null ){
+            throw new RuntimeException( "Catalog was not set correctly on Polypheny-DB start-up" );
+        }
+        return INSTANCE;
     }
 
 

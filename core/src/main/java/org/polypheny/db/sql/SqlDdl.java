@@ -38,7 +38,6 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -85,7 +84,7 @@ public abstract class SqlDdl extends SqlCall {
         try {
             long schemaId;
             String tableOldName;
-            Catalog catalog = CatalogManager.getInstance().getCatalog();
+            Catalog catalog = Catalog.getInstance();
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
                 schemaId = catalog.getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
@@ -113,7 +112,7 @@ public abstract class SqlDdl extends SqlCall {
     protected CatalogColumn getCatalogColumn( long tableId, SqlIdentifier columnName ) {
         CatalogColumn catalogColumn;
         try {
-            catalogColumn = CatalogManager.getInstance().getCatalog().getColumn( tableId, columnName.getSimple() );
+            catalogColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownColumnException e ) {
