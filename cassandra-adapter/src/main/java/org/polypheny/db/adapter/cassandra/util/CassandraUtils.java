@@ -50,7 +50,7 @@ public class CassandraUtils {
 
         innerLevel.addAll( rels );
 
-        while ( ! innerLevel.isEmpty() ) {
+        while ( !innerLevel.isEmpty() ) {
             RelNode relNode = innerLevel.pop();
             alreadyChecked.add( relNode );
             if ( relNode instanceof CassandraTableScan ) {
@@ -62,10 +62,10 @@ public class CassandraUtils {
                     return ((CassandraTableModify) relNode).cassandraTable;
                 }
             } else {
-                for ( RelNode innerNode: relNode.getInputs() ) {
+                for ( RelNode innerNode : relNode.getInputs() ) {
                     if ( innerNode instanceof RelSubset ) {
                         for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
-                            if ( ! alreadyChecked.contains( possibleNewRel ) ) {
+                            if ( !alreadyChecked.contains( possibleNewRel ) ) {
                                 innerLevel.addLast( possibleNewRel );
                             }
                         }

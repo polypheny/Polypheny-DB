@@ -59,9 +59,9 @@ public class CassandraTableScan extends TableScan implements CassandraRel {
     /**
      * Creates a CassandraTableScan.
      *
-     * @param cluster Cluster
-     * @param traitSet Traits
-     * @param table Table
+     * @param cluster        Cluster
+     * @param traitSet       Traits
+     * @param table          Table
      * @param cassandraTable Cassandra table
      * @param projectRowType Fields and types to project; null to project raw row
      */

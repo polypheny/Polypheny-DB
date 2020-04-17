@@ -386,7 +386,7 @@ public class CassandraTypesUtils {
                             } else if ( "false".equalsIgnoreCase( string ) ) {
                                 return false;
                             } else {
-                                throw new IllegalArgumentException( "Unable to converter string \"" + string + "\" to boolean.");
+                                throw new IllegalArgumentException( "Unable to converter string \"" + string + "\" to boolean." );
                             }
                         };
                         break;

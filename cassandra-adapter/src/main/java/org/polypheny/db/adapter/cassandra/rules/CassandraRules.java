@@ -98,8 +98,8 @@ public class CassandraRules {
 
 
     public static List<String> cassandraPhysicalFieldNames( final RelDataType rowType ) {
-        List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList()), rowType.getFieldNames() );
-        return pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList());
+        List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
+        return pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
     }
 
 
@@ -177,9 +177,9 @@ public class CassandraRules {
         /**
          * Check if the node is a supported predicate (primary key equality).
          *
-         * @param node Condition node to check
-         * @param fieldNames Names of all columns in the table
-         * @param partitionKeys Names of primary key columns
+         * @param node           Condition node to check
+         * @param fieldNames     Names of all columns in the table
+         * @param partitionKeys  Names of primary key columns
          * @param clusteringKeys Names of primary key columns
          * @return True if the node represents an equality predicate on a primary key
          */
@@ -206,8 +206,8 @@ public class CassandraRules {
         /**
          * Check if an equality operation is comparing a primary key column with a literal.
          *
-         * @param left Left operand of the equality
-         * @param right Right operand of the equality
+         * @param left       Left operand of the equality
+         * @param right      Right operand of the equality
          * @param fieldNames Names of all columns in the table
          * @return The field being compared or null if there is no key equality
          */

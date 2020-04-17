@@ -111,7 +111,7 @@ public class CassandraStore extends Store {
             // This is a cassandra issue. It is also marked as "won't fix"...
             // See: https://issues.apache.org/jira/browse/CASSANDRA-13107
 
-            if ( ! System.getProperty("java.version").startsWith( "1.8" ) ) {
+            if ( !System.getProperty( "java.version" ).startsWith( "1.8" ) ) {
                 log.error( "Embedded cassandra requires Java 8 to work. Currently using: {}. Aborting!", System.getProperty( "java.version" ) );
                 throw new RuntimeException( "Embedded cassandra requires Java 8 to be used!" );
             }
@@ -308,7 +308,7 @@ public class CassandraStore extends Store {
     @Override
     public boolean prepare( PolyXid xid ) {
         // TODO JS: implement cassandra prepare
-        if ( ! displayedPrepareLoggingMessage ) {
+        if ( !displayedPrepareLoggingMessage ) {
             log.warn( "Prepare is not yet supported. This warning will not be repeated!" );
             displayedPrepareLoggingMessage = true;
         }
@@ -319,7 +319,7 @@ public class CassandraStore extends Store {
     @Override
     public void commit( PolyXid xid ) {
         // TODO JS: implement cassandra commit
-        if ( ! displayedCommitLoggingMessage ) {
+        if ( !displayedCommitLoggingMessage ) {
             log.warn( "Commit is not yet supported. This warning will not be repeated!" );
             displayedCommitLoggingMessage = true;
         }
@@ -358,15 +358,13 @@ public class CassandraStore extends Store {
         SimpleStatement selectData = QueryBuilder.selectFrom( this.dbKeyspace, physicalTableName ).all().build();
         ResultSet rs = this.session.execute( selectData );
 
-        if ( ! rs.isFullyFetched() ) {
+        if ( !rs.isFullyFetched() ) {
             throw new RuntimeException( "Unable to convert column type..." );
         }
 
         String physicalColumnName = physicalNameProvider.getPhysicalColumnName( catalogColumn.id );
 
         String newPhysicalColumnName = CassandraPhysicalNameProvider.incrementNameRevision( physicalColumnName );
-
-
 
         BatchStatementBuilder builder = new BatchStatementBuilder( BatchType.LOGGED );
         RelationMetadata relationMetadata = session.getMetadata().getKeyspace( dbKeyspace ).get().getTable( physicalTableName ).get();
@@ -385,10 +383,9 @@ public class CassandraStore extends Store {
                 .addColumn( newPhysicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) )
                 .build() );
 
-
-        for ( Row r: rs ) {
+        for ( Row r : rs ) {
             List<Relation> whereClause = new ArrayList<>();
-            for ( ColumnMetadata cm: primaryKeys ) {
+            for ( ColumnMetadata cm : primaryKeys ) {
                 Relation rl = Relation.column( cm.getName() ).isEqualTo(
                         QueryBuilder.literal( r.get( cm.getName(), CassandraTypesUtils.getJavaType( cm.getType() ) ) )
 //                        QueryBuilder.literal( r.get( cm.getName(), CassandraTypesUtils.getPolyType( cm.getType() ).getTypeJavaClass() ) )
@@ -401,20 +398,18 @@ public class CassandraStore extends Store {
 
             builder.addStatement(
                     QueryBuilder.update( this.dbKeyspace, physicalTableName )
-                    .set( Assignment.setColumn(
-                            newPhysicalColumnName,
-                            QueryBuilder.literal( converter.apply( oldValue ) ) ) )
-                    .where( whereClause )
-                    .build()
+                            .set( Assignment.setColumn(
+                                    newPhysicalColumnName,
+                                    QueryBuilder.literal( converter.apply( oldValue ) ) ) )
+                            .where( whereClause )
+                            .build()
             );
         }
 
         this.session.execute( builder.build() );
 
-
         session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .dropColumn( physicalColumnName ).build() );
-
 
         physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );
     }

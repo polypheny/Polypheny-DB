@@ -114,7 +114,7 @@ public class CassandraToEnumerableConverter extends ConverterImpl implements Enu
                 // Construct the list of fields to project
                 if ( cassandraContext.selectFields.isEmpty() ) {
                     List<String> physicalNames = CassandraRules.cassandraPhysicalFieldNames( getRowType() );
-                    for ( String physicalName: physicalNames ) {
+                    for ( String physicalName : physicalNames ) {
                         cassandraContext.selectFields.add( Selector.column( physicalName ) );
                     }
                 }

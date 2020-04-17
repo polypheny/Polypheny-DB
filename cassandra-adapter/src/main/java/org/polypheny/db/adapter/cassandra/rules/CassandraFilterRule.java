@@ -98,8 +98,8 @@ public class CassandraFilterRule extends CassandraConverterRule {
         final List<RelDataTypeField> logicalFields = filter.getRowType().getFieldList();
         final List<RelDataTypeField> fields = new ArrayList<>();
         List<String> fieldNames = new ArrayList<>();
-        for ( RelDataTypeField field: logicalFields ) {
-            for ( RelDataTypeField physicalField: physicalFields ) {
+        for ( RelDataTypeField field : logicalFields ) {
+            for ( RelDataTypeField physicalField : physicalFields ) {
                 if ( field.getName().equals( physicalField.getName() ) ) {
                     fields.add( physicalField );
                     fieldNames.add( field.getName() );
@@ -124,9 +124,9 @@ public class CassandraFilterRule extends CassandraConverterRule {
     /**
      * Check if the node is a supported predicate (primary key equality).
      *
-     * @param node Condition node to check
-     * @param fieldNames Names of all columns in the table
-     * @param partitionKeys Names of primary key columns
+     * @param node           Condition node to check
+     * @param fieldNames     Names of all columns in the table
+     * @param partitionKeys  Names of primary key columns
      * @param clusteringKeys Names of primary key columns
      * @return True if the node represents an equality predicate on a primary key
      */
@@ -158,8 +158,8 @@ public class CassandraFilterRule extends CassandraConverterRule {
     /**
      * Check if an equality operation is comparing a primary key column with a literal.
      *
-     * @param left Left operand of the equality
-     * @param right Right operand of the equality
+     * @param left       Left operand of the equality
+     * @param right      Right operand of the equality
      * @param fieldNames Names of all columns in the table
      * @return The field being compared or null if there is no key equality
      */

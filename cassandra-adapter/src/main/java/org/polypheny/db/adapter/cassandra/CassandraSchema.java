@@ -143,6 +143,7 @@ public class CassandraSchema extends AbstractSchema {
         return convention.physicalNameProvider.getLogicalColumnName( columnId );
     }
 
+
     private CatalogColumn logicalColumnFromPhysicalColumn( String physicalColumnName ) {
         Matcher m = columnIdPattern.matcher( physicalColumnName );
         Long columnId;
@@ -262,7 +263,7 @@ public class CassandraSchema extends AbstractSchema {
         List<String> pKeyFields = new ArrayList<>();
         for ( ColumnMetadata column : partitionKey ) {
 //            pKeyFields.add( this.logicalColumnFromPhysical( column.getName().toString() ) );
-            pKeyFields.add(  column.getName().toString() );
+            pKeyFields.add( column.getName().toString() );
         }
 
         Map<ColumnMetadata, ClusteringOrder> clusteringKey = relation.getClusteringColumns();
@@ -347,6 +348,7 @@ public class CassandraSchema extends AbstractSchema {
 
     @AllArgsConstructor
     private class RowTypeGeneratorContainer {
+
         String logicalName;
         String physicalName;
         RelDataType dataType;

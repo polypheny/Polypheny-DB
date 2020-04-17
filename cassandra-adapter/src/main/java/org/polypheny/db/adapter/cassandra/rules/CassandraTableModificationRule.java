@@ -47,7 +47,7 @@ public class CassandraTableModificationRule extends CassandraConverterRule {
             return false;
         }
 
-        if ( ! tableModify.getTable().unwrap( CassandraTable.class ).getUnderlyingConvention().equals( this.out ) ) {
+        if ( !tableModify.getTable().unwrap( CassandraTable.class ).getUnderlyingConvention().equals( this.out ) ) {
             return false;
         }
         return tableModify.getOperation() != Operation.MERGE;

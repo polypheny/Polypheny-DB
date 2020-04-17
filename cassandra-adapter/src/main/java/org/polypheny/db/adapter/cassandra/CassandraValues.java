@@ -54,6 +54,7 @@ public class CassandraValues extends Values implements CassandraRel {
 
     private final RelDataType logicalRowType;
 
+
     public CassandraValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
         this.logicalRowType = rowType;
@@ -172,8 +173,8 @@ public class CassandraValues extends Values implements CassandraRel {
         final List<RelDataTypeField> physicalFields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
         final List<RelDataTypeField> logicalFields = rowType.getFieldList();
         final List<RelDataTypeField> fields = new ArrayList<>();
-        for ( RelDataTypeField field: logicalFields ) {
-            for ( RelDataTypeField physicalField: physicalFields ) {
+        for ( RelDataTypeField field : logicalFields ) {
+            for ( RelDataTypeField physicalField : physicalFields ) {
                 if ( field.getName().equals( physicalField.getName() ) ) {
                     fields.add( physicalField );
                     break;

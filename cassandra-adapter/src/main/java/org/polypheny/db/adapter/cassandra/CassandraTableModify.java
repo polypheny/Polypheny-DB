@@ -46,21 +46,21 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
 
     /**
      * Creates a {@code TableModify}.
-     *
+     * <p>
      * The UPDATE operation has format like this:
      * <blockquote>
      * <pre>UPDATE table SET iden1 = exp1, ident2 = exp2  WHERE condition</pre>
      * </blockquote>
      *
-     * @param cluster Cluster this relational expression belongs to
-     * @param traitSet Traits of this relational expression
-     * @param table Target table to modify
-     * @param catalogReader accessor to the table metadata.
-     * @param input Sub-query or filter condition
-     * @param operation Modify operation (INSERT, UPDATE, DELETE)
-     * @param updateColumnList List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
+     * @param cluster              Cluster this relational expression belongs to
+     * @param traitSet             Traits of this relational expression
+     * @param table                Target table to modify
+     * @param catalogReader        accessor to the table metadata.
+     * @param input                Sub-query or filter condition
+     * @param operation            Modify operation (INSERT, UPDATE, DELETE)
+     * @param updateColumnList     List of column identifiers to be updated (e.g. ident1, ident2); null if not UPDATE
      * @param sourceExpressionList List of value expressions to be set (e.g. exp1, exp2); null if not UPDATE
-     * @param flattened Whether set flattens the input row type
+     * @param flattened            Whether set flattens the input row type
      */
     public CassandraTableModify(
             RelOptCluster cluster,

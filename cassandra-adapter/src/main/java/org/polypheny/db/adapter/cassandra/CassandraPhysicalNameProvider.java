@@ -38,6 +38,7 @@ public class CassandraPhysicalNameProvider {
 
     private final String DEFAULT_SCHEMA = "public";
 
+
     public CassandraPhysicalNameProvider( Catalog catalog, int storeId ) {
         this.catalog = catalog;
         this.storeId = storeId;
@@ -78,16 +79,15 @@ public class CassandraPhysicalNameProvider {
             placements = catalog.getColumnPlacementsOnStore( this.storeId );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
-//            e.printStackTrace();
         }
 
-        for ( CatalogColumnPlacement placement: placements ) {
+        for ( CatalogColumnPlacement placement : placements ) {
             if ( placement.columnId == columnId ) {
                 return placement.physicalColumnName;
             }
         }
 
-        throw new RuntimeException("Column placement not found for store " + this.storeId + " and column " + columnId );
+        throw new RuntimeException( "Column placement not found for store " + this.storeId + " and column " + columnId );
     }
 
 
@@ -96,7 +96,6 @@ public class CassandraPhysicalNameProvider {
         try {
             catalogColumn = catalog.getColumn( columnId );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
-//            e.printStackTrace();
             throw new RuntimeException( e );
         }
 
@@ -109,7 +108,6 @@ public class CassandraPhysicalNameProvider {
         try {
             catalogColumn = catalog.getColumn( columnId );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
-//            e.printStackTrace();
             throw new RuntimeException( e );
         }
 
@@ -207,6 +205,7 @@ public class CassandraPhysicalNameProvider {
 
         return getPhysicalTableName( schemaName, tableName );
     }
+
 
     public static String incrementNameRevision( String name ) {
         Matcher m = idRevPattern.matcher( name );
