@@ -48,10 +48,6 @@ import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.background.BackgroundTask;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
@@ -145,7 +141,11 @@ public abstract class AbstractJdbcStore extends Store {
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
         }
-        builder.append( "CREATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) ).append( " ( " );
+        builder.append( "CREATE TABLE " )
+                .append( dialect.quoteIdentifier( getDefaultPhysicalSchemaName() ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physicalTableName ) )
+                .append( " ( " );
         boolean first = true;
         for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
             CatalogColumn catalogColumn;
@@ -177,7 +177,7 @@ public abstract class AbstractJdbcStore extends Store {
                 context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
                         getStoreId(),
                         placement.columnId,
-                        "public", // TODO MV: physical schema name
+                        getDefaultPhysicalSchemaName(),
                         physicalTableName,
                         getPhysicalColumnName( placement.columnId ) );
             } catch ( GenericCatalogException e ) {
@@ -193,7 +193,11 @@ public abstract class AbstractJdbcStore extends Store {
         StringBuilder builder = new StringBuilder();
         String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
         String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        String physicalSchemaName = catalogTable.getColumnPlacementsByStore().get( getStoreId() ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ADD " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " " );
         builder.append( catalogColumn.type.name() );
         if ( catalogColumn.length != null ) {
@@ -219,7 +223,7 @@ public abstract class AbstractJdbcStore extends Store {
             context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
                     getStoreId(),
                     catalogColumn.id,
-                    "public", // TODO MV: physical schema name
+                    physicalSchemaName,
                     physicalTableName,
                     physicalColumnName );
         } catch ( GenericCatalogException e ) {
@@ -231,7 +235,10 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
         builder.append( " " ).append( catalogColumn.type );
         if ( catalogColumn.length != null ) {
@@ -250,7 +257,11 @@ public abstract class AbstractJdbcStore extends Store {
     public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
         String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
-        builder.append( "DROP TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        String physicalSchemaName = combinedTable.getColumnPlacementsByStore().get( getStoreId() ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        builder.append( "DROP TABLE " )
+                .append( dialect.quoteIdentifier( physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physicalTableName ) );
         executeUpdate( builder, context );
     }
 
@@ -258,7 +269,10 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         StringBuilder builder = new StringBuilder();
-        builder.append( "ALTER TABLE " ).append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
         builder.append( " DROP " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
         executeUpdate( builder, context );
     }
@@ -268,7 +282,11 @@ public abstract class AbstractJdbcStore extends Store {
     public void truncate( Context context, CatalogCombinedTable combinedTable ) {
         StringBuilder builder = new StringBuilder();
         String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
-        builder.append( "TRUNCATE TABLE " ).append( dialect.quoteIdentifier( physicalTableName ) );
+        String physicalSchemaName = combinedTable.getColumnPlacementsByStore().get( getStoreId() ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        builder.append( "TRUNCATE TABLE " )
+                .append( dialect.quoteIdentifier( physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( physicalTableName ) );
         executeUpdate( builder, context );
     }
 
@@ -325,6 +343,9 @@ public abstract class AbstractJdbcStore extends Store {
     protected String getPhysicalColumnName( long columnId ) {
         return "col" + columnId;
     }
+
+
+    protected abstract String getDefaultPhysicalSchemaName();
 
 
     protected void removeInformationPage() {
