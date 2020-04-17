@@ -150,6 +150,12 @@ public class PostgresqlStore extends AbstractJdbcStore {
     }
 
 
+    @Override
+    protected String getDefaultPhysicalSchemaName() {
+        return "public";
+    }
+
+
     private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
         return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
     }
