@@ -186,7 +186,6 @@ public class TransactionImpl implements Transaction, Comparable {
                 if ( changedTables.size() > 0 ) {
                     StatisticsManager.getInstance().apply( changedTables );
                 }
-
             } else {
                 log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
                 rollback();
@@ -195,7 +194,7 @@ public class TransactionImpl implements Transaction, Comparable {
 
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );
-
+            // Remove transaction
             transactionManager.removeTransaction( xid );
         } catch ( CatalogTransactionException e ) {
             log.error( "Exception while committing changes. Execution rollback!" );
@@ -204,8 +203,6 @@ public class TransactionImpl implements Transaction, Comparable {
         } finally {
             cachedSchema = null;
         }
-
-
     }
 
 
@@ -229,6 +226,8 @@ public class TransactionImpl implements Transaction, Comparable {
             cachedSchema = null;
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );
+            // Remove transaction
+            transactionManager.removeTransaction( xid );
         }
     }
 
@@ -293,7 +292,7 @@ public class TransactionImpl implements Transaction, Comparable {
         queryProcessor = null;
         dataContext = null;
         prepareContext = null;
-        cachedSchema = null; // TODO: This should no be necessary.
+        cachedSchema = null; // TODO: This should not be necessary.
     }
 
 
