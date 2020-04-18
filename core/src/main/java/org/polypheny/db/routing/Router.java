@@ -23,7 +23,7 @@ import org.polypheny.db.transaction.Transaction;
 
 public interface Router {
 
-    RelRoot route( RelRoot relRoot, Transaction transaction );
+    RelRoot route( RelRoot relRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor );
 
     List<Store> createTable( long schemaId, Transaction transaction );
 

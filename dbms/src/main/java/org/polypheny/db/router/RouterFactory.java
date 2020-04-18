@@ -16,33 +16,9 @@
 
 package org.polypheny.db.router;
 
-import org.polypheny.db.router.IcarusRouter.IcarusRouterFactory;
 import org.polypheny.db.routing.Router;
 
-public class RouterManager {
+public abstract class RouterFactory {
 
-    private static final RouterManager INSTANCE = new RouterManager();
-
-    private RouterFactory currentRouter = null;
-
-
-    public static RouterManager getInstance() {
-        return INSTANCE;
-    }
-
-
-    public RouterManager() {
-        setCurrentRouter( new IcarusRouterFactory() );
-    }
-
-
-    public void setCurrentRouter( RouterFactory routerFactory ) {
-        this.currentRouter = routerFactory;
-    }
-
-
-    public Router getRouter() {
-        return currentRouter.createInstance();
-    }
-
+    public abstract Router createInstance();
 }

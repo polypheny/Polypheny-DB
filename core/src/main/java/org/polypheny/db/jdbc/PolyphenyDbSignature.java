@@ -20,6 +20,7 @@ package org.polypheny.db.jdbc;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
@@ -28,6 +29,7 @@ import org.apache.calcite.linq4j.EnumerableDefaults;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 
@@ -49,6 +51,9 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
     private final long maxRowCount;
     private final Bindable<T> bindable;
 
+    @Getter
+    private final ExecutionTimeMonitor executionTimeMonitor;
+
 
     public PolyphenyDbSignature(
             String sql,
@@ -61,13 +66,15 @@ public class PolyphenyDbSignature<T> extends Meta.Signature {
             List<RelCollation> collationList,
             long maxRowCount,
             Bindable<T> bindable,
-            Meta.StatementType statementType ) {
+            Meta.StatementType statementType,
+            ExecutionTimeMonitor executionTimeMonitor ) {
         super( columns, sql, parameterList, internalParameters, cursorFactory, statementType );
         this.rowType = rowType;
         this.rootSchema = rootSchema;
         this.collationList = collationList;
         this.maxRowCount = maxRowCount;
         this.bindable = bindable;
+        this.executionTimeMonitor = executionTimeMonitor;
     }
 
 

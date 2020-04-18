@@ -49,6 +49,7 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.util.Cursor;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.ArrayEnumeratorCursor;
 import org.polypheny.db.runtime.ObjectEnumeratorCursor;
 
@@ -87,7 +88,8 @@ public class PolyphenyDbResultSet extends AvaticaResultSet {
                         ImmutableList.of(),
                         -1,
                         null,
-                        statement.getStatementType() );
+                        statement.getStatementType(),
+                        new ExecutionTimeMonitor() );
         ResultSetMetaData subResultSetMetaData = new AvaticaResultSetMetaData( statement, null, newSignature );
         final PolyphenyDbResultSet resultSet = new PolyphenyDbResultSet( statement, signature, subResultSetMetaData, localCalendar.getTimeZone(), new Meta.Frame( 0, true, iterable ) );
         final Cursor cursor = resultSet.createCursor( elementType, iterable );
