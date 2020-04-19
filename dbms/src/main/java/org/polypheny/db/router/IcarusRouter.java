@@ -16,7 +16,9 @@
 
 package org.polypheny.db.router;
 
+import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -25,10 +27,15 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -75,7 +82,7 @@ public class IcarusRouter extends AbstractRouter {
             queryClassString = icarusShuttle.hashBasis.toString();
             if ( routingTable.contains( queryClassString ) ) {
                 for ( Map.Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
-                    if ( entry.getValue() == -1 ) {
+                    if ( entry.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
                         // We have no execution time for this store.
                         selectedStoreId = entry.getKey();
                         break;
@@ -94,12 +101,11 @@ public class IcarusRouter extends AbstractRouter {
     // Execute the table scan on the store select in the analysis (in Icarus routing all tables are replicated to all stores)
     @Override
     protected CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available ) {
+        // Update known stores
+        routingTable.updateKnownStores( available );
+        // Route
         if ( selectedStoreId == -1 ) {
-            List<Integer> stores = new LinkedList<>();
-            for ( CatalogColumnPlacement placement : available ) {
-                stores.add( placement.storeId );
-            }
-            routingTable.add( queryClassString, stores );
+            routingTable.initializeRow( queryClassString, available );
             selectedStoreId = available.get( 0 ).storeId;
         }
         for ( CatalogColumnPlacement placement : available ) {
@@ -131,13 +137,45 @@ public class IcarusRouter extends AbstractRouter {
 
     private static class IcarusRoutingTable implements ExecutionTimeObserver {
 
+        public static final int MISSING_VALUE = -1;
+        public static final int NO_PLACEMENT = -2;
+
         private final Map<String, Map<Integer, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Percentage)
         private final Map<String, Map<Integer, Long>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Percentage)
+
+        private final Map<Integer, String> knownStores = new HashMap<>(); // Store ID -> Store Name
 
         private final Queue<ExecutionTime> processingQueue = new ConcurrentLinkedQueue<>();
 
 
         private IcarusRoutingTable() {
+            // Information
+            InformationManager im = InformationManager.getInstance();
+            InformationPage page = new InformationPage( "IcarusRouting", "Icarus Routing" );
+            page.fullWidth();
+            im.addPage( page );
+            InformationGroup routingTableGroup = new InformationGroup( page, "Routing Table" );
+            im.addGroup( routingTableGroup );
+            InformationTable routingTableElement = new InformationTable(
+                    routingTableGroup,
+                    Arrays.asList( "Query Class" ) );
+            im.registerInformation( routingTableElement );
+            page.setRefreshFunction( () -> {
+                // Update labels
+                if ( routingTable.size() > 0 ) {
+                    routingTableElement.updateLabels(
+                            "Query Class",
+                            ImmutableList.copyOf( knownStores.values() )
+                    );
+                }
+                // Update rows
+                routingTableElement.reset();
+                routingTable.forEach( ( k, v ) -> routingTableElement.addRow(
+                        k,
+                        v.values().stream().map( Functions.toStringFunction()::apply ).collect( Collectors.toList() ) ) );
+            } );
+
+            // Background Task
             BackgroundTaskManager.INSTANCE.registerTask(
                     this::process,
                     "Process query execution times and update Icarus routing table",
@@ -154,16 +192,6 @@ public class IcarusRouter extends AbstractRouter {
 
         public Map<Integer, Integer> get( String queryClassStr ) {
             return routingTable.get( queryClassStr );
-        }
-
-
-        public void add( String queryClassStr, List<Integer> stores ) {
-            Map<Integer, Integer> row = new HashMap<>();
-            for ( Integer store : stores ) {
-                row.put( store, -1 );
-            }
-            routingTable.put( queryClassStr, row );
-            times.put( queryClassStr, new HashMap<>() );
         }
 
 
@@ -193,10 +221,14 @@ public class IcarusRouter extends AbstractRouter {
                 }
                 Map<Integer, Integer> newRow = new HashMap<>();
                 for ( Map.Entry<Integer, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
+                    if ( oldEntry.getValue() == NO_PLACEMENT ) {
+                        newRow.put( oldEntry.getKey(), NO_PLACEMENT );
+                        continue;
+                    }
                     if ( timeRow.containsKey( oldEntry.getKey() ) ) {
                         newRow.put( oldEntry.getKey(), 0 );
                     } else {
-                        newRow.put( oldEntry.getKey(), -1 );
+                        newRow.put( oldEntry.getKey(), MISSING_VALUE );
                     }
                 }
                 newRow.replace( fastestStore, 1 );
@@ -212,6 +244,30 @@ public class IcarusRouter extends AbstractRouter {
             int storeId = Integer.parseInt( storeIdStr );
             String queryClassString = reference.substring( storeIdStr.length() + 1 );
             processingQueue.add( new ExecutionTime( queryClassString, storeId, nanoTime ) );
+        }
+
+
+        public void updateKnownStores( List<CatalogColumnPlacement> available ) {
+            for ( CatalogColumnPlacement placement : available ) {
+                if ( !knownStores.containsKey( placement.storeId ) ) {
+                    knownStores.put( placement.storeId, placement.storeUniqueName );
+                }
+            }
+        }
+
+
+        public void initializeRow( String queryClassString, List<CatalogColumnPlacement> available ) {
+            Map<Integer, Integer> row = new HashMap<>();
+            // Initialize with NO_PLACEMENT
+            for ( int storeId : knownStores.keySet() ) {
+                row.put( storeId, NO_PLACEMENT );
+            }
+            // Set missing values entry
+            for ( CatalogColumnPlacement placement : available ) {
+                row.replace( placement.storeId, MISSING_VALUE );
+            }
+            routingTable.put( queryClassString, row );
+            times.put( queryClassString, new HashMap<>() );
         }
     }
 
