@@ -29,7 +29,7 @@ public class CatalogManagerImpl extends CatalogManager {
     private static CatalogImpl catalog = null;
 
 
-    public CatalogManagerImpl( boolean resetCatalog, boolean memoryCatalog) {
+    public CatalogManagerImpl( boolean resetCatalog, boolean memoryCatalog ) {
         if ( catalog == null ) {
             CatalogManager.resetCatalog = resetCatalog;
             CatalogManager.memoryCatalog = memoryCatalog;
@@ -37,7 +37,6 @@ public class CatalogManagerImpl extends CatalogManager {
             catalog = new CatalogImpl();
         }
     }
-
 
 
     @Override

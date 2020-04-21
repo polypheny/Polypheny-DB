@@ -58,6 +58,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.type.PolyType;
 
+
 @Slf4j
 public class CatalogTest {
 
@@ -440,6 +441,7 @@ public class CatalogTest {
 
     }
 
+
     @Test
     public void performanceTests() throws UnknownUserException, UnknownDatabaseException {
         int iterations = 1000;
@@ -448,12 +450,12 @@ public class CatalogTest {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        for( int i = 0; i < iterations; i++ ) {
+        for ( int i = 0; i < iterations; i++ ) {
             long id = catalog.addDatabase( "APP", userId, user.name, 0, "" );
             catalog.deleteDatabase( id );
         }
         stopWatch.stop();
-        log.warn( "{}ms iterations needed, means 1 needed {}ms", stopWatch.getTime(), stopWatch.getTime()/1000 );
+        log.warn( "{}ms iterations needed, means 1 needed {}ms", stopWatch.getTime(), stopWatch.getTime() / 1000 );
     }
 
 
