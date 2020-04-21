@@ -45,17 +45,22 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -76,6 +81,8 @@ import org.slf4j.Logger;
  */
 @Slf4j
 public class CassandraSchema extends AbstractSchema {
+
+    private final static Pattern columnIdPattern = Pattern.compile( "^col([0-9]+)(r([0-9]+))?" );
 
     @Getter
     final CqlSession session;
@@ -124,11 +131,33 @@ public class CassandraSchema extends AbstractSchema {
     }
 
 
-    RelProtoDataType getRelDataType( String columnFamily, boolean view ) {
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( this.name );
-        qualifiedNames.add( columnFamily );
-        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
+    private String logicalColumnFromPhysical( String physicalColumnName ) {
+        Matcher m = columnIdPattern.matcher( physicalColumnName );
+        Long columnId;
+        if ( m.find() ) {
+            columnId = Long.valueOf( m.group( 1 ) );
+        } else {
+            throw new RuntimeException( "Unable to find column id in physical column name: " + physicalColumnName );
+        }
+
+        return convention.physicalNameProvider.getLogicalColumnName( columnId );
+    }
+
+
+    private CatalogColumn logicalColumnFromPhysicalColumn( String physicalColumnName ) {
+        Matcher m = columnIdPattern.matcher( physicalColumnName );
+        Long columnId;
+        if ( m.find() ) {
+            columnId = Long.valueOf( m.group( 1 ) );
+        } else {
+            throw new RuntimeException( "Unable to find column id in physical column name: " + physicalColumnName );
+        }
+
+        return convention.physicalNameProvider.getLogicalColumn( columnId );
+    }
+
+
+    RelProtoDataType getRelDataType( String physicalTableName, boolean view ) {
         Map<CqlIdentifier, ColumnMetadata> columns;
         if ( view ) {
             throw new RuntimeException( "Views are currently broken." );
@@ -139,16 +168,39 @@ public class CassandraSchema extends AbstractSchema {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type, not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+//        Pattern columnIdPattern = Pattern.compile( "^col([0-9]+)(r([0-9]+))?" );
+
+//        List<Pair<Integer, Entry<CqlIdentifier, ColumnMetadata>>> preorderedList = new ArrayList<>();
+        List<Pair<Integer, RowTypeGeneratorContainer>> preorderedList = new ArrayList<>();
+
         for ( Entry<CqlIdentifier, ColumnMetadata> column : columns.entrySet() ) {
-            final String columnName = column.getKey().toString();
+            final String physicalColumnName = column.getKey().toString();
             final DataType type = column.getValue().getType();
 
             // TODO: This mapping of types can be done much better
             PolyType typeName = CassandraTypesUtils.getPolyType( type );
 
             // TODO (PCP)
-            String physicalColumnName = columnName;
-            fieldInfo.add( columnName, physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
+            /*Matcher m = columnIdPattern.matcher( physicalColumnName );
+            Long columnId;
+            if ( m.find() ) {
+                columnId = Long.valueOf( m.group( 1 ) );
+            } else {
+                throw new RuntimeException( "Unable to find column id in physical column name: " + physicalColumnName );
+            }
+            String logicalColumnName = convention.physicalNameProvider.getLogicalColumnName( columnId );*/
+            CatalogColumn logicalColumn = this.logicalColumnFromPhysicalColumn( physicalColumnName );
+            String logicalColumnName = this.logicalColumnFromPhysical( physicalColumnName );
+
+            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ) ) );
+//            fieldInfo.add( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
+        }
+
+        preorderedList.sort( Comparator.naturalOrder() );
+
+        for ( Pair<Integer, RowTypeGeneratorContainer> containerPair : preorderedList ) {
+            RowTypeGeneratorContainer container = containerPair.right;
+            fieldInfo.add( container.logicalName, container.physicalName, container.dataType ).nullable( true );
         }
 
         return RelDataTypeImpl.proto( fieldInfo.build() );
@@ -160,12 +212,12 @@ public class CassandraSchema extends AbstractSchema {
      *
      * @return A list of field names that are part of the partition and clustering keys
      */
-    Pair<List<String>, List<String>> getKeyFields( String columnFamily, boolean view ) {
+    Pair<List<String>, List<String>> getKeyFields( String physicalTableName, boolean view ) {
         RelationMetadata relation;
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( this.name );
-        qualifiedNames.add( columnFamily );
-        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
+//        List<String> qualifiedNames = new LinkedList<>();
+//        qualifiedNames.add( this.name );
+//        qualifiedNames.add( columnFamily );
+//        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         if ( view ) {
             relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
         } else {
@@ -175,12 +227,49 @@ public class CassandraSchema extends AbstractSchema {
         List<ColumnMetadata> partitionKey = relation.getPartitionKey();
         List<String> pKeyFields = new ArrayList<>();
         for ( ColumnMetadata column : partitionKey ) {
+            pKeyFields.add( this.logicalColumnFromPhysical( column.getName().toString() ) );
+//            pKeyFields.add(  column.getName().toString() );
+        }
+
+        Map<ColumnMetadata, ClusteringOrder> clusteringKey = relation.getClusteringColumns();
+        List<String> cKeyFields = new ArrayList<>();
+        for ( Entry<ColumnMetadata, ClusteringOrder> column : clusteringKey.entrySet() ) {
+            cKeyFields.add( this.logicalColumnFromPhysical( column.getKey().getName().asInternal() ) );
+//            cKeyFields.add( column.getKey().toString() );
+        }
+
+        return Pair.of( ImmutableList.copyOf( pKeyFields ), ImmutableList.copyOf( cKeyFields ) );
+    }
+
+
+    /**
+     * Get all primary key columns from the underlying CQL table
+     *
+     * @return A list of field names that are part of the partition and clustering keys
+     */
+    Pair<List<String>, List<String>> getPhysicalKeyFields( String physicalTableName, boolean view ) {
+        RelationMetadata relation;
+//        List<String> qualifiedNames = new LinkedList<>();
+//        qualifiedNames.add( this.name );
+//        qualifiedNames.add( columnFamily );
+//        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
+        if ( view ) {
+            relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
+        } else {
+            relation = getKeyspace().getTable( "\"" + physicalTableName + "\"" ).get();
+        }
+
+        List<ColumnMetadata> partitionKey = relation.getPartitionKey();
+        List<String> pKeyFields = new ArrayList<>();
+        for ( ColumnMetadata column : partitionKey ) {
+//            pKeyFields.add( this.logicalColumnFromPhysical( column.getName().toString() ) );
             pKeyFields.add( column.getName().toString() );
         }
 
         Map<ColumnMetadata, ClusteringOrder> clusteringKey = relation.getClusteringColumns();
         List<String> cKeyFields = new ArrayList<>();
         for ( Entry<ColumnMetadata, ClusteringOrder> column : clusteringKey.entrySet() ) {
+//            cKeyFields.add( this.logicalColumnFromPhysical( column.getKey().toString() ) );
             cKeyFields.add( column.getKey().toString() );
         }
 
@@ -193,12 +282,12 @@ public class CassandraSchema extends AbstractSchema {
      *
      * @return A RelCollations representing the collation of all clustering keys
      */
-    public List<RelFieldCollation> getClusteringOrder( String columnFamily, boolean view ) {
+    public List<RelFieldCollation> getClusteringOrder( String physicalTableName, boolean view ) {
         RelationMetadata relation;
-        List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( this.name );
-        qualifiedNames.add( columnFamily );
-        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
+//        List<String> qualifiedNames = new LinkedList<>();
+//        qualifiedNames.add( this.name );
+//        qualifiedNames.add( columnFamily );
+//        String physicalTableName = this.convention.physicalNameProvider.getPhysicalTableName( qualifiedNames );
         if ( view ) {
 //            throw new RuntimeException( "Views are currently broken." );
             relation = getKeyspace().getView( "\"" + physicalTableName + "\"" ).get();
@@ -221,7 +310,8 @@ public class CassandraSchema extends AbstractSchema {
                     direction = RelFieldCollation.Direction.ASCENDING;
                     break;
             }
-            keyCollations.add( new RelFieldCollation( i, direction ) );
+            CatalogColumn logicalColumn = this.logicalColumnFromPhysicalColumn( order.getKey().getName().asInternal() );
+            keyCollations.add( new RelFieldCollation( logicalColumn.position - 1, direction ) );
             i++;
         }
 
@@ -229,6 +319,7 @@ public class CassandraSchema extends AbstractSchema {
     }
 
 
+    // FIXME JS: Do not regenerate TableMap every time we call this!
     @Override
     protected Map<String, Table> getTableMap() {
         final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
@@ -252,6 +343,15 @@ public class CassandraSchema extends AbstractSchema {
         } else {
             throw new RuntimeException( "There is no metadata." );
         }
+    }
+
+
+    @AllArgsConstructor
+    private class RowTypeGeneratorContainer {
+
+        String logicalName;
+        String physicalName;
+        RelDataType dataType;
     }
 }
 

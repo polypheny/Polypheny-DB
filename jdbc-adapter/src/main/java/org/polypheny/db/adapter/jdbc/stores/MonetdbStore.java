@@ -143,6 +143,12 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
+    @Override
+    protected String getDefaultPhysicalSchemaName() {
+        return "public";
+    }
+
+
     private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
         return String.format( "jdbc:monetdb://%s:%d/%s", dbHostname, dbPort, dbName );
     }

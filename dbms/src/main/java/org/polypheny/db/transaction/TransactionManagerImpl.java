@@ -20,6 +20,7 @@ package org.polypheny.db.transaction;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -39,6 +40,7 @@ import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PUID.UserId;
 
 
+@Slf4j
 public class TransactionManagerImpl implements TransactionManager {
 
     private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
@@ -93,9 +95,10 @@ public class TransactionManagerImpl implements TransactionManager {
     @Override
     public void removeTransaction( PolyXid xid ) throws TransactionException {
         if ( !transactions.containsKey( xid ) ) {
-            throw new TransactionException( "Unknown transaction id: " + xid );
+            log.warn( "Unknown transaction id: " + xid );
+        } else {
+            transactions.remove( xid );
         }
-        transactions.remove( xid );
     }
 
 

@@ -19,6 +19,7 @@ package org.polypheny.db.catalog;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.sun.tools.javac.jvm.Gen;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,6 +56,8 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.exceptions.CatalogConnectionException;
+import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -1267,6 +1270,16 @@ public class CatalogImpl extends Catalog {
         }
 
 
+    }
+
+
+    @Override
+    public CatalogColumnPlacement getColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
+        try {
+            return Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
+        } catch ( NullPointerException e ) {
+            throw new GenericCatalogException( e );
+        }
     }
 
 

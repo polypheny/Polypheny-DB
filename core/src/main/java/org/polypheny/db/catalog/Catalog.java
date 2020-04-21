@@ -401,6 +401,18 @@ public abstract class Catalog {
 
 
     /**
+     * Get a specific column placement.
+     *
+     * @param storeId The id of the store
+     * @param columnId The id of the column
+     * @return The specific column placement
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract CatalogColumnPlacement getColumnPlacement( int storeId, long columnId ) throws GenericCatalogException;
+
+
+
+    /**
      * Get all placements of a column
      *
      * @param columnId The id of the column
