@@ -508,6 +508,8 @@ public class Crud implements InformationObserver {
                 value = "TIME '" + value + "'";
             } else if ( dataTypes.get( entry.getKey() ) == PolyType.TIMESTAMP ) {
                 value = "TIMESTAMP '" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolyType.ARRAY ) {
+                value = String.format( "ARRAY %s", value );
             }
             values.add( value );
         }
@@ -734,6 +736,8 @@ public class Crud implements InformationObserver {
             String condition;
             if ( entry.getValue() == null ) {
                 condition = String.format( "\"%s\" IS NULL", entry.getKey() );
+            } else if ( dataTypes.get( entry.getKey() ) == PolyType.ARRAY ) {
+                condition = String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() );
             } else if ( dataTypes.get( entry.getKey() ).getFamily() != PolyTypeFamily.CHARACTER ) {
                 condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
             } else {
@@ -785,6 +789,8 @@ public class Crud implements InformationObserver {
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             if ( entry.getValue() == null ) {
                 setStatements.add( String.format( "\"%s\" = NULL", entry.getKey() ) );
+            } else if ( entry.getValue().startsWith( "[" ) ) {
+                setStatements.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                 setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
@@ -796,7 +802,11 @@ public class Crud implements InformationObserver {
 
         StringJoiner where = new StringJoiner( " AND ", "", "" );
         for ( Entry<String, String> entry : request.filter.entrySet() ) {
-            where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
+            if ( entry.getValue().startsWith( "[" ) ) {
+                where.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
+            } else {
+                where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
+            }
         }
         builder.append( " WHERE " ).append( where.toString() );
 
@@ -851,9 +861,10 @@ public class Crud implements InformationObserver {
             for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                 String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
                 cols.add(
+                        //TODO NH extend DbColumn with collectionsType, dimension, cardinality
                         new DbColumn(
                                 catalogColumn.name,
-                                catalogColumn.type.name(),
+                                catalogColumn.type.getName(),
                                 catalogColumn.nullable,
                                 catalogColumn.length,
                                 primaryColumns.contains( catalogColumn.name ),
@@ -2343,14 +2354,10 @@ public class Crud implements InformationObserver {
 
     private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         // Parser Config
-        //TODO: "VECTOR" is parsed as "vector" if the configs are not changed.
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        //configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setCaseSensitive( false );
-        //configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_UPPER );
-        //configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_UPPER );
+        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
 
         PolyphenyDbSignature signature;
@@ -2469,7 +2476,11 @@ public class Crud implements InformationObserver {
             CatalogTable table = transaction.getCatalog().getTable( this.databaseName, schemaName, tableName );
             List<CatalogColumn> catalogColumns = transaction.getCatalog().getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
-                dataTypes.put( catalogColumn.name, catalogColumn.type );
+                if ( catalogColumn.collectionsType != null ) {
+                    dataTypes.put( catalogColumn.name, catalogColumn.collectionsType );
+                } else {
+                    dataTypes.put( catalogColumn.name, catalogColumn.type );
+                }
             }
         } catch ( UnknownTableException | GenericCatalogException | UnknownCollationException | UnknownTypeException e ) {
             log.error( "Caught exception", e );

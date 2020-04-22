@@ -241,7 +241,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 return Map.class;
             case ARRAY:
             case MULTISET:
-            case VECTOR:
                 return List.class;
         }
         return null;

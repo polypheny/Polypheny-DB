@@ -141,8 +141,8 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "TIME";
             case TIMESTAMP:
                 return "TIMESTAMP";
-            case VECTOR:
-                return "DOUBLE ARRAY";
+            case ARRAY:
+                return "ARRAY";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
     }

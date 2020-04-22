@@ -73,6 +73,8 @@ public class SqlDataTypeSpec extends SqlNode {
     private final SqlIdentifier baseTypeName;
     private final int scale;
     private final int precision;
+    private final int dimension;
+    private final int cardinality;
     private final String charSetName;
     private final TimeZone timeZone;
 
@@ -94,7 +96,7 @@ public class SqlDataTypeSpec extends SqlNode {
             String charSetName,
             TimeZone timeZone,
             SqlParserPos pos ) {
-        this( null, typeName, precision, scale, charSetName, timeZone, null, pos );
+        this( null, typeName, precision, scale, -1, -1, charSetName, timeZone, null, pos );
     }
 
 
@@ -106,9 +108,11 @@ public class SqlDataTypeSpec extends SqlNode {
             SqlIdentifier typeName,
             int precision,
             int scale,
+            int dimension,
+            int cardinality,
             String charSetName,
             SqlParserPos pos ) {
-        this( collectionsTypeName, typeName, precision, scale, charSetName, null, null, pos );
+        this( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, null, null, pos );
     }
 
 
@@ -120,11 +124,13 @@ public class SqlDataTypeSpec extends SqlNode {
             SqlIdentifier typeName,
             int precision,
             int scale,
+            int dimension,
+            int cardinality,
             String charSetName,
             TimeZone timeZone,
             Boolean nullable,
             SqlParserPos pos ) {
-        this( collectionsTypeName, typeName, typeName, precision, scale, charSetName, timeZone, nullable, pos );
+        this( collectionsTypeName, typeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, pos );
     }
 
 
@@ -137,6 +143,8 @@ public class SqlDataTypeSpec extends SqlNode {
             SqlIdentifier baseTypeName,
             int precision,
             int scale,
+            int dimension,
+            int cardinality,
             String charSetName,
             TimeZone timeZone,
             Boolean nullable,
@@ -147,6 +155,8 @@ public class SqlDataTypeSpec extends SqlNode {
         this.baseTypeName = baseTypeName;
         this.precision = precision;
         this.scale = scale;
+        this.dimension = dimension;
+        this.cardinality = cardinality;
         this.charSetName = charSetName;
         this.timeZone = timeZone;
         this.nullable = nullable;
@@ -156,7 +166,7 @@ public class SqlDataTypeSpec extends SqlNode {
     @Override
     public SqlNode clone( SqlParserPos pos ) {
         return (collectionsTypeName != null)
-                ? new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, charSetName, pos )
+                ? new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, pos )
                 : new SqlDataTypeSpec( typeName, precision, scale, charSetName, timeZone, pos );
     }
 
@@ -187,6 +197,16 @@ public class SqlDataTypeSpec extends SqlNode {
     }
 
 
+    public int getDimension() {
+        return dimension;
+    }
+
+
+    public int getCardinality() {
+        return cardinality;
+    }
+
+
     public String getCharSetName() {
         return charSetName;
     }
@@ -209,7 +229,7 @@ public class SqlDataTypeSpec extends SqlNode {
         if ( Objects.equals( nullable, this.nullable ) ) {
             return this;
         }
-        return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, charSetName, timeZone, nullable, getParserPosition() );
+        return new SqlDataTypeSpec( collectionsTypeName, typeName, precision, scale, dimension, cardinality, charSetName, timeZone, nullable, getParserPosition() );
     }
 
 
@@ -390,7 +410,10 @@ public class SqlDataTypeSpec extends SqlNode {
 
             switch ( collectionsPolyType ) {
                 case MULTISET:
-                    type = typeFactory.createMultisetType( type, -1 );
+                    type = typeFactory.createMultisetType( type, cardinality );
+                    break;
+                case ARRAY:
+                    type = typeFactory.createArrayType( type, cardinality );
                     break;
 
                 default:

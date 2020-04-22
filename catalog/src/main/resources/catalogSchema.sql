@@ -37,17 +37,20 @@ CREATE TABLE "table" (
 );
 
 
-CREATE TABLE "column" (
-    "id"        BIGINT IDENTITY NOT NULL,
-    "table"     BIGINT          NOT NULL REFERENCES "table" ("id"),
-    "name"      VARCHAR(100)    NOT NULL,
-    "position"  INTEGER         NOT NULL,
-    "type"      VARCHAR(50)     NOT NULL,
-    "length"    INTEGER         NULL,
-    "scale"     INTEGER         NULL,
-    "nullable"  BOOLEAN         NOT NULL,
-    "collation" INTEGER         NULL,
-    PRIMARY KEY ("id")
+CREATE TABLE "column"(
+                         "id"               BIGINT IDENTITY NOT NULL,
+                         "table"            BIGINT          NOT NULL REFERENCES "table" ("id"),
+                         "name"             VARCHAR(100)    NOT NULL,
+                         "position"         INTEGER         NOT NULL,
+                         "type"             VARCHAR(50)     NOT NULL,
+                         "collections_type" VARCHAR(50)     NULL,
+                         "length"           INTEGER         NULL,
+                         "scale"            INTEGER         NULL,
+                         "dimension"        INTEGER         NULL,
+                         "cardinality"      INTEGER         NULL,
+                         "nullable"         BOOLEAN         NOT NULL,
+                         "collation"        INTEGER         NULL,
+                         PRIMARY KEY ("id")
 );
 
 
@@ -328,7 +331,7 @@ WHERE "id" = 0;
 --
 INSERT INTO "table" ( "id", "schema", "name", "owner", "type", "definition" )
 VALUES ( 0, 0, 'depts', 0, 1, NULL ),
-       ( 1, 0, 'emps', 0, 1, NULL );
+       (1, 0, 'emps', 0, 1, NULL);
 
 ALTER TABLE "table"
     ALTER COLUMN "id"
@@ -338,14 +341,14 @@ ALTER TABLE "table"
 --
 -- column
 --
-INSERT INTO "column" ( "id", "table", "name", "position", "type", "length", "scale", "nullable", "collation" )
-VALUES ( 0, 0, 'deptno', 1, 'INTEGER', NULL, NULL, FALSE, NULL ),
-       ( 1, 0, 'name', 2, 'VARCHAR', 20, NULL, FALSE, 2 ),
-       ( 2, 1, 'empid', 1, 'INTEGER', NULL, NULL, FALSE, NULL ),
-       ( 3, 1, 'deptno', 2, 'INTEGER', NULL, NULL, FALSE, NULL ),
-       ( 4, 1, 'name', 3, 'VARCHAR', 20, NULL, FALSE, 2 ),
-       ( 5, 1, 'salary', 4, 'INTEGER', NULL, NULL, FALSE, NULL ),
-       ( 6, 1, 'commission', 5, 'INTEGER', NULL, NULL, FALSE, NULL );
+INSERT INTO "column" ("id", "table", "name", "position", "type", "collections_type", "length", "scale", "dimension", "cardinality", "nullable", "collation")
+VALUES (0, 0, 'deptno', 1, 'INTEGER', NULL, NULL, NULL, NULL, NULL, FALSE, NULL),
+       (1, 0, 'name', 2, 'VARCHAR', NULL, 20, NULL, NULL, NULL, FALSE, 2),
+       (2, 1, 'empid', 1, 'INTEGER', NULL, NULL, NULL, NULL, NULL, FALSE, NULL),
+       (3, 1, 'deptno', 2, 'INTEGER', NULL, NULL, NULL, NULL, NULL, FALSE, NULL),
+       (4, 1, 'name', 3, 'VARCHAR', NULL, 20, NULL, NULL, NULL, FALSE, 2),
+       (5, 1, 'salary', 4, 'INTEGER', NULL, NULL, NULL, NULL, NULL, FALSE, NULL),
+       (6, 1, 'commission', 5, 'INTEGER', NULL, NULL, NULL, NULL, NULL, FALSE, NULL);
 
 ALTER TABLE "column"
     ALTER COLUMN "id"
@@ -355,7 +358,7 @@ ALTER TABLE "column"
 --
 -- store
 --
-INSERT INTO "store" ( "id", "unique_name", "adapter", "settings" )
+INSERT INTO "store" ("id", "unique_name", "adapter", "settings")
 VALUES ( 0, 'hsqldb', 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore', '{"type": "Memory","path": "","maxConnections": "25","trxControlMode": "mvcc","trxIsolationLevel": "read_committed"}' ),
        ( 1, 'csv', 'org.polypheny.db.adapter.csv.CsvStore', '{"directory": "classpath://hr"}' );
 

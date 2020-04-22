@@ -94,7 +94,7 @@ public class PolySchemaBuilder {
                 final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
                 for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                     columnNames.add( catalogColumn.name );
-                    fieldInfo.add( catalogColumn.name, null, sqlType( typeFactory, catalogColumn ) ).nullable( catalogColumn.nullable );
+                    fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) ).nullable( catalogColumn.nullable );
                 }
                 List<Long> columnIds = new LinkedList<>();
                 combinedTable.getColumns().forEach( c -> columnIds.add( c.id ) );
@@ -155,19 +155,6 @@ public class PolySchemaBuilder {
         }
 
         return polyphenyDbSchema;
-    }
-
-
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, CatalogColumn column ) {
-        final PolyType polyType = PolyType.get( column.type.name() );
-        if ( column.length != null && column.scale != null && polyType.allowsPrecScale( true, true ) ) {
-            return typeFactory.createPolyType( polyType, column.length, column.scale );
-        } else if ( column.length != null && polyType.allowsPrecNoScale() ) {
-            return typeFactory.createPolyType( polyType, column.length );
-        } else {
-            assert polyType.allowsNoPrecNoScale();
-            return typeFactory.createPolyType( polyType );
-        }
     }
 
 

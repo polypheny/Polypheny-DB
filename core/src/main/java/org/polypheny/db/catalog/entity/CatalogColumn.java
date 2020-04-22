@@ -22,6 +22,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 
 
@@ -43,8 +45,11 @@ public final class CatalogColumn implements CatalogEntity {
     public final String databaseName;
     public final int position;
     public final PolyType type;
+    public final PolyType collectionsType;
     public final Integer length; // JDBC length or precision depending on type
     public final Integer scale; // decimal digits
+    public final Integer dimension;
+    public final Integer cardinality;
     public final boolean nullable;
     public final Collation collation;
     public final CatalogDefaultValue defaultValue;
@@ -61,8 +66,11 @@ public final class CatalogColumn implements CatalogEntity {
             @NonNull final String databaseName,
             final int position,
             @NonNull final PolyType type,
+            final PolyType collectionsType,
             final Integer length,
             final Integer scale,
+            final Integer dimension,
+            final Integer cardinality,
             final boolean nullable,
             final Collation collation,
             CatalogDefaultValue defaultValue ) {
@@ -76,11 +84,33 @@ public final class CatalogColumn implements CatalogEntity {
         this.databaseName = databaseName;
         this.position = position;
         this.type = type;
+        this.collectionsType = collectionsType;
         this.length = length;
         this.scale = scale;
+        this.dimension = dimension;
+        this.cardinality = cardinality;
         this.nullable = nullable;
         this.collation = collation;
         this.defaultValue = defaultValue;
+    }
+
+
+    public RelDataType getRelDataType( final RelDataTypeFactory typeFactory ) {
+        final PolyType polyType = PolyType.get( type.name() );
+        RelDataType elementType;
+        if ( length != null && scale != null && polyType.allowsPrecScale( true, true ) ) {
+            elementType = typeFactory.createPolyType( polyType, length, scale );
+        } else if ( length != null && polyType.allowsPrecNoScale() ) {
+            elementType = typeFactory.createPolyType( polyType, length );
+        } else {
+            assert polyType.allowsNoPrecNoScale();
+            elementType = typeFactory.createPolyType( polyType );
+        }
+        if ( collectionsType == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( elementType, cardinality );
+        } else {
+            return elementType;
+        }
     }
 
 

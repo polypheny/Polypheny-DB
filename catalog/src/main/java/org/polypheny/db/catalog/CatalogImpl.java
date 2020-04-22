@@ -760,7 +760,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted column
      */
     @Override
-    public long addColumn( String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
+    public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) throws GenericCatalogException {
         try {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             CatalogTable table = Statements.getTable( transactionHandler, tableId );
@@ -770,7 +770,7 @@ public class CatalogImpl extends Catalog {
             if ( scale != null && scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
-            return Statements.addColumn( transactionHandler, name, table.id, position, type, length, scale, nullable, collation );
+            return Statements.addColumn( transactionHandler, name, table.id, position, type, collectionsType, length, scale, dimension, cardinality, nullable, collation );
         } catch ( CatalogConnectionException | CatalogTransactionException | UnknownTableTypeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }

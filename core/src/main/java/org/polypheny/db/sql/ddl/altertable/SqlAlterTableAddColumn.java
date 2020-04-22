@@ -158,13 +158,18 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     transaction.getCatalog().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
                 }
             }
+            final PolyType collectionsType = type.getCollectionsTypeName() == null ?
+                    null : PolyType.get( type.getCollectionsTypeName().getSimple() );
             long columnId = transaction.getCatalog().addColumn(
                     column.getSimple(),
                     catalogTable.getTable().id,
                     position,
                     PolyType.get( type.getTypeName().getSimple() ),
+                    collectionsType,
                     type.getPrecision() == -1 ? null : type.getPrecision(),
                     type.getScale() == -1 ? null : type.getScale(),
+                    type.getDimension() == -1 ? null : type.getDimension(),
+                    type.getCardinality() == -1 ? null : type.getCardinality(),
                     nullable,
                     Collation.CASE_INSENSITIVE
             );

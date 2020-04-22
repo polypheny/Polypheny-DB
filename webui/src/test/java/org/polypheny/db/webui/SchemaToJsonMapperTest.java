@@ -45,9 +45,9 @@ public class SchemaToJsonMapperTest {
         CatalogCombinedTable catalogCombinedTable = new CatalogCombinedTable(
                 new CatalogTable( 4, "stores", 1, "public", 1, "APP", 1, "hans", TableType.TABLE, "", 23L ),
                 Arrays.asList(
-                        new CatalogColumn( 5, "sid", 4, "stores", 1, "public", 1, "APP", 1, PolyType.INTEGER, null, null, false, null, null ),
-                        new CatalogColumn( 6, "name", 4, "stores", 1, "public", 1, "APP", 2, PolyType.VARCHAR, 50, null, false, null, null ),
-                        new CatalogColumn( 7, "location", 4, "stores", 1, "public", 1, "APP", 3, PolyType.VARCHAR, 30, null, true, null, new CatalogDefaultValue( 7, PolyType.VARCHAR, "Basel", null ) )
+                        new CatalogColumn( 5, "sid", 4, "stores", 1, "public", 1, "APP", 1, PolyType.INTEGER, null, null, null, null, null, false, null, null ),
+                        new CatalogColumn( 6, "name", 4, "stores", 1, "public", 1, "APP", 2, PolyType.VARCHAR, null, 50, null, null, null, false, null, null ),
+                        new CatalogColumn( 7, "location", 4, "stores", 1, "public", 1, "APP", 3, PolyType.VARCHAR, null, 30, null, null, null, true, null, new CatalogDefaultValue( 7, PolyType.VARCHAR, "Basel", null ) )
                 ),
                 new CatalogSchema( 1, "public", 1, "APP", 1, "hans", SchemaType.RELATIONAL ),
                 new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" ),

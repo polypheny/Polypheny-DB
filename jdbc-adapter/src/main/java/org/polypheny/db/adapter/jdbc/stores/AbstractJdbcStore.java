@@ -48,10 +48,6 @@ import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.background.BackgroundTask;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 @Slf4j
@@ -166,6 +162,17 @@ public abstract class AbstractJdbcStore extends Store {
                     builder.append( "," ).append( catalogColumn.scale );
                 }
                 builder.append( ")" );
+            }
+            if ( catalogColumn.collectionsType != null ) {
+                builder.append( " " ).append( catalogColumn.collectionsType.toString() );
+                //TODO NH check if can apply dimension / cardinality
+                /*if ( catalogColumn.dimension != null ) {
+                    builder.append( "(" ).append( catalogColumn.dimension );
+                    if ( catalogColumn.cardinality != null ) {
+                        builder.append( "," ).append( catalogColumn.cardinality );
+                    }
+                    builder.append( ")" );
+                }*/
             }
 
         }

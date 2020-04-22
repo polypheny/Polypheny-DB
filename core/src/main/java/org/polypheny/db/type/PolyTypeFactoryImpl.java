@@ -114,6 +114,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
     @Override
     public RelDataType createArrayType( RelDataType elementType, long maxCardinality ) {
+        //TODO NH support maxCardinality
         assert maxCardinality == -1;
         ArrayType newType = new ArrayType( elementType, false );
         return canonize( newType );
@@ -226,6 +227,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     private void assertBasic( PolyType typeName ) {
         assert typeName != null;
         assert typeName != PolyType.MULTISET : "use createMultisetType() instead";
+        assert typeName != PolyType.ARRAY : "use createArrayType() instead";
         assert !PolyType.INTERVAL_TYPES.contains( typeName ) : "use createSqlIntervalType() instead";
     }
 

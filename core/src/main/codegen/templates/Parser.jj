@@ -4367,6 +4367,8 @@ SqlDataTypeSpec DataType() :
     SqlIdentifier collectionTypeName = null;
     int scale = -1;
     int precision = -1;
+    int dimension = -1;
+    int cardinality = -1;
     String charSetName = null;
     final Span s;
 }
@@ -4388,7 +4390,17 @@ SqlDataTypeSpec DataType() :
         charSetName = Identifier()
     ]
     [
+        //e.g. ARRAY(dimension, cardinality)
         collectionTypeName = CollectionsTypeName()
+        [
+            <LPAREN>
+            dimension = UnsignedIntLiteral()
+            [
+                <COMMA>
+                cardinality = UnsignedIntLiteral()
+            ]
+            <RPAREN>
+        ]
     ]
     {
         if (null != collectionTypeName) {
@@ -4397,6 +4409,8 @@ SqlDataTypeSpec DataType() :
                 typeName,
                 precision,
                 scale,
+                dimension,
+                cardinality,
                 charSetName,
                 s.end(collectionTypeName));
         }
@@ -4550,6 +4564,11 @@ SqlIdentifier CollectionsTypeName() :
     <MULTISET> {
         return new SqlIdentifier(
             PolyType.MULTISET.name(), getPos());
+    }
+    |
+    <ARRAY> {
+        return new SqlIdentifier(
+                    PolyType.ARRAY.name(), getPos());
     }
 }
 

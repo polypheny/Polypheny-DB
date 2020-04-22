@@ -763,7 +763,7 @@ final class Statements {
 
 
     private static List<CatalogColumn> columnFilter( TransactionHandler transactionHandler, String filter ) throws GenericCatalogException, UnknownTypeException, UnknownCollationException {
-        String sql = "SELECT c.\"id\", c.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", c.\"position\", c.\"type\", c.\"length\", c.\"scale\", c.\"nullable\", c.\"collation\" FROM \"column\" c, \"table\" t, \"schema\" s, \"database\" d WHERE c.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\"" + filter + " ORDER BY d.\"id\", s.\"id\", t.\"id\", c.\"position\";";
+        String sql = "SELECT c.\"id\", c.\"name\", t.\"id\", t.\"name\", s.\"id\", s.\"name\", d.\"id\", d.\"name\", c.\"position\", c.\"type\", c.\"collections_type\", c.\"length\", c.\"scale\", c.\"dimension\", c.\"cardinality\", c.\"nullable\", c.\"collation\" FROM \"column\" c, \"table\" t, \"schema\" s, \"database\" d WHERE c.\"table\" = t.\"id\" AND t.\"schema\" = s.\"id\"  AND s.\"database\" = d.\"id\"" + filter + " ORDER BY d.\"id\", s.\"id\", t.\"id\", c.\"position\";";
         try ( ResultSet rs = transactionHandler.executeSelect( sql ) ) {
             List<CatalogColumn> list = new LinkedList<>();
             while ( rs.next() ) {
@@ -781,12 +781,14 @@ final class Statements {
                 }
 
                 Collation collation = null;
-                Integer collationId = getIntOrNull( rs, 14 );
+                Integer collationId = getIntOrNull( rs, 17 );
                 if ( collationId != null ) {
                     collation = Collation.getById( collationId );
                 }
 
-                list.add( new CatalogColumn(
+                final PolyType collectionsType = rs.getString( 11 ) == null ?
+                        null : PolyType.get( rs.getString( 11 ) );
+                CatalogColumn c = new CatalogColumn(
                         getLong( rs, 1 ),
                         rs.getString( 2 ),
                         getLong( rs, 3 ),
@@ -797,12 +799,17 @@ final class Statements {
                         rs.getString( 8 ),
                         getInt( rs, 9 ),
                         PolyType.get( rs.getString( 10 ) ),
-                        getIntOrNull( rs, 11 ),
+                        collectionsType,
                         getIntOrNull( rs, 12 ),
-                        rs.getBoolean( 13 ),
+                        getIntOrNull( rs, 13 ),
+                        getIntOrNull( rs, 14 ),
+                        getIntOrNull( rs, 15 ),
+                        rs.getBoolean( 16 ),
                         collation,
                         defaultValue
-                ) );
+                );
+                //System.out.println(String.format("Statements column filter: %s %s", c.name, c.type.getName()));
+                list.add( c );
             }
             return list;
         } catch ( SQLException e ) {
@@ -906,14 +913,19 @@ final class Statements {
     }
 
 
-    static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
+    static long addColumn( XATransactionHandler transactionHandler, String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "table", "" + tableId );
         data.put( "name", quoteString( name ) );
         data.put( "position", "" + position );
         data.put( "type", "" + quoteString( type.getName() ) );
+        if ( collectionsType != null ) {
+            data.put( "collections_type", quoteString( collectionsType.getName() ) );
+        }
         data.put( "length", length == null ? null : "" + length );
         data.put( "scale", scale == null ? null : "" + scale );
+        data.put( "dimension", dimension == null ? null : "" + dimension );
+        data.put( "cardinality", cardinality == null ? null : "" + cardinality );
         data.put( "nullable", "" + nullable );
         if ( collation != null ) {
             data.put( "collation", "" + collation.getId() );
