@@ -108,7 +108,7 @@ public class HttpServer extends QueryInterface {
 
         post("/getExploreTables", crud::getExploreTables, gson::toJson);
 
-        post("/createQuery", crud::createQuery, gson::toJson);
+        post("/createInitialExploreQuery", crud::createInitialExploreQuery, gson::toJson);
 
         post("/exploration", crud::exploration, gson::toJson);
 

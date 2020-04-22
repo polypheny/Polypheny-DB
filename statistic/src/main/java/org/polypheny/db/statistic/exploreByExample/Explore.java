@@ -161,6 +161,11 @@ public class Explore {
                 tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
                 return;
             }
+            if(sqlStatment.split( "\nFROM" )[1].split( "," ).length > 1){
+                sqlStatment = selectDistinct;
+                tableSize = getSQLCount( sqlStatment );
+                return;
+            }
             rowCount = getSQLCount( selectDistinct );
             if ( rowCount < 10 ) {
                 tableSize = rowCount;
@@ -198,6 +203,8 @@ public class Explore {
                 } else {
                     sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + String.join( "", unionList );
                 }
+
+                System.out.println(sqlStatment);
 
                 tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
             }
@@ -376,12 +383,13 @@ public class Explore {
             log.error( "Caught exception while building Classifier and tree graph", e );
         }
 
+        System.out.println(this.buildGraph);
         return tree;
     }
 
 
     public String sqlClassifiedData( J48 tree, Map<String, String> nameAndType ) {
-        //System.out.println( tree.toString() );
+        System.out.println( tree.toString() );
         String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString(), nameAndType, includesJoin );
         //System.out.println( classifiedSqlStatement );
         return classifiedSqlStatement;

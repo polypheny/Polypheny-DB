@@ -34,7 +34,6 @@ import org.polypheny.db.jdbc.JdbcInterface;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
-import org.polypheny.db.statistic.exploreByExample.Explore;
 import org.polypheny.db.statistic.exploreByExample.ExploreManager;
 import org.polypheny.db.statistic.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.transaction.PUID;

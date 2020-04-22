@@ -867,7 +867,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    public Result createQuery( Request req, Response res ) {
+    public Result createInitialExploreQuery( Request req, Response res ) {
 
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
