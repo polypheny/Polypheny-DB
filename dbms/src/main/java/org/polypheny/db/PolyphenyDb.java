@@ -61,6 +61,9 @@ public class PolyphenyDb {
     @Option(name = { "-memoryCatalog" }, description = "in-memory catalog flag")
     public boolean memoryCatalog = false;
 
+    @Option(name = { "-testMode" }, description = "empty non-persistent catalog")
+    public boolean testMode = false;
+
 
     @SuppressWarnings("unchecked")
     public static void main( final String[] args ) {
@@ -86,8 +89,9 @@ public class PolyphenyDb {
         Catalog catalog;
         Transaction trx = null;
         try {
-            Catalog.resetCatalog =resetCatalog;
+            Catalog.resetCatalog = resetCatalog;
             Catalog.memoryCatalog = memoryCatalog;
+            Catalog.testMode = testMode;
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false );
             StoreManager.getInstance().restoreStores( catalog );

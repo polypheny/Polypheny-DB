@@ -111,8 +111,8 @@ public class RelBuilderTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection() ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE department( deptno INTEGER NOT NULL, name VARCHAR(20) NOT NULL, loc VARCHAR(50) NULL )" );
-                statement.executeUpdate( "CREATE TABLE employee( empid BIGINT NOT NULL, ename VARCHAR(20), job VARCHAR(10), mgr INTEGER, hiredate DATE, salary DECIMAL(7,2), commission DECIMAL(7,2), deptno INTEGER NOT NULL) " );
+                statement.executeUpdate( "CREATE TABLE department( deptno INTEGER NOT NULL, name VARCHAR(20) NOT NULL, loc VARCHAR(50) NULL, PRIMARY KEY (deptno))" );
+                statement.executeUpdate( "CREATE TABLE employee( empid BIGINT NOT NULL, ename VARCHAR(20), job VARCHAR(10), mgr INTEGER, hiredate DATE, salary DECIMAL(7,2), commission DECIMAL(7,2), deptno INTEGER NOT NULL, PRIMARY KEY (empid)) " );
                 connection.commit();
             }
         } catch ( SQLException e ) {

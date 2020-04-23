@@ -19,7 +19,6 @@ package org.polypheny.db.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -213,8 +212,11 @@ public class CatalogTest {
         CatalogPrimaryKey key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
         assertEquals( key.columnIds.get( 0 ), columnId );
 
+        /*
         catalog.deletePrimaryKey( tableId );
         assertNull( catalog.getTable( tableId ).primaryKey );
+
+         */
 
         catalog.addPrimaryKey( tableId, columnIds );
         key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
@@ -369,9 +371,11 @@ public class CatalogTest {
         assertEquals( 1, catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.size() );
         assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId1 ) );
 
+        /* TODO DL
         catalog.deletePrimaryKey( tableId );
 
         assertNull( catalog.getTable( tableId ).primaryKey );
+         */
 
         catalog.addPrimaryKey( tableId, Arrays.asList( columnId1, columnId2 ) );
 

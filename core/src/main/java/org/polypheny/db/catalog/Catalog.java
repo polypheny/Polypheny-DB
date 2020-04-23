@@ -66,6 +66,7 @@ public abstract class Catalog {
     public static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
+    public static boolean testMode;
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {

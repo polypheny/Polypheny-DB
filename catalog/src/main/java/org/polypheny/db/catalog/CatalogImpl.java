@@ -114,6 +114,8 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, CatalogConstraint> constraints;
     private static HTreeMap<Long, CatalogIndex> indices;
 
+    private static Long openTable;
+
 
     private static final AtomicInteger storeIdBuilder = new AtomicInteger();
     private static final AtomicInteger userIdBuilder = new AtomicInteger();
@@ -150,7 +152,7 @@ public class CatalogImpl extends Catalog {
         }
         synchronized ( this ) {
 
-            if ( Catalog.memoryCatalog ) {
+            if ( Catalog.memoryCatalog || Catalog.testMode ) {
                 isPersistent = false;
             } else {
                 isPersistent = isPersistent();
@@ -208,7 +210,7 @@ public class CatalogImpl extends Catalog {
                     insertDefaultData();
                 }
 
-            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException e ) {
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
             if ( doInitInformationPage ) {
@@ -223,6 +225,9 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public void commit() {
+        if ( openTable != null ) {
+            throw new RuntimeException( "A table was added without a primary key" );
+        }
         db.commit();
     }
 
@@ -435,7 +440,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownStoreException {
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownStoreException, UnknownColumnException {
 
         //////////////
         // init users
@@ -470,17 +475,7 @@ public class CatalogImpl extends Catalog {
         }
 
         //////////////
-        // init schema
-        if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-            addTable( "depts", schemaId, systemId, TableType.TABLE, null );
-        }
-        if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-            addTable( "emps", schemaId, systemId, TableType.TABLE, null );
-        }
-
-        //////////////
         // init store
-        // TODO refactor
         if ( !storeNames.containsKey( "hsqldb" ) ) {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
@@ -503,12 +498,25 @@ public class CatalogImpl extends Catalog {
         CatalogStore csv = getStore( "csv" );
         // TODO temporary change
 
-        addDefaultCsvColumns( csv );
+        if ( !testMode ) {
+            //////////////
+            // init schema
+            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
+                addTable( "depts", schemaId, systemId, TableType.TABLE, null );
+            }
+            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
+                addTable( "emps", schemaId, systemId, TableType.TABLE, null );
+            }
+
+            addDefaultCsvColumns( csv );
+        }
+
+        commit();
 
     }
 
 
-    private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException {
+    private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException, UnknownColumnException {
         CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
 
@@ -521,6 +529,10 @@ public class CatalogImpl extends Catalog {
         addDefaultColumn( csv, emps, "name", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
         addDefaultColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
         addDefaultColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
+
+        // set all needed primary keys
+        addPrimaryKey( depts.id, Collections.singletonList( getColumn( depts.id, "deptno" ).id ) );
+        addPrimaryKey( emps.id, Collections.singletonList( getColumn( emps.id, "empid" ).id ) );
     }
 
 
@@ -1076,6 +1088,7 @@ public class CatalogImpl extends Catalog {
 
 
             }
+            openTable = id;
             listeners.firePropertyChange( "table", null, table );
             return id;
         } catch ( NullPointerException e ) {
@@ -1198,10 +1211,13 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 tables.replace( tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-                if ( keyId != null ) {
-                    primaryKeys.put( keyId, new CatalogPrimaryKey( Objects.requireNonNull( keys.get( keyId ) ) ) );
-                }
 
+                if ( keyId == null ) {
+                    openTable = tableId;
+                } else {
+                    primaryKeys.put( keyId, new CatalogPrimaryKey( Objects.requireNonNull( keys.get( keyId ) ) ) );
+                    openTable = null;
+                }
             }
             listeners.firePropertyChange( "table", old, table );
         } catch ( NullPointerException e ) {
@@ -2103,7 +2119,7 @@ public class CatalogImpl extends Catalog {
                     }
                 }
 
-                setPrimaryKey( tableId, null );
+                //setPrimaryKey( tableId, null );
                 deleteKeyIfNoLongerUsed( table.primaryKey );
             }
         } catch ( NullPointerException e ) {

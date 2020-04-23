@@ -59,10 +59,10 @@ public class CatalogTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE SCHEMA schema1" );
-                statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL )" );
+                statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL, PRIMARY KEY(id))" );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD COLUMN name VARCHAR (255) NOT NULL " );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id USING BTREE" );
-                statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL)" );
+                statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL, PRIMARY KEY(id) )" );
                 statement.executeUpdate( "ALTER TABLE schema1.table2 ADD CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES schema1.table1(id) ON UPDATE CASCADE ON DELETE SET NULL" );
                 connection.commit();
             }
