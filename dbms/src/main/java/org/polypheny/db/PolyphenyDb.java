@@ -61,7 +61,7 @@ public class PolyphenyDb {
     @Option(name = { "-memoryCatalog" }, description = "in-memory catalog flag")
     public boolean memoryCatalog = false;
 
-    @Option(name = { "-testMode" }, description = "empty non-persistent catalog")
+    @Option(name = { "-testMode" }, description = "test configuration for catalog")
     public boolean testMode = false;
 
 
