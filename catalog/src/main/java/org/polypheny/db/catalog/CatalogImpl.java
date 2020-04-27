@@ -498,7 +498,10 @@ public class CatalogImpl extends Catalog {
         CatalogStore csv = getStore( "csv" );
         // TODO temporary change
 
-        if ( !testMode ) {
+
+
+        if ( true ) {
+
             //////////////
             // init schema
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
