@@ -271,4 +271,10 @@ public class ConfigTable extends Config {
         throw new ConfigRuntimeException( "Reading tables of values from config files is not supported yet." );
     }
 
+
+    @Override
+    public void parseStringAndSetValue( String value ) {
+        throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
+    }
+
 }

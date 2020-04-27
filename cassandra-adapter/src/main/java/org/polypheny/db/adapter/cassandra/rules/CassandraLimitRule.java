@@ -32,7 +32,7 @@ import org.polypheny.db.tools.RelBuilderFactory;
 public class CassandraLimitRule extends CassandraConverterRule {
 
     CassandraLimitRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( EnumerableLimit.class, r -> true, EnumerableConvention.INSTANCE, out, relBuilderFactory, "CassandraLimitRule" );
+        super( EnumerableLimit.class, r -> true, EnumerableConvention.INSTANCE, out, relBuilderFactory, "CassandraLimitRule:" + out.getName() );
     }
 
 

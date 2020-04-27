@@ -93,7 +93,7 @@ public class CassandraSort extends Sort implements CassandraRel {
             final List<RelDataTypeField> fields = getRowType().getFieldList();
             for ( RelFieldCollation fieldCollation : sortCollations ) {
                 final String name =
-                        fields.get( fieldCollation.getFieldIndex() ).getName();
+                        fields.get( fieldCollation.getFieldIndex() ).getPhysicalName();
                 final ClusteringOrder direction;
                 switch ( fieldCollation.getDirection() ) {
                     case DESCENDING:

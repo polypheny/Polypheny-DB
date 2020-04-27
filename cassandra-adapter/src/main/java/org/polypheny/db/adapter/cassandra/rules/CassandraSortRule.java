@@ -19,12 +19,12 @@ package org.polypheny.db.adapter.cassandra.rules;
 
 import java.util.List;
 import org.polypheny.db.adapter.cassandra.CassandraConvention;
-import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraSort;
+import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelNode;
@@ -54,8 +54,22 @@ public class CassandraSortRule extends CassandraConverterRule {
     @Override
     public boolean matches( RelOptRuleCall call ) {
         final Sort sort = call.rel( 0 );
-        final CassandraFilter filter = call.rel( 2 );
-        return collationsCompatible( sort.getCollation(), filter.getImplicitCollation() );
+
+        // We only deal with limit here!
+//        return sort.getCollation().getFieldCollations().isEmpty();
+        CassandraTable table = null;
+        // This is a copy in getRelList, so probably expensive!
+        if ( sort.getInput() instanceof RelSubset ) {
+            RelSubset subset = (RelSubset) sort.getInput();
+//            table = CassandraUtils.getUnderlyingTable( subset );
+        }
+
+        if ( table == null ) {
+            return false;
+        }
+
+//        final CassandraFilter filter = call.rel( 2 );
+        return collationsCompatible( sort.getCollation().getFieldCollations(), table.getClusteringOrder() );
     }
 
 
@@ -64,9 +78,10 @@ public class CassandraSortRule extends CassandraConverterRule {
      *
      * @return True if it is possible to achieve this sort in Cassandra
      */
-    private boolean collationsCompatible( RelCollation sortCollation, RelCollation implicitCollation ) {
-        List<RelFieldCollation> sortFieldCollations = sortCollation.getFieldCollations();
-        List<RelFieldCollation> implicitFieldCollations = implicitCollation.getFieldCollations();
+//    private boolean collationsCompatible( RelCollation sortCollation, RelCollation implicitCollation ) {
+    private boolean collationsCompatible( List<RelFieldCollation> sortFieldCollations, List<RelFieldCollation> implicitFieldCollations ) {
+//        List<RelFieldCollation> sortFieldCollations = sortCollation.getFieldCollations();
+//        List<RelFieldCollation> implicitFieldCollations = implicitCollation.getFieldCollations();
 
         if ( sortFieldCollations.size() > implicitFieldCollations.size() ) {
             return false;

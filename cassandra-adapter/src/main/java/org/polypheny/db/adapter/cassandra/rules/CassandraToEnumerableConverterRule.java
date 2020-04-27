@@ -39,7 +39,7 @@ public class CassandraToEnumerableConverterRule extends ConverterRule {
      * @param relBuilderFactory Builder for relational expressions
      */
     public CassandraToEnumerableConverterRule( CassandraConvention in, RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, in, EnumerableConvention.INSTANCE, relBuilderFactory, "CassandraToEnumerableConverterRule" );
+        super( RelNode.class, (Predicate<RelNode>) r -> true, in, EnumerableConvention.INSTANCE, relBuilderFactory, "CassandraToEnumerableConverterRule:" + in.getName() );
     }
 
 
