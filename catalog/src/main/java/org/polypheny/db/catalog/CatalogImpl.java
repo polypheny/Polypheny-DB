@@ -140,8 +140,12 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * MapDB Catalog; idea is to only need a minimal amount( max 2-3 ) map lookups for each get
-     * most maps should work with ids to prevent overhead when renaming
+     * Creates a new catalog after the given parameters
+     *
+     * @param fileName name of persistent catalog file
+     * @param doInitSchema if the default schema is initiated
+     * @param doInitInformationPage if a new informationPage should be created
+     * @param deleteAfter if the file is deleted when the catalog is closed
      */
     public CatalogImpl( String fileName, boolean doInitSchema, boolean doInitInformationPage, boolean deleteAfter ) {
         super();
@@ -338,6 +342,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Sets the idBuilder for a given map to the new starting position
+     *
+     * @param map the map to which the idBuilder belongs
+     * @param idBuilder which is creates new unique ids
+     */
     private void restoreIdBuilder( Map<Integer, ?> map, AtomicInteger idBuilder ) {
         if ( !map.isEmpty() ) {
             idBuilder.set( Collections.max( map.keySet() ) + 1 );
@@ -367,12 +377,28 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * initiates all needed maps for stores
+     *
+     * stores: storeId -> CatalogStore
+     * storeNames: storeName -> CatalogStore
+     */
     private void initStoreInfo( DB db ) {
         stores = db.hashMap( "stores", Serializer.INTEGER, new GenericSerializer<CatalogStore>() ).createOrOpen();
         storeNames = db.hashMap( "storeNames", Serializer.STRING, new GenericSerializer<CatalogStore>() ).createOrOpen();
     }
 
 
+    /**
+     * creates all needed maps for keys and constraints
+     *
+     * keyColumns: [columnId1, columnId2,...] -> keyId
+     * keys: keyId -> CatalogKey
+     * primaryKeys: keyId -> CatalogPrimaryKey
+     * foreignKeys: keyId -> CatalogForeignKey
+     * constraints: constraintId -> CatalogConstraint
+     * indices: indexId -> CatalogIndex
+     */
     private void initKeysAndConstraintsInfo( DB db ) {
         keyColumns = db.hashMap( "keyColumns", Serializer.LONG_ARRAY, Serializer.LONG ).createOrOpen();
         keys = db.hashMap( "keys", Serializer.LONG, new GenericSerializer<CatalogKey>() ).createOrOpen();
@@ -383,6 +409,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * creates all needed maps for users
+     *
+     * users: userId -> CatalogUser
+     * userNames: name -> CatalogUser
+     */
     private void initUserInfo( DB db ) {
         users = db.hashMap( "users", Serializer.INTEGER, new GenericSerializer<CatalogUser>() ).createOrOpen();
         userNames = db.hashMap( "usersNames", Serializer.STRING, new GenericSerializer<CatalogUser>() ).createOrOpen();
@@ -391,11 +423,11 @@ public class CatalogImpl extends Catalog {
 
     /**
      * initialize the column maps
-     * "columns" holds all CatalogColumn objects, access by id
-     * "columnNames" holds the id, which can be access by String[], which consist of databaseName, schemaName, tableName, columnName
-     * "columnPlacements" holds the columnPlacement accessed by long[], which consist of storeId and columnPlacementId
      *
-     * @param db the MapDB database object on which the maps are generated from
+     * columns: columnId -> CatalogColumn
+     * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} -> CatalogColumn
+     * columnPlacements: new Object[]{storeId, columnId} -> CatalogPlacement
+     *
      */
     private void initColumnInfo( DB db ) {
         //noinspection unchecked
@@ -407,6 +439,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * creates all maps needed for tables
+     *
+     * tables: tableId -> CatalogTable
+     * tableChildren: tableId -> [columnId, columnId,..]
+     * tableNames: new Object[]{databaseId, schemaId, tableName} -> CatalogTable
+     */
     private void initTableInfo( DB db ) {
         //noinspection unchecked
         tables = db.treeMap( "tables", Serializer.LONG, Serializer.JAVA ).createOrOpen();
@@ -419,6 +458,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * creates all needed maps for schemas
+     *
+     * schemas: schemaId -> CatalogSchema
+     * schemaChildren: schemaId -> [tableId, tableId, etc]
+     * schemaNames: new Object[]{databaseId, schemaName} -> CatalogSchema
+     */
     private void initSchemaInfo( DB db ) {
         //noinspection unchecked
         schemas = db.treeMap( "schemas", Serializer.LONG, Serializer.JAVA ).createOrOpen();
@@ -428,6 +474,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * creates maps for databases
+     *
+     * databases: databaseId -> CatalogDatabase
+     * databaseNames: databaseName -> CatalogDatabase
+     * databaseChildren: databaseId -> [tableId, tableId,...]
+     */
     private void initDatabaseInfo( DB db ) {
         //noinspection unchecked
         databases = db.treeMap( "databases", Serializer.LONG, Serializer.JAVA ).createOrOpen();
@@ -496,11 +549,10 @@ public class CatalogImpl extends Catalog {
         }
 
         CatalogStore csv = getStore( "csv" );
-        // TODO temporary change
 
 
 
-        if ( true ) {
+        if ( !testMode ) {
 
             //////////////
             // init schema
@@ -519,6 +571,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Initiates default columns for csv files
+     *
+     * @param csv
+     */
     private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException, UnknownColumnException {
         CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );

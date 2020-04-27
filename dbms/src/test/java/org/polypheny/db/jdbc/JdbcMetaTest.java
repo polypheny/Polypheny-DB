@@ -285,8 +285,6 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "PK_NAME", rsmd.getColumnName( 6 ) );
 
             // Check data
-            final Object[] defaultKey1 = new Object[]{ "APP", "public", "depts", "deptno", 1, null };
-            final Object[] defaultKey2 = new Object[]{ "APP", "public", "emps", "empid", 1, null };
             final Object[] primaryKey = new Object[]{ "APP", "public", "foo", "id", 1, null };
             final Object[] compositePrimaryKey1 = new Object[]{ "APP", "test", "foo2", "id", 1, null };
             final Object[] compositePrimaryKey2 = new Object[]{ "APP", "test", "foo2", "name", 2, null };
@@ -302,10 +300,10 @@ public class JdbcMetaTest {
                     ImmutableList.of( compositePrimaryKey1, compositePrimaryKey2 ) );
             checkResultSet(
                     connection.getMetaData().getPrimaryKeys( "AP_", "%", null ),
-                    ImmutableList.of( defaultKey1, defaultKey2, primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
+                    ImmutableList.of( primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
             checkResultSet(
                     connection.getMetaData().getPrimaryKeys( null, null, null ),
-                    ImmutableList.of( defaultKey1, defaultKey2, primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
+                    ImmutableList.of( primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
         } catch ( SQLException e ) {
             log.error( "Exception while testing getPrimaryKeys()", e );
         }
