@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.Linq4j;
 
 
 @Slf4j
@@ -60,6 +61,9 @@ public class CassandraEnumerable extends AbstractEnumerable<Object> {
 
         final ResultSet results = session.execute( this.stringStatement );
         // Skip results until we get to the right offset
+        if ( results.getColumnDefinitions().size() == 0 ) {
+            return Linq4j.singletonEnumerator( (Object) 0 );
+        }
         int skip = 0;
         Enumerator<Object> enumerator = new CassandraEnumerator( results );
         while ( skip < offset && enumerator.moveNext() ) {

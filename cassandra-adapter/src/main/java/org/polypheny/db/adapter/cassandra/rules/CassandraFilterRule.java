@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.cassandra.rules;
 
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -25,6 +26,7 @@ import org.polypheny.db.adapter.cassandra.CassandraConvention;
 import org.polypheny.db.adapter.cassandra.CassandraFilter;
 import org.polypheny.db.adapter.cassandra.CassandraTable;
 import org.polypheny.db.adapter.cassandra.util.CassandraUtils;
+import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelOptUtil;
@@ -32,6 +34,7 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
@@ -47,7 +50,7 @@ import org.polypheny.db.util.Pair;
 public class CassandraFilterRule extends CassandraConverterRule {
 
     CassandraFilterRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraFilterRule" );
+        super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraFilterRule:" + out.getName() );
     }
 
 
@@ -80,7 +83,7 @@ public class CassandraFilterRule extends CassandraConverterRule {
         // This is a copy in getRelList, so probably expensive!
         if ( filter.getInput() instanceof RelSubset ) {
             RelSubset subset = (RelSubset) filter.getInput();
-            table = CassandraUtils.getUnderlyingTable( subset );
+            table = CassandraUtils.getUnderlyingTable( subset, this.out );
         }
 
         if ( table == null ) {
@@ -90,7 +93,21 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
         Pair<List<String>, List<String>> keyFields = table.getKeyFields();
         Set<String> partitionKeys = new HashSet<>( keyFields.left );
-        List<String> fieldNames = CassandraRules.cassandraFieldNames( filter.getInput().getRowType() );
+        // TODO JS: Is this work around still needed with the fix in CassandraSchema?
+        final List<RelDataTypeField> physicalFields = table.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
+        final List<RelDataTypeField> logicalFields = filter.getRowType().getFieldList();
+        final List<RelDataTypeField> fields = new ArrayList<>();
+        List<String> fieldNames = new ArrayList<>();
+        for ( RelDataTypeField field : logicalFields ) {
+            for ( RelDataTypeField physicalField : physicalFields ) {
+                if ( field.getName().equals( physicalField.getName() ) ) {
+                    fields.add( physicalField );
+                    fieldNames.add( field.getName() );
+                    break;
+                }
+            }
+        }
+//        List<String> fieldNames = CassandraRules.cassandraLogicalFieldNames( filter.getInput().getRowType() );
 
         // Check that all conjunctions are primary key equalities
         condition = disjunctions.get( 0 );
@@ -107,9 +124,9 @@ public class CassandraFilterRule extends CassandraConverterRule {
     /**
      * Check if the node is a supported predicate (primary key equality).
      *
-     * @param node Condition node to check
-     * @param fieldNames Names of all columns in the table
-     * @param partitionKeys Names of primary key columns
+     * @param node           Condition node to check
+     * @param fieldNames     Names of all columns in the table
+     * @param partitionKeys  Names of primary key columns
      * @param clusteringKeys Names of primary key columns
      * @return True if the node represents an equality predicate on a primary key
      */
@@ -141,8 +158,8 @@ public class CassandraFilterRule extends CassandraConverterRule {
     /**
      * Check if an equality operation is comparing a primary key column with a literal.
      *
-     * @param left Left operand of the equality
-     * @param right Right operand of the equality
+     * @param left       Left operand of the equality
+     * @param right      Right operand of the equality
      * @param fieldNames Names of all columns in the table
      * @return The field being compared or null if there is no key equality
      */
@@ -154,9 +171,10 @@ public class CassandraFilterRule extends CassandraConverterRule {
 
         if ( left.isA( SqlKind.INPUT_REF ) && right.isA( SqlKind.LITERAL ) ) {
             final RexInputRef left1 = (RexInputRef) left;
-            return fieldNames.get( left1.getIndex() );
-        } else {
-            return null;
+            if ( left1.getIndex() < fieldNames.size() ) {
+                return fieldNames.get( left1.getIndex() );
+            }
         }
+        return null;
     }
 }

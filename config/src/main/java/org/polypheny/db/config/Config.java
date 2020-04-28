@@ -857,6 +857,14 @@ public abstract class Config {
 
 
     /**
+     * Parse the string and set as value.
+     *
+     * @param value
+     */
+    public abstract void parseStringAndSetValue( String value );
+
+
+    /**
      * The observers of a Configuration object need to implement the method onConfigChange() to define what needs to happen when this Configuration changes. The parameter "Config c" provides the changed Config.
      * The method restart() can be implemented to define what will happen, when a Config changes, that requires a restart.
      */

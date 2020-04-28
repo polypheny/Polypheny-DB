@@ -72,4 +72,10 @@ public class ConfigLong extends ConfigScalar {
         }
         setLong( value );
     }
+
+
+    @Override
+    public void parseStringAndSetValue( String value ) {
+        setLong( Long.parseLong( value ) );
+    }
 }

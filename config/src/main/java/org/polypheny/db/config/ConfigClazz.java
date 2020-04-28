@@ -91,6 +91,12 @@ public class ConfigClazz extends Config {
     }
 
 
+    @Override
+    public void parseStringAndSetValue( String valueStr ) {
+        setClazz( getByString( valueStr ) );
+    }
+
+
     private Class getByString( String str ) throws ConfigRuntimeException {
         for ( Class c : classes ) {
             if ( str.equalsIgnoreCase( c.getName() ) ) {

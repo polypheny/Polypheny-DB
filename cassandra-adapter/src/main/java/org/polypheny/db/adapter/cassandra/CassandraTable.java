@@ -81,11 +81,16 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     RelProtoDataType protoRowType;
     Pair<List<String>, List<String>> keyFields;
+    Pair<List<String>, List<String>> physicalKeyFields;
     List<RelFieldCollation> clusteringOrder;
     private final CassandraSchema cassandraSchema;
     private final String columnFamily;
     private final String physicalName;
     private final boolean view;
+
+//    private final String physicalTableName;
+
+//    private final String logicalTableName;
 
 
     public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, boolean view ) {
@@ -101,6 +106,15 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    public CassandraTable( CassandraSchema cassandraSchema, String columnFamily, String physicalName, boolean view ) {
+        super( Object[].class );
+        this.cassandraSchema = cassandraSchema;
+        this.columnFamily = columnFamily;
+        this.view = view;
+        this.physicalName = physicalName;
+    }
+
+
     public CassandraTable( CassandraSchema cassandraSchema, String columnFamily ) {
         this( cassandraSchema, columnFamily, false );
     }
@@ -111,10 +125,15 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    public CassandraConvention getUnderlyingConvention() {
+        return this.cassandraSchema.getConvention();
+    }
+
+
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType == null ) {
-            protoRowType = cassandraSchema.getRelDataType( columnFamily, view );
+            protoRowType = cassandraSchema.getRelDataType( physicalName, view );
         }
         return protoRowType.apply( typeFactory );
     }
@@ -122,15 +141,23 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
 
     public Pair<List<String>, List<String>> getKeyFields() {
         if ( keyFields == null ) {
-            keyFields = cassandraSchema.getKeyFields( columnFamily, view );
+            keyFields = cassandraSchema.getKeyFields( physicalName, view );
         }
         return keyFields;
     }
 
 
+    public Pair<List<String>, List<String>> getPhysicalKeyFields() {
+        if ( physicalKeyFields == null ) {
+            physicalKeyFields = cassandraSchema.getPhysicalKeyFields( physicalName, view );
+        }
+        return physicalKeyFields;
+    }
+
+
     public List<RelFieldCollation> getClusteringOrder() {
         if ( clusteringOrder == null ) {
-            clusteringOrder = cassandraSchema.getClusteringOrder( columnFamily, view );
+            clusteringOrder = cassandraSchema.getClusteringOrder( physicalName, view );
         }
         return clusteringOrder;
     }
@@ -144,8 +171,8 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     /**
      * Executes a CQL query on the underlying table.
      *
-     * @param session Cassandra session
-     * @param fields List of fields to project
+     * @param session    Cassandra session
+     * @param fields     List of fields to project
      * @param predicates A list of predicates which should be used in the query
      * @return Enumerator of results
      */
