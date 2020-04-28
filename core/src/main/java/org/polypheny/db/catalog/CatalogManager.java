@@ -25,7 +25,7 @@ public abstract class CatalogManager {
 
     public static CatalogManager setAndGetInstance( CatalogManager catalogManager ) {
         if( INSTANCE != null ){
-            throw new RuntimeException( "Setting the CatalogManager, when already set is not permitted." );
+            throw new RuntimeException( "Setting the CatalogManager, when already set, is not permitted." );
         }
         INSTANCE = catalogManager;
         return INSTANCE;

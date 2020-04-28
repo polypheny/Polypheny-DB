@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -244,6 +245,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         Meta.StatementType.OTHER_DDL );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "Exception while acquiring global schema lock", e );
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( e );
             } finally {
                 // Release lock
                 // TODO: This can be removed when auto-commit of ddls is implemented

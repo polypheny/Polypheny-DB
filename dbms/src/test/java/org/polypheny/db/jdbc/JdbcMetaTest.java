@@ -266,7 +266,7 @@ public class JdbcMetaTest {
     }
 
 
-    @Ignore
+    //@Ignore
     //TODO DL examine why this tests fails on Travis
     @Test
     public void testGetPrimaryKeys() {

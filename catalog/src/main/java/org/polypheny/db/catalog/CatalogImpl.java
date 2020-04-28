@@ -56,6 +56,7 @@ import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
@@ -228,9 +229,9 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void commit() {
+    public void commit() throws NoTablePrimaryKeyException {
         if ( openTable != null ) {
-            throw new RuntimeException( "A table was added without a primary key" );
+            throw new NoTablePrimaryKeyException();
         }
         db.commit();
     }
@@ -563,7 +564,11 @@ public class CatalogImpl extends Catalog {
             addDefaultCsvColumns( csv );
         }
 
-        commit();
+        try {
+            commit();
+        } catch ( NoTablePrimaryKeyException e ) {
+            throw new RuntimeException( e );
+        }
 
     }
 
@@ -655,7 +660,7 @@ public class CatalogImpl extends Catalog {
                 databases.remove( databaseId );
                 databaseNames.remove( database.name );
                 databaseChildren.remove( databaseId );
-                // db.commit();
+
 
             }
         }
@@ -675,7 +680,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             users.put( user.id, user );
             userNames.put( user.name, user );
-            // db.commit();
+
         }
         listeners.firePropertyChange( "user", null, user );
         return user.id;
@@ -857,7 +862,7 @@ public class CatalogImpl extends Catalog {
                 children.add( id );
                 databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
 
-                // db.commit();
+
             }
             listeners.firePropertyChange( "schema", null, schema );
             return id;
@@ -897,7 +902,7 @@ public class CatalogImpl extends Catalog {
                 schemaNames.remove( new Object[]{ old.databaseId, old.name } );
                 schemaNames.put( new Object[]{ old.databaseId, name }, schema );
 
-                // db.commit();
+
             }
             listeners.firePropertyChange( "schema", old, schema );
         } catch ( NullPointerException e ) {
@@ -920,7 +925,7 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
-                // db.commit();
+
             }
             listeners.firePropertyChange( "schema", old, schema );
 
@@ -951,7 +956,7 @@ public class CatalogImpl extends Catalog {
                 }
                 schemaChildren.remove( schemaId );
                 schemas.remove( schemaId );
-                // db.commit();
+
             }
             listeners.firePropertyChange( "Schema", schema, null );
         } catch ( NullPointerException e ) {

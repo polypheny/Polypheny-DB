@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
@@ -86,7 +87,7 @@ public abstract class Catalog {
     }
 
 
-    public abstract void commit();
+    public abstract void commit() throws NoTablePrimaryKeyException;
 
     public abstract void rollback();
 

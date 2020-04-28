@@ -57,6 +57,7 @@ public class TestHelper {
         Runnable runnable = () -> {
             try {
                 polyphenyDb.testMode = true;
+                polyphenyDb.resetCatalog = true;
                 polyphenyDb.runPolyphenyDb();
             } catch ( GenericCatalogException e ) {
                 log.error( "Exception while starting Polypheny-DB", e );
