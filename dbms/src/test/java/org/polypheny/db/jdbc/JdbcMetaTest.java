@@ -516,9 +516,9 @@ public class JdbcMetaTest {
             Object[] expectedRow = expected.get( i++ );
             Assert.assertEquals( "Wrong number of columns", expectedRow.length, resultSet.getMetaData().getColumnCount() );
             int j = 0;
-            while ( j < expectedRow.length ) {
+            while ( j < expectedRow.length && resultSet.getMetaData() != null && resultSet.getMetaData().getCatalogName( j + 1 ) != null ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", expectedRow[j++], resultSet.getObject( j ) );
+                    Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j ) + "'", expectedRow[j++], resultSet.getObject( j ) );
                 } else {
                     fail( "More data available then expected." );
                 }
