@@ -427,7 +427,6 @@ public class CatalogImpl extends Catalog {
      * columns: columnId -> CatalogColumn
      * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} -> CatalogColumn
      * columnPlacements: new Object[]{storeId, columnId} -> CatalogPlacement
-     *
      */
     private void initColumnInfo( DB db ) {
         //noinspection unchecked
@@ -550,8 +549,6 @@ public class CatalogImpl extends Catalog {
 
         CatalogStore csv = getStore( "csv" );
 
-
-
         if ( !testMode ) {
 
             //////////////
@@ -573,8 +570,6 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Initiates default columns for csv files
-     *
-     * @param csv
      */
     private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException, UnknownColumnException {
         CatalogSchema schema = getSchema( "APP", "public" );
@@ -598,7 +593,7 @@ public class CatalogImpl extends Catalog {
 
     private void addDefaultColumn( CatalogStore csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) throws GenericCatalogException, UnknownTableException {
         if ( !checkIfExistsColumn( table.id, name ) ) {
-            long colId = addColumn( name, table.id, position, type, length, null, false, collation );
+            long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, table.name, name );
         }
     }
@@ -1546,7 +1541,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted column
      */
     @Override
-    public long addColumn( String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException {
+    public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) throws GenericCatalogException {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             if ( type.getFamily() == PolyTypeFamily.CHARACTER && collation == null ) {
@@ -1557,7 +1552,7 @@ public class CatalogImpl extends Catalog {
             }
 
             long id = columnIdBuilder.getAndIncrement();
-            CatalogColumn column = new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, length, scale, nullable, collation, null );
+            CatalogColumn column = new CatalogColumn( id, name, tableId, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, position, type, null, length, scale, null, null, nullable, collation, null );
 
             synchronized ( this ) {
                 columns.put( id, column );

@@ -232,6 +232,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 if ( c.e instanceof SqlColumnDeclaration ) {
                     final SqlColumnDeclaration columnDeclaration = (SqlColumnDeclaration) c.e;
                     final PolyType dataType = PolyType.get( columnDeclaration.dataType.getTypeName().getSimple() );
+                    final PolyType collectionsType = columnDeclaration.dataType.getCollectionsTypeName() == null ?
+                            null : PolyType.get( columnDeclaration.dataType.getCollectionsTypeName().getSimple() );
                     Collation collation = null;
                     if ( dataType.getFamily() == PolyTypeFamily.CHARACTER ) {
                         if ( columnDeclaration.collation != null ) {
@@ -245,8 +247,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             tableId,
                             position++,
                             dataType,
+                            collectionsType,
                             columnDeclaration.dataType.getPrecision() == -1 ? null : columnDeclaration.dataType.getPrecision(),
                             columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
+                            null,
+                            null,
                             columnDeclaration.dataType.getNullable(),
                             collation
                     );

@@ -102,7 +102,7 @@ public class CatalogTest {
         CatalogTable table = catalog.getTable( schemaId, "test_table" );
         assertEquals( tableId, table.id );
 
-        long columnId = catalog.addColumn( "test_column", tableId, 0, PolyType.BIGINT, null, null, false, null );
+        long columnId = catalog.addColumn( "test_column", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column = catalog.getColumn( tableId, "test_column" );
         assertEquals( columnId, column.id );
     }
@@ -203,7 +203,7 @@ public class CatalogTest {
         List<Long> columnIds = new ArrayList<>();
         int counter = 0;
         for ( String name : columnNames ) {
-            columnIds.add( catalog.addColumn( name, tableId, counter++, PolyType.BIGINT, null, null, false, null ) );
+            columnIds.add( catalog.addColumn( name, tableId, counter++, PolyType.BIGINT, null, null, null, null, null, false, null ) );
         }
 
         Long columnId = columnIds.get( 0 );
@@ -245,7 +245,7 @@ public class CatalogTest {
         List<Long> columnIds = new ArrayList<>();
         int counter = 0;
         for ( String name : columnNames ) {
-            columnIds.add( catalog.addColumn( name, tableId, counter++, PolyType.BIGINT, null, null, false, null ) );
+            columnIds.add( catalog.addColumn( name, tableId, counter++, PolyType.BIGINT, null, null, null, null, null, false, null ) );
         }
 
         // test rename of column
@@ -328,7 +328,7 @@ public class CatalogTest {
         long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
         long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, null );
 
-        long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, false, null );
+        long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column = catalog.getColumn( columnId );
 
         CatalogStore csv = catalog.getStore( "csv" );
@@ -360,10 +360,10 @@ public class CatalogTest {
         long schemaId = catalog.addSchema( "schema1", databaseId, userId, SchemaType.RELATIONAL );
         long tableId = catalog.addTable( "table1", schemaId, userId, TableType.TABLE, null );
 
-        long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, false, null );
+        long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column1 = catalog.getColumn( columnId1 );
 
-        long columnId2 = catalog.addColumn( "column2", tableId, 0, PolyType.BIGINT, null, null, false, null );
+        long columnId2 = catalog.addColumn( "column2", tableId, 0, PolyType.BIGINT, null,null, null, null, null, false, null );
         CatalogColumn column2 = catalog.getColumn( columnId2 );
 
         catalog.addPrimaryKey( tableId, Collections.singletonList( column1.id ) );
@@ -420,7 +420,7 @@ public class CatalogTest {
 
         // test foreignkey
         long tableId2 = catalog.addTable( "table2", schemaId, userId, TableType.TABLE, null );
-        long columnId3 = catalog.addColumn( "column3", tableId2, 0, PolyType.BIGINT, null, null, false, null );
+        long columnId3 = catalog.addColumn( "column3", tableId2, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column3 = catalog.getColumn( columnId3 );
 
         catalog.addPrimaryKey( tableId, Collections.singletonList( columnId1 ) );
