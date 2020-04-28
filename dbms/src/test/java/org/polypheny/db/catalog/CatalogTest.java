@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog;
 
 
+import static org.junit.Assert.fail;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -226,8 +228,11 @@ public class CatalogTest {
             Assert.assertEquals( "Wrong number of columns", expectedRow.length, resultSet.getMetaData().getColumnCount() );
             int j = 0;
             while ( j < expectedRow.length ) {
-                Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", expectedRow[j++], resultSet.getObject( j ) );
-                // System.out.println( resultSet.getObject( j )  );
+                if ( expectedRow.length >= j + 1 ) {
+                    Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", expectedRow[j++], resultSet.getObject( j ) );
+                } else {
+                    fail( "More data available then expected." );
+                }
             }
         }
         Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );

@@ -29,7 +29,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -304,11 +303,11 @@ public class JdbcMetaTest {
                     connection.getMetaData().getPrimaryKeys( "AP%", "test", null ),
                     ImmutableList.of( compositePrimaryKey1, compositePrimaryKey2 ) );
             checkResultSet(
-                    connection.getMetaData().getPrimaryKeys( "AP_", "%", null ),
-                    ImmutableList.of( primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
+                    connection.getMetaData().getPrimaryKeys( "AP_", "t%", null ),
+                    ImmutableList.of( compositePrimaryKey1, compositePrimaryKey2 ) );
             checkResultSet(
-                    connection.getMetaData().getPrimaryKeys( null, null, null ),
-                    ImmutableList.of( primaryKey, compositePrimaryKey1, compositePrimaryKey2 ) );
+                    connection.getMetaData().getPrimaryKeys( null, "t___", null ),
+                    ImmutableList.of( compositePrimaryKey1, compositePrimaryKey2 ) );
         } catch ( SQLException e ) {
             log.error( "Exception while testing getPrimaryKeys()", e );
         }
@@ -518,7 +517,8 @@ public class JdbcMetaTest {
             int j = 0;
             while ( j < expectedRow.length && resultSet.getMetaData() != null && resultSet.getMetaData().getCatalogName( j + 1 ) != null ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j ) + "'", expectedRow[j++], resultSet.getObject( j ) );
+                    j++;
+                    Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", expectedRow[j++], resultSet.getObject( j ) );
                 } else {
                     fail( "More data available then expected." );
                 }
