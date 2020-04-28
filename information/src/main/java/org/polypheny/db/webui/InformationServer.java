@@ -90,7 +90,8 @@ public class InformationServer implements InformationObserver {
         }, gson::toJson );
 
         http.post( "/refreshPage", ( req, res ) -> {
-            im.getPage( req.body() ).refresh();
+            //refresh not necessary, since getPage already triggers a refresh
+            im.getPage( req.body() );
             return "";
         } );
 
