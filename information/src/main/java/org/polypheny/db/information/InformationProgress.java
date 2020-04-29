@@ -25,10 +25,15 @@ import java.util.UUID;
  */
 public class InformationProgress extends Information {
 
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private String label;
+    @SuppressWarnings({ "unused" })
     private int value;
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private ProgressColor color = ProgressColor.DYNAMIC;
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private int min = 0;
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private int max = 100;
 
 

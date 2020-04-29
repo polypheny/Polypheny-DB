@@ -73,17 +73,16 @@ public class InformationDuration extends Information {
     }
 
     static JsonSerializer<InformationDuration> getSerializer() {
-        JsonSerializer<InformationDuration> serializer = ( src, typeOfSrc, context ) -> {
+        return ( src, typeOfSrc, context ) -> {
             JsonObject jsonObj = new JsonObject();
             jsonObj.addProperty( "type", src.type );
             jsonObj.add( "duration", context.serialize( src.duration ) );
-            Object[] children = src.children.values().toArray();
-            Arrays.sort( children );
-            jsonObj.add( "children", context.serialize( children ) );
+            Object[] children1 = src.children.values().toArray();
+            Arrays.sort( children1 );
+            jsonObj.add( "children", context.serialize( children1 ) );
             jsonObj.add( "isChild", context.serialize( src.isChild ) );
             return jsonObj;
         };
-        return serializer;
     }
 
     /**
@@ -171,7 +170,7 @@ public class InformationDuration extends Information {
         }
 
         static JsonSerializer<Duration> getSerializer() {
-            JsonSerializer<Duration> serializer = ( src, typeOfSrc, context ) -> {
+            return ( src, typeOfSrc, context ) -> {
                 JsonObject jsonObj = new JsonObject();
                 jsonObj.addProperty( "type", src.type );
                 jsonObj.addProperty( "name", src.name );
@@ -179,13 +178,12 @@ public class InformationDuration extends Information {
                 jsonObj.add( "limit", context.serialize( src.limit ) );
                 jsonObj.add( "sequence", context.serialize( src.sequence ) );
                 jsonObj.add( "noProgressBar", context.serialize( src.noProgressBar ) );
-                Object[] children = src.children.values().toArray();
-                Arrays.sort( children );
-                jsonObj.add( "children", context.serialize( children ) );
+                Object[] children1 = src.children.values().toArray();
+                Arrays.sort( children1 );
+                jsonObj.add( "children", context.serialize( children1 ) );
                 jsonObj.add( "isChild", context.serialize( src.isChild ) );
                 return jsonObj;
             };
-            return serializer;
         }
     }
 

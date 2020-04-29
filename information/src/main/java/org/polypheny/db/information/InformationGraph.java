@@ -32,7 +32,8 @@ import org.apache.commons.collections4.queue.CircularFifoQueue;
 @Accessors(chain = true, fluent = true)
 public class InformationGraph extends Information {
 
-    private HashMap<String, GraphData> data = new HashMap<>();
+    private HashMap<String, GraphData<? extends Number>> data = new HashMap<>();
+    @SuppressWarnings("unused")
     @SerializedName("labels")
     private String[] xLabels;
     private GraphType graphType;
@@ -42,6 +43,7 @@ public class InformationGraph extends Information {
      * see https://www.chartjs.org/docs/latest/axes/cartesian/linear.html#axis-range-settings
      */
     @Setter
+    @SuppressWarnings("unused")
     @SerializedName("min")
     private int minY = 0;
     /**
@@ -49,6 +51,7 @@ public class InformationGraph extends Information {
      * see https://www.chartjs.org/docs/latest/axes/cartesian/linear.html#axis-range-settings
      */
     @Setter
+    @SuppressWarnings("unused")
     @SerializedName("max")
     private int maxY;
 
@@ -56,11 +59,12 @@ public class InformationGraph extends Information {
     /**
      * Constructor
      *
-     * @param group The group this InformationGraph object belongs to
+     * @param group   The group this InformationGraph object belongs to
      * @param xLabels labels that are displayed on the x-axis
-     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     * @param data    data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final InformationGroup group, GraphType type, final String[] xLabels, final GraphData... data ) {
+    @SafeVarargs
+    public InformationGraph( final InformationGroup group, GraphType type, final String[] xLabels, final GraphData<? extends Number>... data ) {
         this( group.getId(), type, xLabels, data );
     }
 
@@ -70,9 +74,10 @@ public class InformationGraph extends Information {
      *
      * @param groupId The id of the group to which this InformationGraph object belongs
      * @param xLabels labels that are displayed on the x-axis
-     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     * @param data    data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final String groupId, GraphType type, final String[] xLabels, final GraphData... data ) {
+    @SafeVarargs
+    public InformationGraph( final String groupId, GraphType type, final String[] xLabels, final GraphData<? extends Number>... data ) {
         this( UUID.randomUUID().toString(), groupId, type, xLabels, data );
     }
 
@@ -80,15 +85,16 @@ public class InformationGraph extends Information {
     /**
      * Constructor
      *
-     * @param id unique id of the Information object
+     * @param id      unique id of the Information object
      * @param groupId id of the group to which this InformationGraph object belongs
      * @param xLabels labels that are displayed on the x-axis
-     * @param data data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
+     * @param data    data that is rendered in the graph. The types LINE, RADAR, BAR can accept multiple GraphData objects, the other ones only one
      */
-    public InformationGraph( final String id, final String groupId, GraphType type, final String[] xLabels, final GraphData... data ) {
+    @SafeVarargs
+    public InformationGraph( final String id, final String groupId, GraphType type, final String[] xLabels, final GraphData<? extends Number>... data ) {
         super( id, groupId );
 
-        for ( GraphData d : data ) {
+        for ( GraphData<? extends Number> d : data ) {
             this.data.put( d.dataLabel, d );
         }
 
@@ -109,7 +115,7 @@ public class InformationGraph extends Information {
      *
      * @param type The type of graph
      */
-    public InformationGraph updateType( final GraphType type ) {
+    public void updateType( final GraphType type ) {
 
         if ( type == GraphType.PIE || type == GraphType.DOUGHNUT || type == GraphType.POLARAREA ) {
             if ( this.data.size() > 1 ) {
@@ -119,7 +125,6 @@ public class InformationGraph extends Information {
 
         this.graphType = type;
         notifyManager();
-        return this;
     }
 
 
@@ -137,9 +142,10 @@ public class InformationGraph extends Information {
      * Set the data for this graph.
      *
      * @param xLabels labels that are displayed on the x-axis
-     * @param data new GraphData objects. Types PIE, DOUGHNUT and POLARAREA can accept only one GraphData object
+     * @param data    new GraphData objects. Types PIE, DOUGHNUT and POLARAREA can accept only one GraphData object
      */
-    public void updateGraph( final String[] xLabels, final GraphData... data ) {
+    @SafeVarargs
+    public final void updateGraph( final String[] xLabels, final GraphData<? extends Number>... data ) {
 
         if ( data.length > 1 ) {
             if ( this.graphType == GraphType.PIE || this.graphType == GraphType.DOUGHNUT || this.graphType == GraphType.POLARAREA ) {
@@ -149,7 +155,7 @@ public class InformationGraph extends Information {
 
         this.xLabels = xLabels;
         this.data.clear();
-        for ( GraphData d : data ) {
+        for ( GraphData<? extends Number> d : data ) {
             this.data.put( d.dataLabel, d );
         }
         notifyManager();
@@ -184,7 +190,7 @@ public class InformationGraph extends Information {
         BAR,
         PIE,
         DOUGHNUT,
-        POLARAREA;
+        POLARAREA
     }
 
     // -----------------------------------------------------------------------
@@ -202,6 +208,7 @@ public class InformationGraph extends Information {
          * Data for the graph, e.g. a line in the line-graph.
          */
         // Choice of CircularFifoQueue: https://stackoverflow.com/questions/5498865/size-limited-queue-that-holds-last-n-elements-in-java
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
         private final CircularFifoQueue<T> data;
 
 
@@ -237,7 +244,7 @@ public class InformationGraph extends Information {
          */
         public GraphData( final String dataLabel, final T[] data, final int maxLength ) {
             this.dataLabel = dataLabel;
-            this.data = new CircularFifoQueue<T>( maxLength );
+            this.data = new CircularFifoQueue<>( maxLength );
             this.data.addAll( Arrays.asList( data ) );
         }
 

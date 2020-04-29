@@ -27,7 +27,7 @@ public class InformationCode extends Information {
 
     @SuppressWarnings("unused")
     private String code;
-    @SuppressWarnings("unused")
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
     private String language;
 
 
