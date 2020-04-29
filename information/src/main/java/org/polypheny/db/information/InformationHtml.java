@@ -32,7 +32,7 @@ public class InformationHtml extends Information {
      * Constructor
      *
      * @param group The group this information element belongs to
-     * @param html The html code
+     * @param html  The html code
      */
     public InformationHtml( final InformationGroup group, final String html ) {
         this( UUID.randomUUID().toString(), group.getId(), html );
@@ -43,7 +43,7 @@ public class InformationHtml extends Information {
      * Constructor
      *
      * @param groupId The id of the group this information element belongs to
-     * @param html The html code
+     * @param html    The html code
      */
     public InformationHtml( final String groupId, final String html ) {
         this( UUID.randomUUID().toString(), groupId, html );
@@ -53,9 +53,9 @@ public class InformationHtml extends Information {
     /**
      * Constructor
      *
-     * @param id The id of this element
+     * @param id      The id of this element
      * @param groupId The id of the group this information element belongs to
-     * @param html The html code
+     * @param html    The html code
      */
     public InformationHtml( final String id, final String groupId, final String html ) {
         super( id, groupId );

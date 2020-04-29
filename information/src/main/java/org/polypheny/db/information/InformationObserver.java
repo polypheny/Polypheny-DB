@@ -18,6 +18,8 @@ package org.polypheny.db.information;
 
 
 public interface InformationObserver {
-    void observeInfos ( final Information info );
-    void observePageList ( final String debugId, final InformationPage[] pages );
+
+    void observeInfos( final Information info );
+
+    void observePageList( final String debugId, final InformationPage[] pages );
 }

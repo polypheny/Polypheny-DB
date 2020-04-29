@@ -34,6 +34,7 @@ public class InformationDuration extends Information {
     private HashMap<String, Duration> children = new HashMap<>();
     private boolean isChild = false;
 
+
     /**
      * Constructor
      *
@@ -42,6 +43,7 @@ public class InformationDuration extends Information {
     public InformationDuration( final InformationGroup group ) {
         super( UUID.randomUUID().toString(), group.getId() );
     }
+
 
     public Duration start( final String name ) {
         Duration d = new Duration( name );
@@ -54,9 +56,11 @@ public class InformationDuration extends Information {
         this.duration += this.children.get( name ).stop();
     }
 
+
     public Duration get( final String name ) {
         return this.children.get( name );
     }
+
 
     public Duration addNanoDuration( final String name, final long nanoDuration ) {
         Duration d = new Duration( name, nanoDuration );
@@ -65,6 +69,7 @@ public class InformationDuration extends Information {
         return d;
     }
 
+
     public Duration addMilliDuration( final String name, final long milliDuration ) {
         Duration d = new Duration( name, milliDuration * 1_000_000L );
         this.children.put( name, d );
@@ -72,19 +77,20 @@ public class InformationDuration extends Information {
         return d;
     }
 
+
     static JsonSerializer<InformationDuration> getSerializer() {
-        JsonSerializer<InformationDuration> serializer = ( src, typeOfSrc, context ) -> {
+        return ( src, typeOfSrc, context ) -> {
             JsonObject jsonObj = new JsonObject();
             jsonObj.addProperty( "type", src.type );
             jsonObj.add( "duration", context.serialize( src.duration ) );
-            Object[] children = src.children.values().toArray();
-            Arrays.sort( children );
-            jsonObj.add( "children", context.serialize( children ) );
+            Object[] children1 = src.children.values().toArray();
+            Arrays.sort( children1 );
+            jsonObj.add( "children", context.serialize( children1 ) );
             jsonObj.add( "isChild", context.serialize( src.isChild ) );
             return jsonObj;
         };
-        return serializer;
     }
+
 
     /**
      * Helper class for Durations
@@ -110,17 +116,20 @@ public class InformationDuration extends Information {
         private HashMap<String, Duration> children = new HashMap<>();
         private boolean isChild = true;
 
+
         private Duration( final String name ) {
             this.sequence = counter++;
             this.name = name;
             this.sw = StopWatch.createStarted();
         }
 
+
         private Duration( final String name, final long nanoDuration ) {
             this.sequence = counter++;
             this.name = name;
             this.duration = nanoDuration;
         }
+
 
         public long stop() {
             this.sw.stop();
@@ -129,9 +138,11 @@ public class InformationDuration extends Information {
             return time;
         }
 
+
         public long stop( final String childName ) {
             return this.children.get( childName ).stop();
         }
+
 
         public Duration start( final String name ) {
             Duration d = new Duration( name );
@@ -139,9 +150,11 @@ public class InformationDuration extends Information {
             return d;
         }
 
+
         public Duration get( final String name ) {
             return this.children.get( name );
         }
+
 
         /**
          * Set the limit in milliseconds. If the task too more time than the limit, it will be marked in the UI
@@ -153,6 +166,7 @@ public class InformationDuration extends Information {
             return this;
         }
 
+
         /**
          * Hide the progressbar for this Duration's children
          */
@@ -160,6 +174,7 @@ public class InformationDuration extends Information {
             this.noProgressBar = true;
             return this;
         }
+
 
         public int compareTo( final Duration other ) {
             if ( this.sequence > other.sequence ) {
@@ -170,8 +185,9 @@ public class InformationDuration extends Information {
             return -1;
         }
 
+
         static JsonSerializer<Duration> getSerializer() {
-            JsonSerializer<Duration> serializer = ( src, typeOfSrc, context ) -> {
+            return ( src, typeOfSrc, context ) -> {
                 JsonObject jsonObj = new JsonObject();
                 jsonObj.addProperty( "type", src.type );
                 jsonObj.addProperty( "name", src.name );
@@ -179,13 +195,12 @@ public class InformationDuration extends Information {
                 jsonObj.add( "limit", context.serialize( src.limit ) );
                 jsonObj.add( "sequence", context.serialize( src.sequence ) );
                 jsonObj.add( "noProgressBar", context.serialize( src.noProgressBar ) );
-                Object[] children = src.children.values().toArray();
-                Arrays.sort( children );
-                jsonObj.add( "children", context.serialize( children ) );
+                Object[] children1 = src.children.values().toArray();
+                Arrays.sort( children1 );
+                jsonObj.add( "children", context.serialize( children1 ) );
                 jsonObj.add( "isChild", context.serialize( src.isChild ) );
                 return jsonObj;
             };
-            return serializer;
         }
     }
 

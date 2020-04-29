@@ -405,7 +405,7 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void displayInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        InformationPage page = new InformationPage( "statistics", "Statistics" );
+        InformationPage page = new InformationPage( "Statistics" );
         im.addPage( page );
 
         InformationGroup contentGroup = new InformationGroup( page, "Column Statistic Status" );
