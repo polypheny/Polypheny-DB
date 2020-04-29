@@ -740,7 +740,6 @@ public class Crud implements InformationObserver {
             long temp = 0;
             Transaction transaction = getTransaction();
             Result result;
-            System.out.println( explore.getClassifiedSqlStatement() );
 
             try {
                 temp = System.nanoTime();

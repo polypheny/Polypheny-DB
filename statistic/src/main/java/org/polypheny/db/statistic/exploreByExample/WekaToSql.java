@@ -96,7 +96,7 @@ public class WekaToSql {
                         }
 
                         if ( temp.size() > 0 ) {
-                            res.add( element + " AND " + iterateTee( temp ) );
+                            res.add( element + "\nAND " + iterateTee( temp ) );
                         } else {
                             res.add( element );
                         }
@@ -120,7 +120,7 @@ public class WekaToSql {
             }
 
             if ( temp.size() > 0 ) {
-                res.add( element + " AND " + iterateTee( temp ) );
+                res.add( element + "\nAND " + iterateTee( temp ) );
             } else {
                 res.add( element );
             }
