@@ -57,7 +57,7 @@ public abstract class Information {
     /**
      * Constructor
      *
-     * @param id Unique id for this Information object
+     * @param id      Unique id for this Information object
      * @param groupId The id of the InformationGroup to which this information belongs
      */
     Information( final String id, final String groupId ) {
@@ -140,7 +140,7 @@ public abstract class Information {
      * Notify the information manager about changes of this information object.
      */
     void notifyManager() {
-        if (informationManager != null) {
+        if ( informationManager != null ) {
             informationManager.notify( this );
         }
     }

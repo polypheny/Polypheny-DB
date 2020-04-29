@@ -53,8 +53,8 @@ public class InformationProgress extends Information {
      * Constructor
      *
      * @param groupId The id of the group this information object belongs to
-     * @param label Label that will be displayed near the progress bar
-     * @param value Value of the progress bar
+     * @param label   Label that will be displayed near the progress bar
+     * @param value   Value of the progress bar
      */
     public InformationProgress( final String groupId, final String label, final int value ) {
         this( UUID.randomUUID().toString(), groupId, label, value );
@@ -64,10 +64,10 @@ public class InformationProgress extends Information {
     /**
      * Constructor
      *
-     * @param id Id of this Information object
+     * @param id      Id of this Information object
      * @param groupId Group to which this information object belongs to
-     * @param label Label that will be displayed near the progress bar
-     * @param value Value of the progress bar
+     * @param label   Label that will be displayed near the progress bar
+     * @param value   Value of the progress bar
      */
     public InformationProgress( final String id, final String groupId, final String label, final int value ) {
         super( id, groupId );

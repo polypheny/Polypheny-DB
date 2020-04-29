@@ -91,6 +91,7 @@ public class InformationManagerTest {
         i1.updateType( GraphType.RADAR );
     }
 
+
     @Test
     public void informationAction() {
         final String[] test = { "", "" };

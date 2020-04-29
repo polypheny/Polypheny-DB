@@ -228,7 +228,7 @@ public class InformationGraph extends Information {
          * GraphData constructor
          *
          * @param dataLabel The label that describes the data
-         * @param data Data for the graph, e.g. a line in the line-graph. The maximum amount of data points is defined by DEFAULT_MAX_LENGTH
+         * @param data      Data for the graph, e.g. a line in the line-graph. The maximum amount of data points is defined by DEFAULT_MAX_LENGTH
          */
         public GraphData( final String dataLabel, final T[] data ) {
             this( dataLabel, data, DEFAULT_MAX_LENGTH );
@@ -239,7 +239,7 @@ public class InformationGraph extends Information {
          * GraphData constructor
          *
          * @param dataLabel The label that describes the data
-         * @param data Data for the graph, e.g. a line in the line-graph
+         * @param data      Data for the graph, e.g. a line in the line-graph
          * @param maxLength Maximal number of data points that should be stored.
          */
         public GraphData( final String dataLabel, final T[] data, final int maxLength ) {

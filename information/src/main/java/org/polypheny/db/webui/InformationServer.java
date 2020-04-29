@@ -39,6 +39,7 @@ public class InformationServer implements InformationObserver {
 
     Gson gson = new Gson();
 
+
     public InformationServer( final int port ) {
 
         Service http = ignite().port( port );
@@ -122,6 +123,7 @@ public class InformationServer implements InformationObserver {
     public void observePageList( final String debugId, final InformationPage[] pages ) {
         //todo can be implemented if needed
     }
+
 
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi
