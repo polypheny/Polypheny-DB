@@ -1680,7 +1680,8 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction( true );
         transaction.resetQueryProcessor();
 
-        transaction.getQueryAnalyzer().observe( this );
+        InformationManager im = transaction.getQueryAnalyzer().observe( this );
+        im.addPage( new InformationPage( "p1", "Query analysis" ) );
 
         RelNode result;
         try {
