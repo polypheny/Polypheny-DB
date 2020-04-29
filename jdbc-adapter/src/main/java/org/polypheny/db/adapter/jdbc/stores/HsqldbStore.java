@@ -147,4 +147,10 @@ public class HsqldbStore extends AbstractJdbcStore {
         throw new RuntimeException( "Unknown type: " + type.name() );
     }
 
+
+    @Override
+    protected String getDefaultPhysicalSchemaName() {
+        return "public";
+    }
+
 }

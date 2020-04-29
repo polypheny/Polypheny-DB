@@ -80,6 +80,12 @@ public class ConfigEnum extends Config {
     }
 
 
+    @Override
+    public void parseStringAndSetValue( String value ) {
+        setEnum( getByString( value ) );
+    }
+
+
     private Enum getByString( String str ) throws ConfigRuntimeException {
         for ( Enum e : enumValues ) {
             if ( str.equalsIgnoreCase( e.name() ) ) {

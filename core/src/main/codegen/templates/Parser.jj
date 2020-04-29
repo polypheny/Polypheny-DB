@@ -6078,6 +6078,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < CONDITION: "CONDITION" >
 |   < CONDITIONAL: "CONDITIONAL" >
 |   < CONDITION_NUMBER: "CONDITION_NUMBER" >
+|   < CONFIG: "CONFIG" >
 |   < CONNECT: "CONNECT" >
 |   < CONNECTION: "CONNECTION" >
 |   < CONNECTION_NAME: "CONNECTION_NAME" >
@@ -6557,6 +6558,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < STDDEV_POP: "STDDEV_POP" >
 |   < STDDEV_SAMP: "STDDEV_SAMP" >
 |   < STORE: "STORE" >
+|   < STORES: "STORES" >
 |   < STREAM: "STREAM" >
 |   < STRUCTURE: "STRUCTURE" >
 |   < STYLE: "STYLE" >

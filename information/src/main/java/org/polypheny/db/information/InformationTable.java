@@ -20,7 +20,6 @@ package org.polypheny.db.information;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.commons.text.StringEscapeUtils;
 
 
 public class InformationTable extends InformationHtml {
