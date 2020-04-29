@@ -681,7 +681,7 @@ public class Crud implements InformationObserver {
         }
 
         if ( queryAnalyzer != null ) {
-            InformationPage p1 = new InformationPage( "p1", "Query analysis", "Analysis of the query." );
+            InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
             InformationGroup g1 = new InformationGroup( p1, "Execution time" );
             InformationHtml html;
             if ( executionTime < 1e4 ) {
@@ -1681,7 +1681,7 @@ public class Crud implements InformationObserver {
         transaction.resetQueryProcessor();
 
         InformationManager im = transaction.getQueryAnalyzer().observe( this );
-        im.addPage( new InformationPage( "p1", "Query analysis" ) );
+        im.addPage( new InformationPage( "Query analysis" ) );
 
         RelNode result;
         try {

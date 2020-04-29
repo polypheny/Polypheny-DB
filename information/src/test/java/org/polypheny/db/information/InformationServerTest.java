@@ -261,6 +261,7 @@ public class InformationServerTest {
         im.registerInformation( duration3 );
     }
 
+
     /**
      * Sleep method for testing
      */
