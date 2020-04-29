@@ -121,7 +121,7 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
 
         if ( transaction != null && transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "informationPageGeneratedCode", "Generated Code" );
+            InformationPage page = new InformationPage( "Generated Code" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Generated Code" );
             queryAnalyzer.addPage( page );

@@ -78,4 +78,5 @@ public interface Transaction {
     Router getRouter();
 
     InformationDuration getDuration();
+
 }

@@ -45,6 +45,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
@@ -92,7 +93,7 @@ public class TransactionImpl implements Transaction, Comparable {
 
     private PolyphenyDbSchema cachedSchema = null;
 
-    private InformationDuration duration = null;
+    private InformationDuration duration;
 
     private Set<Lock> lockList = new HashSet<>();
 
@@ -110,6 +111,7 @@ public class TransactionImpl implements Transaction, Comparable {
         this.defaultSchema = defaultSchema;
         this.database = database;
         this.analyze = analyze;
+        this.duration = null;
     }
 
 
@@ -148,7 +150,8 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Override
     public InformationManager getQueryAnalyzer() {
-        return InformationManager.getInstance( xid.toString() );
+        InformationManager queryAnalyzer = InformationManager.getInstance( xid.toString() );
+        return queryAnalyzer;
     }
 
 
@@ -293,6 +296,7 @@ public class TransactionImpl implements Transaction, Comparable {
         dataContext = null;
         prepareContext = null;
         cachedSchema = null; // TODO: This should not be necessary.
+        duration = null;
     }
 
 
@@ -315,7 +319,9 @@ public class TransactionImpl implements Transaction, Comparable {
     public InformationDuration getDuration() {
         if ( duration == null ) {
             InformationManager im = getQueryAnalyzer();
-            InformationGroup group = new InformationGroup( "p1", "Processing" );
+            InformationPage executionTimePage = new InformationPage( "Execution time", "Query execution time" );
+            im.addPage( executionTimePage );
+            InformationGroup group = new InformationGroup( executionTimePage, "Processing" );
             im.addGroup( group );
             duration = new InformationDuration( group );
             im.registerInformation( duration );
