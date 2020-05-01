@@ -19,6 +19,7 @@ package org.polypheny.db.router;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -92,7 +93,31 @@ public class IcarusRouter extends AbstractRouter {
                         selectedStoreId = entry.getKey();
                     }
                 }
+                if ( transaction.isAnalyze() ) {
+                    InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
+                    transaction.getQueryAnalyzer().addGroup( group );
+                    InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownStores.values() ) );
+                    Collection<Integer> entry = routingTable.get( queryClassString ).values();
+                    List<String> entryString = new LinkedList<>();
+                    for ( Integer integer : entry ) {
+                        if ( integer == IcarusRoutingTable.MISSING_VALUE ) {
+                            entryString.add( "MISSING VALUE" );
+                        } else if ( integer == IcarusRoutingTable.NO_PLACEMENT ) {
+                            entryString.add( "NO PLACEMENT" );
+                        } else {
+                            entryString.add( integer + "" );
+                        }
+                    }
+                    table.addRow( entryString );
+                    transaction.getQueryAnalyzer().registerInformation( table );
+                }
             } else {
+                if ( transaction.isAnalyze() ) {
+                    InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
+                    transaction.getQueryAnalyzer().addGroup( group );
+                    InformationHtml html = new InformationHtml( group, "Unknown query class" );
+                    transaction.getQueryAnalyzer().registerInformation( html );
+                }
                 selectedStoreId = -1;
             }
         }
