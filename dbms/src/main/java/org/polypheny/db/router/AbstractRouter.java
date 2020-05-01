@@ -18,12 +18,18 @@ package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -48,12 +54,26 @@ public abstract class AbstractRouter implements Router {
 
     protected ExecutionTimeMonitor executionTimeMonitor;
 
+    protected InformationPage page = null;
+
+    // For reporting purposes
+    protected Map<RelOptTable, CatalogColumnPlacement> selectedStores;
+
 
     @Override
     public RelRoot route( RelRoot logicalRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
+        this.selectedStores = new HashMap<>();
+
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            page = new InformationPage( "Routing" );
+            page.fullWidth();
+            queryAnalyzer.addPage( page );
+        }
+
         RelNode routed;
-        analyze( logicalRoot );
+        analyze( transaction, logicalRoot );
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             routed = routeDml( logicalRoot.rel, transaction );
         } else {
@@ -61,6 +81,22 @@ public abstract class AbstractRouter implements Router {
             builder = buildSelect( logicalRoot.rel, builder, transaction );
             routed = builder.build();
         }
+
+        wrapUp( transaction, routed );
+
+        // Add information to query analyzer
+        if ( transaction.isAnalyze() ) {
+            InformationGroup group = new InformationGroup( page, "Selected Stores" );
+            transaction.getQueryAnalyzer().addGroup( group );
+            InformationTable table = new InformationTable(
+                    group,
+                    ImmutableList.of( "Table", "Store", "Physical Name" ) );
+            selectedStores.forEach( ( k, v ) -> {
+                table.addRow( k.getQualifiedName(), v.storeUniqueName, v.physicalSchemaName + "." + v.physicalTableName );
+            } );
+            transaction.getQueryAnalyzer().registerInformation( table );
+        }
+
         return new RelRoot(
                 routed,
                 logicalRoot.validatedRowType,
@@ -70,8 +106,9 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected abstract void analyze( RelRoot logicalRoot );
+    protected abstract void analyze( Transaction transaction, RelRoot logicalRoot );
 
+    protected abstract void wrapUp( Transaction transaction, RelNode routed );
 
     // Select the placement on which a table scan should be executed
     protected abstract CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available );
@@ -228,6 +265,7 @@ public abstract class AbstractRouter implements Router {
 
 
     protected RelBuilder handleTableScan( RelBuilder builder, RelOptTableImpl table, CatalogColumnPlacement placement ) {
+        selectedStores.put( table, placement );
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildStoreSchemaName(
                         placement.storeUniqueName,

@@ -33,6 +33,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
@@ -75,7 +76,7 @@ public class IcarusRouter extends AbstractRouter {
 
 
     @Override
-    protected void analyze( RelRoot logicalRoot ) {
+    protected void analyze( Transaction transaction, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
             IcarusShuttle icarusShuttle = new IcarusShuttle();
             logicalRoot.rel.accept( icarusShuttle );
@@ -95,6 +96,31 @@ public class IcarusRouter extends AbstractRouter {
                 selectedStoreId = -1;
             }
         }
+        if ( transaction.isAnalyze() ) {
+            InformationGroup group = new InformationGroup( page, "Icarus Routing" );
+            transaction.getQueryAnalyzer().addGroup( group );
+            InformationHtml informationHtml = new InformationHtml(
+                    group,
+                    "<p><b>Selected Store ID:</b> " + selectedStoreId + "</p>"
+                            + "<p><b>Query Class:</b> " + queryClassString + "</p>" );
+            transaction.getQueryAnalyzer().registerInformation( informationHtml );
+        }
+    }
+
+
+    @Override
+    protected void wrapUp( Transaction transaction, RelNode routed ) {
+        executionTimeMonitor.subscribe( routingTable, selectedStoreId + "-" + queryClassString );
+        if ( transaction.isAnalyze() ) {
+            InformationGroup executionTimeGroup = new InformationGroup( page, "Execution Time" );
+            transaction.getQueryAnalyzer().addGroup( executionTimeGroup );
+            executionTimeMonitor.subscribe(
+                    ( reference, nanoTime ) -> {
+                        InformationHtml html = new InformationHtml( executionTimeGroup, nanoTime / 1000000.0 + " ms" );
+                        transaction.getQueryAnalyzer().registerInformation( html );
+                    },
+                    selectedStoreId + "-" + queryClassString );
+        }
     }
 
 
@@ -110,7 +136,6 @@ public class IcarusRouter extends AbstractRouter {
         }
         for ( CatalogColumnPlacement placement : available ) {
             if ( placement.storeId == selectedStoreId ) {
-                executionTimeMonitor.subscribe( routingTable, placement.storeId + "-" + queryClassString );
                 return placement;
             }
         }

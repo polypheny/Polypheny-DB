@@ -35,7 +35,13 @@ public class SimpleRouter extends AbstractRouter {
 
 
     @Override
-    protected void analyze( RelRoot logicalRoot ) {
+    protected void analyze( Transaction transaction, RelRoot logicalRoot ) {
+        // Nothing to do. Simple router does nothing sophisticated...
+    }
+
+
+    @Override
+    protected void wrapUp( Transaction transaction, RelNode routed ) {
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
