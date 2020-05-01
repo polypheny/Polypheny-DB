@@ -16,7 +16,6 @@
 
 package org.polypheny.db.router;
 
-import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
@@ -201,7 +199,7 @@ public class IcarusRouter extends AbstractRouter {
         private IcarusRoutingTable() {
             // Information
             InformationManager im = InformationManager.getInstance();
-            InformationPage page = new InformationPage( "IcarusRouting", "Icarus Routing" );
+            InformationPage page = new InformationPage( "Icarus Routing" );
             page.fullWidth();
             im.addPage( page );
             InformationGroup routingTableGroup = new InformationGroup( page, "Routing Table" );
@@ -213,16 +211,27 @@ public class IcarusRouter extends AbstractRouter {
             page.setRefreshFunction( () -> {
                 // Update labels
                 if ( routingTable.size() > 0 ) {
-                    routingTableElement.updateLabels(
-                            "Query Class",
-                            ImmutableList.copyOf( knownStores.values() )
-                    );
+                    LinkedList<String> labels = new LinkedList<>();
+                    labels.add( "Query Class" );
+                    labels.addAll( knownStores.values() );
+                    routingTableElement.updateLabels( labels );
                 }
                 // Update rows
                 routingTableElement.reset();
-                routingTable.forEach( ( k, v ) -> routingTableElement.addRow(
-                        k,
-                        v.values().stream().map( Functions.toStringFunction()::apply ).collect( Collectors.toList() ) ) );
+                routingTable.forEach( ( k, v ) -> {
+                    List<String> row = new LinkedList<>();
+                    row.add( k );
+                    for ( Integer integer : v.values() ) {
+                        if ( integer == IcarusRoutingTable.MISSING_VALUE ) {
+                            row.add( "Unknown" );
+                        } else if ( integer == IcarusRoutingTable.NO_PLACEMENT ) {
+                            row.add( "-" );
+                        } else {
+                            row.add( integer + "" );
+                        }
+                    }
+                    routingTableElement.addRow( row );
+                } );
             } );
 
             // Background Task
@@ -270,6 +279,9 @@ public class IcarusRouter extends AbstractRouter {
                     }
                 }
                 Map<Integer, Integer> newRow = new HashMap<>();
+                for ( Integer storeId : knownStores.keySet() ) {
+                    newRow.put( storeId, IcarusRoutingTable.NO_PLACEMENT );
+                }
                 for ( Map.Entry<Integer, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
                     if ( oldEntry.getValue() == NO_PLACEMENT ) {
                         newRow.put( oldEntry.getKey(), NO_PLACEMENT );
