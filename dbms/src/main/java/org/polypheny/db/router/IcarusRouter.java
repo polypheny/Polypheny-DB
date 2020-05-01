@@ -291,6 +291,7 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
+    // TODO MV: This should be improved to include more information on the used tables and columns
     private static class IcarusShuttle extends RelShuttleImpl {
 
         private HashSet<String> hashBasis = new HashSet<>();
@@ -332,7 +333,7 @@ public class IcarusRouter extends AbstractRouter {
 
         @Override
         public RelNode visit( LogicalFilter filter ) {
-            // TODO
+            hashBasis.add( "LogicalFilter" );
             return visitChild( filter, 0, filter.getInput() );
         }
 
@@ -353,42 +354,42 @@ public class IcarusRouter extends AbstractRouter {
 
         @Override
         public RelNode visit( LogicalCorrelate correlate ) {
-            // TODO
+            hashBasis.add( "LogicalCorrelate" );
             return visitChildren( correlate );
         }
 
 
         @Override
         public RelNode visit( LogicalUnion union ) {
-            // TODO
+            hashBasis.add( "LogicalUnion" );
             return visitChildren( union );
         }
 
 
         @Override
         public RelNode visit( LogicalIntersect intersect ) {
-            // TODO
+            hashBasis.add( "LogicalIntersect" );
             return visitChildren( intersect );
         }
 
 
         @Override
         public RelNode visit( LogicalMinus minus ) {
-            // TODO
+            hashBasis.add( "LogicalMinus" );
             return visitChildren( minus );
         }
 
 
         @Override
         public RelNode visit( LogicalSort sort ) {
-            // TODO
+            hashBasis.add( "LogicalSort" );
             return visitChildren( sort );
         }
 
 
         @Override
         public RelNode visit( LogicalExchange exchange ) {
-            // TODO
+            hashBasis.add( "LogicalExchange#" + exchange.distribution.getType().shortName );
             return visitChildren( exchange );
         }
 
