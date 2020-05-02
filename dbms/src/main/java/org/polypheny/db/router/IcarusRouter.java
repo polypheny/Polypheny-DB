@@ -27,6 +27,8 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
@@ -90,6 +92,12 @@ public class IcarusRouter extends AbstractRouter {
                     if ( entry.getValue() > 0 ) {
                         selectedStoreId = entry.getKey();
                     }
+                }
+                // In case the query class is known but the table has been dropped and than recreated with the same name,
+                // the query class is known but only contains information for the stores with no placement. To handle this
+                // special case (selectedStoreId == -2) we have to set it to -1.
+                if ( selectedStoreId == -2 ) {
+                    selectedStoreId = -1;
                 }
                 if ( transaction.isAnalyze() ) {
                     InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
@@ -201,17 +209,24 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
+    @Override
+    public void dropPlacements( List<CatalogColumnPlacement> placements ) {
+        routingTable.dropPlacements( placements );
+    }
+
+
     private static class IcarusRoutingTable implements ExecutionTimeObserver {
 
         public static final int MISSING_VALUE = -1;
         public static final int NO_PLACEMENT = -2;
 
         private final Map<String, Map<Integer, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Percentage)
-        private final Map<String, Map<Integer, Long>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Percentage)
+        private final Map<String, Map<Integer, Long>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Time)
 
         private final Map<Integer, String> knownStores = new HashMap<>(); // Store ID -> Store Name
 
         private final Queue<ExecutionTime> processingQueue = new ConcurrentLinkedQueue<>();
+        private final Lock processingQueueLock = new ReentrantLock();
 
 
         private IcarusRoutingTable() {
@@ -273,8 +288,10 @@ public class IcarusRouter extends AbstractRouter {
 
 
         private void process() {
+            processingQueueLock.lock();
             // Add to times map
-            for ( ExecutionTime executionTime : processingQueue ) {
+            while ( processingQueue.size() > 0 ) {
+                ExecutionTime executionTime = processingQueue.poll();
                 Map<Integer, Long> row = times.get( executionTime.queryClassString );
                 if ( row.containsKey( executionTime.storeId ) ) {
                     long time = (row.get( executionTime.storeId ) + executionTime.nanoTime) / 2;
@@ -314,6 +331,7 @@ public class IcarusRouter extends AbstractRouter {
                 newRow.replace( fastestStore, 1 );
                 routingTable.replace( queryClass, newRow );
             }
+            processingQueueLock.unlock();
         }
 
 
@@ -324,6 +342,23 @@ public class IcarusRouter extends AbstractRouter {
             int storeId = Integer.parseInt( storeIdStr );
             String queryClassString = reference.substring( storeIdStr.length() + 1 );
             processingQueue.add( new ExecutionTime( queryClassString, storeId, nanoTime ) );
+        }
+
+
+        public void dropPlacements( List<CatalogColumnPlacement> placements ) {
+            process();// empty processing queue
+            processingQueueLock.lock();
+            for ( CatalogColumnPlacement placement : placements ) {
+                knownStores.remove( placement.storeId );
+                for ( Map<Integer, Long> entry : times.values() ) {
+                    entry.remove( placement.storeId );
+                }
+                for ( Map<Integer, Integer> entry : routingTable.values() ) {
+                    entry.remove( placement.storeId );
+                }
+            }
+            processingQueueLock.unlock();
+            process();// update routing table
         }
 
 

@@ -67,6 +67,12 @@ public class SimpleRouter extends AbstractRouter {
     }
 
 
+    @Override
+    public void dropPlacements( List<CatalogColumnPlacement> placements ) {
+        // Nothing to do. Simple router does nothing sophisticated...
+    }
+
+
     public static class SimpleRouterFactory extends RouterFactory {
 
         @Override

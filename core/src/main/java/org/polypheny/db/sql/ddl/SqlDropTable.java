@@ -38,8 +38,10 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map.Entry;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -119,11 +121,14 @@ public class SqlDropTable extends SqlDropObject {
 
         // Delete data from the stores and remove the column placement
         try {
-            for ( int storeId : table.getColumnPlacementsByStore().keySet() ) {
-                StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
+            for ( Entry<Integer, List<CatalogColumnPlacement>> entry : table.getColumnPlacementsByStore().entrySet() ) {
+                // Delete table on store
+                StoreManager.getInstance().getStore( entry.getKey() ).dropTable( context, table );
+                // Inform routing
+                transaction.getRouter().dropPlacements( entry.getValue() );
                 // Delete column placement in catalog
                 for ( CatalogColumn catalogColumn : table.getColumns() ) {
-                    transaction.getCatalog().deleteColumnPlacement( storeId, catalogColumn.id );
+                    transaction.getCatalog().deleteColumnPlacement( entry.getKey(), catalogColumn.id );
                 }
             }
         } catch ( GenericCatalogException e ) {
