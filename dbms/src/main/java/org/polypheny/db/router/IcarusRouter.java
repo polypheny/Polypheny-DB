@@ -18,12 +18,12 @@ package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -95,18 +95,24 @@ public class IcarusRouter extends AbstractRouter {
                     InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
                     transaction.getQueryAnalyzer().addGroup( group );
                     InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownStores.values() ) );
-                    Collection<Integer> entry = routingTable.get( queryClassString ).values();
-                    List<String> entryString = new LinkedList<>();
-                    for ( Integer integer : entry ) {
-                        if ( integer == IcarusRoutingTable.MISSING_VALUE ) {
-                            entryString.add( "MISSING VALUE" );
-                        } else if ( integer == IcarusRoutingTable.NO_PLACEMENT ) {
-                            entryString.add( "NO PLACEMENT" );
+                    Map<Integer, Integer> entry = routingTable.get( queryClassString );
+                    Map<Integer, Long> timesEntry = routingTable.times.get( queryClassString );
+                    List<String> row1 = new LinkedList<>();
+                    List<String> row2 = new LinkedList<>();
+                    for ( Entry<Integer, Integer> e : entry.entrySet() ) {
+                        if ( e.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
+                            row1.add( "MISSING VALUE" );
+                            row2.add( "" );
+                        } else if ( e.getValue() == IcarusRoutingTable.NO_PLACEMENT ) {
+                            row1.add( "NO PLACEMENT" );
+                            row2.add( "" );
                         } else {
-                            entryString.add( integer + "" );
+                            row1.add( e.getValue() + "" );
+                            row2.add( timesEntry.get( e.getKey() ) / 1000000.0 + " ms" );
                         }
                     }
-                    table.addRow( entryString );
+                    table.addRow( row1 );
+                    table.addRow( row2 );
                     transaction.getQueryAnalyzer().registerInformation( table );
                 }
             } else {
@@ -151,7 +157,7 @@ public class IcarusRouter extends AbstractRouter {
     @Override
     protected CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available ) {
         // Update known stores
-        routingTable.updateKnownStores( available );
+        updateKnownStores( available );
         // Route
         if ( selectedStoreId == -1 ) {
             routingTable.initializeRow( queryClassString, available );
@@ -163,6 +169,18 @@ public class IcarusRouter extends AbstractRouter {
             }
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedStoreId );
+    }
+
+
+    public void updateKnownStores( List<CatalogColumnPlacement> available ) {
+        for ( CatalogColumnPlacement placement : available ) {
+            if ( !routingTable.knownStores.containsKey( placement.storeId ) ) {
+                routingTable.knownStores.put( placement.storeId, placement.storeUniqueName );
+                if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( placement.storeId ) ) {
+                    routingTable.routingTable.get( queryClassString ).put( placement.storeId, IcarusRoutingTable.MISSING_VALUE );
+                }
+            }
+        }
     }
 
 
@@ -306,15 +324,6 @@ public class IcarusRouter extends AbstractRouter {
             int storeId = Integer.parseInt( storeIdStr );
             String queryClassString = reference.substring( storeIdStr.length() + 1 );
             processingQueue.add( new ExecutionTime( queryClassString, storeId, nanoTime ) );
-        }
-
-
-        public void updateKnownStores( List<CatalogColumnPlacement> available ) {
-            for ( CatalogColumnPlacement placement : available ) {
-                if ( !knownStores.containsKey( placement.storeId ) ) {
-                    knownStores.put( placement.storeId, placement.storeUniqueName );
-                }
-            }
         }
 
 
