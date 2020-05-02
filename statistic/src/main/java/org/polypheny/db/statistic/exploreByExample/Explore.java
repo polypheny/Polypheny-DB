@@ -82,7 +82,9 @@ public class Explore {
         this.query = query;
         this.sqlStatment = query;
         this.exploreQueryProcessor = exploreQueryProcessor;
+
         this.dataType = getTypeInfo( query );
+
     }
 
 
@@ -94,7 +96,7 @@ public class Explore {
     public void exploreUserInput() {
         isDataAfterClassification = true;
         List<String[]> initialDataClassification = getAllData( sqlStatment );
-        unlabledData = createInstance( initialDataClassification, rotate2dArray( initialDataClassification ),  dataType, uniqueValues );
+        unlabledData = createInstance( initialDataClassification, rotate2dArray( initialDataClassification ), dataType, uniqueValues );
         dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
@@ -106,7 +108,7 @@ public class Explore {
         this.isConvertedToSql = isConvertedToSql;
         if ( isConvertedToSql ) {
             classifiedSqlStatement = sqlClassifiedData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), nameAndType );
-            tableSize = getSQLCount(classifiedSqlStatement);
+            tableSize = getSQLCount( classifiedSqlStatement );
         } else {
             unlabledData = createInstance( allData, rotate2dArray( allData ), dataType, uniqueValues );
             data = classifyData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
@@ -161,7 +163,7 @@ public class Explore {
                 tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
                 return;
             }
-            if(sqlStatment.split( "\nFROM" )[1].split( "," ).length > 1){
+            if ( sqlStatment.split( "\nFROM" )[1].split( "," ).length > 1 ) {
                 sqlStatment = selectDistinct;
                 tableSize = getSQLCount( sqlStatment );
                 return;
@@ -203,7 +205,6 @@ public class Explore {
                 } else {
                     sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + String.join( "", unionList );
                 }
-
 
                 tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
             }

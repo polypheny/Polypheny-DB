@@ -51,10 +51,14 @@ public class WekaToSql {
             if ( element.contains( "<=" ) || element.contains( ">" ) ) {
                 splitedTree.add( element );
             } else if ( element.contains( "=" ) ) {
-                elements = Arrays.asList( element.replace( " ", "" ).split( "=" ) );
-                if ( nameAndType.get( elements.get( 0 ).replaceAll( "\\|","" ) ).equals( "VARCHAR" ) ) {
-                    temp.add( elements.get(0) );
-                    temp.add( "'" + elements.get( 1 ) + "'" );
+
+
+
+                elements = Arrays.asList( element.split( "=" ) );
+
+                if ( nameAndType.get( elements.get( 0 ).replaceAll( " ", "" ).replaceAll( "\\|","" ) ).equals( "VARCHAR" ) ) {
+                    temp.add( elements.get(0).replaceAll( " ", "" ) );
+                    temp.add( "'" + elements.get( 1 ).substring(1) + "'" );
                     splitedTree.add( String.join( " = ", temp ) );
                 }else {
                     splitedTree.add( element );
