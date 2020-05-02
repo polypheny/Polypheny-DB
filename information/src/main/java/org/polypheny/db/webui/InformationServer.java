@@ -39,6 +39,7 @@ public class InformationServer implements InformationObserver {
 
     Gson gson = new Gson();
 
+
     public InformationServer( final int port ) {
 
         Service http = ignite().port( port );
@@ -90,7 +91,8 @@ public class InformationServer implements InformationObserver {
         }, gson::toJson );
 
         http.post( "/refreshPage", ( req, res ) -> {
-            im.getPage( req.body() ).refresh();
+            //refresh not necessary, since getPage already triggers a refresh
+            im.getPage( req.body() );
             return "";
         } );
 
@@ -121,6 +123,7 @@ public class InformationServer implements InformationObserver {
     public void observePageList( final String debugId, final InformationPage[] pages ) {
         //todo can be implemented if needed
     }
+
 
     /**
      * To avoid the CORS problem, when the ConfigServer receives requests from the WebUi

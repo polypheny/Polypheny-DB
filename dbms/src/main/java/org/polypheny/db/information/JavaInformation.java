@@ -31,7 +31,7 @@ public class JavaInformation {
     public JavaInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        InformationPage page = new InformationPage( "javaInfo", "Java Runtime" );
+        InformationPage page = new InformationPage( "Java Runtime" );
         im.addPage( page );
 
         // JVM Info

@@ -33,7 +33,6 @@ public abstract class Information {
     /**
      * The field type is used by Gson and is needed for the frontend.
      */
-    @SuppressWarnings("FieldCanBeLocal")
     final String type;
 
     /**
@@ -45,7 +44,7 @@ public abstract class Information {
      * The information object with lowest uiOrder are rendered first, then those with higher number, then those where uiOrder is null.
      * Field required for GSON.
      */
-    @SuppressWarnings("FieldCanBeLocal")
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private int uiOrder;
 
     /**
@@ -58,7 +57,7 @@ public abstract class Information {
     /**
      * Constructor
      *
-     * @param id Unique id for this Information object
+     * @param id      Unique id for this Information object
      * @param groupId The id of the InformationGroup to which this information belongs
      */
     Information( final String id, final String groupId ) {
@@ -106,6 +105,7 @@ public abstract class Information {
      */
     public <T extends Information> T unwrap( final Class<T> clazz ) {
         if ( clazz.isInstance( this ) ) {
+            //noinspection unchecked
             return (T) this;
         } else {
             throw new InformationRuntimeException( "Can not unwrap as " + clazz.getSimpleName() );
@@ -140,7 +140,7 @@ public abstract class Information {
      * Notify the information manager about changes of this information object.
      */
     void notifyManager() {
-        if (informationManager != null) {
+        if ( informationManager != null ) {
             informationManager.notify( this );
         }
     }

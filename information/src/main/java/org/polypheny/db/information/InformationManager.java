@@ -49,12 +49,12 @@ public class InformationManager {
     private ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
 
     /**
-     *  Identifier of this information manager. null for the main information manger.
+     * Identifier of this information manager. null for the main information manger.
      */
     private final String instanceId;
 
 
-    private InformationManager(final String instanceId) {
+    private InformationManager( final String instanceId ) {
         // private constructor to ensure singleton is applied by calling get instance
         this.instanceId = instanceId;
 
@@ -152,9 +152,9 @@ public class InformationManager {
      */
     public void addGroup( final InformationGroup... groups ) {
         for ( InformationGroup g : groups ) {
-            if( this.groups.containsKey( g.getId() )){
+            if ( this.groups.containsKey( g.getId() ) ) {
                 InformationGroup existing = this.groups.get( g.getId() );
-                if( !existing.isImplicit() ){
+                if ( !existing.isImplicit() ) {
                     throw new InformationRuntimeException( "You are trying to add an InformationGroup twice to the InformationManager." );
                 } else {
                     existing.overrideWith( g );
@@ -285,14 +285,14 @@ public class InformationManager {
      * Send an updated information object as JSON via Websocket to the WebUI
      */
     public void notify( final Information i ) {
-        for( InformationObserver observer : this.observers ){
+        for ( InformationObserver observer : this.observers ) {
             observer.observeInfos( i );
         }
     }
 
 
-    private void notifyPageList (){
-        for( InformationObserver observer : this.observers ){
+    private void notifyPageList() {
+        for ( InformationObserver observer : this.observers ) {
             observer.observePageList( instanceId, this.pages.values().toArray( new InformationPage[0] ) );
         }
     }

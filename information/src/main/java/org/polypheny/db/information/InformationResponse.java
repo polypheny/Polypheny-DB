@@ -29,10 +29,12 @@ public class InformationResponse {
     String errorMsg;
     String successMsg;
 
+
     public InformationResponse message( final String message ) {
         this.successMsg = message;
         return this;
     }
+
 
     public InformationResponse error( final String error ) {
         this.errorMsg = error;
