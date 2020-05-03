@@ -235,12 +235,21 @@ public class IcarusRouter extends AbstractRouter {
             InformationPage page = new InformationPage( "Icarus Routing" );
             page.fullWidth();
             im.addPage( page );
+            // Routing table
             InformationGroup routingTableGroup = new InformationGroup( page, "Routing Table" );
             im.addGroup( routingTableGroup );
             InformationTable routingTableElement = new InformationTable(
                     routingTableGroup,
                     Arrays.asList( "Query Class" ) );
             im.registerInformation( routingTableElement );
+            // Processing queue size
+            InformationGroup processingQueueGroup = new InformationGroup( page, "Processing Queue" );
+            im.addGroup( processingQueueGroup );
+            InformationHtml processingQueueSize = new InformationHtml(
+                    processingQueueGroup,
+                    "Processing queue size: " + processingQueue.size() );
+            im.registerInformation( processingQueueSize );
+            // update
             page.setRefreshFunction( () -> {
                 // Update labels
                 if ( routingTable.size() > 0 ) {
@@ -265,6 +274,8 @@ public class IcarusRouter extends AbstractRouter {
                     }
                     routingTableElement.addRow( row );
                 } );
+                // Update processing queue size
+                processingQueueSize.updateHtml( "Processing queue size: " + processingQueue.size() );
             } );
 
             // Background Task

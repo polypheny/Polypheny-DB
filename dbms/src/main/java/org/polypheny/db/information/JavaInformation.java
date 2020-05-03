@@ -91,6 +91,7 @@ public class JavaInformation {
                 null,
                 new GraphData<Long>( "Free", new Long[]{ Runtime.getRuntime().totalMemory() }, 20 )
         );
+        heapOverTimeGraph.minY( 1 );
         im.registerInformation( heapOverTimeGraph );
 
         BackgroundTaskManager.INSTANCE.registerTask(
