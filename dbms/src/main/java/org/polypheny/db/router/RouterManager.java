@@ -25,7 +25,6 @@ import org.polypheny.db.config.ConfigClazz;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
-import org.polypheny.db.router.IcarusRouter.IcarusRouterFactory;
 import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
 import org.polypheny.db.routing.Router;
 
@@ -43,8 +42,6 @@ public class RouterManager {
 
 
     public RouterManager() {
-        setCurrentRouter( new IcarusRouterFactory() );
-
         final ConfigManager configManager = ConfigManager.getInstance();
         final WebUiPage routingPage = new WebUiPage(
                 "routingPage",
@@ -64,20 +61,28 @@ public class RouterManager {
                 ConfigClazz configClazz = (ConfigClazz) c;
                 if ( currentRouter.getClass() != configClazz.getClazz() ) {
                     log.warn( "Change router implementation: " + configClazz.getClazz() );
-                    try {
-                        Constructor<?> ctor = configClazz.getClazz().getConstructor();
-                        RouterFactory instance = (RouterFactory) ctor.newInstance();
-                        setCurrentRouter( instance );
-                    } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
-                        log.error( "Exception while changing router implementation", e );
-                    }
+                    setCurrentRouter( configClazz );
                 }
             }
+
 
             @Override
             public void restart( Config c ) {
             }
         } );
+
+        setCurrentRouter( routerImplementation );
+    }
+
+
+    private void setCurrentRouter( ConfigClazz routerImplementation ) {
+        try {
+            Constructor<?> ctor = routerImplementation.getClazz().getConstructor();
+            RouterFactory instance = (RouterFactory) ctor.newInstance();
+            setCurrentRouter( instance );
+        } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
+            log.error( "Exception while changing router implementation", e );
+        }
     }
 
 

@@ -17,7 +17,9 @@
 package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -25,11 +27,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
+import java.util.SortedSet;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.StatUtils;
@@ -66,7 +72,12 @@ import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
 
+@Slf4j
 public class IcarusRouter extends AbstractRouter {
+
+    public static final int WINDOW_SIZE = 25;
+    private static final int SHORT_RUNNING_SIMILAR_THRESHOLD = 100;
+    private static final int LONG_RUNNING_SIMILAR_THRESHOLD = 0;
 
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
@@ -86,16 +97,8 @@ public class IcarusRouter extends AbstractRouter {
             logicalRoot.rel.accept( icarusShuttle );
             queryClassString = icarusShuttle.hashBasis.toString();
             if ( routingTable.contains( queryClassString ) ) {
-                for ( Map.Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
-                    if ( entry.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
-                        // We have no execution time for this store.
-                        selectedStoreId = entry.getKey();
-                        break;
-                    }
-                    if ( entry.getValue() > 0 ) {
-                        selectedStoreId = entry.getKey();
-                    }
-                }
+                selectedStoreId = routeQuery( routingTable.get( queryClassString ) );
+
                 // In case the query class is known but the table has been dropped and than recreated with the same name,
                 // the query class is known but only contains information for the stores with no placement. To handle this
                 // special case (selectedStoreId == -2) we have to set it to -1.
@@ -146,6 +149,37 @@ public class IcarusRouter extends AbstractRouter {
                             + "<p><b>Query Class:</b> " + queryClassString + "</p>" );
             transaction.getQueryAnalyzer().registerInformation( informationHtml );
         }
+    }
+
+
+    private int routeQuery( Map<Integer, Integer> routingTableRow ) {
+        // Check if there is a store for which we do not have a execution time
+        for ( Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
+            if ( entry.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
+                // We have no execution time for this store.
+                return entry.getKey();
+            }
+        }
+
+        if ( SHORT_RUNNING_SIMILAR_THRESHOLD == 0 ) {
+            // There should only be exactly one entry in the routing table > 0
+            for ( Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
+                if ( entry.getValue() == 100 ) {
+                    // We have no execution time for this store.
+                    return entry.getKey();
+                }
+            }
+        } else {
+            int p = 0;
+            int random = (int) (Math.random() * 100) + 1;
+            for ( Map.Entry<Integer, Integer> entry : routingTableRow.entrySet() ) {
+                p += entry.getValue();
+                if ( p >= random ) {
+                    return entry.getKey();
+                }
+            }
+        }
+        throw new RuntimeException( "Something went wrong..." );
     }
 
 
@@ -220,8 +254,6 @@ public class IcarusRouter extends AbstractRouter {
 
 
     private static class IcarusRoutingTable implements ExecutionTimeObserver {
-
-        public static final int WINDOW_SIZE = 25;
 
         public static final int MISSING_VALUE = -1;
         public static final int NO_PLACEMENT = -2;
@@ -321,33 +353,26 @@ public class IcarusRouter extends AbstractRouter {
 
             // Update routing table
             for ( String queryClass : routingTable.keySet() ) {
-                Map<Integer, CircularFifoQueue<Double>> timeRow = times.get( queryClass );
-                // find fastest
-                int fastestStore = -1;
-                double fastestTime = Double.MAX_VALUE;
-                for ( Map.Entry<Integer, CircularFifoQueue<Double>> entry : timeRow.entrySet() ) {
+                Map<Integer, Double> meanTimeRow = new HashMap<>();
+                for ( Map.Entry<Integer, CircularFifoQueue<Double>> entry : times.get( queryClass ).entrySet() ) {
                     double mean = StatUtils.mean( ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ), 0, entry.getValue().size() );
-                    if ( mean < fastestTime ) {
-                        fastestStore = entry.getKey();
-                        fastestTime = mean;
-                    }
+                    meanTimeRow.put( entry.getKey(), mean );
                 }
+
                 Map<Integer, Integer> newRow = new HashMap<>();
                 for ( Integer storeId : knownStores.keySet() ) {
                     newRow.put( storeId, IcarusRoutingTable.NO_PLACEMENT );
                 }
+                Map<Integer, Integer> calculatedRow = generateRow( meanTimeRow );
                 for ( Map.Entry<Integer, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
                     if ( oldEntry.getValue() == NO_PLACEMENT ) {
                         newRow.put( oldEntry.getKey(), NO_PLACEMENT );
-                        continue;
-                    }
-                    if ( timeRow.containsKey( oldEntry.getKey() ) ) {
-                        newRow.put( oldEntry.getKey(), 0 );
+                    } else if ( calculatedRow.containsKey( oldEntry.getKey() ) ) {
+                        newRow.replace( oldEntry.getKey(), calculatedRow.get( oldEntry.getKey() ) );
                     } else {
-                        newRow.put( oldEntry.getKey(), MISSING_VALUE );
+                        newRow.replace( oldEntry.getKey(), MISSING_VALUE );
                     }
                 }
-                newRow.replace( fastestStore, 1 );
                 routingTable.replace( queryClass, newRow );
             }
             processingQueueLock.unlock();
@@ -393,6 +418,99 @@ public class IcarusRouter extends AbstractRouter {
             }
             routingTable.put( queryClassString, row );
             times.put( queryClassString, new HashMap<>() );
+        }
+
+
+        protected Map<Integer, Integer> generateRow( Map<Integer, Double> map ) {
+            Map<Integer, Integer> row;
+            // find fastest
+            int fastestStore = -1;
+            double fastestTime = Double.MAX_VALUE;
+            for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
+                if ( fastestTime > entry.getValue() ) {
+                    fastestStore = entry.getKey();
+                    fastestTime = entry.getValue();
+                }
+            }
+            long shortRunningLongRunningThreshold = SHORT_RUNNING_SIMILAR_THRESHOLD * 1000000; // multiply with 1000000 to get nanoseconds
+            if ( fastestTime < shortRunningLongRunningThreshold && SHORT_RUNNING_SIMILAR_THRESHOLD != 0 ) {
+                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD, fastestTime, fastestStore );
+            } else if ( fastestTime > shortRunningLongRunningThreshold && LONG_RUNNING_SIMILAR_THRESHOLD != 0 ) {
+                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD, fastestTime, fastestStore );
+            } else {
+                row = new HashMap<>();
+                if ( fastestStore != -1 && fastestTime > 0 ) {
+                    row.put( fastestStore, 100 );
+                } else {
+                    log.error( "Something went wrong while analyzing data. This should not happen!" );
+                }
+            }
+            return row;
+        }
+
+
+        private Map<Integer, Integer> calc( Map<Integer, Double> map, int similarThreshold, double fastestTime, int fastestStore ) {
+            HashMap<Integer, Integer> row = new HashMap<>();
+            ArrayList<Integer> percents = new ArrayList<>();
+            Map<Integer, Double> stores = new TreeMap<>();
+            // init row with 0
+            for ( Integer storeId : map.keySet() ) {
+                row.put( storeId, 0 );
+            }
+            // calc 100%
+            int threshold = (int) (fastestTime + (fastestTime * (similarThreshold / 100.0)));
+            int hundredPercent = 0;
+            for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
+                if ( threshold >= entry.getValue() ) {
+                    hundredPercent += entry.getValue();
+                }
+            }
+            // calc percents
+            int onePercent = hundredPercent / 100;
+            for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
+                if ( threshold >= entry.getValue() ) {
+                    int t = Math.min( entry.getValue().intValue() / onePercent, 100 ); // This is not nice... But if there is only one entry with 100 percent, it some time happens that we get 101
+                    percents.add( t );
+                    stores.put( entry.getKey(), entry.getValue() );
+                }
+            }
+            // add
+            Collections.sort( percents );
+            Collections.reverse( percents );
+            for ( Map.Entry<Integer, Double> entry : entriesSortedByValues( stores ) ) {
+                row.put( entry.getKey(), percents.remove( 0 ) );
+            }
+            // normalize to 100
+            int sum = 0;
+            for ( Map.Entry<Integer, Integer> entry : row.entrySet() ) {
+                sum += entry.getValue();
+            }
+            if ( sum == 0 ) {
+                log.error( "Routing table row is empty! This should not happen!" );
+            } else if ( sum > 100 ) {
+                log.error( "Routing table row does sum up to a value greater 100! This should not happen!" );
+            } else if ( sum < 100 ) {
+                if ( fastestStore == -1 ) {
+                    log.error( "Fastest Store is -1! This should not happen!" );
+                } else if ( !row.containsKey( fastestStore ) ) {
+                    log.error( "Row does not contain the fastest row! This should not happen!" );
+                } else {
+                    int delta = 100 - sum;
+                    row.replace( fastestStore, row.get( fastestStore ) + delta );
+                }
+            }
+            return row;
+        }
+
+
+        //http://stackoverflow.com/a/2864923
+        private static <K, V extends Comparable<? super V>> SortedSet<Entry<K, V>> entriesSortedByValues( Map<K, V> map ) {
+            SortedSet<Map.Entry<K, V>> sortedEntries = new TreeSet<>( ( e1, e2 ) -> {
+                int res = e1.getValue().compareTo( e2.getValue() );
+                return res != 0 ? res : 1;
+            } );
+            sortedEntries.addAll( map.entrySet() );
+            return sortedEntries;
         }
     }
 
