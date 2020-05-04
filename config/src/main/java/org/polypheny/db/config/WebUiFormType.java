@@ -23,7 +23,8 @@ package org.polypheny.db.config;
 public enum WebUiFormType {
     TEXT( "text" ),
     NUMBER( "number" ),
-    BOOLEAN( "boolean" );
+    BOOLEAN( "boolean" ),
+    SELECT( "select" );
 
     private final String type;
 

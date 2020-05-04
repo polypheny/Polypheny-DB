@@ -131,7 +131,7 @@ public class ConfigClazzList extends Config {
 
 
     @Override
-    public void parseStringAndSetValue( String value ) {
+    public boolean parseStringAndSetValue( String value ) {
         throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
     }
 
