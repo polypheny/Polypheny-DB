@@ -18,7 +18,8 @@ package org.polypheny.db.jdbc;
 
 
 import java.util.Iterator;
-
+import lombok.Getter;
+import org.apache.commons.lang3.time.StopWatch;
 
 /**
  *
@@ -29,6 +30,9 @@ public class PolyphenyDbStatementHandle {
     private final int statementId;
     private volatile transient Iterator<Object> openResultSet;
     private volatile transient PolyphenyDbSignature signature;
+
+    @Getter
+    private final StopWatch executionStopWatch = new StopWatch();
 
 
     public PolyphenyDbStatementHandle( final PolyphenyDbConnectionHandle connection, final int statementId ) {
@@ -62,6 +66,7 @@ public class PolyphenyDbStatementHandle {
 
     public synchronized void setSignature( PolyphenyDbSignature signature ) {
         this.signature = signature;
+        executionStopWatch.reset();
     }
 
 
@@ -74,5 +79,4 @@ public class PolyphenyDbStatementHandle {
         this.openResultSet = null;
         this.signature = null;
     }
-
 }

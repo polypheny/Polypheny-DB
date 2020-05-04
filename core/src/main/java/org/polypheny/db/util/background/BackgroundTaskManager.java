@@ -75,8 +75,7 @@ public class BackgroundTaskManager {
                         handle.getDescription(),
                         handle.getSchedulingType().name(),
                         handle.getPriority().name(),
-                        String.format( Locale.ENGLISH, "%.2f", handle.getAverageExecutionTime() ) + " ms",
-                        "" + handle.getMaxExecTime() + " ms" );
+                        String.format( Locale.ENGLISH, "%.2f", handle.getAverageExecutionTime() ) + " ms", "" + handle.getMaxExecTime() + " ms" );
             }
         }
     }

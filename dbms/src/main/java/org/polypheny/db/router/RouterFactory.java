@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.routing;
+package org.polypheny.db.router;
 
-import java.util.List;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.routing.Router;
 
-public interface Router {
+public abstract class RouterFactory {
 
-    RelRoot route( RelRoot relRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor );
-
-    List<Store> createTable( long schemaId, Transaction transaction );
-
-    void dropPlacements( List<CatalogColumnPlacement> placements );
-
+    public abstract Router createInstance();
 }

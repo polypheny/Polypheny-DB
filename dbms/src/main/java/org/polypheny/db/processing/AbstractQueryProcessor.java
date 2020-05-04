@@ -68,6 +68,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
@@ -122,6 +123,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         }
         stopWatch.start();
 
+        ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
+
         final Convention resultConvention =
                 ENABLE_BINDABLE
                         ? BindableConvention.INSTANCE
@@ -154,7 +157,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             transaction.getDuration().stop( "Locking" );
             transaction.getDuration().start( "Routing" );
         }
-        RelRoot routedRoot = route( logicalRoot, transaction );
+        RelRoot routedRoot = route( logicalRoot, transaction, executionTimeMonitor );
 
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                 RelBuilder.create( transaction, routedRoot.rel.getCluster() ),
@@ -184,7 +187,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             transaction.getDuration().start( "Implementation" );
         }
 
-        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention );
+        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention, executionTimeMonitor );
 
         if ( transaction.isAnalyze() ) {
             transaction.getDuration().stop( "Implementation" );
@@ -199,8 +202,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private RelRoot route( RelRoot logicalRoot, Transaction transaction ) {
-        RelRoot routedRoot = transaction.getRouter().route( logicalRoot, transaction );
+    private RelRoot route( RelRoot logicalRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor ) {
+        RelRoot routedRoot = transaction.getRouter().route( logicalRoot, transaction, executionTimeMonitor );
         if ( log.isTraceEnabled() ) {
             log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
@@ -220,7 +223,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention ) {
+    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         if ( log.isTraceEnabled() ) {
@@ -289,7 +292,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 ImmutableList.of(),
                 -1,
                 bindable,
-                getStatementType( preparedResult ) );
+                getStatementType( preparedResult ),
+                executionTimeMonitor );
     }
 
 

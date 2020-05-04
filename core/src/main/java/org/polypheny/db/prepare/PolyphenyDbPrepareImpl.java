@@ -144,6 +144,7 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
@@ -716,7 +717,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                 ImmutableList.of(),
                 -1,
                 dataContext -> Linq4j.asEnumerable( list ),
-                StatementType.SELECT );
+                StatementType.SELECT,
+                new ExecutionTimeMonitor() );
     }
 
 
@@ -815,7 +817,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         ImmutableList.of(),
                         -1,
                         null,
-                        StatementType.OTHER_DDL );
+                        StatementType.OTHER_DDL,
+                        new ExecutionTimeMonitor() );
             }
 
             final SqlValidator validator = createSqlValidator( context, catalogReader );
@@ -886,7 +889,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         : ImmutableList.of(),
                 maxRowCount,
                 bindable,
-                statementType );
+                statementType,
+                new ExecutionTimeMonitor() );
     }
 
 

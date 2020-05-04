@@ -158,7 +158,7 @@ public class ConfigClazz extends Config {
             try {
                 return Class.forName( in.nextString() );
             } catch ( ClassNotFoundException e ) {
-                log.error( "Caught exection!", e );
+                log.error( "Caught exception!", e );
                 return null;
             }
         }
