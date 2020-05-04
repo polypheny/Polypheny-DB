@@ -16,10 +16,12 @@
 
 package org.polypheny.db.router;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
-import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigClazz;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.config.WebUiPage;
@@ -53,14 +55,14 @@ public class RouterManager {
         configManager.registerWebUiGroup( routingGroup );
 
         // Settings
-        /*final ConfigClazz routerImplementation = new ConfigClazz( "routing/router", RouterFactory.class, SimpleRouterFactory.class );
-        configManager.registerConfig( icarusRouting );
+        final ConfigClazz routerImplementation = new ConfigClazz( "routing/router", RouterFactory.class, SimpleRouterFactory.class );
+        configManager.registerConfig( routerImplementation );
         routerImplementation.withUi( routingGroup.getId() );
         routerImplementation.addObserver( new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
                 ConfigClazz configClazz = (ConfigClazz) c;
-                if (currentRouter.getClass() != configClazz.getClazz() ) {
+                if ( currentRouter.getClass() != configClazz.getClazz() ) {
                     log.warn( "Change router implementation: " + configClazz.getClazz() );
                     try {
                         Constructor<?> ctor = configClazz.getClazz().getConstructor();
@@ -75,30 +77,7 @@ public class RouterManager {
             @Override
             public void restart( Config c ) {
             }
-        } );*/
-        // Delete this and uncomment above as soon as the UI supports ConfigClazz
-        final ConfigBoolean icarusRouting = new ConfigBoolean( "routing/icarus", "Whether to use Icarus routing", true );
-        configManager.registerConfig( icarusRouting );
-        icarusRouting.withUi( routingGroup.getId() );
-        icarusRouting.addObserver( new ConfigListener() {
-            @Override
-            public void onConfigChange( Config c ) {
-                ConfigBoolean configBoolean = (ConfigBoolean) c;
-                if ( currentRouter.getClass().getSimpleName().equals( "IcarusRouterFactory" ) && !configBoolean.getBoolean() ) {
-                    log.warn( "Change router implementation to SimpleRouter" );
-                    setCurrentRouter( new SimpleRouterFactory() );
-                } else if ( currentRouter.getClass().getSimpleName().equals( "SimpleRouterFactory" ) && configBoolean.getBoolean() ) {
-                    log.warn( "Change router implementation to IcarusRouter " );
-                    setCurrentRouter( new IcarusRouterFactory() );
-                }
-            }
-
-
-            @Override
-            public void restart( Config c ) {
-            }
         } );
-
     }
 
 
