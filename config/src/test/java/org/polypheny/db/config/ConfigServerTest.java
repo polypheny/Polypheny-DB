@@ -77,6 +77,9 @@ public class ConfigServerTest {
         Config c9 = new ConfigBoolean( "expose_php", true ).withUi( "g2" );
         cm.registerConfig( c9 );
 
+        Config clazz1 = new ConfigClazz( "clazz1", TestClass.class, FooImplementation.class ).withUi( "g2" );
+        cm.registerConfig( clazz1 );
+
         Config c10 = new ConfigInteger( "max_execution_time", 30 ).withUi( "g3" );
         Config c11 = new ConfigInteger( "max_input_time", 60 ).withUi( "g3" );
         Config c12 = new ConfigString( "memory_limit", "128M" ).withUi( "g3" );
@@ -130,6 +133,19 @@ public class ConfigServerTest {
             }
         }, 10000, 10000 );
 
+    }
+
+    private static class TestClass {
+        int a;
+    }
+    private static class FooImplementation extends TestClass {
+        int b;
+    }
+    private static class BarImplementation extends TestClass {
+        int c;
+    }
+    private static class FooBarImplementation extends TestClass {
+        int d;
     }
 
 

@@ -16,13 +16,24 @@
 
 package org.polypheny.db.router;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigClazz;
+import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.config.WebUiGroup;
+import org.polypheny.db.config.WebUiPage;
+import org.polypheny.db.router.SimpleRouter.SimpleRouterFactory;
 import org.polypheny.db.routing.Router;
 
+@Slf4j
 public class RouterManager {
 
     private static final RouterManager INSTANCE = new RouterManager();
 
-    private Router currentRouter = null;
+    private RouterFactory currentRouter = null;
 
 
     public static RouterManager getInstance() {
@@ -31,17 +42,57 @@ public class RouterManager {
 
 
     public RouterManager() {
-        setCurrentRouter( new SimpleRouter() );
+        final ConfigManager configManager = ConfigManager.getInstance();
+        final WebUiPage routingPage = new WebUiPage(
+                "routingPage",
+                "Routing Settings",
+                "Settings influencing the query routing." );
+        final WebUiGroup routingGroup = new WebUiGroup( "routingGroup", routingPage.getId() );
+        configManager.registerWebUiPage( routingPage );
+        configManager.registerWebUiGroup( routingGroup );
+
+        // Settings
+        final ConfigClazz routerImplementation = new ConfigClazz( "routing/router", RouterFactory.class, SimpleRouterFactory.class );
+        configManager.registerConfig( routerImplementation );
+        routerImplementation.withUi( routingGroup.getId() );
+        routerImplementation.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                ConfigClazz configClazz = (ConfigClazz) c;
+                if ( currentRouter.getClass() != configClazz.getClazz() ) {
+                    log.warn( "Change router implementation: " + configClazz.getClazz() );
+                    setCurrentRouter( configClazz );
+                }
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+            }
+        } );
+
+        setCurrentRouter( routerImplementation );
     }
 
 
-    public void setCurrentRouter( Router router ) {
-        this.currentRouter = router;
+    private void setCurrentRouter( ConfigClazz routerImplementation ) {
+        try {
+            Constructor<?> ctor = routerImplementation.getClazz().getConstructor();
+            RouterFactory instance = (RouterFactory) ctor.newInstance();
+            setCurrentRouter( instance );
+        } catch ( InstantiationException | InvocationTargetException | NoSuchMethodException | IllegalAccessException e ) {
+            log.error( "Exception while changing router implementation", e );
+        }
+    }
+
+
+    public void setCurrentRouter( RouterFactory routerFactory ) {
+        this.currentRouter = routerFactory;
     }
 
 
     public Router getRouter() {
-        return currentRouter;
+        return currentRouter.createInstance();
     }
 
 }

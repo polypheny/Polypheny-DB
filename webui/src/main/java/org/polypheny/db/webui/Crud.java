@@ -73,6 +73,7 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
@@ -1638,7 +1639,11 @@ public class Crud implements InformationObserver {
         try {
             @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
             rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
+            stopWatch.stop();
+            signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
         } catch ( Exception e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             return new Result( e );
@@ -2146,12 +2151,15 @@ public class Crud implements InformationObserver {
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
+            StopWatch stopWatch = new StopWatch();
+            stopWatch.start();
             if ( noLimit ) {
                 rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
             } else {
                 rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
             }
-
+            stopWatch.stop();
+            signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {

@@ -75,8 +75,8 @@ public class ConfigString extends ConfigScalar {
 
 
     @Override
-    public void parseStringAndSetValue( String value ) {
-        setString( value );
+    public boolean parseStringAndSetValue( String value ) {
+        return setString( value );
     }
 
 }

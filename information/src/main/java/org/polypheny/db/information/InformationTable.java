@@ -66,6 +66,25 @@ public class InformationTable extends InformationHtml {
     }
 
 
+    public void updateLabels( List<String> labels ) {
+        this.labels = labels;
+        notifyManager();
+    }
+
+
+    public void updateLabels( Object... row ) {
+        List<String> list = new LinkedList<>();
+        for ( Object o : row ) {
+            if ( o != null ) {
+                list.add( o.toString() );
+            } else {
+                list.add( "NULL" );
+            }
+        }
+        updateLabels( list );
+    }
+
+
     public void addRow( List<String> row ) {
         rows.add( row );
         notifyManager();

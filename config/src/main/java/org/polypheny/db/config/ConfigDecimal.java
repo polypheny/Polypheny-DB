@@ -76,8 +76,8 @@ public class ConfigDecimal extends ConfigScalar {
 
 
     @Override
-    public void parseStringAndSetValue( String value ) {
-        setDecimal( new BigDecimal( value ) );
+    public boolean parseStringAndSetValue( String value ) {
+        return setDecimal( new BigDecimal( value ) );
     }
 
 }

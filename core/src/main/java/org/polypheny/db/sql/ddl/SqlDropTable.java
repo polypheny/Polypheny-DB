@@ -122,7 +122,10 @@ public class SqlDropTable extends SqlDropObject {
         // Delete data from the stores and remove the column placement
         try {
             for ( int storeId : table.placementsByStore.keySet() ) {
+                // Delete table on store
                 StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
+                // Inform routing
+                transaction.getRouter().dropPlacements( catalog.getColumnPlacementsOnStore( storeId, table.id ) );
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
                     catalog.deleteColumnPlacement( storeId, columnId );

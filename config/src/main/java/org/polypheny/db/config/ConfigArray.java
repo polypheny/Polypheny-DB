@@ -254,7 +254,7 @@ public class ConfigArray extends Config {
 
 
     @Override
-    public void parseStringAndSetValue( String valueStr ) {
+    public boolean parseStringAndSetValue( String valueStr ) {
         throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
     }
 

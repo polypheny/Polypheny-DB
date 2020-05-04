@@ -82,7 +82,7 @@ public class ConfigDouble extends ConfigScalar {
 
 
     @Override
-    public void parseStringAndSetValue( String value ) {
-        setDouble( Double.parseDouble( value ) );
+    public boolean parseStringAndSetValue( String value ) {
+        return setDouble( Double.parseDouble( value ) );
     }
 }
