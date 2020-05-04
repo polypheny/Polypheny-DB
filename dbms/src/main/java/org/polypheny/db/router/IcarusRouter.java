@@ -30,6 +30,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import lombok.AllArgsConstructor;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.stat.StatUtils;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -104,7 +107,7 @@ public class IcarusRouter extends AbstractRouter {
                     transaction.getQueryAnalyzer().addGroup( group );
                     InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownStores.values() ) );
                     Map<Integer, Integer> entry = routingTable.get( queryClassString );
-                    Map<Integer, Long> timesEntry = routingTable.times.get( queryClassString );
+                    Map<Integer, CircularFifoQueue<Double>> timesEntry = routingTable.times.get( queryClassString );
                     List<String> row1 = new LinkedList<>();
                     List<String> row2 = new LinkedList<>();
                     for ( Entry<Integer, Integer> e : entry.entrySet() ) {
@@ -116,7 +119,8 @@ public class IcarusRouter extends AbstractRouter {
                             row2.add( "" );
                         } else {
                             row1.add( e.getValue() + "" );
-                            row2.add( timesEntry.get( e.getKey() ) / 1000000.0 + " ms" );
+                            double mean = StatUtils.mean( ArrayUtils.toPrimitive( timesEntry.get( e.getKey() ).toArray( new Double[0] ) ), 0, timesEntry.get( e.getKey() ).size() );
+                            row2.add( mean / 1000000.0 + " ms" );
                         }
                     }
                     table.addRow( row1 );
@@ -217,11 +221,13 @@ public class IcarusRouter extends AbstractRouter {
 
     private static class IcarusRoutingTable implements ExecutionTimeObserver {
 
+        public static final int WINDOW_SIZE = 25;
+
         public static final int MISSING_VALUE = -1;
         public static final int NO_PLACEMENT = -2;
 
         private final Map<String, Map<Integer, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Percentage)
-        private final Map<String, Map<Integer, Long>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Time)
+        private final Map<String, Map<Integer, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Time)
 
         private final Map<Integer, String> knownStores = new HashMap<>(); // Store ID -> Store Name
 
@@ -303,25 +309,27 @@ public class IcarusRouter extends AbstractRouter {
             // Add to times map
             while ( processingQueue.size() > 0 ) {
                 ExecutionTime executionTime = processingQueue.poll();
-                Map<Integer, Long> row = times.get( executionTime.queryClassString );
+                Map<Integer, CircularFifoQueue<Double>> row = times.get( executionTime.queryClassString );
                 if ( row.containsKey( executionTime.storeId ) ) {
-                    long time = (row.get( executionTime.storeId ) + executionTime.nanoTime) / 2;
-                    row.replace( executionTime.storeId, time );
+                    row.get( executionTime.storeId ).offer( (double) executionTime.nanoTime );
                 } else {
-                    row.put( executionTime.storeId, executionTime.nanoTime );
+                    CircularFifoQueue<Double> queue = new CircularFifoQueue<>( WINDOW_SIZE );
+                    queue.offer( (double) executionTime.nanoTime );
+                    row.put( executionTime.storeId, queue );
                 }
             }
 
             // Update routing table
             for ( String queryClass : routingTable.keySet() ) {
-                Map<Integer, Long> timeRow = times.get( queryClass );
+                Map<Integer, CircularFifoQueue<Double>> timeRow = times.get( queryClass );
                 // find fastest
                 int fastestStore = -1;
-                long fastestTime = Long.MAX_VALUE;
-                for ( Map.Entry<Integer, Long> entry : timeRow.entrySet() ) {
-                    if ( entry.getValue() < fastestTime ) {
+                double fastestTime = Double.MAX_VALUE;
+                for ( Map.Entry<Integer, CircularFifoQueue<Double>> entry : timeRow.entrySet() ) {
+                    double mean = StatUtils.mean( ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ), 0, entry.getValue().size() );
+                    if ( mean < fastestTime ) {
                         fastestStore = entry.getKey();
-                        fastestTime = entry.getValue();
+                        fastestTime = mean;
                     }
                 }
                 Map<Integer, Integer> newRow = new HashMap<>();
@@ -361,7 +369,7 @@ public class IcarusRouter extends AbstractRouter {
             processingQueueLock.lock();
             for ( CatalogColumnPlacement placement : placements ) {
                 knownStores.remove( placement.storeId );
-                for ( Map<Integer, Long> entry : times.values() ) {
+                for ( Map<Integer, CircularFifoQueue<Double>> entry : times.values() ) {
                     entry.remove( placement.storeId );
                 }
                 for ( Map<Integer, Integer> entry : routingTable.values() ) {
