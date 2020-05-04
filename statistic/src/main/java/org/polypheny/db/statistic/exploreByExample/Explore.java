@@ -190,18 +190,20 @@ public class Explore {
                     }
                     if ( dataType[i].equals( "INTEGER" ) ) {
                         includesInteger = true;
-                        allCols.add( "AVG(" + selecdedCols.get( i ) + ")" );
+                        allCols.add( "AVG(" + selecdedCols.get( i ) + ") AS " + selecdedCols.get( i ).substring( selecdedCols.get( i ).lastIndexOf( '.' ) + 1 ));
                         intCols.add( selecdedCols.get( i ) );
                         allBlankCols.add( selecdedCols.get( i ) );
                     }
                 }
 
                 if ( includesInteger ) {
-                    getMins( intCols ).forEach( ( s, min ) -> unionList.add( "\nUNION \nSELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min ) );
-                    getMaxs( intCols ).forEach( ( s, max ) -> unionList.add( "\nUNION \nSELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max ) );
+                    getMins( intCols ).forEach( ( s, min ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min + "\nLIMIT 1)")  );
+                    getMaxs( intCols ).forEach( ( s, max ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max + "\nLIMIT 1)") );
                 }
+
+
                 if ( includesVarchar ) {
-                    sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", goupByList ) + String.join( "", unionList );
+                    sqlStatment = "(SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", goupByList )+ "\nLIMIT 200)" + String.join( "", unionList ) ;
                 } else {
                     sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + String.join( "", unionList );
                 }
@@ -239,7 +241,8 @@ public class Explore {
 
 
     private List<String[]> getAllData( String query ) {
-        String queryLimit = query.split( "\nLIMIT" )[0] + "\nLIMIT 500";
+        String queryLimit = query;
+
 
         ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( queryLimit );
         List<String[]> allDataTable = new ArrayList<>( Arrays.asList( exploreQueryResult.data ) );
