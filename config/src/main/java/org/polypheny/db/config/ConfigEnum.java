@@ -81,8 +81,8 @@ public class ConfigEnum extends Config {
 
 
     @Override
-    public void parseStringAndSetValue( String value ) {
-        setEnum( getByString( value ) );
+    public boolean parseStringAndSetValue( String value ) {
+        return setEnum( getByString( value ) );
     }
 
 
