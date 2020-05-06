@@ -878,40 +878,46 @@ public class Crud implements InformationObserver {
         long temp = 0;
 
         Explore explore = exploreManager.createSqlQuery( null, queryExplorationRequest.query );
-        String query = explore.getSqlStatment();
+        if(explore.getDataType() == null){
+            result = new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" );
+        }else {
 
-        try {
-            temp = System.nanoTime();
-            result = executeSqlSelect( transaction, queryExplorationRequest, query, false, getPageSize() ).setInfo( new Debug().setGeneratedQuery( query ) );
-            executionTime += System.nanoTime() - temp;
-            if ( autoCommit ) {
-                transaction.commit();
-                transaction = getTransaction( queryExplorationRequest.analyze );
-            }
-        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            executionTime += System.nanoTime() - temp;
-            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+            String query = explore.getSqlStatment();
+
             try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", ex );
+                temp = System.nanoTime();
+                result = executeSqlSelect( transaction, queryExplorationRequest, query, false, getPageSize() ).setInfo( new Debug().setGeneratedQuery( query ) );
+                executionTime += System.nanoTime() - temp;
+                if ( autoCommit ) {
+                    transaction.commit();
+                    transaction = getTransaction( queryExplorationRequest.analyze );
+                }
+            } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+                log.error( "Caught exception while executing a query from the console", e );
+                executionTime += System.nanoTime() - temp;
+                result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", ex );
+                }
             }
+
+            result.setExplorerId( explore.getId() );
+            if ( !explore.isClassificationPossible() ) {
+                result.setClassificationInfo( "NoClassificationPossible" );
+
+            } else {
+                result.setClassificationInfo( "ClassificationPossible" );
+            }
+
+            result.setCurrentPage( queryExplorationRequest.currentPage ).setTable( queryExplorationRequest.tableId );
+            int tableSize = 0;
+
+            tableSize = explore.getTableSize();
+            result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+
         }
-
-        result.setExplorerId( explore.getId() );
-        if ( !explore.isClassificationPossible() ) {
-            result.setClassificationInfo( "NoClassificationPossible" );
-        } else {
-            result.setClassificationInfo( "ClassificationPossible" );
-        }
-
-        result.setCurrentPage( queryExplorationRequest.currentPage ).setTable( queryExplorationRequest.tableId );
-        int tableSize = 0;
-
-        tableSize = explore.getTableSize();
-        result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
-
         return result;
     }
 

@@ -125,8 +125,14 @@ public class Explore {
         for ( int i = 0; i < exploreQueryResult.typeInfo.size(); i++ ) {
             String name = fullNames[i].substring( fullNames[i].lastIndexOf( "." ) + 1 );
             if ( exploreQueryResult.name.get( i ).startsWith( name ) ) {
-                dataType[i] = exploreQueryResult.typeInfo.get( i );
-                nameAndType.put( fullNames[i], dataType[i] );
+                String type = exploreQueryResult.typeInfo.get( i );
+                if( type.equals( "VARCHAR" ) || type.equals( "INTEGER" )  || type.equals( "BIGINT" ) || type.equals( "SMALLINT" ) || type.equals( "TINYINT" ) || type.equals( "DECIMAL" ) ){
+                    dataType[i] = exploreQueryResult.typeInfo.get( i );
+                    nameAndType.put( fullNames[i], dataType[i] );
+                } else {
+                    dataType = null;
+                    return null;
+                }
             }
         }
 
@@ -188,7 +194,7 @@ public class Explore {
                         goupByList.add( selecdedCols.get( i ) );
                         allBlankCols.add( selecdedCols.get( i ) );
                     }
-                    if ( dataType[i].equals( "INTEGER" ) ) {
+                    if ( dataType[i].equals( "INTEGER" ) || dataType[i].equals( "BIGINT" ) || dataType[i].equals( "SMALLINT" ) || dataType[i].equals( "TINYINT" ) || dataType[i].equals( "DECIMAL" ) ) {
                         includesInteger = true;
                         allCols.add( "AVG(" + selecdedCols.get( i ) + ") AS " + selecdedCols.get( i ).substring( selecdedCols.get( i ).lastIndexOf( '.' ) + 1 ));
                         intCols.add( selecdedCols.get( i ) );
@@ -340,7 +346,7 @@ public class Explore {
                 }
                 atts.addElement( new Attribute( qualifiedNames.get( dim ), attVals ) );
                 attValsEl[dim] = attVals;
-            } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
+            } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) || dataType[dim].equals( "SMALLINT" ) || dataType[dim].equals( "TINYINT" ) || dataType[dim].equals( "DECIMAL" ) ) {
                 atts.addElement( new Attribute( qualifiedNames.get( dim ) ) );
             }
         }
@@ -358,7 +364,7 @@ public class Explore {
                     } else {
                         vals[dim] = Utils.missingValue();
                     }
-                } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) ) {
+                } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) || dataType[dim].equals( "SMALLINT" ) || dataType[dim].equals( "TINYINT" ) || dataType[dim].equals( "DECIMAL" )) {
                     vals[dim] = Double.parseDouble( table.get( obj )[dim] );
                 }
             }
