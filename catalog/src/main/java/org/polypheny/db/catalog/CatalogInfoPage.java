@@ -46,16 +46,16 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.catalog = catalog;
         infoManager = InformationManager.getInstance();
 
-        InformationPage page = new InformationPage( "catalog", "Catalog" );
+        InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
 
-        this.databaseInformation = addCatalogInformationTable( page, "databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
+        this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
 
-        this.schemaInformation = addCatalogInformationTable( page, "schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
+        this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
 
-        this.tableInformation = addCatalogInformationTable( page, "tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
 
-        this.columnInformation = addCatalogInformationTable( page, "columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
+        this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
 
         addPersistentInfo( page );
 
@@ -75,7 +75,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
 
     private InformationTable addPersistentInfo( InformationPage page ) {
-        InformationGroup catalogGroup = new InformationGroup( page, "Persistent" );
+        InformationGroup catalogGroup = new InformationGroup( page, "Persistency" );
         infoManager.addGroup( catalogGroup );
         InformationTable table = new InformationTable( catalogGroup, Collections.singletonList( "is persistent" ) );
         infoManager.registerInformation( table );
