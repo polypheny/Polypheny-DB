@@ -97,7 +97,7 @@ public class JavaInformation {
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
                     long current = Runtime.getRuntime().totalMemory();
-                    heapOverTimeGraph.addData( "Free", current );
+                    heapOverTimeGraph.addData( "Total", current );
                 },
                 "Update Java runtime information",
                 TaskPriority.LOW,
