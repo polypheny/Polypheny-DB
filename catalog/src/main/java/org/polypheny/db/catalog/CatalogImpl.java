@@ -644,8 +644,6 @@ public class CatalogImpl extends Catalog {
             databases.put( id, database );
             databaseNames.put( name, database );
             databaseChildren.put( id, ImmutableList.<Long>builder().build() );
-
-
         }
         listeners.firePropertyChange( "database", null, database );
         return id;
@@ -660,8 +658,6 @@ public class CatalogImpl extends Catalog {
                 databases.remove( databaseId );
                 databaseNames.remove( database.name );
                 databaseChildren.remove( databaseId );
-
-
             }
         }
     }
@@ -680,7 +676,6 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             users.put( user.id, user );
             userNames.put( user.name, user );
-
         }
         listeners.firePropertyChange( "user", null, user );
         return user.id;
@@ -861,8 +856,6 @@ public class CatalogImpl extends Catalog {
                 List<Long> children = new ArrayList<>( Objects.requireNonNull( databaseChildren.get( databaseId ) ) );
                 children.add( id );
                 databaseChildren.replace( databaseId, ImmutableList.copyOf( children ) );
-
-
             }
             listeners.firePropertyChange( "schema", null, schema );
             return id;
@@ -901,8 +894,6 @@ public class CatalogImpl extends Catalog {
                 schemas.replace( schemaId, schema );
                 schemaNames.remove( new Object[]{ old.databaseId, old.name } );
                 schemaNames.put( new Object[]{ old.databaseId, name }, schema );
-
-
             }
             listeners.firePropertyChange( "schema", old, schema );
         } catch ( NullPointerException e ) {
@@ -925,14 +916,12 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 schemas.replace( schemaId, schema );
                 schemaNames.replace( new Object[]{ schema.databaseId, schema.name }, schema );
-
             }
             listeners.firePropertyChange( "schema", old, schema );
 
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
-
     }
 
 
@@ -1135,7 +1124,21 @@ public class CatalogImpl extends Catalog {
             long id = tableIdBuilder.getAndIncrement();
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
-            CatalogTable table = new CatalogTable( id, name, ImmutableList.of(), ImmutableList.of(), schemaId, schema.name, schema.databaseId, schema.databaseName, ownerId, owner.name, tableType, definition, null, ImmutableMap.of() );
+            CatalogTable table = new CatalogTable(
+                    id,
+                    name,
+                    ImmutableList.of(),
+                    ImmutableList.of(),
+                    schemaId,
+                    schema.name,
+                    schema.databaseId,
+                    schema.databaseName,
+                    ownerId,
+                    owner.name,
+                    tableType,
+                    definition,
+                    null,
+                    ImmutableMap.of() );
 
             synchronized ( this ) {
                 tables.put( id, table );
@@ -1145,8 +1148,6 @@ public class CatalogImpl extends Catalog {
                 List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
                 children.add( id );
                 schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
-
-
             }
             openTable = id;
             listeners.firePropertyChange( "table", null, table );
@@ -1190,8 +1191,6 @@ public class CatalogImpl extends Catalog {
                 tables.replace( tableId, table );
                 tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
                 tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
-
-
             }
             listeners.firePropertyChange( "table", old, table );
         } catch ( NullPointerException e ) {
@@ -1222,7 +1221,6 @@ public class CatalogImpl extends Catalog {
                 tables.remove( tableId );
                 tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
 
-
             }
             listeners.firePropertyChange( "table", table, null );
         } catch ( NullPointerException e ) {
@@ -1246,8 +1244,6 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 tables.replace( tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-
-
             }
             listeners.firePropertyChange( "table", old, table );
         } catch ( NullPointerException e ) {
@@ -1302,15 +1298,23 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
             CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
-            CatalogColumnPlacement placement = new CatalogColumnPlacement( column.tableId, column.tableName, columnId, column.name, storeId, store.uniqueName, placementType, physicalSchemaName, physicalTableName, physicalColumnName );
+            CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    column.tableId,
+                    column.tableName,
+                    columnId,
+                    column.name,
+                    storeId,
+                    store.uniqueName,
+                    placementType,
+                    physicalSchemaName,
+                    physicalTableName,
+                    physicalColumnName );
 
             synchronized ( this ) {
                 columnPlacements.put( new Object[]{ storeId, columnId }, placement );
                 CatalogTable table = CatalogTable.addColumnPlacement( Objects.requireNonNull( tables.get( column.tableId ) ), columnId, storeId );
                 tables.replace( column.tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-
-
             }
             listeners.firePropertyChange( "columnPlacement", null, placement );
         } catch ( NullPointerException e ) {
@@ -1334,8 +1338,6 @@ public class CatalogImpl extends Catalog {
                 tables.replace( table.id, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
                 columnPlacements.remove( new Object[]{ storeId, columnId } );
-
-
             }
             listeners.firePropertyChange( "columnPlacement", table, null );
         } catch ( UnknownTableException | UnknownColumnException e ) {
@@ -1418,8 +1420,6 @@ public class CatalogImpl extends Catalog {
             CatalogColumnPlacement placement = CatalogColumnPlacement.replacePhysicalNames( old, physicalSchemaName, physicalTableName, physicalColumnName );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
-
-
             }
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
