@@ -293,7 +293,7 @@ public class CatalogImpl extends Catalog {
     public void restoreColumnPlacements( Transaction trx ) throws GenericCatalogException {
         StoreManager manager = StoreManager.getInstance();
 
-        List<Long> restoredTables = new ArrayList<>();
+        Map<Integer, List<Long>> restoredTables = new HashMap<>();
 
         for ( CatalogColumn c : columns.values() ) {
             List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
@@ -311,22 +311,40 @@ public class CatalogImpl extends Catalog {
                     }
                     // TODO only full placements atm here
 
-                    if ( !restoredTables.contains( c.tableId ) ) {
+                    if ( !restoredTables.containsKey( store.getStoreId() ) ) {
                         store.createTable( trx.getPrepareContext(), catalogTable );
-                        restoredTables.add( c.tableId );
+                        restoredTables.put( store.getStoreId(), Collections.singletonList( catalogTable.id ) );
+
+                    } else if ( !(restoredTables.containsKey( store.getStoreId() ) && restoredTables.get( store.getStoreId() ).contains( catalogTable.id )) ) {
+                        store.createTable( trx.getPrepareContext(), catalogTable );
+                        restoredTables.get( store.getStoreId() ).add( catalogTable.id );
                     }
 
                 }
             } else {
                 Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.storeId, p -> manager.getStore( p.storeId ).isPersistent() ) );
+
                 if ( !persistent.containsValue( true ) ) {
                     // no persistent placement for this column
                     try {
                         CatalogTable table = getTable( c.tableId );
                         for ( CatalogColumnPlacement p : placements ) {
-                            manager.getStore( p.storeId ).addColumn( null, table, getColumn( p.columnId ) );
+                            Store store = manager.getStore( p.storeId );
+
+                            if ( !restoredTables.containsKey( store.getStoreId() ) ) {
+                                store.createTable( trx.getPrepareContext(), table );
+                                List<Long> ids = new ArrayList<>();
+                                ids.add( table.id );
+                                restoredTables.put( store.getStoreId(), ids );
+
+                            } else if ( !(restoredTables.containsKey( store.getStoreId() ) && restoredTables.get( store.getStoreId() ).contains( table.id )) ) {
+                                store.createTable( trx.getPrepareContext(), table );
+                                List<Long> ids = new ArrayList<>( restoredTables.get( store.getStoreId() ) );
+                                ids.add( table.id );
+                                restoredTables.put( store.getStoreId(), ids );
+                            }
                         }
-                    } catch ( UnknownColumnException | UnknownTableException e ) {
+                    } catch ( UnknownTableException e ) {
                         throw new GenericCatalogException( e );
                     }
 
@@ -340,6 +358,11 @@ public class CatalogImpl extends Catalog {
                 }
             }
         }
+    }
+
+
+    private String buildStoreSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
+        return storeName + "_" + logicalSchema + "_" + physicalSchema;
     }
 
 
@@ -2326,10 +2349,17 @@ public class CatalogImpl extends Catalog {
         uniqueName = uniqueName.toLowerCase();
 
         int id = storeIdBuilder.getAndIncrement();
-        CatalogStore store = new CatalogStore( id, uniqueName, adapter, settings );
+        Map<String, String> temp = new HashMap<>();
+        settings.forEach( temp::put );
+        CatalogStore store = new CatalogStore( id, uniqueName, adapter, temp );
         synchronized ( this ) {
             stores.put( id, store );
             storeNames.put( uniqueName, store );
+        }
+        try {
+            commit();
+        } catch ( NoTablePrimaryKeyException e ) {
+            throw new RuntimeException( "An error occured while creating the store." );
         }
         listeners.firePropertyChange( "store", null, store );
         return id;

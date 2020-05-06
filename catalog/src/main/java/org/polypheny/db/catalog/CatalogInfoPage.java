@@ -40,6 +40,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable schemaInformation;
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
+    private final InformationTable storeInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -48,6 +49,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
         InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
+
+        this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name", "Persistent" ) );
 
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
 
@@ -95,11 +98,16 @@ public class CatalogInfoPage implements PropertyChangeListener {
         schemaInformation.reset();
         tableInformation.reset();
         columnInformation.reset();
+        storeInformation.reset();
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
         }
         try {
+            catalog.getStores().forEach( s -> {
+                storeInformation.addRow( s.id, s.uniqueName, s.persistent );
+            } );
+
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
             } );

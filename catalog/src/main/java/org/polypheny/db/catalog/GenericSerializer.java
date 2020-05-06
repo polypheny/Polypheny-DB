@@ -24,6 +24,8 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Objects;
 import lombok.NonNull;
 import org.mapdb.DataInput2;
 import org.mapdb.DataOutput2;
