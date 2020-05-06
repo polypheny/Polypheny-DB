@@ -441,9 +441,10 @@ public class IcarusRouter extends AbstractRouter {
                 row = new HashMap<>();
                 if ( fastestStore != -1 && fastestTime > 0 ) {
                     row.put( fastestStore, 100 );
-                } else {
-                    log.error( "Something went wrong while analyzing data. This should not happen!" );
                 }
+                /*else {
+                    log.error( "Something went wrong while analyzing data. This should not happen!" );
+                }*/
             }
             return row;
         }
