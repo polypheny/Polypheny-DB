@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;

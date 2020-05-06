@@ -39,7 +39,6 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.Aggregate.Group;
