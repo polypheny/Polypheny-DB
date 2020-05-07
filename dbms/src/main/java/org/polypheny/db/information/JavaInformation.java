@@ -89,7 +89,7 @@ public class JavaInformation {
                 groupHeapOverTime,
                 GraphType.LINE,
                 null,
-                new GraphData<Long>( "Free", new Long[]{ Runtime.getRuntime().totalMemory() }, 20 )
+                new GraphData<Long>( "Total", new Long[]{ Runtime.getRuntime().totalMemory() }, 20 )
         );
         heapOverTimeGraph.minY( 1 );
         im.registerInformation( heapOverTimeGraph );
