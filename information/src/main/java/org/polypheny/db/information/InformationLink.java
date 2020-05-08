@@ -32,8 +32,8 @@ public class InformationLink extends Information {
     /**
      * Constructor
      *
-     * @param group The group this object belongs to
-     * @param label Name of the link
+     * @param group      The group this object belongs to
+     * @param label      Name of the link
      * @param routerLink Link to a subpage of the UI
      */
     public InformationLink( final InformationGroup group, final String label, final String... routerLink ) {
@@ -44,8 +44,8 @@ public class InformationLink extends Information {
     /**
      * Constructor
      *
-     * @param groupId Id of the group this object belongs to
-     * @param label Name of the link
+     * @param groupId    Id of the group this object belongs to
+     * @param label      Name of the link
      * @param routerLink Link to a subpage of the UI
      */
     public InformationLink( final String groupId, final String label, final String... routerLink ) {
@@ -56,9 +56,9 @@ public class InformationLink extends Information {
     /**
      * Constructor
      *
-     * @param id Id of this Information object
-     * @param groupId Id of the group this object belongs to
-     * @param label Name of the link
+     * @param id         Id of this Information object
+     * @param groupId    Id of the group this object belongs to
+     * @param label      Name of the link
      * @param routerLink Link to a subpage of the UI
      */
     public InformationLink( final String id, final String groupId, final String label, final String... routerLink ) {
@@ -71,7 +71,7 @@ public class InformationLink extends Information {
     /**
      * Update a InformationLink object
      *
-     * @param label The name of the link when it is displayed
+     * @param label      The name of the link when it is displayed
      * @param routerLink Angular route to another subpage of the WebUI
      */
     public void updateLink( final String label, final String... routerLink ) {

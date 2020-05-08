@@ -19,6 +19,7 @@ package org.polypheny.db.information;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.polypheny.db.information.InformationDuration.Duration;
@@ -59,6 +60,7 @@ public class InformationPage extends Refreshable {
     /**
      * All items on this page will be rendered in full width
      */
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private boolean fullWidth = false;
 
     /**
@@ -70,11 +72,10 @@ public class InformationPage extends Refreshable {
     /**
      * Constructor
      *
-     * @param id Id of this page
      * @param title Title of this page
      */
-    public InformationPage( final String id, final String title ) {
-        this.id = id;
+    public InformationPage( final String title ) {
+        this.id = UUID.randomUUID().toString();
         this.name = title;
     }
 
@@ -82,26 +83,27 @@ public class InformationPage extends Refreshable {
     /**
      * Constructor
      *
-     * @param id Id of this page
-     * @param title Title of this page
+     * @param title       Title of this page
      * @param description Description of this page, will be displayed in the UI
      */
-    public InformationPage( final String id, final String title, final String description ) {
-        this( id, title );
+    public InformationPage( final String title, final String description ) {
+        this.id = UUID.randomUUID().toString();
+        this.name = title;
         this.description = description;
     }
 
 
     /**
      * Constructor
-     * When creating a page implicitly
+     *
+     * @param id          Id of this page
+     * @param title       Title of this page
+     * @param description Description of this page, will be displayed in the UI
      */
-    public InformationPage( final String id ) {
+    public InformationPage( final String id, final String title, final String description ) {
         this.id = id;
-        this.name = id;
-        this.implicit = true;
-        //todo default icon
-        this.addGroup( new InformationGroup( id, id ).setImplicit( true ) );
+        this.name = title;
+        this.description = description;
     }
 
 

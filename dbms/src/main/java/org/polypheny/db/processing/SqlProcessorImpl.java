@@ -54,6 +54,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -189,7 +190,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
+            InformationPage page = new InformationPage( "Logical Query Plan" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
             queryAnalyzer.addPage( page );
@@ -240,7 +241,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         ImmutableList.of(),
                         -1,
                         null,
-                        Meta.StatementType.OTHER_DDL );
+                        Meta.StatementType.OTHER_DDL,
+                        new ExecutionTimeMonitor() );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "Exception while acquiring global schema lock", e );
             } finally {

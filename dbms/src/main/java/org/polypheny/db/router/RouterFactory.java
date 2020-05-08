@@ -14,30 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.information;
+package org.polypheny.db.router;
 
+import org.polypheny.db.routing.Router;
 
-import lombok.NoArgsConstructor;
+public abstract class RouterFactory {
 
-
-/**
- * A response that can be sent back to the UI after executing an InformationAction
- */
-@NoArgsConstructor
-public class InformationResponse {
-
-    String errorMsg;
-    String successMsg;
-
-
-    public InformationResponse message( final String message ) {
-        this.successMsg = message;
-        return this;
-    }
-
-
-    public InformationResponse error( final String error ) {
-        this.errorMsg = error;
-        return this;
-    }
+    public abstract Router createInstance();
 }

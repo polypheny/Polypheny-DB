@@ -81,8 +81,8 @@ public class ConfigInteger extends ConfigScalar {
 
 
     @Override
-    public void parseStringAndSetValue( String value ) {
-        setInt( Integer.parseInt( value ) );
+    public boolean parseStringAndSetValue( String value ) {
+        return setInt( Integer.parseInt( value ) );
     }
 
 }

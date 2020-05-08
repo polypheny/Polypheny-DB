@@ -8,11 +8,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.time.StopWatch;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
-
+@Slf4j
 class BackgroundTaskHandle implements Runnable {
 
     @Getter
@@ -65,13 +66,17 @@ class BackgroundTaskHandle implements Runnable {
 
     @Override
     public void run() {
-        stopWatch.reset();
-        stopWatch.start();
-        task.backgroundTask();
-        stopWatch.stop();
-        avgExecTime.add( stopWatch.getTime() );
-        if ( maxExecTime < stopWatch.getTime() ) {
-            maxExecTime = stopWatch.getTime();
+        try {
+            stopWatch.reset();
+            stopWatch.start();
+            task.backgroundTask();
+            stopWatch.stop();
+            avgExecTime.add( stopWatch.getTime() );
+            if ( maxExecTime < stopWatch.getTime() ) {
+                maxExecTime = stopWatch.getTime();
+            }
+        } catch ( Exception e ) {
+            log.error( "Caught exception in background task", e );
         }
     }
 

@@ -861,7 +861,7 @@ public abstract class Config {
      *
      * @param value
      */
-    public abstract void parseStringAndSetValue( String value );
+    public abstract boolean parseStringAndSetValue( String value );
 
 
     /**

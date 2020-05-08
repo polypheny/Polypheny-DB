@@ -28,7 +28,7 @@ public class BackgroundTaskManager {
 
 
     private BackgroundTaskManager() {
-        informationPage = new InformationPage( "BackgroundTaskManagerPage", "Background Tasks" );
+        informationPage = new InformationPage( "Background Tasks" );
         informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Overview" );
 
@@ -75,8 +75,7 @@ public class BackgroundTaskManager {
                         handle.getDescription(),
                         handle.getSchedulingType().name(),
                         handle.getPriority().name(),
-                        String.format( Locale.ENGLISH, "%.2f", handle.getAverageExecutionTime() ) + " ms",
-                        "" + handle.getMaxExecTime() + " ms" );
+                        String.format( Locale.ENGLISH, "%.2f", handle.getAverageExecutionTime() ) + " ms", "" + handle.getMaxExecTime() + " ms" );
             }
         }
     }

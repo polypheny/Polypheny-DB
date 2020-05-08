@@ -31,7 +31,7 @@ public class JavaInformation {
     public JavaInformation() {
         InformationManager im = InformationManager.getInstance();
 
-        InformationPage page = new InformationPage( "javaInfo", "Java Runtime" );
+        InformationPage page = new InformationPage( "Java Runtime" );
         im.addPage( page );
 
         // JVM Info
@@ -91,6 +91,7 @@ public class JavaInformation {
                 null,
                 new GraphData<Long>( "Free", new Long[]{ Runtime.getRuntime().totalMemory() }, 20 )
         );
+        heapOverTimeGraph.minY( 1 );
         im.registerInformation( heapOverTimeGraph );
 
         BackgroundTaskManager.INSTANCE.registerTask(

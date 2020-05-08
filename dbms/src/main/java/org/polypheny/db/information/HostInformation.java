@@ -42,7 +42,7 @@ public class HostInformation {
         HardwareAbstractionLayer hal = si.getHardware();
         OperatingSystem os = si.getOperatingSystem();
 
-        InformationPage page = new InformationPage( "host", "Host" );
+        InformationPage page = new InformationPage( "Host" );
         im.addPage( page );
 
         //
