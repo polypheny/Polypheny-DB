@@ -266,6 +266,9 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
         if ( oldColumnList != null ) {
             CatalogTable catalogTable = getCatalogTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+            if ( catalogTable == null ) {
+                throw new PolyphenyDbException( "Unknown table: " + ((SqlIdentifier) insert.getTargetTable()).names.toString() );
+            }
             SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][catalogTable.columnIds.size()];
             int pos = 0;
