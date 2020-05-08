@@ -521,6 +521,9 @@ public abstract class SqlImplementor {
                         final Enum symbol = (Enum) literal.getValue();
                         return SqlLiteral.createSymbol( symbol, POS );
                     }
+                    if ( RexLiteral.isNullLiteral( literal ) ) {
+                        return SqlLiteral.createNull( POS );
+                    }
                     switch ( literal.getTypeName().getFamily() ) {
                         case CHARACTER:
                             return SqlLiteral.createCharString( (String) literal.getValue2(), POS );
