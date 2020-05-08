@@ -185,6 +185,9 @@ public interface PolyphenyDbResource {
     @BaseMessage("Cannot assign to target field ''{0}'' of type {1} from source field ''{2}'' of type {3}")
     ExInst<SqlValidatorException> typeNotAssignable( String a0, String a1, String a2, String a3 );
 
+    @BaseMessage( "Array exceeds cardinality in column ''{0}''" )
+    ExInst<SqlValidatorException> exceededCardinality( String a0 );
+
     @BaseMessage("Database ''{0}'' not found")
     ExInst<SqlValidatorException> databaseNotFound( String a0 );
 

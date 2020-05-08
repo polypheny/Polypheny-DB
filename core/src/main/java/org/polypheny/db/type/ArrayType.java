@@ -35,6 +35,7 @@ package org.polypheny.db.type;
 
 
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
@@ -46,15 +47,26 @@ import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 public class ArrayType extends AbstractPolyType {
 
     private final RelDataType elementType;
+    @Getter
+    private final long cardinality;
 
 
     /**
      * Creates an ArrayType. This constructor should only be called from a factory method.
      */
     public ArrayType( RelDataType elementType, boolean isNullable ) {
+        this( elementType, isNullable, -1 );
+    }
+
+
+    /**
+     * Creates an ArrayType. This constructor should only be called from a factory method.
+     */
+    public ArrayType( final RelDataType elementType, final boolean isNullable, final long cardinality ) {
         super( PolyType.ARRAY, isNullable, null );
         this.elementType = Objects.requireNonNull( elementType );
         computeDigest();
+        this.cardinality = cardinality;
     }
 
 

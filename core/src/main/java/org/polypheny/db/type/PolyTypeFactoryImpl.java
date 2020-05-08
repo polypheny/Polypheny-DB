@@ -114,9 +114,8 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
     @Override
     public RelDataType createArrayType( RelDataType elementType, long maxCardinality ) {
-        //TODO NH support maxCardinality
         assert maxCardinality == -1;
-        ArrayType newType = new ArrayType( elementType, false );
+        ArrayType newType = new ArrayType( elementType, false, maxCardinality );
         return canonize( newType );
     }
 
@@ -491,7 +490,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     private RelDataType copyArrayType( RelDataType type, boolean nullable ) {
         ArrayType at = (ArrayType) type;
         RelDataType elementType = copyType( at.getComponentType() );
-        return new ArrayType( elementType, nullable );
+        return new ArrayType( elementType, nullable, at.getCardinality() );
     }
 
 
@@ -506,7 +505,10 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     // override RelDataTypeFactoryImpl
     @Override
     protected RelDataType canonize( RelDataType type ) {
-        type = super.canonize( type );
+        // skip canonize step for ArrayTypes, because it caches the cardinality
+        if( ! (type instanceof ArrayType)) {
+            type = super.canonize( type );
+        }
         if ( !(type instanceof ObjectPolyType) ) {
             return type;
         }

@@ -491,7 +491,7 @@ public class Crud implements InformationObserver {
         StringBuilder query = new StringBuilder();
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-        query.append( "INSERT INTO " ).append( tableId );
+        query.append( "INSERT INTO " ).append( tableId ).append( " " );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
         Map<String, PolyType> dataTypes = getColumnTypes( t[0], t[1] );

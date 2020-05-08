@@ -35,6 +35,7 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
+import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -51,6 +52,7 @@ public class SqlInsert extends SqlCall {
 
     SqlNodeList keywords;
     SqlNode targetTable;
+    @Getter
     SqlNode source;
     @Setter
     SqlNodeList columnList;

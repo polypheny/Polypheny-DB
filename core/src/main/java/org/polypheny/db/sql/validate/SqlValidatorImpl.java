@@ -134,6 +134,7 @@ import org.polypheny.db.sql.util.SqlBasicVisitor;
 import org.polypheny.db.sql.util.SqlShuttle;
 import org.polypheny.db.sql.util.SqlVisitor;
 import org.polypheny.db.sql2rel.InitializerContext;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.checker.AssignableOperandTypeChecker;
@@ -4281,6 +4282,16 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         for ( int i = 0; i < sourceCount; ++i ) {
             RelDataType sourceType = sourceFields.get( i ).getType();
             RelDataType targetType = targetFields.get( i ).getType();
+            if( targetType instanceof ArrayType ) {
+                long targetCardinality = ((ArrayType) targetType).getCardinality();
+                //without this check you will get a casting error if the field is NULL
+                if( ((SqlBasicCall) ((SqlBasicCall) ((SqlInsert) query).getSource()).operands[0]).operands[i] instanceof SqlBasicCall ) {
+                    long sourceCardinality = ((SqlBasicCall) ((SqlBasicCall) ((SqlBasicCall) ((SqlInsert) query).getSource()).operands[0]).operands[i]).operands.length;
+                    if( targetCardinality > -1 && sourceCardinality > targetCardinality ) {
+                        throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getKey() ));
+                    }
+                }
+            }
             if ( !PolyTypeUtil.canAssignFrom( targetType, sourceType ) ) {
                 // FRG-255:  account for UPDATE rewrite; there's probably a better way to do this.
                 int iAdjusted = i;
