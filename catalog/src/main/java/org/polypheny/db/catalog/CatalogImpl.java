@@ -317,7 +317,9 @@ public class CatalogImpl extends Catalog {
 
                     } else if ( !(restoredTables.containsKey( store.getStoreId() ) && restoredTables.get( store.getStoreId() ).contains( catalogTable.id )) ) {
                         store.createTable( trx.getPrepareContext(), catalogTable );
-                        restoredTables.get( store.getStoreId() ).add( catalogTable.id );
+                        List<Long> ids = new ArrayList<>( restoredTables.get( store.getStoreId() ) );
+                        ids.add( catalogTable.id );
+                        restoredTables.put( store.getStoreId(), ids );
                     }
 
                 }
@@ -740,7 +742,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException {
         try {
-            return databaseNames.get( databaseName );
+            return Objects.requireNonNull( databaseNames.get( databaseName ) );
         } catch ( NullPointerException e ) {
             throw new UnknownDatabaseException( databaseName );
         }
@@ -757,7 +759,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogDatabase getDatabase( long databaseId ) throws UnknownDatabaseException {
         try {
-            return databases.get( databaseId );
+            return Objects.requireNonNull( databases.get( databaseId ) );
         } catch ( NullPointerException e ) {
             throw new UnknownDatabaseException( databaseId );
         }
@@ -814,8 +816,12 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogSchema getSchema( long schemaId ) {
-        return schemas.get( schemaId );
+    public CatalogSchema getSchema( long schemaId ) throws UnknownSchemaException {
+        try {
+            return Objects.requireNonNull( schemas.get( schemaId ) );
+        }catch ( NullPointerException e ){
+            throw new UnknownSchemaException( schemaId );
+        }
     }
 
 
@@ -830,7 +836,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException {
         try {
-            return schemaNames.get( new Object[]{ Objects.requireNonNull( databaseNames.get( databaseName ) ).id, schemaName } );
+            return Objects.requireNonNull( schemaNames.get( new Object[]{ Objects.requireNonNull( databaseNames.get( databaseName ) ).id, schemaName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseName, schemaName );
         }
@@ -849,7 +855,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
         try {
-            return schemaNames.get( new Object[]{ databaseId, schemaName } );
+            return Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( databaseId, schemaName );
         }
@@ -1082,7 +1088,7 @@ public class CatalogImpl extends Catalog {
     public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException {
         try {
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
-            return tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } );
+            return Objects.requireNonNull( tableNames.get( new Object[]{ schema.databaseId, schemaId, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( schemaId, tableName );
         }
@@ -1102,7 +1108,7 @@ public class CatalogImpl extends Catalog {
     public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
         try {
             long schemaId = Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) ).id;
-            return tableNames.get( new Object[]{ databaseId, schemaId, tableName } );
+            return Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( databaseId, schemaName, tableName );
         }
@@ -1123,7 +1129,7 @@ public class CatalogImpl extends Catalog {
         try {
             long databaseId = Objects.requireNonNull( databaseNames.get( databaseName ) ).id;
             long schemaId = Objects.requireNonNull( schemaNames.get( new Object[]{ databaseId, schemaName } ) ).id;
-            return tableNames.get( new Object[]{ databaseId, schemaId, tableName } );
+            return Objects.requireNonNull( tableNames.get( new Object[]{ databaseId, schemaId, tableName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownTableException( databaseName, schemaName, tableName );
         }
@@ -1243,6 +1249,10 @@ public class CatalogImpl extends Catalog {
                 tableChildren.remove( tableId );
                 tables.remove( tableId );
                 tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
+                // primary key was deleted and open table has to be closed
+                if( openTable != null && openTable == tableId ){
+                    openTable = null;
+                }
 
             }
             listeners.firePropertyChange( "table", table, null );
@@ -1526,7 +1536,7 @@ public class CatalogImpl extends Catalog {
     public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            return columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } );
+            return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } ) );
         } catch ( NullPointerException e ) {
             throw new UnknownColumnException( tableId, columnName );
         }
@@ -1548,7 +1558,7 @@ public class CatalogImpl extends Catalog {
 
         try {
             CatalogTable table = getTable( databaseName, schemaName, tableName );
-            return columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } );
+            return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } ) );
         } catch ( UnknownTableException | NullPointerException e ) {
             throw new UnknownColumnException( databaseName, schemaName, tableName, columnName );
         }
@@ -1862,7 +1872,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogPrimaryKey getPrimaryKey( long key ) throws UnknownKeyException {
         try {
-            return primaryKeys.get( key );
+            return Objects.requireNonNull( primaryKeys.get( key ) );
         } catch ( NullPointerException e ) {
             throw new UnknownKeyException( key );
         }
@@ -2164,7 +2174,7 @@ public class CatalogImpl extends Catalog {
     public long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException {
         long keyId = getOrAddKey( tableId, columnIds );
         if ( unique ) {
-            // TODO DL: Check if the current values are unique
+            // TODO: Check if the current values are unique
         }
         long id = indexIdBuilder.getAndIncrement();
         synchronized ( this ) {
@@ -2224,7 +2234,7 @@ public class CatalogImpl extends Catalog {
                     }
                 }
 
-                //setPrimaryKey( tableId, null );
+                setPrimaryKey( tableId, null );
                 deleteKeyIfNoLongerUsed( table.primaryKey );
             }
         } catch ( NullPointerException e ) {
@@ -2293,7 +2303,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogUser getUser( String userName ) throws UnknownUserException {
         try {
-            return userNames.get( userName );
+            return Objects.requireNonNull( userNames.get( userName ) );
         } catch ( NullPointerException e ) {
             throw new UnknownUserException( userName );
         }
@@ -2302,7 +2312,7 @@ public class CatalogImpl extends Catalog {
 
     public CatalogUser getUser( int userId ) throws UnknownUserException {
         try {
-            return users.get( userId );
+            return Objects.requireNonNull( users.get( userId ) );
         } catch ( NullPointerException e ) {
             throw new UnknownUserException( userId );
         }

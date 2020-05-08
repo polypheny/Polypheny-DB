@@ -363,7 +363,7 @@ public class CatalogTest {
         long columnId1 = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column1 = catalog.getColumn( columnId1 );
 
-        long columnId2 = catalog.addColumn( "column2", tableId, 0, PolyType.BIGINT, null,null, null, null, null, false, null );
+        long columnId2 = catalog.addColumn( "column2", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column2 = catalog.getColumn( columnId2 );
 
         catalog.addPrimaryKey( tableId, Collections.singletonList( column1.id ) );
@@ -383,7 +383,7 @@ public class CatalogTest {
         assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId1 ) );
         assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId2 ) );
 
-        catalog.deletePrimaryKey( tableId );
+        //catalog.deletePrimaryKey( tableId );
 
         // test constraints
         String constraint1 = "unique constraint";
@@ -431,7 +431,7 @@ public class CatalogTest {
         assertEquals( columnId1, (long) catalog.getForeignKeys( tableId2 ).get( 0 ).referencedKeyColumnIds.get( 0 ) );
 
         catalog.deleteForeignKey( catalog.getForeignKeys( tableId2 ).get( 0 ).id );
-        catalog.deletePrimaryKey( tableId );
+        //catalog.deletePrimaryKey( tableId );
 
         assertEquals( 0, catalog.getForeignKeys( tableId ).size() );
 

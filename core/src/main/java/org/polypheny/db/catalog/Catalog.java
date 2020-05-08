@@ -180,7 +180,7 @@ public abstract class Catalog {
      */
     public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownSchemaException;
 
-    public abstract CatalogSchema getSchema( long schemaId );
+    public abstract CatalogSchema getSchema( long schemaId ) throws UnknownSchemaException;
 
     /**
      * Returns the schema with the given name in the specified database.
