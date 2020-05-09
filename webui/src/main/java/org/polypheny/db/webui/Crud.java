@@ -735,22 +735,16 @@ public class Crud implements InformationObserver {
         Explore explore = exploreManager.classifyData( classifyAllData.id, classifyAllData.classified, isConvertedToSql );
 
         if ( isConvertedToSql ) {
-
-            long executionTime = 0;
-            long temp = 0;
             Transaction transaction = getTransaction();
             Result result;
 
             try {
-                temp = System.nanoTime();
                 result = executeSqlSelect( transaction, classifyAllData, explore.getClassifiedSqlStatement(), false, getPageSize() ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
-                executionTime += System.nanoTime() - temp;
                 transaction.commit();
                 transaction = getTransaction( classifyAllData.analyze );
 
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
-                executionTime += System.nanoTime() - temp;
                 result = new Result( e ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
                 try {
                     transaction.rollback();
@@ -765,6 +759,7 @@ public class Crud implements InformationObserver {
             tableSize = explore.getTableSize();
             result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
             result.setClassificationInfo( "NoClassificationPossible" );
+            result.setConvertedToSql( isConvertedToSql );
 
             return result;
         } else {
@@ -777,7 +772,7 @@ public class Crud implements InformationObserver {
             int tableSize = 0;
             tableSize = explore.getData().length;
             result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
-
+            result.setConvertedToSql( isConvertedToSql );
             return result;
         }
 
@@ -871,30 +866,21 @@ public class Crud implements InformationObserver {
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
         Transaction transaction = getTransaction( queryExplorationRequest.analyze );
-        boolean autoCommit = true;
 
         Result result;
-        long executionTime = 0;
-        long temp = 0;
 
         Explore explore = exploreManager.createSqlQuery( null, queryExplorationRequest.query );
         if(explore.getDataType() == null){
             result = new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" );
         }else {
-
             String query = explore.getSqlStatment();
-
             try {
-                temp = System.nanoTime();
                 result = executeSqlSelect( transaction, queryExplorationRequest, query, false, getPageSize() ).setInfo( new Debug().setGeneratedQuery( query ) );
-                executionTime += System.nanoTime() - temp;
-                if ( autoCommit ) {
-                    transaction.commit();
-                    transaction = getTransaction( queryExplorationRequest.analyze );
-                }
+                transaction.commit();
+                transaction = getTransaction( queryExplorationRequest.analyze );
+
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
-                executionTime += System.nanoTime() - temp;
                 result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
                 try {
                     transaction.rollback();

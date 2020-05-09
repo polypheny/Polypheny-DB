@@ -89,6 +89,9 @@ public class Result {
     @Setter
     private String[][] classifedData;
 
+    @Setter
+    private boolean isConvertedToSql;
+
     /**
      * Build a Result object containing the data from the ResultSet, including the headers of the columns
      *
