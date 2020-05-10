@@ -29,4 +29,6 @@ public class QueryExplorationRequest extends UIRequest {
      */
     public boolean analyze;
 
+    public int cPage;
+
 }

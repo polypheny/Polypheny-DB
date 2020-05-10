@@ -29,4 +29,5 @@ public class ClassifyAllData extends UIRequest {
      * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
      */
     public boolean analyze;
+    public int cPage;
 }
