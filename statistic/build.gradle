@@ -51,7 +51,7 @@ targetCompatibility = 1.8
 
 dependencies {
     api project(":core")
-
+    implementation group: 'nz.ac.waikato.cms.weka', name: 'weka-stable', version: weka_version
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: junit_version
 }
