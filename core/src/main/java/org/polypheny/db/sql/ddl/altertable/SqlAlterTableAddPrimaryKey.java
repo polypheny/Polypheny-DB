@@ -20,6 +20,7 @@ package org.polypheny.db.sql.ddl.altertable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -71,15 +72,15 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
         try {
             List<Long> columnIds = new LinkedList<>();
             for ( SqlNode node : columnList.getList() ) {
                 String columnName = node.toString();
-                CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
+                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogTable.id, columnName );
                 columnIds.add( catalogColumn.id );
             }
-            transaction.getCatalog().addPrimaryKey( catalogTable.id, columnIds );
+            Catalog.getInstance().addPrimaryKey( catalogTable.id, columnIds );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

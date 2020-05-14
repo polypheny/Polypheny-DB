@@ -40,9 +40,12 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -80,22 +83,18 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    public Table createCsvTable( CatalogCombinedTable combinedTable, CsvStore csvStore ) {
+    public Table createCsvTable( CatalogTable catalogTable, CsvStore csvStore ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
-        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ) ) {
-            CatalogColumn catalogColumn = null;
-            // TODO MV: This is not efficient
-            // Get catalog column
-            for ( CatalogColumn c : combinedTable.getColumns() ) {
-                if ( c.id == placement.columnId ) {
-                    catalogColumn = c;
-                }
-            }
-            if ( catalogColumn == null ) {
+        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ) ) {
+            CatalogColumn catalogColumn;
+            try {
+                catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            } catch ( UnknownColumnException | GenericCatalogException e ) {
                 throw new RuntimeException( "Column not found." ); // This should not happen
             }
+
             PolyType dataTypeName = PolyType.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
             RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
@@ -103,7 +102,7 @@ public class CsvSchema extends AbstractSchema {
         }
 
         // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
-        String csvFileName = combinedTable.getColumnPlacementsByStore().get( csvStore.getStoreId() ).iterator().next().physicalTableName + ".csv";
+        String csvFileName = Catalog.getInstance().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ).iterator().next().physicalTableName + ".csv";
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );
@@ -111,7 +110,7 @@ public class CsvSchema extends AbstractSchema {
             throw new RuntimeException( e );
         }
         CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvStore );
-        tableMap.put( combinedTable.getTable().name, table );
+        tableMap.put( catalogTable.name, table );
         return table;
     }
 

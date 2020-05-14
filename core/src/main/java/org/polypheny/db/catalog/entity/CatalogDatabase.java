@@ -27,7 +27,7 @@ import lombok.RequiredArgsConstructor;
  *
  */
 @EqualsAndHashCode
-public final class CatalogDatabase implements CatalogEntity {
+public final class CatalogDatabase implements CatalogEntity, Comparable<CatalogDatabase> {
 
     private static final long serialVersionUID = 4711611630126858410L;
 
@@ -62,8 +62,18 @@ public final class CatalogDatabase implements CatalogEntity {
     }
 
 
+    @Override
+    public int compareTo( CatalogDatabase o ) {
+        if ( o != null ) {
+            return (int) (this.id - o.id);
+        }
+        return -1;
+    }
+
+
     @RequiredArgsConstructor
     public static class PrimitiveCatalogDatabase {
+
         public final String tableCat;
         public final String owner;
         public final String defaultSchema;

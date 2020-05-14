@@ -22,12 +22,14 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -38,7 +40,6 @@ import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.UnknownTypeException;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -137,13 +138,13 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable catalogTable = getCatalogCombinedTable( context, transaction, tableName );
-        CatalogColumn catalogColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName );
-
+        CatalogTable catalogTable = getCatalogTable( context, tableName );
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+        Catalog catalog = Catalog.getInstance();
         try {
             if ( type != null ) {
                 // Check whether all stores support schema changes
-                for ( int storeId : catalogTable.getColumnPlacementsByStore().keySet() ) {
+                for ( int storeId : catalogTable.placementsByStore.keySet() ) {
                     if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
                         throw SqlUtil.newContextException(
                                 SqlParserPos.ZERO,
@@ -151,54 +152,54 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                     }
                 }
                 PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
-                transaction.getCatalog().setColumnType(
+                catalog.setColumnType(
                         catalogColumn.id,
                         dataType,
                         type.getPrecision() == -1 ? null : type.getPrecision(),
                         type.getScale() == -1 ? null : type.getScale() );
-                for ( CatalogColumnPlacement placement : catalogTable.getColumnPlacementsByColumn().get( catalogColumn.id ) ) {
+                for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
                     StoreManager.getInstance().getStore( placement.storeId ).updateColumnType(
                             context,
                             placement,
-                            getCatalogColumn( context, transaction, catalogTable.getTable().id, columnName ) );
+                            getCatalogColumn( catalogTable.id, columnName ) );
                 }
             } else if ( nullable != null ) {
-                transaction.getCatalog().setNullable( catalogColumn.id, nullable );
+                catalog.setNullable( catalogColumn.id, nullable );
             } else if ( beforeColumn != null || afterColumn != null ) {
                 int targetPosition;
                 CatalogColumn refColumn;
                 if ( beforeColumn != null ) {
-                    refColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, beforeColumn );
+                    refColumn = getCatalogColumn( catalogTable.id, beforeColumn );
                     targetPosition = refColumn.position;
                 } else {
-                    refColumn = getCatalogColumn( context, transaction, catalogTable.getTable().id, afterColumn );
+                    refColumn = getCatalogColumn( catalogTable.id, afterColumn );
                     targetPosition = refColumn.position + 1;
                 }
                 if ( catalogColumn.id == refColumn.id ) {
                     throw new RuntimeException( "Same column!" );
                 }
-                List<CatalogColumn> columns = transaction.getCatalog().getColumns( catalogTable.getTable().id );
+                List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
                 if ( targetPosition < catalogColumn.position ) {  // Walk from last column to first column
                     for ( int i = columns.size(); i >= 1; i-- ) {
                         if ( i < catalogColumn.position && i >= targetPosition ) {
-                            transaction.getCatalog().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
+                            catalog.setColumnPosition( columns.get( i - 1 ).id, i + 1 );
                         } else if ( i == catalogColumn.position ) {
-                            transaction.getCatalog().setColumnPosition( catalogColumn.id, columns.size() + 1 );
+                            catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
                         }
                         if ( i == targetPosition ) {
-                            transaction.getCatalog().setColumnPosition( catalogColumn.id, targetPosition );
+                            catalog.setColumnPosition( catalogColumn.id, targetPosition );
                         }
                     }
                 } else if ( targetPosition > catalogColumn.position ) { // Walk from first column to last column
                     targetPosition--;
                     for ( int i = 1; i <= columns.size(); i++ ) {
                         if ( i > catalogColumn.position && i <= targetPosition ) {
-                            transaction.getCatalog().setColumnPosition( columns.get( i - 1 ).id, i - 1 );
+                            catalog.setColumnPosition( columns.get( i - 1 ).id, i - 1 );
                         } else if ( i == catalogColumn.position ) {
-                            transaction.getCatalog().setColumnPosition( catalogColumn.id, columns.size() + 1 );
+                            catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
                         }
                         if ( i == targetPosition ) {
-                            transaction.getCatalog().setColumnPosition( catalogColumn.id, targetPosition );
+                            catalog.setColumnPosition( catalogColumn.id, targetPosition );
                         }
                     }
                 } else {
@@ -206,20 +207,20 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                 }
             } else if ( collation != null ) {
                 Collation col = Collation.parse( collation );
-                transaction.getCatalog().setCollation( catalogColumn.id, col );
+                catalog.setCollation( catalogColumn.id, col );
             } else if ( defaultValue != null ) {
                 // TODO: String is only a temporal solution for default values
                 String v = defaultValue.toString();
                 if ( v.startsWith( "'" ) ) {
                     v = v.substring( 1, v.length() - 1 );
                 }
-                transaction.getCatalog().setDefaultValue( catalogColumn.id, PolyType.VARCHAR, v );
+                catalog.setDefaultValue( catalogColumn.id, PolyType.VARCHAR, v );
             } else if ( dropDefault != null && dropDefault ) {
-                transaction.getCatalog().deleteDefaultValue( catalogColumn.id );
+                catalog.deleteDefaultValue( catalogColumn.id );
             } else {
                 throw new RuntimeException( "Unknown option" );
             }
-        } catch ( GenericCatalogException | UnknownTypeException | UnknownCollationException e ) {
+        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

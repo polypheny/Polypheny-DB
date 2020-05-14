@@ -24,7 +24,6 @@ import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationManager;
@@ -43,7 +42,7 @@ public interface Transaction {
 
     SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
 
-    Catalog getCatalog();
+    // Catalog getCatalog();
 
     void commit() throws TransactionException;
 

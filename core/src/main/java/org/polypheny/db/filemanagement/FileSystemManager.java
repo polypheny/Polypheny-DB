@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity.combined;
+package org.polypheny.db.filemanagement;
 
 
-import java.io.Serializable;
+import java.io.File;
 
 
-public interface CatalogCombinedEntity extends Serializable {
+public abstract class FileSystemManager {
 
+    public abstract File registerDataFolder( String path );
 
+    public abstract File registerNewFile( String pathToFile );
+
+    public abstract File registerNewFile( File path, String pathToFile );
 }

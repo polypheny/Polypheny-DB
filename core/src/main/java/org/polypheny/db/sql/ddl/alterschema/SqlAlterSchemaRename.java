@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -71,11 +72,12 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
     @Override
     public void execute( Context context, Transaction transaction ) {
         try {
-            if ( transaction.getCatalog().checkIfExistsSchema( context.getDatabaseId(), newName.getSimple() ) ) {
+            Catalog catalog = Catalog.getInstance();
+            if ( catalog.checkIfExistsSchema( context.getDatabaseId(), newName.getSimple() ) ) {
                 throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaExists( newName.getSimple() ) );
             }
-            CatalogSchema catalogSchema = transaction.getCatalog().getSchema( context.getDatabaseId(), oldName.getSimple() );
-            transaction.getCatalog().renameSchema( catalogSchema.id, newName.getSimple() );
+            CatalogSchema catalogSchema = catalog.getSchema( context.getDatabaseId(), oldName.getSimple() );
+            catalog.renameSchema( catalogSchema.id, newName.getSimple() );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {

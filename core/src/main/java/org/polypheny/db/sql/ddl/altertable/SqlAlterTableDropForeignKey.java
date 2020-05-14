@@ -19,9 +19,11 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -68,11 +70,12 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
         try {
-            CatalogForeignKey foreignKey = transaction.getCatalog().getForeignKey( catalogTable.id, foreignKeyName.getSimple() );
-            transaction.getCatalog().deleteForeignKey( foreignKey.id );
-        } catch ( GenericCatalogException e ) {
+            Catalog catalog = Catalog.getInstance();
+            CatalogForeignKey foreignKey = catalog.getForeignKey( catalogTable.id, foreignKeyName.getSimple() );
+            catalog.deleteForeignKey( foreignKey.id );
+        } catch ( GenericCatalogException | UnknownForeignKeyException e ) {
             throw new RuntimeException( e );
         }
     }

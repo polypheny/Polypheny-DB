@@ -16,6 +16,7 @@
 
 package org.polypheny.db.router;
 
+
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Transaction;
+
 
 public class SimpleRouter extends AbstractRouter {
 

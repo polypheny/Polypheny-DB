@@ -17,11 +17,14 @@
 package org.polypheny.db;
 
 
+import com.github.rvesse.airline.SingleCommand;
+import com.github.rvesse.airline.annotations.Command;
+import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManagerImpl;
+import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -46,6 +49,7 @@ import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
 
 
+@Command(name = "polypheny-db", description = "Polypheny-DB command line hook.")
 @Slf4j
 public class PolyphenyDb {
 
@@ -53,14 +57,26 @@ public class PolyphenyDb {
 
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
+    @Option(name = { "-resetCatalog" }, description = "catalog reset flag")
+    public boolean resetCatalog = false;
 
+    @Option(name = { "-memoryCatalog" }, description = "in-memory catalog flag")
+    public boolean memoryCatalog = false;
+
+    @Option(name = { "-testMode" }, description = "test configuration for catalog")
+    public boolean testMode = false;
+
+
+    @SuppressWarnings("unchecked")
     public static void main( final String[] args ) {
         try {
             if ( log.isDebugEnabled() ) {
                 log.debug( "PolyphenyDb.main( {} )", java.util.Arrays.toString( args ) );
             }
+            final SingleCommand<PolyphenyDb> parser = SingleCommand.singleCommand( PolyphenyDb.class );
+            final PolyphenyDb polyphenyDb = parser.parse( args );
 
-            new PolyphenyDb().runPolyphenyDb();
+            polyphenyDb.runPolyphenyDb();
 
         } catch ( Throwable uncaught ) {
             if ( log.isErrorEnabled() ) {
@@ -75,10 +91,18 @@ public class PolyphenyDb {
         Catalog catalog;
         Transaction trx = null;
         try {
+            Catalog.resetCatalog = resetCatalog;
+            Catalog.memoryCatalog = memoryCatalog;
+            Catalog.testMode = testMode;
+            catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false );
-            catalog = CatalogManagerImpl.getInstance().getCatalog( trx.getXid() );
             StoreManager.getInstance().restoreStores( catalog );
             trx.commit();
+            trx = transactionManager.startTransaction( "pa", "APP", false );
+            catalog.restoreColumnPlacements( trx );
+            trx.commit();
+
+
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
             if ( trx != null ) {
                 try {
@@ -166,9 +190,6 @@ public class PolyphenyDb {
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
 
-
-
-
         try {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
@@ -176,8 +197,8 @@ public class PolyphenyDb {
             log.warn( "Interrupted on join()", e );
         }
 
-        StatisticsManager store = StatisticsManager.getInstance();
-        store.setSqlQueryInterface( statisticQueryProcessor );
+        StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
+        statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
 
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor(exploreQueryProcessor);

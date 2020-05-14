@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -26,7 +27,7 @@ import lombok.NonNull;
  *
  */
 @EqualsAndHashCode
-public class CatalogKey {
+public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
 
     public final long id;
     public final long tableId;
@@ -72,4 +73,18 @@ public class CatalogKey {
         this( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, null, null );
     }
 
+
+    @Override
+    public Serializable[] getParameterArray() {
+        return new Serializable[]{id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, null, null};
+    }
+
+
+    @Override
+    public int compareTo( CatalogKey o ) {
+        if( o != null ){
+            return (int) (this.id - o.id);
+        }
+        return -1;
+    }
 }

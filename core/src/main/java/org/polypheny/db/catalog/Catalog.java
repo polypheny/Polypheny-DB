@@ -17,6 +17,8 @@
 package org.polypheny.db.catalog;
 
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,22 +30,21 @@ import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
+import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
-import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
@@ -51,29 +52,87 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.UnknownTypeException;
 
 
 public abstract class Catalog {
 
+    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+    public boolean isPersistent = false;
+    public static Catalog INSTANCE = null;
+    public static boolean resetCatalog;
+    public static boolean memoryCatalog;
+    public static boolean testMode;
 
-    protected final PolyXid xid;
 
-
-    public Catalog( PolyXid xid ) {
-        this.xid = xid;
+    public static Catalog setAndGetInstance( Catalog catalog ) {
+        if ( INSTANCE != null ) {
+            throw new RuntimeException( "Setting the Catalog, when already set is not permitted." );
+        }
+        INSTANCE = catalog;
+        return INSTANCE;
     }
+
+
+    public static Catalog getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( "Catalog was not set correctly on Polypheny-DB start-up" );
+        }
+        return INSTANCE;
+    }
+
+
+    public abstract void commit() throws NoTablePrimaryKeyException;
+
+    public abstract void rollback();
+
+
+    /**
+     * Adds a listener which gets notified on store update
+     *
+     * @param listener which gets added
+     */
+    public void addObserver( PropertyChangeListener listener ) {
+        listeners.addPropertyChangeListener( listener );
+    }
+
+
+    /**
+     * Removes a registered observer
+     *
+     * @param listener which gets removed
+     */
+    public void removeObserver( PropertyChangeListener listener ) {
+        listeners.removePropertyChangeListener( listener );
+    }
+
+
+    /**
+     * Validates that all columns have a valid placement,
+     * else deletes them.
+     * TODO DL check
+     */
+    public abstract void validateColumns();
+
+    /**
+     * Restores all columnPlacements in the dedicated store
+     */
+    public abstract void restoreColumnPlacements( Transaction trx ) throws GenericCatalogException;
 
 
     protected final boolean isValidIdentifier( final String str ) {
         return str.length() <= 100 && str.matches( "^[a-z_][a-z0-9_]*$" ) && !str.isEmpty();
     }
 
+
+    public abstract long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName );
+
+    public abstract void deleteDatabase( long databaseId ) throws UnknownDatabaseException;
 
     /**
      * Get all databases
@@ -109,7 +168,7 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all.
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) throws GenericCatalogException;
+    public abstract List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Get all schemas of the specified database which fit to the specified filter pattern.
@@ -119,7 +178,9 @@ public abstract class Catalog {
      * @param schemaNamePattern Pattern for the schema name. null returns all
      * @return List of schemas which fit to the specified filter. If there is no schema which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException;
+    public abstract List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) throws GenericCatalogException, UnknownSchemaException;
+
+    public abstract CatalogSchema getSchema( long schemaId ) throws UnknownSchemaException;
 
     /**
      * Returns the schema with the given name in the specified database.
@@ -151,7 +212,7 @@ public abstract class Catalog {
      * @return The id of the inserted schema
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException;
+    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -170,7 +231,7 @@ public abstract class Catalog {
      * @param name New name of the schema
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameSchema( long schemaId, String name ) throws GenericCatalogException;
+    public abstract void renameSchema( long schemaId, String name ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Change owner of a schema
@@ -179,7 +240,7 @@ public abstract class Catalog {
      * @param ownerId Id of the new owner
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException;
+    public abstract void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Delete a schema from the catalog
@@ -187,7 +248,8 @@ public abstract class Catalog {
      * @param schemaId The if of the schema to delete
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void deleteSchema( long schemaId ) throws GenericCatalogException;
+    public abstract void deleteSchema( long schemaId ) throws GenericCatalogException, UnknownSchemaException;
+
 
     /**
      * Get all tables of the specified schema which fit to the specified filters.
@@ -245,7 +307,7 @@ public abstract class Catalog {
     /**
      * Returns the table with the given name in the specified schema.
      *
-     * @param schemaId  The id of the schema
+     * @param schemaId The id of the schema
      * @param tableName The name of the table
      * @return The table
      * @throws UnknownTableException If there is no table with this name in the specified database and schema.
@@ -284,7 +346,7 @@ public abstract class Catalog {
      * @return true if there is a table with this name, false if not.
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException;
+    public abstract boolean checkIfExistsTable( long schemaId, String tableName ) throws GenericCatalogException, UnknownSchemaException;
 
     /**
      * Renames a table
@@ -293,14 +355,14 @@ public abstract class Catalog {
      * @param name New name of the table
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameTable( long tableId, String name ) throws GenericCatalogException;
+    public abstract void renameTable( long tableId, String name ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Delete the specified table. Columns need to be deleted before.
      *
      * @param tableId The id of the table to delete
      */
-    public abstract void deleteTable( long tableId ) throws GenericCatalogException;
+    public abstract void deleteTable( long tableId ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Change owner of a table
@@ -309,7 +371,7 @@ public abstract class Catalog {
      * @param ownerId Id of the new owner
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException;
+    public abstract void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Set the primary key of a table
@@ -317,7 +379,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @param keyId The id of the key to set as primary key. Set null to set no primary key.
      */
-    public abstract void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException;
+    public abstract void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Adds a placement for a column.
@@ -335,7 +397,7 @@ public abstract class Catalog {
     /**
      * Deletes a column placement
      *
-     * @param storeId  The id of the store
+     * @param storeId The id of the store
      * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException;
@@ -352,14 +414,15 @@ public abstract class Catalog {
     public abstract CatalogColumnPlacement getColumnPlacement( int storeId, long columnId ) throws GenericCatalogException;
 
 
-
     /**
      * Get all placements of a column
      *
      * @param columnId The id of the column
      * @return List of placements
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacements( Long columnId ) throws GenericCatalogException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
+
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId );
 
 
     /**
@@ -368,13 +431,18 @@ public abstract class Catalog {
      * @param storeId The id of the store
      * @return List of column placements on this store
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) throws GenericCatalogException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId );
 
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId );
+
+    public abstract List<CatalogKey> getKeys();
+
+    public abstract List<CatalogKey> getTableKeys( long tableId );
 
     /**
      * Get column placements in a specific schema on a specific store
      *
-     * @param storeId  The id of the store
+     * @param storeId The id of the store
      * @param schemaId The id of the schema
      * @return List of column placements on this store and schema
      */
@@ -390,7 +458,7 @@ public abstract class Catalog {
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
      */
-    public abstract void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException;
+    public abstract void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException, UnknownColumnPlacementException;
 
 
     /**
@@ -399,7 +467,8 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( long tableId ) throws GenericCatalogException, UnknownCollationException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( long tableId );
+
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
@@ -411,7 +480,7 @@ public abstract class Catalog {
      * @param columnNamePattern Pattern for the column name. null returns all.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
-    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException, UnknownTypeException;
+    public abstract List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern );
 
     /**
      * Returns the column with the specified id.
@@ -457,7 +526,7 @@ public abstract class Catalog {
      * @param collation The collation of the field (if applicable, else null)
      * @return The id of the inserted column
      */
-    public abstract long addColumn( String name, long tableId, int position, PolyType type, Integer length, Integer scale, boolean nullable, Collation collation ) throws GenericCatalogException;
+    public abstract long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) throws GenericCatalogException;
 
     /**
      * Renames a column
@@ -466,7 +535,7 @@ public abstract class Catalog {
      * @param name New name of the column
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameColumn( long columnId, String name ) throws GenericCatalogException;
+    public abstract void renameColumn( long columnId, String name ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Change the position of the column.
@@ -474,13 +543,13 @@ public abstract class Catalog {
      * @param columnId The id of the column for which to change the position
      * @param position The new position of the column
      */
-    public abstract void setColumnPosition( long columnId, int position ) throws GenericCatalogException;
+    public abstract void setColumnPosition( long columnId, int position ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Change the data type of an column.
      *
      * @param columnId The id of the column
-     * @param type     The new type of the column
+     * @param type The new type of the column
      */
     public abstract void setColumnType( long columnId, PolyType type, Integer length, Integer precision ) throws GenericCatalogException;
 
@@ -499,7 +568,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param collation The collation to set
      */
-    public abstract void setCollation( long columnId, Collation collation ) throws GenericCatalogException;
+    public abstract void setCollation( long columnId, Collation collation ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -509,7 +578,7 @@ public abstract class Catalog {
      * @return true if there is a column with this name, false if not.
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException;
+    public abstract boolean checkIfExistsColumn( long tableId, String columnName ) throws GenericCatalogException, UnknownTableException;
 
     /**
      * Delete the specified column. This also deletes a default value in case there is one defined for this column.
@@ -521,18 +590,21 @@ public abstract class Catalog {
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
      *
-     * @param columnId     The id of the column
-     * @param type         The type of the default value
+     * @param columnId The id of the column
+     * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws GenericCatalogException;
+
+
+    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws GenericCatalogException, UnknownColumnException;
+
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.
      *
      * @param columnId The id of the column
      */
-    public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException;
+    public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException, UnknownColumnException;
 
     /**
      * Returns a specified primary key
@@ -541,6 +613,15 @@ public abstract class Catalog {
      * @return The primary key
      */
     public abstract CatalogPrimaryKey getPrimaryKey( long key ) throws GenericCatalogException, UnknownKeyException;
+
+
+    public abstract boolean isPrimaryKey( long key );
+
+    public abstract boolean isForeignKey( long keyId );
+
+    public abstract boolean isIndex( long keyId );
+
+    public abstract boolean isConstraint( long keyId );
 
     /**
      * Adds a primary key
@@ -574,6 +655,13 @@ public abstract class Catalog {
      */
     public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
 
+
+    public abstract List<CatalogIndex> getIndices( CatalogKey key );
+
+    public abstract List<CatalogIndex> getForeignKeys( CatalogKey key );
+
+    public abstract List<CatalogConstraint> getConstraints( CatalogKey key );
+
     /**
      * Returns the constraint with the specified name in the specified table.
      *
@@ -590,7 +678,7 @@ public abstract class Catalog {
      * @param foreignKeyName The name of the foreign key
      * @return The foreign key
      */
-    public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException;
+    public abstract CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws GenericCatalogException, UnknownForeignKeyException;
 
     /**
      * Adds a unique foreign key constraint.
@@ -694,7 +782,7 @@ public abstract class Catalog {
      *
      * @return List of stores
      */
-    public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException;
+    public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException, UnknownStoreException;
 
     /**
      * Add a store
@@ -711,40 +799,19 @@ public abstract class Catalog {
      *
      * @param storeId The id of the store to delete
      */
-    public abstract void deleteStore( int storeId ) throws GenericCatalogException;
+    public abstract void deleteStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
 
 
     /*
      *
      */
 
-
-    public abstract CatalogCombinedDatabase getCombinedDatabase( long databaseId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException;
-
-    public abstract CatalogCombinedSchema getCombinedSchema( long schemaId ) throws GenericCatalogException, UnknownSchemaException, UnknownTableException;
-
-    public abstract CatalogCombinedTable getCombinedTable( long tableId ) throws GenericCatalogException, UnknownTableException;
-
-    public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
+    // public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
 
+    public abstract void close();
 
-    /*
-     *
-     */
-
-
-    public abstract boolean prepare() throws CatalogTransactionException;
-
-    public abstract void commit() throws CatalogTransactionException;
-
-    public abstract void rollback() throws CatalogTransactionException;
-
-
-
-    /*
-     *
-     */
+    public abstract void clear();
 
 
     public enum TableType {
@@ -1036,9 +1103,17 @@ public abstract class Catalog {
 
         public final String pattern;
 
+        public final boolean containsWildcards;
+
 
         public Pattern( String pattern ) {
             this.pattern = pattern;
+            containsWildcards = pattern.contains( "%" ) || pattern.contains( "_" );
+        }
+
+
+        public String toRegex() {
+            return pattern.replace( "_", "(.)" ).replace( "%", "(.*)" );
         }
 
 

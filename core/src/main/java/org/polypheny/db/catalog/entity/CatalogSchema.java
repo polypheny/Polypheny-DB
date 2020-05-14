@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
  *
  */
 @EqualsAndHashCode
-public final class CatalogSchema implements CatalogEntity {
+public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSchema> {
 
     private static final long serialVersionUID = 6130781950959616712L;
 
@@ -66,6 +66,21 @@ public final class CatalogSchema implements CatalogEntity {
     }
 
 
+    @Override
+    public int compareTo( CatalogSchema o ) {
+        if ( o != null ) {
+            int comp = (int) (this.databaseId - o.databaseId);
+            if( comp == 0 ){
+                return (int) (this.id - o.id);
+            }else {
+                return comp;
+            }
+
+        }
+        return -1;
+    }
+
+
     @RequiredArgsConstructor
     public class PrimitiveCatalogSchema {
 
@@ -73,5 +88,22 @@ public final class CatalogSchema implements CatalogEntity {
         public final String tableCatalog;
         public final String owner;
         public final String schemaType;
+    }
+
+
+    /**
+     * Rebuilds a new CatalogSchema with a different name
+     *
+     * @param old CatalogSchema which should be replaced
+     * @param name of the new CatalogSchema
+     * @return the new CatalogSchema
+     */
+    public static CatalogSchema rename( CatalogSchema old, String name ) {
+        return new CatalogSchema( old.id, name, old.databaseId, old.databaseName, old.ownerId, old.ownerName, old.schemaType );
+    }
+
+
+    public static CatalogSchema changeOwner( CatalogSchema old, int ownerId ) {
+        return new CatalogSchema( old.id, old.name, old.databaseId, old.databaseName, ownerId, old.ownerName, old.schemaType );
     }
 }

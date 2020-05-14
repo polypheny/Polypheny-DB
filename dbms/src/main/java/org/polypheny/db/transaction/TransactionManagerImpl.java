@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
-import org.polypheny.db.catalog.CatalogManagerImpl;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -80,20 +80,13 @@ public class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
-        CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( user );
 
-        // TODO MV: This is not nice and should be replaced
-        // Because of the current implementation of the catalog requiring a transaction id for schema requests we first
-        // need to create a "dummy" transaction for accessing the catalog to get the actual information required for starting
-        // the actual transaction.
-        Transaction transaction = startTransaction( catalogUser, null, null, false );
-        CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
-        CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
+        Catalog catalog = Catalog.getInstance();
+        CatalogUser catalogUser = catalog.getUser( user );
+
+        CatalogDatabase catalogDatabase = catalog.getDatabase( database );
+
+        CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
 
         return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze );
     }

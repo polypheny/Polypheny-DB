@@ -19,13 +19,16 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -73,14 +76,14 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable combinedTable = getCatalogCombinedTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
             // Check if there are at least to placements for each column of this table
-            for ( List<CatalogColumnPlacement> placements : combinedTable.getColumnPlacementsByColumn().values() ) {
+            for ( List<CatalogColumnPlacement> placements : catalogTable.columnIds.stream().map( id -> Catalog.getInstance().getColumnPlacements( id ) ).collect( Collectors.toList() ) ) {
                 if ( placements.size() < 2 ) {
                     throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                 }
@@ -92,20 +95,18 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
             // Check whether this placement exists
-            for ( Map.Entry<Integer, List<CatalogColumnPlacement>> p : combinedTable.getColumnPlacementsByStore().entrySet() ) {
-                if ( p.getKey() == storeInstance.getStoreId() ) {
-                    // Physically delete the data from the store
-                    storeInstance.dropTable( context, combinedTable );
-                    // Inform routing
-                    transaction.getRouter().dropPlacements( p.getValue() );
-                    // Delete placement in the catalog
-                    for ( CatalogColumnPlacement cp : p.getValue() ) {
-                        transaction.getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), cp.columnId );
-                    }
-                    return;
+            Map<Integer, ImmutableList<Long>> placements = catalogTable.placementsByStore;
+            if ( placements.containsKey( storeInstance.getStoreId() ) ) {
+                // Physically delete the data from the store
+                storeInstance.dropTable( context, catalogTable );
+                // Delete placement in the catalog
+                for ( long columnId : placements.get( storeInstance.getStoreId() ) ) {
+                    Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), columnId );
                 }
+                return;
             }
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( combinedTable.getTable().name, storeName.getSimple() ) );
+
+            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

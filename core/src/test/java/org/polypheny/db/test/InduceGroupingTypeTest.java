@@ -39,7 +39,6 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.rel.core.Aggregate;
 import org.polypheny.db.rel.core.Aggregate.Group;
@@ -59,7 +58,7 @@ public class InduceGroupingTypeTest {
         // SIMPLE
         List<ImmutableBitSet> groupSets = new ArrayList<>();
         groupSets.add( groupSet );
-        Assert.assertEquals( Aggregate.Group.SIMPLE, Aggregate.Group.induce( groupSet, groupSets ) );
+        assertEquals( Aggregate.Group.SIMPLE, Aggregate.Group.induce( groupSet, groupSets ) );
 
         // CUBE
         groupSets = ImmutableBitSet.ORDERING.sortedCopy( groupSet.powerSet() );
