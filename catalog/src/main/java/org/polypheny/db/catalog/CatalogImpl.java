@@ -585,6 +585,12 @@ public class CatalogImpl extends Catalog {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
                 addTable( "emps", schemaId, systemId, TableType.TABLE, null );
             }
+            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
+                addTable( "emp", schemaId, systemId, TableType.TABLE, null );
+            }
+            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
+                addTable( "work", schemaId, systemId, TableType.TABLE, null );
+            }
 
             addDefaultCsvColumns( csv );
         }
@@ -615,9 +621,35 @@ public class CatalogImpl extends Catalog {
         addDefaultColumn( csv, emps, "salary", PolyType.INTEGER, null, 4, null );
         addDefaultColumn( csv, emps, "commission", PolyType.INTEGER, null, 5, null );
 
+        CatalogTable emp = getTable( schema.id, "emp" );
+        addDefaultColumn( csv, emp, "EmployeeNumber", PolyType.INTEGER, null, 1, null );
+        addDefaultColumn( csv, emp, "Age", PolyType.INTEGER, null, 2, null );
+        addDefaultColumn( csv, emp, "Gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultColumn( csv, emp, "MaritalStatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
+        addDefaultColumn( csv, emp, "WorkLifeBalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
+        addDefaultColumn( csv, emp, "Education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultColumn( csv, emp, "MonthlyIncome", PolyType.INTEGER, null, 7, null );
+        addDefaultColumn( csv, emp, "RelationshipSatisfaction", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultColumn( csv, emp, "TotalWorkingYears", PolyType.INTEGER, null, 9, null );
+        addDefaultColumn( csv, emp, "YearsAtCompany", PolyType.INTEGER, null, 10, null );
+
+        CatalogTable work = getTable( schema.id, "work" );
+        addDefaultColumn( csv, work, "EmployeeNumber", PolyType.INTEGER, null, 1, null );
+        addDefaultColumn( csv, work, "EducationField", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 2, 20 );
+        addDefaultColumn( csv, work, "JobInvolvement", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
+        addDefaultColumn( csv, work, "JobLevel", PolyType.INTEGER, null, 4, null );
+        addDefaultColumn( csv, work, "JobRole", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
+        addDefaultColumn( csv, work, "BusinessTravel", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
+        addDefaultColumn( csv, work, "Department", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 7, 20 );
+        addDefaultColumn( csv, work, "Attrition", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );
+        addDefaultColumn( csv, work, "DailyRate", PolyType.INTEGER, null, 9, null );
+
         // set all needed primary keys
         addPrimaryKey( depts.id, Collections.singletonList( getColumn( depts.id, "deptno" ).id ) );
         addPrimaryKey( emps.id, Collections.singletonList( getColumn( emps.id, "empid" ).id ) );
+        addPrimaryKey( emp.id, Collections.singletonList( getColumn( emp.id, "EmployeeNumber" ).id ) );
+        addPrimaryKey( work.id, Collections.singletonList( getColumn( work.id, "EmployeeNumber" ).id ) );
+
     }
 
 
