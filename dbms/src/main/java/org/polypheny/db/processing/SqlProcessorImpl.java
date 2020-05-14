@@ -54,6 +54,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -77,7 +78,11 @@ import org.polypheny.db.sql2rel.RelDecorrelator;
 import org.polypheny.db.sql2rel.SqlToRelConverter;
 import org.polypheny.db.sql2rel.StandardConvertletTable;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.transaction.DeadlockException;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 
@@ -185,7 +190,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "informationPageLogicalQueryPlan", "Logical Query Plan" );
+            InformationPage page = new InformationPage( "Logical Query Plan" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
             queryAnalyzer.addPage( page );
@@ -220,19 +225,31 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     @Override
     public PolyphenyDbSignature prepareDdl( SqlNode parsed ) {
         if ( parsed instanceof SqlExecutableStatement ) {
-            ((SqlExecutableStatement) parsed).execute( transaction.getPrepareContext(), transaction );
-            return new PolyphenyDbSignature<>(
-                    parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
-                    ImmutableList.of(),
-                    ImmutableMap.of(),
-                    null,
-                    ImmutableList.of(),
-                    Meta.CursorFactory.OBJECT,
-                    transaction.getSchema(),
-                    ImmutableList.of(),
-                    -1,
-                    null,
-                    Meta.StatementType.OTHER_DDL );
+            try {
+                // Acquire global schema lock
+                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                // Execute statement
+                ((SqlExecutableStatement) parsed).execute( transaction.getPrepareContext(), transaction );
+                return new PolyphenyDbSignature<>(
+                        parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
+                        ImmutableList.of(),
+                        ImmutableMap.of(),
+                        null,
+                        ImmutableList.of(),
+                        Meta.CursorFactory.OBJECT,
+                        transaction.getSchema(),
+                        ImmutableList.of(),
+                        -1,
+                        null,
+                        Meta.StatementType.OTHER_DDL,
+                        new ExecutionTimeMonitor() );
+            } catch ( DeadlockException e ) {
+                throw new RuntimeException( "Exception while acquiring global schema lock", e );
+            } finally {
+                // Release lock
+                // TODO: This can be removed when auto-commit of ddls is implemented
+                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
+            }
         } else {
             throw new RuntimeException( "All DDL queries should be of a type that inherits SqlExecutableStatement. But this one is of type " + parsed.getClass() );
         }

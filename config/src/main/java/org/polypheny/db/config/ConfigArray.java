@@ -252,4 +252,10 @@ public class ConfigArray extends Config {
         throw new ConfigRuntimeException( "Reading arrays of values from config files is not supported yet." );
     }
 
+
+    @Override
+    public boolean parseStringAndSetValue( String valueStr ) {
+        throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
+    }
+
 }

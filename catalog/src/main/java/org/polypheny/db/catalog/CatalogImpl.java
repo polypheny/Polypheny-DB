@@ -44,6 +44,7 @@ import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
@@ -580,6 +581,17 @@ public class CatalogImpl extends Catalog {
             val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
             Statements.deleteColumnPlacement( transactionHandler, storeId, columnId );
         } catch ( CatalogConnectionException | CatalogTransactionException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+
+    @Override
+    public CatalogColumnPlacement getColumnPlacement( int storeId, long columndId ) throws GenericCatalogException {
+        try {
+            val transactionHandler = XATransactionHandler.getOrCreateTransactionHandler( xid );
+            return Statements.getColumnPlacement( transactionHandler, storeId, columndId );
+        } catch ( CatalogConnectionException | CatalogTransactionException | UnknownColumnPlacementException e ) {
             throw new GenericCatalogException( e );
         }
     }

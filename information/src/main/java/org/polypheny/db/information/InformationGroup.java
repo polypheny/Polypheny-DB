@@ -73,7 +73,7 @@ public class InformationGroup extends Refreshable {
     /**
      * Constructor
      *
-     * @param id Id of this group
+     * @param id     Id of this group
      * @param pageId Id of the page this group belongs to
      */
     public InformationGroup( final String id, final String pageId, final String name ) {
@@ -182,10 +182,10 @@ public class InformationGroup extends Refreshable {
     /**
      * If the InformationGroup was created implicitly, it can be overwritten with an explicitly created InformationGroup.
      */
-    public void overrideWith ( final InformationGroup group ) {
-        if( ! this.implicit ){
+    public void overrideWith( final InformationGroup group ) {
+        if ( !this.implicit ) {
             throw new InformationRuntimeException( "Explicitly created pages are not allowed to be overwritten." );
-        }else if( group.isImplicit() ){
+        } else if ( group.isImplicit() ) {
             throw new InformationRuntimeException( "A page cannot be overwritten by an implicitly created page." );
         }
         this.color = group.color;

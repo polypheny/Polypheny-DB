@@ -119,6 +119,12 @@ public class ConfigEnumList extends Config {
     }
 
 
+    @Override
+    public boolean parseStringAndSetValue( String value ) {
+        throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
+    }
+
+
     private Enum getByString( String str ) throws ConfigRuntimeException {
         for ( Enum e : enumValues ) {
             if ( str.equalsIgnoreCase( e.name() ) ) {

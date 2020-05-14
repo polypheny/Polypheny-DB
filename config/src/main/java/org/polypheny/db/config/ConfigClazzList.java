@@ -130,6 +130,12 @@ public class ConfigClazzList extends Config {
     }
 
 
+    @Override
+    public boolean parseStringAndSetValue( String value ) {
+        throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
+    }
+
+
     private Class getByString( String str ) throws ConfigRuntimeException {
         for ( Class c : classes ) {
             if ( str.equalsIgnoreCase( c.getName() ) ) {

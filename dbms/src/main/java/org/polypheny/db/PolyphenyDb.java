@@ -54,7 +54,6 @@ public class PolyphenyDb {
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
 
-    @SuppressWarnings("unchecked")
     public static void main( final String[] args ) {
         try {
             if ( log.isDebugEnabled() ) {

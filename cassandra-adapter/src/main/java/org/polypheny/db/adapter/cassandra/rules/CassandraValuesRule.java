@@ -28,7 +28,7 @@ import org.polypheny.db.tools.RelBuilderFactory;
 public class CassandraValuesRule extends CassandraConverterRule {
 
     CassandraValuesRule( CassandraConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraValuesRule" );
+        super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "CassandraValuesRule:" + out.getName() );
     }
 
 

@@ -28,7 +28,7 @@ public class InformationManagerTest {
 
     private InformationManager im;
 
-    private static InformationPage p = new InformationPage( "page1", "Page 1" );
+    private static InformationPage p = new InformationPage( "page1", "Page 1", "Test Page 1" );
     private static InformationGroup g = new InformationGroup( p, "Group 1.1" );
 
 
@@ -90,6 +90,7 @@ public class InformationManagerTest {
         InformationGraph i1 = new InformationGraph( g, GraphType.LINE, labels, graphData );
         i1.updateType( GraphType.RADAR );
     }
+
 
     @Test
     public void informationAction() {

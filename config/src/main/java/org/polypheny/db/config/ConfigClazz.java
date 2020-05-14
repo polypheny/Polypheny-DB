@@ -46,6 +46,7 @@ public class ConfigClazz extends Config {
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         setClazz( defaultValue );
+        this.webUiFormType = WebUiFormType.SELECT;
     }
 
 
@@ -88,6 +89,12 @@ public class ConfigClazz extends Config {
             throw new ConfigRuntimeException( "The value in the config file has a type which is incompatible with this config element." );
         }
 
+    }
+
+
+    @Override
+    public boolean parseStringAndSetValue( String valueStr ) {
+        return setClazz( getByString( valueStr ) );
     }
 
 
@@ -151,7 +158,7 @@ public class ConfigClazz extends Config {
             try {
                 return Class.forName( in.nextString() );
             } catch ( ClassNotFoundException e ) {
-                log.error( "Caught exection!", e );
+                log.error( "Caught exception!", e );
                 return null;
             }
         }

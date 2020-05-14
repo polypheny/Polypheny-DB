@@ -96,6 +96,8 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
                 if ( p.getKey() == storeInstance.getStoreId() ) {
                     // Physically delete the data from the store
                     storeInstance.dropTable( context, combinedTable );
+                    // Inform routing
+                    transaction.getRouter().dropPlacements( p.getValue() );
                     // Delete placement in the catalog
                     for ( CatalogColumnPlacement cp : p.getValue() ) {
                         transaction.getCatalog().deleteColumnPlacement( storeInstance.getStoreId(), cp.columnId );

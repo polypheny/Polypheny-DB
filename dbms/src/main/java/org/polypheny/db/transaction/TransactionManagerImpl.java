@@ -20,6 +20,7 @@ package org.polypheny.db.transaction;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -37,11 +38,9 @@ import org.polypheny.db.transaction.PUID.ConnectionId;
 import org.polypheny.db.transaction.PUID.NodeId;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PUID.UserId;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
+@Slf4j
 public class TransactionManagerImpl implements TransactionManager {
 
     private ConcurrentHashMap<PolyXid, Transaction> transactions = new ConcurrentHashMap<>();
@@ -49,7 +48,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
     public TransactionManagerImpl() {
         InformationManager im = InformationManager.getInstance();
-        InformationPage page = new InformationPage( "Transactions", "Transactions" );
+        InformationPage page = new InformationPage( "Transactions" );
         page.fullWidth();
         im.addPage( page );
         InformationGroup runningTransactionsGroup = new InformationGroup( page, "Running Transactions" );
@@ -84,8 +83,9 @@ public class TransactionManagerImpl implements TransactionManager {
         CatalogUser catalogUser = CatalogManagerImpl.getInstance().getUser( user );
 
         // TODO MV: This is not nice and should be replaced
-        // Because of the current implementation of the catalog requiring a transaction id for schema requests we first  need to create a "dummy" transaction for accessing the catalog
-        // to get the actual information required for starting the actual transaction.
+        // Because of the current implementation of the catalog requiring a transaction id for schema requests we first
+        // need to create a "dummy" transaction for accessing the catalog to get the actual information required for starting
+        // the actual transaction.
         Transaction transaction = startTransaction( catalogUser, null, null, false );
         CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( database );
         CatalogSchema catalogSchema = transaction.getCatalog().getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
@@ -102,9 +102,10 @@ public class TransactionManagerImpl implements TransactionManager {
     @Override
     public void removeTransaction( PolyXid xid ) throws TransactionException {
         if ( !transactions.containsKey( xid ) ) {
-            throw new TransactionException( "Unknown transaction id: " + xid );
+            log.warn( "Unknown transaction id: " + xid );
+        } else {
+            transactions.remove( xid );
         }
-        transactions.remove( xid );
     }
 
 

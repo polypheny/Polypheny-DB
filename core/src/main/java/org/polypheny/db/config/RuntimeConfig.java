@@ -149,7 +149,7 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN ),
 
     TWO_PC_MODE( "runtime/twoPcMode",
-            "Commute joins in planner.",
+            "Use two-phase commit protocol for committing queries on data stores.",
             false,
             ConfigType.BOOLEAN,
             "runtimeGroup" ),

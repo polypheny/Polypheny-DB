@@ -100,6 +100,7 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
@@ -147,7 +148,7 @@ public class DbmsMeta implements ProtobufMeta {
         this.authenticator = authenticator;
 
         // ------ Information Manager -----------
-        final InformationPage informationPage = new InformationPage( "jdbc", "JDBC Interface" );
+        final InformationPage informationPage = new InformationPage( "JDBC Interface" );
         final InformationGroup informationGroupConnection = new InformationGroup( informationPage, "Connections" );
 
         InformationManager im = InformationManager.getInstance();
@@ -201,7 +202,8 @@ public class DbmsMeta implements ProtobufMeta {
                         ImmutableList.of(),
                         -1,
                         null,
-                        StatementType.SELECT ) {
+                        StatementType.SELECT,
+                        new ExecutionTimeMonitor() ) {
                     @Override
                     public Enumerable<Object> enumerable( DataContext dataContext ) {
                         return Linq4j.asEnumerable( firstFrame.rows );
@@ -1058,14 +1060,19 @@ public class DbmsMeta implements ProtobufMeta {
             final Iterable<Object> iterable = createIterable( statement.getConnection().getCurrentTransaction().getDataContext(), signature );
             iterator = iterable.iterator();
             statement.setOpenResultSet( iterator );
+            statement.getExecutionStopWatch().start();
         } else {
             iterator = statement.getOpenResultSet();
+            statement.getExecutionStopWatch().resume();
         }
         final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
+        statement.getExecutionStopWatch().suspend();
         boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
         @SuppressWarnings("unchecked")
         List<Object> rows1 = (List<Object>) rows;
         if ( done ) {
+            statement.getExecutionStopWatch().stop();
+            signature.getExecutionTimeMonitor().setExecutionTime( statement.getExecutionStopWatch().getNanoTime() );
             try {
                 ((AutoCloseable) iterator).close();
             } catch ( Exception e ) {

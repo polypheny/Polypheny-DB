@@ -38,11 +38,13 @@ public abstract class Refreshable {
         this.refreshable = true;
     }
 
+
     public void refresh() {
         if ( this.refreshable && this.refreshFunction != null ) {
             this.refreshFunction.refresh();
         }
     }
+
 
     public interface RefreshFunction {
 

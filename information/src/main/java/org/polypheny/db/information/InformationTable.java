@@ -20,19 +20,20 @@ package org.polypheny.db.information;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import org.apache.commons.text.StringEscapeUtils;
 
 
 public class InformationTable extends InformationHtml {
 
+    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
     private List<String> labels;
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private List<List<String>> rows = new LinkedList<>();
 
 
     /**
      * Constructor
      *
-     * @param group The information group this element belongs to
+     * @param group  The information group this element belongs to
      * @param labels The labels
      */
     public InformationTable( InformationGroup group, List<String> labels ) {
@@ -44,7 +45,7 @@ public class InformationTable extends InformationHtml {
      * Constructor
      *
      * @param groupId The id of the information group this element belongs to
-     * @param labels The labels
+     * @param labels  The labels
      */
     public InformationTable( String groupId, List<String> labels ) {
         this( UUID.randomUUID().toString(), groupId, labels );
@@ -54,14 +55,33 @@ public class InformationTable extends InformationHtml {
     /**
      * Constructor
      *
-     * @param id The unique id for this information element
+     * @param id      The unique id for this information element
      * @param groupId The id of the information group this element belongs to
-     * @param labels The labels
+     * @param labels  The labels
      */
     public InformationTable( String id, String groupId, List<String> labels ) {
         super( id, groupId, "" );
         this.labels = labels;
         notifyManager();
+    }
+
+
+    public void updateLabels( List<String> labels ) {
+        this.labels = labels;
+        notifyManager();
+    }
+
+
+    public void updateLabels( Object... row ) {
+        List<String> list = new LinkedList<>();
+        for ( Object o : row ) {
+            if ( o != null ) {
+                list.add( o.toString() );
+            } else {
+                list.add( "NULL" );
+            }
+        }
+        updateLabels( list );
     }
 
 

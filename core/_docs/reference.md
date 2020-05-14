@@ -105,6 +105,9 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT storeUniqueName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT storeUniqueName
+     | ALTER CONFIG key SET value
+     | ALTER STORES ADD storeName USING adapterClass WITH config 
+     | ALTER STORES DROP storeName
 
 explain:
       EXPLAIN PLAN
@@ -391,6 +394,7 @@ COMMITTED,
 **CONDITION**,
 CONDITIONAL,
 CONDITION_NUMBER,
+CONFIG,
 **CONNECT**,
 CONNECTION,
 CONNECTION_NAME,
@@ -874,6 +878,7 @@ STATEMENT,
 **STDDEV_SAMP**,
 STORE,
 **STORED**,
+STORES,
 **STREAM**,
 STRUCTURE,
 STYLE,

@@ -1,6 +1,6 @@
 /**
- * Cassandra query provider.
- *
+ * Cassandra adapter.
+ * <p>
  * There is one table for each Cassandra column family.
  */
 

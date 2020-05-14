@@ -80,11 +80,13 @@ public class CassandraProject extends Project implements CassandraRel {
     @Override
     public void implement( CassandraImplementContext context ) {
         context.visitChild( 0, getInput() );
-        final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), CassandraRules.cassandraFieldNames( getInput().getRowType() ) );
+        final CassandraRules.RexToCassandraTranslator translator = new CassandraRules.RexToCassandraTranslator( (JavaTypeFactory) getCluster().getTypeFactory(), CassandraRules.cassandraPhysicalFieldNames( getInput().getRowType() ) );
         final List<Selector> fields = new ArrayList<>();
         for ( Pair<RexNode, String> pair : getNamedProjects() ) {
             if ( pair.left instanceof RexInputRef ) {
                 final String name = pair.right;
+//                getRowType()
+//                ((RexInputRef) pair.left);
                 final String originalName = pair.left.accept( translator );
                 fields.add( Selector.column( originalName ).as( name ) );
             }

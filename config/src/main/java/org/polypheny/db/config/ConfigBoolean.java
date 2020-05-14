@@ -74,4 +74,10 @@ public class ConfigBoolean extends ConfigScalar {
         setBoolean( value );
     }
 
+
+    @Override
+    public boolean parseStringAndSetValue( String valueStr ) {
+        return setBoolean( Boolean.parseBoolean( valueStr ) );
+    }
+
 }

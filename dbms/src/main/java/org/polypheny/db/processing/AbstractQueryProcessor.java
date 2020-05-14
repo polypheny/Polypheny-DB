@@ -68,6 +68,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
@@ -78,7 +79,14 @@ import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.transaction.DeadlockException;
+import org.polypheny.db.transaction.Lock.LockMode;
+import org.polypheny.db.transaction.LockManager;
+import org.polypheny.db.transaction.TableAccessMap;
+import org.polypheny.db.transaction.TableAccessMap.Mode;
+import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
@@ -115,16 +123,41 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         }
         stopWatch.start();
 
+        ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
+
         final Convention resultConvention =
                 ENABLE_BINDABLE
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
+        // Locking
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().start( "Locking" );
+
+        }
+        try {
+            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.SHARED );
+            // Get locks for individual tables
+            TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                if ( mode == Mode.READ_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.SHARED );
+                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                }
+            }
+        } catch ( DeadlockException e ) {
+            throw new RuntimeException( e );
+        }
+
         // Route
         if ( transaction.isAnalyze() ) {
+            transaction.getDuration().stop( "Locking" );
             transaction.getDuration().start( "Routing" );
         }
-        RelRoot routedRoot = route( logicalRoot, transaction );
+        RelRoot routedRoot = route( logicalRoot, transaction, executionTimeMonitor );
 
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                 RelBuilder.create( transaction, routedRoot.rel.getCluster() ),
@@ -154,7 +187,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             transaction.getDuration().start( "Implementation" );
         }
 
-        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention );
+        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention, executionTimeMonitor );
 
         if ( transaction.isAnalyze() ) {
             transaction.getDuration().stop( "Implementation" );
@@ -169,14 +202,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private RelRoot route( RelRoot logicalRoot, Transaction transaction ) {
-        RelRoot routedRoot = transaction.getRouter().route( logicalRoot, transaction );
+    private RelRoot route( RelRoot logicalRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor ) {
+        RelRoot routedRoot = transaction.getRouter().route( logicalRoot, transaction, executionTimeMonitor );
         if ( log.isTraceEnabled() ) {
             log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "informationPageRoutedQueryPlan", "Routed Query Plan" );
+            InformationPage page = new InformationPage( "Routed Query Plan" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
             queryAnalyzer.addPage( page );
@@ -190,7 +223,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention ) {
+    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         if ( log.isTraceEnabled() ) {
@@ -198,7 +231,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         }
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "informationPagePhysicalQueryPlan", "Physical Query Plan" );
+            InformationPage page = new InformationPage( "Physical Query Plan" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
             queryAnalyzer.addPage( page );
@@ -246,7 +279,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 resultConvention == BindableConvention.INSTANCE
                         ? CursorFactory.ARRAY
                         : CursorFactory.deduce( columns, resultClazz );
-        //noinspection unchecked
         final Bindable bindable = preparedResult.getBindable( cursorFactory );
 
         return new PolyphenyDbSignature<Object[]>(
@@ -260,7 +292,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 ImmutableList.of(),
                 -1,
                 bindable,
-                getStatementType( preparedResult ) );
+                getStatementType( preparedResult ),
+                executionTimeMonitor );
     }
 
 

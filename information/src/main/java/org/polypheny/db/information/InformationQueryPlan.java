@@ -51,7 +51,7 @@ public class InformationQueryPlan extends Information {
     /**
      * Constructor
      *
-     * @param id Unique id for this information object
+     * @param id    Unique id for this information object
      * @param group The id of the InformationGroup to which this information belongs
      */
     public InformationQueryPlan( final String id, final String group, final String queryPlan ) {

@@ -74,4 +74,10 @@ public class ConfigDecimal extends ConfigScalar {
         setDecimal( new BigDecimal( stringValue ) );
     }
 
+
+    @Override
+    public boolean parseStringAndSetValue( String value ) {
+        return setDecimal( new BigDecimal( value ) );
+    }
+
 }

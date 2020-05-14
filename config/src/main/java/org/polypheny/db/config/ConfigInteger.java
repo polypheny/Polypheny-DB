@@ -79,4 +79,10 @@ public class ConfigInteger extends ConfigScalar {
         setInt( value );
     }
 
+
+    @Override
+    public boolean parseStringAndSetValue( String value ) {
+        return setInt( Integer.parseInt( value ) );
+    }
+
 }
