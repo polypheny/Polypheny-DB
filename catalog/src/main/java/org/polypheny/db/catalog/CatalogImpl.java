@@ -1756,7 +1756,7 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = CatalogColumn.replaceCollation( old, collation );
             synchronized ( this ) {
                 columns.replace( columnId, column );
-                columnNames.replace( new Object[]{ old.databaseId, old.schemaName, old.tableId, old.name }, column );
+                columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
             }
             listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
