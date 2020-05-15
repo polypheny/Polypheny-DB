@@ -557,7 +557,7 @@ public class CatalogImpl extends Catalog {
         if ( !storeNames.containsKey( "hsqldb" ) ) {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
-            hsqldbSettings.put( "path", "maxConnections" );
+            hsqldbSettings.put( "path", "./" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
