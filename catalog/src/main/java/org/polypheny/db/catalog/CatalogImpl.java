@@ -557,7 +557,7 @@ public class CatalogImpl extends Catalog {
         if ( !storeNames.containsKey( "hsqldb" ) ) {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
-            hsqldbSettings.put( "path", "maxConnections" );
+            hsqldbSettings.put( "path", "./" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
@@ -819,7 +819,7 @@ public class CatalogImpl extends Catalog {
     public CatalogSchema getSchema( long schemaId ) throws UnknownSchemaException {
         try {
             return Objects.requireNonNull( schemas.get( schemaId ) );
-        }catch ( NullPointerException e ){
+        } catch ( NullPointerException e ) {
             throw new UnknownSchemaException( schemaId );
         }
     }
@@ -1250,7 +1250,7 @@ public class CatalogImpl extends Catalog {
                 tables.remove( tableId );
                 tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
                 // primary key was deleted and open table has to be closed
-                if( openTable != null && openTable == tableId ){
+                if ( openTable != null && openTable == tableId ) {
                     openTable = null;
                 }
 
@@ -1694,6 +1694,7 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = CatalogColumn.replaceColumnType( old, type, length, scale, collation );
             synchronized ( this ) {
                 columns.replace( columnId, column );
+                columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
             }
             listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException | UnknownCollationException e ) {
@@ -1755,6 +1756,7 @@ public class CatalogImpl extends Catalog {
             CatalogColumn column = CatalogColumn.replaceCollation( old, collation );
             synchronized ( this ) {
                 columns.replace( columnId, column );
+                columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
             }
             listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
@@ -1854,6 +1856,7 @@ public class CatalogImpl extends Catalog {
             if ( column.defaultValue != null ) {
                 synchronized ( this ) {
                     columns.replace( columnId, column );
+                    columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
                 }
                 listeners.firePropertyChange( "column", old, column );
             }
