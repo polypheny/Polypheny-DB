@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.filemanagement;
+package org.polypheny.db.util;
 
 
 import java.io.File;
@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * The FileSystemManager should handle all dynamically needed resources and sort them
  */
-public class FileSystemManagerImpl extends FileSystemManager {
+public class FileSystemManager {
 
     static FileSystemManager fileSystemManager = null;
     final File root = new File( System.getProperty( "user.home" ), ".polypheny" );
@@ -35,13 +35,13 @@ public class FileSystemManagerImpl extends FileSystemManager {
 
     public static FileSystemManager getInstance() {
         if ( fileSystemManager == null ) {
-            fileSystemManager = new FileSystemManagerImpl();
+            fileSystemManager = new FileSystemManager();
         }
         return fileSystemManager;
     }
 
 
-    private FileSystemManagerImpl() {
+    private FileSystemManager() {
         if ( !root.exists() ) {
             root.mkdir();
         }
@@ -54,7 +54,6 @@ public class FileSystemManagerImpl extends FileSystemManager {
      * @param path the path of the new folder
      * @return the file object for the directory
      */
-    @Override
     public File registerDataFolder( String path ) {
         File file = new File( this.root, path );
         if ( !file.exists() ) {
@@ -66,7 +65,6 @@ public class FileSystemManagerImpl extends FileSystemManager {
     }
 
 
-    @Override
     public File registerNewFile( String pathToFile ) {
         return registerNewFile( root, pathToFile );
     }
@@ -75,11 +73,10 @@ public class FileSystemManagerImpl extends FileSystemManager {
     /**
      * places a new file in a specific path, if no path is specified, it is places in the root path
      *
-     * @param path path to the folder in which the file should be placed
+     * @param path       path to the folder in which the file should be placed
      * @param pathToFile the file and its parent paths
      * @return the file object of the file itself
      */
-    @Override
     public File registerNewFile( File path, String pathToFile ) {
         File file = new File( path, pathToFile
                 .replace( "//", "/" )
