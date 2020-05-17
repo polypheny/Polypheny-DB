@@ -55,14 +55,16 @@ public class ExploreQueryProcessor {
     private final String userName;
 
 
-    public ExploreQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName) {
+    public ExploreQueryProcessor( final TransactionManager transactionManager, String userName, String databaseName ) {
         this.transactionManager = transactionManager;
         this.userName = userName;
         this.databaseName = databaseName;
 
     }
-    public ExploreQueryProcessor( final TransactionManager transactionManager, Authenticator authenticator){
-        this(transactionManager, "pa", "APP");
+
+
+    public ExploreQueryProcessor( final TransactionManager transactionManager, Authenticator authenticator ) {
+        this( transactionManager, "pa", "APP" );
     }
 
 
@@ -75,22 +77,25 @@ public class ExploreQueryProcessor {
     }
 
 
-    public List<ExploreQueryResult> getAllUniqueValues( List<String> qualifiedColumnNames, String qualifiedTableName  ) {
-        String tables = qualifiedTableName.split( "\nFROM ")[1].split( " LIMIT")[0];
+    public List<ExploreQueryResult> getAllUniqueValues( List<String> qualifiedColumnNames, String qualifiedTableName ) {
+        String tables = qualifiedTableName.split( "\nFROM " )[1].split( " LIMIT" )[0];
         return qualifiedColumnNames.stream().map( c -> getAllUniqueValuesMethod( c, tables ) ).collect( Collectors.toList() );
     }
+
 
     private ExploreQueryResult getAllUniqueValuesMethod( String qualifiedColumn, String qualifiedTableName ) {
         String query = "SELECT " + qualifiedColumn + " FROM " + qualifiedTableName + " GROUP BY " + qualifiedColumn + " LIMIT 200";
         return this.executeSQL( query );
     }
 
-    public ExploreQueryResult executeSQL(String query){
+
+    public ExploreQueryResult executeSQL( String query ) {
         return executeSQL( query, getPageSize() );
     }
 
-    public ExploreQueryResult executeSQL(String query, int pagination){
-        ExploreQueryResult result = new ExploreQueryResult(  );
+
+    public ExploreQueryResult executeSQL( String query, int pagination ) {
+        ExploreQueryResult result = new ExploreQueryResult();
         Transaction transaction = getTransaction();
         try {
             result = executeSqlSelect( transaction, query, pagination );
@@ -107,13 +112,13 @@ public class ExploreQueryProcessor {
     }
 
 
-
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
     private ExploreQueryResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws ExploreQueryProcessor.QueryExecutionException {
         return executeSqlSelect( transaction, sqlSelect, getPageSize() );
     }
+
 
     private ExploreQueryResult executeSqlSelect( final Transaction transaction, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
         // Parser Config
@@ -148,17 +153,17 @@ public class ExploreQueryProcessor {
         }
 
         try {
-            List<String> typeInfo = new ArrayList<>(  );
-            List<String> name = new ArrayList<>(  );
+            List<String> typeInfo = new ArrayList<>();
+            List<String> name = new ArrayList<>();
             for ( ColumnMetaData metaData : signature.columns ) {
                 typeInfo.add( metaData.type.name );
                 name.add( metaData.columnName );
             }
 
-            if(rows.size() == 1){
-                for(List<Object> row : rows){
-                    if (row.size() == 1){
-                        for(Object o : row){
+            if ( rows.size() == 1 ) {
+                for ( List<Object> row : rows ) {
+                    if ( row.size() == 1 ) {
+                        for ( Object o : row ) {
                             return new ExploreQueryResult( o.toString(), rows.size(), typeInfo, name );
                         }
                     }
@@ -222,14 +227,6 @@ public class ExploreQueryProcessor {
 
 
     static class QueryExecutionException extends Exception {
-
-        QueryExecutionException( String message ) {
-            super( message );
-        }
-
-        QueryExecutionException( String message, Exception e ) {
-            super( message, e );
-        }
 
         QueryExecutionException( Throwable t ) {
             super( t );

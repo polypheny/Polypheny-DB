@@ -722,7 +722,7 @@ public class Crud implements InformationObserver {
             Result result;
 
             try {
-                result = executeSqlSelect( transaction, classifyAllData, explore.getClassifiedSqlStatement(), false, getPageSize() ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
+                result = executeSqlSelect( transaction, classifyAllData, explore.getClassifiedSqlStatement(), false ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
                 transaction.commit();
                 transaction = getTransaction( classifyAllData.analyze );
 
@@ -738,23 +738,20 @@ public class Crud implements InformationObserver {
 
             result.setExplorerId( explore.getId() );
             result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
-            int tableSize = 0;
-            tableSize = explore.getTableSize();
-            result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+
+            result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
             result.setClassificationInfo( "NoClassificationPossible" );
             result.setConvertedToSql( isConvertedToSql );
 
             return result;
         } else {
-            Result result = new Result( classifyAllData.header, Arrays.copyOfRange(explore.getData(), 0, 9) );
+            Result result = new Result( classifyAllData.header, Arrays.copyOfRange( explore.getData(), 0, 10 ) );
 
             result.setClassificationInfo( "NoClassificationPossible" );
             result.setExplorerId( explore.getId() );
 
-            result.setCurrentPage( classifyAllData.currentPage ).setTable( classifyAllData.tableId );
-            int tableSize = 0;
-            tableSize = explore.getData().length;
-            result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
+            result.setHighestPage( (int) Math.ceil( (double) explore.getData().length / getPageSize() ) );
             result.setConvertedToSql( isConvertedToSql );
             return result;
         }
@@ -762,6 +759,9 @@ public class Crud implements InformationObserver {
     }
 
 
+    /**
+     * Pagination
+     */
     public Object getExploreTables( Request request, Response response ) {
 
         ExploreTables exploreTables = this.gson.fromJson( request.body(), ExploreTables.class );
@@ -773,13 +773,13 @@ public class Crud implements InformationObserver {
 
         String query = explore.getSqlStatment() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
 
-        if(!explore.isConvertedToSql() && !explore.isClassificationPossible()){
+        if ( !explore.isConvertedToSql() && !explore.isClassificationPossible() ) {
             int tablesize = explore.getData().length;
 
-            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize())) {
-                paginationData = Arrays.copyOfRange( explore.getData(),  ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
+            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
+                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
             } else {
-                paginationData = Arrays.copyOfRange( explore.getData(),  ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize() ));
+                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
             }
             result = new Result( exploreTables.columns, paginationData );
             result.setClassificationInfo( "NoClassificationPossible" );
@@ -826,10 +826,10 @@ public class Crud implements InformationObserver {
         if ( explore.isDataAfterClassification ) {
             int tablesize = explore.getDataAfterClassification().size();
             List<String[]> paginationDataList = new ArrayList<>();
-            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize())) {
+            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
                 paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
             } else {
-                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize() ));
+                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
             }
 
             paginationData = new String[paginationDataList.size()][];
@@ -837,13 +837,16 @@ public class Crud implements InformationObserver {
                 paginationData[i] = paginationDataList.get( i );
             }
 
-            result.setClassifedData(paginationData);
+            result.setClassifiedData( paginationData );
         }
         return result;
 
     }
 
 
+    /**
+     * creates the initial query for the Explore-by-Example process
+     */
     public Result createInitialExploreQuery( Request req, Response res ) {
 
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
@@ -853,44 +856,43 @@ public class Crud implements InformationObserver {
         Result result;
 
         Explore explore = exploreManager.createSqlQuery( null, queryExplorationRequest.query );
-        if(explore.getDataType() == null){
-            result = new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" );
-        }else {
-            String query = explore.getSqlStatment();
-            try {
-                result = executeSqlSelect( transaction, queryExplorationRequest, query, false, getPageSize() ).setInfo( new Debug().setGeneratedQuery( query ) );
-                transaction.commit();
-                transaction = getTransaction( queryExplorationRequest.analyze );
-
-            } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
-                log.error( "Caught exception while executing a query from the console", e );
-                result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rollback", ex );
-                }
-            }
-
-            result.setExplorerId( explore.getId() );
-            if ( !explore.isClassificationPossible() ) {
-                result.setClassificationInfo( "NoClassificationPossible" );
-
-            } else {
-                result.setClassificationInfo( "ClassificationPossible" );
-            }
-
-            result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
-            int tableSize = 0;
-
-            tableSize = explore.getTableSize();
-            result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
-
+        if ( explore.getDataType() == null ) {
+            return new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" );
         }
+
+        String query = explore.getSqlStatment();
+        try {
+            result = executeSqlSelect( transaction, queryExplorationRequest, query, false ).setInfo( new Debug().setGeneratedQuery( query ) );
+            transaction.commit();
+            transaction = getTransaction( queryExplorationRequest.analyze );
+
+        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", ex );
+            }
+        }
+
+        result.setExplorerId( explore.getId() );
+        if ( !explore.isClassificationPossible() ) {
+            result.setClassificationInfo( "NoClassificationPossible" );
+
+        } else {
+            result.setClassificationInfo( "ClassificationPossible" );
+        }
+        result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
+        result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
+
         return result;
     }
 
 
+    /**
+     * Start Classification, classifies the initial dataset, to show what would be within the final result set
+     */
     public ExploreResult exploration( Request req, Response res ) {
         ExploreData exploreData = this.gson.fromJson( req.body(), ExploreData.class );
 
@@ -2341,16 +2343,11 @@ public class Crud implements InformationObserver {
      * Execute a select statement with default limit
      */
     private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
-        return executeSqlSelect( transaction, request, sqlSelect, false, getPageSize() );
+        return executeSqlSelect( transaction, request, sqlSelect, false );
     }
 
 
     private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
-        return executeSqlSelect( transaction, request, sqlSelect, noLimit, getPageSize() );
-    }
-
-
-    private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit, final int pagnation ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -2371,7 +2368,7 @@ public class Crud implements InformationObserver {
             if ( noLimit ) {
                 rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
             } else {
-                rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, pagnation ), new ArrayList<>() );
+                rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
             }
             stopWatch.stop();
             signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
@@ -2553,9 +2550,11 @@ public class Crud implements InformationObserver {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
     }
 
-    private boolean isClassificationToSql(){
+
+    private boolean isClassificationToSql() {
         return RuntimeConfig.EXPLORE_BY_EXAMPLE_TO_SQL.getBoolean();
     }
+
 
     private String filterTable( final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );

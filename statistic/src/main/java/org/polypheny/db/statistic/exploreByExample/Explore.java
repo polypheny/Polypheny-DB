@@ -82,9 +82,7 @@ public class Explore {
         this.query = query;
         this.sqlStatment = query;
         this.exploreQueryProcessor = exploreQueryProcessor;
-
         this.dataType = getTypeInfo( query );
-
     }
 
 
@@ -126,7 +124,7 @@ public class Explore {
             String name = fullNames[i].substring( fullNames[i].lastIndexOf( "." ) + 1 );
             if ( exploreQueryResult.name.get( i ).startsWith( name ) ) {
                 String type = exploreQueryResult.typeInfo.get( i );
-                if( type.equals( "VARCHAR" ) || type.equals( "INTEGER" )  || type.equals( "BIGINT" ) || type.equals( "SMALLINT" ) || type.equals( "TINYINT" ) || type.equals( "DECIMAL" ) ){
+                if ( type.equals( "VARCHAR" ) || type.equals( "INTEGER" ) || type.equals( "BIGINT" ) || type.equals( "SMALLINT" ) || type.equals( "TINYINT" ) || type.equals( "DECIMAL" ) ) {
                     dataType[i] = exploreQueryResult.typeInfo.get( i );
                     nameAndType.put( fullNames[i], dataType[i] );
                 } else {
@@ -166,7 +164,7 @@ public class Explore {
             if ( sqlStatment.contains( "WHERE" ) ) {
                 includesJoin = true;
                 sqlStatment = selectDistinct;
-                tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
+                tableSize = getSQLCount( sqlStatment.replace( "\nLIMIT 60", "\nLIMIT 200" ) );
                 return;
             }
             if ( sqlStatment.split( "\nFROM" )[1].split( "," ).length > 1 ) {
@@ -196,20 +194,19 @@ public class Explore {
                     }
                     if ( dataType[i].equals( "INTEGER" ) || dataType[i].equals( "BIGINT" ) || dataType[i].equals( "SMALLINT" ) || dataType[i].equals( "TINYINT" ) || dataType[i].equals( "DECIMAL" ) ) {
                         includesInteger = true;
-                        allCols.add( "AVG(" + selecdedCols.get( i ) + ") AS " + selecdedCols.get( i ).substring( selecdedCols.get( i ).lastIndexOf( '.' ) + 1 ));
+                        allCols.add( "AVG(" + selecdedCols.get( i ) + ") AS " + selecdedCols.get( i ).substring( selecdedCols.get( i ).lastIndexOf( '.' ) + 1 ) );
                         intCols.add( selecdedCols.get( i ) );
                         allBlankCols.add( selecdedCols.get( i ) );
                     }
                 }
 
                 if ( includesInteger ) {
-                    getMins( intCols ).forEach( ( s, min ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min + "\nLIMIT 1)")  );
-                    getMaxs( intCols ).forEach( ( s, max ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max + "\nLIMIT 1)") );
+                    getMins( intCols ).forEach( ( s, min ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min + "\nLIMIT 1)" ) );
+                    getMaxs( intCols ).forEach( ( s, max ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max + "\nLIMIT 1)" ) );
                 }
 
-
                 if ( includesVarchar ) {
-                    sqlStatment = "(SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", goupByList )+ "\nLIMIT 200)" + String.join( "", unionList ) ;
+                    sqlStatment = "(SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", goupByList ) + "\nLIMIT 200)" + String.join( "", unionList );
                 } else {
                     sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + String.join( "", unionList );
                 }
@@ -248,7 +245,6 @@ public class Explore {
 
     private List<String[]> getAllData( String query ) {
         String queryLimit = query;
-
 
         ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( queryLimit );
         List<String[]> allDataTable = new ArrayList<>( Arrays.asList( exploreQueryResult.data ) );
@@ -364,7 +360,7 @@ public class Explore {
                     } else {
                         vals[dim] = Utils.missingValue();
                     }
-                } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) || dataType[dim].equals( "SMALLINT" ) || dataType[dim].equals( "TINYINT" ) || dataType[dim].equals( "DECIMAL" )) {
+                } else if ( dataType[dim].equals( "INTEGER" ) || dataType[dim].equals( "BIGINT" ) || dataType[dim].equals( "SMALLINT" ) || dataType[dim].equals( "TINYINT" ) || dataType[dim].equals( "DECIMAL" ) ) {
                     vals[dim] = Double.parseDouble( table.get( obj )[dim] );
                 }
             }
@@ -398,6 +394,7 @@ public class Explore {
 
     public String sqlClassifiedData( J48 tree, Map<String, String> nameAndType ) {
         String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString(), nameAndType, includesJoin );
+        sqlStatment = classifiedSqlStatement;
         return classifiedSqlStatement;
     }
 

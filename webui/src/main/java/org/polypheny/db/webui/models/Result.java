@@ -77,6 +77,9 @@ public class Result {
      */
     private ResultType type;
 
+    /**
+     *
+     */
     @Setter
     private String classificationInfo;
 
@@ -86,11 +89,15 @@ public class Result {
     @Setter
     private boolean includesClassificationInfo;
 
+    /**
+     * If WekaToSQL is switched off, classifiedData is saved
+     */
     @Setter
-    private String[][] classifedData;
+    private String[][] classifiedData;
 
     @Setter
     private boolean isConvertedToSql;
+
 
     /**
      * Build a Result object containing the data from the ResultSet, including the headers of the columns

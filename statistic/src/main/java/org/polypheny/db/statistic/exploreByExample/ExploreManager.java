@@ -62,7 +62,7 @@ public class ExploreManager {
             int identifier = atomicId.getAndIncrement();
             explore.put( identifier, new Explore( identifier, query, this.exploreQueryProcessor ) );
 
-            if(explore.get( identifier ).getDataType() == null){
+            if ( explore.get( identifier ).getDataType() == null ) {
                 return explore.get( identifier );
             }
 
