@@ -45,6 +45,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -189,14 +190,14 @@ public class CassandraStore extends Store {
         long primaryKeyColumn = -1;
         List<Long> keyColumns = new ArrayList<>();
 
-        /*
-        for ( CatalogKey catalogKey : combinedTable.getKeys() ) {
+
+        for ( CatalogKey catalogKey : catalog.getTableKeys( catalogTable.id ) ) {
             keyColumns.addAll( catalogKey.columnIds );
             // TODO JS: make sure there's only one primary key!
             if ( primaryKeyColumn == -1 ) {
                 primaryKeyColumn = catalogKey.columnIds.get( 0 );
             }
-        }*/
+        }
 
         if ( primaryKeyColumn == -1 ) {
             throw new UnsupportedOperationException( "Cannot create Cassandra Table without a primary key!" );
