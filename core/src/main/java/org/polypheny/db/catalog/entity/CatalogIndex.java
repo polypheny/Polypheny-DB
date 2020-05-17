@@ -30,7 +30,7 @@ import org.polypheny.db.catalog.Catalog.IndexType;
  *
  */
 @EqualsAndHashCode(callSuper = false)
-public final class CatalogIndex {
+public final class CatalogIndex implements Serializable {
 
     public final long id;
     public final String name;
@@ -38,8 +38,8 @@ public final class CatalogIndex {
     public final IndexType type;
     public final Integer location;
 
-    public CatalogKey key;
-    public long keyId;
+    public final CatalogKey key;
+    public final long keyId;
 
 
     public CatalogIndex(
@@ -48,13 +48,15 @@ public final class CatalogIndex {
             final boolean unique,
             final IndexType type,
             final Integer location,
-            final long keyId ) {
+            final long keyId,
+            final CatalogKey key ) {
         this.id = id;
         this.name = name;
         this.unique = unique;
         this.type = type;
         this.location = location;
         this.keyId = keyId;
+        this.key = key;
     }
 
 

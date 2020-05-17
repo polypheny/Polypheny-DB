@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 
@@ -39,8 +40,8 @@ public class CassandraPhysicalNameProvider {
     private final String DEFAULT_SCHEMA = "public";
 
 
-    public CassandraPhysicalNameProvider( Catalog catalog, int storeId ) {
-        this.catalog = catalog;
+    public CassandraPhysicalNameProvider( int storeId ) {
+        this.catalog = Catalog.getInstance();
         this.storeId = storeId;
     }
 
@@ -75,11 +76,7 @@ public class CassandraPhysicalNameProvider {
     public String getPhysicalColumnName( long columnId ) throws RuntimeException {
         // TODO JS: This really should be a direct call to the catalog!
         List<CatalogColumnPlacement> placements;
-        try {
-            placements = catalog.getColumnPlacementsOnStore( this.storeId );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+        placements = catalog.getColumnPlacementsOnStore( this.storeId );
 
         for ( CatalogColumnPlacement placement : placements ) {
             if ( placement.columnId == columnId ) {
@@ -174,7 +171,7 @@ public class CassandraPhysicalNameProvider {
         try {
             placement = this.catalog.getColumnPlacement( this.storeId, columnId );
             this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId, placement.physicalTableName, placement.physicalTableName, updatedName );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
     }

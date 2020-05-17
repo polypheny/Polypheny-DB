@@ -28,4 +28,9 @@ public class UnknownIndexException extends CatalogException {
     public UnknownIndexException( long indexId ) {
         super( "Unknown index id: " + indexId + ". There is no index with this id." );
     }
+
+
+    public UnknownIndexException( long tableId, String indexName ) {
+        super( "Unknown index on table: " + tableId + " with name: " + indexName );
+    }
 }

@@ -142,7 +142,6 @@ public class PolyphenyDbCatalogReader implements Prepare.CatalogReader {
     }
 
 
-
     private Collection<Function> getFunctionsFrom( List<String> names ) {
         final List<Function> functions2 = new ArrayList<>();
         final List<List<String>> schemaNameList = new ArrayList<>();

@@ -23,11 +23,10 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -74,18 +73,18 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogCombinedTable combinedTable = getCatalogCombinedTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
             // Check whether this placement already exists
-            for ( int storeId : combinedTable.getColumnPlacementsByStore().keySet() ) {
+            for ( int storeId : catalogTable.placementsByStore.keySet() ) {
                 if ( storeId == storeInstance.getStoreId() ) {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
-                            RESOURCE.placementAlreadyExists( storeName.getSimple(), combinedTable.getTable().name ) );
+                            RESOURCE.placementAlreadyExists( storeName.getSimple(), catalogTable.name ) );
                 }
             }
             // Check whether the store supports schema changes
@@ -95,20 +94,20 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
             // Create column placements
-            for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                transaction.getCatalog().addColumnPlacement(
+            for ( long id : catalogTable.columnIds ) {
+                Catalog.getInstance().addColumnPlacement(
                         storeInstance.getStoreId(),
-                        catalogColumn.id,
+                        id,
                         PlacementType.MANUAL,
                         null,
                         null,
                         null );
             }
             // Fetch the table again to get the update list of placements
-            storeInstance.createTable( context, transaction.getCatalog().getCombinedTable( combinedTable.getTable().id ) );
+            storeInstance.createTable( context, catalogTable );
             // !!!!!!!!!!!!!!!!!!!!!!!!
             // TODO: Now we should also copy the data
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

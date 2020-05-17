@@ -85,7 +85,6 @@ import org.polypheny.db.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -109,7 +108,6 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.UnknownTypeException;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 
@@ -130,6 +128,7 @@ public class DbmsMeta implements ProtobufMeta {
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
+    private final Catalog catalog = Catalog.getInstance();
 
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
@@ -166,6 +165,7 @@ public class DbmsMeta implements ProtobufMeta {
             connectionNumberTable.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
         } );
     }
+
 
     private static Object addProperty( final Map<DatabaseProperty, Object> map, final DatabaseMetaData metaData, final DatabaseProperty p ) throws SQLException {
         Object propertyValue;
@@ -273,7 +273,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogTable> tables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables(
+            final List<CatalogTable> tables = catalog.getTables(
                     database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
                     (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
@@ -310,45 +310,41 @@ public class DbmsMeta implements ProtobufMeta {
         if ( log.isTraceEnabled() ) {
             log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
         }
-        try {
-            final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogColumn> columns = connection.getCurrentOrCreateNewTransaction().getCatalog().getColumns(
-                    database == null ? null : new Pattern( database ),
-                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
-                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
-                    (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
-            );
-            StatementHandle statementHandle = createStatement( ch );
-            return createMetaResultSet(
-                    ch,
-                    statementHandle,
-                    toEnumerable( columns ),
-                    PrimitiveCatalogColumn.class,
-                    // According to JDBC standard:
-                    "TABLE_CAT",  // the database name
-                    "TABLE_SCHEM",        // the schema name
-                    "TABLE_NAME",         // the table name
-                    "COLUMN_NAME",        // the column name
-                    "DATA_TYPE",          // The SQL data type from java.sql.Types.
-                    "TYPE_NAME",          // The name of the data type.
-                    "COLUMN_SIZE",        // The length of the column (number of chars in a string or number of digits in a numerical data type).
-                    "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
-                    "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
-                    "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
-                    "NULLABLE",           // Indicates if the column is nullable. 1 means nullable
-                    "REMARKS",            // The comments associated with the column. --> Polypheny-DB always returns null for this column
-                    "COLUMN_DEF",         // The default value of the column.
-                    "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
-                    "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
-                    "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types) --> always null
-                    "ORDINAL_POSITION",   // The index of the column within the table.
-                    "IS_NULLABLE",        // Indicates if the column allows null values.
-                    // Polypheny-DB specific extensions:
-                    "COLLATION"
-            );
-        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException | UnknownTypeException e ) {
-            throw propagate( e );
-        }
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
+        final List<CatalogColumn> columns = catalog.getColumns(
+                database == null ? null : new Pattern( database ),
+                (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s ),
+                (columnPattern == null || columnPattern.s == null) ? null : new Pattern( columnPattern.s )
+        );
+        StatementHandle statementHandle = createStatement( ch );
+        return createMetaResultSet(
+                ch,
+                statementHandle,
+                toEnumerable( columns ),
+                PrimitiveCatalogColumn.class,
+                // According to JDBC standard:
+                "TABLE_CAT",  // the database name
+                "TABLE_SCHEM",        // the schema name
+                "TABLE_NAME",         // the table name
+                "COLUMN_NAME",        // the column name
+                "DATA_TYPE",          // The SQL data type from java.sql.Types.
+                "TYPE_NAME",          // The name of the data type.
+                "COLUMN_SIZE",        // The length of the column (number of chars in a string or number of digits in a numerical data type).
+                "BUFFER_LENGTH",      // Transfer size of the data. --> not used, always null
+                "DECIMAL_DIGITS",     // The number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
+                "NUM_PREC_RADIX",     // The radix of the column. (typically either 10 or 2)
+                "NULLABLE",           // Indicates if the column is nullable. 1 means nullable
+                "REMARKS",            // The comments associated with the column. --> Polypheny-DB always returns null for this column
+                "COLUMN_DEF",         // The default value of the column.
+                "SQL_DATA_TYPE",      // This column is the same as the DATA_TYPE column, except for the datetime and SQL-92 interval data types. --> unused, always null
+                "SQL_DATETIME_SUB",   // Subtype code for datetime and SQL-92 interval data types. For other data types, this column returns NULL. --> unused, always null
+                "CHAR_OCTET_LENGTH",  // The maximum number of bytes in the column (only for char types) --> always null
+                "ORDINAL_POSITION",   // The index of the column within the table.
+                "IS_NULLABLE",        // Indicates if the column allows null values.
+                // Polypheny-DB specific extensions:
+                "COLLATION"
+        );
     }
 
 
@@ -359,7 +355,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogSchema> schemas = connection.getCurrentOrCreateNewTransaction().getCatalog().getSchemas(
+            final List<CatalogSchema> schemas = catalog.getSchemas(
                     database == null ? null : new Pattern( database ),
                     (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
             );
@@ -376,7 +372,7 @@ public class DbmsMeta implements ProtobufMeta {
                     "OWNER",
                     "SCHEMA_TYPE"
             );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException e ) {
             throw propagate( e );
         }
     }
@@ -389,7 +385,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
         try {
             final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
-            final List<CatalogDatabase> databases = connection.getCurrentOrCreateNewTransaction().getCatalog().getDatabases( null );
+            final List<CatalogDatabase> databases = catalog.getDatabases( null );
             StatementHandle statementHandle = createStatement( ch );
             return createMetaResultSet(
                     ch,
@@ -509,11 +505,11 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
                 if ( catalogTable.primaryKey != null ) {
-                    final CatalogPrimaryKey primaryKey = connection.getCurrentTransaction().getCatalog().getPrimaryKey( catalogTable.primaryKey );
+                    final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
                     primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
             }
@@ -548,10 +544,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
-                List<CatalogForeignKey> importedKeys = connection.getCurrentTransaction().getCatalog().getForeignKeys( catalogTable.id );
+                List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
                 importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -593,10 +589,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
-                List<CatalogForeignKey> exportedKeys = connection.getCurrentTransaction().getCatalog().getExportedKeys( catalogTable.id );
+                List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
                 exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -706,10 +702,10 @@ public class DbmsMeta implements ProtobufMeta {
             final Pattern tablePattern = table == null ? null : new Pattern( table );
             final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
             final Pattern databasePattern = database == null ? null : new Pattern( database );
-            final List<CatalogTable> catalogTables = connection.getCurrentOrCreateNewTransaction().getCatalog().getTables( databasePattern, schemaPattern, tablePattern );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
             List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
             for ( CatalogTable catalogTable : catalogTables ) {
-                List<CatalogIndex> catalogIndexInfos = connection.getCurrentTransaction().getCatalog().getIndexes( catalogTable.id, unique );
+                List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
                 catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
             StatementHandle statementHandle = createStatement( ch );
@@ -1228,7 +1224,6 @@ public class DbmsMeta implements ProtobufMeta {
         // Create transaction
         Transaction transaction = transactionManager.startTransaction( user, null, null, false );
 
-        final Catalog catalog = transaction.getCatalog();
         // Check database access
         final CatalogDatabase database;
         try {

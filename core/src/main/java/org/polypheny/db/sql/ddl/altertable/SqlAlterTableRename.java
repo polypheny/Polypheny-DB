@@ -21,8 +21,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -69,18 +72,19 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable table = getCatalogTable( context, transaction, oldName );
+        CatalogTable table = getCatalogTable( context, oldName );
 
         if ( newName.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
         }
         String newTableName = newName.getSimple();
         try {
-            if ( transaction.getCatalog().checkIfExistsTable( table.schemaId, newTableName ) ) {
+            Catalog catalog = Catalog.getInstance();
+            if ( catalog.checkIfExistsTable( table.schemaId, newTableName ) ) {
                 throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.tableExists( newTableName ) );
             }
-            transaction.getCatalog().renameTable( table.id, newTableName );
-        } catch ( GenericCatalogException e ) {
+            catalog.renameTable( table.id, newTableName );
+        } catch ( GenericCatalogException | UnknownTableException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
     }

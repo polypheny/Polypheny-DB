@@ -36,11 +36,9 @@ import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.CatalogManagerImpl;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.CatalogTransactionException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationGroup;
@@ -71,7 +69,6 @@ public class TransactionImpl implements Transaction, Comparable {
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     private QueryProcessor queryProcessor;
-    private Catalog catalog;
 
     @Getter
     private CatalogUser user;
@@ -131,15 +128,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public Catalog getCatalog() {
-        if ( catalog == null ) {
-            catalog = CatalogManagerImpl.getInstance().getCatalog( xid );
-        }
-        return catalog;
-    }
-
-
-    @Override
     public PolyphenyDbSchema getSchema() {
         if ( cachedSchema == null ) {
             cachedSchema = PolySchemaBuilder.getInstance().getCurrent( this );
@@ -168,9 +156,6 @@ public class TransactionImpl implements Transaction, Comparable {
         try {
             // Prepare to commit changes on all involved stores and the catalog
             boolean okToCommit = true;
-            if ( catalog != null ) {
-                okToCommit &= catalog.prepare();
-            }
             if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
                 for ( Store store : involvedStores ) {
                     okToCommit &= store.prepare( xid );
@@ -179,9 +164,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
             if ( okToCommit ) {
                 // Commit changes
-                if ( catalog != null ) {
-                    catalog.commit();
-                }
                 for ( Store store : involvedStores ) {
                     store.commit( xid );
                 }
@@ -199,10 +181,6 @@ public class TransactionImpl implements Transaction, Comparable {
             LockManager.INSTANCE.removeTransaction( this );
             // Remove transaction
             transactionManager.removeTransaction( xid );
-        } catch ( CatalogTransactionException e ) {
-            log.error( "Exception while committing changes. Execution rollback!" );
-            rollback();
-            throw new TransactionException( e );
         } finally {
             cachedSchema = null;
         }
@@ -216,15 +194,7 @@ public class TransactionImpl implements Transaction, Comparable {
             for ( Store store : involvedStores ) {
                 store.rollback( xid );
             }
-
-            // Rollback changes to the catalog
-            try {
-                if ( catalog != null ) {
-                    catalog.rollback();
-                }
-            } catch ( CatalogTransactionException e ) {
-                throw new TransactionException( e );
-            }
+            Catalog.getInstance().rollback();
         } finally {
             cachedSchema = null;
             // Release locks

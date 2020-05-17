@@ -38,16 +38,15 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map.Entry;
 import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -79,9 +78,10 @@ public class SqlDropTable extends SqlDropObject {
     @Override
     public void execute( Context context, Transaction transaction ) {
         // Get table
-        final CatalogCombinedTable table;
+        final CatalogTable table;
+        Catalog catalog = Catalog.getInstance();
         try {
-            table = getCatalogCombinedTable( context, transaction, name );
+            table = getCatalogTable( context, name );
         } catch ( PolyphenyDbContextException e ) {
             if ( ifExists ) {
                 // It is ok that there is no database / schema / table with this name because "IF EXISTS" was specified
@@ -94,14 +94,14 @@ public class SqlDropTable extends SqlDropObject {
         // Check if there are foreign keys referencing this table
         List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
         try {
-            List<CatalogForeignKey> exportedKeys = transaction.getCatalog().getExportedKeys( table.getTable().id );
+            List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( table.id );
             if ( exportedKeys.size() > 0 ) {
                 for ( CatalogForeignKey foreignKey : exportedKeys ) {
-                    if ( foreignKey.tableId == table.getTable().id ) {
+                    if ( foreignKey.tableId == table.id ) {
                         // If this is a self-reference, drop it later.
                         selfRefsToDelete.add( foreignKey );
                     } else {
-                        throw new PolyphenyDbException( "Cannot drop table '" + table.getSchema().name + "." + table.getTable().name + "' because it is being referenced by '" + exportedKeys.get( 0 ).schemaName + "." + exportedKeys.get( 0 ).tableName + "'." );
+                        throw new PolyphenyDbException( "Cannot drop table '" + table.name + "." + table.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).schemaName + "." + exportedKeys.get( 0 ).tableName + "'." );
                     }
                 }
 
@@ -111,7 +111,7 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         // Check whether all stores support schema changes
-        for ( int storeId : table.getColumnPlacementsByStore().keySet() ) {
+        for ( int storeId : table.placementsByStore.keySet() ) {
             if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
                 throw SqlUtil.newContextException(
                         SqlParserPos.ZERO,
@@ -121,14 +121,14 @@ public class SqlDropTable extends SqlDropObject {
 
         // Delete data from the stores and remove the column placement
         try {
-            for ( Entry<Integer, List<CatalogColumnPlacement>> entry : table.getColumnPlacementsByStore().entrySet() ) {
+            for ( int storeId : table.placementsByStore.keySet() ) {
                 // Delete table on store
-                StoreManager.getInstance().getStore( entry.getKey() ).dropTable( context, table );
+                StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
                 // Inform routing
-                transaction.getRouter().dropPlacements( entry.getValue() );
+                transaction.getRouter().dropPlacements( catalog.getColumnPlacementsOnStore( storeId, table.id ) );
                 // Delete column placement in catalog
-                for ( CatalogColumn catalogColumn : table.getColumns() ) {
-                    transaction.getCatalog().deleteColumnPlacement( entry.getKey(), catalogColumn.id );
+                for ( Long columnId : table.columnIds ) {
+                    catalog.deleteColumnPlacement( storeId, columnId );
                 }
             }
         } catch ( GenericCatalogException e ) {
@@ -138,7 +138,7 @@ public class SqlDropTable extends SqlDropObject {
         // Delete the self-referencing foreign keys
         try {
             for ( CatalogForeignKey foreignKey : selfRefsToDelete ) {
-                transaction.getCatalog().deleteForeignKey( foreignKey.id );
+                catalog.deleteForeignKey( foreignKey.id );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while deleting self-referencing foreign key constraints.", e );
@@ -146,9 +146,9 @@ public class SqlDropTable extends SqlDropObject {
 
         // Delete indexes of this table
         try {
-            List<CatalogIndex> indexes = transaction.getCatalog().getIndexes( table.getTable().id, false );
+            List<CatalogIndex> indexes = catalog.getIndexes( table.id, false );
             for ( CatalogIndex index : indexes ) {
-                transaction.getCatalog().deleteIndex( index.id );
+                catalog.deleteIndex( index.id );
             }
         } catch ( GenericCatalogException | UnknownIndexException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
@@ -157,15 +157,15 @@ public class SqlDropTable extends SqlDropObject {
         // Delete keys and constraints
         try {
             // Remove primary key
-            transaction.getCatalog().deletePrimaryKey( table.getTable().id );
+            catalog.deletePrimaryKey( table.id );
             // Delete all foreign keys of the table
-            List<CatalogForeignKey> foreignKeys = transaction.getCatalog().getForeignKeys( table.getTable().id );
+            List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( table.id );
             for ( CatalogForeignKey foreignKey : foreignKeys ) {
-                transaction.getCatalog().deleteForeignKey( foreignKey.id );
+                catalog.deleteForeignKey( foreignKey.id );
             }
             // Delete all constraints of the table
-            for ( CatalogConstraint constraint : transaction.getCatalog().getConstraints( table.getTable().id ) ) {
-                transaction.getCatalog().deleteConstraint( constraint.id );
+            for ( CatalogConstraint constraint : catalog.getConstraints( table.id ) ) {
+                catalog.deleteConstraint( constraint.id );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
@@ -173,8 +173,8 @@ public class SqlDropTable extends SqlDropObject {
 
         // Delete columns
         try {
-            for ( CatalogColumn catalogColumn : table.getColumns() ) {
-                transaction.getCatalog().deleteColumn( catalogColumn.id );
+            for ( Long columnId : table.columnIds ) {
+                catalog.deleteColumn( columnId );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping columns.", e );
@@ -182,8 +182,8 @@ public class SqlDropTable extends SqlDropObject {
 
         // Delete the table
         try {
-            transaction.getCatalog().deleteTable( table.getTable().id );
-        } catch ( GenericCatalogException e ) {
+            catalog.deleteTable( table.id );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping the table.", e );
         }
     }

@@ -27,16 +27,16 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.SqlProcessor;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Pattern;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedDatabase;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedSchema;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -61,6 +61,7 @@ public class StatisticQueryProcessor {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
+    private final Catalog catalog = Catalog.getInstance();
 
 
     /**
@@ -107,34 +108,28 @@ public class StatisticQueryProcessor {
      */
     public List<List<String>> getSchemaTree() {
         List<List<String>> result = new ArrayList<>();
-        Transaction transaction = getTransaction();
 
         try {
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
             List<String> schemaTree = new ArrayList<>();
-            for ( CatalogCombinedSchema combinedSchema : combinedDatabase.getSchemas() ) {
+            List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
+            for ( CatalogSchema schema : schemas ) {
                 List<String> tables = new ArrayList<>();
-                for ( CatalogCombinedTable combinedTable : combinedSchema.getTables() ) {
+                List<CatalogTable> childTables = catalog.getTables( schema.id, null );
+                for ( CatalogTable childTable : childTables ) {
                     List<String> table = new ArrayList<>();
-                    for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
-                        table.add( combinedSchema.getSchema().name + "." + combinedTable.getTable().name + "." + catalogColumn.name );
+                    List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
+                    for ( CatalogColumn catalogColumn : childColumns ) {
+                        table.add( schema.name + "." + childTable.name + "." + catalogColumn.name );
                     }
-                    if ( combinedTable.getTable().tableType == TableType.TABLE ) {
+                    if ( childTable.tableType == TableType.TABLE ) {
                         tables.addAll( table );
                     }
                 }
                 schemaTree.addAll( tables );
                 result.add( schemaTree );
             }
-            transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( GenericCatalogException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return result;
     }
@@ -146,27 +141,11 @@ public class StatisticQueryProcessor {
      * @return all the columns
      */
     public List<QueryColumn> getAllColumns() {
-        Transaction transaction = getTransaction();
         List<QueryColumn> columns = new ArrayList<>();
 
-        try {
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
+        List<CatalogColumn> catalogColumns = catalog.getColumns( new Pattern( databaseName ), null, null, null );
+        columns.addAll( catalogColumns.stream().map( c -> new QueryColumn( c.schemaName, c.tableName, c.name, c.type ) ).collect( Collectors.toList() ) );
 
-            for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
-                for ( CatalogCombinedTable table : schema.getTables() ) {
-                    columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
-                }
-            }
-            transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
-            log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
-        }
         return columns;
     }
 
@@ -188,32 +167,13 @@ public class StatisticQueryProcessor {
      * @return all columns
      */
     public List<QueryColumn> getAllColumns( String schemaName, String tableName ) {
-        Transaction transaction = getTransaction();
 
         List<QueryColumn> columns = new ArrayList<>();
 
-        try {
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-            for ( CatalogCombinedSchema schema : combinedDatabase.getSchemas() ) {
-                if ( schema.getSchema().name.equals( schemaName ) ) {
-                    for ( CatalogCombinedTable table : schema.getTables() ) {
-                        if ( table.getTable().name.equals( tableName ) ) {
-                            columns.addAll( table.getColumns().stream().map( c -> new QueryColumn( schema.getSchema().name, table.getTable().name, c.name, c.type ) ).collect( Collectors.toList() ) );
-                        }
-                    }
-                }
-            }
-            transaction.commit();
+        catalog
+                .getColumns( new Pattern( databaseName ), new Pattern( schemaName ), new Pattern( tableName ), null )
+                .forEach( c -> columns.add( QueryColumn.fromCatalogColumn( c ) ) );
 
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
-            log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
-        }
         return columns;
 
     }
@@ -232,25 +192,12 @@ public class StatisticQueryProcessor {
      * Method to get the type of a specific column
      */
     public PolyType getColumnType( String schema, String table, String column ) {
-        Transaction transaction = getTransaction();
-        // TODO: fix possible NullPointer
         PolyType type = null;
 
         try {
-            CatalogDatabase catalogDatabase = transaction.getCatalog().getDatabase( databaseName );
-            CatalogCombinedDatabase combinedDatabase = transaction.getCatalog().getCombinedDatabase( catalogDatabase.id );
-            type = combinedDatabase
-                    .getSchemas().stream().filter( s -> s.getSchema().name.equals( schema ) ).findFirst().get()
-                    .getTables().stream().filter( t -> t.getTable().name.equals( table ) ).findFirst().get()
-                    .getColumns().stream().filter( c -> c.name.equals( column ) ).findFirst().get().type;
-            transaction.commit();
-        } catch ( UnknownDatabaseException | UnknownTableException | UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+            type = catalog.getColumn( databaseName, schema, table, column ).type;
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
         }
         return type;
     }
@@ -387,7 +334,7 @@ public class StatisticQueryProcessor {
     public boolean hasData( String schema, String table, String column ) {
         String query = "SELECT * FROM " + buildQualifiedName( schema, table ) + " LIMIT 1";
         StatisticResult res = executeSqlSelect( query );
-        return res.getColumns().length > 0;
+        return res.getColumns() != null && res.getColumns().length > 0;
     }
 
 

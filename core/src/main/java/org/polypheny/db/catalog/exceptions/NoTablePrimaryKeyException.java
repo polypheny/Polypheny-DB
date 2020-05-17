@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.entity.combined;
+package org.polypheny.db.catalog.exceptions;
 
 
-import java.io.Serializable;
+/**
+ * Is thrown when a new table is created and no primary key provided.
+ */
+public class NoTablePrimaryKeyException extends CatalogException {
 
-
-public interface CatalogCombinedEntity extends Serializable {
-
-
+    public NoTablePrimaryKeyException() {
+        super( "No primary key was provided on table creation." );
+    }
 }

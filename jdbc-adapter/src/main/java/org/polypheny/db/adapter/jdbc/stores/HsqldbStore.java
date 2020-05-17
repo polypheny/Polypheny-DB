@@ -12,7 +12,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
@@ -70,8 +70,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        return currentJdbcSchema.createJdbcTable( combinedTable );
+    public Table createTableSchema( CatalogTable catalogTable ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable );
     }
 
 
