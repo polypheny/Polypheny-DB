@@ -265,11 +265,6 @@ public class CassandraStore extends Store {
 
 
     @Override
-/*<<<<<<< HEAD
-    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
-        // TODO JS: Implement
-        log.warn( "addColumn is not implemented yet." );
-=======*/
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getStoreId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.schemaName, catalogTable.name );

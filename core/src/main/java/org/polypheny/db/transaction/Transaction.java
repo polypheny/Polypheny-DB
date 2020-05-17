@@ -42,8 +42,6 @@ public interface Transaction {
 
     SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
 
-    // Catalog getCatalog();
-
     void commit() throws TransactionException;
 
     void rollback() throws TransactionException;

@@ -123,7 +123,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
 
 
         } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
-            e.printStackTrace();
+            log.error( "Exception while reset catalog information page", e );
         }
     }
 }

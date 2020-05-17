@@ -95,8 +95,7 @@ public class CsvSchema extends AbstractSchema {
                 throw new RuntimeException( "Column not found." ); // This should not happen
             }
 
-            PolyType dataTypeName = PolyType.get( catalogColumn.type.name() ); // TODO Replace PolySqlType with native
-            RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
+            RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
         }
