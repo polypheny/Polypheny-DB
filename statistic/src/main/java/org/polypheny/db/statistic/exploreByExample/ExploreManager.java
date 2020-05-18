@@ -32,11 +32,6 @@ public class ExploreManager {
     private ExploreQueryProcessor exploreQueryProcessor;
 
 
-    public void setExploreQueryProcessor( ExploreQueryProcessor exploreQueryProcessor ) {
-        this.exploreQueryProcessor = exploreQueryProcessor;
-    }
-
-
     public synchronized static ExploreManager getInstance() {
         if ( INSTANCE == null ) {
             INSTANCE = new ExploreManager();
@@ -45,18 +40,23 @@ public class ExploreManager {
     }
 
 
-    public Explore classifyData( Integer id, String[][] classified, boolean returnsSql ) {
-        List<String[]> labeled = new ArrayList<>();
-        for ( String[] data : classified ) {
-            if ( !(data[data.length - 1].equals( "?" )) ) {
-                labeled.add( data );
-            }
-        }
-        explore.get( id ).classifyAllData( labeled, returnsSql );
+    public void setExploreQueryProcessor( ExploreQueryProcessor exploreQueryProcessor ) {
+        this.exploreQueryProcessor = exploreQueryProcessor;
+    }
+
+
+    public Explore getExploreInformation( Integer id ) {
         return explore.get( id );
     }
 
 
+    /**
+     * Creates the initial sql statement for initial query
+     *
+     * @param id ExploreID to identify the explore object at this point always null
+     * @param query initial sql query form user interface
+     * @return Explore object
+     */
     public Explore createSqlQuery( Integer id, String query ) {
         if ( id == null ) {
             int identifier = atomicId.getAndIncrement();
@@ -73,11 +73,14 @@ public class ExploreManager {
     }
 
 
-    public Explore getExploreInformation( Integer id ) {
-        return explore.get( id );
-    }
-
-
+    /**
+     * Starts the exploration process or continuous the process, depending on the explore id
+     *
+     * @param id Explore ID to identify the explore object
+     * @param classified data form user
+     * @param dataType for all columns
+     * @return Explore Object
+     */
     public Explore exploreData( Integer id, String[][] classified, String[] dataType ) {
         List<String[]> labeled = new ArrayList<>();
 
@@ -98,4 +101,23 @@ public class ExploreManager {
         return explore.get( id );
     }
 
+
+    /**
+     * Classify all data for final result
+     *
+     * @param id Explore ID to identify the explore object
+     * @param classified data form user
+     * @param returnsSql to check if WekaToSQL is active or not
+     * @return Explore object
+     */
+    public Explore classifyData( Integer id, String[][] classified, boolean returnsSql ) {
+        List<String[]> labeled = new ArrayList<>();
+        for ( String[] data : classified ) {
+            if ( !(data[data.length - 1].equals( "?" )) ) {
+                labeled.add( data );
+            }
+        }
+        explore.get( id ).classifyAllData( labeled, returnsSql );
+        return explore.get( id );
+    }
 }

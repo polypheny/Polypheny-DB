@@ -86,11 +86,9 @@ public class Explore {
     }
 
 
-    public void updateExploration( List<String[]> labeled ) {
-        dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
-    }
-
-
+    /**
+     * First exploration/classification with the labeled entries from the user
+     */
     public void exploreUserInput() {
         isDataAfterClassification = true;
         List<String[]> initialDataClassification = getAllData( sqlStatment );
@@ -99,6 +97,22 @@ public class Explore {
     }
 
 
+    /**
+     * For each additional exploration
+     *
+     * @param labeled data from user
+     */
+    public void updateExploration( List<String[]> labeled ) {
+        dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
+    }
+
+
+    /**
+     * Final classification of all data according to isConvertedToSql with Weka or by creating a sql query
+     *
+     * @param labeled data from user
+     * @param isConvertedToSql boolean if it should be converted to SQL or not
+     */
     public void classifyAllData( List<String[]> labeled, boolean isConvertedToSql ) {
         List<String[]> allData = getAllData( this.query );
         isDataAfterClassification = false;
@@ -113,6 +127,13 @@ public class Explore {
         }
     }
 
+
+    /**
+     * Executes query to get the type information about all the queries
+     *
+     * @param query from user interface
+     * @return different datatypes of a query
+     */
 
     public String[] getTypeInfo( String query ) {
         ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( query );
@@ -141,6 +162,9 @@ public class Explore {
     }
 
 
+    /**
+     * Creates the SQL query for the initial table
+     */
     public void createSQLStatement() {
 
         List<String> selecdedCols = new ArrayList<>();
@@ -217,6 +241,9 @@ public class Explore {
     }
 
 
+    /**
+     * gets all unique Values for a given query and adds true and false for Weka Instances
+     */
     public List<List<String>> getStatistics( String query ) {
 
         List<List<String>> uniqueValues = new ArrayList<>();
@@ -243,10 +270,14 @@ public class Explore {
     }
 
 
+    /**
+     * Gets all data with a query and adds "?" for classification
+     *
+     * @return List of all Data
+     */
     private List<String[]> getAllData( String query ) {
-        String queryLimit = query;
 
-        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( queryLimit );
+        ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( query );
         List<String[]> allDataTable = new ArrayList<>( Arrays.asList( exploreQueryResult.data ) );
         allDataTable = rotate2dArray( allDataTable );
 
@@ -260,11 +291,19 @@ public class Explore {
     }
 
 
+    /**
+     * given a query it returns a list of all qualified column names
+     *
+     * @return list of all columns
+     */
     private List<String> prepareColInfo( String query ) {
         return Arrays.asList( query.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
     }
 
 
+    /**
+     * @return the amount of entries of a given sql query
+     */
     private int getSQLCount( String sql ) {
         ExploreQueryResult exploreQueryResult = this.exploreQueryProcessor.executeSQL( sql );
         return (exploreQueryResult.count);
@@ -304,6 +343,12 @@ public class Explore {
     }
 
 
+    /**
+     * rotates a List<String[]> to switch between rows and columns
+     *
+     * @param table of rows or columns
+     * @return rotated table
+     */
     private List<String[]> rotate2dArray( List<String[]> table ) {
         int width = table.get( 0 ).length;
         int height = table.size();
@@ -321,6 +366,9 @@ public class Explore {
     }
 
 
+    /**
+     * Creates a Weka Instances for a given data table
+     */
     public Instances createInstance( List<String[]> rotatedTable, List<String[]> table, String[] dataType, List<List<String>> uniqueValues ) {
 
         int numInstances = rotatedTable.get( 0 ).length;
@@ -370,6 +418,12 @@ public class Explore {
     }
 
 
+    /**
+     * Trains a J48 Tree with the entry selection from the user
+     *
+     * @param classifiedData weka Instances
+     * @return J48 tree
+     */
     public J48 trainData( Instances classifiedData ) {
         classifiedData.setClassIndex( classifiedData.numAttributes() - 1 );
         J48 tree = new J48();
@@ -392,12 +446,27 @@ public class Explore {
     }
 
 
+    /**
+     * Translates a Weka J48 Tree to a SQL query
+     *
+     * @param tree J48 tree
+     * @param nameAndType of all the columns
+     * @return sql query
+     */
     public String sqlClassifiedData( J48 tree, Map<String, String> nameAndType ) {
         String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString(), nameAndType, includesJoin );
         sqlStatment = classifiedSqlStatement;
         return classifiedSqlStatement;
     }
 
+
+    /**
+     * Classifies unlabeled data with the before created tree
+     *
+     * @param tree J48 tree
+     * @param unlabeled Weka Instances
+     * @return labeled data
+     */
 
     public List<String[]> classifyUnlabledData( J48 tree, Instances unlabeled ) {
 

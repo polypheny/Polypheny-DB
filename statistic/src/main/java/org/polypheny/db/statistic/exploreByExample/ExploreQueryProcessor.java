@@ -59,7 +59,6 @@ public class ExploreQueryProcessor {
         this.transactionManager = transactionManager;
         this.userName = userName;
         this.databaseName = databaseName;
-
     }
 
 
@@ -115,9 +114,6 @@ public class ExploreQueryProcessor {
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
-    private ExploreQueryResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws ExploreQueryProcessor.QueryExecutionException {
-        return executeSqlSelect( transaction, sqlSelect, getPageSize() );
-    }
 
 
     private ExploreQueryResult executeSqlSelect( final Transaction transaction, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {

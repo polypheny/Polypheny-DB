@@ -329,10 +329,10 @@ public class Crud implements InformationObserver {
                             views.add( table );
                         }
                     }
-                    if( request.showTable ) {
+                    if ( request.showTable ) {
                         schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
 
-                    }else {
+                    } else {
                         schemaTree.addChildren( tables );
                     }
                     if ( request.views ) {
@@ -713,7 +713,6 @@ public class Crud implements InformationObserver {
      * Gets the classified Data from User
      * return possibly interesting Data to User
      */
-
     public Result classifyData( Request req, Response res ) {
         ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
@@ -765,7 +764,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Pagination
+     * For pagination within the Explore-by-Example table
      */
     public Object getExploreTables( Request request, Response response ) {
 
@@ -850,7 +849,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * creates the initial query for the Explore-by-Example process
+     * Creates the initial query for the Explore-by-Example process
      */
     public Result createInitialExploreQuery( Request req, Response res ) {
 

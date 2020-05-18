@@ -78,23 +78,32 @@ public class Result {
     private ResultType type;
 
     /**
-     *
+     * Explore-by-Example, information about classification, because classification is only possible if a table holds at least 10 entries
      */
     @Setter
     private String classificationInfo;
 
+    /**
+     * Explore-by-Example Explorer Id for
+     */
     @Setter
     private int explorerId;
 
+    /**
+     * Pagination for Explore-by-Example, Information if it includes classified data
+     */
     @Setter
     private boolean includesClassificationInfo;
 
     /**
-     * If WekaToSQL is switched off, classifiedData is saved
+     * Pagination for Explore-by-Example, to display the classified Data with the addition of true/false
      */
     @Setter
     private String[][] classifiedData;
 
+    /**
+     * Explore-by-Example, Information if the weka classifier is translated to sql or not
+     */
     @Setter
     private boolean isConvertedToSql;
 
