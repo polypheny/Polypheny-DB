@@ -21,6 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
@@ -46,6 +47,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name DROP COLUMN name} statement.
  */
+@Slf4j
 public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     private final SqlIdentifier table;
@@ -200,7 +202,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 try {
                     Catalog.getInstance().deleteColumn( columnId );
                 } catch ( GenericCatalogException ex ) {
-                    ex.printStackTrace();
+                    log.error( "Exception while deleting column to undo changes. This might leave the catalog in an invalid state!", e );
                 }
             }
             throw new RuntimeException( e );

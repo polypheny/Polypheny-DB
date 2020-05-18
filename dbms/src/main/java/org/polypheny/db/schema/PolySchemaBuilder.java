@@ -45,7 +45,6 @@ import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -157,14 +156,13 @@ public class PolySchemaBuilder {
 
 
     private RelDataType sqlType( RelDataTypeFactory typeFactory, CatalogColumn column ) {
-        final PolyType polyType = PolyType.get( column.type.name() );
-        if ( column.length != null && column.scale != null && polyType.allowsPrecScale( true, true ) ) {
-            return typeFactory.createPolyType( polyType, column.length, column.scale );
-        } else if ( column.length != null && polyType.allowsPrecNoScale() ) {
-            return typeFactory.createPolyType( polyType, column.length );
+        if ( column.length != null && column.scale != null && column.type.allowsPrecScale( true, true ) ) {
+            return typeFactory.createPolyType( column.type, column.length, column.scale );
+        } else if ( column.length != null && column.type.allowsPrecNoScale() ) {
+            return typeFactory.createPolyType( column.type, column.length );
         } else {
-            assert polyType.allowsNoPrecNoScale();
-            return typeFactory.createPolyType( polyType );
+            assert column.type.allowsNoPrecNoScale();
+            return typeFactory.createPolyType( column.type );
         }
     }
 

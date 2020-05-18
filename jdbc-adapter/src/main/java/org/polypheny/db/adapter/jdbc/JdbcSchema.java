@@ -47,6 +47,7 @@ import java.util.Set;
 import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -83,6 +84,7 @@ import org.polypheny.db.util.Util;
  * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed
  * against those tables, pushing down as much as possible of the query logic to SQL.
  */
+@Slf4j
 public class JdbcSchema implements Schema {
 
     final ConnectionFactory connectionFactory;
@@ -159,13 +161,12 @@ public class JdbcSchema implements Schema {
                 if ( physicalTableName == null ) {
                     physicalTableName = placement.physicalTableName;
                 }
-                PolyType dataTypeName = PolyType.get( catalogColumn.type.name() ); // TODO MV: Replace PolySqlType with native
-                RelDataType sqlType = sqlType( typeFactory, dataTypeName, catalogColumn.length, catalogColumn.scale, null );
+                RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
                 fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
                 logicalColumnNames.add( catalogColumn.name );
                 physicalColumnNames.add( placement.physicalColumnName );
             } catch ( UnknownColumnException | GenericCatalogException e ) {
-                e.printStackTrace();
+                throw new RuntimeException( e );
             }
         }
         JdbcTable table = new JdbcTable(

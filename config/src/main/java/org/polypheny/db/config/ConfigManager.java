@@ -32,7 +32,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
  */
 public class ConfigManager {
 
-    private static ConfigManager instance;
+    private static ConfigManager instance = new ConfigManager();
 
     private final ConcurrentMap<String, Config> configs;
     private final ConcurrentMap<String, WebUiGroup> uiGroups;
@@ -54,9 +54,6 @@ public class ConfigManager {
      * Singleton
      */
     public static ConfigManager getInstance() {
-        if ( instance == null ) {
-            instance = new ConfigManager();
-        }
         return instance;
     }
 

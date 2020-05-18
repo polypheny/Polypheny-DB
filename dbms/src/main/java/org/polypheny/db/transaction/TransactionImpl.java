@@ -127,15 +127,6 @@ public class TransactionImpl implements Transaction, Comparable {
     }
 
 
-    /*@Override
-    public Catalog getCatalog() {
-        if ( catalog == null ) {
-            catalog = CatalogManager.getInstance().getCatalog( xid );
-        }
-        return catalog;
-    }*/
-
-
     @Override
     public PolyphenyDbSchema getSchema() {
         if ( cachedSchema == null ) {
@@ -165,9 +156,6 @@ public class TransactionImpl implements Transaction, Comparable {
         try {
             // Prepare to commit changes on all involved stores and the catalog
             boolean okToCommit = true;
-            /*if ( catalog != null ) {
-                okToCommit &= catalog.prepare();
-            }*/
             if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
                 for ( Store store : involvedStores ) {
                     okToCommit &= store.prepare( xid );
@@ -176,11 +164,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
             if ( okToCommit ) {
                 // Commit changes
-                /*
-                if ( catalog != null ) {
-                    catalog.commit();
-                }
-                 */
                 for ( Store store : involvedStores ) {
                     store.commit( xid );
                 }
