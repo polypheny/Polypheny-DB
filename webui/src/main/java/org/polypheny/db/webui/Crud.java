@@ -1428,7 +1428,7 @@ public class Crud implements InformationObserver {
         if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) ) {
             return new Result( "Invalid request" );
         }
-        String query = String.format( "ALTER TABLE %s.%s %s PLACEMENT %s", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT \"%s\"", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
         Transaction transaction = getTransaction();
         int affectedRows = 0;
         try {
