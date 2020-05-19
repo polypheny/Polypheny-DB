@@ -413,7 +413,7 @@ public class SqlDataTypeSpec extends SqlNode {
                     type = typeFactory.createMultisetType( type, cardinality );
                     break;
                 case ARRAY:
-                    type = typeFactory.createArrayType( type, cardinality );
+                    type = typeFactory.createArrayType( type, cardinality, dimension );
                     break;
 
                 default:

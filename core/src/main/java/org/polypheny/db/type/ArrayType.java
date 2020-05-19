@@ -49,24 +49,27 @@ public class ArrayType extends AbstractPolyType {
     private final RelDataType elementType;
     @Getter
     private final long cardinality;
+    @Getter
+    private final long dimension;
 
 
     /**
      * Creates an ArrayType. This constructor should only be called from a factory method.
      */
     public ArrayType( RelDataType elementType, boolean isNullable ) {
-        this( elementType, isNullable, -1 );
+        this( elementType, isNullable, -1, -1 );
     }
 
 
     /**
      * Creates an ArrayType. This constructor should only be called from a factory method.
      */
-    public ArrayType( final RelDataType elementType, final boolean isNullable, final long cardinality ) {
+    public ArrayType( final RelDataType elementType, final boolean isNullable, final long cardinality, final long dimension ) {
         super( PolyType.ARRAY, isNullable, null );
         this.elementType = Objects.requireNonNull( elementType );
         computeDigest();
         this.cardinality = cardinality;
+        this.dimension = dimension;
     }
 
 
@@ -86,6 +89,27 @@ public class ArrayType extends AbstractPolyType {
     @Override
     public RelDataType getComponentType() {
         return elementType;
+    }
+
+
+    /*
+    * @return This returns the type of a nested ArrayType. E.g. for an array of an array of Integers, this will return the Integer type.
+    */
+    public RelDataType getNestedComponentType() {
+        if( this.getComponentType().getPolyType() == PolyType.ARRAY ) {
+            return ((ArrayType) this.elementType).getNestedComponentType();
+        } else {
+            return this.elementType;
+        }
+    }
+
+
+    public int getRecursiveDimension() {
+        if( this.getComponentType() != null && this.elementType instanceof ArrayType ) {
+            return ((ArrayType)this.elementType).getRecursiveDimension() + 1;
+        } else {
+            return 1;
+        }
     }
 
 

@@ -107,7 +107,7 @@ public final class CatalogColumn implements CatalogEntity {
             elementType = typeFactory.createPolyType( polyType );
         }
         if ( collectionsType == PolyType.ARRAY ) {
-            return typeFactory.createArrayType( elementType, cardinality );
+            return typeFactory.createArrayType( elementType, cardinality, dimension );
         } else {
             return elementType;
         }

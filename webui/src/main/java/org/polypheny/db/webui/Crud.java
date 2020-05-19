@@ -47,6 +47,7 @@ import java.nio.file.Paths;
 import java.sql.ResultSetMetaData;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -250,9 +251,12 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( transaction, request, query.toString() );
         } catch ( QueryExecutionException e ) {
-            //result = new Result( e.getMessage() );
-            log.error( "Caught exception while fetching a table", e );
-            result = new Result( "Could not fetch table " + request.tableId );
+            if(request.filter != null) {
+                result = new Result( "Error while filtering table " + request.tableId );
+            } else {
+                result = new Result( "Could not fetch table " + request.tableId );
+                log.error( "Caught exception while fetching a table", e );
+            }
             try {
                 transaction.rollback();
                 return result;
@@ -2323,6 +2327,9 @@ public class Crud implements InformationObserver {
                             default:
                                 temp[counter] = o.toString();
                         }
+                        if( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
+                            temp[counter] = gson.toJson( o, AbstractList.class );
+                        }
                     }
                     counter++;
                 }
@@ -2379,7 +2386,12 @@ public class Crud implements InformationObserver {
         if ( signature.statementType == StatementType.OTHER_DDL ) {
             return 1;
         } else if ( signature.statementType == StatementType.IS_DML ) {
-            Object object = signature.enumerable( transaction.getDataContext() ).iterator().next();
+            Object object = null;
+            try{
+                object = signature.enumerable( transaction.getDataContext() ).iterator().next();
+            } catch ( RuntimeException e ) {
+                throw new QueryExecutionException( e.getCause().getMessage(), e );
+            }
             if ( object != null && object.getClass().isArray() ) {
                 Object[] o = (Object[]) object;
                 return ((Number) o[0]).intValue();
@@ -2424,7 +2436,13 @@ public class Crud implements InformationObserver {
         StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );
         int counter = 0;
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
-            if ( !entry.getValue().equals( "" ) ) {
+            //special treatment for arrays
+            if( entry.getValue().startsWith( "[" ) ) {
+                joiner.add( entry.getKey() + " = ARRAY" + entry.getValue() );
+                counter++;
+            }
+            //default
+            else if ( !entry.getValue().equals( "" ) ) {
                 joiner.add( "CAST (\"" + entry.getKey() + "\" AS VARCHAR) LIKE '" + entry.getValue() + "%'" );
                 counter++;
             }

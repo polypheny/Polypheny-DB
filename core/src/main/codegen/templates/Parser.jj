@@ -3900,18 +3900,47 @@ SqlNode ArrayConstructor() :
         }
     |
         // by enumeration "ARRAY[e0, e1, ..., eN]"
-        <LBRACKET> // TODO: do trigraph as well ??( ??)
-        (
-            args = ExpressionCommaList(s, ExprContext.ACCEPT_NON_QUERY)
-        |
-            { args = SqlNodeList.EMPTY; }
-        )
-        <RBRACKET>
+        e = NestedArray(s)
         {
-            return SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR.createCall(
-                s.end(this), args.getList());
+            return e;
         }
     )
+}
+
+
+/**
+* Parse the content of an array, including the square brackets
+* Supports nested arrays
+*/
+SqlNode NestedArray(Span s) :
+{
+    SqlNodeList args;
+    List<SqlNode> list;
+    SqlNode arr;
+}
+{
+    <LBRACKET>
+    (
+        args = ExpressionCommaList(s, ExprContext.ACCEPT_NON_QUERY)
+    |
+        arr = NestedArray(s)
+        { list = startList(arr); }
+        (
+            LOOKAHEAD(2)
+            <COMMA>
+            arr = NestedArray(s)
+            {list.add(arr);}
+        )*
+        {
+            args = new SqlNodeList(list, s.addAll(list).pos());
+        }
+    |
+        { args = SqlNodeList.EMPTY; }
+    )
+    <RBRACKET>
+    {
+        return SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR.createCall( s.end(this), args.getList());
+    }
 }
 
 /** Parses a MAP constructor */

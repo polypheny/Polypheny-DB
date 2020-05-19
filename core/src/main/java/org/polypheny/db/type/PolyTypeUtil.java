@@ -636,7 +636,12 @@ public abstract class PolyTypeUtil {
             if ( toType.getPolyType() != PolyType.ARRAY ) {
                 return false;
             }
-            return canAssignFrom( toType.getComponentType(), fromType.getComponentType() );
+            ArrayType fromPolyType = (ArrayType) fromType;
+            ArrayType toPolyType = (ArrayType) toType;
+            //check if the nested types can be assigned
+            RelDataType fromComponentType = fromPolyType.getNestedComponentType();
+            RelDataType toComponentType = toPolyType.getNestedComponentType();
+            return canAssignFrom( toComponentType, fromComponentType );
         }
 
         if ( areCharacterSetsMismatched( toType, fromType ) ) {

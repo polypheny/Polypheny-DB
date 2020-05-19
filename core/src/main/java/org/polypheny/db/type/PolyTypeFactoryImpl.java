@@ -114,8 +114,14 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
     @Override
     public RelDataType createArrayType( RelDataType elementType, long maxCardinality ) {
-        assert maxCardinality == -1;
-        ArrayType newType = new ArrayType( elementType, false, maxCardinality );
+        ArrayType newType = new ArrayType( elementType, false, maxCardinality, -1 );
+        return canonize( newType );
+    }
+
+
+    @Override
+    public RelDataType createArrayType( RelDataType elementType, long maxCardinality, long dimension ) {
+        ArrayType newType = new ArrayType( elementType, false, maxCardinality, dimension );
         return canonize( newType );
     }
 
@@ -490,7 +496,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     private RelDataType copyArrayType( RelDataType type, boolean nullable ) {
         ArrayType at = (ArrayType) type;
         RelDataType elementType = copyType( at.getComponentType() );
-        return new ArrayType( elementType, nullable, at.getCardinality() );
+        return new ArrayType( elementType, nullable, at.getCardinality(), at.getDimension() );
     }
 
 

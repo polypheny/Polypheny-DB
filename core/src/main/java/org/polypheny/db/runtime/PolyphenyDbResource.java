@@ -188,6 +188,9 @@ public interface PolyphenyDbResource {
     @BaseMessage( "Array exceeds cardinality in column ''{0}''" )
     ExInst<SqlValidatorException> exceededCardinality( String a0 );
 
+    @BaseMessage( "Array exceeds dimension in column ''{0}''" )
+    ExInst<SqlValidatorException> exceededDimension( String a0 );
+
     @BaseMessage("Database ''{0}'' not found")
     ExInst<SqlValidatorException> databaseNotFound( String a0 );
 

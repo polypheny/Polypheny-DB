@@ -4283,12 +4283,24 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             RelDataType sourceType = sourceFields.get( i ).getType();
             RelDataType targetType = targetFields.get( i ).getType();
             if( targetType instanceof ArrayType ) {
+                //check cardinality
                 long targetCardinality = ((ArrayType) targetType).getCardinality();
-                //without this check you will get a casting error if the field is NULL
-                if( ((SqlBasicCall) ((SqlBasicCall) ((SqlInsert) query).getSource()).operands[0]).operands[i] instanceof SqlBasicCall ) {
-                    long sourceCardinality = ((SqlBasicCall) ((SqlBasicCall) ((SqlBasicCall) ((SqlInsert) query).getSource()).operands[0]).operands[i]).operands.length;
-                    if( targetCardinality > -1 && sourceCardinality > targetCardinality ) {
-                        throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getKey() ));
+                long sourceCardinality = -1;
+                //without the instanceof check you will get a casting error if the field is NULL
+                if( query instanceof SqlInsert && ((SqlBasicCall) ((SqlBasicCall) ((SqlInsert) query).getSource()).operands[0]).operands[i] instanceof SqlBasicCall ) {
+                    sourceCardinality = ((SqlBasicCall) ((SqlBasicCall) ((SqlBasicCall) ((SqlInsert) query).getSource()).operands[0]).operands[i]).operands.length;
+                } else if (query instanceof SqlUpdate && ((SqlUpdate) query).getSourceExpressionList().get( i ) instanceof SqlBasicCall ) {
+                    sourceCardinality = ((SqlBasicCall) ((SqlUpdate) query).getSourceExpressionList().get( i )).operands.length;
+                }
+                if( targetCardinality > -1 && sourceCardinality > targetCardinality ) {
+                    throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getKey() ));
+                }
+                //check dimension
+                ArrayType fromPolyType = (ArrayType) sourceType;
+                ArrayType toPolyType = (ArrayType) targetType;
+                if(toPolyType.getDimension() > -1) {
+                    if( fromPolyType.getRecursiveDimension() > toPolyType.getDimension() ) {
+                        throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getKey() ));
                     }
                 }
             }
