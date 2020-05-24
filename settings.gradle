@@ -20,3 +20,5 @@ include 'information'
 include 'statistic'
 
 include 'dbms'
+include 'restapi'
+

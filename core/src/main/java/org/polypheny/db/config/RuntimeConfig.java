@@ -191,7 +191,12 @@ public enum RuntimeConfig {
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
             100,
             ConfigType.INTEGER,
-            "uiSettingsDataViewGroup" );
+            "uiSettingsDataViewGroup" ),
+    REST_API_SERVER_PORT( "runtime/restapiServerPort",
+            "The port on which the REST API should listen.",
+            8089,
+            ConfigType.INTEGER)
+    ;
 
 
     private final String key;

@@ -37,6 +37,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.transaction.TransactionManager;
+import spark.Service;
 import spark.Spark;
 
 
@@ -61,16 +62,17 @@ public class HttpServer extends QueryInterface {
 
     @Override
     public void run() {
-        port( port );
+        Service webuiServer = Service.ignite();
+        webuiServer.port( port );
 
-        webSockets();
+        webSockets( webuiServer );
 
-        Spark.staticFiles.location( "webapp/" );
+        webuiServer.staticFiles.location( "webapp/" );
 
-        enableCORS();
+        enableCORS( webuiServer );
 
         // get modified index.html
-        get( "/", ( req, res ) -> {
+        webuiServer.get( "/", ( req, res ) -> {
             res.type( "text/html" );
             try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream() ) {
                 return streamToString( stream );
@@ -81,7 +83,7 @@ public class HttpServer extends QueryInterface {
             }
         } );
 
-        crudRoutes( new Crud( transactionManager, "pa", "APP" ) );
+        crudRoutes( webuiServer, new Crud( transactionManager, "pa", "APP" ) );
 
         log.info( "HTTP Server started." );
     }
@@ -90,85 +92,85 @@ public class HttpServer extends QueryInterface {
     /**
      * Defines the routes for this Server
      */
-    private void crudRoutes( Crud crud ) {
+    private void crudRoutes( Service webuiServer, Crud crud ) {
 
-        post( "/getTable", crud::getTable, gson::toJson );
+        webuiServer.post( "/getTable", crud::getTable, gson::toJson );
 
-        post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
+        webuiServer.post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
-        post( "/insertRow", crud::insertRow, gson::toJson );
+        webuiServer.post( "/insertRow", crud::insertRow, gson::toJson );
 
-        post( "/deleteRow", crud::deleteRow, gson::toJson );
+        webuiServer.post( "/deleteRow", crud::deleteRow, gson::toJson );
 
-        post( "/updateRow", crud::updateRow, gson::toJson );
+        webuiServer.post( "/updateRow", crud::updateRow, gson::toJson );
 
-        post( "/anyQuery", crud::anyQuery, gson::toJson );
+        webuiServer.post( "/anyQuery", crud::anyQuery, gson::toJson );
 
-        post( "/allStatistics", crud::getStatistics, gsonExpose::toJson );
+        webuiServer.post( "/allStatistics", crud::getStatistics, gsonExpose::toJson );
 
-        post( "/getColumns", crud::getColumns, gson::toJson );
+        webuiServer.post( "/getColumns", crud::getColumns, gson::toJson );
 
-        post( "/updateColumn", crud::updateColumn, gson::toJson );
+        webuiServer.post( "/updateColumn", crud::updateColumn, gson::toJson );
 
-        post( "/addColumn", crud::addColumn, gson::toJson );
+        webuiServer.post( "/addColumn", crud::addColumn, gson::toJson );
 
-        post( "/dropColumn", crud::dropColumn, gson::toJson );
+        webuiServer.post( "/dropColumn", crud::dropColumn, gson::toJson );
 
-        post( "/getTables", crud::getTables, gson::toJson );
+        webuiServer.post( "/getTables", crud::getTables, gson::toJson );
 
-        post( "/dropTruncateTable", crud::dropTruncateTable, gson::toJson );
+        webuiServer.post( "/dropTruncateTable", crud::dropTruncateTable, gson::toJson );
 
-        post( "/createTable", crud::createTable, gson::toJson );
+        webuiServer.post( "/createTable", crud::createTable, gson::toJson );
 
-        get( "/getGeneratedNames", crud::getGeneratedNames, gson::toJson );
+        webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames, gson::toJson );
 
-        post( "/getConstraints", crud::getConstraints, gson::toJson );
+        webuiServer.post( "/getConstraints", crud::getConstraints, gson::toJson );
 
-        post( "/dropConstraint", crud::dropConstraint, gson::toJson );
+        webuiServer.post( "/dropConstraint", crud::dropConstraint, gson::toJson );
 
-        post( "/addPrimaryKey", crud::addPrimaryKey, gson::toJson );
+        webuiServer.post( "/addPrimaryKey", crud::addPrimaryKey, gson::toJson );
 
-        post( "/addUniqueConstraint", crud::addUniqueConstraint, gson::toJson );
+        webuiServer.post( "/addUniqueConstraint", crud::addUniqueConstraint, gson::toJson );
 
-        post( "/getIndexes", crud::getIndexes, gson::toJson );
+        webuiServer.post( "/getIndexes", crud::getIndexes, gson::toJson );
 
-        post( "/dropIndex", crud::dropIndex, gson::toJson );
+        webuiServer.post( "/dropIndex", crud::dropIndex, gson::toJson );
 
-        post( "/getUml", crud::getUml, gson::toJson );
+        webuiServer.post( "/getUml", crud::getUml, gson::toJson );
 
-        post( "/addForeignKey", crud::addForeignKey, gson::toJson );
+        webuiServer.post( "/addForeignKey", crud::addForeignKey, gson::toJson );
 
-        post( "/createIndex", crud::createIndex, gson::toJson );
+        webuiServer.post( "/createIndex", crud::createIndex, gson::toJson );
 
-        post( "/getPlacements", crud::getPlacements, gson::toJson );
+        webuiServer.post( "/getPlacements", crud::getPlacements, gson::toJson );
 
-        post( "/addDropPlacement", crud::addDropPlacement, gson::toJson );
+        webuiServer.post( "/addDropPlacement", crud::addDropPlacement, gson::toJson );
 
-        post( "/getAnalyzerPage", crud::getAnalyzerPage );
+        webuiServer.post( "/getAnalyzerPage", crud::getAnalyzerPage );
 
-        post( "/closeAnalyzer", crud::closeAnalyzer );
+        webuiServer.post( "/closeAnalyzer", crud::closeAnalyzer );
 
-        post( "/executeRelAlg", crud::executeRelAlg, gson::toJson );
+        webuiServer.post( "/executeRelAlg", crud::executeRelAlg, gson::toJson );
 
-        post( "/schemaRequest", crud::schemaRequest, gson::toJson );
+        webuiServer.post( "/schemaRequest", crud::schemaRequest, gson::toJson );
 
-        get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
+        webuiServer.get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
 
-        get( "/getForeignKeyActions", crud::getForeignKeyActions, gson::toJson );
+        webuiServer.get( "/getForeignKeyActions", crud::getForeignKeyActions, gson::toJson );
 
-        post( "/importDataset", crud::importDataset, gson::toJson );
+        webuiServer.post( "/importDataset", crud::importDataset, gson::toJson );
 
-        post( "/exportTable", crud::exportTable, gson::toJson );
+        webuiServer.post( "/exportTable", crud::exportTable, gson::toJson );
 
-        get( "/getStores", crud::getStores );
+        webuiServer.get( "/getStores", crud::getStores );
 
-        post( "/removeStore", crud::removeStore, gson::toJson );
+        webuiServer.post( "/removeStore", crud::removeStore, gson::toJson );
 
-        post( "/updateStoreSettings", crud::updateStoreSettings, gson::toJson );
+        webuiServer.post( "/updateStoreSettings", crud::updateStoreSettings, gson::toJson );
 
-        get( "/getAdapters", crud::getAdapters );
+        webuiServer.get( "/getAdapters", crud::getAdapters );
 
-        post( "/addStore", crud::addStore, gson::toJson );
+        webuiServer.post( "/addStore", crud::addStore, gson::toJson );
 
     }
 
@@ -201,8 +203,8 @@ public class HttpServer extends QueryInterface {
     /**
      * Define websocket paths
      */
-    private void webSockets() {
-        webSocket( "/queryAnalyzer", WebSocket.class );
+    private void webSockets( Service webuiServer ) {
+        webuiServer.webSocket( "/queryAnalyzer", WebSocket.class );
     }
 
 
@@ -210,10 +212,10 @@ public class HttpServer extends QueryInterface {
      * To avoid the CORS problem, when the ConfigServer receives requests from the Web UI.
      * See https://gist.github.com/saeidzebardast/e375b7d17be3e0f4dddf
      */
-    private static void enableCORS() {
+    private static void enableCORS( Service webuiServer ) {
         //staticFiles.header("Access-Control-Allow-Origin", "*");
 
-        options( "/*", ( req, res ) -> {
+        webuiServer.options( "/*", ( req, res ) -> {
             String accessControlRequestHeaders = req.headers( "Access-Control-Request-Headers" );
             if ( accessControlRequestHeaders != null ) {
                 res.header( "Access-Control-Allow-Headers", accessControlRequestHeaders );
@@ -227,7 +229,7 @@ public class HttpServer extends QueryInterface {
             return "OK";
         } );
 
-        before( ( req, res ) -> {
+        webuiServer.before( ( req, res ) -> {
             //res.header("Access-Control-Allow-Origin", "*");
             res.header( "Access-Control-Allow-Origin", "*" );
             res.header( "Access-Control-Allow-Credentials", "true" );

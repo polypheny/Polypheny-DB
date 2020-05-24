@@ -1,7 +1,6 @@
 
 group "org.polypheny"
 
-
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
@@ -16,28 +15,24 @@ buildscript {
     dependencies {
         // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
         classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
-        // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
-        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
 
 repositories {
+    mavenLocal()
     maven {
         // DBIS Nexus
         url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
     }
-    maven {
-        url "https://clojars.org/repo/"
-    }
     mavenCentral()
+    jcenter()
 }
 
 
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
-apply plugin: "com.github.johnrengelman.shadow"
 
 
 tasks.withType(JavaCompile) {
@@ -56,39 +51,15 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    compile project(":core")
-    compile project(":cassandra-adapter")
-    compile project(":csv-adapter")
-    compile project(":jdbc-adapter")
-    compile project(":catalog")
-    compile project(":webui")
-    compile project(":restapi")
-    compile project(":jdbc-interface")
-    compile project(":statistic")
-
-    ////// Logging
-    compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version   // License: Apache 2.0
-    compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version
-
-    ////// CLI PARSING
-    compile group: "com.github.rvesse", name: "airline", version: airline_version
-
-    compile group: "com.github.oshi", name: "oshi-core", version: oshi_core_version
-
-    compile group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version
+    implementation project(":core")
+    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
+    implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
+    implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
 
     testCompile group: "junit", name: "junit", version: junit_version
-
-    //testCompile group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
-    //testCompile group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
-    //testCompile group: "net.hydromatic", name: "quidem", version: quidem_version
-    //testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
-
-    testCompile group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version
 }
 
 
@@ -141,7 +112,6 @@ jar {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
         attributes "Version": "$version"
-        attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -152,13 +122,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier "javadoc"
     from javadoc.destinationDir
 }
-shadowJar {
-    classifier = ""
-}
-assemble.dependsOn shadowJar
 artifacts {
     //archives jar // regular jar containing only the compiled source
-    archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
