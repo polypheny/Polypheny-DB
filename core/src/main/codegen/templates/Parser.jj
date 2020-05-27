@@ -4423,10 +4423,10 @@ SqlDataTypeSpec DataType() :
         collectionTypeName = CollectionsTypeName()
         [
             <LPAREN>
-            dimension = UnsignedIntLiteral()
+            dimension = IntLiteral()
             [
                 <COMMA>
-                cardinality = UnsignedIntLiteral()
+                cardinality = IntLiteral()
             ]
             <RPAREN>
         ]

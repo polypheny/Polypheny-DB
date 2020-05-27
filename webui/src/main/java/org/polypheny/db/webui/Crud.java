@@ -433,6 +433,16 @@ public class Crud implements InformationObserver {
             if ( col.maxLength != null ) {
                 colBuilder.append( String.format( "(%d)", col.maxLength ) );
             }
+            if( col.collectionsType != null && ! col.collectionsType.equals( "" ) ) {
+                colBuilder.append( " ").append( col.collectionsType );
+                if( col.dimension != null ){
+                    colBuilder.append("(").append( col.dimension );
+                    if( col.cardinality != null ){
+                        colBuilder.append(",").append( col.cardinality );
+                    }
+                    colBuilder.append(")");
+                }
+            }
             if ( !col.nullable ) {
                 colBuilder.append( " NOT NULL" );
             }
@@ -865,13 +875,17 @@ public class Crud implements InformationObserver {
             }
             for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
                 String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
+                String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
                 cols.add(
-                        //TODO NH extend DbColumn with collectionsType, dimension, cardinality
+                        //TODO NH extend DbColumn with dimension, cardinality
                         new DbColumn(
                                 catalogColumn.name,
                                 catalogColumn.type.getName(),
+                                collectionsType,
                                 catalogColumn.nullable,
                                 catalogColumn.length,
+                                catalogColumn.dimension,
+                                catalogColumn.cardinality,
                                 primaryColumns.contains( catalogColumn.name ),
                                 defaultValue ) );
             }
@@ -912,15 +926,26 @@ public class Crud implements InformationObserver {
 
         // change type + length
         // TODO: cast if needed
-        if ( !oldColumn.dataType.equals( newColumn.dataType ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
+        if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
+               !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
+                !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ||
+                !oldColumn.dimension.equals( newColumn.dimension ) ||
+                !oldColumn.cardinality.equals( newColumn.cardinality ) ) {
+            String query = "";
             if ( newColumn.maxLength != null ) {
-                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s(%s)", tableId, newColumn.name, newColumn.dataType, newColumn.maxLength );
-                queries.add( query );
+                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s(%s)", tableId, newColumn.name, newColumn.dataType, newColumn.maxLength );
             } else {
                 // TODO: drop maxlength if requested
-                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
-                queries.add( query );
+                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
             }
+            //collectionType
+            if( !newColumn.collectionsType.equals( "" )){
+                query = query + " " + request.newColumn.collectionsType;
+                int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
+                int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
+                query = query + String.format("(%d,%d)", dimension, cardinality);
+            }
+            queries.add( query );
         }
 
         // set/drop nullable
@@ -940,23 +965,31 @@ public class Crud implements InformationObserver {
                 query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
             } else {
                 query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
-                switch ( newColumn.dataType ) {
-                    case "BIGINT":
-                    case "INTEGER":
-                    case "DECIMAL":
-                    case "DOUBLE":
-                    case "FLOAT":
-                    case "SMALLINT":
-                    case "TINYINT":
-                        request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                        BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                        query = query + b.toString();
-                        break;
-                    case "VARCHAR":
-                        query = query + String.format( "'%s'", request.newColumn.defaultValue );
-                        break;
-                    default:
-                        query = query + request.newColumn.defaultValue;
+                if(newColumn.collectionsType != null ){
+                    //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
+                    if( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ){
+                        query = query + request.newColumn.collectionsType;
+                    }
+                    query = query + request.newColumn.defaultValue;
+                }else{
+                    switch ( newColumn.dataType ) {
+                        case "BIGINT":
+                        case "INTEGER":
+                        case "DECIMAL":
+                        case "DOUBLE":
+                        case "FLOAT":
+                        case "SMALLINT":
+                        case "TINYINT":
+                            request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                            BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                            query = query + b.toString();
+                            break;
+                        case "VARCHAR":
+                            query = query + String.format( "'%s'", request.newColumn.defaultValue );
+                            break;
+                        default:
+                            query = query + request.newColumn.defaultValue;
+                    }
                 }
             }
             queries.add( query );
@@ -965,8 +998,8 @@ public class Crud implements InformationObserver {
         result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( queries.toString() ) );
         try {
             for ( String query : queries ) {
-                executeSqlUpdate( transaction, query );
                 sBuilder.append( query );
+                executeSqlUpdate( transaction, query );
             }
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
@@ -998,27 +1031,41 @@ public class Crud implements InformationObserver {
         if ( request.newColumn.maxLength != null ) {
             query = query + String.format( "(%d)", request.newColumn.maxLength );
         }
+        if( !request.newColumn.collectionsType.equals( "" )){
+            query = query + " " + request.newColumn.collectionsType;
+            int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
+            int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
+            query = query + String.format("(%d,%d)", dimension, cardinality);
+        }
         if ( !request.newColumn.nullable ) {
             query = query + " NOT NULL";
         }
         if ( request.newColumn.defaultValue != null ) {
-            switch ( request.newColumn.dataType ) {
-                case "BIGINT":
-                case "INTEGER":
-                case "SMALLINT":
-                case "TINYINT":
-                case "FLOAT":
-                case "DOUBLE":
-                case "DECIMAL":
-                    request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                    BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                    query = query + " DEFAULT " + b.toString();
-                    break;
-                case "VARCHAR":
-                    query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
-                    break;
-                default:
-                    query = query + " DEFAULT " + request.newColumn.defaultValue;
+            if(request.newColumn.collectionsType != null ){
+                //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
+                if( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ){
+                    query = query + request.newColumn.collectionsType;
+                }
+                query = query + request.newColumn.defaultValue;
+            } else {
+                switch ( request.newColumn.dataType ) {
+                    case "BIGINT":
+                    case "INTEGER":
+                    case "SMALLINT":
+                    case "TINYINT":
+                    case "FLOAT":
+                    case "DOUBLE":
+                    case "DECIMAL":
+                        request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                        BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                        query = query + " DEFAULT " + b.toString();
+                        break;
+                    case "VARCHAR":
+                        query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
+                        break;
+                    default:
+                        query = query + " DEFAULT " + request.newColumn.defaultValue;
+                }
             }
         }
         Result result;

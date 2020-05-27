@@ -920,9 +920,7 @@ final class Statements {
         data.put( "name", quoteString( name ) );
         data.put( "position", "" + position );
         data.put( "type", "" + quoteString( type.getName() ) );
-        if ( collectionsType != null ) {
-            data.put( "collections_type", quoteString( collectionsType.getName() ) );
-        }
+        data.put( "collections_type", collectionsType == null ? null : quoteString( collectionsType.getName() ) );
         data.put( "length", length == null ? null : "" + length );
         data.put( "scale", scale == null ? null : "" + scale );
         data.put( "dimension", dimension == null ? null : "" + dimension );
@@ -953,11 +951,14 @@ final class Statements {
     }
 
 
-    static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolyType type, final Integer length, final Integer scale, Collation collation ) throws GenericCatalogException {
+    static void setColumnType( XATransactionHandler transactionHandler, long columnId, PolyType type, PolyType collectionsType, final Integer length, final Integer scale, Integer dimension, Integer cardinality, Collation collation ) throws GenericCatalogException {
         Map<String, String> data = new LinkedHashMap<>();
         data.put( "type", "" + quoteString( type.getName() ) );
+        data.put( "collections_type", collectionsType == null ? null : quoteString( collectionsType.getName() ) );
         data.put( "length", length == null ? null : "" + length );
         data.put( "scale", scale == null ? null : "" + scale );
+        data.put( "dimension", dimension == null ? null : "" + dimension );
+        data.put( "cardinality", cardinality == null ? null : "" + cardinality );
         data.put( "collation", collation == null ? null : "" + collation.getId() );
         Map<String, String> where = new LinkedHashMap<>();
         where.put( "id", "" + columnId );
