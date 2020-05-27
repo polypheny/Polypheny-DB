@@ -28,6 +28,7 @@ import org.apache.commons.lang.StringUtils;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import spark.Service;
 
@@ -39,9 +40,12 @@ public class HttpRestServer extends QueryInterface {
 
     private final int port;
 
+    private final RequestParser requestParser;
+
     public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, final int port ) {
         super( transactionManager, authenticator );
         this.port = port;
+        this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
     }
 
 
@@ -62,6 +66,7 @@ public class HttpRestServer extends QueryInterface {
     private void restRoutes( Service restServer, Rest rest ) {
         restServer.path( "/restapi/v1", () -> {
             restServer.before( "/*", (q, a) -> {
+                q.queryMap();
                 log.info( "Received api call." );
 
                 boolean authenticated = this.checkBasicAuthentication( q.headers("Authorization") );
@@ -70,7 +75,13 @@ public class HttpRestServer extends QueryInterface {
                 }
             } );
             restServer.get( "/res", rest::getTableList, gson::toJson );
-            restServer.get( "/res/:resName", rest::getTable, gson::toJson );
+//            restServer.get( "/res", rest::getTableList, gson::toJson );
+            restServer.get( "/res/:resName", (q, a) -> {
+                ResourceRequest resourceRequest = requestParser.parseResourceRequest( q.params( ":resName" ), q.queryMap() );
+
+                return rest.getResourceTable( resourceRequest );
+            }, gson::toJson );
+//            restServer.get( "/res/:resName", rest::getTable, gson::toJson );
 
 //            restServer.path( "/res", () -> {
 //                restServer.get( "/", rest::testMethod, gson::toJson );

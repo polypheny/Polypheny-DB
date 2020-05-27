@@ -29,29 +29,39 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
+import spark.QueryParamsMap;
 import spark.Request;
 import spark.Response;
 
@@ -104,6 +114,75 @@ public class Rest {
     }
 
 
+    Map<String, Object> getResourceTable( final ResourceRequest resourceRequest ) {
+        Transaction transaction = getTransaction( false );
+//        transaction.resetQueryProcessor();
+        RelBuilder relBuilder = RelBuilder.create( transaction );
+        JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+
+        boolean firstTable = true;
+        for ( CatalogTable catalogTable : resourceRequest.tables ) {
+            if ( firstTable ) {
+                relBuilder = relBuilder.scan( catalogTable.schemaName, catalogTable.name );
+                firstTable = false;
+            } else {
+                relBuilder = relBuilder
+                        .scan( catalogTable.schemaName, catalogTable.name )
+                        .join( JoinRelType.INNER, rexBuilder.makeLiteral( true ) );
+            }
+        }
+
+        // Filters
+
+        List<RexNode> filterNodes = new ArrayList<>();
+        RelNode baseNodeForFilters = relBuilder.peek();
+        RelDataType filtersRowType = baseNodeForFilters.getRowType();
+        List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
+        for ( CatalogColumn catalogColumn : resourceRequest.filters.keySet() ) {
+            for ( Pair<SqlOperator, Object> filterOperationPair : resourceRequest.filters.get( catalogColumn ) ) {
+                int columnPosition = resourceRequest.getInputPosition( catalogColumn );
+                RelDataTypeField typeField = filtersRows.get( columnPosition );
+                RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, columnPosition );
+                RexNode rightHandSide = rexBuilder.makeLiteral( filterOperationPair.right, typeField.getType(), true );
+                RexNode call = rexBuilder.makeCall( filterOperationPair.left, inputRef, rightHandSide );
+                filterNodes.add( call );
+            }
+        }
+
+        relBuilder = relBuilder.filter( filterNodes );
+
+
+
+        // Projections
+        List<RexNode> projectionInputRefs = new ArrayList<>();
+        RelNode baseNodeForProjections = relBuilder.peek();
+        for ( CatalogColumn catalogColumn : resourceRequest.projection.left ) {
+            int inputField = resourceRequest.getInputPosition( catalogColumn );
+            RexNode inputRef = rexBuilder.makeInputRef( baseNodeForProjections, inputField );
+            projectionInputRefs.add( inputRef );
+        }
+
+        relBuilder = relBuilder.project( projectionInputRefs, resourceRequest.projection.right );
+
+
+        // Limit and Offset
+        if ( resourceRequest.limit >= 0 || resourceRequest.offset >= 0 ) {
+            relBuilder = relBuilder.limit( resourceRequest.offset, resourceRequest.limit );
+        }
+
+
+        RelNode result = relBuilder.build();
+
+        Map<String, Object> finalResult = executeAndTransformRelAlg( result, transaction );
+
+//        finalResult.put( "uri", req.uri() );
+//        finalResult.put( "query", req.queryString() );
+        return finalResult;
+    }
+
+
     Map<String, Object> getTable( final Request req, final Response res ) {
         String tableName = req.params( ":resName" );
         log.info( "Tables param: {}", tableName );
@@ -122,10 +201,56 @@ public class Rest {
         for (String table: tables) {
             if ( firstTable ) {
                 relBuilder = relBuilder.scan( table.split( "\\." ) );
+                LogicalTableScan tableScan = (LogicalTableScan) relBuilder.peek();
+                Table relAlgTable = ((RelOptTableImpl) tableScan.getTable()).getTable();
+                for ( String possibleFilter : req.queryMap().toMap().keySet() ) {
+                    if ( possibleFilter.startsWith( table ) ) {
+                        String[] splitPossibleFilter = possibleFilter.split( "\\." );
+                        int counter = 0;
+                        for ( RelDataTypeField relDataTypeField : relAlgTable.getRowType( typeFactory ).getFieldList() ) {
+                            if ( relDataTypeField.getName().equals( splitPossibleFilter[2] ) ) {
+                                RelDataType relDataType = relDataTypeField.getType();
+                                QueryParamsMap toCompute = req.queryMap( possibleFilter );
+                                for ( String valuesBlaBla : toCompute.values() ) {
+                                    RexNode inputRef = rexBuilder.makeInputRef( tableScan, counter );
+                                    SqlOperator callOperator;
+                                    String restOfOp;
+                                    if ( valuesBlaBla.startsWith( "<" ) ) {
+                                        callOperator = SqlStdOperatorTable.LESS_THAN;
+                                        restOfOp = valuesBlaBla.substring( 1, valuesBlaBla.length() );
+                                    } else if ( valuesBlaBla.startsWith( "<=" ) ) {
+                                        callOperator = SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+                                        restOfOp = valuesBlaBla.substring( 2, valuesBlaBla.length() );
+                                    } else if ( valuesBlaBla.startsWith( ">" ) ) {
+                                        callOperator = SqlStdOperatorTable.GREATER_THAN;
+                                        restOfOp = valuesBlaBla.substring( 1, valuesBlaBla.length() );
+                                    } else if ( valuesBlaBla.startsWith( ">=" ) ) {
+                                        callOperator = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+                                        restOfOp = valuesBlaBla.substring( 2, valuesBlaBla.length() );
+                                    } else if ( valuesBlaBla.startsWith( "=" ) ) {
+                                        callOperator = SqlStdOperatorTable.EQUALS;
+                                        restOfOp = valuesBlaBla.substring( 1, valuesBlaBla.length() );
+                                    } else {
+                                        log.error( "bugger me..." );
+                                        return null;
+                                    }
+//                                    PolyTypeFactoryImpl polyTypeFactory = new PolyTypeFactoryImpl( relDataType );
+                                    RexNode rightSide = rexBuilder.makeLiteral( Integer.valueOf( restOfOp ), relDataType, true );
+                                    RexNode call = rexBuilder.makeCall( callOperator, inputRef, rightSide );
+                                    relBuilder = relBuilder.filter( call );
+                                }
+//                                RexNode constantValue = rexBuilder
+//                                rexBuilder.makeFieldAccess( tableScan, "bla", false )
+                            }
+                            counter++;
+                        }
+                    }
+                }
+
                 firstTable = false;
             } else {
-                relBuilder = relBuilder.scan( table.split( "\\." ) )
-                        .join( JoinRelType.INNER, rexBuilder.makeLiteral( true ) );
+                relBuilder = relBuilder.scan( table.split( "\\." ) );
+                relBuilder = relBuilder.join( JoinRelType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
         log.info( "RelNodeBuilder: {}", relBuilder.toString() );
