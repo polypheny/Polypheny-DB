@@ -28,7 +28,7 @@ import org.polypheny.db.util.Pair;
 
 public class ResourceRequest {
 
-    public ResourceRequest( List<CatalogTable> tables, Pair<List<CatalogColumn>, List<String>> projection, Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters, int limit, int offset, List<Pair<CatalogColumn, SqlOperator>> sort ) {
+    public ResourceRequest( List<CatalogTable> tables, Pair<List<CatalogColumn>, List<String>> projection, Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters, int limit, int offset, List<Pair<CatalogColumn, Boolean>> sort ) {
         this.tables = tables;
         this.projection = projection;
         this.filters = filters;
@@ -59,7 +59,7 @@ public class ResourceRequest {
     // ?_offset=<offset>
     public int offset;
 
-    public List<Pair<CatalogColumn, SqlOperator>> sort;
+    public List<Pair<CatalogColumn, Boolean>> sort;
 
 
     public int getInputPosition( CatalogColumn column ) {

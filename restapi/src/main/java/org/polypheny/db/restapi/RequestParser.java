@@ -67,8 +67,10 @@ public class RequestParser {
         Integer limit = this.parseLimit( queryParamsMap );
         Integer offset = this.parseOffset( queryParamsMap );
 
+        List<Pair<CatalogColumn, Boolean>> sort = this.parseSorting( queryParamsMap );
 
-        return new ResourceRequest( tables, projections, filters, limit, offset, null );
+
+        return new ResourceRequest( tables, projections, filters, limit, offset, sort );
     }
 
 
@@ -167,9 +169,35 @@ public class RequestParser {
     }
 
 
-    private List<Pair<CatalogColumn, SqlOperator>> parseSorting( QueryParamsMap queryParamsMap ) {
+    private List<Pair<CatalogColumn, Boolean>> parseSorting( QueryParamsMap queryParamsMap ) {
+        if ( ! queryParamsMap.hasKey( "_sort" )) {
+            return null;
+        }
+        QueryParamsMap sortMap = queryParamsMap.get( "_sort" );
+        String[] possibleSortValues = sortMap.values();
+        String possibleSortString = possibleSortValues[0];
 
-        return null;
+        List<Pair<CatalogColumn, Boolean>> sortingColumns = new ArrayList<>();
+        String[] possibleSorts = possibleSortString.split( "," );
+        for ( String sortToParse : possibleSorts ) {
+            String[] splitUp = sortToParse.split( "@" );
+            CatalogColumn catalogColumn;
+            try {
+                catalogColumn = this.getCatalogColumnFromString( splitUp[0] );
+            } catch ( GenericCatalogException | UnknownColumnException e ) {
+                log.warn( "Unable to fetch column: {}", splitUp[0], e );
+                return null;
+            }
+
+            if ( splitUp.length == 2 && splitUp[1].equalsIgnoreCase( "desc" ) ) {
+                sortingColumns.add( new Pair<>( catalogColumn, true ) );
+            } else {
+                sortingColumns.add( new Pair<>( catalogColumn, false ) );
+            }
+        }
+
+
+        return sortingColumns;
     }
 
 

@@ -154,23 +154,47 @@ public class Rest {
         relBuilder = relBuilder.filter( filterNodes );
 
 
+        // Sorting, Limit and Offset
+        if ( resourceRequest.sort.size() == 0 && ( resourceRequest.limit >= 0 || resourceRequest.offset >= 0 ) ) {
+            relBuilder = relBuilder.limit( resourceRequest.offset, resourceRequest.limit );
+        } else {
+            List<RexNode> sortingNodes = new ArrayList<>();
+            RelNode baseNodeForSorts = relBuilder.peek();
+            for ( Pair<CatalogColumn, Boolean> sort : resourceRequest.sort ) {
+                int inputField = resourceRequest.getInputPosition( sort.left );
+                RexNode inputRef = rexBuilder.makeInputRef( baseNodeForSorts, inputField );
+                RexNode sortingNode;
+                if ( sort.right ) {
+                    RexNode innerNode = rexBuilder.makeCall( SqlStdOperatorTable.DESC, inputRef );
+                    sortingNode = rexBuilder.makeCall( SqlStdOperatorTable.NULLS_FIRST, innerNode );
+                } else {
+                    sortingNode = rexBuilder.makeCall( SqlStdOperatorTable.NULLS_FIRST, inputRef );
+                }
+
+                sortingNodes.add( sortingNode );
+            }
+
+            relBuilder = relBuilder.sortLimit( resourceRequest.offset, resourceRequest.limit, sortingNodes );
+        }
+
 
         // Projections
-        List<RexNode> projectionInputRefs = new ArrayList<>();
-        RelNode baseNodeForProjections = relBuilder.peek();
-        for ( CatalogColumn catalogColumn : resourceRequest.projection.left ) {
-            int inputField = resourceRequest.getInputPosition( catalogColumn );
-            RexNode inputRef = rexBuilder.makeInputRef( baseNodeForProjections, inputField );
-            projectionInputRefs.add( inputRef );
+        if ( resourceRequest.projection != null ) {
+            List<RexNode> projectionInputRefs = new ArrayList<>();
+            RelNode baseNodeForProjections = relBuilder.peek();
+            for ( CatalogColumn catalogColumn : resourceRequest.projection.left ) {
+                int inputField = resourceRequest.getInputPosition( catalogColumn );
+                RexNode inputRef = rexBuilder.makeInputRef( baseNodeForProjections, inputField );
+                projectionInputRefs.add( inputRef );
+            }
+
+            relBuilder = relBuilder.project( projectionInputRefs, resourceRequest.projection.right );
         }
-
-        relBuilder = relBuilder.project( projectionInputRefs, resourceRequest.projection.right );
-
 
         // Limit and Offset
-        if ( resourceRequest.limit >= 0 || resourceRequest.offset >= 0 ) {
+        /*if ( resourceRequest.limit >= 0 || resourceRequest.offset >= 0 ) {
             relBuilder = relBuilder.limit( resourceRequest.offset, resourceRequest.limit );
-        }
+        }*/
 
 
         RelNode result = relBuilder.build();
