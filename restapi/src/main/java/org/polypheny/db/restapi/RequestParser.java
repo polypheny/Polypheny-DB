@@ -205,7 +205,7 @@ public class RequestParser {
                 return null;
             }
 
-            if ( splitUp.length == 2 && splitUp[1].equalsIgnoreCase( "desc" ) ) {
+            if ( splitUp.length == 2 && splitUp[1].equals( "DESC" ) ) {
                 sortingColumns.add( new Pair<>( catalogColumn, true ) );
             } else {
                 sortingColumns.add( new Pair<>( catalogColumn, false ) );
