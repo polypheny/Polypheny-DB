@@ -56,6 +56,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
@@ -328,8 +329,14 @@ public class Rest {
             rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
             stopWatch.stop();
             signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
-        } catch ( Exception e ) {
+            transaction.commit();
+        } catch ( Exception | TransactionException e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                transactionException.printStackTrace();
+            }
             return null;
         }
 
