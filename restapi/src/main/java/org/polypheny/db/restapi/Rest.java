@@ -158,14 +158,16 @@ public class Rest {
             log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
             relBuilder = relBuilder.filter( filterNodes );
             log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
+        } else {
+            log.debug( "No filters to add. Session ID: {}.", req.session().id() );
         }
 
 
         // Sorting, Limit and Offset
-        if ( resourceRequest.sort.size() == 0 && ( resourceRequest.limit >= 0 || resourceRequest.offset >= 0 ) ) {
+        if ( ( resourceRequest.sort == null || resourceRequest.sort.size() == 0 ) && ( resourceRequest.limit >= 0 || resourceRequest.offset >= 0 ) ) {
             relBuilder = relBuilder.limit( resourceRequest.offset, resourceRequest.limit );
             log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
-        } else if ( resourceRequest.sort.size() != 0 ) {
+        } else if ( resourceRequest.sort != null && resourceRequest.sort.size() != 0 ) {
             List<RexNode> sortingNodes = new ArrayList<>();
             RelNode baseNodeForSorts = relBuilder.peek();
             for ( Pair<CatalogColumn, Boolean> sort : resourceRequest.sort ) {
@@ -184,6 +186,8 @@ public class Rest {
 
             relBuilder = relBuilder.sortLimit( resourceRequest.offset, resourceRequest.limit, sortingNodes );
             log.debug( "Added sort, limit and offset to relation. Session ID: {}.", req.session().id() );
+        } else {
+            log.debug( "No sort, limit, or offset to add. Session ID: {}.", req.session().id() );
         }
 
 
@@ -199,6 +203,8 @@ public class Rest {
 
             relBuilder = relBuilder.project( projectionInputRefs, resourceRequest.projection.right );
             log.debug( "Added projections to relation. Session ID: {}.", req.session().id() );
+        } else {
+            log.debug( "No projections to add. Session ID: {}.", req.session().id() );
         }
 
         // Limit and Offset
