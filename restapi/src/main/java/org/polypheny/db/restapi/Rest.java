@@ -36,8 +36,6 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
@@ -114,14 +112,17 @@ public class Rest {
     }
 
 
-    Map<String, Object> getResourceTable( final ResourceRequest resourceRequest ) {
+    Map<String, Object> getResourceTable( final ResourceRequest resourceRequest, final Request req, final Response res ) {
+        log.debug( "Starting to process resource request. Session ID: {}.", req.session().id() );
         Transaction transaction = getTransaction( false );
 //        transaction.resetQueryProcessor();
         RelBuilder relBuilder = RelBuilder.create( transaction );
-        JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
+//        JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-
+        // Tables
+        log.debug( "Starting to process tables. Session ID: {}.", req.session().id() );
         boolean firstTable = true;
         for ( CatalogTable catalogTable : resourceRequest.tables ) {
             if ( firstTable ) {
@@ -133,31 +134,38 @@ public class Rest {
                         .join( JoinRelType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }
+        log.debug( "Finished processing tables. Session ID: {}.", req.session().id() );
 
         // Filters
 
-        List<RexNode> filterNodes = new ArrayList<>();
-        RelNode baseNodeForFilters = relBuilder.peek();
-        RelDataType filtersRowType = baseNodeForFilters.getRowType();
-        List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
-        for ( CatalogColumn catalogColumn : resourceRequest.filters.keySet() ) {
-            for ( Pair<SqlOperator, Object> filterOperationPair : resourceRequest.filters.get( catalogColumn ) ) {
-                int columnPosition = resourceRequest.getInputPosition( catalogColumn );
-                RelDataTypeField typeField = filtersRows.get( columnPosition );
-                RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, columnPosition );
-                RexNode rightHandSide = rexBuilder.makeLiteral( filterOperationPair.right, typeField.getType(), true );
-                RexNode call = rexBuilder.makeCall( filterOperationPair.left, inputRef, rightHandSide );
-                filterNodes.add( call );
+        if ( resourceRequest.filters != null ) {
+            log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
+            List<RexNode> filterNodes = new ArrayList<>();
+            RelNode baseNodeForFilters = relBuilder.peek();
+            RelDataType filtersRowType = baseNodeForFilters.getRowType();
+            List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
+            for ( CatalogColumn catalogColumn : resourceRequest.filters.keySet() ) {
+                for ( Pair<SqlOperator, Object> filterOperationPair : resourceRequest.filters.get( catalogColumn ) ) {
+                    int columnPosition = resourceRequest.getInputPosition( catalogColumn );
+                    RelDataTypeField typeField = filtersRows.get( columnPosition );
+                    RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, columnPosition );
+                    RexNode rightHandSide = rexBuilder.makeLiteral( filterOperationPair.right, typeField.getType(), true );
+                    RexNode call = rexBuilder.makeCall( filterOperationPair.left, inputRef, rightHandSide );
+                    filterNodes.add( call );
+                }
             }
-        }
 
-        relBuilder = relBuilder.filter( filterNodes );
+            log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
+            relBuilder = relBuilder.filter( filterNodes );
+            log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
+        }
 
 
         // Sorting, Limit and Offset
         if ( resourceRequest.sort.size() == 0 && ( resourceRequest.limit >= 0 || resourceRequest.offset >= 0 ) ) {
             relBuilder = relBuilder.limit( resourceRequest.offset, resourceRequest.limit );
-        } else {
+            log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
+        } else if ( resourceRequest.sort.size() != 0 ) {
             List<RexNode> sortingNodes = new ArrayList<>();
             RelNode baseNodeForSorts = relBuilder.peek();
             for ( Pair<CatalogColumn, Boolean> sort : resourceRequest.sort ) {
@@ -175,6 +183,7 @@ public class Rest {
             }
 
             relBuilder = relBuilder.sortLimit( resourceRequest.offset, resourceRequest.limit, sortingNodes );
+            log.debug( "Added sort, limit and offset to relation. Session ID: {}.", req.session().id() );
         }
 
 
@@ -189,6 +198,7 @@ public class Rest {
             }
 
             relBuilder = relBuilder.project( projectionInputRefs, resourceRequest.projection.right );
+            log.debug( "Added projections to relation. Session ID: {}.", req.session().id() );
         }
 
         // Limit and Offset
@@ -219,7 +229,7 @@ public class Rest {
         RelBuilder relBuilder = RelBuilder.create( transaction );
 
         boolean firstTable = true;
-        JavaTypeFactory typeFactory = new JavaTypeFactoryImpl();
+        JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
         log.info( "Tables: {}", tables.length );
         for (String table: tables) {
@@ -370,6 +380,7 @@ public class Rest {
     Object testMethod( final Request req, final Response res ) {
         log.info( "Something arrived here!" );
 
+//        SqlValidatorUtil.getRelOptTable(  )
         // DEMO THINGS!
         List<Map<String, Object>> mapList = new ArrayList<>();
 

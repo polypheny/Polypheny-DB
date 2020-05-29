@@ -30,6 +30,7 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.transaction.TransactionManager;
+import spark.Request;
 import spark.Service;
 
 
@@ -67,10 +68,12 @@ public class HttpRestServer extends QueryInterface {
         restServer.path( "/restapi/v1", () -> {
             restServer.before( "/*", (q, a) -> {
                 q.queryMap();
-                log.info( "Received api call." );
+//                log.info( "Received api call." );
 
+                log.debug( "Checking authentication of request with id: {}.", q.session().id() );
                 boolean authenticated = this.checkBasicAuthentication( q.headers("Authorization") );
                 if ( ! authenticated ) {
+                    log.debug( "Unauthenticated request with id: {}. Blocking with 401.", q.session().id() );
                     restServer.halt( 401, "Not authorized.");
                 }
             } );
@@ -79,7 +82,7 @@ public class HttpRestServer extends QueryInterface {
             restServer.get( "/res/:resName", (q, a) -> {
                 ResourceRequest resourceRequest = requestParser.parseResourceRequest( q.params( ":resName" ), q.queryMap() );
 
-                return rest.getResourceTable( resourceRequest );
+                return rest.getResourceTable( resourceRequest, q, a );
             }, gson::toJson );
 //            restServer.get( "/res/:resName", rest::getTable, gson::toJson );
 
@@ -92,6 +95,10 @@ public class HttpRestServer extends QueryInterface {
     }
 
     private boolean checkBasicAuthentication( String basicAuthHeader ) {
+        if ( basicAuthHeader == null ) {
+            return false;
+        }
+
         String[] decoded = this.decodeAuthorizationHeader( basicAuthHeader );
 
         try {
