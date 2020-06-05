@@ -58,7 +58,7 @@ public class Explore {
     @Getter
     private String query;
     @Getter
-    private String sqlStatment;
+    private String sqlStatement;
     @Getter
     private boolean classificationPossible = true;
     private ExploreQueryProcessor exploreQueryProcessor;
@@ -80,7 +80,7 @@ public class Explore {
     public Explore( int identifier, String query, ExploreQueryProcessor exploreQueryProcessor ) {
         this.id = identifier;
         this.query = query;
-        this.sqlStatment = query;
+        this.sqlStatement = query;
         this.exploreQueryProcessor = exploreQueryProcessor;
         this.dataType = getTypeInfo( query );
     }
@@ -91,9 +91,9 @@ public class Explore {
      */
     public void exploreUserInput() {
         isDataAfterClassification = true;
-        List<String[]> initialDataClassification = getAllData( sqlStatment );
+        List<String[]> initialDataClassification = getAllData( sqlStatement );
         unlabledData = createInstance( initialDataClassification, rotate2dArray( initialDataClassification ), dataType, uniqueValues );
-        dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
+        dataAfterClassification = classifyUnlabeledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
 
@@ -103,7 +103,7 @@ public class Explore {
      * @param labeled data from user
      */
     public void updateExploration( List<String[]> labeled ) {
-        dataAfterClassification = classifyUnlabledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
+        dataAfterClassification = classifyUnlabeledData( trainData( createInstance( rotate2dArray( labeled ), labeled, dataType, uniqueValues ) ), unlabledData );
     }
 
 
@@ -132,7 +132,7 @@ public class Explore {
      * Executes query to get the type information about all the queries
      *
      * @param query from user interface
-     * @return different datatypes of a query
+     * @return different data types of a query
      */
 
     public String[] getTypeInfo( String query ) {
@@ -167,33 +167,32 @@ public class Explore {
      */
     public void createSQLStatement() {
 
-        List<String> selecdedCols = new ArrayList<>();
+        List<String> selectedCols = new ArrayList<>();
         List<String> whereClause = new ArrayList<>();
         List<String> allCols = new ArrayList<>();
-        List<String> goupByList = new ArrayList<>();
+        List<String> groupByList = new ArrayList<>();
         List<String> intCols = new ArrayList<>();
         List<String> unionList = new ArrayList<>();
         List<String> allBlankCols = new ArrayList<>();
         includesJoin = false;
-        int rowCount = getSQLCount( sqlStatment + "\nLIMIT 60" );
+        int rowCount = getSQLCount( sqlStatement + "\nLIMIT 60" );
 
         if ( rowCount < 10 ) {
             classificationPossible = false;
             tableSize = rowCount;
         } else if ( rowCount > 10 && rowCount < 40 ) {
             tableSize = rowCount;
-            sqlStatment = sqlStatment;
         } else if ( rowCount > 40 ) {
-            String selectDistinct = sqlStatment.replace( "SELECT", "SELECT DISTINCT" ) + "\nLIMIT 60";
-            if ( sqlStatment.contains( "WHERE" ) ) {
+            String selectDistinct = sqlStatement.replace( "SELECT", "SELECT DISTINCT" ) + "\nLIMIT 60";
+            if ( sqlStatement.contains( "WHERE" ) ) {
                 includesJoin = true;
-                sqlStatment = selectDistinct;
-                tableSize = getSQLCount( sqlStatment.replace( "\nLIMIT 60", "\nLIMIT 200" ) );
+                sqlStatement = selectDistinct;
+                tableSize = getSQLCount( sqlStatement.replace( "\nLIMIT 60", "\nLIMIT 200" ) );
                 return;
             }
-            if ( sqlStatment.split( "\nFROM" )[1].split( "," ).length > 1 ) {
-                sqlStatment = selectDistinct;
-                tableSize = getSQLCount( sqlStatment );
+            if ( sqlStatement.split( "\nFROM" )[1].split( "," ).length > 1 ) {
+                sqlStatement = selectDistinct;
+                tableSize = getSQLCount( sqlStatement );
                 return;
             }
             rowCount = getSQLCount( selectDistinct );
@@ -202,40 +201,40 @@ public class Explore {
                 classificationPossible = false;
             } else if ( rowCount > 10 && rowCount < 40 ) {
                 tableSize = rowCount;
-                sqlStatment = selectDistinct;
+                sqlStatement = selectDistinct;
             } else if ( rowCount > 40 ) {
 
-                selecdedCols = Arrays.asList( sqlStatment.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
+                selectedCols = Arrays.asList( sqlStatement.replace( "SELECT", "" ).split( "\nFROM" )[0].split( "," ) );
 
                 boolean includesInteger = false;
                 boolean includesVarchar = false;
-                for ( int i = 0; i < selecdedCols.size(); i++ ) {
+                for ( int i = 0; i < selectedCols.size(); i++ ) {
                     if ( dataType[i].equals( "VARCHAR" ) ) {
                         includesVarchar = true;
-                        allCols.add( selecdedCols.get( i ) );
-                        goupByList.add( selecdedCols.get( i ) );
-                        allBlankCols.add( selecdedCols.get( i ) );
+                        allCols.add( selectedCols.get( i ) );
+                        groupByList.add( selectedCols.get( i ) );
+                        allBlankCols.add( selectedCols.get( i ) );
                     }
                     if ( dataType[i].equals( "INTEGER" ) || dataType[i].equals( "BIGINT" ) || dataType[i].equals( "SMALLINT" ) || dataType[i].equals( "TINYINT" ) || dataType[i].equals( "DECIMAL" ) ) {
                         includesInteger = true;
-                        allCols.add( "AVG(" + selecdedCols.get( i ) + ") AS " + selecdedCols.get( i ).substring( selecdedCols.get( i ).lastIndexOf( '.' ) + 1 ) );
-                        intCols.add( selecdedCols.get( i ) );
-                        allBlankCols.add( selecdedCols.get( i ) );
+                        allCols.add( "AVG(" + selectedCols.get( i ) + ") AS " + selectedCols.get( i ).substring( selectedCols.get( i ).lastIndexOf( '.' ) + 1 ) );
+                        intCols.add( selectedCols.get( i ) );
+                        allBlankCols.add( selectedCols.get( i ) );
                     }
                 }
 
                 if ( includesInteger ) {
-                    getMins( intCols ).forEach( ( s, min ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min + "\nLIMIT 1)" ) );
-                    getMaxs( intCols ).forEach( ( s, max ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max + "\nLIMIT 1)" ) );
+                    getMins( intCols ).forEach( ( s, min ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatement.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + min + "\nLIMIT 1)" ) );
+                    getMaxs( intCols ).forEach( ( s, max ) -> unionList.add( "\nUNION \n(SELECT " + String.join( ",", allBlankCols ) + "\nFROM" + sqlStatement.split( "\nFROM" )[1] + "\nWHERE " + s + "=" + max + "\nLIMIT 1)" ) );
                 }
 
                 if ( includesVarchar ) {
-                    sqlStatment = "(SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", goupByList ) + "\nLIMIT 200)" + String.join( "", unionList );
+                    sqlStatement = "(SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatement.split( "\nFROM" )[1] + "\nGROUP BY " + String.join( ",", groupByList ) + "\nLIMIT 200)" + String.join( "", unionList );
                 } else {
-                    sqlStatment = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatment.split( "\nFROM" )[1] + String.join( "", unionList );
+                    sqlStatement = "SELECT " + String.join( ",", allCols ) + "\nFROM" + sqlStatement.split( "\nFROM" )[1] + String.join( "", unionList );
                 }
 
-                tableSize = getSQLCount( sqlStatment + "\nLIMIT 200" );
+                tableSize = getSQLCount( sqlStatement + "\nLIMIT 200" );
             }
         }
     }
@@ -375,7 +374,7 @@ public class Explore {
         int dimLength = table.get( 0 ).length;
         FastVector atts = new FastVector();
         FastVector attVals;
-        FastVector attValsEl[] = new FastVector[dimLength];
+        FastVector[] attValsEl = new FastVector[dimLength];
         Instances classifiedData;
         double[] vals;
         //fullNames.add("classification");
@@ -455,7 +454,7 @@ public class Explore {
      */
     public String sqlClassifiedData( J48 tree, Map<String, String> nameAndType ) {
         String classifiedSqlStatement = query.split( "\nLIMIT" )[0] + WekaToSql.translate( tree.toString(), nameAndType, includesJoin );
-        sqlStatment = classifiedSqlStatement;
+        sqlStatement = classifiedSqlStatement;
         return classifiedSqlStatement;
     }
 
@@ -463,17 +462,17 @@ public class Explore {
     /**
      * Classifies unlabeled data with the before created tree
      *
-     * @param tree J48 tree
+     * @param tree      J48 tree
      * @param unlabeled Weka Instances
      * @return labeled data
      */
 
-    public List<String[]> classifyUnlabledData( J48 tree, Instances unlabeled ) {
+    public List<String[]> classifyUnlabeledData( J48 tree, Instances unlabeled ) {
 
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
         Instances labeled = new Instances( unlabeled );
         String[] label = new String[unlabeled.numInstances()];
-        List<String[]> labledData = new ArrayList<>();
+        List<String[]> labeledData = new ArrayList<>();
 
         for ( int i = 0; i < unlabeled.numInstances(); i++ ) {
             double clsLabel = 0;
@@ -486,10 +485,10 @@ public class Explore {
 
             labeled.instance( i ).setClassValue( clsLabel );
             label[i] = unlabeled.classAttribute().value( (int) clsLabel );
-            labledData.add( labeled.instance( i ).toString().split( "," ) );
+            labeledData.add( labeled.instance( i ).toString().split( "," ) );
         }
 
-        return labledData;
+        return labeledData;
     }
 
 
@@ -501,7 +500,7 @@ public class Explore {
      * @return only the data labeled as true
      */
     public String[][] classifyData( J48 tree, Instances unlabeled ) {
-        List<String[]> labledData = new ArrayList<>();
+        List<String[]> labeledData = new ArrayList<>();
         unlabeled.setClassIndex( unlabeled.numAttributes() - 1 );
         Instances labeled = new Instances( unlabeled );
 
@@ -517,10 +516,10 @@ public class Explore {
             labeled.instance( i ).setClassValue( clsLabel );
 
             if ( "true".equals( unlabeled.classAttribute().value( (int) clsLabel ) ) ) {
-                labledData.add( Arrays.copyOf( labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length - 1 ) );
+                labeledData.add( Arrays.copyOf( labeled.instance( i ).toString().split( "," ), labeled.instance( i ).toString().split( "," ).length - 1 ) );
             }
         }
-        return labledData.toArray( new String[0][] );
+        return labeledData.toArray( new String[0][] );
     }
 
 }

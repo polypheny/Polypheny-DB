@@ -774,7 +774,7 @@ public class Crud implements InformationObserver {
         Explore explore = exploreManager.getExploreInformation( exploreTables.id );
         String[][] paginationData;
 
-        String query = explore.getSqlStatment() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
+        String query = explore.getSqlStatement() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
 
         if ( !explore.isConvertedToSql() && !explore.isClassificationPossible() ) {
             int tablesize = explore.getData().length;
@@ -863,7 +863,7 @@ public class Crud implements InformationObserver {
             return new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" );
         }
 
-        String query = explore.getSqlStatment();
+        String query = explore.getSqlStatement();
         try {
             result = executeSqlSelect( transaction, queryExplorationRequest, query, false ).setInfo( new Debug().setGeneratedQuery( query ) );
             transaction.commit();

@@ -27,14 +27,14 @@ public class WekaToSql {
 
 
     public static String translate( String tree, Map<String, String> nameAndType, boolean includesJoin ) {
-        List<String> splitedTree = new ArrayList<>( Arrays.asList( tree.replace( "   ", " " ).replace( "  ", " " ).split( "Number of Leaves" )[0].split( "\\n" ) ) );
-        splitedTree.remove( 0 );
-        splitedTree.remove( 0 );
-        splitedTree.remove( 0 );
+        List<String> splitTree = new ArrayList<>( Arrays.asList( tree.replace( "   ", " " ).replace( "  ", " " ).split( "Number of Leaves" )[0].split( "\\n" ) ) );
+        splitTree.remove( 0 );
+        splitTree.remove( 0 );
+        splitTree.remove( 0 );
 
         List<String> selectedElements = new ArrayList<>();
 
-        for ( String element : splitedTree ) {
+        for ( String element : splitTree ) {
             if ( !element.contains( "false" ) ) {
                 if ( element.contains( ":" ) ) {
                     selectedElements.add( element.split( ":" )[0] );
@@ -44,12 +44,12 @@ public class WekaToSql {
             }
         }
 
-        splitedTree.clear();
+        splitTree.clear();
         for ( String element : selectedElements ) {
             List<String> elements = new ArrayList<>();
             List<String> temp = new ArrayList<>(  );
             if ( element.contains( "<=" ) || element.contains( ">" ) ) {
-                splitedTree.add( element );
+                splitTree.add( element );
             } else if ( element.contains( "=" ) ) {
 
 
@@ -58,27 +58,27 @@ public class WekaToSql {
 
                 if ( nameAndType.get( elements.get( 0 ).replaceAll( " ", "" ).replaceAll( "\\|","" ) ).equals( "VARCHAR" ) ) {
                     temp.add( elements.get(0).replaceAll( " ", "" ) );
-                    temp.add( "'" + elements.get( 1 ).substring(1) + "'" );
-                    splitedTree.add( String.join( " = ", temp ) );
+                    temp.add( "'" + elements.get( 1 ).substring( 1 ) + "'" );
+                    splitTree.add( String.join( " = ", temp ) );
                 }else {
-                    splitedTree.add( element );
+                    splitTree.add( element );
                 }
             }
         }if(includesJoin){
-            return "\nAND " + WekaToSql.iterateTee( splitedTree );
+            return "\nAND " + WekaToSql.iterateTee( splitTree );
         }else{
-            return "\nWHERE " + WekaToSql.iterateTee( splitedTree );
+            return "\nWHERE " + WekaToSql.iterateTee( splitTree );
         }
     }
 
 
-    private static String iterateTee( List<String> splitedTree ) {
+    private static String iterateTee( List<String> splitTree ) {
         List<String> res = new ArrayList<>();
         boolean flag = false;
         List<String> sequence = new ArrayList<>();
         String element;
 
-        for ( String node : splitedTree ) {
+        for ( String node : splitTree ) {
             if ( node.contains( "|" ) ) {
                 sequence.add( node );
                 flag = true;
