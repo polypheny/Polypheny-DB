@@ -71,8 +71,6 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.filemanagement.FileSystemManagerImpl;
-
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.FileSystemManager;
@@ -167,7 +165,7 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
-                File folder = FileSystemManagerImpl.getInstance().registerDataFolder( "catalog" );
+                File folder = FileSystemManager.getInstance().registerDataFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
                     log.info( "Reseting catalog on startup." );
@@ -559,7 +557,7 @@ public class CatalogImpl extends Catalog {
         if ( !storeNames.containsKey( "hsqldb" ) ) {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
-            hsqldbSettings.put( "path", "maxConnections" );
+            hsqldbSettings.put( "path", "./" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
