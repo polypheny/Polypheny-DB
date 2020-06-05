@@ -30,18 +30,21 @@ public class ExploreQueryResult {
     List<String> typeInfo;
     List<String> name;
 
-    public ExploreQueryResult(){
+
+    public ExploreQueryResult() {
 
     }
 
-    public ExploreQueryResult( String[][] data, int count,  List<String> colInfo,  List<String> name ) {
+
+    public ExploreQueryResult( String[][] data, int count, List<String> colInfo, List<String> name ) {
         this.data = data;
         this.count = count;
         this.typeInfo = colInfo;
         this.name = name;
     }
 
-    public ExploreQueryResult (String col, int count,  List<String> colInfo,  List<String> name ){
+
+    public ExploreQueryResult( String col, int count, List<String> colInfo, List<String> name ) {
         this.col = col;
         this.count = count;
         this.typeInfo = colInfo;

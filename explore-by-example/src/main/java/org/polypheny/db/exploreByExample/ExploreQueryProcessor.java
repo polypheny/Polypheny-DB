@@ -110,7 +110,6 @@ public class ExploreQueryProcessor {
         return result;
     }
 
-
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
@@ -127,16 +126,12 @@ public class ExploreQueryProcessor {
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
-
         try {
             signature = processQuery( transaction, sqlSelect, parserConfig );
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
             //noinspection unchecked
-
             iterator = enumerable.iterator();
-
             rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 200 ), new ArrayList<>() );
-
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
@@ -223,7 +218,6 @@ public class ExploreQueryProcessor {
 
 
     static class QueryExecutionException extends Exception {
-
         QueryExecutionException( Throwable t ) {
             super( t );
         }

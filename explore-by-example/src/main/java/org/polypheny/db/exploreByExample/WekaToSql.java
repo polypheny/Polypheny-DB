@@ -47,26 +47,24 @@ public class WekaToSql {
         splitTree.clear();
         for ( String element : selectedElements ) {
             List<String> elements = new ArrayList<>();
-            List<String> temp = new ArrayList<>(  );
+            List<String> temp = new ArrayList<>();
             if ( element.contains( "<=" ) || element.contains( ">" ) ) {
                 splitTree.add( element );
             } else if ( element.contains( "=" ) ) {
-
-
-
                 elements = Arrays.asList( element.split( "=" ) );
 
-                if ( nameAndType.get( elements.get( 0 ).replaceAll( " ", "" ).replaceAll( "\\|","" ) ).equals( "VARCHAR" ) ) {
-                    temp.add( elements.get(0).replaceAll( " ", "" ) );
+                if ( nameAndType.get( elements.get( 0 ).replaceAll( " ", "" ).replaceAll( "\\|", "" ) ).equals( "VARCHAR" ) ) {
+                    temp.add( elements.get( 0 ).replaceAll( " ", "" ) );
                     temp.add( "'" + elements.get( 1 ).substring( 1 ) + "'" );
                     splitTree.add( String.join( " = ", temp ) );
-                }else {
+                } else {
                     splitTree.add( element );
                 }
             }
-        }if(includesJoin){
+        }
+        if ( includesJoin ) {
             return "\nAND " + WekaToSql.iterateTee( splitTree );
-        }else{
+        } else {
             return "\nWHERE " + WekaToSql.iterateTee( splitTree );
         }
     }

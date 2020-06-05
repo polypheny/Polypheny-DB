@@ -51,10 +51,10 @@ public class ExploreManager {
 
 
     /**
-     * Creates the initial sql statement for initial query
+     * Creates the initial sql statement for initial query.
      *
-     * @param id ExploreID to identify the explore object at this point always null
-     * @param query initial sql query form user interface
+     * @param id    ExploreID to identify the explore object at this point always null
+     * @param query Initial sql query form user interface
      * @return Explore object
      */
     public Explore createSqlQuery( Integer id, String query ) {
@@ -74,11 +74,11 @@ public class ExploreManager {
 
 
     /**
-     * Starts the exploration process or continuous the process, depending on the explore id
+     * Starts the exploration process or continuous the process, depending on the explore id.
      *
-     * @param id Explore ID to identify the explore object
+     * @param id         Explore ID to identify the explore object
      * @param classified data form user
-     * @param dataType for all columns
+     * @param dataType   for all columns
      * @return Explore Object
      */
     public Explore exploreData( Integer id, String[][] classified, String[] dataType ) {
@@ -105,7 +105,7 @@ public class ExploreManager {
     /**
      * Classify all data for final result
      *
-     * @param id Explore ID to identify the explore object
+     * @param id         Explore ID to identify the explore object
      * @param classified data form user
      * @param returnsSql to check if WekaToSQL is active or not
      * @return Explore object
