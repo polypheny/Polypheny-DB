@@ -138,6 +138,8 @@ public class MonetdbStore extends AbstractJdbcStore {
                 return "TIME";
             case TIMESTAMP:
                 return "TIMESTAMP";
+            case ARRAY:
+                return "TEXT";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
     }

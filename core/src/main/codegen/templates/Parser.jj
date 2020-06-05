@@ -57,6 +57,7 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.JoinConditionType;
 import org.polypheny.db.sql.JoinType;
 import org.polypheny.db.sql.SqlAlter;
+import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCharStringLiteral;
@@ -110,6 +111,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.SqlWith;
 import org.polypheny.db.sql.SqlWithItem;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -3900,7 +3902,7 @@ SqlNode ArrayConstructor() :
         }
     |
         // by enumeration "ARRAY[e0, e1, ..., eN]"
-        e = NestedArray(s)
+        e = NestedArray(s, 1)
         {
             return e;
         }
@@ -3912,7 +3914,7 @@ SqlNode ArrayConstructor() :
 * Parse the content of an array, including the square brackets
 * Supports nested arrays
 */
-SqlNode NestedArray(Span s) :
+SqlNode NestedArray(Span s, int dimension) :
 {
     SqlNodeList args;
     List<SqlNode> list;
@@ -3921,25 +3923,25 @@ SqlNode NestedArray(Span s) :
 {
     <LBRACKET>
     (
-        args = ExpressionCommaList(s, ExprContext.ACCEPT_NON_QUERY)
-    |
-        arr = NestedArray(s)
+        arr = NestedArray(s, dimension+1)
         { list = startList(arr); }
         (
             LOOKAHEAD(2)
             <COMMA>
-            arr = NestedArray(s)
-            {list.add(arr);}
+            arr = NestedArray(s, dimension+1)
+            { list.add(arr); }
         )*
         {
             args = new SqlNodeList(list, s.addAll(list).pos());
         }
     |
+        args = ExpressionCommaList(s, ExprContext.ACCEPT_NON_QUERY)
+    |
         { args = SqlNodeList.EMPTY; }
     )
     <RBRACKET>
     {
-        return SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR.createCall( s.end(this), args.getList());
+        return new SqlArrayValueConstructor(dimension, args.getList().size()).createCall( s.end(this), args.getList());
     }
 }
 

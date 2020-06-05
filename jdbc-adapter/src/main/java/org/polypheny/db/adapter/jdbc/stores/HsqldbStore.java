@@ -142,7 +142,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             case TIMESTAMP:
                 return "TIMESTAMP";
             case ARRAY:
-                return "ARRAY";
+                return "LONGVARCHAR";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
     }

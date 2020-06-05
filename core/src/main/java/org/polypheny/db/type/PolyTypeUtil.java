@@ -904,9 +904,9 @@ public abstract class PolyTypeUtil {
     }
 
 
-    public static RelDataType createArrayType( RelDataTypeFactory typeFactory, RelDataType type, boolean nullable ) {
-        RelDataType ret = typeFactory.createArrayType( type, -1 );
-        return typeFactory.createTypeWithNullability( ret, nullable );
+    public static RelDataType createArrayType( RelDataTypeFactory typeFactory, RelDataType type, boolean nullable, int dimension, int cardinality ) {
+        RelDataType rdt = typeFactory.createArrayType( type, cardinality, dimension );
+        return typeFactory.createTypeWithNullability( rdt, nullable );
     }
 
 

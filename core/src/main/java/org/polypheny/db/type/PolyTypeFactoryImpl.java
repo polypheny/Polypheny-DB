@@ -511,8 +511,11 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     // override RelDataTypeFactoryImpl
     @Override
     protected RelDataType canonize( RelDataType type ) {
-        // skip canonize step for ArrayTypes, because it caches the cardinality
+        // skip canonize step for ArrayTypes, to not cache cardinality or dimension
+        //type = super.canonize( type );
         if( ! (type instanceof ArrayType)) {
+            type = super.canonize( type );
+        } else if ( ((ArrayType)type).getCardinality() == -1 && ((ArrayType)type).getDimension() == -1 ) {
             type = super.canonize( type );
         }
         if ( !(type instanceof ObjectPolyType) ) {

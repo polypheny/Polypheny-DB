@@ -2375,7 +2375,11 @@ public class Crud implements InformationObserver {
                                 temp[counter] = o.toString();
                         }
                         if( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
-                            temp[counter] = gson.toJson( o, AbstractList.class );
+                            if(o instanceof AbstractList) {
+                                temp[counter] = gson.toJson( o, AbstractList.class );
+                            } else {
+                                temp[counter] = o.toString();
+                            }
                         }
                     }
                     counter++;

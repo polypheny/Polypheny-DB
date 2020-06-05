@@ -168,7 +168,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         if ( fieldCount == 1 ) {
             final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
             builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
-            generateGet( implementor, physType, builder, resultSet_, 0, value_, calendar_, calendarPolicy );
+            generateGet( implementor, physType, builder, resultSet_, 0, value_, calendar_, calendarPolicy, jdbcConvention.dialect );
             builder.add( Expressions.return_( null, value_ ) );
         } else {
             final Expression values_ = builder.append(
@@ -183,7 +183,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                         i,
                         Expressions.arrayIndex( values_, Expressions.constant( i ) ),
                         calendar_,
-                        calendarPolicy );
+                        calendarPolicy,
+                        jdbcConvention.dialect );
             }
             builder.add( Expressions.return_( null, values_ ) );
         }
@@ -272,7 +273,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             int i,
             Expression target,
             Expression calendar_,
-            CalendarPolicy calendarPolicy ) {
+            CalendarPolicy calendarPolicy,
+            SqlDialect dialect) {
         final Primitive primitive = Primitive.ofBoxOr( physType.fieldClass( i ) );
         final RelDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
@@ -310,10 +312,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                                 .appendIf( offset, getTimeZoneExpression( implementor ) ) );
                 break;
             case ARRAY:
-                final Expression x = Expressions.convert_(
-                        Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) ),
-                        java.sql.Array.class );
-                source = Expressions.call( BuiltInMethod.JDBC_ARRAY_TO_LIST.method, x );
+                if( dialect.supportsNestedArrays() ) {
+                    final Expression x = Expressions.convert_(
+                            Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) ),
+                            java.sql.Array.class );
+                    source = Expressions.call( BuiltInMethod.JDBC_ARRAY_TO_LIST.method, x );
+                } else {
+                    source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
+                }
                 break;
             default:
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );

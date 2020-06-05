@@ -185,11 +185,11 @@ public interface PolyphenyDbResource {
     @BaseMessage("Cannot assign to target field ''{0}'' of type {1} from source field ''{2}'' of type {3}")
     ExInst<SqlValidatorException> typeNotAssignable( String a0, String a1, String a2, String a3 );
 
-    @BaseMessage( "Array exceeds cardinality in column ''{0}''" )
-    ExInst<SqlValidatorException> exceededCardinality( String a0 );
+    @BaseMessage( "Array in column ''{0}'' with cardinality {1,number} exceeds max-cardinality of {2,number}" )
+    ExInst<SqlValidatorException> exceededCardinality( String a0, long a1, long a2 );
 
-    @BaseMessage( "Array exceeds dimension in column ''{0}''" )
-    ExInst<SqlValidatorException> exceededDimension( String a0 );
+    @BaseMessage( "Array in column ''{0}'' with dimension {1,number} exceeds max-dimension of {2,number}" )
+    ExInst<SqlValidatorException> exceededDimension( String a0, long a1, long a2 );
 
     @BaseMessage("Database ''{0}'' not found")
     ExInst<SqlValidatorException> databaseNotFound( String a0 );

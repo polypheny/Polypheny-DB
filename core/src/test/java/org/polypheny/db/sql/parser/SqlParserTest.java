@@ -49,9 +49,11 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlSetOption;
+import org.polypheny.db.sql.dialect.AnsiSqlDialect;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.parser.impl.SqlParserImpl;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
@@ -560,6 +562,10 @@ public class SqlParserTest {
     private Casing unquotedCasing = Casing.TO_UPPER;
     private Casing quotedCasing = Casing.UNCHANGED;
     private SqlConformance conformance = SqlConformanceEnum.DEFAULT;
+    /**
+     * Similar to the null dialect in SqlNode.toSqlString(), but it claims to be able to parse nested arrays, which is needed for some of the tests
+     */
+    private final SqlDialect nullDialect = AnsiSqlDialect.NULL_DIALECT;
 
 
     public SqlParserTest() {
@@ -7294,7 +7300,7 @@ public class SqlParserTest {
             final SqlNode sqlNode = parseStmtAndHandleEx( sql );
 
             // no dialect, always parenthesize
-            String actual = sqlNode.toSqlString( null, true ).getSql();
+            String actual = sqlNode.toSqlString( nullDialect, true ).getSql();
             if ( LINUXIFY.get()[0] ) {
                 actual = Util.toLinux( actual );
             }
@@ -7316,7 +7322,7 @@ public class SqlParserTest {
         @Override
         public void checkExp( String sql, String expected ) {
             final SqlNode sqlNode = parseExpressionAndHandleEx( sql );
-            String actual = sqlNode.toSqlString( null, true ).getSql();
+            String actual = sqlNode.toSqlString( nullDialect, true ).getSql();
             if ( LINUXIFY.get()[0] ) {
                 actual = Util.toLinux( actual );
             }
@@ -7397,7 +7403,7 @@ public class SqlParserTest {
             SqlNode sqlNode = parseStmtAndHandleEx( sql );
 
             // Unparse with no dialect, always parenthesize.
-            final String actual = sqlNode.toSqlString( null, true ).getSql();
+            final String actual = sqlNode.toSqlString( nullDialect, true ).getSql();
             assertEquals( expected, linux( actual ) );
 
             // Unparse again in Polypheny-DB dialect (which we can parse), and minimal parentheses.
@@ -7418,7 +7424,7 @@ public class SqlParserTest {
             assertEquals( sql1, sql2 );
 
             // Now unparse again in the null dialect. If the unparser is not including sufficient parens to override precedence, the problem will show up here.
-            final String actual2 = sqlNode2.toSqlString( null, true ).getSql();
+            final String actual2 = sqlNode2.toSqlString( nullDialect, true ).getSql();
             assertEquals( expected, linux( actual2 ) );
         }
 
@@ -7428,7 +7434,7 @@ public class SqlParserTest {
             SqlNode sqlNode = parseExpressionAndHandleEx( sql );
 
             // Unparse with no dialect, always parenthesize.
-            final String actual = sqlNode.toSqlString( null, true ).getSql();
+            final String actual = sqlNode.toSqlString( nullDialect, true ).getSql();
             assertEquals( expected, linux( actual ) );
 
             // Unparse again in Polypheny-DB dialect (which we can parse), and minimal parentheses.
@@ -7449,7 +7455,7 @@ public class SqlParserTest {
             assertEquals( sql1, sql2 );
 
             // Now unparse again in the null dialect. If the unparser is not including sufficient parens to override precedence, the problem will show up here.
-            final String actual2 = sqlNode2.toSqlString( null, true ).getSql();
+            final String actual2 = sqlNode2.toSqlString( nullDialect, true ).getSql();
             assertEquals( expected, linux( actual2 ) );
         }
 

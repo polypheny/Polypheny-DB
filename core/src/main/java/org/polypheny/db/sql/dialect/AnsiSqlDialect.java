@@ -52,6 +52,20 @@ public class AnsiSqlDialect extends SqlDialect {
 
 
     /**
+     * Dialect used for unit tests. Identical to the SqlDialect.DEFAULT, except that it claims to support nested arrays
+     */
+    public static final SqlDialect NULL_DIALECT =
+            new AnsiSqlDialect( emptyContext()
+                    .withDatabaseProduct( DatabaseProduct.UNKNOWN )
+                    .withIdentifierQuoteString( "`" ) ){
+                @Override
+                public boolean supportsNestedArrays() {
+                    return true;
+                }
+            };
+
+
+    /**
      * Creates an AnsiSqlDialect.
      */
     public AnsiSqlDialect( Context context ) {

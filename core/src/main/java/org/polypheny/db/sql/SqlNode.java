@@ -147,6 +147,7 @@ public abstract class SqlNode implements Cloneable {
      */
     public SqlString toSqlString( SqlDialect dialect, boolean forceParens ) {
         if ( dialect == null ) {
+            //if you change this default dialect, you should consider changing the SqlParserTest.nullDialect as well!
             dialect = AnsiSqlDialect.DEFAULT;
         }
         SqlPrettyWriter writer = new SqlPrettyWriter( dialect );

@@ -34,9 +34,17 @@
 package org.polypheny.db.sql.fun;
 
 
+import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlBasicCall;
+import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorBinding;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.validate.SqlValidator;
+import org.polypheny.db.sql.validate.SqlValidatorScope;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -45,8 +53,18 @@ import org.polypheny.db.type.PolyTypeUtil;
  */
 public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
 
+    public final int dimension;
+    public final int cardinality;
+
     public SqlArrayValueConstructor() {
+        this( 0, 0 );
+    }
+
+
+    public SqlArrayValueConstructor ( final int dimension, final int cardinality ) {
         super( "ARRAY", SqlKind.ARRAY_VALUE_CONSTRUCTOR );
+        this.dimension = dimension;
+        this.cardinality = cardinality;
     }
 
 
@@ -56,6 +74,45 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
         if ( null == type ) {
             return null;
         }
-        return PolyTypeUtil.createArrayType( opBinding.getTypeFactory(), type, false );
+        return PolyTypeUtil.createArrayType( opBinding.getTypeFactory(), type, false, dimension, cardinality );
+    }
+
+    @Override
+    public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
+        RelDataType type = super.deriveType( validator, scope, call );
+        if( type instanceof ArrayType ) {
+            ((ArrayType) type).setCardinality( cardinality ).setDimension( dimension );
+        }
+        //set the operator again, because SqlOperator.deriveType will clear the dimension & cardinality of this constructor
+        ((SqlBasicCall) call).setOperator( this );
+        return type;
+    }
+
+    @Override
+    public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
+        if(!writer.getDialect().supportsNestedArrays()) {
+
+            if( dimension == 1 ) {
+                writer.literal( "'" );
+            }
+
+            final SqlWriter.Frame frame = writer.startList( "[", "]" );
+            for ( SqlNode operand : call.getOperandList() ) {
+                writer.sep( "," );
+                operand.unparse( writer, leftPrec, rightPrec );
+            }
+            writer.endList( frame );
+
+            if( dimension == 1 ) {
+                writer.literal( "'" );
+            }
+        } else {
+            super.unparse( writer, call, leftPrec, rightPrec );
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash( kind, "ARRAY", dimension, cardinality );
     }
 }
