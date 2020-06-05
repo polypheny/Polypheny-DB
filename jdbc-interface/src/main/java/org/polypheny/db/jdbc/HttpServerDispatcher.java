@@ -92,9 +92,9 @@ public class HttpServerDispatcher {
         }
 
         if ( log.isInfoEnabled() ) {
-            log.info( "HTTP Dispatcher is listening on port {}", connector.getLocalPort() );
+            log.info( "HTTP Dispatcher is listening on port {}.", connector.getLocalPort() );
         } else {
-            System.out.println( "HTTP Dispatcher is listening on port " + connector.getLocalPort() );
+            System.out.println( "HTTP Dispatcher is listening on port " + connector.getLocalPort() + "." );
         }
 
         String host = connector.getHost();
