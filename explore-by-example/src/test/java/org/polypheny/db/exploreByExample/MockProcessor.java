@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.exploreByExample;
 
 
 import java.util.Collections;
-import org.polypheny.db.statistic.exploreByExample.ExploreQueryProcessor;
-import org.polypheny.db.statistic.exploreByExample.ExploreQueryResult;
 
 
 /**

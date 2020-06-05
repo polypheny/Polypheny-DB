@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.statistic.exploreByExample;
+package org.polypheny.db.exploreByExample;
 
 
 import java.util.ArrayList;

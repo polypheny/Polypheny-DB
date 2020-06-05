@@ -30,6 +30,8 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.exploreByExample.ExploreManager;
+import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
@@ -37,8 +39,6 @@ import org.polypheny.db.jdbc.JdbcInterface;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
-import org.polypheny.db.statistic.exploreByExample.ExploreManager;
-import org.polypheny.db.statistic.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -182,7 +182,7 @@ public class PolyphenyDb {
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator );
+        final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
 
         Thread jdbcInterfaceThread = new Thread( jdbcInterface );
         jdbcInterfaceThread.start();
@@ -205,7 +205,7 @@ public class PolyphenyDb {
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
-        log.info( "                           The UI is waiting for you on port: {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        log.info( "                           The UI is waiting for you on port {}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
 
         try {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.exploreByExample;
 
 
 import static org.junit.Assert.assertEquals;
@@ -22,8 +22,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
-import org.polypheny.db.statistic.exploreByExample.Explore;
-import org.polypheny.db.statistic.exploreByExample.ExploreManager;
 
 
 public class ExploreTest {
@@ -46,8 +44,6 @@ public class ExploreTest {
 
         assertEquals( manager.getExploreInformation( explore.getId() ), explore );
         assertEquals( manager.getExploreInformation( explore2.getId() ), explore2 );
-
-
     }
 
 }

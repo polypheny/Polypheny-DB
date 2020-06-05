@@ -58,6 +58,7 @@ configurations {
 dependencies {
     implementation project(":core")
     api project(":statistic")
+    api project(":explore-by-example")
 
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
