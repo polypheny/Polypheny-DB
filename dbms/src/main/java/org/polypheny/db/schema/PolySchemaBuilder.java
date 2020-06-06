@@ -17,6 +17,8 @@
 package org.polypheny.db.schema;
 
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -39,19 +41,26 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.schema.impl.AbstractSchema;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public class PolySchemaBuilder {
+public class PolySchemaBuilder implements PropertyChangeListener {
 
     private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
+
+    private static AbstractPolyphenyDbSchema current;
+
+
+    private PolySchemaBuilder() {
+        Catalog.getInstance().addObserver( this );
+    }
 
 
     public static PolySchemaBuilder getInstance() {
@@ -59,12 +68,18 @@ public class PolySchemaBuilder {
     }
 
 
-    public AbstractPolyphenyDbSchema getCurrent( Transaction transaction ) {
-        return update( transaction );
+    public AbstractPolyphenyDbSchema getCurrent() {
+        if ( !RuntimeConfig.SCHEMA_CACHING.getBoolean() ) {
+            return buildSchema();
+        }
+        if ( current == null ) {
+            current = buildSchema();
+        }
+        return current;
     }
 
 
-    public AbstractPolyphenyDbSchema update( Transaction transaction ) {
+    private AbstractPolyphenyDbSchema buildSchema() {
         final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
         if ( false ) {
@@ -133,7 +148,7 @@ public class PolySchemaBuilder {
                         Map<String, Table> physicalTables = new HashMap<>();
                         Store store = StoreManager.getInstance().getStore( catalogStore.id );
                         final String schemaName = buildStoreSchemaName( catalogStore.uniqueName, catalogSchema.name, physicalSchemaName );
-                        store.createNewSchema( transaction, rootSchema, schemaName );
+                        store.createNewSchema( rootSchema, schemaName );
                         SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, store.getCurrentSchema(), schemaName ).plus();
                         for ( long tableId : tableIds ) {
                             CatalogTable catalogTable = catalog.getTable( tableId );
@@ -169,6 +184,14 @@ public class PolySchemaBuilder {
 
     public static String buildStoreSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
         return storeName + "_" + logicalSchema + "_" + physicalSchema;
+    }
+
+
+    // Listens on changes to the catalog
+    @Override
+    public void propertyChange( PropertyChangeEvent evt ) {
+        // Catalog changed, rebuild schema
+        current = buildSchema();
     }
 
 
