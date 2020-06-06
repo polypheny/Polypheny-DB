@@ -88,8 +88,6 @@ public class TransactionImpl implements Transaction, Comparable {
     @Getter
     private List<Store> involvedStores = new CopyOnWriteArrayList<>();
 
-    private PolyphenyDbSchema cachedSchema = null;
-
     private InformationDuration duration;
 
     private Set<Lock> lockList = new HashSet<>();
@@ -129,10 +127,7 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Override
     public PolyphenyDbSchema getSchema() {
-        if ( cachedSchema == null ) {
-            cachedSchema = PolySchemaBuilder.getInstance().getCurrent( this );
-        }
-        return cachedSchema;
+        return PolySchemaBuilder.getInstance().getCurrent();
     }
 
 
@@ -153,37 +148,33 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Override
     public void commit() throws TransactionException {
-        try {
-            // Prepare to commit changes on all involved stores and the catalog
-            boolean okToCommit = true;
-            if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
-                for ( Store store : involvedStores ) {
-                    okToCommit &= store.prepare( xid );
-                }
+        // Prepare to commit changes on all involved stores and the catalog
+        boolean okToCommit = true;
+        if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
+            for ( Store store : involvedStores ) {
+                okToCommit &= store.prepare( xid );
             }
-
-            if ( okToCommit ) {
-                // Commit changes
-                for ( Store store : involvedStores ) {
-                    store.commit( xid );
-                }
-
-                if ( changedTables.size() > 0 ) {
-                    StatisticsManager.getInstance().apply( changedTables );
-                }
-            } else {
-                log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
-                rollback();
-                throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
-            }
-
-            // Release locks
-            LockManager.INSTANCE.removeTransaction( this );
-            // Remove transaction
-            transactionManager.removeTransaction( xid );
-        } finally {
-            cachedSchema = null;
         }
+
+        if ( okToCommit ) {
+            // Commit changes
+            for ( Store store : involvedStores ) {
+                store.commit( xid );
+            }
+
+            if ( changedTables.size() > 0 ) {
+                StatisticsManager.getInstance().apply( changedTables );
+            }
+        } else {
+            log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
+            rollback();
+            throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
+        }
+
+        // Release locks
+        LockManager.INSTANCE.removeTransaction( this );
+        // Remove transaction
+        transactionManager.removeTransaction( xid );
     }
 
 
@@ -196,7 +187,6 @@ public class TransactionImpl implements Transaction, Comparable {
             }
             Catalog.getInstance().rollback();
         } finally {
-            cachedSchema = null;
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );
             // Remove transaction
@@ -265,7 +255,6 @@ public class TransactionImpl implements Transaction, Comparable {
         queryProcessor = null;
         dataContext = null;
         prepareContext = null;
-        cachedSchema = null; // TODO: This should not be necessary.
         duration = null;
     }
 
