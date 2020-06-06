@@ -2301,6 +2301,28 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Checks if there is an index with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param indexName The name to check for
+     * @return true if there is an index with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    @Override
+    public boolean checkIfExistsIndex( long tableId, String indexName ) throws GenericCatalogException {
+        try {
+            CatalogTable table = getTable( tableId );
+            getIndex( table.id, indexName );
+            return true;
+        } catch ( UnknownTableException e ) {
+            throw new GenericCatalogException( e );
+        } catch ( UnknownIndexException e ) {
+            return false;
+        }
+    }
+
+
+    /**
      * Adds an index over the specified columns
      *
      * @param tableId The id of the table

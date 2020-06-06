@@ -25,9 +25,11 @@ import java.sql.Types;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -35,6 +37,8 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.adapter.Index;
+import org.polypheny.db.adapter.IndexManager;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
@@ -42,6 +46,15 @@ import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -62,12 +75,21 @@ import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.RelShuttle;
+import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -76,6 +98,7 @@ import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlConformance;
 import org.polypheny.db.sql2rel.RelStructuredTypeFlattener;
 import org.polypheny.db.tools.Program;
@@ -164,12 +187,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             throw new RuntimeException( e );
         }
 
-        // Route
+        // Constraint Enforcement Rewrite
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getDuration().stop( "Locking" );
+            statement.getDuration().start( "Constraint Enforcement" );
+        }
+        RelRoot constraintsRoot = enforceConstraints( logicalRoot, statement );
+
+        // Index Lookup Rewrite
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Constraint Enforcement" );
+            statement.getDuration().start( "Index Lookup Rewrite" );
+        }
+        RelRoot indexLookupRoot = indexLookup( constraintsRoot, statement, executionTimeMonitor );
+
+        // Route
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Index Lookup Rewrite" );
             statement.getDuration().start( "Routing" );
         }
-        RelRoot routedRoot = route( logicalRoot, statement, executionTimeMonitor );
+        RelRoot routedRoot = route( indexLookupRoot, statement, executionTimeMonitor );
 
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                 RelBuilder.create( statement, routedRoot.rel.getCluster() ),
@@ -284,6 +321,129 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         return signature;
     }
 
+
+
+    private RelRoot enforceConstraints( RelRoot logicalRoot, Statement statement ) {
+        if ( !logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+            return logicalRoot;
+        }
+        if ( !(logicalRoot.rel instanceof TableModify) ) {
+            return logicalRoot;
+        }
+        final TableModify root = (TableModify) logicalRoot.rel;
+
+        if ( root.isInsert() ) {
+            final Values values = (Values) root.getInput();
+            final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
+            final RexBuilder builder = root.getCluster().getRexBuilder();
+
+            final Catalog catalog = Catalog.getInstance();
+            final CatalogSchema schema = transaction.getDefaultSchema();
+            final CatalogTable table;
+            final List<CatalogConstraint> constraints;
+            final List<String> columns;
+            try {
+                table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
+                constraints = new ArrayList<>( catalog.getConstraints( table.id ) );
+                // Turn primary key into an artificial unique constraint
+                if ( table.primaryKey != null ) {
+                    CatalogPrimaryKey pk = catalog.getPrimaryKey( table.primaryKey );
+                    final CatalogConstraint pkc = new CatalogConstraint(
+                            0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+                    constraints.add( pkc );
+                }
+            } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+                e.printStackTrace();
+                return logicalRoot;
+            }
+
+            RelNode lceRoot = root;
+            for ( final CatalogConstraint constraint : constraints ) {
+                if ( constraint.type != ConstraintType.UNIQUE ) {
+                    log.warn( "Unknown constraint type: " + constraint.type );
+                    continue;
+                }
+
+                RexNode condition = builder.makeLiteral( false );
+                final Set<List<RexLiteral>> uniqueSet = new HashSet<>();
+                for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
+                    RexNode rowcheck = builder.makeLiteral( true );
+                    final List<RexLiteral> rowValues = new ArrayList<>();
+                    for ( final String column : constraint.key.getColumnNames() ) {
+                        final RexLiteral fieldValue = row.get(
+                                values.getRowType().getField( column, false, false ).getIndex()
+                        );
+                        rowValues.add( fieldValue );
+                        RexNode comparison = builder.makeCall(
+                                SqlStdOperatorTable.EQUALS,
+                                builder.makeFieldAccess(
+                                        builder.makeRangeReference( scan ), column, false
+                                ),
+                                fieldValue
+                        );
+                        rowcheck = builder.makeCall( SqlStdOperatorTable.AND, rowcheck, comparison );
+                    }
+                    uniqueSet.add( rowValues );
+                    condition = builder.makeCall( SqlStdOperatorTable.OR, condition, rowcheck );
+                }
+                // Validate values in the insert set for uniqueness among each other
+                if ( uniqueSet.size() != values.getTuples().size() ) {
+                    throw new RuntimeException( "UNIQUE constraint violated" );
+                }
+                final LogicalFilter filter = LogicalFilter.create( scan, condition );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.EQUAL_TO_ZERO );
+                lce.setCatalogSchema( schema );
+                lce.setCatalogTable( table );
+                lce.setCatalogColumns( constraint.key.getColumnNames() );
+                lce.setValues( uniqueSet );
+                lceRoot = lce;
+            }
+            return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        }
+
+        return logicalRoot;
+    }
+
+
+    private RelRoot indexLookup( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+        if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+            final RelShuttle shuttle = new RelShuttleImpl() {
+
+                @Override
+                public RelNode visit( RelNode node) {
+                    if (node instanceof LogicalConditionalExecute) {
+                        final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+                        final Index index = IndexManager.getInstance().getIndex(
+                                lce.getCatalogSchema(),
+                                lce.getCatalogTable(),
+                                lce.getCatalogColumns()
+                        );
+                        if (index != null) {
+                            final LogicalConditionalExecute visited = (LogicalConditionalExecute) super.visit( lce );
+                            final Condition c = index.containsAny( lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
+                            return LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c );
+                        }
+                    }
+                    return super.visit( node );
+                }
+
+            };
+            final RelNode newRoot = shuttle.visit( logicalRoot.rel );
+            return new RelRoot(
+                    newRoot,
+                    logicalRoot.validatedRowType,
+                    logicalRoot.kind,
+                    logicalRoot.fields,
+                    logicalRoot.collation );
+
+        }
+        return new RelRoot(
+                logicalRoot.rel,
+                logicalRoot.validatedRowType,
+                logicalRoot.kind,
+                logicalRoot.fields,
+                logicalRoot.collation );
+    }
 
 
     private RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
@@ -558,9 +718,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     private static String getClassName( RelDataType type ) {
         return Object.class.getName();
     }
-
-
-
 
 
     private static int getTypeOrdinal( RelDataType type ) {

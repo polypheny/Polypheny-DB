@@ -764,6 +764,9 @@ public interface PolyphenyDbResource {
     @BaseMessage("Column ''{0}'' is defined NOT NULL and has no default value assigned")
     ExInst<SqlValidatorException> notNullAndNoDefaultValue( String name );
 
+    @BaseMessage("Index ''{0}'' already exists")
+    ExInst<SqlValidatorException> indexExists( String name );
+
     @BaseMessage("Invalid schema type ''{0}''; valid values: {1}")
     ExInst<SqlValidatorException> schemaInvalidType( String type, String values );
 

@@ -17,6 +17,8 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -26,12 +28,14 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -109,6 +113,12 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             } else {
                 type = IndexType.getById( RuntimeConfig.DEFAULT_INDEX_TYPE.getInteger() );
             }
+
+            // Check if index already exists
+            if ( Catalog.getInstance().checkIfExistsIndex( catalogTable.id, indexName.getSimple() ) ) {
+                throw SqlUtil.newContextException( indexName.getParserPosition(), RESOURCE.indexExists( indexName.getSimple() ) );
+            }
+
             Catalog.getInstance().addIndex( catalogTable.id, columnIds, unique, type, indexName.getSimple() );
         } catch ( GenericCatalogException | UnknownColumnException | UnknownIndexTypeException e ) {
             throw new RuntimeException( e );

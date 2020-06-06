@@ -42,6 +42,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
 import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -173,6 +174,12 @@ public class RelShuttleImpl implements RelShuttle {
     @Override
     public RelNode visit( LogicalExchange exchange ) {
         return visitChildren( exchange );
+    }
+
+
+    @Override
+    public RelNode visit( LogicalConditionalExecute lce ) {
+        return visitChildren( lce );
     }
 
 

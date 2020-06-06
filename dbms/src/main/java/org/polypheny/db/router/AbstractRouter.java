@@ -49,6 +49,8 @@ import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.core.ConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableModify;
@@ -67,6 +69,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
+
 
 public abstract class AbstractRouter implements Router {
 
@@ -96,6 +99,8 @@ public abstract class AbstractRouter implements Router {
         analyze( statement, logicalRoot );
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             routed = routeDml( logicalRoot.rel, statement );
+        } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
+            routed = handleConditionalExecute( logicalRoot.rel, statement );
         } else {
             RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
             builder = buildSelect( logicalRoot.rel, builder );
@@ -169,6 +174,22 @@ public abstract class AbstractRouter implements Router {
             }
         }
         return node.copy( node.getTraitSet(), inputs );
+    }
+
+
+    protected RelNode handleConditionalExecute( RelNode node, Statement statement ) {
+        LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+        RelBuilder builder = RelBuilder.create( statement, node.getCluster() );
+        buildSelect( lce.getLeft(), builder, statement );
+        RelNode action;
+        if (lce.getRight() instanceof LogicalConditionalExecute) {
+            action = handleConditionalExecute( lce.getRight(), statement );
+        } else if (lce.getRight() instanceof TableModify) {
+            action = routeDml( lce.getRight(), statement );
+        } else {
+            throw new IllegalArgumentException(  );
+        }
+        return LogicalConditionalExecute.create( builder.build(), action, lce.getCondition() );
     }
 
 

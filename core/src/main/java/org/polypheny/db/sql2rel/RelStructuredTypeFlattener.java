@@ -61,6 +61,7 @@ import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.core.Uncollect;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalCalc;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalIntersect;
@@ -348,6 +349,18 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
             }
         }
         return offset;
+    }
+
+
+    public void rewriteRel( LogicalConditionalExecute rel ) {
+        LogicalConditionalExecute newRel =
+                new LogicalConditionalExecute(
+                        rel.getCluster(),
+                        rel.getTraitSet(),
+                        rel.getLeft(),
+                        rel.getRight(),
+                        rel.getCondition());
+        setNewForOldRel( rel, newRel );
     }
 
 

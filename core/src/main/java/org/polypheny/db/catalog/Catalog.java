@@ -742,6 +742,16 @@ public abstract class Catalog {
     public abstract CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException;
 
     /**
+     * Checks if there is an index with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param indexName The name to check for
+     * @return true if there is am index with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract boolean checkIfExistsIndex( long tableId, String indexName ) throws GenericCatalogException;
+
+    /**
      * Adds an index over the specified columns
      *
      * @param tableId The id of the table
