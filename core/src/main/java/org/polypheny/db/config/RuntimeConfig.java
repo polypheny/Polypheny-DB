@@ -191,7 +191,11 @@ public enum RuntimeConfig {
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
             100,
             ConfigType.INTEGER,
-            "uiSettingsDataViewGroup" );
+            "uiSettingsDataViewGroup" ),
+    SCHEMA_CACHING( "runtime/schemaCaching",
+            "Cache polypheny-db schema",
+            true,
+            ConfigType.BOOLEAN );
 
 
     private final String key;

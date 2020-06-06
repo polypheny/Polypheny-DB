@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -68,14 +69,17 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
 
     public AbstractPolyphenyDbSchema getCurrent() {
+        if ( !RuntimeConfig.SCHEMA_CACHING.getBoolean() ) {
+            return buildSchema();
+        }
         if ( current == null ) {
-            update();
+            current = buildSchema();
         }
         return current;
     }
 
 
-    private void update() {
+    private AbstractPolyphenyDbSchema buildSchema() {
         final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
         if ( false ) {
@@ -162,7 +166,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
         }
 
-        current = polyphenyDbSchema;
+        return polyphenyDbSchema;
     }
 
 
@@ -183,9 +187,11 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
+    // Listens on changes to the catalog
     @Override
     public void propertyChange( PropertyChangeEvent evt ) {
-        update();
+        // Catalog changed, rebuild schema
+        current = buildSchema();
     }
 
 
