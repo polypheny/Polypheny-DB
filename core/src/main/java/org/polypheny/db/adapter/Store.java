@@ -33,7 +33,6 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Transaction;
 
 
 public abstract class Store {
@@ -78,7 +77,7 @@ public abstract class Store {
     }
 
 
-    public abstract void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name );
+    public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
     public abstract Table createTableSchema( CatalogTable combinedTable );
 

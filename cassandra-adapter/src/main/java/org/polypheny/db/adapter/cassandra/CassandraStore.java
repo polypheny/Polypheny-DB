@@ -55,7 +55,6 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
 
@@ -161,7 +160,7 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
+    public void createNewSchema( SchemaPlus rootSchema, String name ) {
         this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( this.getStoreId() ), this );
     }
 

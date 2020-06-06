@@ -57,6 +57,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlExplainFormat;
@@ -239,7 +240,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         null,
                         ImmutableList.of(),
                         Meta.CursorFactory.OBJECT,
-                        transaction.getSchema(),
+                        PolySchemaBuilder.getInstance().getCurrent(),
                         ImmutableList.of(),
                         -1,
                         null,
