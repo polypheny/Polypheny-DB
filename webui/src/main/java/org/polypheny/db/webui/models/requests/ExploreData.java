@@ -17,10 +17,13 @@
 package org.polypheny.db.webui.models.requests;
 
 
-public class SchemaTreeRequest extends UIRequest {
+import org.polypheny.db.webui.models.DbColumn;
 
-    public String routerLinkRoot;
-    public boolean views;
-    public int depth;
-    public boolean showTable;
+
+public class ExploreData {
+
+    public Integer id;
+    public DbColumn[] header;
+    public String[][] classified;
+
 }

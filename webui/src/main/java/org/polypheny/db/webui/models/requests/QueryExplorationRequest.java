@@ -17,10 +17,18 @@
 package org.polypheny.db.webui.models.requests;
 
 
-public class SchemaTreeRequest extends UIRequest {
+public class QueryExplorationRequest extends UIRequest {
 
-    public String routerLinkRoot;
-    public boolean views;
-    public int depth;
-    public boolean showTable;
+    /**
+     * A query from the SQL console
+     */
+    public String query;
+
+    /**
+     * TRUE if information about the query execution should be added to the Query Analyzer (InformationManager)
+     */
+    public boolean analyze;
+
+    public int cPage;
+
 }

@@ -182,6 +182,11 @@ public enum RuntimeConfig {
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
             ConfigType.ENUM ),
+    EXPLORE_BY_EXAMPLE_TO_SQL( "exploreByExample/classificationToSQL",
+            "Build SQL query from classification.",
+            true,
+            ConfigType.BOOLEAN,
+            "exploreByExampleGroup" ),
     UI_PAGE_SIZE( "ui/pageSize",
             "Number of rows per page in the data view.",
             10,
@@ -235,6 +240,15 @@ public enum RuntimeConfig {
         final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() ).withTitle( "Statistics Settings" );
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
+
+        //Explore by Example Settings
+        final WebUiPage exploreByExamplePage = new WebUiPage(
+                "exploreByExamplePage",
+                "Explore by Example",
+                "Settings for the Explore-by-Example component." );
+        final WebUiGroup exploreByExampleGroup = new WebUiGroup( "exploreByExampleGroup", exploreByExamplePage.getId() ).withTitle( "Explore by Example" );
+        configManager.registerWebUiPage( exploreByExamplePage );
+        configManager.registerWebUiGroup( exploreByExampleGroup );
 
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(

@@ -14,13 +14,25 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models.requests;
+package org.polypheny.db.webui.models;
 
 
-public class SchemaTreeRequest extends UIRequest {
+import java.util.List;
 
-    public String routerLinkRoot;
-    public boolean views;
-    public int depth;
-    public boolean showTable;
+
+public class ExploreResult {
+
+    private DbColumn[] header;
+    private List<String[]> dataAfterClassification;
+    private int exploreManagerId;
+    private String graph;
+
+
+    public ExploreResult(final DbColumn[] header, final List<String[]> dataAfterClassification, final int exploreManagerId, final String graph) {
+        this.header = header;
+        this.dataAfterClassification = dataAfterClassification;
+        this.exploreManagerId = exploreManagerId;
+        this.graph = graph;
+    }
+
 }

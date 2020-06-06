@@ -104,6 +104,8 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.exploreByExample.Explore;
+import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
@@ -139,6 +141,7 @@ import org.polypheny.db.webui.models.Adapter;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.Debug;
+import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
@@ -151,10 +154,14 @@ import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.UIRelNode;
 import org.polypheny.db.webui.models.Uml;
+import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
 import org.polypheny.db.webui.models.requests.EditTableRequest;
+import org.polypheny.db.webui.models.requests.ExploreData;
+import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
+import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
@@ -322,7 +329,11 @@ public class Crud implements InformationObserver {
                             views.add( table );
                         }
                     }
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
+                    if( request.showTable ) {
+                        schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
+                    }else {
+                        schemaTree.addChildren( tables );
+                    }
                     if ( request.views ) {
                         schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
                     }
@@ -694,6 +705,210 @@ public class Crud implements InformationObserver {
             return new ConcurrentHashMap<>();
         }
 
+    }
+
+
+    /**
+     * Gets the classified Data from User
+     * return possibly interesting Data to User
+     */
+    public Result classifyData( Request req, Response res ) {
+        ClassifyAllData classifyAllData = this.gson.fromJson( req.body(), ClassifyAllData.class );
+        ExploreManager exploreManager = ExploreManager.getInstance();
+
+        boolean isConvertedToSql = isClassificationToSql();
+
+        Explore explore = exploreManager.classifyData( classifyAllData.id, classifyAllData.classified, isConvertedToSql );
+
+        if ( isConvertedToSql ) {
+            Transaction transaction = getTransaction();
+            Result result;
+
+            try {
+                result = executeSqlSelect( transaction, classifyAllData, explore.getClassifiedSqlStatement(), false ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
+                transaction.commit();
+                transaction = getTransaction( classifyAllData.analyze );
+
+            } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+                log.error( "Caught exception while executing a query from the console", e );
+                result = new Result( e ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Caught exception while rollback", ex );
+                }
+            }
+
+            result.setExplorerId( explore.getId() );
+            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
+
+            result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
+            result.setClassificationInfo( "NoClassificationPossible" );
+            result.setConvertedToSql( isConvertedToSql );
+
+            return result;
+        } else {
+            Result result = new Result( classifyAllData.header, Arrays.copyOfRange( explore.getData(), 0, 10 ) );
+
+            result.setClassificationInfo( "NoClassificationPossible" );
+            result.setExplorerId( explore.getId() );
+
+            result.setCurrentPage( classifyAllData.cPage ).setTable( classifyAllData.tableId );
+            result.setHighestPage( (int) Math.ceil( (double) explore.getData().length / getPageSize() ) );
+            result.setConvertedToSql( isConvertedToSql );
+            return result;
+        }
+
+    }
+
+
+    /**
+     * For pagination within the Explore-by-Example table
+     */
+    public Object getExploreTables( Request request, Response response ) {
+
+        ExploreTables exploreTables = this.gson.fromJson( request.body(), ExploreTables.class );
+        Transaction transaction = getTransaction();
+        Result result;
+        ExploreManager exploreManager = ExploreManager.getInstance();
+        Explore explore = exploreManager.getExploreInformation( exploreTables.id );
+        String[][] paginationData;
+
+        String query = explore.getSqlStatement() + " OFFSET " + ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize());
+
+        if ( !explore.isConvertedToSql() && !explore.isClassificationPossible() ) {
+            int tablesize = explore.getData().length;
+
+            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
+                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
+            } else {
+                paginationData = Arrays.copyOfRange( explore.getData(), ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
+            }
+            result = new Result( exploreTables.columns, paginationData );
+            result.setClassificationInfo( "NoClassificationPossible" );
+            result.setExplorerId( explore.getId() );
+
+            result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
+            result.setHighestPage( (int) Math.ceil( (double) tablesize / getPageSize() ) );
+
+            return result;
+        }
+
+        try {
+            result = executeSqlSelect( transaction, exploreTables, query );
+        } catch ( QueryExecutionException e ) {
+            log.error( "Caught exception while fetching a table", e );
+            result = new Result( "Could not fetch table " + exploreTables.tableId );
+            try {
+                transaction.rollback();
+                return result;
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+        }
+
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            log.error( "Caught exception while committing transaction", e );
+        }
+        result.setExplorerId( explore.getId() );
+        result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
+        int tableSize = 0;
+        tableSize = explore.getTableSize();
+
+        result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+
+        if ( !explore.isClassificationPossible() ) {
+            result.setClassificationInfo( "NoClassificationPossible" );
+        } else {
+            result.setClassificationInfo( "ClassificationPossible" );
+        }
+        result.setIncludesClassificationInfo( explore.isDataAfterClassification );
+
+        if ( explore.isDataAfterClassification ) {
+            int tablesize = explore.getDataAfterClassification().size();
+            List<String[]> paginationDataList = new ArrayList<>();
+            if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
+                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
+            } else {
+                paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), ((Math.max( 0, exploreTables.cPage )) * getPageSize()) );
+            }
+
+            paginationData = new String[paginationDataList.size()][];
+            for ( int i = 0; i < paginationDataList.size(); i++ ) {
+                paginationData[i] = paginationDataList.get( i );
+            }
+
+            result.setClassifiedData( paginationData );
+        }
+        return result;
+
+    }
+
+
+    /**
+     * Creates the initial query for the Explore-by-Example process
+     */
+    public Result createInitialExploreQuery( Request req, Response res ) {
+
+        QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
+        ExploreManager exploreManager = ExploreManager.getInstance();
+        Transaction transaction = getTransaction( queryExplorationRequest.analyze );
+
+        Result result;
+
+        Explore explore = exploreManager.createSqlQuery( null, queryExplorationRequest.query );
+        if ( explore.getDataType() == null ) {
+            return new Result( "Explore by Example is only available for tables with the following datatypes: VARCHAR, INTEGER, SMALLINT, TINYINT, BIGINT, DECIMAL" );
+        }
+
+        String query = explore.getSqlStatement();
+        try {
+            result = executeSqlSelect( transaction, queryExplorationRequest, query, false ).setInfo( new Debug().setGeneratedQuery( query ) );
+            transaction.commit();
+            transaction = getTransaction( queryExplorationRequest.analyze );
+
+        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
+            log.error( "Caught exception while executing a query from the console", e );
+            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", ex );
+            }
+        }
+
+        result.setExplorerId( explore.getId() );
+        if ( !explore.isClassificationPossible() ) {
+            result.setClassificationInfo( "NoClassificationPossible" );
+
+        } else {
+            result.setClassificationInfo( "ClassificationPossible" );
+        }
+        result.setCurrentPage( queryExplorationRequest.cPage ).setTable( queryExplorationRequest.tableId );
+        result.setHighestPage( (int) Math.ceil( (double) explore.getTableSize() / getPageSize() ) );
+
+        return result;
+    }
+
+
+    /**
+     * Start Classification, classifies the initial dataset, to show what would be within the final result set
+     */
+    public ExploreResult exploration( Request req, Response res ) {
+        ExploreData exploreData = this.gson.fromJson( req.body(), ExploreData.class );
+
+        String[] dataType = new String[exploreData.header.length + 1];
+        for ( int i = 0; i < exploreData.header.length; i++ ) {
+            dataType[i] = exploreData.header[i].dataType;
+        }
+        dataType[exploreData.header.length] = "VARCHAR";
+
+        ExploreManager e = ExploreManager.getInstance();
+        Explore explore = e.exploreData( exploreData.id, exploreData.classified, dataType );
+
+        return new ExploreResult( exploreData.header, explore.getDataAfterClassification(), explore.getId(), explore.getBuildGraph() );
     }
 
 
@@ -2336,6 +2551,11 @@ public class Crud implements InformationObserver {
      */
     private int getPageSize() {
         return RuntimeConfig.UI_PAGE_SIZE.getInteger();
+    }
+
+
+    private boolean isClassificationToSql() {
+        return RuntimeConfig.EXPLORE_BY_EXAMPLE_TO_SQL.getBoolean();
     }
 
 

@@ -51,20 +51,15 @@ public class CatalogInfoPage implements PropertyChangeListener {
         infoManager.addPage( page );
 
         this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name", "Persistent" ) );
-
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
-
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
-
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
 
         addPersistentInfo( page );
 
         resetCatalogInformation();
         catalog.addObserver( this );
-
     }
 
 
@@ -120,8 +115,6 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
             } );
-
-
         } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
             log.error( "Exception while reset catalog information page", e );
         }
