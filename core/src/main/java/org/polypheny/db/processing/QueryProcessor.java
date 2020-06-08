@@ -14,24 +14,18 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.processing;
 
 
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.util.Pair;
 
 
-public interface SqlProcessor {
+public interface QueryProcessor {
 
-    SqlNode parse( String sql );
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
 
-    Pair<SqlNode, RelDataType> validate( SqlNode parsed );
-
-    RelRoot translate( SqlNode sql );
-
-    PolyphenyDbSignature prepareDdl( SqlNode parsed );
+    RelOptPlanner getPlanner();
 
 }

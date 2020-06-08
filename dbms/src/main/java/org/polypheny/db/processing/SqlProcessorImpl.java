@@ -27,7 +27,6 @@ import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.SqlProcessor;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
@@ -224,7 +223,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature prepareDdl( SqlNode parsed ) {
+    public PolyphenyDbSignature<?> prepareDdl( SqlNode parsed ) {
         if ( parsed instanceof SqlExecutableStatement ) {
             try {
                 // Acquire global schema lock
