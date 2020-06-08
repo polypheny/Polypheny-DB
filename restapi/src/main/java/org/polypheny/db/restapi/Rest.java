@@ -19,6 +19,7 @@ package org.polypheny.db.restapi;
 
 import com.google.gson.Gson;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +38,10 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.prepare.Prepare.PreparingTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -44,16 +49,22 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
+import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -220,6 +231,59 @@ public class Rest {
 
 //        finalResult.put( "uri", req.uri() );
 //        finalResult.put( "query", req.queryString() );
+        return finalResult;
+    }
+
+
+    Map<String, Object> postInsertValue( InsertValueRequest insertValueRequest, final Request req, final Response res ) {
+        log.debug( "Starting to process insert value request. Session ID: {}.", req.session().id() );
+        Transaction transaction = getTransaction( false );
+        RelBuilder relBuilder = RelBuilder.create( transaction );
+        JavaTypeFactory typeFactory = transaction.getTypeFactory();
+        RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+        // RelOptTable
+        PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
+        PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.table.schemaName, insertValueRequest.table.name ) );
+
+        // Values
+        RelDataType tableRowType = table.getRowType();
+        List<RelDataTypeField> tableRows = tableRowType.getFieldList();
+
+        List<RexLiteral> rexValues = new ArrayList<>();
+        List<Object> actualRexValues = new ArrayList<>();
+        for ( Pair<CatalogColumn, Object> insertValue : insertValueRequest.values ) {
+            int columnPosition = insertValueRequest.getInputPosition( insertValue.left );
+            RelDataTypeField typeField = tableRows.get( columnPosition );
+            rexValues.add( (RexLiteral) rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
+            actualRexValues.add( insertValue.right );
+        }
+
+//        relBuilder = relBuilder.values( tableRowType, actualRexValues );
+        List<List<RexLiteral>> wrapperList = new ArrayList<>();
+        wrapperList.add( rexValues );
+        relBuilder = relBuilder.values( wrapperList, tableRowType );
+
+        // Table Modify
+
+        ModifiableTable modifiableTable = table.unwrap( ModifiableTable.class );
+
+        RelOptPlanner planner = transaction.getQueryProcessor().getPlanner();
+        RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
+
+        TableModify tableModify = modifiableTable.toModificationRel(
+                cluster, // FIXME?
+                table,
+                catalogReader,
+                relBuilder.build(),
+                Operation.INSERT,
+                null,
+                null,
+                false
+        );
+
+        Map<String, Object> finalResult = executeAndTransformRelAlg( tableModify, transaction );
+
         return finalResult;
     }
 
@@ -393,17 +457,18 @@ public class Rest {
     Object testMethod( final Request req, final Response res ) {
         log.info( "Something arrived here!" );
 
+        Transaction transaction = this.getTransaction();
+        PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
+        PreparingTable table = catalogReader.getTable( Arrays.asList( "public", "emps" ) );
+        log.info( "blabla" );
+
 //        SqlValidatorUtil.getRelOptTable(  )
         // DEMO THINGS!
-        List<Map<String, Object>> mapList = new ArrayList<>();
 
-        for ( int i = 0; i < 10; i++ ) {
-            Map<String, Object> data = new HashMap<String, Object>();
-            data.put( "name", "Mars" );
-            data.put( "age", i);
-            data.put( "city", "NY" );
-
-            mapList.add( data );
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            e.printStackTrace();
         }
 
         return null;

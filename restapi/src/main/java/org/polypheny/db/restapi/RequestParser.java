@@ -19,6 +19,7 @@ package org.polypheny.db.restapi;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
@@ -74,6 +76,15 @@ public class RequestParser {
     }
 
 
+    public InsertValueRequest parseInsertValuePost( String resourceName, QueryParamsMap queryParamsMap ) {
+
+        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
+        List<Pair<CatalogColumn, Object>> values = this.parseInsertStatementValues( queryParamsMap );
+
+        return new InsertValueRequest( catalogTable, values );
+    }
+
+
     // /res/ parsing
 
     private List<CatalogTable> parseTableList( String tableList ) {
@@ -82,23 +93,36 @@ public class RequestParser {
 
         List<CatalogTable> tables = new ArrayList<>();
         for ( String tableName : tableNameList ) {
-            String[] tableElements = tableName.split( "\\." );
-            if ( tableElements.length != 2 ) {
-                log.warn( "Table name \"{}\" not possible to parse.", tableName );
-                return null;
-            }
-
-            try {
-                tables.add( this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] ) );
+            CatalogTable temp = this.parseCatalogTableName( tableName );
+            if ( temp != null ) {
+                tables.add( temp );
                 log.debug( "Added table \"{}\" to table list.", tableName );
-            } catch ( UnknownTableException | GenericCatalogException e ) {
-                log.error( "Unable to fetch table: {}.", tableName, e );
+            } else {
+//                log.error( "Unable to fetch table: {}.", tableName, e );
                 return null;
             }
         }
 
         log.debug( "Finished parsing table list: {}", tableList );
         return tables;
+    }
+
+
+    private CatalogTable parseCatalogTableName( String tableName ) {
+        String[] tableElements = tableName.split( "\\." );
+        if ( tableElements.length != 2 ) {
+            log.warn( "Table name \"{}\" not possible to parse.", tableName );
+            return null;
+        }
+
+        try {
+            CatalogTable table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
+            log.debug( "Finished parsing table \"{}\".", tableName );
+            return table;
+        } catch ( UnknownTableException | GenericCatalogException e ) {
+            log.error( "Unable to fetch table: {}.", tableName, e );
+            return null;
+        }
     }
 
 
@@ -297,16 +321,8 @@ public class RequestParser {
             return null;
         }
 
-        Object rightHandSide;
-        if ( PolyType.BOOLEAN_TYPES.contains( catalogColumn.type ) ) {
-            rightHandSide = Boolean.valueOf( restOfOp );
-        } else if ( PolyType.INT_TYPES.contains( catalogColumn.type ) ) {
-            rightHandSide = Long.valueOf( restOfOp );
-        } else if ( PolyType.NUMERIC_TYPES.contains( catalogColumn.type ) ) {
-            rightHandSide = Double.valueOf( restOfOp );
-        } else if ( PolyType.CHAR_TYPES.contains( catalogColumn.type ) ) {
-            rightHandSide = restOfOp;
-        } else {
+        Object rightHandSide = this.parseLiteralValue( catalogColumn.type, restOfOp );
+        if ( rightHandSide == null ) {
             // TODO js: error handling.
             log.warn( "Unable to convert literal value for filter operation. Returning null. Column: {}, Value: {}.", catalogColumn.id, filterString );
             return null;
@@ -315,4 +331,55 @@ public class RequestParser {
         log.debug( "Finished parsing filter operation. Column: {}, Value: {}.", catalogColumn.id, filterString );
         return new Pair<>( callOperator, rightHandSide );
     }
+
+
+    private Object parseLiteralValue( PolyType type, String literal ) {
+        Object parsedLiteral;
+        if ( PolyType.BOOLEAN_TYPES.contains( type ) ) {
+            parsedLiteral = Boolean.valueOf( literal );
+        } else if ( PolyType.INT_TYPES.contains( type ) ) {
+            parsedLiteral = Long.valueOf( literal );
+        } else if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
+            parsedLiteral = Double.valueOf( literal );
+        } else if ( PolyType.CHAR_TYPES.contains( type ) ) {
+            parsedLiteral = literal;
+        } else {
+            // TODO js: error handling.
+            log.warn( "Unable to convert literal value. Returning null. Type: {}, Value: {}.", type, literal );
+            return null;
+        }
+
+        return parsedLiteral;
+    }
+
+    private List<Pair<CatalogColumn, Object>> parseInsertStatementValues( QueryParamsMap queryParamsMap ) {
+        List<Pair<CatalogColumn, Object>> result = new ArrayList<>();
+
+        for ( String possibleValue : queryParamsMap.toMap().keySet() ) {
+            if ( possibleValue.startsWith( "_" ) ) {
+                log.debug( "FIX THIS MESSAGE: {}", possibleValue );
+                continue;
+            }
+
+            // Make sure we actually have a column
+            CatalogColumn catalogColumn;
+            try {
+                catalogColumn = this.getCatalogColumnFromString( possibleValue );
+                log.debug( "Fetched catalog column for filter key: {}", possibleValue );
+            } catch ( GenericCatalogException | UnknownColumnException e ) {
+                log.error( "Unable to fetch catalog column for filter key: {}. Returning null.", possibleValue, e );
+                return null;
+            }
+
+            String litVal = queryParamsMap.value( possibleValue );
+            Object parsedValue = this.parseLiteralValue( catalogColumn.type, litVal );
+            result.add( new Pair<>( catalogColumn, parsedValue ) );
+        }
+
+        result.sort( ( p1, p2 ) -> p1.left.position - p2.left.position );
+
+        return result;
+    }
+
+
 }

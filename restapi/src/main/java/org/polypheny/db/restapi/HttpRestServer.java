@@ -28,6 +28,7 @@ import org.apache.commons.lang.StringUtils;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import spark.Request;
@@ -83,6 +84,11 @@ public class HttpRestServer extends QueryInterface {
                 ResourceRequest resourceRequest = requestParser.parseResourceRequest( q.params( ":resName" ), q.queryMap() );
 
                 return rest.getResourceTable( resourceRequest, q, a );
+            }, gson::toJson );
+            restServer.post( "/res/:resName", (q, a) -> {
+                InsertValueRequest insertValueRequest = requestParser.parseInsertValuePost( q.params(":resName"), q.queryMap() );
+
+                return rest.postInsertValue( insertValueRequest, q, a );
             }, gson::toJson );
 //            restServer.get( "/res/:resName", rest::getTable, gson::toJson );
 
