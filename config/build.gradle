@@ -50,14 +50,14 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
-    implementation group: "com.google.code.gson", name: "gson", version: gson_version
+    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
+    implementation group: "com.google.code.gson", name: "gson", version: gson_version  // Apache 2.0
     
-    implementation group: "com.typesafe", name: "config", version: typesafe_config_version
+    implementation group: "com.typesafe", name: "config", version: typesafe_config_version  // Apache 2.0
 
-    api group: "org.reflections", name: "reflections", version: reflections_version
+    api group: "org.reflections", name: "reflections", version: reflections_version  // BSD 2-clause
 
-    implementation group: "com.google.guava", name: "guava", version: guava_version
+    implementation group: "com.google.guava", name: "guava", version: guava_version  // Apache 2.0
     
 
     // --- Test Compile ---

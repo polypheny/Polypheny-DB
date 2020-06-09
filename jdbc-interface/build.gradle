@@ -53,10 +53,10 @@ dependencies {
     implementation project(":core")
 
     ////// BYTE UNITS
-    implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version// License: Apache 2.0
+    implementation group: "com.jakewharton.byteunits", name: "byteunits", version: byteunits_version  // Apache 2.0
 
     ////// APACHE CALCITE AVATICA
-    implementation group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version
+    implementation group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
     
 
     // --- Test Compile ---

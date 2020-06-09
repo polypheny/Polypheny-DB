@@ -52,8 +52,8 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version
-    implementation group: "commons-io", name: "commons-io", version: commons_io_version
+    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+    implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -61,7 +61,7 @@ dependencies {
 
     testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
 

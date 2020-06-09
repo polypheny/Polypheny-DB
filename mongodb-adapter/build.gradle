@@ -52,8 +52,7 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    implementation group: "org.mongodb", name: "mongo-java-driver", version: mongo_java_driver_version
-
+    implementation group: "org.mongodb", name: "mongo-java-driver", version: mongo_java_driver_version  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -61,9 +60,9 @@ dependencies {
 
     testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
-    testCompile group: "com.github.fakemongo", name: "fongo", version: fongo_version
-    testCompile group: "net.hydromatic", name: "foodmart-data-json", version: foodmart_data_json_version
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testCompile group: "com.github.fakemongo", name: "fongo", version: fongo_version  // Apache 2.0
+    testCompile group: "net.hydromatic", name: "foodmart-data-json", version: foodmart_data_json_version  // Apache 2.0
 }
 
 

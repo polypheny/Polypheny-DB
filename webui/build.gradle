@@ -62,14 +62,13 @@ dependencies {
 
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
+    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
 
+    implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
 
-    compile group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version
+    implementation group: "com.mashape.unirest", name: "unirest-java", version: unirest_version  // MIT
 
-    compile group: 'com.mashape.unirest', name: 'unirest-java', version: unirest_version
-
-    compile group: "net.sf.opencsv", name: "opencsv", version: opencsv_version
+    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
 
 
     // --- Test Compile ---

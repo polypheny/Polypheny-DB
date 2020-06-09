@@ -52,8 +52,7 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    implementation group: "org.apache.pig", name: "pig", version: pig_version, classifier:"h2"
-
+    implementation group: "org.apache.pig", name: "pig", version: pig_version, classifier:"h2"  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -61,10 +60,10 @@ dependencies {
 
     testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.apache.hadoop", name: "hadoop-client", version: hadoop_client_version
-    testCompile group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_common_version
-    testCompile group: "org.apache.pig", name: "pigunit", version: pigunit_version
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    testCompile group: "org.apache.hadoop", name: "hadoop-client", version: hadoop_client_version  // Apache 2.0
+    testCompile group: "org.apache.hadoop", name: "hadoop-common", version: hadoop_common_version  // Apache 2.0
+    testCompile group: "org.apache.pig", name: "pigunit", version: pigunit_version  // Apache 2.0
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
 }
 

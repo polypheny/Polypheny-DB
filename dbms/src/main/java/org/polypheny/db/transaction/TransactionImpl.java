@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.Store;
@@ -133,8 +133,7 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Override
     public InformationManager getQueryAnalyzer() {
-        InformationManager queryAnalyzer = InformationManager.getInstance( xid.toString() );
-        return queryAnalyzer;
+        return InformationManager.getInstance( xid.toString() );
     }
 
 
@@ -290,7 +289,7 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public int compareTo( @NotNull Object o ) {
+    public int compareTo( @NonNull Object o ) {
         Transaction that = (Transaction) o;
         return this.xid.hashCode() - that.getXid().hashCode();
     }

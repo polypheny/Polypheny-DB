@@ -66,16 +66,16 @@ dependencies {
     compile project(":statistic")
 
     ////// Logging
-    compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version   // License: Apache 2.0
-    compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version
+    compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
+    compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
+    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
 
     ////// CLI PARSING
-    compile group: "com.github.rvesse", name: "airline", version: airline_version
+    compile group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
 
-    compile group: "com.github.oshi", name: "oshi-core", version: oshi_core_version
+    compile group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
 
-    compile group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version
+    compile group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version  // Apache 2.0
 
     // --- Test Compile ---
     testCompile project(path: ":core", configuration: "testClasses")
@@ -87,7 +87,7 @@ dependencies {
     //testCompile group: "net.hydromatic", name: "quidem", version: quidem_version
     //testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
 
-    testCompile group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version
+    testCompile group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 }
 
 

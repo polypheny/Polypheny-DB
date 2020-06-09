@@ -51,9 +51,9 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearch_rest_client_version
-    implementation group: "org.apache.httpcomponents", name: "httpcore", version: httpcore_version
-    implementation group: "org.apache.httpcomponents", name: "httpclient", version: httpclient_version
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-client", version: elasticsearch_rest_client_version  // Apache 2.0
+    implementation group: "org.apache.httpcomponents", name: "httpcore", version: httpcore_version  // Apache 2.0
+    implementation group: "org.apache.httpcomponents", name: "httpclient", version: httpclient_version  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -61,12 +61,12 @@ dependencies {
 
     testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.elasticsearch", name: "elasticsearch", version: elasticsearch_version
-    testCompile group: "org.elasticsearch.plugin", name: "transport-netty4-client", version: transport_netty4_client_version
-    testCompile group: "org.codelibs.elasticsearch.module", name: "lang-painless", version: lang_painless_version
-    testCompile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-    testCompile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    testCompile group: "org.elasticsearch", name: "elasticsearch", version: elasticsearch_version  // Apache 2.0
+    testCompile group: "org.elasticsearch.plugin", name: "transport-netty4-client", version: transport_netty4_client_version  // Apache 2.0
+    testCompile group: "org.codelibs.elasticsearch.module", name: "lang-painless", version: lang_painless_version  // Apache 2.0
+    //testCompile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
+    //testCompile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
 

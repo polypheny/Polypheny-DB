@@ -59,7 +59,7 @@ targetCompatibility = 1.8
 
 dependencies {
     // Javacc
-    javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version
+    javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version  // BSD 2-clause
 
     implementation project(':core')
 
@@ -69,9 +69,9 @@ dependencies {
 
     testCompile group: 'junit', name: 'junit', version: junit_version
 
-    testCompile group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version
-    testCompile group: 'org.hamcrest', name: 'hamcrest-core', version: hamcrest_core_version
-    testCompile group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version
+    testCompile group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version  // Apache 2.0
+    testCompile group: 'org.hamcrest', name: 'hamcrest-core', version: hamcrest_core_version  // BSD 3-clause
+    testCompile group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version  // HSQLDB License (BSD-style)
 }
 
 

@@ -51,12 +51,12 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version
-    implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version
-    implementation group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version
+    implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version  // Apache 2.0
+    implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version  // Apache 2.0
+    implementation group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version  // Apache 2.0
 
     // Embedded Cassandra
-    implementation group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version
+    implementation group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version  // Apache 2.0
 
 
     // --- Test Compile ---
@@ -64,8 +64,8 @@ dependencies {
 
     testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.cassandraunit", name: "cassandra-unit", version: cassandra_unit_version
-    testCompile(group: "org.apache.cassandra", name: "cassandra-all", version: cassandra_all_version) { exclude(module: "log4j-over-slf4j") }
+    //testCompile group: "org.cassandraunit", name: "cassandra-unit", version: cassandra_unit_version  // LGPL 3.0
+    testCompile(group: "org.apache.cassandra", name: "cassandra-all", version: cassandra_all_version) { exclude(module: "log4j-over-slf4j") }  // Apache 2.0
 }
 
 

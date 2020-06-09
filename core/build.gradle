@@ -63,45 +63,45 @@ dependencies {
     api project(":config")
     api project(":information")
 
-    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version
+    javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 
-    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version
+    api group: "org.slf4j", name: "slf4j-api", version: slf4j_api_version  // MIT
     
-    api group: "com.google.guava", name: "guava", version: guava_version
-    api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version
-    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
-    implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
+    api group: "com.google.guava", name: "guava", version: guava_version  // Apache 2.0
+    api group: "org.apache.commons", name: "commons-dbcp2", version: commons_dbcp2_version  // Apache 2.0
+    api group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version  // Apache 2.0
+    implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
 
-    implementation group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version
-    api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version
-    api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version
-    api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version
-    api group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version
-    api group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version
-    implementation group: "com.yahoo.datasketches", name: "sketches-core", version: sketches_core_version
-    implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart") }
-    api group: "net.hydromatic", name: "aggdesigner-algorithm", version: aggdesigner_algorithm_version
-    implementation group: "org.codehaus.janino", name: "janino", version: janino_version
-    implementation group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version
+    implementation group: "com.esri.geometry", name: "esri-geometry-api", version: esri_geometry_api_version  // Apache 2.0
+    api group: "com.fasterxml.jackson.core", name: "jackson-core", version: jackson_core_version  // Apache 2.0
+    api group: "com.fasterxml.jackson.core", name: "jackson-annotations", version: jackson_annotations_version  // Apache 2.0
+    api group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jackson_databind_version  // Apache 2.0
+    api group: "com.fasterxml.jackson.dataformat", name: "jackson-dataformat-yaml", version: jackson_dataformat_yaml_version  // Apache 2.0
+    api group: "com.google.code.findbugs", name: "jsr305", version: jsr305_version  // Apache 2.0
+    implementation group: "com.yahoo.datasketches", name: "sketches-core", version: sketches_core_version  // Apache 2.0
+    implementation(group: "com.jayway.jsonpath", name: "json-path", version: json_path_version) { exclude(module: "json-smart") }  // Apache 2.0
+    api group: "net.hydromatic", name: "aggdesigner-algorithm", version: aggdesigner_algorithm_version  // Apache 2.0
+    implementation group: "org.codehaus.janino", name: "janino", version: janino_version  // BSD
+    implementation group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
 
-    api group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
-    api group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version
+    api group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version  // Apache 2.0
+    api group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version  // Apache 2.0
     
 
     // --- Test Compile ---
     testCompile group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version
-    testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version
+    //testCompile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version  // Apache 2.0
+    testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
 
-    testCompile group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version
-    testCompile group: "com.h2database", name: "h2", version: h2_version
-    testCompile group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version
-    testCompile group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
-    testCompile group: "org.postgresql", name: "postgresql", version: postgresql_version
+    testCompile group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version // Apache 2.0
+    //testCompile group: "com.h2database", name: "h2", version: h2_version
+    //testCompile group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version
+    //testCompile group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
+    //testCompile group: "org.postgresql", name: "postgresql", version: postgresql_version
 
-    testCompile group: "org.incava", name: "java-diff", version: java_diff_version
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version
+    testCompile group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
+    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
 
