@@ -12,31 +12,13 @@ configurations {
 
 
 buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
     dependencies {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
         classpath group: "ca.coglinc2.javacc", name: "ca.coglinc2.javacc.gradle.plugin", version: "3.0.0"
         // Fmpp
         classpath group: "net.sourceforge.fmpp", name: "fmpp", version: "0.9.16"
-        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
     }
     ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
-}
-
-
-repositories {
-    maven {
-        // DBIS Nexus
-        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-    }
-    mavenCentral()
 }
 
 
@@ -50,14 +32,9 @@ compileTestJava.options.encoding = "UTF-8"
 javadoc.options.encoding = "UTF-8"
 
 
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
-
-
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
 
 dependencies {
     api project(":config")
@@ -89,19 +66,19 @@ dependencies {
     
 
     // --- Test Compile ---
-    testCompile group: "junit", name: "junit", version: junit_version
+    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
-    //testCompile group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version  // Apache 2.0
-    testCompile group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
+    testImplementation group: "org.apache.calcite.avatica", name: "avatica-server", version: avatica_server_version  // Apache 2.0
+    testImplementation group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
+    testImplementation group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version // Apache 2.0
 
-    testCompile group: "org.apache.commons", name: "commons-pool2", version: commons_pool2_version // Apache 2.0
-    //testCompile group: "com.h2database", name: "h2", version: h2_version
-    //testCompile group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version
-    //testCompile group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
-    //testCompile group: "org.postgresql", name: "postgresql", version: postgresql_version
+    //testImplementation group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version  // Apache 2.0
+    //testImplementation group: "com.h2database", name: "h2", version: h2_version
+    //testImplementation group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version
+    //testImplementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
+    //testImplementation group: "org.postgresql", name: "postgresql", version: postgresql_version
 
-    testCompile group: "org.incava", name: "java-diff", version: java_diff_version  // Apache 2.0
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
 

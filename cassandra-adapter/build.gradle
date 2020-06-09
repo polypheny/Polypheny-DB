@@ -4,44 +4,14 @@ group "org.polypheny"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
-    }
-}
-
-
-repositories {
-    maven {
-        // DBIS Nexus
-        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-    }
-    mavenCentral()
-}
-
-
 apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+javadoc.options.encoding = "UTF-8"
 
 
 sourceCompatibility = 1.8
@@ -60,12 +30,13 @@ dependencies {
 
 
     // --- Test Compile ---
-    testCompile project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version: junit_version
+    testImplementation group: "junit", name: "junit", version: junit_version
 
-    //testCompile group: "org.cassandraunit", name: "cassandra-unit", version: cassandra_unit_version  // LGPL 3.0
-    testCompile(group: "org.apache.cassandra", name: "cassandra-all", version: cassandra_all_version) { exclude(module: "log4j-over-slf4j") }  // Apache 2.0
+    //testImplementation group: "org.cassandraunit", name: "cassandra-unit", version: cassandra_unit_version  // LGPL 3.0
+    testImplementation(group: "org.apache.cassandra", name: "cassandra-all", version: cassandra_all_version) { exclude(module: "log4j-over-slf4j") }  // Apache 2.0
 }
 
 

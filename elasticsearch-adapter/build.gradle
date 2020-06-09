@@ -4,44 +4,14 @@ group "org.polypheny"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
-    }
-}
-
-
-repositories {
-    maven {
-        // DBIS Nexus
-        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-    }
-    mavenCentral()
-}
-
-
 apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+javadoc.options.encoding = "UTF-8"
 
 
 sourceCompatibility = 1.8
@@ -57,16 +27,16 @@ dependencies {
 
 
     // --- Test Compile ---
-    testCompile project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version: junit_version
+    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
-    testCompile group: "org.elasticsearch", name: "elasticsearch", version: elasticsearch_version  // Apache 2.0
-    testCompile group: "org.elasticsearch.plugin", name: "transport-netty4-client", version: transport_netty4_client_version  // Apache 2.0
-    testCompile group: "org.codelibs.elasticsearch.module", name: "lang-painless", version: lang_painless_version  // Apache 2.0
+    testImplementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearch_version  // Apache 2.0
+    testImplementation group: "org.elasticsearch.plugin", name: "transport-netty4-client", version: transport_netty4_client_version  // Apache 2.0
+    testImplementation group: "org.codelibs.elasticsearch.module", name: "lang-painless", version: lang_painless_version  // Apache 2.0
     //testCompile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
     //testCompile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
-    testCompile group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 }
 
 
