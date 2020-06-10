@@ -136,7 +136,6 @@ public class CatalogTest {
                     connection.getMetaData().getSchemas( "APP", "schema1" ),
                     ImmutableList.of( schemaTest ) );
 
-
         } catch ( SQLException e ) {
             log.error( "Exception while testing getSchemas()", e );
         }

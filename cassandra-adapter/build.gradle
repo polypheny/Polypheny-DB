@@ -4,44 +4,14 @@ group "org.polypheny"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
-    }
-}
-
-
-repositories {
-    maven {
-        // DBIS Nexus
-        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-    }
-    mavenCentral()
-}
-
-
 apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+javadoc.options.encoding = "UTF-8"
 
 
 sourceCompatibility = 1.8
@@ -51,21 +21,22 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version
-    implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version
-    implementation group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version
+    implementation group: "com.datastax.oss", name: "java-driver-core", version: cassandra_driver_core_version  // Apache 2.0
+    implementation group: "com.datastax.oss", name: "java-driver-query-builder", version: cassandra_driver_query_builder_version  // Apache 2.0
+    implementation group: "com.datastax.oss", name: "java-driver-mapper-runtime", version: cassandra_driver_query_builder_version  // Apache 2.0
 
     // Embedded Cassandra
-    implementation group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version
+    implementation group: 'com.github.nosan', name: 'embedded-cassandra', version: cassandra_embedded_version  // Apache 2.0
 
 
     // --- Test Compile ---
-    testCompile project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version: junit_version
+    testImplementation group: "junit", name: "junit", version: junit_version
 
-    testCompile group: "org.cassandraunit", name: "cassandra-unit", version: cassandra_unit_version
-    testCompile(group: "org.apache.cassandra", name: "cassandra-all", version: cassandra_all_version) { exclude(module: "log4j-over-slf4j") }
+    //testImplementation group: "org.cassandraunit", name: "cassandra-unit", version: cassandra_unit_version  // LGPL 3.0
+    testImplementation(group: "org.apache.cassandra", name: "cassandra-all", version: cassandra_all_version) { exclude(module: "log4j-over-slf4j") }  // Apache 2.0
 }
 
 
@@ -114,7 +85,7 @@ javadoc {
 jar {
     manifest {
         attributes "Manifest-Version": "1.0"
-        attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$version"
     }
 }
