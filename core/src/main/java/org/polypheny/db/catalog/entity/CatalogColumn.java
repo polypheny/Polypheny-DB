@@ -200,8 +200,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     }
 
 
-    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, Integer length, Integer scale, Integer dimension, Integer cardinality, Collation collation ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, column.collectionsType, length, scale, dimension, cardinality, column.nullable, collation, column.defaultValue );
+    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, Collation collation ) {
+        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, collectionsType, length, scale, dimension, cardinality, column.nullable, collation, column.defaultValue );
     }
 
 

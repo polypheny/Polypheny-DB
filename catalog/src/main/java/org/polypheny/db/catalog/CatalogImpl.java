@@ -1723,7 +1723,7 @@ public class CatalogImpl extends Catalog {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
             Collation collation = type.getFamily() == PolyTypeFamily.CHARACTER ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
-            CatalogColumn column = CatalogColumn.replaceColumnType( old, type, length, scale, dimension, cardinality, collation );
+            CatalogColumn column = CatalogColumn.replaceColumnType( old, type, collectionsType, length, scale, dimension, cardinality, collation );
             synchronized ( this ) {
                 columns.replace( columnId, column );
                 columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
