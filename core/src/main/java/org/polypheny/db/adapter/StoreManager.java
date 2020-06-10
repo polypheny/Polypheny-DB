@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.reflections.Reflections;
 
 
@@ -153,7 +154,7 @@ public class StoreManager {
 
             // delete store from catalog
             catalog.deleteStore( catalogStore.id );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownStoreException e ) {
             throw new RuntimeException( "Something went wrong while removing a store", e );
         }
     }

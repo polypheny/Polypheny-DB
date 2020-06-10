@@ -18,12 +18,15 @@ package org.polypheny.db.statistic;
 
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.type.PolyType;
 
 
 /**
  * Boilerplate of a column to guide the handling and pattern of a column
  */
+@Slf4j
 class QueryColumn {
 
     @Getter
@@ -85,5 +88,11 @@ class QueryColumn {
     public static String[] getSplitColumn( String schemaTableColumn ) {
         return schemaTableColumn.split( "\\." );
     }
+
+
+    public static QueryColumn fromCatalogColumn( CatalogColumn column ) {
+        return new QueryColumn( column.schemaName, column.tableName, column.name, column.type );
+    }
+
 
 }

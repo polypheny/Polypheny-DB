@@ -47,15 +47,19 @@ import java.util.Set;
 import javax.sql.DataSource;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -80,6 +84,7 @@ import org.polypheny.db.util.Util;
  * The tables in the JDBC data source appear to be tables in this schema; queries against this schema are executed
  * against those tables, pushing down as much as possible of the query logic to SQL.
  */
+@Slf4j
 public class JdbcSchema implements Schema {
 
     final ConnectionFactory connectionFactory;
@@ -134,7 +139,7 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public JdbcTable createJdbcTable( CatalogCombinedTable combinedTable ) {
+    public JdbcTable createJdbcTable( CatalogTable catalogTable ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
         // not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
@@ -143,41 +148,39 @@ public class JdbcSchema implements Schema {
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
         String physicalTableName = null;
-        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( jdbcStore.getStoreId() ) ) {
-            CatalogColumn catalogColumn = null;
-            // TODO MV: This is not really efficient
-            // Get catalog column
-            for ( CatalogColumn c : combinedTable.getColumns() ) {
-                if ( c.id == placement.columnId ) {
-                    catalogColumn = c;
+        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( jdbcStore.getStoreId(), catalogTable.id ) ) {
+            try {
+                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+
+                if ( catalogColumn == null ) {
+                    throw new RuntimeException( "Column not found." ); // This should not happen
                 }
+                if ( physicalSchemaName == null ) {
+                    physicalSchemaName = placement.physicalSchemaName;
+                }
+                if ( physicalTableName == null ) {
+                    physicalTableName = placement.physicalTableName;
+                }
+                RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
+                fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
+                logicalColumnNames.add( catalogColumn.name );
+                physicalColumnNames.add( placement.physicalColumnName );
+            } catch ( UnknownColumnException | GenericCatalogException e ) {
+                throw new RuntimeException( e );
             }
-            if ( catalogColumn == null ) {
-                throw new RuntimeException( "Column not found." ); // This should not happen
-            }
-            if ( physicalSchemaName == null ) {
-                physicalSchemaName = placement.physicalSchemaName;
-            }
-            if ( physicalTableName == null ) {
-                physicalTableName = placement.physicalTableName;
-            }
-            RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
-            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-            logicalColumnNames.add( catalogColumn.name );
-            physicalColumnNames.add( placement.physicalColumnName );
         }
         JdbcTable table = new JdbcTable(
                 this,
-                combinedTable.getSchema().name,
-                combinedTable.getTable().name,
+                catalogTable.schemaName,
+                catalogTable.name,
                 logicalColumnNames,
-                TableType.valueOf( combinedTable.getTable().tableType.name() ),
+                TableType.valueOf( catalogTable.tableType.name() ),
                 RelDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 physicalTableName,
                 physicalColumnNames );
-        tableMap.put( combinedTable.getTable().name, table );
-        physicalToLogicalTableNameMap.put( physicalTableName, combinedTable.getTable().name );
+        tableMap.put( catalogTable.name, table );
+        physicalToLogicalTableNameMap.put( physicalTableName, catalogTable.name );
         return table;
     }
 

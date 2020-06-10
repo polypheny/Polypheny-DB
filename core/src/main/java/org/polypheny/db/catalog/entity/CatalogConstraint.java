@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog.entity;
 
 
+import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -26,14 +27,14 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
  *
  */
 @EqualsAndHashCode
-public class CatalogConstraint {
+public class CatalogConstraint implements Serializable {
 
     public final long id;
     public final long keyId;
     public final ConstraintType type;
     public final String name;
 
-    public CatalogKey key;
+    public final CatalogKey key;
 
 
     public CatalogConstraint(
@@ -45,6 +46,21 @@ public class CatalogConstraint {
         this.keyId = keyId;
         this.type = constraintType;
         this.name = name;
+        this.key = null;
+    }
+
+
+    public CatalogConstraint(
+            final long id,
+            final long keyId,
+            @NonNull final ConstraintType constraintType,
+            final String name,
+            final CatalogKey key ) {
+        this.id = id;
+        this.keyId = keyId;
+        this.type = constraintType;
+        this.name = name;
+        this.key = key;
     }
 
 

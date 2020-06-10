@@ -46,15 +46,15 @@ import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
 
@@ -64,7 +64,7 @@ public class CassandraStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "Cassandra";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "Apache Cassandra is an open-source key-value store designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
+    public static final String DESCRIPTION = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Standalone", "Embedded" ) ),
@@ -160,15 +160,16 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
-        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( transaction.getCatalog(), this.getStoreId() ), this );
+    public void createNewSchema( SchemaPlus rootSchema, String name ) {
+        this.currentSchema = CassandraSchema.create( rootSchema, name, this.session, this.dbKeyspace, new CassandraPhysicalNameProvider( this.getStoreId() ), this );
     }
 
 
     @Override
-    public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        String physicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( combinedTable.getTable().id );
-        return new CassandraTable( this.currentSchema, combinedTable.getTable().name, physicalTableName, false );
+    public Table createTableSchema( CatalogTable catalogTable ) {
+        String physicalTableName = currentSchema.getConvention().physicalNameProvider.getPhysicalTableName( catalogTable.id );
+        return new CassandraTable( this.currentSchema, catalogTable.name, physicalTableName, false );
+
     }
 
 
@@ -179,16 +180,17 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
+    public void createTable( Context context, CatalogTable catalogTable ) {
         // This check is probably not required due to the check below it.
-        if ( combinedTable.getKeys().isEmpty() ) {
+        if ( catalogTable.primaryKey == null ) {
             throw new UnsupportedOperationException( "Cannot create Cassandra Table without a primary key!" );
         }
 
         long primaryKeyColumn = -1;
         List<Long> keyColumns = new ArrayList<>();
 
-        for ( CatalogKey catalogKey : combinedTable.getKeys() ) {
+
+        for ( CatalogKey catalogKey : catalog.getTableKeys( catalogTable.id ) ) {
             keyColumns.addAll( catalogKey.columnIds );
             // TODO JS: make sure there's only one primary key!
             if ( primaryKeyColumn == -1 ) {
@@ -202,14 +204,14 @@ public class CassandraStore extends Store {
 
         final long primaryKeyColumnLambda = primaryKeyColumn;
 
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( combinedTable.getSchema().name, combinedTable.getTable().name );
-//        List<CatalogColumn> columns = combinedTable.getColumns();
-        List<CatalogColumnPlacement> columns = combinedTable.getColumnPlacementsByStore().get( getStoreId() );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getStoreId() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.schemaName, catalogTable.name );
+        // List<CatalogColumn> columns = combinedTable.getColumns();
+        List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id );
         CatalogColumnPlacement primaryColumnPlacement = columns.stream().filter( c -> c.columnId == primaryKeyColumnLambda ).findFirst().get();
         CatalogColumn catalogColumn;
         try {
-            catalogColumn = context.getTransaction().getCatalog().getColumn( primaryColumnPlacement.columnId );
+            catalogColumn = catalog.getColumn( primaryColumnPlacement.columnId );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
@@ -218,7 +220,7 @@ public class CassandraStore extends Store {
 
         for ( CatalogColumnPlacement placement : columns ) {
             try {
-                catalogColumn = context.getTransaction().getCatalog().getColumn( placement.columnId );
+                catalogColumn = catalog.getColumn( placement.columnId );
             } catch ( GenericCatalogException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
@@ -235,15 +237,15 @@ public class CassandraStore extends Store {
         context.getTransaction().registerInvolvedStore( this );
         this.session.execute( createTable.build() );
 
-        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
             try {
-                context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+                catalog.updateColumnPlacementPhysicalNames(
                         getStoreId(),
                         placement.columnId,
                         this.dbKeyspace, // TODO MV: physical schema name
                         physicalTableName,
                         physicalNameProvider.generatePhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException e ) {
+            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
                 throw new RuntimeException( e );
             }
         }
@@ -251,9 +253,9 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( combinedTable.getSchema().name, combinedTable.getTable().name );
+    public void dropTable( Context context, CatalogTable catalogTable ) {
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getStoreId() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.schemaName, catalogTable.name );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
 
         // FIXME JS: Cassandra transaction hotfix
@@ -263,9 +265,9 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.getSchema().name, catalogTable.getTable().name );
+    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getStoreId() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.schemaName, catalogTable.name );
         String physicalColumnName = physicalNameProvider.generatePhysicalColumnName( catalogColumn.id );
 
         SimpleStatement addColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
@@ -277,13 +279,13 @@ public class CassandraStore extends Store {
         this.session.execute( addColumn );
 
         try {
-            context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+            catalog.updateColumnPlacementPhysicalNames(
                     getStoreId(),
                     catalogColumn.id,
                     this.dbKeyspace,
                     physicalTableName,
                     physicalColumnName );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -334,9 +336,9 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void truncate( Context context, CatalogCombinedTable table ) {
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
-        String physicalTableName = physicalNameProvider.getPhysicalTableName( table.getSchema().name, table.getTable().name );
+    public void truncate( Context context, CatalogTable table ) {
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getStoreId() );
+        String physicalTableName = physicalNameProvider.getPhysicalTableName( table.schemaName, table.name );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
 
         // FIXME JS: Cassandra transaction hotfix
@@ -351,7 +353,7 @@ public class CassandraStore extends Store {
         // FIXME JS: Cassandra transaction hotfix
         context.getTransaction().registerInvolvedStore( this );
 
-        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
+        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getStoreId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogColumn.schemaName, catalogColumn.tableName );
 
 //        SimpleStatement selectData = QueryBuilder.selectFrom( this.dbKeyspace, physicalTableName ).all().build();

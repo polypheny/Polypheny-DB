@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.webui.models.requests;
 
 
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.util.Pair;
+import org.polypheny.db.webui.models.DbColumn;
 
 
-public interface SqlProcessor {
+public class ExploreData {
 
-    SqlNode parse( String sql );
-
-    Pair<SqlNode, RelDataType> validate( SqlNode parsed );
-
-    RelRoot translate( SqlNode sql );
-
-    PolyphenyDbSignature prepareDdl( SqlNode parsed );
+    public Integer id;
+    public DbColumn[] header;
+    public String[][] classified;
 
 }

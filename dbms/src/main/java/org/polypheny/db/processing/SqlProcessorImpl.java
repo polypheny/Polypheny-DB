@@ -27,12 +27,12 @@ import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.SqlProcessor;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -223,13 +223,14 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature prepareDdl( SqlNode parsed ) {
+    public PolyphenyDbSignature<?> prepareDdl( SqlNode parsed ) {
         if ( parsed instanceof SqlExecutableStatement ) {
             try {
                 // Acquire global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
                 // Execute statement
                 ((SqlExecutableStatement) parsed).execute( transaction.getPrepareContext(), transaction );
+                Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
                         parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
                         ImmutableList.of(),
@@ -245,6 +246,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         new ExecutionTimeMonitor() );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "Exception while acquiring global schema lock", e );
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( e );
             } finally {
                 // Release lock
                 // TODO: This can be removed when auto-commit of ddls is implemented
@@ -261,11 +264,11 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         Context prepareContext = transaction.getPrepareContext();
         SqlNodeList oldColumnList = insert.getTargetColumnList();
         if ( oldColumnList != null ) {
-            CatalogCombinedTable combinedTable = getCatalogCombinedTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+            CatalogTable catalogTable = getCatalogTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
             SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
-            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][combinedTable.getColumns().size()];
+            SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][catalogTable.columnIds.size()];
             int pos = 0;
-            for ( CatalogColumn column : combinedTable.getColumns() ) {
+            for ( CatalogColumn column : Catalog.getInstance().getColumns( catalogTable.id ) ) {
                 // Add column
                 newColumnList.add( new SqlIdentifier( column.name, SqlParserPos.ZERO ) );
 
@@ -326,16 +329,16 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             long schemaId;
             String tableOldName;
             if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
                 tableOldName = tableName.names.get( 1 );
             } else { // TableName
-                schemaId = transaction.getCatalog().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = Catalog.getInstance().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableOldName = tableName.names.get( 0 );
             }
-            catalogTable = transaction.getCatalog().getTable( schemaId, tableOldName );
+            catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );
         } catch ( UnknownDatabaseException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.databaseNotFound( tableName.toString() ) );
         } catch ( UnknownSchemaException e ) {
@@ -346,15 +349,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             throw new RuntimeException( e );
         }
         return catalogTable;
-    }
-
-
-    private CatalogCombinedTable getCatalogCombinedTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
-        try {
-            return transaction.getCatalog().getCombinedTable( getCatalogTable( context, transaction, tableName ).id );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
     }
 
 

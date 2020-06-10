@@ -84,6 +84,7 @@ public class StatisticResult {
     }
 
 
+
     /**
      * Transforms an StatisticResult, which has to consist of <b>value</b> and <b>occurrence</b> of a column, into a map
      *

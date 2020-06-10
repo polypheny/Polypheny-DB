@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.MonetdbSqlDialect;
@@ -69,8 +69,8 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogCombinedTable combinedTable ) {
-        return currentJdbcSchema.createJdbcTable( combinedTable );
+    public Table createTableSchema( CatalogTable catalogTable ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable );
     }
 
 

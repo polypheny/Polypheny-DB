@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.processing;
 
 
 import org.polypheny.db.jdbc.PolyphenyDbSignature;

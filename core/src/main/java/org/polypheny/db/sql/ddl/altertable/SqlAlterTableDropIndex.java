@@ -19,6 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -68,10 +69,11 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
         try {
-            CatalogIndex index = transaction.getCatalog().getIndex( catalogTable.id, indexName.getSimple() );
-            transaction.getCatalog().deleteIndex( index.id );
+            Catalog catalog = Catalog.getInstance();
+            CatalogIndex index = catalog.getIndex( catalogTable.id, indexName.getSimple() );
+            catalog.deleteIndex( index.id );
         } catch ( GenericCatalogException | UnknownIndexException e ) {
             throw new RuntimeException( e );
         }

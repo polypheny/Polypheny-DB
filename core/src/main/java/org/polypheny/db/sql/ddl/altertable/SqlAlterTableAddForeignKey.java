@@ -20,6 +20,7 @@ package org.polypheny.db.sql.ddl.altertable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -97,22 +98,22 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
-        CatalogTable refTable = getCatalogTable( context, transaction, referencesTable );
+        CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogTable refTable = getCatalogTable( context, referencesTable );
         try {
             List<Long> columnIds = new LinkedList<>();
             for ( SqlNode node : columnList.getList() ) {
                 String columnName = node.toString();
-                CatalogColumn catalogColumn = transaction.getCatalog().getColumn( catalogTable.id, columnName );
+                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogTable.id, columnName );
                 columnIds.add( catalogColumn.id );
             }
             List<Long> referencesIds = new LinkedList<>();
             for ( SqlNode node : referencesList.getList() ) {
                 String columnName = node.toString();
-                CatalogColumn catalogColumn = transaction.getCatalog().getColumn( refTable.id, columnName );
+                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( refTable.id, columnName );
                 referencesIds.add( catalogColumn.id );
             }
-            transaction.getCatalog().addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName.getSimple(), onUpdate, onDelete );
+            Catalog.getInstance().addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName.getSimple(), onUpdate, onDelete );
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

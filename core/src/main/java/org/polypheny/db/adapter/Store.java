@@ -24,15 +24,15 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Transaction;
 
 
 public abstract class Store {
@@ -49,6 +49,11 @@ public abstract class Store {
 
     protected final Map<String, String> settings;
 
+    @Getter
+    private final boolean persistent;
+
+    protected final Catalog catalog = Catalog.getInstance();
+
 
     public Store(
             final int storeId,
@@ -63,20 +68,26 @@ public abstract class Store {
         this.settings = settings;
         this.dataReadOnly = dataReadOnly;
         this.schemaReadOnly = schemaReadOnly;
+
+        if ( settings.containsKey( "persistent" ) ) {
+            this.persistent = Boolean.parseBoolean( settings.get( "persistent" ) );
+        } else {
+            this.persistent = false;
+        }
     }
 
 
-    public abstract void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name );
+    public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
-    public abstract Table createTableSchema( CatalogCombinedTable combinedTable );
+    public abstract Table createTableSchema( CatalogTable combinedTable );
 
     public abstract Schema getCurrentSchema();
 
-    public abstract void createTable( Context context, CatalogCombinedTable combinedTable );
+    public abstract void createTable( Context context, CatalogTable combinedTable );
 
-    public abstract void dropTable( Context context, CatalogCombinedTable combinedTable );
+    public abstract void dropTable( Context context, CatalogTable combinedTable );
 
-    public abstract void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn );
+    public abstract void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn );
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
@@ -86,7 +97,7 @@ public abstract class Store {
 
     public abstract void rollback( PolyXid xid );
 
-    public abstract void truncate( Context context, CatalogCombinedTable table );
+    public abstract void truncate( Context context, CatalogTable table );
 
     public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn );
 
@@ -122,7 +133,7 @@ public abstract class Store {
             if ( newSettings.containsKey( s.name ) ) {
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
-                    if ( ! s.canBeNull && newValue == null ) {
+                    if ( !s.canBeNull && newValue == null ) {
                         throw new RuntimeException( "Setting \"" + s.name + "\" cannot be null." );
                     }
                 } else {

@@ -22,4 +22,5 @@ public class SchemaTreeRequest extends UIRequest {
     public String routerLinkRoot;
     public boolean views;
     public int depth;
+    public boolean showTable;
 }
