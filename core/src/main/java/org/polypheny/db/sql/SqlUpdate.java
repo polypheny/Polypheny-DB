@@ -35,7 +35,6 @@ package org.polypheny.db.sql;
 
 
 import java.util.List;
-import lombok.Getter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
@@ -52,7 +51,6 @@ public class SqlUpdate extends SqlCall {
 
     SqlNode targetTable;
     SqlNodeList targetColumnList;
-    @Getter
     SqlNodeList sourceExpressionList;
     SqlNode condition;
     SqlSelect sourceSelect;

@@ -96,15 +96,14 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
 
 
     public RelDataType getRelDataType( final RelDataTypeFactory typeFactory ) {
-        final PolyType polyType = PolyType.get( type.name() );
         RelDataType elementType;
-        if ( length != null && scale != null && polyType.allowsPrecScale( true, true ) ) {
-            elementType = typeFactory.createPolyType( polyType, length, scale );
-        } else if ( length != null && polyType.allowsPrecNoScale() ) {
-            elementType = typeFactory.createPolyType( polyType, length );
+        if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
+            elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
+        } else if ( this.length != null && this.type.allowsPrecNoScale() ) {
+            elementType = typeFactory.createPolyType( this.type, this.length );
         } else {
-            assert polyType.allowsNoPrecNoScale();
-            elementType = typeFactory.createPolyType( polyType );
+            assert this.type.allowsNoPrecNoScale();
+            elementType = typeFactory.createPolyType( this.type );
         }
         if ( collectionsType == PolyType.ARRAY ) {
             return typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
@@ -152,7 +151,6 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
                     } else {
                         return comp;
                     }
-
 
                 } else {
                     return comp;
@@ -202,8 +200,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     }
 
 
-    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, Integer length, Integer scale, Collation collation ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, column.collectionsType, length, scale, column.dimension, column.cardinality, column.nullable, collation, column.defaultValue );
+    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, Integer length, Integer scale, Integer dimension, Integer cardinality, Collation collation ) {
+        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, column.collectionsType, length, scale, dimension, cardinality, column.nullable, collation, column.defaultValue );
     }
 
 
