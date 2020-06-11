@@ -136,7 +136,7 @@ public class StatisticsManager<T extends Comparable<T>> {
      * Adds a new column to the tracked columns and sorts it correctly
      *
      * @param qualifiedColumn column name
-     * @param type            the type of the new column
+     * @param type the type of the new column
      */
     private void addColumn( String qualifiedColumn, PolyType type ) {
         String[] splits = QueryColumn.getSplitColumn( qualifiedColumn );

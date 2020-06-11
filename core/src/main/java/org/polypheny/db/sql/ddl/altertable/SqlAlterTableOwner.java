@@ -21,9 +21,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -71,16 +73,16 @@ public class SqlAlterTableOwner extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Transaction transaction ) {
-        CatalogTable catalogTable = getCatalogTable( context, transaction, table );
+        CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( owner.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + owner.toString() );
         }
         String newOwnerName = owner.getSimple();
         try {
-            CatalogUser catalogUser = transaction.getCatalog().getUser( newOwnerName );
-            transaction.getCatalog().setTableOwner( catalogTable.id, catalogUser.id );
-        } catch ( GenericCatalogException e ) {
+            CatalogUser catalogUser = Catalog.getInstance().getUser( newOwnerName );
+            Catalog.getInstance().setTableOwner( catalogTable.id, catalogUser.id );
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownUserException e ) {
             throw SqlUtil.newContextException( owner.getParserPosition(), RESOURCE.userNotFound( owner.getSimple() ) );

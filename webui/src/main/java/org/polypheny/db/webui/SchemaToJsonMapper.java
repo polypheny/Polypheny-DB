@@ -24,9 +24,10 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.pretty.SqlPrettyWriter;
@@ -38,9 +39,9 @@ public class SchemaToJsonMapper {
     private final static Gson gson = new Gson();
 
 
-    public static String exportTableDefinitionAsJson( @NonNull CatalogCombinedTable combinedTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
+    public static String exportTableDefinitionAsJson( @NonNull CatalogTable catalogTable, boolean exportPrimaryKey, boolean exportDefaultValues ) {
         List<JsonColumn> columns = new LinkedList<>();
-        for ( CatalogColumn catalogColumn : combinedTable.getColumns() ) {
+        for ( CatalogColumn catalogColumn : Catalog.getInstance().getColumns( catalogTable.id ) ) {
             String defaultValue = null;
             String defaultFunctionName = null;
             if ( exportDefaultValues ) {
@@ -60,14 +61,14 @@ public class SchemaToJsonMapper {
         }
         List<String> primaryKeyColumnNames = null;
         if ( exportPrimaryKey ) {
-            for ( CatalogKey catalogKey : combinedTable.getKeys() ) {
-                if ( catalogKey.id == combinedTable.getTable().primaryKey ) {
+            for ( CatalogKey catalogKey : Catalog.getInstance().getTableKeys( catalogTable.id ) ) {
+                if ( catalogKey.id == catalogTable.primaryKey ) {
                     primaryKeyColumnNames = catalogKey.columnNames;
                     break;
                 }
             }
         }
-        JsonTable table = new JsonTable( combinedTable.getTable().name, columns, primaryKeyColumnNames );
+        JsonTable table = new JsonTable( catalogTable.name, columns, primaryKeyColumnNames );
         return gson.toJson( table );
     }
 

@@ -27,4 +27,9 @@ public class UnknownConstraintException extends CatalogException {
     public UnknownConstraintException( long id ) {
         super( "There is no constraint with id: " + id );
     }
+
+
+    public UnknownConstraintException( long tableId, String name ) {
+        super( "There is no constraint in table: " + tableId + " with name: " + name );
+    }
 }

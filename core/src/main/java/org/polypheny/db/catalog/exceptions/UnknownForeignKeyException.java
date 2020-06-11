@@ -27,4 +27,8 @@ public class UnknownForeignKeyException extends CatalogException {
     public UnknownForeignKeyException( long id ) {
         super( "There is no foreign key with id: " + id );
     }
+
+    public UnknownForeignKeyException( long tableId, String name ) {
+        super( "There is no foreign key on table: " + tableId + " with name: " + name );
+    }
 }

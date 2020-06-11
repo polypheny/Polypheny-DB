@@ -39,6 +39,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -95,12 +96,13 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     @Override
     public void execute( Context context, Transaction transaction ) {
         try {
+            Catalog catalog = Catalog.getInstance();
             // Check if there is a schema with this name
-            if ( transaction.getCatalog().checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
-                CatalogSchema catalogSchema = transaction.getCatalog().getSchema( context.getDatabaseId(), name.getSimple() );
+            if ( catalog.checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
+                CatalogSchema catalogSchema = catalog.getSchema( context.getDatabaseId(), name.getSimple() );
 
                 // Drop all tables in this schema
-                List<CatalogTable> catalogTables = transaction.getCatalog().getTables( catalogSchema.id, null );
+                List<CatalogTable> catalogTables = catalog.getTables( catalogSchema.id, null );
                 catalogTables.forEach( catalogTable -> {
                     new SqlDropTable(
                             SqlParserPos.ZERO,
@@ -110,7 +112,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
                 } );
 
                 // Drop schema
-                transaction.getCatalog().deleteSchema( catalogSchema.id );
+                catalog.deleteSchema( catalogSchema.id );
             } else {
                 if ( ifExists ) {
                     // This is ok because "IF EXISTS" was specified

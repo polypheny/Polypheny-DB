@@ -29,11 +29,13 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.combined.CatalogCombinedTable;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -46,7 +48,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
 
@@ -68,8 +69,9 @@ public abstract class AbstractJdbcStore extends Store {
             String uniqueName,
             Map<String, String> settings,
             ConnectionFactory connectionFactory,
-            SqlDialect dialect ) {
-        super( storeId, uniqueName, settings, false, false );
+            SqlDialect dialect,
+            boolean persistent ) {
+        super( storeId, uniqueName, settings, false, false, persistent );
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager
@@ -121,7 +123,7 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     @Override
-    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
+    public void createNewSchema( SchemaPlus rootSchema, String name ) {
         //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
         // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
         currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, this );
@@ -132,12 +134,12 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     @Override
-    public void createTable( Context context, CatalogCombinedTable combinedTable ) {
+    public void createTable( Context context, CatalogTable catalogTable ) {
         StringBuilder builder = new StringBuilder();
         List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( combinedTable.getSchema().name );
-        qualifiedNames.add( combinedTable.getTable().name );
-        String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
+        qualifiedNames.add( catalogTable.schemaName );
+        qualifiedNames.add( catalogTable.name );
+        String physicalTableName = getPhysicalTableName( catalogTable.id );
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
         }
@@ -147,10 +149,10 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( dialect.quoteIdentifier( physicalTableName ) )
                 .append( " ( " );
         boolean first = true;
-        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
             CatalogColumn catalogColumn;
             try {
-                catalogColumn = context.getTransaction().getCatalog().getColumn( placement.columnId );
+                catalogColumn = catalog.getColumn( placement.columnId );
             } catch ( GenericCatalogException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
@@ -190,15 +192,15 @@ public abstract class AbstractJdbcStore extends Store {
         builder.append( " )" );
         executeUpdate( builder, context );
         // Add physical names to placements
-        for ( CatalogColumnPlacement placement : combinedTable.getColumnPlacementsByStore().get( getStoreId() ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
             try {
-                context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+                catalog.updateColumnPlacementPhysicalNames(
                         getStoreId(),
                         placement.columnId,
                         getDefaultPhysicalSchemaName(),
                         physicalTableName,
                         getPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException e ) {
+            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
                 throw new RuntimeException( e );
             }
         }
@@ -207,11 +209,11 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     @Override
-    public void addColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
+    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
         String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
-        String physicalSchemaName = catalogTable.getColumnPlacementsByStore().get( getStoreId() ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName; // TODO: Potential bug
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )
@@ -231,20 +233,20 @@ public abstract class AbstractJdbcStore extends Store {
         } else {
             builder.append( " NOT NULL" );
         }
-        if ( catalogColumn.position <= catalogTable.getColumns().size() ) {
-            String beforeColumnName = catalogTable.getColumns().get( catalogColumn.position - 1 ).name;
+        if ( catalogColumn.position <= catalogTable.columnIds.size() ) {
+            String beforeColumnName = catalogTable.columnNames.get( catalogColumn.position - 1 );
             builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
         }
         executeUpdate( builder, context );
         // Add physical name to placement
         try {
-            context.getTransaction().getCatalog().updateColumnPlacementPhysicalNames(
+            catalog.updateColumnPlacementPhysicalNames(
                     getStoreId(),
                     catalogColumn.id,
                     physicalSchemaName,
                     physicalTableName,
                     physicalColumnName );
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -272,10 +274,10 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     @Override
-    public void dropTable( Context context, CatalogCombinedTable combinedTable ) {
+    public void dropTable( Context context, CatalogTable catalogTable ) {
         StringBuilder builder = new StringBuilder();
-        String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
-        String physicalSchemaName = combinedTable.getColumnPlacementsByStore().get( getStoreId() ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        String physicalTableName = getPhysicalTableName( catalogTable.id );
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName; // TODO: Potential bug
         builder.append( "DROP TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )
@@ -297,10 +299,10 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     @Override
-    public void truncate( Context context, CatalogCombinedTable combinedTable ) {
+    public void truncate( Context context, CatalogTable catalogTable ) {
         StringBuilder builder = new StringBuilder();
-        String physicalTableName = getPhysicalTableName( combinedTable.getTable().id );
-        String physicalSchemaName = combinedTable.getColumnPlacementsByStore().get( getStoreId() ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        String physicalTableName = getPhysicalTableName( catalogTable.id );
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName; // TODO: Potential bug
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )

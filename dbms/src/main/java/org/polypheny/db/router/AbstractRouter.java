@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -55,6 +56,8 @@ public abstract class AbstractRouter implements Router {
     protected ExecutionTimeMonitor executionTimeMonitor;
 
     protected InformationPage page = null;
+
+    final Catalog catalog = Catalog.getInstance();
 
     // For reporting purposes
     protected Map<RelOptTable, CatalogColumnPlacement> selectedStores;
@@ -126,11 +129,9 @@ public abstract class AbstractRouter implements Router {
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
                 List<CatalogColumnPlacement> placements;
-                try {
-                    placements = transaction.getCatalog().getColumnPlacements( t.getColumnIds().get( 0 ) );
-                } catch ( GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
+
+                placements = catalog.getColumnPlacements( t.getColumnIds().get( 0 ) );
+
                 CatalogColumnPlacement placement = selectPlacement( node, placements );
                 return handleTableScan( builder, table, placement );
             } else {
@@ -166,11 +167,7 @@ public abstract class AbstractRouter implements Router {
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
                 List<CatalogColumnPlacement> placements;
-                try {
-                    placements = transaction.getCatalog().getColumnPlacements( t.getColumnIds().get( 0 ) );
-                } catch ( GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
+                placements = catalog.getColumnPlacements( t.getColumnIds().get( 0 ) );
 
                 // Execute on all placements
                 List<TableModify> modifies = new ArrayList<>( placements.size() );
@@ -179,7 +176,7 @@ public abstract class AbstractRouter implements Router {
                     CatalogReader catalogReader = transaction.getCatalogReader();
                     CatalogTable catalogTable;
                     try {
-                        catalogTable = transaction.getCatalog().getTable( placement.tableId );
+                        catalogTable = catalog.getTable( placement.tableId );
                     } catch ( UnknownTableException | GenericCatalogException e ) {
                         // This should not happen
                         throw new RuntimeException( e );
