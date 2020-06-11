@@ -50,7 +50,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
 
-        this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name", "Persistent" ) );
+        this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
@@ -100,7 +100,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         }
         try {
             catalog.getStores().forEach( s -> {
-                storeInformation.addRow( s.id, s.uniqueName, s.persistent );
+                storeInformation.addRow( s.id, s.uniqueName );
             } );
 
             catalog.getDatabases( null ).forEach( d -> {

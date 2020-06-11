@@ -2404,7 +2404,7 @@ public class CatalogImpl extends Catalog {
         try {
             commit();
         } catch ( NoTablePrimaryKeyException e ) {
-            throw new RuntimeException( "An error occured while creating the store." );
+            throw new RuntimeException( "An error occurred while creating the store." );
         }
         listeners.firePropertyChange( "store", null, store );
         return id;
