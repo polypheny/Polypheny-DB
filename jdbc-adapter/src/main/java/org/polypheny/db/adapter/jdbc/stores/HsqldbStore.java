@@ -41,7 +41,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings ), HsqldbSqlDialect.DEFAULT );
+        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
 

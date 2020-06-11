@@ -37,7 +37,7 @@ public class CsvStore extends Store {
 
 
     public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, true );
+        super( storeId, uniqueName, settings, true, true, true );
         setCsvDir( settings );
     }
 

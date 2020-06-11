@@ -31,11 +31,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.type.PolyType;
 
-// TODO(jan): General PostgresqlStore todo list:
-//   - Implement better logging.
-//   - Check all the functions whether they are properly adjusted to Postgres.
-//   - Link to Postgres documentation.
-
 
 @Slf4j
 public class PostgresqlStore extends AbstractJdbcStore {
@@ -55,7 +50,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( settings ), PostgresqlSqlDialect.DEFAULT );
+        super( storeId, uniqueName, settings, createConnectionFactory( settings ), PostgresqlSqlDialect.DEFAULT, true );
     }
 
 
