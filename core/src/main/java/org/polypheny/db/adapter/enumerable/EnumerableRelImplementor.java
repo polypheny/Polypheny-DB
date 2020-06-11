@@ -112,7 +112,6 @@ public class EnumerableRelImplementor extends JavaRelImplementor {
         EnumerableRel.Result result = rootRel.implement( this, prefer );
         switch ( prefer ) {
             case ARRAY:
-                //TODO NH maybe adapt to support fieldCount > 1
                 if ( result.physType.getFormat() == JavaRowFormat.ARRAY && rootRel.getRowType().getFieldCount() == 1 ) {
                     BlockBuilder bb = new BlockBuilder();
                     Expression e = null;

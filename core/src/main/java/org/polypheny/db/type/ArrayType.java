@@ -72,9 +72,9 @@ public class ArrayType extends AbstractPolyType {
     public ArrayType( final RelDataType elementType, final boolean isNullable, final long cardinality, final long dimension ) {
         super( PolyType.ARRAY, isNullable, null );
         this.elementType = Objects.requireNonNull( elementType );
-        computeDigest();
         this.cardinality = cardinality;
         this.dimension = dimension;
+        computeDigest();
     }
 
 

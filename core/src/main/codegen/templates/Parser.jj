@@ -3025,6 +3025,7 @@ List<Object> Expression2(ExprContext exprContext) :
     final List<Object> list3 = new ArrayList();
     SqlNodeList nodeList;
     SqlNode e;
+    List<Object> arrayItemList;
     SqlOperator op;
     String p;
     final Span s = span();
@@ -3141,14 +3142,8 @@ List<Object> Expression2(ExprContext exprContext) :
                 }
                 Expression2b(ExprContext.ACCEPT_SUB_QUERY, list)
             |
-                <LBRACKET>
-                e = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                <RBRACKET> {
-                    list.add(
-                        new SqlParserUtil.ToTreeListItem(
-                            SqlStdOperatorTable.ITEM, getPos()));
-                    list.add(e);
-                }
+                arrayItemList = ArrayItem(s)
+                { list.addAll(arrayItemList); }
                 (
                     <DOT>
                     p = Identifier() {
@@ -3942,6 +3937,35 @@ SqlNode NestedArray(Span s, int dimension) :
     <RBRACKET>
     {
         return new SqlArrayValueConstructor(dimension, args.getList().size()).createCall( s.end(this), args.getList());
+    }
+}
+
+/**
+* Parses an array accessor, e.g. myArray[1] (only the accessor [1])
+* supports posgres-style slicing, e.g. myArray[1:2]
+*/
+List<Object> ArrayItem(Span s) :
+{
+    final List<Object> list = new ArrayList<Object>();
+    SqlNode e1;
+    SqlNode e2 = null;
+    SqlParserPos pos;
+}
+{
+    <LBRACKET>
+    e1 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+    //allow postgres-syntax to get a specific array item: a[1:1]
+    [
+        <COLON>
+        e2 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+    ]
+    <RBRACKET> {
+        list.add(
+            new SqlParserUtil.ToTreeListItem(
+                SqlStdOperatorTable.ITEM, getPos()));
+        list.add(e1);
+        if(e2!=null){list.add(e2);}
+        return list;
     }
 }
 

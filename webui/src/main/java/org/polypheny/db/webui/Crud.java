@@ -44,10 +44,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Array;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -2375,8 +2376,12 @@ public class Crud implements InformationObserver {
                                 temp[counter] = o.toString();
                         }
                         if( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
-                            if(o instanceof AbstractList) {
-                                temp[counter] = gson.toJson( o, AbstractList.class );
+                            if( o instanceof Array ) {
+                                try {
+                                    temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
+                                } catch ( SQLException sqlException ) {
+                                    temp[counter] = o.toString();
+                                }
                             } else {
                                 temp[counter] = o.toString();
                             }

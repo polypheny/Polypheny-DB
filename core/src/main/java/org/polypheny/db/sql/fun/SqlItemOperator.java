@@ -37,8 +37,10 @@ package org.polypheny.db.sql.fun;
 import java.util.Arrays;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rel.type.RelRecordType;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCallBinding;
+import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperandCountRange;
@@ -46,6 +48,7 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyOperandCountRanges;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -56,7 +59,7 @@ import org.polypheny.db.type.checker.PolySingleOperandTypeChecker;
 /**
  * The item operator {@code [ ... ]}, used to access a given element of an array or map. For example, {@code myArray[3]} or {@code "myMap['foo']"}.
  */
-class SqlItemOperator extends SqlSpecialOperator {
+public class SqlItemOperator extends SqlSpecialOperator {
 
     private static final PolySingleOperandTypeChecker ARRAY_OR_MAP =
             OperandTypes.or(
@@ -74,6 +77,21 @@ class SqlItemOperator extends SqlSpecialOperator {
     public ReduceResult reduceExpr( int ordinal, TokenSequence list ) {
         SqlNode left = list.node( ordinal - 1 );
         SqlNode right = list.node( ordinal + 1 );
+        //if expression is of type a[i:j]
+        if( list.size() > 3 && ! list.isOp(3) ) {
+            SqlNode right2 = list.node(ordinal+2);
+            return new ReduceResult(
+                    ordinal - 1,
+                    ordinal + 3,
+                    createCall(
+                            SqlParserPos.sum(
+                                    Arrays.asList(
+                                            left.getParserPosition(),
+                                            right2.getParserPosition(),
+                                            list.pos( ordinal ) ) ),
+                            left,
+                            right, right2 ) );
+        }
         return new ReduceResult(
                 ordinal - 1,
                 ordinal + 2,
@@ -93,13 +111,17 @@ class SqlItemOperator extends SqlSpecialOperator {
         call.operand( 0 ).unparse( writer, leftPrec, 0 );
         final SqlWriter.Frame frame = writer.startList( "[", "]" );
         call.operand( 1 ).unparse( writer, 0, 0 );
+        if( call.operandCount() > 2 ) {
+            writer.literal( ":" );
+            call.operand( 2 ).unparse( writer, 0, 0 );
+        }
         writer.endList( frame );
     }
 
 
     @Override
     public SqlOperandCountRange getOperandCountRange() {
-        return PolyOperandCountRanges.of( 2 );
+        return PolyOperandCountRanges.between( 2, 3 );
     }
 
 
@@ -145,7 +167,20 @@ class SqlItemOperator extends SqlSpecialOperator {
         final RelDataType operandType = opBinding.getOperandType( 0 );
         switch ( operandType.getPolyType() ) {
             case ARRAY:
-                return typeFactory.createTypeWithNullability( operandType.getComponentType(), true );
+                if( operandType instanceof ArrayType && ((ArrayType)operandType).getDimension() > 1 ) {
+                    long dimension = ((ArrayType) operandType).getDimension() -1;
+                    //set the dimension to -1 if you have a slice operator ([1:1]), so the returnType will be adjusted to array if they are additional itemOperators (without the slice operator)
+                    if( opBinding.getOperandCount() > 2 ){ dimension = -1; }
+                    return typeFactory.createArrayType( operandType.getComponentType(), ((ArrayType) operandType).getCardinality(), dimension );
+                } else if( operandType instanceof ArrayType && ((ArrayType)operandType).getDimension() < 0//if dimension was set to -1
+                && !( ((SqlCallBinding) opBinding).operand( 0 ) instanceof SqlIdentifier )//e.g. a[1]
+                && !(operandType.getComponentType() instanceof RelRecordType) ){//e.g. a.b[1].c.d[1], for unit tests
+                    long dimension = ((ArrayType) operandType).getDimension() -1;
+                    if( opBinding.getOperandCount() > 2 ){ dimension = -1; }//if dimension was set to -1, the returned type will be an array (e.g. a[1:1][1] is of type array and [1:1] sets the cardinality to -1
+                    return typeFactory.createArrayType( operandType.getComponentType(), ((ArrayType) operandType).getCardinality(), dimension );
+                } else {
+                    return typeFactory.createTypeWithNullability( operandType.getComponentType(), true );
+                }
             case MAP:
                 return typeFactory.createTypeWithNullability( operandType.getValueType(), true );
             case ANY:
