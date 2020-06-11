@@ -310,43 +310,46 @@ public class Crud implements InformationObserver {
             return new ArrayList<>();
         }
 
+        Transaction transaction = getTransaction();
         try {
             List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
             for ( CatalogSchema schema : schemas ) {
                 SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
 
                 if ( request.depth > 1 ) {
-                    ArrayList<SidebarElement> tables = new ArrayList<>();
-                    ArrayList<SidebarElement> views = new ArrayList<>();
-                    List<CatalogTable> childTables = catalog.getTables( schema.id, null );
-                    for ( CatalogTable childTable : childTables ) {
-                        SidebarElement table = new SidebarElement( childTable.schemaName + "." + childTable.name, childTable.name, request.routerLinkRoot, "fa fa-table" );
+                    ArrayList<SidebarElement> tableTree = new ArrayList<>();
+                    ArrayList<SidebarElement> viewTree = new ArrayList<>();
+                    List<CatalogTable> tables = catalog.getTables( schema.id, null );
+                    for ( CatalogTable table : tables ) {
+                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, "fa fa-table" );
 
                         if ( request.depth > 2 ) {
-                            List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
-                            for ( CatalogColumn childColumn : childColumns ) {
-                                table.addChild( new SidebarElement( childColumn.schemaName + "." + childColumn.tableName + "." + childColumn.name, childColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                            List<CatalogColumn> columns = catalog.getColumns( table.id );
+                            for ( CatalogColumn column : columns ) {
+                                tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
-                        if ( childTable.tableType == TableType.TABLE ) {
-                            tables.add( table );
-                        } else if ( request.views && childTable.tableType == TableType.VIEW ) {
-                            views.add( table );
+                        if ( table.tableType == TableType.TABLE ) {
+                            tableTree.add( tableElement );
+                        } else if ( request.views && table.tableType == TableType.VIEW ) {
+                            viewTree.add( tableElement );
                         }
                     }
-                    if( request.showTable ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
-                    }else {
-                        schemaTree.addChildren( tables );
-                    }
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                     if ( request.views ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
+                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
                     }
                 }
                 result.add( schemaTree );
             }
-        } catch ( GenericCatalogException | UnknownSchemaException e ) {
+            transaction.commit();
+        } catch ( UnknownSchemaException | GenericCatalogException | TransactionException e ) {
             log.error( "Caught exception", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
         }
 
         return result;
