@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -222,10 +223,19 @@ public class Rest {
             relBuilder = relBuilder.limit( resourceRequest.offset, resourceRequest.limit );
         }*/
 
+        RelNode relNode = relBuilder.build();
 
-        RelNode result = relBuilder.build();
+        // Wrap RelNode into a RelRoot
+        final RelDataType rowType = relNode.getRowType();
+        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final RelCollation collation =
+                relNode instanceof Sort
+                        ? ((Sort) relNode).collation
+                        : RelCollations.EMPTY;
+        RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
+        log.info( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( result, transaction );
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
 
 //        finalResult.put( "uri", req.uri() );
 //        finalResult.put( "query", req.queryString() );
@@ -267,20 +277,30 @@ public class Rest {
         RelOptPlanner planner = transaction.getQueryProcessor().getPlanner();
         RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
 
-        RelNode plan = relBuilder.build();
+        RelNode relNode = relBuilder.build();
         TableModify tableModify = new LogicalTableModify(
                 cluster,
-                plan.getTraitSet(),
+                relNode.getTraitSet(),
                 table,
                 catalogReader,
-                plan,
+                relNode,
                 LogicalTableModify.Operation.INSERT,
                 null,
                 null,
                 false
         );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( tableModify, transaction );
+        // Wrap RelNode into a RelRoot
+        final RelDataType rowType = relNode.getRowType();
+        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final RelCollation collation =
+                relNode instanceof Sort
+                        ? ((Sort) relNode).collation
+                        : RelCollations.EMPTY;
+        RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.INSERT, fields, collation );
+        log.info( "RelRoot was built." );
+
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
 
         return finalResult;
     }
@@ -357,17 +377,9 @@ public class Rest {
             }
         }
         log.info( "RelNodeBuilder: {}", relBuilder.toString() );
-        RelNode result = relBuilder.build();
+        RelNode relNode = relBuilder.build();
         log.info( "RelNode was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( result, transaction );
-
-        finalResult.put( "uri", req.uri() );
-        finalResult.put( "query", req.queryString() );
-        return finalResult;
-    }
-
-    Map<String, Object> executeAndTransformRelAlg( RelNode relNode, final Transaction transaction ) {
         // Wrap RelNode into a RelRoot
         final RelDataType rowType = relNode.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
@@ -378,19 +390,52 @@ public class Rest {
         RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
         log.info( "RelRoot was built." );
 
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
+
+        finalResult.put( "uri", req.uri() );
+        finalResult.put( "query", req.queryString() );
+        return finalResult;
+    }
+
+
+    Map<String, Object> executeAndTransformRelAlg( RelRoot relRoot, final Transaction transaction ) {
         // Prepare
-        PolyphenyDbSignature signature = transaction.getQueryProcessor().prepareQuery( root );
+        PolyphenyDbSignature signature = transaction.getQueryProcessor().prepareQuery( relRoot );
         log.info( "RelRoot was prepared." );
 
         List<List<Object>> rows;
         try {
             @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
-            StopWatch stopWatch = new StopWatch();
-            stopWatch.start();
-            rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
-            stopWatch.stop();
-            if ( root.kind.belongsTo( SqlKind.DML ) ) {
+            if ( relRoot.kind.belongsTo( SqlKind.DML ) ) {
+                Object object;
+                int rowsChanged = -1;
+                while ( iterator.hasNext() ) {
+                    object = iterator.next();
+                    int num;
+                    if ( object != null && object.getClass().isArray() ) {
+                        Object[] o = (Object[]) object;
+                        num = ((Number) o[0]).intValue();
+                    } else if ( object != null ) {
+                        num = ((Number) object).intValue();
+                    } else {
+                        throw new RuntimeException( "Result is null" );
+                    }
+                    // Check if num is equal for all stores
+                    if ( rowsChanged != -1 && rowsChanged != num ) {
+                        throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
+                    }
+                    rowsChanged = num;
+                }
+                rows = new LinkedList<>();
+                LinkedList<Object> result = new LinkedList<>();
+                result.add( rowsChanged );
+                rows.add( result );
+            } else {
+                StopWatch stopWatch = new StopWatch();
+                stopWatch.start();
+                rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
+                stopWatch.stop();
                 signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
             }
             transaction.commit();
