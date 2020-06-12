@@ -42,6 +42,9 @@ import org.apache.commons.math3.stat.StatUtils;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigManager;
+import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
@@ -83,6 +86,11 @@ public class IcarusRouter extends AbstractRouter {
 
     private int selectedStoreId = -2; // Is set in analyze
     private String queryClassString;
+
+    private static final ConfigBoolean ICARUS_TRAINING = new ConfigBoolean(
+            "routing/icarusTraining",
+            "Whether routing table should be adjusted according to the measured execution times. Setting this to false keeps the routing table in its current state.",
+            true );
 
 
     private IcarusRouter() {
@@ -185,7 +193,9 @@ public class IcarusRouter extends AbstractRouter {
 
     @Override
     protected void wrapUp( Transaction transaction, RelNode routed ) {
-        executionTimeMonitor.subscribe( routingTable, selectedStoreId + "-" + queryClassString );
+        if ( ICARUS_TRAINING.getBoolean() ) {
+            executionTimeMonitor.subscribe( routingTable, selectedStoreId + "-" + queryClassString );
+        }
         if ( transaction.isAnalyze() ) {
             InformationGroup executionTimeGroup = new InformationGroup( page, "Execution Time" );
             transaction.getQueryAnalyzer().addGroup( executionTimeGroup );
@@ -197,6 +207,7 @@ public class IcarusRouter extends AbstractRouter {
                     selectedStoreId + "-" + queryClassString );
         }
     }
+
 
 
     // Execute the table scan on the store select in the analysis (in Icarus routing all tables are replicated to all stores)
@@ -527,6 +538,21 @@ public class IcarusRouter extends AbstractRouter {
 
 
     public static class IcarusRouterFactory extends RouterFactory {
+
+        public IcarusRouterFactory() {
+            super();
+            final ConfigManager configManager = ConfigManager.getInstance();
+            // Only initialize ones
+            if ( configManager.getConfig( ICARUS_TRAINING.getKey() ) == null ) {
+                final WebUiGroup icarusGroup = new WebUiGroup( "icarusGroup", RouterManager.getInstance().routingPage.getId(), 2 );
+                icarusGroup.withTitle( "Icarus Routing" );
+                configManager.registerWebUiGroup( icarusGroup );
+
+                configManager.registerConfig( ICARUS_TRAINING );
+                ICARUS_TRAINING.withUi( icarusGroup.getId() );
+            }
+        }
+
 
         @Override
         public Router createInstance() {
