@@ -291,13 +291,13 @@ public class Rest {
         );
 
         // Wrap RelNode into a RelRoot
-        final RelDataType rowType = relNode.getRowType();
+        final RelDataType rowType = tableModify.getRowType();
         final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
         final RelCollation collation =
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.INSERT, fields, collation );
+        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
         log.info( "RelRoot was built." );
 
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
