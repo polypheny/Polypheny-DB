@@ -19,6 +19,6 @@ include 'config'
 include 'information'
 include 'statistic'
 include 'explore-by-example'
-include 'restapi'
+include 'rest-interface'
 
 include 'dbms'

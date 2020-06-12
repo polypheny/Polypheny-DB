@@ -4,46 +4,14 @@ group "org.polypheny"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
-    }
-}
-
-
-repositories {
-    mavenLocal()
-    maven {
-        // DBIS Nexus
-        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-    }
-    mavenCentral()
-    jcenter()
-}
-
-
 apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+javadoc.options.encoding = "UTF-8"
 
 
 sourceCompatibility = 1.8
@@ -57,9 +25,8 @@ dependencies {
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
 
     // --- Test Compile ---
-    testCompile project(path: ":core", configuration: "testClasses")
-
-    testCompile group: "junit", name: "junit", version: junit_version
+    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation group: "junit", name: "junit", version: junit_version
 }
 
 
@@ -110,7 +77,7 @@ javadoc {
 jar {
     manifest {
         attributes "Manifest-Version": "1.0"
-        attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$version"
     }
 }

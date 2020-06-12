@@ -50,7 +50,7 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -64,7 +64,6 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -276,7 +275,7 @@ public class Rest {
                 table,
                 catalogReader,
                 relBuilder.build(),
-                Operation.INSERT,
+                LogicalTableModify.Operation.INSERT,
                 null,
                 null,
                 false
@@ -408,7 +407,7 @@ public class Rest {
     }
 
 
-    Map<String, Object> transformResultIterator( PolyphenyDbSignature signature, List<List<Object>> rows ) {
+    Map<String, Object> transformResultIterator( PolyphenyDbSignature<?> signature, List<List<Object>> rows ) {
         List<Map<String, Object>> resultData = new ArrayList<>();
 
         try {
