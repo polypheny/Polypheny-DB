@@ -18,7 +18,6 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
-import org.polypheny.db.transaction.Transaction;
 
 
 @Slf4j
@@ -59,7 +58,7 @@ public class CsvStore extends Store {
 
 
     @Override
-    public void createNewSchema( Transaction transaction, SchemaPlus rootSchema, String name ) {
+    public void createNewSchema( SchemaPlus rootSchema, String name ) {
         currentSchema = new CsvSchema( csvDir, Flavor.SCANNABLE );
     }
 

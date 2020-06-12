@@ -182,6 +182,11 @@ public enum RuntimeConfig {
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
             ConfigType.ENUM ),
+    EXPLORE_BY_EXAMPLE_TO_SQL( "exploreByExample/classificationToSQL",
+            "Build SQL query from classification.",
+            true,
+            ConfigType.BOOLEAN,
+            "exploreByExampleGroup" ),
     UI_PAGE_SIZE( "ui/pageSize",
             "Number of rows per page in the data view.",
             10,
@@ -192,11 +197,14 @@ public enum RuntimeConfig {
             100,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
+    SCHEMA_CACHING( "runtime/schemaCaching",
+            "Cache polypheny-db schema",
+            true,
+            ConfigType.BOOLEAN ),
     REST_API_SERVER_PORT( "runtime/restapiServerPort",
             "The port on which the REST API should listen.",
             8089,
-            ConfigType.INTEGER)
-    ;
+            ConfigType.INTEGER);
 
 
     private final String key;
@@ -236,6 +244,15 @@ public enum RuntimeConfig {
         final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() ).withTitle( "Statistics Settings" );
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
+
+        //Explore by Example Settings
+        final WebUiPage exploreByExamplePage = new WebUiPage(
+                "exploreByExamplePage",
+                "Explore by Example",
+                "Settings for the Explore-by-Example component." );
+        final WebUiGroup exploreByExampleGroup = new WebUiGroup( "exploreByExampleGroup", exploreByExamplePage.getId() ).withTitle( "Explore by Example" );
+        configManager.registerWebUiPage( exploreByExamplePage );
+        configManager.registerWebUiGroup( exploreByExampleGroup );
 
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(

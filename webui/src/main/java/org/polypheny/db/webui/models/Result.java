@@ -20,6 +20,7 @@ package org.polypheny.db.webui.models;
 import com.google.gson.Gson;
 import java.util.ArrayList;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
@@ -31,11 +32,13 @@ public class Result {
     /**
      * The header contains information about the columns of a result
      */
+    @Getter
     private DbColumn[] header;
     /**
      * The rows containing the fetched data
      */
     @Getter
+    @Setter
     private String[][] data;
     /**
      * Information for the pagination: what current page is being displayed
@@ -73,6 +76,36 @@ public class Result {
      * Type of the result: if the data is from a table/view/arbitrary query
      */
     private ResultType type;
+
+    /**
+     * Explore-by-Example, information about classification, because classification is only possible if a table holds at least 10 entries
+     */
+    @Setter
+    private String classificationInfo;
+
+    /**
+     * Explore-by-Example Explorer Id for
+     */
+    @Setter
+    private int explorerId;
+
+    /**
+     * Pagination for Explore-by-Example, Information if it includes classified data
+     */
+    @Setter
+    private boolean includesClassificationInfo;
+
+    /**
+     * Pagination for Explore-by-Example, to display the classified Data with the addition of true/false
+     */
+    @Setter
+    private String[][] classifiedData;
+
+    /**
+     * Explore-by-Example, Information if the weka classifier is translated to sql or not
+     */
+    @Setter
+    private boolean isConvertedToSql;
 
 
     /**

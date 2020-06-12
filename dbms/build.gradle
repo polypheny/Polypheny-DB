@@ -6,49 +6,22 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 
 buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
     dependencies {
-        // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
         // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
         classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
     }
 }
 
 
-repositories {
-    maven {
-        // DBIS Nexus
-        url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-    }
-    maven {
-        url "https://clojars.org/repo/"
-    }
-    mavenCentral()
-}
-
-
-apply plugin: "java"
+apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
 apply plugin: "com.github.johnrengelman.shadow"
 
 
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+javadoc.options.encoding = "UTF-8"
 
 
 sourceCompatibility = 1.8
@@ -56,39 +29,44 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    compile project(":core")
-    compile project(":cassandra-adapter")
-    compile project(":csv-adapter")
-    compile project(":jdbc-adapter")
-    compile project(":catalog")
-    compile project(":webui")
-    compile project(":restapi")
-    compile project(":jdbc-interface")
-    compile project(":statistic")
+    implementation project(":core")
+    implementation project(":cassandra-adapter")
+    implementation project(":csv-adapter")
+    implementation project(":jdbc-adapter")
+    implementation project(":catalog")
+    implementation project(":webui")
+    implementation project(":jdbc-interface")
+    implementation project(":restapi")
+    implementation project(":statistic")
+    implementation project(":explore-by-example")
 
     ////// Logging
-    compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version   // License: Apache 2.0
-    compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version
+    implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
+    implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version  // Apache 2.0
+    implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4j_slf4j_impl_version  // Apache 2.0
 
     ////// CLI PARSING
-    compile group: "com.github.rvesse", name: "airline", version: airline_version
+    implementation group: "com.github.rvesse", name: "airline", version: airline_version  // Apache 2.0
 
-    compile group: "com.github.oshi", name: "oshi-core", version: oshi_core_version
+    implementation group: "com.github.oshi", name: "oshi-core", version: oshi_core_version  // MIT
 
-    compile group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version  // Apache 2.0
+
+
 
     // --- Test Compile ---
-    testCompile project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "testClasses")
 
-    testCompile group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
     //testCompile group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
     //testCompile group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
     //testCompile group: "net.hydromatic", name: "quidem", version: quidem_version
     //testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
 
-    testCompile group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version
 }
 
 
@@ -139,7 +117,7 @@ javadoc {
 jar {
     manifest {
         attributes "Manifest-Version": "1.0"
-        attributes "Copyright": "Databases and Information Systems Group, Department Mathematics and Computer Science, University of Basel, Switzerland"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$version"
         attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
