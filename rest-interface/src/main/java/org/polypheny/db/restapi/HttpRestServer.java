@@ -16,11 +16,6 @@
 
 package org.polypheny.db.restapi;
 
-import static spark.Spark.before;
-import static spark.Spark.get;
-import static spark.Spark.port;
-import static spark.Spark.post;
-
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
@@ -31,7 +26,6 @@ import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.transaction.TransactionManager;
-import spark.Request;
 import spark.Service;
 
 

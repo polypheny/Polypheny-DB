@@ -59,7 +59,6 @@ import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
@@ -265,16 +264,16 @@ public class Rest {
 
         // Table Modify
 
-        ModifiableTable modifiableTable = table.unwrap( ModifiableTable.class );
-
         RelOptPlanner planner = transaction.getQueryProcessor().getPlanner();
         RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
 
-        TableModify tableModify = modifiableTable.toModificationRel(
-                cluster, // FIXME?
+        RelNode plan = relBuilder.build();
+        TableModify tableModify = new LogicalTableModify(
+                cluster,
+                plan.getTraitSet(),
                 table,
                 catalogReader,
-                relBuilder.build(),
+                plan,
                 LogicalTableModify.Operation.INSERT,
                 null,
                 null,
@@ -391,7 +390,9 @@ public class Rest {
             stopWatch.start();
             rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
             stopWatch.stop();
-            signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
+            if ( root.kind.belongsTo( SqlKind.DML ) ) {
+                signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
+            }
             transaction.commit();
         } catch ( Exception | TransactionException e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
