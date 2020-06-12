@@ -489,7 +489,7 @@ public class IcarusRouter extends AbstractRouter {
             if ( sum == 0 ) {
                 log.error( "Routing table row is empty! This should not happen!" );
             } else if ( sum > 100 ) {
-                log.error( "Routing table row does sum up to a value greater 100! This should not happen!" );
+                log.error( "Routing table row does sum up to a value greater 100! This should not happen! The value is: " + sum + " | Entries: " + row.values().toString() );
             } else if ( sum < 100 ) {
                 if ( fastestStore == -1 ) {
                     log.error( "Fastest Store is -1! This should not happen!" );
