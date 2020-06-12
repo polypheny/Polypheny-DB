@@ -171,9 +171,9 @@ public class IcarusRouter extends AbstractRouter {
             }
         } else {
             int p = 0;
-            int random = (int) (Math.random() * 100) + 1;
+            int random = Math.min( (int) (Math.random() * 100) + 1, 100 );
             for ( Map.Entry<Integer, Integer> entry : routingTableRow.entrySet() ) {
-                p += entry.getValue();
+                p += Math.max( entry.getValue(), 0 ); // avoid subtracting -2
                 if ( p >= random ) {
                     return entry.getKey();
                 }
