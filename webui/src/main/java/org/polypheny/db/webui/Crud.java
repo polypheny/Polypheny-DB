@@ -2515,17 +2515,25 @@ public class Crud implements InformationObserver {
         } else if ( signature.statementType == StatementType.IS_DML ) {
             Iterator<?> iterator = signature.enumerable( transaction.getDataContext() ).iterator();
             Object object = null;
+            int rowsChanged = -1;
             while ( iterator.hasNext() ) {
                 object = iterator.next();
+                int num;
+                if ( object != null && object.getClass().isArray() ) {
+                    Object[] o = (Object[]) object;
+                    num = ((Number) o[0]).intValue();
+                } else if ( object != null ) {
+                    num = ((Number) object).intValue();
+                } else {
+                    throw new QueryExecutionException( "Result is null" );
+                }
+                // Check if num is equal for all stores
+                if ( rowsChanged != -1 && rowsChanged != num ) {
+                    throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                }
+                rowsChanged = num;
             }
-            if ( object != null && object.getClass().isArray() ) {
-                Object[] o = (Object[]) object;
-                return ((Number) o[0]).intValue();
-            } else if ( object != null ) {
-                return ((Number) object).intValue();
-            } else {
-                throw new QueryExecutionException( "Result is null" );
-            }
+            return rowsChanged;
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );
         }
