@@ -467,10 +467,11 @@ public class IcarusRouter extends AbstractRouter {
                 }
             }
             // calc percents
-            int onePercent = hundredPercent / 100;
+            double onePercent = hundredPercent / 100.0;
             for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
                 if ( threshold >= entry.getValue() ) {
-                    int t = Math.min( entry.getValue().intValue() / onePercent, 100 ); // This is not nice... But if there is only one entry with 100 percent, it some time happens that we get 101
+                    double d = entry.getValue().intValue() / onePercent;
+                    int t = Math.min( (int) d, 100 ); // This is not nice... But if there is only one entry with 100 percent, it some time happens that we get 101
                     percents.add( t );
                     stores.put( entry.getKey(), entry.getValue() );
                 }
