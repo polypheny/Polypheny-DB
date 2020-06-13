@@ -36,6 +36,9 @@ public class RouterManager {
     private RouterFactory currentRouter = null;
 
 
+    protected final WebUiPage routingPage;
+
+
     public static RouterManager getInstance() {
         return INSTANCE;
     }
@@ -43,11 +46,12 @@ public class RouterManager {
 
     public RouterManager() {
         final ConfigManager configManager = ConfigManager.getInstance();
-        final WebUiPage routingPage = new WebUiPage(
+        routingPage = new WebUiPage(
                 "routingPage",
                 "Routing Settings",
                 "Settings influencing the query routing." );
-        final WebUiGroup routingGroup = new WebUiGroup( "routingGroup", routingPage.getId() );
+        final WebUiGroup routingGroup = new WebUiGroup( "routingGroup", routingPage.getId(), 1 );
+        routingGroup.withTitle( "General" );
         configManager.registerWebUiPage( routingPage );
         configManager.registerWebUiGroup( routingGroup );
 

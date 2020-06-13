@@ -259,7 +259,11 @@ public class InformationManager {
             this.pages.get( page ).addGroup( g );
         }
 
-        p.refresh();
+        // p can be null if the client requests a unknown page. This often happens after a restart of Polypheny-DB if a
+        // certain information page is not (yet) available.
+        if ( p != null ) {
+            p.refresh();
+        }
         return p;
     }
 

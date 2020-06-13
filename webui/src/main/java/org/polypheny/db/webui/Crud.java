@@ -2580,7 +2580,7 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
 
-        PolyphenyDbSignature signature;
+        PolyphenyDbSignature<?> signature;
         try {
             signature = processQuery( transaction, sqlUpdate, parserConfig );
         } catch ( Throwable t ) {
@@ -2590,18 +2590,31 @@ public class Crud implements InformationObserver {
         if ( signature.statementType == StatementType.OTHER_DDL ) {
             return 1;
         } else if ( signature.statementType == StatementType.IS_DML ) {
-            Object object = null;
+            int rowsChanged = -1;
             try{
-                object = signature.enumerable( transaction.getDataContext() ).iterator().next();
+                Iterator<?> iterator = signature.enumerable( transaction.getDataContext() ).iterator();
+                Object object;
+                while ( iterator.hasNext() ) {
+                    object = iterator.next();
+                    int num;
+                    if ( object != null && object.getClass().isArray() ) {
+                        Object[] o = (Object[]) object;
+                        num = ((Number) o[0]).intValue();
+                    } else if ( object != null ) {
+                        num = ((Number) object).intValue();
+                    } else {
+                        throw new QueryExecutionException( "Result is null" );
+                    }
+                    // Check if num is equal for all stores
+                    if ( rowsChanged != -1 && rowsChanged != num ) {
+                        throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                    }
+                    rowsChanged = num;
+                }
             } catch ( RuntimeException e ) {
                 throw new QueryExecutionException( e.getCause().getMessage(), e );
             }
-            if ( object != null && object.getClass().isArray() ) {
-                Object[] o = (Object[]) object;
-                return ((Number) o[0]).intValue();
-            } else {
-                return ((Number) object).intValue();
-            }
+            return rowsChanged;
         } else {
             throw new QueryExecutionException( "Unknown statement type: " + signature.statementType );
         }
