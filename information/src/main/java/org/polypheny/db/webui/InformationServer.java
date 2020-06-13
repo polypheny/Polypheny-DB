@@ -70,7 +70,12 @@ public class InformationServer implements InformationObserver {
         http.post( "/getPage", ( req, res ) -> {
             //input: req: {pageId: "page1"}
             try {
-                return im.getPage( req.body() ).asJson();
+                InformationPage page = im.getPage( req.body() );
+                if ( page == null ) {
+                    log.error( "Request for unknown page: " + req.body() );
+                    return "";
+                }
+                return page.asJson();
             } catch ( Exception e ) {
                 // if input not number or page does not exist
                 log.error( "Caught exception!", e );
