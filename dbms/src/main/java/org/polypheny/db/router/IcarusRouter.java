@@ -43,6 +43,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
 import org.polypheny.db.information.InformationGroup;
@@ -78,19 +79,31 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 @Slf4j
 public class IcarusRouter extends AbstractRouter {
 
-    public static final int WINDOW_SIZE = 25;
-    private static final int SHORT_RUNNING_SIMILAR_THRESHOLD = 100;
-    private static final int LONG_RUNNING_SIMILAR_THRESHOLD = 0;
+    private static final ConfigBoolean TRAINING = new ConfigBoolean(
+            "icarusRouting/training",
+            "Whether routing table should be adjusted according to the measured execution times. Setting this to false keeps the routing table in its current state.",
+            true );
+    private static final ConfigInteger WINDOW_SIZE = new ConfigInteger(
+            "icarusRouting/windowSize",
+            "Size of the moving average on the execution times per query class used for calculating the routing table.",
+            25 );
+    private static final ConfigInteger SHORT_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
+            "icarusRouting/shortRunningSimilarThreshold",
+            "The amount of time (specified as percentage of the fastest time) a store can be slower than the fastest store in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest store.",
+            100 );
+    private static final ConfigInteger LONG_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
+            "icarusRouting/longRunningSimilarThreshold",
+            "The amount of time (specified as percentage of the fastest time) a store can be slower than the fastest store in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest store.",
+            100 );
+    private static final ConfigInteger SHORT_RUNNING_LONG_RUNNING_THRESHOLD = new ConfigInteger(
+            "icarusRouting/shortRunningLongRunningThreshold",
+            "The minimal execution time (in milliseconds) for a query to be considered as long-running. Queries with lower execution times are considered as short-running.",
+            1000 );
 
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
     private int selectedStoreId = -2; // Is set in analyze
     private String queryClassString;
-
-    private static final ConfigBoolean ICARUS_TRAINING = new ConfigBoolean(
-            "routing/icarusTraining",
-            "Whether routing table should be adjusted according to the measured execution times. Setting this to false keeps the routing table in its current state.",
-            true );
 
 
     private IcarusRouter() {
@@ -169,7 +182,7 @@ public class IcarusRouter extends AbstractRouter {
             }
         }
 
-        if ( SHORT_RUNNING_SIMILAR_THRESHOLD == 0 ) {
+        if ( SHORT_RUNNING_SIMILAR_THRESHOLD.getInt() == 0 ) {
             // There should only be exactly one entry in the routing table > 0
             for ( Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
                 if ( entry.getValue() == 100 ) {
@@ -193,7 +206,7 @@ public class IcarusRouter extends AbstractRouter {
 
     @Override
     protected void wrapUp( Transaction transaction, RelNode routed ) {
-        if ( ICARUS_TRAINING.getBoolean() ) {
+        if ( TRAINING.getBoolean() ) {
             executionTimeMonitor.subscribe( routingTable, selectedStoreId + "-" + queryClassString );
         }
         if ( transaction.isAnalyze() ) {
@@ -356,7 +369,7 @@ public class IcarusRouter extends AbstractRouter {
                 if ( row.containsKey( executionTime.storeId ) ) {
                     row.get( executionTime.storeId ).offer( (double) executionTime.nanoTime );
                 } else {
-                    CircularFifoQueue<Double> queue = new CircularFifoQueue<>( WINDOW_SIZE );
+                    CircularFifoQueue<Double> queue = new CircularFifoQueue<>( WINDOW_SIZE.getInt() );
                     queue.offer( (double) executionTime.nanoTime );
                     row.put( executionTime.storeId, queue );
                 }
@@ -443,11 +456,11 @@ public class IcarusRouter extends AbstractRouter {
                     fastestTime = entry.getValue();
                 }
             }
-            long shortRunningLongRunningThreshold = SHORT_RUNNING_SIMILAR_THRESHOLD * 1000000; // multiply with 1000000 to get nanoseconds
-            if ( fastestTime < shortRunningLongRunningThreshold && SHORT_RUNNING_SIMILAR_THRESHOLD != 0 ) {
-                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD, fastestTime, fastestStore );
-            } else if ( fastestTime > shortRunningLongRunningThreshold && LONG_RUNNING_SIMILAR_THRESHOLD != 0 ) {
-                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD, fastestTime, fastestStore );
+            long shortRunningLongRunningThreshold = SHORT_RUNNING_LONG_RUNNING_THRESHOLD.getInt() * 1_000_000; // multiply with 1000000 to get nanoseconds
+            if ( fastestTime < shortRunningLongRunningThreshold && SHORT_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
+                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestStore );
+            } else if ( fastestTime > shortRunningLongRunningThreshold && LONG_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
+                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestStore );
             } else {
                 row = new HashMap<>();
                 if ( fastestStore != -1 && fastestTime > 0 ) {
@@ -543,13 +556,25 @@ public class IcarusRouter extends AbstractRouter {
             super();
             final ConfigManager configManager = ConfigManager.getInstance();
             // Only initialize ones
-            if ( configManager.getConfig( ICARUS_TRAINING.getKey() ) == null ) {
+            if ( configManager.getConfig( TRAINING.getKey() ) == null ) {
                 final WebUiGroup icarusGroup = new WebUiGroup( "icarusGroup", RouterManager.getInstance().routingPage.getId(), 2 );
                 icarusGroup.withTitle( "Icarus Routing" );
                 configManager.registerWebUiGroup( icarusGroup );
 
-                configManager.registerConfig( ICARUS_TRAINING );
-                ICARUS_TRAINING.withUi( icarusGroup.getId() );
+                configManager.registerConfig( TRAINING );
+                TRAINING.withUi( icarusGroup.getId() );
+
+                configManager.registerConfig( WINDOW_SIZE );
+                WINDOW_SIZE.withUi( icarusGroup.getId() );
+
+                configManager.registerConfig( SHORT_RUNNING_SIMILAR_THRESHOLD );
+                SHORT_RUNNING_SIMILAR_THRESHOLD.withUi( icarusGroup.getId() );
+
+                configManager.registerConfig( LONG_RUNNING_SIMILAR_THRESHOLD );
+                LONG_RUNNING_SIMILAR_THRESHOLD.withUi( icarusGroup.getId() );
+
+                configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
+                SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( icarusGroup.getId() );
             }
         }
 
