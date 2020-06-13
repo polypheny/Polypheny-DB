@@ -4,11 +4,6 @@ group "org.polypheny"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
-repositories {
-    mavenLocal()
-}
-
-
 apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
@@ -21,6 +16,12 @@ javadoc.options.encoding = "UTF-8"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+
+
+configurations.all {
+    // check for updates every build
+    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+}
 
 
 configurations {

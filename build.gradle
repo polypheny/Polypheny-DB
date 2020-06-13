@@ -35,6 +35,7 @@ allprojects {
     }
 
     repositories {
+        mavenLocal()
         maven {
             // DBIS Nexus
             url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
