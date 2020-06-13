@@ -94,7 +94,7 @@ public class IcarusRouter extends AbstractRouter {
     private static final ConfigInteger LONG_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
             "icarusRouting/longRunningSimilarThreshold",
             "The amount of time (specified as percentage of the fastest time) a store can be slower than the fastest store in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest store.",
-            100 );
+            0 );
     private static final ConfigInteger SHORT_RUNNING_LONG_RUNNING_THRESHOLD = new ConfigInteger(
             "icarusRouting/shortRunningLongRunningThreshold",
             "The minimal execution time (in milliseconds) for a query to be considered as long-running. Queries with lower execution times are considered as short-running.",
