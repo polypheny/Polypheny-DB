@@ -335,7 +335,11 @@ public class Crud implements InformationObserver {
                             viewTree.add( tableElement );
                         }
                     }
-                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                    if( request.showTable ) {
+                        schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                    } else {
+                        schemaTree.addChildren( tableTree ).setRouterLink( "" );
+                    }
                     if ( request.views ) {
                         schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
                     }
@@ -1687,6 +1691,7 @@ public class Crud implements InformationObserver {
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
             jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
+            jsonStore.add( "persistent", context.serialize( src.isPersistent() ));
             return jsonStore;
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
@@ -2665,7 +2670,7 @@ public class Crud implements InformationObserver {
             }
             //default
             else if ( !entry.getValue().equals( "" ) ) {
-                joiner.add( "CAST (\"" + entry.getKey() + "\" AS VARCHAR) LIKE '" + entry.getValue() + "%'" );
+                joiner.add( "CAST (\"" + entry.getKey() + "\" AS VARCHAR(8000)) LIKE '" + entry.getValue() + "%'" );
                 counter++;
             }
         }

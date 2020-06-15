@@ -255,6 +255,15 @@ public class SqlDataTypeSpec extends SqlNode {
         if ( PolyType.get( name ) != null ) {
             PolyType polyType = PolyType.get( name );
 
+            //e.g. for CAST call, for stores that don't support ARRAYs. This is a fix for the WebUI filtering (see webui.Crud.filterTable)
+            if( !writer.getDialect().supportsNestedArrays() && polyType == PolyType.ARRAY ) {
+                polyType = PolyType.VARCHAR;
+                name = polyType.getName();
+                if(precision < 0){
+                    name = name + "(8000)";
+                }
+            }
+
             // we have a built-in data type
             writer.keyword( name );
 
