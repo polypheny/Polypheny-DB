@@ -160,7 +160,7 @@ public class HttpServer extends QueryInterface {
 
         post( "/schemaRequest", crud::schemaRequest, gson::toJson );
 
-        get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
+        get( "/getTypeInfo", crud::getTypeInfo );
 
         get( "/getForeignKeyActions", crud::getForeignKeyActions, gson::toJson );
 

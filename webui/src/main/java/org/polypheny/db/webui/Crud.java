@@ -431,8 +431,12 @@ public class Crud implements InformationObserver {
         for ( DbColumn col : request.columns ) {
             colBuilder = new StringBuilder();
             colBuilder.append( "\"" ).append( col.name ).append( "\" " ).append( col.dataType );
-            if ( col.maxLength != null ) {
-                colBuilder.append( String.format( "(%d)", col.maxLength ) );
+            if ( col.precision != null ) {
+                colBuilder.append( "(" ).append( col.precision );
+                if( col.scale != null ) {
+                    colBuilder.append( "," ).append( col.scale );
+                }
+                colBuilder.append( ")" );
             }
             if( col.collectionsType != null && ! col.collectionsType.equals( "" ) ) {
                 colBuilder.append( " ").append( col.collectionsType );
@@ -1087,6 +1091,7 @@ public class Crud implements InformationObserver {
                                 collectionsType,
                                 catalogColumn.nullable,
                                 catalogColumn.length,
+                                catalogColumn.scale,
                                 catalogColumn.dimension,
                                 catalogColumn.cardinality,
                                 primaryColumns.contains( catalogColumn.name ),
@@ -1125,15 +1130,18 @@ public class Crud implements InformationObserver {
         // TODO: cast if needed
         if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
                !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
-                !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ||
+                !Objects.equals( oldColumn.precision, newColumn.precision ) ||
+                !Objects.equals( oldColumn.scale, newColumn.scale ) ||
                 !oldColumn.dimension.equals( newColumn.dimension ) ||
                 !oldColumn.cardinality.equals( newColumn.cardinality ) ) {
-            String query = "";
-            if ( newColumn.maxLength != null ) {
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s(%s)", tableId, newColumn.name, newColumn.dataType, newColumn.maxLength );
-            } else {
-                // TODO: drop maxlength if requested
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
+            // TODO: drop maxlength if requested
+            String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
+            if ( newColumn.precision != null ) {
+                query = query + "(" + newColumn.precision;
+                if( newColumn.scale != null ) {
+                    query = query + "," + newColumn.scale;
+                }
+                query = query + ")";
             }
             //collectionType
             if( !newColumn.collectionsType.equals( "" )){
@@ -1225,8 +1233,14 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         String query = String.format( "ALTER TABLE %s ADD COLUMN \"%s\" %s", tableId, request.newColumn.name, request.newColumn.dataType );
-        if ( request.newColumn.maxLength != null ) {
-            query = query + String.format( "(%d)", request.newColumn.maxLength );
+        if ( request.newColumn.precision != null ) {
+            if ( request.newColumn.precision != null ) {
+                query = query + "(" + request.newColumn.precision;
+                if( request.newColumn.scale != null ) {
+                    query = query + "," + request.newColumn.scale;
+                }
+                query = query + ")";
+            }
         }
         if( !request.newColumn.collectionsType.equals( "" )){
             query = query + " " + request.newColumn.collectionsType;
@@ -2019,31 +2033,10 @@ public class Crud implements InformationObserver {
     /**
      * Get all supported data types of the DBMS.
      */
-    public Result getTypeInfo( final Request req, final Response res ) {
-        ArrayList<String[]> data = new ArrayList<>();
-
-        /*
-        for ( PolyType polyType : PolyType.values() ) {
-            // ignore types that are not relevant
-            if ( polyType.getJdbcOrdinal() < -500 || polyType.getJdbcOrdinal() > 500 ) {
-                continue;
-            }
-            String[] row = new String[1];
-            for ( int i = 1; i <= 18; i++ ) {
-                row[0] = polyType.name();
-            }
-            data.add( row );
-        }
-         */
-
-        for ( PolyType polyType : PolyType.availableTypes() ) {
-            String[] row = new String[1];
-            row[0] = polyType.name();
-            data.add( row );
-        }
-
-        DbColumn[] header = { new DbColumn( "TYPE_NAME" ) };
-        return new Result( header, data.toArray( new String[0][1] ) );
+    public String getTypeInfo( final Request req, final Response res ) {
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.serializer );
+        Gson gson = gsonBuilder.create();
+        return gson.toJson( PolyType.availableTypes().toArray(new PolyType[0]), PolyType[].class );
     }
 
 
