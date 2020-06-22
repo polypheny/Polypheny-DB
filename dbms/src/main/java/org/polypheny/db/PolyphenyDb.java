@@ -205,7 +205,8 @@ public class PolyphenyDb {
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
-        log.info( "                              The UI is waiting for you on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        log.info( "                              The UI is waiting for you on port {}:", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
 
         try {

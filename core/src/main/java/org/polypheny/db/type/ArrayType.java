@@ -116,26 +116,14 @@ public class ArrayType extends AbstractPolyType {
      * @return the largest cardinality of all nested arrays
      */
     public long getMaxCardinality () {
-        if( this.elementType != null && this.elementType instanceof ArrayType ) {
-            return Math.max( this.cardinality, ((ArrayType) this.elementType).getMaxCardinality() );
-        }
-        else {
-            return this.cardinality;
-        }
+        return this.cardinality;
     }
 
     /**
-     * Return the largest dimension of all nested arrays
-     * E.g. if array b is within array a (a = [b1,b2]), then the array b has dimension 2 (it sits in the second dimension) and array a has dimension 1
-     * It might make sense to turn it around, but with this approach, the outermost SqlArrayValueConstructor has dimension 1 and knows that it is the outermost one, which is important for the unparsing
+     * @return the dimension of this array
      */
     public long getMaxDimension () {
-        if( this.elementType != null && this.elementType instanceof ArrayType ) {
-            return Math.max( this.dimension, ((ArrayType) this.elementType).getMaxDimension() );
-        }
-        else {
-            return this.dimension;
-        }
+        return this.dimension;
     }
 
 

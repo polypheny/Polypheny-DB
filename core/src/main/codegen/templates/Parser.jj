@@ -135,6 +135,7 @@ import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
 import java.io.Reader;
+import java.lang.Math;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -3897,7 +3898,7 @@ SqlNode ArrayConstructor() :
         }
     |
         // by enumeration "ARRAY[e0, e1, ..., eN]"
-        e = NestedArray(s, 1)
+        e = NestedArray(s)
         {
             return e;
         }
@@ -3909,22 +3910,37 @@ SqlNode ArrayConstructor() :
 * Parse the content of an array, including the square brackets
 * Supports nested arrays
 */
-SqlNode NestedArray(Span s, int dimension) :
+SqlNode NestedArray(Span s) :
 {
     SqlNodeList args;
     List<SqlNode> list;
     SqlNode arr;
+    int dimension = 1;
+    int maxCardinality = 0;
+    SqlArrayValueConstructor arrCtor;
 }
 {
     <LBRACKET>
     (
-        arr = NestedArray(s, dimension+1)
-        { list = startList(arr); }
+        arr = NestedArray(s)
+        { if( arr instanceof SqlBasicCall && ((SqlBasicCall)arr).getOperator() instanceof SqlArrayValueConstructor ) {
+            arrCtor = (SqlArrayValueConstructor)((SqlBasicCall)arr).getOperator();
+            arrCtor.outermost = false;
+            dimension = Math.max( dimension, arrCtor.dimension + 1 );
+            maxCardinality = Math.max( arrCtor.maxCardinality, maxCardinality );
+        }
+        list = startList(arr); }
         (
             LOOKAHEAD(2)
             <COMMA>
-            arr = NestedArray(s, dimension+1)
-            { list.add(arr); }
+            arr = NestedArray(s)
+            { if( arr instanceof SqlBasicCall && ((SqlBasicCall)arr).getOperator() instanceof SqlArrayValueConstructor ) {
+                arrCtor = (SqlArrayValueConstructor)((SqlBasicCall)arr).getOperator();
+                arrCtor.outermost = false;
+                dimension = Math.max( dimension, arrCtor.dimension + 1 );
+                maxCardinality = Math.max( arrCtor.maxCardinality, maxCardinality );
+            }
+            list.add(arr); }
         )*
         {
             args = new SqlNodeList(list, s.addAll(list).pos());
@@ -3936,7 +3952,7 @@ SqlNode NestedArray(Span s, int dimension) :
     )
     <RBRACKET>
     {
-        return new SqlArrayValueConstructor(dimension, args.getList().size()).createCall( s.end(this), args.getList());
+        return new SqlArrayValueConstructor( dimension, args.getList().size(), maxCardinality ).createCall( s.end(this), args.getList() );
     }
 }
 

@@ -54,17 +54,24 @@ import org.polypheny.db.type.PolyTypeUtil;
 public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
 
     public final int dimension;
-    public final int cardinality;
+    public final int maxCardinality;
+    public boolean outermost = true;
 
     public SqlArrayValueConstructor() {
-        this( 0, 0 );
+        this( 0, 0, 0 );
     }
 
 
-    public SqlArrayValueConstructor ( final int dimension, final int cardinality ) {
+    /**
+     * Constructor
+     * @param dimension The dimension of this array. The most nested array has dimension 1, its parent has dimension 2 etc.
+     * @param cardinality The cardinality of the array
+     * @param maxCardinality If an array consists of nested arrays that have a larger cardinality, this value will be larger than the array's <i>cardinality</i>.
+     */
+    public SqlArrayValueConstructor ( final int dimension, final int cardinality, final int maxCardinality ) {
         super( "ARRAY", SqlKind.ARRAY_VALUE_CONSTRUCTOR );
         this.dimension = dimension;
-        this.cardinality = cardinality;
+        this.maxCardinality = Math.max( maxCardinality, cardinality );
     }
 
 
@@ -74,14 +81,14 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
         if ( null == type ) {
             return null;
         }
-        return PolyTypeUtil.createArrayType( opBinding.getTypeFactory(), type, false, dimension, cardinality );
+        return PolyTypeUtil.createArrayType( opBinding.getTypeFactory(), type, false, dimension, maxCardinality );
     }
 
     @Override
     public RelDataType deriveType( SqlValidator validator, SqlValidatorScope scope, SqlCall call ) {
         RelDataType type = super.deriveType( validator, scope, call );
         if( type instanceof ArrayType ) {
-            ((ArrayType) type).setCardinality( cardinality ).setDimension( dimension );
+            ((ArrayType) type).setCardinality( maxCardinality ).setDimension( dimension );
         }
         //set the operator again, because SqlOperator.deriveType will clear the dimension & cardinality of this constructor
         ((SqlBasicCall) call).setOperator( this );
@@ -92,7 +99,7 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
         if(!writer.getDialect().supportsNestedArrays()) {
 
-            if( dimension == 1 ) {
+            if( outermost ) {
                 writer.literal( "'" );
             }
 
@@ -103,7 +110,7 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
             }
             writer.endList( frame );
 
-            if( dimension == 1 ) {
+            if( outermost ) {
                 writer.literal( "'" );
             }
         } else {
@@ -113,6 +120,6 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
 
     @Override
     public int hashCode() {
-        return Objects.hash( kind, "ARRAY", dimension, cardinality );
+        return Objects.hash( kind, "ARRAY", dimension, maxCardinality, outermost );
     }
 }
