@@ -255,7 +255,7 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( transaction, request, query.toString() );
         } catch ( QueryExecutionException e ) {
-            if(request.filter != null) {
+            if ( request.filter != null ) {
                 result = new Result( "Error while filtering table " + request.tableId );
             } else {
                 result = new Result( "Could not fetch table " + request.tableId );
@@ -335,7 +335,7 @@ public class Crud implements InformationObserver {
                             viewTree.add( tableElement );
                         }
                     }
-                    if( request.showTable ) {
+                    if ( request.showTable ) {
                         schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
                     } else {
                         schemaTree.addChildren( tableTree ).setRouterLink( "" );
@@ -433,19 +433,19 @@ public class Crud implements InformationObserver {
             colBuilder.append( "\"" ).append( col.name ).append( "\" " ).append( col.dataType );
             if ( col.precision != null ) {
                 colBuilder.append( "(" ).append( col.precision );
-                if( col.scale != null ) {
+                if ( col.scale != null ) {
                     colBuilder.append( "," ).append( col.scale );
                 }
                 colBuilder.append( ")" );
             }
-            if( col.collectionsType != null && ! col.collectionsType.equals( "" ) ) {
-                colBuilder.append( " ").append( col.collectionsType );
-                if( col.dimension != null ){
-                    colBuilder.append("(").append( col.dimension );
-                    if( col.cardinality != null ){
-                        colBuilder.append(",").append( col.cardinality );
+            if ( col.collectionsType != null && !col.collectionsType.equals( "" ) ) {
+                colBuilder.append( " " ).append( col.collectionsType );
+                if ( col.dimension != null ) {
+                    colBuilder.append( "(" ).append( col.dimension );
+                    if ( col.cardinality != null ) {
+                        colBuilder.append( "," ).append( col.cardinality );
                     }
-                    colBuilder.append(")");
+                    colBuilder.append( ")" );
                 }
             }
             if ( !col.nullable ) {
@@ -1129,7 +1129,7 @@ public class Crud implements InformationObserver {
         // change type + length
         // TODO: cast if needed
         if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
-               !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
+                !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
                 !Objects.equals( oldColumn.precision, newColumn.precision ) ||
                 !Objects.equals( oldColumn.scale, newColumn.scale ) ||
                 !oldColumn.dimension.equals( newColumn.dimension ) ||
@@ -1138,17 +1138,17 @@ public class Crud implements InformationObserver {
             String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
             if ( newColumn.precision != null ) {
                 query = query + "(" + newColumn.precision;
-                if( newColumn.scale != null ) {
+                if ( newColumn.scale != null ) {
                     query = query + "," + newColumn.scale;
                 }
                 query = query + ")";
             }
             //collectionType
-            if( !newColumn.collectionsType.equals( "" )){
+            if ( !newColumn.collectionsType.equals( "" ) ) {
                 query = query + " " + request.newColumn.collectionsType;
                 int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
                 int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
-                query = query + String.format("(%d,%d)", dimension, cardinality);
+                query = query + String.format( "(%d,%d)", dimension, cardinality );
             }
             queries.add( query );
         }
@@ -1170,13 +1170,13 @@ public class Crud implements InformationObserver {
                 query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
             } else {
                 query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
-                if(newColumn.collectionsType != null ){
+                if ( newColumn.collectionsType != null ) {
                     //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
-                    if( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ){
+                    if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
                         query = query + request.newColumn.collectionsType;
                     }
                     query = query + request.newColumn.defaultValue;
-                }else{
+                } else {
                     switch ( newColumn.dataType ) {
                         case "BIGINT":
                         case "INTEGER":
@@ -1236,25 +1236,25 @@ public class Crud implements InformationObserver {
         if ( request.newColumn.precision != null ) {
             if ( request.newColumn.precision != null ) {
                 query = query + "(" + request.newColumn.precision;
-                if( request.newColumn.scale != null ) {
+                if ( request.newColumn.scale != null ) {
                     query = query + "," + request.newColumn.scale;
                 }
                 query = query + ")";
             }
         }
-        if( !request.newColumn.collectionsType.equals( "" )){
+        if ( !request.newColumn.collectionsType.equals( "" ) ) {
             query = query + " " + request.newColumn.collectionsType;
             int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
             int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
-            query = query + String.format("(%d,%d)", dimension, cardinality);
+            query = query + String.format( "(%d,%d)", dimension, cardinality );
         }
         if ( !request.newColumn.nullable ) {
             query = query + " NOT NULL";
         }
         if ( request.newColumn.defaultValue != null ) {
-            if(request.newColumn.collectionsType != null ){
+            if ( request.newColumn.collectionsType != null ) {
                 //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
-                if( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ){
+                if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
                     query = query + request.newColumn.collectionsType;
                 }
                 query = query + request.newColumn.defaultValue;
@@ -1705,7 +1705,7 @@ public class Crud implements InformationObserver {
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
             jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
-            jsonStore.add( "persistent", context.serialize( src.isPersistent() ));
+            jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
             return jsonStore;
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
@@ -2036,7 +2036,7 @@ public class Crud implements InformationObserver {
     public String getTypeInfo( final Request req, final Response res ) {
         GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.serializer );
         Gson gson = gsonBuilder.create();
-        return gson.toJson( PolyType.availableTypes().toArray(new PolyType[0]), PolyType[].class );
+        return gson.toJson( PolyType.availableTypes().toArray( new PolyType[0] ), PolyType[].class );
     }
 
 
@@ -2522,8 +2522,8 @@ public class Crud implements InformationObserver {
                             default:
                                 temp[counter] = o.toString();
                         }
-                        if( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
-                            if( o instanceof Array ) {
+                        if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
+                            if ( o instanceof Array ) {
                                 try {
                                     temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
                                 } catch ( SQLException sqlException ) {
@@ -2589,7 +2589,7 @@ public class Crud implements InformationObserver {
             return 1;
         } else if ( signature.statementType == StatementType.IS_DML ) {
             int rowsChanged = -1;
-            try{
+            try {
                 Iterator<?> iterator = signature.enumerable( transaction.getDataContext() ).iterator();
                 Object object;
                 while ( iterator.hasNext() ) {
@@ -2657,7 +2657,7 @@ public class Crud implements InformationObserver {
         int counter = 0;
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
             //special treatment for arrays
-            if( entry.getValue().startsWith( "[" ) ) {
+            if ( entry.getValue().startsWith( "[" ) ) {
                 joiner.add( entry.getKey() + " = ARRAY" + entry.getValue() );
                 counter++;
             }
@@ -2713,7 +2713,7 @@ public class Crud implements InformationObserver {
      * Get the data types of each column of a table
      *
      * @param schemaName name of the schema
-     * @param tableName name of the table
+     * @param tableName  name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
     private Map<String, PolyType> getColumnTypes( String schemaName, String tableName ) {
