@@ -143,6 +143,7 @@ public class Explore {
 
         for ( int i = 0; i < exploreQueryResult.typeInfo.size(); i++ ) {
             String name = fullNames[i].substring( fullNames[i].lastIndexOf( "." ) + 1 );
+            name = name.replace( "\"", "" ); // remove quotes
             if ( exploreQueryResult.name.get( i ).startsWith( name ) ) {
                 String type = exploreQueryResult.typeInfo.get( i );
                 if ( type.equals( "VARCHAR" ) || type.equals( "INTEGER" ) || type.equals( "BIGINT" ) || type.equals( "SMALLINT" ) || type.equals( "TINYINT" ) || type.equals( "DECIMAL" ) ) {
