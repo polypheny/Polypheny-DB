@@ -135,7 +135,6 @@ public abstract class AbstractJdbcStore extends Store {
 
     @Override
     public void createTable( Context context, CatalogTable catalogTable ) {
-        StringBuilder builder = new StringBuilder();
         List<String> qualifiedNames = new LinkedList<>();
         qualifiedNames.add( catalogTable.schemaName );
         qualifiedNames.add( catalogTable.name );
@@ -143,8 +142,29 @@ public abstract class AbstractJdbcStore extends Store {
         if ( log.isDebugEnabled() ) {
             log.debug( "[{}] createTable: Qualified names: {}, physicalTableName: {}", getUniqueName(), qualifiedNames, physicalTableName );
         }
+        StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
+        executeUpdate( query, context );
+        // Add physical names to placements
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+            try {
+                catalog.updateColumnPlacementPhysicalNames(
+                        getStoreId(),
+                        placement.columnId,
+                        getDefaultPhysicalSchemaName(),
+                        physicalTableName,
+                        getPhysicalColumnName( placement.columnId ) );
+            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
+                throw new RuntimeException( e );
+            }
+        }
+
+    }
+
+
+    protected StringBuilder buildCreateTableQuery( String schemaName, String physicalTableName, CatalogTable catalogTable ) {
+        StringBuilder builder = new StringBuilder();
         builder.append( "CREATE TABLE " )
-                .append( dialect.quoteIdentifier( getDefaultPhysicalSchemaName() ) )
+                .append( dialect.quoteIdentifier( schemaName ) )
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTableName ) )
                 .append( " ( " );
@@ -162,11 +182,10 @@ public abstract class AbstractJdbcStore extends Store {
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( placement.columnId ) ) ).append( " " );
 
-            if( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null) {
+            if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
                 //returns e.g. TEXT if arrays are not supported
                 builder.append( getTypeString( PolyType.ARRAY ) );
-            }
-            else {
+            } else {
                 builder.append( getTypeString( catalogColumn.type ) );
                 if ( catalogColumn.length != null ) {
                     builder.append( "(" ).append( catalogColumn.length );
@@ -190,30 +209,33 @@ public abstract class AbstractJdbcStore extends Store {
 
         }
         builder.append( " )" );
-        executeUpdate( builder, context );
-        // Add physical names to placements
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
-            try {
-                catalog.updateColumnPlacementPhysicalNames(
-                        getStoreId(),
-                        placement.columnId,
-                        getDefaultPhysicalSchemaName(),
-                        physicalTableName,
-                        getPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-                throw new RuntimeException( e );
-            }
-        }
-
+        return builder;
     }
 
 
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
-        StringBuilder builder = new StringBuilder();
         String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
         String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
         String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );
+        executeUpdate( query, context );
+        // Add physical name to placement
+        try {
+            catalog.updateColumnPlacementPhysicalNames(
+                    getStoreId(),
+                    catalogColumn.id,
+                    physicalSchemaName,
+                    physicalTableName,
+                    physicalColumnName );
+        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
+    protected StringBuilder buildAddColumnQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )
@@ -237,21 +259,11 @@ public abstract class AbstractJdbcStore extends Store {
             String beforeColumnName = catalogTable.columnNames.get( catalogColumn.position - 1 );
             builder.append( " BEFORE " ).append( dialect.quoteIdentifier( beforeColumnName ) );
         }
-        executeUpdate( builder, context );
-        // Add physical name to placement
-        try {
-            catalog.updateColumnPlacementPhysicalNames(
-                    getStoreId(),
-                    catalogColumn.id,
-                    physicalSchemaName,
-                    physicalTableName,
-                    physicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-            throw new RuntimeException( e );
-        }
+        return builder;
     }
 
 
+    // Make sure to update overriden methods as well
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
