@@ -90,6 +90,10 @@ public class PostgresqlStore extends AbstractJdbcStore {
             }
             builder.append( ")" );
         }
+        builder.append( " USING " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) )
+                .append( "::" )
+                .append( catalogColumn.type );
         executeUpdate( builder, context );
     }
 
