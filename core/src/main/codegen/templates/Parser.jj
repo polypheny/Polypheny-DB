@@ -57,6 +57,7 @@ import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.JoinConditionType;
 import org.polypheny.db.sql.JoinType;
 import org.polypheny.db.sql.SqlAlter;
+import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlBinaryOperator;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlCharStringLiteral;
@@ -110,6 +111,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWindow;
 import org.polypheny.db.sql.SqlWith;
 import org.polypheny.db.sql.SqlWithItem;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.OracleSqlOperatorTable;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -133,6 +135,7 @@ import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
 
 import java.io.Reader;
+import java.lang.Math;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -3023,6 +3026,7 @@ List<Object> Expression2(ExprContext exprContext) :
     final List<Object> list3 = new ArrayList();
     SqlNodeList nodeList;
     SqlNode e;
+    List<Object> arrayItemList;
     SqlOperator op;
     String p;
     final Span s = span();
@@ -3139,14 +3143,8 @@ List<Object> Expression2(ExprContext exprContext) :
                 }
                 Expression2b(ExprContext.ACCEPT_SUB_QUERY, list)
             |
-                <LBRACKET>
-                e = Expression(ExprContext.ACCEPT_SUB_QUERY)
-                <RBRACKET> {
-                    list.add(
-                        new SqlParserUtil.ToTreeListItem(
-                            SqlStdOperatorTable.ITEM, getPos()));
-                    list.add(e);
-                }
+                arrayItemList = ArrayItem(s)
+                { list.addAll(arrayItemList); }
                 (
                     <DOT>
                     p = Identifier() {
@@ -3900,18 +3898,91 @@ SqlNode ArrayConstructor() :
         }
     |
         // by enumeration "ARRAY[e0, e1, ..., eN]"
-        <LBRACKET> // TODO: do trigraph as well ??( ??)
-        (
-            args = ExpressionCommaList(s, ExprContext.ACCEPT_NON_QUERY)
-        |
-            { args = SqlNodeList.EMPTY; }
-        )
-        <RBRACKET>
+        e = NestedArray(s)
         {
-            return SqlStdOperatorTable.ARRAY_VALUE_CONSTRUCTOR.createCall(
-                s.end(this), args.getList());
+            return e;
         }
     )
+}
+
+
+/**
+* Parse the content of an array, including the square brackets
+* Supports nested arrays
+*/
+SqlNode NestedArray(Span s) :
+{
+    SqlNodeList args;
+    List<SqlNode> list;
+    SqlNode arr;
+    int dimension = 1;
+    int maxCardinality = 0;
+    SqlArrayValueConstructor arrCtor;
+}
+{
+    <LBRACKET>
+    (
+        arr = NestedArray(s)
+        { if( arr instanceof SqlBasicCall && ((SqlBasicCall)arr).getOperator() instanceof SqlArrayValueConstructor ) {
+            arrCtor = (SqlArrayValueConstructor)((SqlBasicCall)arr).getOperator();
+            arrCtor.outermost = false;
+            dimension = Math.max( dimension, arrCtor.dimension + 1 );
+            maxCardinality = Math.max( arrCtor.maxCardinality, maxCardinality );
+        }
+        list = startList(arr); }
+        (
+            LOOKAHEAD(2)
+            <COMMA>
+            arr = NestedArray(s)
+            { if( arr instanceof SqlBasicCall && ((SqlBasicCall)arr).getOperator() instanceof SqlArrayValueConstructor ) {
+                arrCtor = (SqlArrayValueConstructor)((SqlBasicCall)arr).getOperator();
+                arrCtor.outermost = false;
+                dimension = Math.max( dimension, arrCtor.dimension + 1 );
+                maxCardinality = Math.max( arrCtor.maxCardinality, maxCardinality );
+            }
+            list.add(arr); }
+        )*
+        {
+            args = new SqlNodeList(list, s.addAll(list).pos());
+        }
+    |
+        args = ExpressionCommaList(s, ExprContext.ACCEPT_NON_QUERY)
+    |
+        { args = SqlNodeList.EMPTY; }
+    )
+    <RBRACKET>
+    {
+        return new SqlArrayValueConstructor( dimension, args.getList().size(), maxCardinality ).createCall( s.end(this), args.getList() );
+    }
+}
+
+/**
+* Parses an array accessor, e.g. myArray[1] (only the accessor [1])
+* supports posgres-style slicing, e.g. myArray[1:2]
+*/
+List<Object> ArrayItem(Span s) :
+{
+    final List<Object> list = new ArrayList<Object>();
+    SqlNode e1;
+    SqlNode e2 = null;
+    SqlParserPos pos;
+}
+{
+    <LBRACKET>
+    e1 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+    //allow postgres-syntax to get a specific array item: a[1:1]
+    [
+        <COLON>
+        e2 = Expression(ExprContext.ACCEPT_SUB_QUERY)
+    ]
+    <RBRACKET> {
+        list.add(
+            new SqlParserUtil.ToTreeListItem(
+                SqlStdOperatorTable.ITEM, getPos()));
+        list.add(e1);
+        if(e2!=null){list.add(e2);}
+        return list;
+    }
 }
 
 /** Parses a MAP constructor */
@@ -4367,6 +4438,8 @@ SqlDataTypeSpec DataType() :
     SqlIdentifier collectionTypeName = null;
     int scale = -1;
     int precision = -1;
+    int dimension = -1;
+    int cardinality = -1;
     String charSetName = null;
     final Span s;
 }
@@ -4388,7 +4461,17 @@ SqlDataTypeSpec DataType() :
         charSetName = Identifier()
     ]
     [
+        //e.g. ARRAY(dimension, cardinality)
         collectionTypeName = CollectionsTypeName()
+        [
+            <LPAREN>
+            dimension = IntLiteral()
+            [
+                <COMMA>
+                cardinality = IntLiteral()
+            ]
+            <RPAREN>
+        ]
     ]
     {
         if (null != collectionTypeName) {
@@ -4397,6 +4480,8 @@ SqlDataTypeSpec DataType() :
                 typeName,
                 precision,
                 scale,
+                dimension,
+                cardinality,
                 charSetName,
                 s.end(collectionTypeName));
         }
@@ -4550,6 +4635,11 @@ SqlIdentifier CollectionsTypeName() :
     <MULTISET> {
         return new SqlIdentifier(
             PolyType.MULTISET.name(), getPos());
+    }
+    |
+    <ARRAY> {
+        return new SqlIdentifier(
+                    PolyType.ARRAY.name(), getPos());
     }
 }
 

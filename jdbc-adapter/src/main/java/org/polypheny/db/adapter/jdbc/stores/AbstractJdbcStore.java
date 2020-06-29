@@ -69,8 +69,9 @@ public abstract class AbstractJdbcStore extends Store {
             String uniqueName,
             Map<String, String> settings,
             ConnectionFactory connectionFactory,
-            SqlDialect dialect ) {
-        super( storeId, uniqueName, settings, false, false );
+            SqlDialect dialect,
+            boolean persistent ) {
+        super( storeId, uniqueName, settings, false, false, persistent );
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager
@@ -160,13 +161,31 @@ public abstract class AbstractJdbcStore extends Store {
             }
             first = false;
             builder.append( dialect.quoteIdentifier( getPhysicalColumnName( placement.columnId ) ) ).append( " " );
-            builder.append( getTypeString( catalogColumn.type ) );
-            if ( catalogColumn.length != null ) {
-                builder.append( "(" ).append( catalogColumn.length );
-                if ( catalogColumn.scale != null ) {
-                    builder.append( "," ).append( catalogColumn.scale );
+
+            if( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null) {
+                //returns e.g. TEXT if arrays are not supported
+                builder.append( getTypeString( PolyType.ARRAY ) );
+            }
+            else {
+                builder.append( getTypeString( catalogColumn.type ) );
+                if ( catalogColumn.length != null ) {
+                    builder.append( "(" ).append( catalogColumn.length );
+                    if ( catalogColumn.scale != null ) {
+                        builder.append( "," ).append( catalogColumn.scale );
+                    }
+                    builder.append( ")" );
                 }
-                builder.append( ")" );
+                if ( catalogColumn.collectionsType != null ) {
+                    builder.append( " " ).append( catalogColumn.collectionsType.toString() );
+                    //TODO NH check if can apply dimension / cardinality
+                    /*if ( catalogColumn.dimension != null ) {
+                        builder.append( "(" ).append( catalogColumn.dimension );
+                        if ( catalogColumn.cardinality != null ) {
+                            builder.append( "," ).append( catalogColumn.cardinality );
+                        }
+                        builder.append( ")" );
+                    }*/
+                }
             }
 
         }

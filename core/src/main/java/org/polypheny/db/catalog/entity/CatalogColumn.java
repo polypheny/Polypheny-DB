@@ -22,6 +22,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 
 
@@ -93,6 +95,24 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     }
 
 
+    public RelDataType getRelDataType( final RelDataTypeFactory typeFactory ) {
+        RelDataType elementType;
+        if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
+            elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
+        } else if ( this.length != null && this.type.allowsPrecNoScale() ) {
+            elementType = typeFactory.createPolyType( this.type, this.length );
+        } else {
+            assert this.type.allowsNoPrecNoScale();
+            elementType = typeFactory.createPolyType( this.type );
+        }
+        if ( collectionsType == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+        } else {
+            return elementType;
+        }
+    }
+
+
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
@@ -131,7 +151,6 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
                     } else {
                         return comp;
                     }
-
 
                 } else {
                     return comp;
@@ -181,8 +200,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     }
 
 
-    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, Integer length, Integer scale, Collation collation ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, column.collectionsType, length, scale, column.dimension, column.cardinality, column.nullable, collation, column.defaultValue );
+    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, Collation collation ) {
+        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, collectionsType, length, scale, dimension, cardinality, column.nullable, collation, column.defaultValue );
     }
 
 

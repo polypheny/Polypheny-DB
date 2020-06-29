@@ -35,6 +35,9 @@ package org.polypheny.db.type;
 
 
 import java.util.Objects;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
 import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
@@ -43,17 +46,34 @@ import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 /**
  * Array type.
  */
+@Accessors(chain = true)
 public class ArrayType extends AbstractPolyType {
 
     private final RelDataType elementType;
+    @Getter
+    @Setter
+    private long cardinality;
+    @Getter
+    @Setter
+    private long dimension;
 
 
     /**
      * Creates an ArrayType. This constructor should only be called from a factory method.
      */
     public ArrayType( RelDataType elementType, boolean isNullable ) {
+        this( elementType, isNullable, -1, -1 );
+    }
+
+
+    /**
+     * Creates an ArrayType. This constructor should only be called from a factory method.
+     */
+    public ArrayType( final RelDataType elementType, final boolean isNullable, final long cardinality, final long dimension ) {
         super( PolyType.ARRAY, isNullable, null );
         this.elementType = Objects.requireNonNull( elementType );
+        this.cardinality = cardinality;
+        this.dimension = dimension;
         computeDigest();
     }
 
@@ -67,6 +87,9 @@ public class ArrayType extends AbstractPolyType {
             sb.append( elementType.toString() );
         }
         sb.append( " ARRAY" );
+        if( withDetail ) {
+            sb.append( String.format( "(%d,%d)", cardinality, dimension ) );
+        }
     }
 
 
@@ -74,6 +97,33 @@ public class ArrayType extends AbstractPolyType {
     @Override
     public RelDataType getComponentType() {
         return elementType;
+    }
+
+
+    /*
+    * @return This returns the type of a nested ArrayType. E.g. for an array of an array of Integers, this will return the Integer type.
+    */
+    public RelDataType getNestedComponentType() {
+        if( this.getComponentType().getPolyType() == PolyType.ARRAY ) {
+            return ((ArrayType) this.elementType).getNestedComponentType();
+        } else {
+            return this.elementType;
+        }
+    }
+
+
+    /**
+     * @return the largest cardinality of all nested arrays
+     */
+    public long getMaxCardinality () {
+        return this.cardinality;
+    }
+
+    /**
+     * @return the dimension of this array
+     */
+    public long getMaxDimension () {
+        return this.dimension;
     }
 
 
@@ -108,4 +158,3 @@ public class ArrayType extends AbstractPolyType {
         };
     }
 }
-

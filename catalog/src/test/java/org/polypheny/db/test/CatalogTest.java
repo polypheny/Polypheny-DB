@@ -259,7 +259,7 @@ public class CatalogTest {
         assertEquals( catalog.getColumns( tableId ).stream().map( c -> c.name ).collect( Collectors.toList() ), columnNames );
 
         // test replacing ColumnType
-        catalog.setColumnType( columnId, PolyType.CHAR, null, null );
+        catalog.setColumnType( columnId, PolyType.CHAR, null, null, null, null, null );
 
         assertEquals( PolyType.CHAR, catalog.getColumn( columnId ).type );
 

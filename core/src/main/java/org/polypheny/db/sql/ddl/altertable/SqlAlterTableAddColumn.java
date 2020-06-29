@@ -24,6 +24,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -171,8 +172,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     collectionsType,
                     type.getPrecision() == -1 ? null : type.getPrecision(),
                     type.getScale() == -1 ? null : type.getScale(),
-                    null,
-                    null,
+                    type.getDimension() == -1 ? null : type.getDimension(),
+                    type.getCardinality() == -1 ? null : type.getCardinality(),
                     nullable,
                     Collation.CASE_INSENSITIVE
             );

@@ -551,7 +551,7 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param type The new type of the column
      */
-    public abstract void setColumnType( long columnId, PolyType type, Integer length, Integer precision ) throws GenericCatalogException;
+    public abstract void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality ) throws GenericCatalogException;
 
     /**
      * Change nullability of the column (weather the column allows null values).

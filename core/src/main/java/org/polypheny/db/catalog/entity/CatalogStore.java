@@ -31,7 +31,6 @@ public class CatalogStore implements CatalogEntity {
     public final String uniqueName;
     public final String adapterClazz;
     public final Map<String, String> settings;
-    public final boolean persistent;
 
 
     public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz, @NonNull final Map<String, String> settings ) {
@@ -39,12 +38,6 @@ public class CatalogStore implements CatalogEntity {
         this.uniqueName = uniqueName;
         this.adapterClazz = adapterClazz;
         this.settings = settings;
-
-        if ( settings.containsKey( "persistent" ) ) {
-            this.persistent = Boolean.parseBoolean( settings.get( "persistent" ) );
-        } else {
-            this.persistent = false;
-        }
     }
 
 

@@ -36,6 +36,7 @@ package org.polypheny.db.rex;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.type.RelDataType;
@@ -56,6 +57,7 @@ import org.polypheny.db.sql.validate.SqlValidatorException;
  */
 public class RexCallBinding extends SqlOperatorBinding {
 
+    @Getter
     private final List<RexNode> operands;
 
     private final List<RelCollation> inputCollations;

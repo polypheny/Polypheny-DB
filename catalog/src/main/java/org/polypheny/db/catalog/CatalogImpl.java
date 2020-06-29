@@ -1633,11 +1633,11 @@ public class CatalogImpl extends Catalog {
                     table.databaseName,
                     position,
                     type,
-                    null,
+                    collectionsType,
                     length,
                     scale,
-                    null,
-                    null,
+                    dimension,
+                    cardinality,
                     nullable,
                     collation,
                     null );
@@ -1715,7 +1715,7 @@ public class CatalogImpl extends Catalog {
      * @param type The new type of the column
      */
     @Override
-    public void setColumnType( long columnId, PolyType type, Integer length, Integer scale ) throws GenericCatalogException {
+    public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality ) throws GenericCatalogException {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
 
@@ -1723,7 +1723,7 @@ public class CatalogImpl extends Catalog {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
             Collation collation = type.getFamily() == PolyTypeFamily.CHARACTER ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
-            CatalogColumn column = CatalogColumn.replaceColumnType( old, type, length, scale, collation );
+            CatalogColumn column = CatalogColumn.replaceColumnType( old, type, collectionsType, length, scale, dimension, cardinality, collation );
             synchronized ( this ) {
                 columns.replace( columnId, column );
                 columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
@@ -2404,7 +2404,7 @@ public class CatalogImpl extends Catalog {
         try {
             commit();
         } catch ( NoTablePrimaryKeyException e ) {
-            throw new RuntimeException( "An error occured while creating the store." );
+            throw new RuntimeException( "An error occurred while creating the store." );
         }
         listeners.firePropertyChange( "store", null, store );
         return id;

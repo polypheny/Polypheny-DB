@@ -106,7 +106,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
                     for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                         columnNames.add( catalogColumn.name );
-                        fieldInfo.add( catalogColumn.name, null, sqlType( typeFactory, catalogColumn ) ).nullable( catalogColumn.nullable );
+                        fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) ).nullable( catalogColumn.nullable );
                     }
                     List<Long> columnIds = new LinkedList<>();
                     catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
@@ -167,18 +167,6 @@ public class PolySchemaBuilder implements PropertyChangeListener {
         }
 
         return polyphenyDbSchema;
-    }
-
-
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, CatalogColumn column ) {
-        if ( column.length != null && column.scale != null && column.type.allowsPrecScale( true, true ) ) {
-            return typeFactory.createPolyType( column.type, column.length, column.scale );
-        } else if ( column.length != null && column.type.allowsPrecNoScale() ) {
-            return typeFactory.createPolyType( column.type, column.length );
-        } else {
-            assert column.type.allowsNoPrecNoScale();
-            return typeFactory.createPolyType( column.type );
-        }
     }
 
 

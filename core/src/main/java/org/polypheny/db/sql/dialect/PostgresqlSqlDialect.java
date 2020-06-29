@@ -97,6 +97,12 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsNestedArrays() {
+        return true;
+    }
+
+
+    @Override
     public SqlNode getCastSpec( RelDataType type ) {
         String castSpec;
         switch ( type.getPolyType() ) {

@@ -283,6 +283,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         // Add value
                         if ( column.defaultValue != null ) {
                             CatalogDefaultValue defaultValue = column.defaultValue;
+                            //TODO NH handle arrays
                             switch ( column.type ) {
                                 case BOOLEAN:
                                     newValues[i][pos] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );

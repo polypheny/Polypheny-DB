@@ -126,6 +126,16 @@ public interface RelDataTypeFactory {
     RelDataType createArrayType( RelDataType elementType, long maxCardinality );
 
     /**
+     * Creates an array type. Arrays are ordered collections of elements.
+     *
+     * @param elementType type of the elements of the array
+     * @param maxCardinality maximum array size, or -1 for unlimited
+     * @param dimension array max dimension. -1 for unlimited
+     * @return canonical array type descriptor
+     */
+    RelDataType createArrayType( RelDataType elementType, long maxCardinality, long dimension );
+
+    /**
      * Creates a map type. Maps are unordered collections of key/value pairs.
      *
      * @param keyType type of the keys of the map

@@ -114,8 +114,14 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
 
     @Override
     public RelDataType createArrayType( RelDataType elementType, long maxCardinality ) {
-        assert maxCardinality == -1;
-        ArrayType newType = new ArrayType( elementType, false );
+        ArrayType newType = new ArrayType( elementType, false, maxCardinality, -1 );
+        return canonize( newType );
+    }
+
+
+    @Override
+    public RelDataType createArrayType( RelDataType elementType, long maxCardinality, long dimension ) {
+        ArrayType newType = new ArrayType( elementType, false, maxCardinality, dimension );
         return canonize( newType );
     }
 
@@ -226,6 +232,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     private void assertBasic( PolyType typeName ) {
         assert typeName != null;
         assert typeName != PolyType.MULTISET : "use createMultisetType() instead";
+        assert typeName != PolyType.ARRAY : "use createArrayType() instead";
         assert !PolyType.INTERVAL_TYPES.contains( typeName ) : "use createSqlIntervalType() instead";
     }
 
@@ -489,7 +496,7 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     private RelDataType copyArrayType( RelDataType type, boolean nullable ) {
         ArrayType at = (ArrayType) type;
         RelDataType elementType = copyType( at.getComponentType() );
-        return new ArrayType( elementType, nullable );
+        return new ArrayType( elementType, nullable, at.getCardinality(), at.getDimension() );
     }
 
 
@@ -504,7 +511,13 @@ public class PolyTypeFactoryImpl extends RelDataTypeFactoryImpl {
     // override RelDataTypeFactoryImpl
     @Override
     protected RelDataType canonize( RelDataType type ) {
-        type = super.canonize( type );
+        // skip canonize step for ArrayTypes, to not cache cardinality or dimension
+        //type = super.canonize( type );
+        if( ! (type instanceof ArrayType)) {
+            type = super.canonize( type );
+        } else if ( ((ArrayType)type).getCardinality() == -1 && ((ArrayType)type).getDimension() == -1 ) {
+            type = super.canonize( type );
+        }
         if ( !(type instanceof ObjectPolyType) ) {
             return type;
         }

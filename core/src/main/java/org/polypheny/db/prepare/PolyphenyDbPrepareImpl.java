@@ -1011,11 +1011,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
     private static String getTypeName( RelDataType type ) {
         final PolyType polyType = type.getPolyType();
         switch ( polyType ) {
+            /*
             case ARRAY:
             case MULTISET:
             case MAP:
             case ROW:
                 return type.toString(); // e.g. "INTEGER ARRAY"
+             */
             case INTERVAL_YEAR_MONTH:
                 return "INTERVAL_YEAR_TO_MONTH";
             case INTERVAL_DAY_HOUR:

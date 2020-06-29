@@ -174,6 +174,7 @@ public enum PolyTypeFamily implements RelDataTypeFamily {
             case MULTISET:
                 return ImmutableList.of( PolyType.MULTISET );
             case ARRAY:
+                //TODO NH: add array types
                 return ImmutableList.of( PolyType.ARRAY );
             case MAP:
                 return ImmutableList.of( PolyType.MAP );

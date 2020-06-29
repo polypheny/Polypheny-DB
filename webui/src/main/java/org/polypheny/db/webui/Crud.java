@@ -44,7 +44,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Array;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -253,9 +255,12 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( transaction, request, query.toString() );
         } catch ( QueryExecutionException e ) {
-            //result = new Result( e.getMessage() );
-            log.error( "Caught exception while fetching a table", e );
-            result = new Result( "Could not fetch table " + request.tableId );
+            if ( request.filter != null ) {
+                result = new Result( "Error while filtering table " + request.tableId );
+            } else {
+                result = new Result( "Could not fetch table " + request.tableId );
+                log.error( "Caught exception while fetching a table", e );
+            }
             try {
                 transaction.rollback();
                 return result;
@@ -305,43 +310,50 @@ public class Crud implements InformationObserver {
             return new ArrayList<>();
         }
 
+        Transaction transaction = getTransaction();
         try {
             List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
             for ( CatalogSchema schema : schemas ) {
                 SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
 
                 if ( request.depth > 1 ) {
-                    ArrayList<SidebarElement> tables = new ArrayList<>();
-                    ArrayList<SidebarElement> views = new ArrayList<>();
-                    List<CatalogTable> childTables = catalog.getTables( schema.id, null );
-                    for ( CatalogTable childTable : childTables ) {
-                        SidebarElement table = new SidebarElement( childTable.schemaName + "." + childTable.name, childTable.name, request.routerLinkRoot, "fa fa-table" );
+                    ArrayList<SidebarElement> tableTree = new ArrayList<>();
+                    ArrayList<SidebarElement> viewTree = new ArrayList<>();
+                    List<CatalogTable> tables = catalog.getTables( schema.id, null );
+                    for ( CatalogTable table : tables ) {
+                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, "fa fa-table" );
 
                         if ( request.depth > 2 ) {
-                            List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
-                            for ( CatalogColumn childColumn : childColumns ) {
-                                table.addChild( new SidebarElement( childColumn.schemaName + "." + childColumn.tableName + "." + childColumn.name, childColumn.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                            List<CatalogColumn> columns = catalog.getColumns( table.id );
+                            for ( CatalogColumn column : columns ) {
+                                tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
-                        if ( childTable.tableType == TableType.TABLE ) {
-                            tables.add( table );
-                        } else if ( request.views && childTable.tableType == TableType.VIEW ) {
-                            views.add( table );
+                        if ( table.tableType == TableType.TABLE ) {
+                            tableTree.add( tableElement );
+                        } else if ( request.views && table.tableType == TableType.VIEW ) {
+                            viewTree.add( tableElement );
                         }
                     }
-                    if( request.showTable ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tables ).setRouterLink( "" ) );
-                    }else {
-                        schemaTree.addChildren( tables );
+                    if ( request.showTable ) {
+                        schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                    } else {
+                        schemaTree.addChildren( tableTree ).setRouterLink( "" );
                     }
                     if ( request.views ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( views ).setRouterLink( "" ) );
+                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
                     }
                 }
                 result.add( schemaTree );
             }
-        } catch ( GenericCatalogException | UnknownSchemaException e ) {
+            transaction.commit();
+        } catch ( UnknownSchemaException | GenericCatalogException | TransactionException e ) {
             log.error( "Caught exception", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Caught exception while rollback", e );
+            }
         }
 
         return result;
@@ -419,8 +431,22 @@ public class Crud implements InformationObserver {
         for ( DbColumn col : request.columns ) {
             colBuilder = new StringBuilder();
             colBuilder.append( "\"" ).append( col.name ).append( "\" " ).append( col.dataType );
-            if ( col.maxLength != null ) {
-                colBuilder.append( String.format( "(%d)", col.maxLength ) );
+            if ( col.precision != null ) {
+                colBuilder.append( "(" ).append( col.precision );
+                if ( col.scale != null ) {
+                    colBuilder.append( "," ).append( col.scale );
+                }
+                colBuilder.append( ")" );
+            }
+            if ( col.collectionsType != null && !col.collectionsType.equals( "" ) ) {
+                colBuilder.append( " " ).append( col.collectionsType );
+                if ( col.dimension != null ) {
+                    colBuilder.append( "(" ).append( col.dimension );
+                    if ( col.cardinality != null ) {
+                        colBuilder.append( "," ).append( col.cardinality );
+                    }
+                    colBuilder.append( ")" );
+                }
             }
             if ( !col.nullable ) {
                 colBuilder.append( " NOT NULL" );
@@ -485,7 +511,7 @@ public class Crud implements InformationObserver {
         StringBuilder query = new StringBuilder();
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-        query.append( "INSERT INTO " ).append( tableId );
+        query.append( "INSERT INTO " ).append( tableId ).append( " " );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
         Map<String, PolyType> dataTypes = getColumnTypes( t[0], t[1] );
@@ -502,6 +528,8 @@ public class Crud implements InformationObserver {
                 value = "TIME '" + value + "'";
             } else if ( dataTypes.get( entry.getKey() ) == PolyType.TIMESTAMP ) {
                 value = "TIMESTAMP '" + value + "'";
+            } else if ( dataTypes.get( entry.getKey() ) == PolyType.ARRAY ) {
+                value = String.format( "ARRAY %s", value );
             }
             values.add( value );
         }
@@ -932,6 +960,8 @@ public class Crud implements InformationObserver {
             String condition;
             if ( entry.getValue() == null ) {
                 condition = String.format( "\"%s\" IS NULL", entry.getKey() );
+            } else if ( dataTypes.get( entry.getKey() ) == PolyType.ARRAY ) {
+                condition = String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() );
             } else if ( dataTypes.get( entry.getKey() ).getFamily() != PolyTypeFamily.CHARACTER ) {
                 condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
             } else {
@@ -983,6 +1013,8 @@ public class Crud implements InformationObserver {
         for ( Entry<String, String> entry : request.data.entrySet() ) {
             if ( entry.getValue() == null ) {
                 setStatements.add( String.format( "\"%s\" = NULL", entry.getKey() ) );
+            } else if ( entry.getValue().startsWith( "[" ) ) {
+                setStatements.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
             } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
                 setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
@@ -994,7 +1026,11 @@ public class Crud implements InformationObserver {
 
         StringJoiner where = new StringJoiner( " AND ", "", "" );
         for ( Entry<String, String> entry : request.filter.entrySet() ) {
-            where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
+            if ( entry.getValue().startsWith( "[" ) ) {
+                where.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
+            } else {
+                where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
+            }
         }
         builder.append( " WHERE " ).append( where.toString() );
 
@@ -1046,12 +1082,18 @@ public class Crud implements InformationObserver {
             }
             for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                 String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
+                String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
                 cols.add(
+                        //TODO NH extend DbColumn with dimension, cardinality
                         new DbColumn(
                                 catalogColumn.name,
-                                catalogColumn.type.name(),
+                                catalogColumn.type.getName(),
+                                collectionsType,
                                 catalogColumn.nullable,
                                 catalogColumn.length,
+                                catalogColumn.scale,
+                                catalogColumn.dimension,
+                                catalogColumn.cardinality,
                                 primaryColumns.contains( catalogColumn.name ),
                                 defaultValue ) );
             }
@@ -1086,15 +1128,29 @@ public class Crud implements InformationObserver {
 
         // change type + length
         // TODO: cast if needed
-        if ( !oldColumn.dataType.equals( newColumn.dataType ) || !Objects.equals( oldColumn.maxLength, newColumn.maxLength ) ) {
-            if ( newColumn.maxLength != null ) {
-                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s(%s)", tableId, newColumn.name, newColumn.dataType, newColumn.maxLength );
-                queries.add( query );
-            } else {
-                // TODO: drop maxlength if requested
-                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
-                queries.add( query );
+        if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
+                !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
+                !Objects.equals( oldColumn.precision, newColumn.precision ) ||
+                !Objects.equals( oldColumn.scale, newColumn.scale ) ||
+                !oldColumn.dimension.equals( newColumn.dimension ) ||
+                !oldColumn.cardinality.equals( newColumn.cardinality ) ) {
+            // TODO: drop maxlength if requested
+            String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
+            if ( newColumn.precision != null ) {
+                query = query + "(" + newColumn.precision;
+                if ( newColumn.scale != null ) {
+                    query = query + "," + newColumn.scale;
+                }
+                query = query + ")";
             }
+            //collectionType
+            if ( !newColumn.collectionsType.equals( "" ) ) {
+                query = query + " " + request.newColumn.collectionsType;
+                int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
+                int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
+                query = query + String.format( "(%d,%d)", dimension, cardinality );
+            }
+            queries.add( query );
         }
 
         // set/drop nullable
@@ -1114,23 +1170,31 @@ public class Crud implements InformationObserver {
                 query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
             } else {
                 query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
-                switch ( newColumn.dataType ) {
-                    case "BIGINT":
-                    case "INTEGER":
-                    case "DECIMAL":
-                    case "DOUBLE":
-                    case "FLOAT":
-                    case "SMALLINT":
-                    case "TINYINT":
-                        request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                        BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                        query = query + b.toString();
-                        break;
-                    case "VARCHAR":
-                        query = query + String.format( "'%s'", request.newColumn.defaultValue );
-                        break;
-                    default:
-                        query = query + request.newColumn.defaultValue;
+                if ( newColumn.collectionsType != null ) {
+                    //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
+                    if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
+                        query = query + request.newColumn.collectionsType;
+                    }
+                    query = query + request.newColumn.defaultValue;
+                } else {
+                    switch ( newColumn.dataType ) {
+                        case "BIGINT":
+                        case "INTEGER":
+                        case "DECIMAL":
+                        case "DOUBLE":
+                        case "FLOAT":
+                        case "SMALLINT":
+                        case "TINYINT":
+                            request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                            BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                            query = query + b.toString();
+                            break;
+                        case "VARCHAR":
+                            query = query + String.format( "'%s'", request.newColumn.defaultValue );
+                            break;
+                        default:
+                            query = query + request.newColumn.defaultValue;
+                    }
                 }
             }
             queries.add( query );
@@ -1139,8 +1203,8 @@ public class Crud implements InformationObserver {
         result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( queries.toString() ) );
         try {
             for ( String query : queries ) {
-                executeSqlUpdate( transaction, query );
                 sBuilder.append( query );
+                executeSqlUpdate( transaction, query );
             }
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
@@ -1169,30 +1233,50 @@ public class Crud implements InformationObserver {
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         String query = String.format( "ALTER TABLE %s ADD COLUMN \"%s\" %s", tableId, request.newColumn.name, request.newColumn.dataType );
-        if ( request.newColumn.maxLength != null ) {
-            query = query + String.format( "(%d)", request.newColumn.maxLength );
+        if ( request.newColumn.precision != null ) {
+            if ( request.newColumn.precision != null ) {
+                query = query + "(" + request.newColumn.precision;
+                if ( request.newColumn.scale != null ) {
+                    query = query + "," + request.newColumn.scale;
+                }
+                query = query + ")";
+            }
+        }
+        if ( !request.newColumn.collectionsType.equals( "" ) ) {
+            query = query + " " + request.newColumn.collectionsType;
+            int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
+            int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
+            query = query + String.format( "(%d,%d)", dimension, cardinality );
         }
         if ( !request.newColumn.nullable ) {
             query = query + " NOT NULL";
         }
         if ( request.newColumn.defaultValue != null ) {
-            switch ( request.newColumn.dataType ) {
-                case "BIGINT":
-                case "INTEGER":
-                case "SMALLINT":
-                case "TINYINT":
-                case "FLOAT":
-                case "DOUBLE":
-                case "DECIMAL":
-                    request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                    BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                    query = query + " DEFAULT " + b.toString();
-                    break;
-                case "VARCHAR":
-                    query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
-                    break;
-                default:
-                    query = query + " DEFAULT " + request.newColumn.defaultValue;
+            if ( request.newColumn.collectionsType != null ) {
+                //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
+                if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
+                    query = query + request.newColumn.collectionsType;
+                }
+                query = query + request.newColumn.defaultValue;
+            } else {
+                switch ( request.newColumn.dataType ) {
+                    case "BIGINT":
+                    case "INTEGER":
+                    case "SMALLINT":
+                    case "TINYINT":
+                    case "FLOAT":
+                    case "DOUBLE":
+                    case "DECIMAL":
+                        request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                        BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                        query = query + " DEFAULT " + b.toString();
+                        break;
+                    case "VARCHAR":
+                        query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
+                        break;
+                    default:
+                        query = query + " DEFAULT " + request.newColumn.defaultValue;
+                }
             }
         }
         Result result;
@@ -1584,7 +1668,7 @@ public class Crud implements InformationObserver {
         if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) ) {
             return new Result( "Invalid request" );
         }
-        String query = String.format( "ALTER TABLE %s.%s %s PLACEMENT %s", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT \"%s\"", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
         Transaction transaction = getTransaction();
         int affectedRows = 0;
         try {
@@ -1621,6 +1705,7 @@ public class Crud implements InformationObserver {
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
             jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
+            jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
             return jsonStore;
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
@@ -1948,31 +2033,10 @@ public class Crud implements InformationObserver {
     /**
      * Get all supported data types of the DBMS.
      */
-    public Result getTypeInfo( final Request req, final Response res ) {
-        ArrayList<String[]> data = new ArrayList<>();
-
-        /*
-        for ( PolyType polyType : PolyType.values() ) {
-            // ignore types that are not relevant
-            if ( polyType.getJdbcOrdinal() < -500 || polyType.getJdbcOrdinal() > 500 ) {
-                continue;
-            }
-            String[] row = new String[1];
-            for ( int i = 1; i <= 18; i++ ) {
-                row[0] = polyType.name();
-            }
-            data.add( row );
-        }
-         */
-
-        for ( PolyType polyType : PolyType.availableTypes() ) {
-            String[] row = new String[1];
-            row[0] = polyType.name();
-            data.add( row );
-        }
-
-        DbColumn[] header = { new DbColumn( "TYPE_NAME" ) };
-        return new Result( header, data.toArray( new String[0][1] ) );
+    public String getTypeInfo( final Request req, final Response res ) {
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.serializer );
+        Gson gson = gsonBuilder.create();
+        return gson.toJson( PolyType.availableTypes().toArray( new PolyType[0] ), PolyType[].class );
     }
 
 
@@ -2458,6 +2522,17 @@ public class Crud implements InformationObserver {
                             default:
                                 temp[counter] = o.toString();
                         }
+                        if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
+                            if ( o instanceof Array ) {
+                                try {
+                                    temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
+                                } catch ( SQLException sqlException ) {
+                                    temp[counter] = o.toString();
+                                }
+                            } else {
+                                temp[counter] = o.toString();
+                            }
+                        }
                     }
                     counter++;
                 }
@@ -2513,25 +2588,29 @@ public class Crud implements InformationObserver {
         if ( signature.statementType == StatementType.OTHER_DDL ) {
             return 1;
         } else if ( signature.statementType == StatementType.IS_DML ) {
-            Iterator<?> iterator = signature.enumerable( transaction.getDataContext() ).iterator();
-            Object object = null;
             int rowsChanged = -1;
-            while ( iterator.hasNext() ) {
-                object = iterator.next();
-                int num;
-                if ( object != null && object.getClass().isArray() ) {
-                    Object[] o = (Object[]) object;
-                    num = ((Number) o[0]).intValue();
-                } else if ( object != null ) {
-                    num = ((Number) object).intValue();
-                } else {
-                    throw new QueryExecutionException( "Result is null" );
+            try {
+                Iterator<?> iterator = signature.enumerable( transaction.getDataContext() ).iterator();
+                Object object;
+                while ( iterator.hasNext() ) {
+                    object = iterator.next();
+                    int num;
+                    if ( object != null && object.getClass().isArray() ) {
+                        Object[] o = (Object[]) object;
+                        num = ((Number) o[0]).intValue();
+                    } else if ( object != null ) {
+                        num = ((Number) object).intValue();
+                    } else {
+                        throw new QueryExecutionException( "Result is null" );
+                    }
+                    // Check if num is equal for all stores
+                    if ( rowsChanged != -1 && rowsChanged != num ) {
+                        throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                    }
+                    rowsChanged = num;
                 }
-                // Check if num is equal for all stores
-                if ( rowsChanged != -1 && rowsChanged != num ) {
-                    throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
-                }
-                rowsChanged = num;
+            } catch ( RuntimeException e ) {
+                throw new QueryExecutionException( e.getCause().getMessage(), e );
             }
             return rowsChanged;
         } else {
@@ -2577,8 +2656,14 @@ public class Crud implements InformationObserver {
         StringJoiner joiner = new StringJoiner( " AND ", " WHERE ", "" );
         int counter = 0;
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
-            if ( !entry.getValue().equals( "" ) ) {
-                joiner.add( "CAST (\"" + entry.getKey() + "\" AS VARCHAR) LIKE '" + entry.getValue() + "%'" );
+            //special treatment for arrays
+            if ( entry.getValue().startsWith( "[" ) ) {
+                joiner.add( entry.getKey() + " = ARRAY" + entry.getValue() );
+                counter++;
+            }
+            //default
+            else if ( !entry.getValue().equals( "" ) ) {
+                joiner.add( "CAST (\"" + entry.getKey() + "\" AS VARCHAR(8000)) LIKE '" + entry.getValue() + "%'" );
                 counter++;
             }
         }
@@ -2628,7 +2713,7 @@ public class Crud implements InformationObserver {
      * Get the data types of each column of a table
      *
      * @param schemaName name of the schema
-     * @param tableName name of the table
+     * @param tableName  name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
     private Map<String, PolyType> getColumnTypes( String schemaName, String tableName ) {
@@ -2637,7 +2722,11 @@ public class Crud implements InformationObserver {
             CatalogTable table = catalog.getTable( this.databaseName, schemaName, tableName );
             List<CatalogColumn> catalogColumns = catalog.getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
-                dataTypes.put( catalogColumn.name, catalogColumn.type );
+                if ( catalogColumn.collectionsType != null ) {
+                    dataTypes.put( catalogColumn.name, catalogColumn.collectionsType );
+                } else {
+                    dataTypes.put( catalogColumn.name, catalogColumn.type );
+                }
             }
         } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception", e );

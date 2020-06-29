@@ -50,7 +50,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( settings ), MonetdbSqlDialect.DEFAULT );
+        super( storeId, uniqueName, settings, createConnectionFactory( settings ), MonetdbSqlDialect.DEFAULT, true );
     }
 
 
@@ -138,6 +138,8 @@ public class MonetdbStore extends AbstractJdbcStore {
                 return "TIME";
             case TIMESTAMP:
                 return "TIMESTAMP";
+            case ARRAY:
+                return "TEXT";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
     }
