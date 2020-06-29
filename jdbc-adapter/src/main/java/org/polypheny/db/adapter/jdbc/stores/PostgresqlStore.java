@@ -80,8 +80,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
                 .append( "." )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
-        builder.append( " ALTER COLUMN TYPE " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-        builder.append( " " ).append( catalogColumn.type );
+        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+        builder.append( " TYPE " ).append( catalogColumn.type );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );
             builder.append( catalogColumn.length );
