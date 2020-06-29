@@ -87,13 +87,15 @@ public class MonetdbStore extends AbstractJdbcStore {
         StringBuilder builder;
 
         // (1) Create a temporary column `alter table tabX add column colXtemp NEW_TYPE;`
-        builder = buildAddColumnQuery(
-                columnPlacement.physicalSchemaName,
-                columnPlacement.physicalTableName,
-                tmpColName,
-                catalogTable,
-                catalogColumn
-        );
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " ADD COLUMN " )
+                .append( dialect.quoteIdentifier( tmpColName ) )
+                .append( " " )
+                .append( catalogColumn.type.name() );
         executeUpdate( builder, context );
 
         // (2) Set data in temporary column to original data `update tabX set colXtemp=colX;`
@@ -119,16 +121,19 @@ public class MonetdbStore extends AbstractJdbcStore {
         executeUpdate( builder, context );
 
         // (4) Re-create the original column with the new type `alter table tabX add column colX NEW_TYPE;
-        builder = buildAddColumnQuery(
-                columnPlacement.physicalSchemaName,
-                columnPlacement.physicalTableName,
-                columnPlacement.physicalColumnName,
-                catalogTable,
-                catalogColumn
-        );
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " ADD COLUMN " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
+                .append( " " )
+                .append( catalogColumn.type.name() );
         executeUpdate( builder, context );
 
         // (5) Move data from temporary column to new column `update tabX set colX=colXtemp`;
+        builder = new StringBuilder();
         builder.append( "UPDATE " )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
                 .append( "." )
