@@ -17,6 +17,10 @@
 package org.polypheny.db.restapi;
 
 
+import com.google.gson.Gson;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +41,7 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimestampString;
 import spark.QueryParamsMap;
 
 
@@ -72,11 +77,15 @@ public class RequestParser {
     }
 
 
-    public InsertValueRequest parseInsertValuePost( String resourceName, QueryParamsMap queryParamsMap ) {
+    public InsertValueRequest parseInsertValuePost( String resourceName, QueryParamsMap queryParamsMap, String body, Gson gson ) {
 
         CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
-        List<Pair<CatalogColumn, Object>> values = this.parseInsertStatementValues( queryParamsMap );
+//        List<Pair<CatalogColumn, Object>> values = this.parseInsertStatementValues( queryParamsMap );
 
+        Object bodyObject = gson.fromJson( body, Object.class );
+        Map bodyMap = (Map) bodyObject;
+        List valuesList = (List) bodyMap.get( "data" );
+        List<List<Pair<CatalogColumn, Object>>> values = this.parseInsertStatementBody( valuesList );
         return new InsertValueRequest( catalogTable, values );
     }
 
@@ -329,45 +338,56 @@ public class RequestParser {
     }
 
 
-    private Object parseLiteralValue( PolyType type, String literal ) {
-        Object parsedLiteral;
-        if ( PolyType.BOOLEAN_TYPES.contains( type ) ) {
-            parsedLiteral = Boolean.valueOf( literal );
-        } else if ( PolyType.INT_TYPES.contains( type ) ) {
-            parsedLiteral = Long.valueOf( literal );
-        } else if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
-            parsedLiteral = Double.valueOf( literal );
-        } else if ( PolyType.CHAR_TYPES.contains( type ) ) {
-            parsedLiteral = literal;
+    private Object parseLiteralValue( PolyType type, Object objectLiteral ) {
+        if ( ! ( objectLiteral instanceof String ) ) {
+            return objectLiteral;
         } else {
-            // TODO js: error handling.
-            log.warn( "Unable to convert literal value. Returning null. Type: {}, Value: {}.", type, literal );
-            return null;
-        }
+            Object parsedLiteral;
+            String literal = (String) objectLiteral;
+            if ( PolyType.BOOLEAN_TYPES.contains( type ) ) {
+                parsedLiteral = Boolean.valueOf( literal );
+            } else if ( PolyType.INT_TYPES.contains( type ) ) {
+                parsedLiteral = Long.valueOf( literal );
+            } else if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
+                parsedLiteral = Double.valueOf( literal );
+            } else if ( PolyType.CHAR_TYPES.contains( type ) ) {
+                parsedLiteral = literal;
+            } else if ( PolyType.DATETIME_TYPES.contains( type ) ) {
+                Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
+                Long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
+                TimestampString timestampString = TimestampString.fromMillisSinceEpoch( millisecondsSinceEpoch );
+                parsedLiteral = timestampString;
+            } else {
+                // TODO js: error handling.
+                log.warn( "Unable to convert literal value. Returning null. Type: {}, Value: {}.", type, literal );
+                return null;
+            }
 
-        return parsedLiteral;
+            return parsedLiteral;
+        }
     }
 
-    private List<Pair<CatalogColumn, Object>> parseInsertStatementValues( QueryParamsMap queryParamsMap ) {
+    private List<Pair<CatalogColumn, Object>> parseInsertStatementValues( Map rowValuesMap ) {
         List<Pair<CatalogColumn, Object>> result = new ArrayList<>();
 
-        for ( String possibleValue : queryParamsMap.toMap().keySet() ) {
-            if ( possibleValue.startsWith( "_" ) ) {
+        for ( Object objectColumnName : rowValuesMap.keySet() ) {
+            String stringColumnName = (String) objectColumnName;
+            /*if ( possibleValue.startsWith( "_" ) ) {
                 log.debug( "FIX THIS MESSAGE: {}", possibleValue );
                 continue;
-            }
+            }*/
 
             // Make sure we actually have a column
             CatalogColumn catalogColumn;
             try {
-                catalogColumn = this.getCatalogColumnFromString( possibleValue );
-                log.debug( "Fetched catalog column for filter key: {}", possibleValue );
+                catalogColumn = this.getCatalogColumnFromString( stringColumnName );
+                log.debug( "Fetched catalog column for filter key: {}", stringColumnName );
             } catch ( GenericCatalogException | UnknownColumnException e ) {
-                log.error( "Unable to fetch catalog column for filter key: {}. Returning null.", possibleValue, e );
+                log.error( "Unable to fetch catalog column for filter key: {}. Returning null.", stringColumnName, e );
                 return null;
             }
 
-            String litVal = queryParamsMap.value( possibleValue );
+            Object litVal = rowValuesMap.get( objectColumnName );
             Object parsedValue = this.parseLiteralValue( catalogColumn.type, litVal );
             result.add( new Pair<>( catalogColumn, parsedValue ) );
         }
@@ -375,6 +395,19 @@ public class RequestParser {
         result.sort( ( p1, p2 ) -> p1.left.position - p2.left.position );
 
         return result;
+    }
+
+
+    private List<List<Pair<CatalogColumn, Object>>> parseInsertStatementBody( List<Object> bodyInsertValues ) {
+        List<List<Pair<CatalogColumn, Object>>> returnValue = new ArrayList<>();
+
+        for ( Object rowObject : bodyInsertValues ) {
+            Map rowMap = (Map) rowObject;
+            List<Pair<CatalogColumn, Object>> rowValue = this.parseInsertStatementValues( rowMap );
+            returnValue.add( rowValue );
+        }
+
+        return returnValue;
     }
 
 

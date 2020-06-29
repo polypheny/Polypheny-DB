@@ -18,6 +18,8 @@ package org.polypheny.db.restapi;
 
 
 import com.google.gson.Gson;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -68,6 +70,7 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import spark.QueryParamsMap;
@@ -258,18 +261,21 @@ public class Rest {
         RelDataType tableRowType = table.getRowType();
         List<RelDataTypeField> tableRows = tableRowType.getFieldList();
 
-        List<RexLiteral> rexValues = new ArrayList<>();
         List<Object> actualRexValues = new ArrayList<>();
-        for ( Pair<CatalogColumn, Object> insertValue : insertValueRequest.values ) {
-            int columnPosition = insertValueRequest.getInputPosition( insertValue.left );
-            RelDataTypeField typeField = tableRows.get( columnPosition );
-            rexValues.add( (RexLiteral) rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
-            actualRexValues.add( insertValue.right );
+        List<List<RexLiteral>> wrapperList = new ArrayList<>();
+        // FIXME
+        for ( List<Pair<CatalogColumn, Object>> rowsToInsert : insertValueRequest.values ) {
+            List<RexLiteral> rexValues = new ArrayList<>();
+            for ( Pair<CatalogColumn, Object> insertValue : rowsToInsert ) {
+                int columnPosition = insertValueRequest.getInputPosition( insertValue.left );
+                RelDataTypeField typeField = tableRows.get( columnPosition );
+                rexValues.add( (RexLiteral) rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
+                actualRexValues.add( insertValue.right );
+            }
+            wrapperList.add( rexValues );
         }
 
 //        relBuilder = relBuilder.values( tableRowType, actualRexValues );
-        List<List<RexLiteral>> wrapperList = new ArrayList<>();
-        wrapperList.add( rexValues );
         relBuilder = relBuilder.values( wrapperList, tableRowType );
 
         // Table Modify
@@ -470,7 +476,14 @@ public class Rest {
                 Map<String, Object> temp = new HashMap<>();
                 int counter = 0;
                 for ( Object o: row ) {
-                    temp.put( signature.columns.get( counter ).columnName, o );
+                    if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIMESTAMP ) ) {
+                        Long nanoSeconds = (Long) o;
+                        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) (( nanoSeconds % 1000 ) * 1000), ZoneOffset.UTC );
+//                        localDateTime.toString();
+                        temp.put( signature.columns.get( counter ).columnName, localDateTime.toString() );
+                    } else {
+                        temp.put( signature.columns.get( counter ).columnName, o );
+                    }
                     counter++;
                 }
                 resultData.add( temp );

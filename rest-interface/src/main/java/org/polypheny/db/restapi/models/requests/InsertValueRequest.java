@@ -26,10 +26,10 @@ import org.polypheny.db.util.Pair;
 public class InsertValueRequest {
 
     public CatalogTable table;
-    public List<Pair<CatalogColumn, Object>> values;
+    public List<List<Pair<CatalogColumn, Object>>> values;
 
 
-    public InsertValueRequest( CatalogTable table, List<Pair<CatalogColumn, Object>> values ) {
+    public InsertValueRequest( CatalogTable table, List<List<Pair<CatalogColumn, Object>>> values ) {
         this.table = table;
         this.values = values;
     }

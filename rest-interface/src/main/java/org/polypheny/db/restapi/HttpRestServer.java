@@ -80,7 +80,7 @@ public class HttpRestServer extends QueryInterface {
                 return rest.getResourceTable( resourceRequest, q, a );
             }, gson::toJson );
             restServer.post( "/res/:resName", (q, a) -> {
-                InsertValueRequest insertValueRequest = requestParser.parseInsertValuePost( q.params(":resName"), q.queryMap() );
+                InsertValueRequest insertValueRequest = requestParser.parseInsertValuePost( q.params(":resName"), q.queryMap(), q.body(), gson );
 
                 return rest.postInsertValue( insertValueRequest, q, a );
             }, gson::toJson );
