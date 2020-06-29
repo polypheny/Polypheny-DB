@@ -241,7 +241,7 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ADD " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " " );
-        builder.append( catalogColumn.type.name() );
+        builder.append( getTypeString( catalogColumn.type ) );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );
             builder.append( catalogColumn.length );
@@ -272,7 +272,7 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( "." )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-        builder.append( " " ).append( catalogColumn.type );
+        builder.append( " " ).append( getTypeString( catalogColumn.type ) );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );
             builder.append( catalogColumn.length );

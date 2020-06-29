@@ -95,7 +95,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         builder.append( " ADD COLUMN " )
                 .append( dialect.quoteIdentifier( tmpColName ) )
                 .append( " " )
-                .append( catalogColumn.type.name() );
+                .append( getTypeString( catalogColumn.type ) );
         executeUpdate( builder, context );
 
         // (2) Set data in temporary column to original data `update tabX set colXtemp=colX;`
@@ -129,7 +129,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         builder.append( " ADD COLUMN " )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
                 .append( " " )
-                .append( catalogColumn.type.name() );
+                .append( getTypeString( catalogColumn.type ) );
         executeUpdate( builder, context );
 
         // (5) Move data from temporary column to new column `update tabX set colX=colXtemp`;

@@ -81,7 +81,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( "." )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
-        builder.append( " TYPE " ).append( catalogColumn.type );
+        builder.append( " TYPE " ).append( getTypeString( catalogColumn.type ) );
         if ( catalogColumn.length != null ) {
             builder.append( "(" );
             builder.append( catalogColumn.length );
@@ -93,7 +93,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         builder.append( " USING " )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
                 .append( "::" )
-                .append( catalogColumn.type );
+                .append( getTypeString( catalogColumn.type ) );
         executeUpdate( builder, context );
     }
 
