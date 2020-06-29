@@ -25,7 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.MonetdbSqlDialect;
@@ -65,6 +71,83 @@ public class MonetdbStore extends AbstractJdbcStore {
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ) );
+    }
+
+
+    @Override
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+        // MonetDB does not support updating the column type directly. We need to do a work-around
+        CatalogTable catalogTable;
+        try {
+            catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
+        } catch ( UnknownTableException | GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+        String tmpColName = columnPlacement.physicalColumnName + "tmp";
+        StringBuilder builder;
+
+        // (1) Create a temporary column `alter table tabX add column colXtemp NEW_TYPE;`
+        builder = buildAddColumnQuery(
+                columnPlacement.physicalSchemaName,
+                columnPlacement.physicalTableName,
+                tmpColName,
+                catalogTable,
+                catalogColumn
+        );
+        executeUpdate( builder, context );
+
+        // (2) Set data in temporary column to original data `update tabX set colXtemp=colX;`
+        builder = new StringBuilder();
+        builder.append( "UPDATE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " SET " )
+                .append( dialect.quoteIdentifier( tmpColName ) )
+                .append( "=" )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+        executeUpdate( builder, context );
+
+        // (3) Remove the original column `alter table tabX drop column colX;`
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " DROP COLUMN " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+        executeUpdate( builder, context );
+
+        // (4) Re-create the original column with the new type `alter table tabX add column colX NEW_TYPE;
+        builder = buildAddColumnQuery(
+                columnPlacement.physicalSchemaName,
+                columnPlacement.physicalTableName,
+                columnPlacement.physicalColumnName,
+                catalogTable,
+                catalogColumn
+        );
+        executeUpdate( builder, context );
+
+        // (5) Move data from temporary column to new column `update tabX set colX=colXtemp`;
+        builder.append( "UPDATE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " SET " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
+                .append( "=" )
+                .append( dialect.quoteIdentifier( tmpColName ) );
+        executeUpdate( builder, context );
+
+        // (6) Drop the temporary column `alter table tabX drop column colXtemp;`
+        builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " DROP COLUMN " )
+                .append( dialect.quoteIdentifier( tmpColName ) );
+        executeUpdate( builder, context );
     }
 
 
