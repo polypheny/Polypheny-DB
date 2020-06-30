@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
 import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.sql.SqlOperator;
@@ -87,6 +88,14 @@ public class RequestParser {
         List valuesList = (List) bodyMap.get( "data" );
         List<List<Pair<CatalogColumn, Object>>> values = this.parseInsertStatementBody( valuesList );
         return new InsertValueRequest( catalogTable, values );
+    }
+
+
+    public DeleteValueRequest parseDeleteValueRequest( String resourceName, QueryParamsMap queryParamsMap ) {
+        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
+        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
+
+        return new DeleteValueRequest( catalogTable, filters );
     }
 
 

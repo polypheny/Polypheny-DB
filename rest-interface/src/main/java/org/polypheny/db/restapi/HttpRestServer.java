@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
 import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
 import org.polypheny.db.transaction.TransactionManager;
@@ -83,6 +84,11 @@ public class HttpRestServer extends QueryInterface {
                 InsertValueRequest insertValueRequest = requestParser.parseInsertValuePost( q.params(":resName"), q.queryMap(), q.body(), gson );
 
                 return rest.postInsertValue( insertValueRequest, q, a );
+            }, gson::toJson );
+            restServer.delete( "/res/:resName", (q, a) -> {
+                DeleteValueRequest deleteValueRequest = requestParser.parseDeleteValueRequest( q.params(":resName"), q.queryMap() );
+
+                return rest.deleteValues( deleteValueRequest, q, a );
             }, gson::toJson );
 //            restServer.get( "/res/:resName", rest::getTable, gson::toJson );
 
