@@ -377,7 +377,7 @@ public class Rest {
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
+        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.DELETE, fields, collation );
         log.info( "RelRoot was built." );
 
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
@@ -461,7 +461,7 @@ public class Rest {
                 relNode instanceof Sort
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
+        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.UPDATE, fields, collation );
         log.info( "RelRoot was built." );
 
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
