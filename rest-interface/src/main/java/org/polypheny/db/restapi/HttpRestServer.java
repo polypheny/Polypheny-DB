@@ -26,6 +26,7 @@ import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
 import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
+import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import spark.Service;
 
@@ -89,6 +90,11 @@ public class HttpRestServer extends QueryInterface {
                 DeleteValueRequest deleteValueRequest = requestParser.parseDeleteValueRequest( q.params(":resName"), q.queryMap() );
 
                 return rest.deleteValues( deleteValueRequest, q, a );
+            }, gson::toJson );
+            restServer.patch( "/res/:resName", (q, a) -> {
+                UpdateResourceRequest updateResourceRequest = requestParser.parseUpdateResourceRequest( q.params(":resName"), q.queryMap(), q.body(), gson );
+
+                return rest.updateResource( updateResourceRequest, q, a );
             }, gson::toJson );
 //            restServer.get( "/res/:resName", rest::getTable, gson::toJson );
 

@@ -36,6 +36,7 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
 import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
+import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
@@ -96,6 +97,18 @@ public class RequestParser {
         Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
 
         return new DeleteValueRequest( catalogTable, filters );
+    }
+
+
+    public UpdateResourceRequest parseUpdateResourceRequest( String resourceName, QueryParamsMap queryParamsMap, String body, Gson gson ) {
+        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
+        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
+        Object bodyObject = gson.fromJson( body, Object.class );
+        Map bodyMap = (Map) bodyObject;
+        List valuesList = (List) bodyMap.get( "data" );
+        List<List<Pair<CatalogColumn, Object>>> values = this.parseInsertStatementBody( valuesList );
+
+        return new UpdateResourceRequest( catalogTable, filters, values.get( 0 ) );
     }
 
 

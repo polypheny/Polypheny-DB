@@ -60,6 +60,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
 import org.polypheny.db.restapi.models.requests.InsertValueRequest;
 import org.polypheny.db.restapi.models.requests.ResourceRequest;
+import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -366,6 +367,90 @@ public class Rest {
                 LogicalTableModify.Operation.DELETE,
                 null,
                 null,
+                false
+        );
+
+        // Wrap RelNode into a RelRoot
+        final RelDataType rowType = tableModify.getRowType();
+        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final RelCollation collation =
+                relNode instanceof Sort
+                        ? ((Sort) relNode).collation
+                        : RelCollations.EMPTY;
+        RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
+        log.info( "RelRoot was built." );
+
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
+
+        return finalResult;
+    }
+
+    Map<String, Object> updateResource( UpdateResourceRequest updateResourceRequest, final Request req, final Response res ) {
+        Transaction transaction = getTransaction( false );
+        RelBuilder relBuilder = RelBuilder.create( transaction );
+        JavaTypeFactory typeFactory = transaction.getTypeFactory();
+        RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+        // RelOptTable
+        PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
+        PreparingTable table = catalogReader.getTable( Arrays.asList( updateResourceRequest.table.schemaName, updateResourceRequest.table.name ) );
+
+        relBuilder = relBuilder.scan( updateResourceRequest.table.schemaName, updateResourceRequest.table.name );
+
+        // Filters
+
+        if ( updateResourceRequest.filters != null ) {
+            log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
+            List<RexNode> filterNodes = new ArrayList<>();
+            RelNode baseNodeForFilters = relBuilder.peek();
+            RelDataType filtersRowType = baseNodeForFilters.getRowType();
+            List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
+            for ( CatalogColumn catalogColumn : updateResourceRequest.filters.keySet() ) {
+                for ( Pair<SqlOperator, Object> filterOperationPair : updateResourceRequest.filters.get( catalogColumn ) ) {
+                    int columnPosition = updateResourceRequest.getInputPosition( catalogColumn );
+                    RelDataTypeField typeField = filtersRows.get( columnPosition );
+                    RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, columnPosition );
+                    RexNode rightHandSide = rexBuilder.makeLiteral( filterOperationPair.right, typeField.getType(), true );
+                    RexNode call = rexBuilder.makeCall( filterOperationPair.left, inputRef, rightHandSide );
+                    filterNodes.add( call );
+                }
+            }
+
+            log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
+            relBuilder = relBuilder.filter( filterNodes );
+            log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
+        } else {
+            log.debug( "No filters to add. Session ID: {}.", req.session().id() );
+        }
+
+        // Values
+        RelDataType tableRowType = table.getRowType();
+        List<RelDataTypeField> tableRows = tableRowType.getFieldList();
+
+        List<String> valueColumnNames = new ArrayList<>();
+        List<RexNode> rexValues = new ArrayList<>();
+        for ( Pair<CatalogColumn, Object> insertValue : updateResourceRequest.values ) {
+            valueColumnNames.add( insertValue.left.name );
+            int columnPosition = updateResourceRequest.getInputPosition( insertValue.left );
+            RelDataTypeField typeField = tableRows.get( columnPosition );
+            rexValues.add( rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
+        }
+
+        // Table Modify
+
+        RelOptPlanner planner = transaction.getQueryProcessor().getPlanner();
+        RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
+
+        RelNode relNode = relBuilder.build();
+        TableModify tableModify = new LogicalTableModify(
+                cluster,
+                relNode.getTraitSet(),
+                table,
+                catalogReader,
+                relNode,
+                LogicalTableModify.Operation.UPDATE,
+                valueColumnNames,
+                rexValues,
                 false
         );
 
