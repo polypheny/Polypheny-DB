@@ -17,6 +17,7 @@
 package org.polypheny.db.restapi;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -25,96 +26,111 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
-import org.polypheny.db.restapi.models.requests.InsertValueRequest;
-import org.polypheny.db.restapi.models.requests.ResourceRequest;
-import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
+import org.polypheny.db.restapi.exception.IllegalColumnException;
+import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
+import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
-import org.polypheny.db.sql.validate.SqlValidatorUtil;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimestampString;
 import spark.QueryParamsMap;
+import spark.Request;
 
 
 @Slf4j
 public class RequestParser {
-
-    private final Catalog catalog = Catalog.getInstance();
+    private final Catalog catalog;
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
     private final String databaseName;
     private final String userName;
 
-    public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String userName, final String databaseName ) {
+
+    private final static Pattern PROJECTION_ENTRY_PATTERN = Pattern.compile(
+            "^(?<column>[a-zA-Z]\\w*\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)(?:@(?<alias>[a-zA-Z]\\w*)(?:\\((?<agg>[A-Z]+)\\))?)?$" );
+
+    private final static Pattern SORTING_ENTRY_PATTERN = Pattern.compile(
+            "^(?<column>[a-zA-Z]\\w*(?:\\.[a-zA-Z]\\w*\\.[a-zA-Z]\\w*)?)(?:@(?<dir>ASC|DESC))?$" );
+
+
+    public RequestParser( final TransactionManager transactionManager, final Authenticator authenticator, final String databaseName, final String userName ) {
+        this( Catalog.getInstance(), transactionManager, authenticator, userName, databaseName );
+    }
+
+
+    @VisibleForTesting
+    RequestParser( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator, String databaseName, String userName ) {
+        this.catalog = catalog;
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
-        this.userName = userName;
         this.databaseName = databaseName;
+        this.userName = userName;
     }
 
 
-    public ResourceRequest parseResourceRequest( String resourceName, QueryParamsMap queryParamsMap ) {
-        List<CatalogTable> tables = this.parseTableList( resourceName );
-        Pair<List<CatalogColumn>, List<String>> projections = this.parseRequestProjections( queryParamsMap );
-        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
+    /**
+     * Parses and authenticates the Basic Authorization for a request.
+     *
+     * @param request the request
+     * @return the authorized user
+     * @throws UnauthorizedAccessException thrown if no authorization provided or invalid credentials
+     */
+    public CatalogUser parseBasicAuthentication( Request request ) throws UnauthorizedAccessException {
+        if ( request.headers( "Authorization" ) == null ) {
+            log.debug( "No Authorization header for request id: {}.", request.session().id() );
+            throw new UnauthorizedAccessException( "No Basic Authorization sent by user." );
+        }
 
-        Integer limit = this.parseLimit( queryParamsMap );
-        Integer offset = this.parseOffset( queryParamsMap );
+        final String basicAuthHeader = request.headers( "Authorization" );
 
-        List<Pair<CatalogColumn, Boolean>> sort = this.parseSorting( queryParamsMap );
+        final Pair<String, String> decoded = decodeBasicAuthorization( basicAuthHeader );
 
-
-        return new ResourceRequest( tables, projections, filters, limit, offset, sort );
+        try {
+            return this.authenticator.authenticate( decoded.left, decoded.right );
+        } catch ( AuthenticationException e ) {
+            log.info( "Unable to authenticate user for request id: {}.", request.session().id(), e );
+            throw new UnauthorizedAccessException( "Not authorized." );
+        }
     }
 
 
-    public InsertValueRequest parseInsertValuePost( String resourceName, QueryParamsMap queryParamsMap, String body, Gson gson ) {
-
-        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
-//        List<Pair<CatalogColumn, Object>> values = this.parseInsertStatementValues( queryParamsMap );
-
-        Object bodyObject = gson.fromJson( body, Object.class );
-        Map bodyMap = (Map) bodyObject;
-        List valuesList = (List) bodyMap.get( "data" );
-        List<List<Pair<CatalogColumn, Object>>> values = this.parseInsertStatementBody( valuesList );
-        return new InsertValueRequest( catalogTable, values );
+    @VisibleForTesting
+    static Pair<String, String> decodeBasicAuthorization( String encodedAuthorization ) {
+        if ( ! Base64.isBase64( encodedAuthorization ) ) {
+            throw new UnauthorizedAccessException( "Basic Authorization header is not properly encoded." );
+        }
+        final String encodedHeader = StringUtils.substringAfter( encodedAuthorization, "Basic" );
+        final String decodedHeader = new String( Base64.decodeBase64( encodedHeader ) );
+        final String[] decoded = StringUtils.splitPreserveAllTokens( decodedHeader, ":" );
+        return new Pair<>( decoded[0], decoded[1] );
     }
 
 
-    public DeleteValueRequest parseDeleteValueRequest( String resourceName, QueryParamsMap queryParamsMap ) {
-        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
-        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
-
-        return new DeleteValueRequest( catalogTable, filters );
-    }
-
-
-    public UpdateResourceRequest parseUpdateResourceRequest( String resourceName, QueryParamsMap queryParamsMap, String body, Gson gson ) {
-        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
-        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
-        Object bodyObject = gson.fromJson( body, Object.class );
-        Map bodyMap = (Map) bodyObject;
-        List valuesList = (List) bodyMap.get( "data" );
-        List<List<Pair<CatalogColumn, Object>>> values = this.parseInsertStatementBody( valuesList );
-
-        return new UpdateResourceRequest( catalogTable, filters, values.get( 0 ) );
-    }
-
-
-    // /res/ parsing
-
-    private List<CatalogTable> parseTableList( String tableList ) {
+    /**
+     * Parse the list of tables for a request.
+     *
+     * @param tableList list of tables
+     * @return parsed list of tables
+     * @throws IllegalArgumentException thrown if unable to parse table list
+     */
+    public List<CatalogTable> parseTables( String tableList ) throws IllegalArgumentException {
         log.debug( "Starting to parse table list: {}", tableList );
         String[] tableNameList = tableList.split( "," );
 
@@ -126,7 +142,7 @@ public class RequestParser {
                 log.debug( "Added table \"{}\" to table list.", tableName );
             } else {
 //                log.error( "Unable to fetch table: {}.", tableName, e );
-                return null;
+                throw new IllegalArgumentException( "Improperly formated resources list." );
             }
         }
 
@@ -135,11 +151,19 @@ public class RequestParser {
     }
 
 
-    private CatalogTable parseCatalogTableName( String tableName ) {
+    /**
+     * Parse individual table name.
+     *
+     * @param tableName table name
+     * @return parsed table name
+     * @throws IllegalArgumentException thrown if unable to parse table name
+     */
+    @VisibleForTesting
+    CatalogTable parseCatalogTableName( String tableName ) throws IllegalArgumentException {
         String[] tableElements = tableName.split( "\\." );
         if ( tableElements.length != 2 ) {
             log.warn( "Table name \"{}\" not possible to parse.", tableName );
-            return null;
+            throw new IllegalArgumentException( "Improperly formated resources list." );
         }
 
         try {
@@ -148,159 +172,83 @@ public class RequestParser {
             return table;
         } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Unable to fetch table: {}.", tableName, e );
-            return null;
+            throw new IllegalArgumentException( "Improperly formatted resources list." );
         }
     }
 
 
-    private Map<CatalogColumn, List<Pair<SqlOperator, Object>>> parseRequestFilters( QueryParamsMap queryParamsMap ) {
-        log.debug( "Starting to parse request filters." );
-        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> result = new HashMap<>();
-
-        for ( String possibleFilterKey : queryParamsMap.toMap().keySet() ) {
-            // Check whether this is a filter or a special term
-            // Special terms always start with an underscore ("_")
-            if ( possibleFilterKey.startsWith( "_" ) ) {
-                log.debug( "Not a filter: {}", possibleFilterKey );
-                continue;
-            }
-            log.debug( "Attempting to parse filters for key: {}.", possibleFilterKey );
-
-            // Make sure we actually have a column
-            CatalogColumn catalogColumn;
-            try {
-                catalogColumn = this.getCatalogColumnFromString( possibleFilterKey );
-                log.debug( "Fetched catalog column for filter key: {}", possibleFilterKey );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                e.printStackTrace();
-                log.error( "Unable to fetch catalog column for filter key: {}. Returning null.", possibleFilterKey );
-                return null;
-            }
-
-            List<Pair<SqlOperator, Object>> filterOperators = new ArrayList<>();
-            for ( String filterString : queryParamsMap.get( possibleFilterKey ).values() ) {
-                filterOperators.add( this.parseFilterOperation( catalogColumn, filterString ) );
-            }
-            result.put( catalogColumn, filterOperators );
-//            result.put( catalogColumn, Arrays.asList( queryParamsMap.get( possibleFilterKey ).values() ) );
-            log.debug( "Finished parsing filters for key: {}.", possibleFilterKey );
-        }
-
-        return result;
-    }
-
-    private Pair<List<CatalogColumn>, List<String>> parseRequestProjections( QueryParamsMap queryParamsMap ) {
-        if ( ! queryParamsMap.hasKey( "_project" )) {
-            log.debug( "Request does not contain a projection. Returning null." );
+    public ProjectionAndAggregation parseProjectionsAndAggregations( Request request ) {
+        if ( ! request.queryMap().hasKey( "_project" ) ) {
+            // FIXME: how to deal with these?
             return null;
         }
-        QueryParamsMap projectionMap = queryParamsMap.get( "_project" );
+        QueryParamsMap projectionMap = request.queryMap().get( "_project" );
         String[] possibleProjectionValues = projectionMap.values();
         String possibleProjectionsString = possibleProjectionValues[0];
         log.debug( "Starting to parse projection: {}", possibleProjectionsString );
 
-//        List<Pair<CatalogColumn, String>> projections = new ArrayList<>();
         String[] possibleProjections = possibleProjectionsString.split( "," );
 
         List<CatalogColumn> projectionColumns = new ArrayList<>();
         List<String> projectionNames = new ArrayList<>();
+        List<Pair<CatalogColumn, SqlAggFunction>> aggregates = new ArrayList<>();
+//        List<CatalogColumn> aggregateColumns = new ArrayList<>();
+//        List<SqlAggFunction> aggregateFunctions = new ArrayList<>();
+
         for ( String projectionToParse : possibleProjections ) {
-            String[] possiblyNamed = projectionToParse.split( "@" );
-            CatalogColumn catalogColumn;
-            try {
-                catalogColumn = this.getCatalogColumnFromString( possiblyNamed[0] );
-                log.debug( "Fetched catalog column for projection key: {}.", possiblyNamed[0] );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                log.warn( "Unable to fetch column: {}.", possiblyNamed[0], e );
-                return null;
-            }
+            Matcher matcher = PROJECTION_ENTRY_PATTERN.matcher( projectionToParse );
+            if ( matcher.find() ) {
+                String columnName = matcher.group( "column" );
+                CatalogColumn catalogColumn;
 
-            projectionColumns.add( catalogColumn );
-            if ( possiblyNamed.length == 2 ) {
-                log.debug( "Parsed projection. Column: {}, Alias: {}.", possiblyNamed[0], possiblyNamed[1] );
-                projectionNames.add( possiblyNamed[1] );
+                try {
+                    catalogColumn = this.getCatalogColumnFromString( columnName );
+                    log.debug( "Fetched catalog column for projection key: {}.", columnName );
+                } catch ( GenericCatalogException | UnknownColumnException e ) {
+                    log.warn( "Unable to fetch column: {}.", columnName, e );
+                    return null; // FIXME
+                }
+
+                projectionColumns.add( catalogColumn );
+
+                if ( matcher.group( "alias" ) == null ) {
+                    // We only have a qualified name
+                    projectionNames.add( columnName );
+                } else {
+                    projectionNames.add( matcher.group( "alias" ) );
+
+                    if ( matcher.group( "agg" ) != null ) {
+                        aggregates.add( new Pair<>( catalogColumn, this.decodeAggregateFunction( matcher.group( "agg" ) ) ) );
+//                        aggregateColumns.add( catalogColumn );
+//                        aggregateFunctions.add( this.decodeAggregateFunction( matcher.group( "agg" ) ) );
+                    }
+                }
             } else {
-                log.debug( "Parsed projection. Column: {}.", possiblyNamed[0] );
-                projectionNames.add( catalogColumn.name );
+                // FIXME: Proper error handling
             }
         }
 
-        // TODO js: proper case sensitivity
-        projectionNames = SqlValidatorUtil.uniquify( projectionNames, false );
 
-        log.debug( "Finished parsing projection: {}", possibleProjectionsString );
-        return new Pair<>( projectionColumns, projectionNames );
+
+        return new ProjectionAndAggregation( new Pair<>( projectionColumns, projectionNames ), aggregates);
     }
 
 
-    private List<Pair<CatalogColumn, Boolean>> parseSorting( QueryParamsMap queryParamsMap ) {
-        if ( ! queryParamsMap.hasKey( "_sort" )) {
-            log.debug( "Request does not contain a sort. Returning null." );
-            return null;
-        }
-        QueryParamsMap sortMap = queryParamsMap.get( "_sort" );
-        String[] possibleSortValues = sortMap.values();
-        String possibleSortString = possibleSortValues[0];
-        log.debug( "Starting to parse sort: {}", possibleSortString );
-
-        List<Pair<CatalogColumn, Boolean>> sortingColumns = new ArrayList<>();
-        String[] possibleSorts = possibleSortString.split( "," );
-        for ( String sortToParse : possibleSorts ) {
-            String[] splitUp = sortToParse.split( "@" );
-            CatalogColumn catalogColumn;
-            try {
-                catalogColumn = this.getCatalogColumnFromString( splitUp[0] );
-                log.debug( "Fetched catalog column for sort key: {}.", splitUp[0] );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                log.warn( "Unable to fetch column: {}", splitUp[0], e );
+    @VisibleForTesting
+    SqlAggFunction decodeAggregateFunction( String function ) {
+        switch ( function ) {
+            case "COUNT":
+                return SqlStdOperatorTable.COUNT;
+            case "MAX":
+                return SqlStdOperatorTable.MAX;
+            case "MIN":
+                return SqlStdOperatorTable.MIN;
+            case "AVG":
+                return SqlStdOperatorTable.AVG;
+            case "SUM":
+                return SqlStdOperatorTable.SUM;
+            default:
                 return null;
-            }
-
-            if ( splitUp.length == 2 && splitUp[1].equals( "DESC" ) ) {
-                sortingColumns.add( new Pair<>( catalogColumn, true ) );
-            } else {
-                sortingColumns.add( new Pair<>( catalogColumn, false ) );
-            }
-        }
-
-
-        log.debug( "Finished parsing sort: {}", possibleSortString );
-        return sortingColumns;
-    }
-
-
-    private Integer parseLimit( QueryParamsMap queryParamsMap ) {
-        if ( ! queryParamsMap.hasKey( "_limit" ) ) {
-            log.debug( "Request does not contain a limit. Returning -1." );
-            return -1;
-        }
-        QueryParamsMap limitMap = queryParamsMap.get( "_limit" );
-        String[] possibleLimitValues = limitMap.values();
-
-        try {
-            log.debug( "Parsed limit value: {}.", possibleLimitValues[0] );
-            return Integer.valueOf( possibleLimitValues[0] );
-        } catch ( NumberFormatException e ) {
-            log.warn( "Unable to parse limit value: {}", possibleLimitValues[0] );
-            return -1;
-        }
-    }
-
-
-    private Integer parseOffset( QueryParamsMap queryParamsMap ) {
-        if ( ! queryParamsMap.hasKey( "_offset" ) ) {
-            log.debug( "Request does not contain an offset. Returning -1." );
-            return -1;
-        }
-        QueryParamsMap offsetMap = queryParamsMap.get( "_offset" );
-        String[] possibleOffsetValues = offsetMap.values();
-
-        try {
-            log.debug( "Parsed offset value: {}.", possibleOffsetValues[0] );
-            return Integer.valueOf( possibleOffsetValues[0] );
-        } catch ( NumberFormatException e ) {
-            log.warn( "Unable to parse offset value: {}", possibleOffsetValues[0] );
-            return -1;
         }
     }
 
@@ -315,52 +263,192 @@ public class RequestParser {
 
     }
 
-    private Pair<SqlOperator, Object> parseFilterOperation( CatalogColumn catalogColumn, String filterString ) {
-        log.debug( "Starting to parse filter operation. Column: {}, Value: {}.", catalogColumn.id, filterString );
-        SqlOperator callOperator;
-        String restOfOp;
-        if ( filterString.startsWith( "<" ) ) {
-            callOperator = SqlStdOperatorTable.LESS_THAN;
-            restOfOp = filterString.substring( 1, filterString.length() );
-        } else if ( filterString.startsWith( "<=" ) ) {
-            callOperator = SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
-            restOfOp = filterString.substring( 2, filterString.length() );
-        } else if ( filterString.startsWith( ">" ) ) {
-            callOperator = SqlStdOperatorTable.GREATER_THAN;
-            restOfOp = filterString.substring( 1, filterString.length() );
-        } else if ( filterString.startsWith( ">=" ) ) {
-            callOperator = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
-            restOfOp = filterString.substring( 2, filterString.length() );
-        } else if ( filterString.startsWith( "=" ) ) {
-            callOperator = SqlStdOperatorTable.EQUALS;
-            restOfOp = filterString.substring( 1, filterString.length() );
-        } else if ( filterString.startsWith( "!=" ) ) {
-            callOperator = SqlStdOperatorTable.NOT_EQUALS;
-            restOfOp = filterString.substring( 2, filterString.length() );
-        } else if ( filterString.startsWith( "%" ) ) {
-            callOperator = SqlStdOperatorTable.LIKE;
-            restOfOp = filterString.substring( 1, filterString.length() );
-        } else if ( filterString.startsWith( "!%" ) ) {
-            callOperator = SqlStdOperatorTable.NOT_LIKE;
-            restOfOp = filterString.substring( 2, filterString.length() );
-        } else {
-            log.warn( "Unable to parse filter operation comparator. Returning null." );
+
+    public List<Pair<CatalogColumn, Boolean>> parseSorting( Request request, Map<String, CatalogColumn> nameAndAliasMapping ) throws IllegalArgumentException {
+        if ( ! request.queryMap().hasKey( "_sort" ) ) {
+            log.debug( "Request does not contain a sort. Returning null." );
             return null;
         }
 
-        Object rightHandSide = this.parseLiteralValue( catalogColumn.type, restOfOp );
-        if ( rightHandSide == null ) {
-            // TODO js: error handling.
-            log.warn( "Unable to convert literal value for filter operation. Returning null. Column: {}, Value: {}.", catalogColumn.id, filterString );
-            return null;
+        QueryParamsMap sortMap = request.queryMap().get( "_sort" );
+        String[] possibleSortValues = sortMap.values();
+        String possibleSortString = possibleSortValues[0];
+        log.debug( "Starting to parse sort: {}", possibleSortString );
+
+        List<Pair<CatalogColumn, Boolean>> sortingColumns = new ArrayList<>();
+        String[] possibleSorts = possibleSortString.split( "," );
+
+        for ( String sortEntry : possibleSorts ) {
+            Matcher matcher = SORTING_ENTRY_PATTERN.matcher( sortEntry );
+
+            if ( matcher.find() ) {
+                CatalogColumn catalogColumn = nameAndAliasMapping.get( matcher.group( "column" ) );
+                boolean inverted = false;
+                if ( matcher.group( "dir" ) != null ) {
+                    String direction = matcher.group( "dir" );
+                    inverted = "DESC".equals( direction );
+                }
+
+                sortingColumns.add( new Pair<>( catalogColumn, inverted ) );
+
+            } else {
+                // FIXME: Proper error handling.
+                throw new IllegalArgumentException( "The following provided sort instruction is not proper: '" + sortEntry + "'." );
+            }
         }
 
-        log.debug( "Finished parsing filter operation. Column: {}, Value: {}.", catalogColumn.id, filterString );
-        return new Pair<>( callOperator, rightHandSide );
+        return sortingColumns;
     }
 
 
-    private Object parseLiteralValue( PolyType type, Object objectLiteral ) {
+    public List<CatalogColumn> parseGroupings( Request request, Map<String, CatalogColumn> nameAndAliasMapping ) throws IllegalArgumentException {
+        if ( ! request.queryMap().hasKey( "_groupby" ) ) {
+            log.debug( "Request does not contain a grouping. Returning null." );
+            return new ArrayList<>();
+        }
+
+        QueryParamsMap groupbyMap = request.queryMap().get( "_groupby" );
+        String[] possibleGroupbyValues = groupbyMap.values();
+        String possibleGroupbyString = possibleGroupbyValues[0];
+        log.debug( "Starting to parse grouping: {}", possibleGroupbyString );
+
+        List<CatalogColumn> groupingColumns = new ArrayList<>();
+        String[] possibleGroupings = possibleGroupbyString.split( "," );
+        for ( String groupbyEntry : possibleGroupings ) {
+            if ( nameAndAliasMapping.containsKey( groupbyEntry ) ) {
+                groupingColumns.add( nameAndAliasMapping.get( groupbyEntry ) );
+            } else {
+                throw new IllegalArgumentException( "The following provided groupby instruction is not proper: '" + groupbyEntry + "'." );
+            }
+        }
+
+        return groupingColumns;
+    }
+
+
+    public Integer parseLimit( Request request ) {
+        if ( ! request.queryMap().hasKey( "_limit" ) ) {
+            log.debug( "Request does not contain a limit. Returning -1." );
+            return -1;
+        }
+        QueryParamsMap limitMap = request.queryMap().get( "_limit" );
+        String[] possibleLimitValues = limitMap.values();
+
+        try {
+            log.debug( "Parsed limit value: {}.", possibleLimitValues[0] );
+            return Integer.valueOf( possibleLimitValues[0] );
+        } catch ( NumberFormatException e ) {
+            log.warn( "Unable to parse limit value: {}", possibleLimitValues[0] );
+            return -1;
+        }
+    }
+
+
+    public Integer parseOffset( Request request ) {
+        if ( ! request.queryMap().hasKey( "_offset" ) ) {
+            log.debug( "Request does not contain an offset. Returning -1." );
+            return -1;
+        }
+        QueryParamsMap offsetMap = request.queryMap().get( "_offset" );
+        String[] possibleOffsetValues = offsetMap.values();
+
+        return this.parseOffset( possibleOffsetValues[0] );
+    }
+
+    @VisibleForTesting
+    Integer parseOffset( String offsetString ) {
+        try {
+            log.debug( "Parsed offset value: {}.", offsetString );
+            return Integer.valueOf( offsetString );
+        } catch ( NumberFormatException e ) {
+            log.warn( "Unable to parse offset value: {}", offsetString );
+            return -1;
+        }
+    }
+
+
+    public Filters parseFilters( Request request, Map<String, CatalogColumn> nameAndAliasMapping ) {
+        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> literalFilters = new HashMap<>();
+        Map<CatalogColumn, List<Pair<SqlOperator, CatalogColumn>>> columnFilters = new HashMap<>();
+
+        for ( String possibleFilterKey : request.queryMap().toMap().keySet() ) {
+            if ( possibleFilterKey.startsWith( "_" ) ) {
+                log.debug( "Not a filter: {}", possibleFilterKey );
+                continue;
+            }
+            log.debug( "Attempting to parse filters for key: {}.", possibleFilterKey );
+
+            if ( ! nameAndAliasMapping.containsKey( possibleFilterKey ) ) {
+                throw new IllegalArgumentException( "Not a valid column for filtering: '" + possibleFilterKey + "'." );
+            }
+
+            CatalogColumn catalogColumn = nameAndAliasMapping.get( possibleFilterKey );
+
+            List<Pair<SqlOperator, Object>> literalFilterOperators = new ArrayList<>();
+            List<Pair<SqlOperator, CatalogColumn>> columnFilterOperators = new ArrayList<>();
+
+            for ( String filterString : request.queryMap().get( possibleFilterKey ).values() ) {
+                Pair<SqlOperator, String> rightHandSide = this.parseFilterOperation( filterString );
+                Object literal = this.parseLiteralValue( catalogColumn.type, rightHandSide.right );
+                // TODO: add column filters here
+                literalFilterOperators.add( new Pair<>( rightHandSide.left, literal ) );
+            }
+            // TODO: Add If Size != 0 checks for both put
+            if ( ! literalFilterOperators.isEmpty() ) {
+                literalFilters.put( catalogColumn, literalFilterOperators );
+            }
+            if ( ! columnFilterOperators.isEmpty() ) {
+                columnFilters.put( catalogColumn, columnFilterOperators );
+            }
+            log.debug( "Finished parsing filters for key: {}.", possibleFilterKey );
+        }
+
+        return new Filters( literalFilters, columnFilters );
+    }
+
+
+
+
+    Pair<SqlOperator, String> parseFilterOperation( String filterString ) throws IllegalArgumentException {
+        log.debug( "Starting to parse filter operation. Value: {}.", filterString );
+
+        SqlOperator callOperator;
+        String rightHandSide;
+        if ( filterString.startsWith( "<" ) ) {
+            callOperator = SqlStdOperatorTable.LESS_THAN;
+            rightHandSide = filterString.substring( 1, filterString.length() );
+        } else if ( filterString.startsWith( "<=" ) ) {
+            callOperator = SqlStdOperatorTable.LESS_THAN_OR_EQUAL;
+            rightHandSide = filterString.substring( 2, filterString.length() );
+        } else if ( filterString.startsWith( ">" ) ) {
+            callOperator = SqlStdOperatorTable.GREATER_THAN;
+            rightHandSide = filterString.substring( 1, filterString.length() );
+        } else if ( filterString.startsWith( ">=" ) ) {
+            callOperator = SqlStdOperatorTable.GREATER_THAN_OR_EQUAL;
+            rightHandSide = filterString.substring( 2, filterString.length() );
+        } else if ( filterString.startsWith( "=" ) ) {
+            callOperator = SqlStdOperatorTable.EQUALS;
+            rightHandSide = filterString.substring( 1, filterString.length() );
+        } else if ( filterString.startsWith( "!=" ) ) {
+            callOperator = SqlStdOperatorTable.NOT_EQUALS;
+            rightHandSide = filterString.substring( 2, filterString.length() );
+        } else if ( filterString.startsWith( "%" ) ) {
+            callOperator = SqlStdOperatorTable.LIKE;
+            rightHandSide = filterString.substring( 1, filterString.length() );
+        } else if ( filterString.startsWith( "!%" ) ) {
+            callOperator = SqlStdOperatorTable.NOT_LIKE;
+            rightHandSide = filterString.substring( 2, filterString.length() );
+        } else {
+            log.warn( "Unable to parse filter operation comparator. Returning null." );
+            throw new IllegalArgumentException( "Not a valid filter statement: '" + filterString + "'." );
+        }
+
+        return new Pair<>( callOperator, rightHandSide );
+    }
+
+    // TODO: REWRITE THIS METHOD
+    @VisibleForTesting
+    Object parseLiteralValue( PolyType type, Object objectLiteral ) {
         if ( ! ( objectLiteral instanceof String ) ) {
             return objectLiteral;
         } else {
@@ -389,7 +477,29 @@ public class RequestParser {
         }
     }
 
-    private List<Pair<CatalogColumn, Object>> parseInsertStatementValues( Map rowValuesMap ) {
+
+    public List<List<Pair<CatalogColumn, Object>>> parseValues( Request request, Map<String, CatalogColumn> nameAndAliasMapping, Gson gson ) {
+        // FIXME: Verify stuff like applications/json, so on, so forth
+        Object bodyObject = gson.fromJson( request.body(), Object.class );
+        Map bodyMap = (Map) bodyObject;
+        List valuesList = (List) bodyMap.get( "data" );
+        return this.parseInsertStatementBody( valuesList, nameAndAliasMapping );
+    }
+
+    @VisibleForTesting
+    List<List<Pair<CatalogColumn, Object>>> parseInsertStatementBody( List<Object> bodyInsertValues, Map<String, CatalogColumn> nameAndAliasMapping ) {
+        List<List<Pair<CatalogColumn, Object>>> returnValue = new ArrayList<>();
+
+        for ( Object rowObject : bodyInsertValues ) {
+            Map rowMap = (Map) rowObject;
+            List<Pair<CatalogColumn, Object>> rowValue = this.parseInsertStatementValues( rowMap, nameAndAliasMapping );
+            returnValue.add( rowValue );
+        }
+
+        return returnValue;
+    }
+
+    private List<Pair<CatalogColumn, Object>> parseInsertStatementValues( Map rowValuesMap, Map<String, CatalogColumn> nameAndAliasMapping ) {
         List<Pair<CatalogColumn, Object>> result = new ArrayList<>();
 
         for ( Object objectColumnName : rowValuesMap.keySet() ) {
@@ -420,17 +530,27 @@ public class RequestParser {
     }
 
 
-    private List<List<Pair<CatalogColumn, Object>>> parseInsertStatementBody( List<Object> bodyInsertValues ) {
-        List<List<Pair<CatalogColumn, Object>>> returnValue = new ArrayList<>();
-
-        for ( Object rowObject : bodyInsertValues ) {
-            Map rowMap = (Map) rowObject;
-            List<Pair<CatalogColumn, Object>> rowValue = this.parseInsertStatementValues( rowMap );
-            returnValue.add( rowValue );
+    public Map<String, CatalogColumn> generateNameMapping( List<CatalogTable> tables ) {
+        Map<String, CatalogColumn> nameMapping = new HashMap<>();
+        for ( CatalogTable table : tables ) {
+            for ( CatalogColumn column : this.catalog.getColumns( table.id ) ) {
+                nameMapping.put(column.schemaName + "." + column.tableName + "." + column.name, column);
+            }
         }
 
-        return returnValue;
+        return nameMapping;
     }
 
 
+    @AllArgsConstructor
+    public static class ProjectionAndAggregation {
+        public final Pair<List<CatalogColumn>, List<String>> projection;
+        public final List<Pair<CatalogColumn, SqlAggFunction>> aggregateFunctions;
+    }
+
+    @AllArgsConstructor
+    public static class Filters {
+        public final Map<CatalogColumn, List<Pair<SqlOperator, Object>>> literalFilters;
+        public final Map<CatalogColumn, List<Pair<SqlOperator, CatalogColumn>>> columnFilters;
+    }
 }

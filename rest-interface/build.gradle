@@ -27,6 +27,8 @@ dependencies {
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
     testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
 }
 
 

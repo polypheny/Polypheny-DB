@@ -17,16 +17,19 @@
 package org.polypheny.db.restapi;
 
 import com.google.gson.Gson;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
-import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
-import org.polypheny.db.restapi.models.requests.InsertValueRequest;
-import org.polypheny.db.restapi.models.requests.ResourceRequest;
-import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
+import org.polypheny.db.restapi.RequestParser.Filters;
+import org.polypheny.db.restapi.RequestParser.ProjectionAndAggregation;
+import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
+import org.polypheny.db.restapi.models.requests.RequestInfo;
 import org.polypheny.db.transaction.TransactionManager;
 import spark.Service;
 
@@ -54,7 +57,6 @@ public class HttpRestServer extends QueryInterface {
         restServer.port(this.port);
 
         Rest rest = new Rest( transactionManager, "pa", "APP" );
-
         restRoutes( restServer, rest );
 
         log.info( "REST API Server started." );
@@ -63,47 +65,110 @@ public class HttpRestServer extends QueryInterface {
 
     private void restRoutes( Service restServer, Rest rest ) {
         restServer.path( "/restapi/v1", () -> {
+//            RequestInfo requestInfo;
             restServer.before( "/*", (q, a) -> {
-                q.queryMap();
-//                log.info( "Received api call." );
-
                 log.debug( "Checking authentication of request with id: {}.", q.session().id() );
-                boolean authenticated = this.checkBasicAuthentication( q.headers("Authorization") );
-                if ( ! authenticated ) {
-                    log.debug( "Unauthenticated request with id: {}. Blocking with 401.", q.session().id() );
-                    restServer.halt( 401, "Not authorized.");
+                RequestInfo requestInfo = new RequestInfo();
+                try {
+                    CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( q );
+                    requestInfo.setAuthenticatedUser( catalogUser );
+                } catch ( UnauthorizedAccessException e ) {
+                    restServer.halt( 401, e.getMessage() );
                 }
+//                boolean authenticated = this.checkBasicAuthentication( q.headers("Authorization") );
+//                CatalogUser catalogUser = this.basicAuthentication( q.headers("Authorization") );
+//                if ( catalogUser == null ) {
+//                    log.debug( "Unauthenticated request with id: {}. Blocking with 401.", q.session().id() );
+//                    restServer.halt( 401, "Not authorized.");
+//                }
+//                requestInfo.setAuthenticatedUser( catalogUser );
             } );
-            restServer.get( "/res", rest::getTableList, gson::toJson );
-//            restServer.get( "/res", rest::getTableList, gson::toJson );
+//            restServer.get( "/res", restOld::getTableList, gson::toJson );
             restServer.get( "/res/:resName", (q, a) -> {
-                ResourceRequest resourceRequest = requestParser.parseResourceRequest( q.params( ":resName" ), q.queryMap() );
+                RequestInfo requestInfo = new RequestInfo();
+                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
+                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
+                requestInfo.initialNameMapping( nameMapping );
+                ProjectionAndAggregation projectionsAndAggregates = requestParser.parseProjectionsAndAggregations( q );
+                requestInfo.setProjection( projectionsAndAggregates.projection );
+                requestInfo.setAggregateFunctions( projectionsAndAggregates.aggregateFunctions );
 
-                return rest.getResourceTable( resourceRequest, q, a );
+                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
+
+                requestInfo.setGroupings( requestParser.parseGroupings( q, nameAndAliasMapping ) );
+
+                requestInfo.setLimit( requestParser.parseLimit( q ) );
+                requestInfo.setOffset( requestParser.parseOffset( q ) );
+                requestInfo.setSort( requestParser.parseSorting( q, nameAndAliasMapping ) );
+
+                Filters filters = requestParser.parseFilters( q, nameAndAliasMapping );
+                requestInfo.setLiteralFilters( filters.literalFilters );
+                requestInfo.setColumnFilters( filters.columnFilters );
+
+
+                return rest.processGetResource( requestInfo, q, a );
+
+//                ResourceRequest resourceRequest = requestParserOld.parseResourceRequest( q.params( ":resName" ), q.queryMap() );
+//                return rest.getResourceTable( resourceRequest, q, a );
             }, gson::toJson );
             restServer.post( "/res/:resName", (q, a) -> {
-                InsertValueRequest insertValueRequest = requestParser.parseInsertValuePost( q.params(":resName"), q.queryMap(), q.body(), gson );
+                RequestInfo requestInfo = new RequestInfo();
+                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
+                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
+                requestInfo.initialNameMapping( nameMapping );
+                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
+                requestInfo.setValues( requestParser.parseValues( q, nameAndAliasMapping, gson ) );
+                return rest.processPutResource( requestInfo, q, a );
 
-                return rest.postInsertValue( insertValueRequest, q, a );
+//                InsertValueRequest insertValueRequest = requestParserOld.parseInsertValuePost( q.params(":resName"), q.queryMap(), q.body(), gson );
+//                return rest.postInsertValue( insertValueRequest, q, a );
             }, gson::toJson );
             restServer.delete( "/res/:resName", (q, a) -> {
-                DeleteValueRequest deleteValueRequest = requestParser.parseDeleteValueRequest( q.params(":resName"), q.queryMap() );
+                RequestInfo requestInfo = new RequestInfo();
+                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
+                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
+                requestInfo.initialNameMapping( nameMapping );
+                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
+                Filters filters = requestParser.parseFilters( q, nameAndAliasMapping );
+                requestInfo.setLiteralFilters( filters.literalFilters );
+                requestInfo.setColumnFilters( filters.columnFilters );
 
-                return rest.deleteValues( deleteValueRequest, q, a );
+                return rest.processDeleteResource( requestInfo, q, a );
+//                DeleteValueRequest deleteValueRequest = requestParserOld.parseDeleteValueRequest( q.params(":resName"), q.queryMap() );
+//                return rest.deleteValues( deleteValueRequest, q, a );
             }, gson::toJson );
             restServer.patch( "/res/:resName", (q, a) -> {
-                UpdateResourceRequest updateResourceRequest = requestParser.parseUpdateResourceRequest( q.params(":resName"), q.queryMap(), q.body(), gson );
+                RequestInfo requestInfo = new RequestInfo();
+                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
+                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
+                requestInfo.initialNameMapping( nameMapping );
+                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
+                Filters filters = requestParser.parseFilters( q, nameAndAliasMapping );
+                requestInfo.setLiteralFilters( filters.literalFilters );
+                requestInfo.setColumnFilters( filters.columnFilters );
+                requestInfo.setValues( requestParser.parseValues( q, nameAndAliasMapping, gson ) );
 
-                return rest.updateResource( updateResourceRequest, q, a );
+                return rest.processPatchResource( requestInfo, q, a );
+//                UpdateResourceRequest updateResourceRequest = requestParserOld.parseUpdateResourceRequest( q.params(":resName"), q.queryMap(), q.body(), gson );
+//                return rest.updateResource( updateResourceRequest, q, a );
             }, gson::toJson );
-//            restServer.get( "/res/:resName", rest::getTable, gson::toJson );
-
-//            restServer.path( "/res", () -> {
-//                restServer.get( "/", rest::testMethod, gson::toJson );
-//                restServer.get( "/:resName", rest::testMethod, gson::toJson );
-//                restServer.post( "/:resName", null );
-//            } );
         } );
+    }
+
+
+    private CatalogUser basicAuthentication( String basicAuthHeader ) {
+        if ( basicAuthHeader == null ) {
+            return null;
+        }
+
+        String[] decoded = this.decodeAuthorizationHeader( basicAuthHeader );
+
+        try {
+            return this.authenticator.authenticate( decoded[0], decoded[1] );
+        } catch ( AuthenticationException e ) {
+//            e.printStackTrace();
+            return null;
+        }
     }
 
     private boolean checkBasicAuthentication( String basicAuthHeader ) {
