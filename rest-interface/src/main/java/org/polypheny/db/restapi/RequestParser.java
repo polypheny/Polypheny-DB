@@ -48,7 +48,9 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import spark.QueryParamsMap;
 import spark.Request;
@@ -463,10 +465,24 @@ public class RequestParser {
             } else if ( PolyType.CHAR_TYPES.contains( type ) ) {
                 parsedLiteral = literal;
             } else if ( PolyType.DATETIME_TYPES.contains( type ) ) {
-                Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
-                Long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
-                TimestampString timestampString = TimestampString.fromMillisSinceEpoch( millisecondsSinceEpoch );
-                parsedLiteral = timestampString;
+                switch ( type ) {
+                    case DATE:
+                        DateString dateString = new DateString( literal );
+                        parsedLiteral = dateString;
+                        break;
+                    case TIMESTAMP:
+                        Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
+                        Long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
+                        TimestampString timestampString = TimestampString.fromMillisSinceEpoch( millisecondsSinceEpoch );
+                        parsedLiteral = timestampString;
+                        break;
+                    case TIME:
+                        TimeString timeString = new TimeString( literal );
+                        parsedLiteral = timeString;
+                        break;
+                    default:
+                        return null;
+                }
             } else {
                 // TODO js: error handling.
                 log.warn( "Unable to convert literal value. Returning null. Type: {}, Value: {}.", type, literal );

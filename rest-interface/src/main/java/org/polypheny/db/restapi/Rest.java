@@ -197,9 +197,9 @@ public class Rest {
         }
 
 
-        log.info( "RelNodeBuilder: {}", relBuilder.toString() );
+        log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
         RelNode relNode = relBuilder.build();
-        log.info( "RelNode was built." );
+        log.debug( "RelNode was built." );
 
         // Wrap RelNode into a RelRoot
         final RelDataType rowType = relNode.getRowType();
@@ -209,7 +209,7 @@ public class Rest {
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
         RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
-        log.info( "RelRoot was built." );
+        log.debug( "RelRoot was built." );
 
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
 
@@ -273,7 +273,7 @@ public class Rest {
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.UPDATE, fields, collation );
-        log.info( "RelRoot was built." );
+        log.debug( "RelRoot was built." );
 
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
         return finalResult;
@@ -321,7 +321,7 @@ public class Rest {
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.DELETE, fields, collation );
-        log.info( "RelRoot was built." );
+        log.debug( "RelRoot was built." );
 
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
         return finalResult;
@@ -383,7 +383,7 @@ public class Rest {
                         ? ((Sort) relNode).collation
                         : RelCollations.EMPTY;
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
-        log.info( "RelRoot was built." );
+        log.debug( "RelRoot was built." );
 
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
 
@@ -482,7 +482,7 @@ public class Rest {
     Map<String, Object> executeAndTransformRelAlg( RelRoot relRoot, final Transaction transaction ) {
         // Prepare
         PolyphenyDbSignature signature = transaction.getQueryProcessor().prepareQuery( relRoot );
-        log.info( "RelRoot was prepared." );
+        log.debug( "RelRoot was prepared." );
 
         List<List<Object>> rows;
         try {
