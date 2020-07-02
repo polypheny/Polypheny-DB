@@ -154,7 +154,7 @@ public class Rest {
         }
 
         // Projections
-        if ( requestInfo.getProjection() != null ) {
+        if ( requestInfo.getProjection() != null && ! requestInfo.getProjection().left.isEmpty() ) {
             List<RexNode> projectionInputRefs = new ArrayList<>();
             RelNode baseNodeForProjections = relBuilder.peek();
             for ( CatalogColumn catalogColumn : requestInfo.getProjection().left ) {
@@ -553,9 +553,13 @@ public class Rest {
                 for ( Object o: row ) {
                     if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIMESTAMP ) ) {
                         Long nanoSeconds = (Long) o;
-                        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) (( nanoSeconds % 1000 ) * 1000), ZoneOffset.UTC );
+                        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
 //                        localDateTime.toString();
                         temp.put( signature.columns.get( counter ).columnName, localDateTime.toString() );
+                    } else if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIME ) ) {
+                        temp.put( signature.columns.get( counter ).columnName, o.toString() );
+                    } else if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIME ) ) {
+                        temp.put( signature.columns.get( counter ).columnName, o.toString() );
                     } else {
                         temp.put( signature.columns.get( counter ).columnName, o );
                     }
@@ -565,7 +569,7 @@ public class Rest {
             }
 
         } catch ( Exception e ) {
-
+            e.printStackTrace();
         }
 
         Map<String, Object> finalResult = new HashMap<>();

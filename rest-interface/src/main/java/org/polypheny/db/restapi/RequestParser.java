@@ -180,9 +180,14 @@ public class RequestParser {
 
 
     public ProjectionAndAggregation parseProjectionsAndAggregations( Request request ) {
+        List<CatalogColumn> projectionColumns = new ArrayList<>();
+        List<String> projectionNames = new ArrayList<>();
+        List<Pair<CatalogColumn, SqlAggFunction>> aggregates = new ArrayList<>();
+
         if ( ! request.queryMap().hasKey( "_project" ) ) {
             // FIXME: how to deal with these?
-            return null;
+            return new ProjectionAndAggregation( new Pair<>( projectionColumns, projectionNames ), aggregates);
+//            return null;
         }
         QueryParamsMap projectionMap = request.queryMap().get( "_project" );
         String[] possibleProjectionValues = projectionMap.values();
@@ -191,9 +196,6 @@ public class RequestParser {
 
         String[] possibleProjections = possibleProjectionsString.split( "," );
 
-        List<CatalogColumn> projectionColumns = new ArrayList<>();
-        List<String> projectionNames = new ArrayList<>();
-        List<Pair<CatalogColumn, SqlAggFunction>> aggregates = new ArrayList<>();
 //        List<CatalogColumn> aggregateColumns = new ArrayList<>();
 //        List<SqlAggFunction> aggregateFunctions = new ArrayList<>();
 
