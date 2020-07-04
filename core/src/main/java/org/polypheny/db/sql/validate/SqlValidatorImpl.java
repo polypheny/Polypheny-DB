@@ -4287,13 +4287,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 if( sourceType instanceof ArrayType ) {
                     long targetDimension = ((ArrayType) targetType).getDimension();
                     long sourceDimension = ((ArrayType) sourceType).getMaxDimension();
-                    if(sourceDimension > targetDimension ) {
+                    if(sourceDimension > targetDimension && targetDimension > -1 ) {
                         throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getKey(), sourceDimension, targetDimension ));
                     }
 
                     long targetCardinality = ((ArrayType) targetType).getCardinality();
                     long sourceCardinality = ((ArrayType) sourceType).getMaxCardinality();
-                    if(sourceCardinality > targetCardinality ) {
+                    if(sourceCardinality > targetCardinality && targetCardinality > -1 ) {
                         throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getKey(), sourceCardinality, targetCardinality ) );
                     }
                 }
