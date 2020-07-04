@@ -19,8 +19,10 @@ package org.polypheny.db.config;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.typesafe.config.ConfigException;
@@ -38,6 +40,7 @@ import org.reflections.Reflections;
 public class ConfigClazzList extends Config {
 
     @JsonAdapter(ClassesAdapter.class)
+    @SerializedName( "values" )
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private final List<Class> value;
@@ -49,6 +52,7 @@ public class ConfigClazzList extends Config {
         //noinspection unchecked
         classes = ImmutableSet.copyOf( reflections.getSubTypesOf( superClass ) );
         this.value = new ArrayList<>();
+        this.webUiFormType = WebUiFormType.CHECKBOXES;
     }
 
 
@@ -132,7 +136,15 @@ public class ConfigClazzList extends Config {
 
     @Override
     public boolean parseStringAndSetValue( String value ) {
-        throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
+        Gson gson = new Gson();
+        ArrayList<String> val = gson.fromJson( value, ArrayList.class );
+        List<Class> toAdd = new ArrayList<>();
+        for( Class c: classes ) {
+            if( val.contains( c.getName() )){
+                toAdd.add(c);
+            }
+        }
+        return this.setClazzList( toAdd );
     }
 
 
