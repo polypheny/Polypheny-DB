@@ -21,6 +21,7 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -65,6 +66,10 @@ public class PolyphenyDb {
 
     @Option(name = { "-testMode" }, description = "test configuration for catalog")
     public boolean testMode = false;
+
+    // required for unit tests to determine when the system is ready to process queries
+    @Getter
+    private volatile boolean isReady = false;
 
 
     @SuppressWarnings("unchecked")
@@ -208,6 +213,7 @@ public class PolyphenyDb {
         log.info( "                              The UI is waiting for you on port {}:", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "****************************************************************************************************" );
+        isReady = true;
 
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );

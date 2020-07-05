@@ -250,15 +250,23 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " ADD " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " " );
-        builder.append( getTypeString( catalogColumn.type ) );
-        if ( catalogColumn.length != null ) {
-            builder.append( "(" );
-            builder.append( catalogColumn.length );
-            if ( catalogColumn.scale != null ) {
-                builder.append( "," ).append( catalogColumn.scale );
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+            //returns e.g. TEXT if arrays are not supported
+            builder.append( getTypeString( PolyType.ARRAY ) );
+        } else {
+            builder.append( getTypeString( catalogColumn.type ) );
+            if ( catalogColumn.length != null ) {
+                builder.append( "(" ).append( catalogColumn.length );
+                if ( catalogColumn.scale != null ) {
+                    builder.append( "," ).append( catalogColumn.scale );
+                }
+                builder.append( ")" );
             }
-            builder.append( ")" );
+            if ( catalogColumn.collectionsType != null ) {
+                builder.append( " " ).append( catalogColumn.collectionsType.toString() );
+            }
         }
+        builder.append( " NULL" );
         return builder;
     }
 

@@ -130,7 +130,10 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
         }
 
-        // TODO: Check if the column either allows null values or has a default value defined.
+        // Check if the column either allows null values or has a default value defined.
+        if ( defaultValue == null && !nullable ) {
+            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
+        }
 
         CatalogColumn addedColumn;
         Long columnId = null;

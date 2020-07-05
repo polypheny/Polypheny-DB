@@ -17,15 +17,20 @@
 package org.polypheny.db;
 
 
+import static org.junit.Assert.fail;
+
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -66,12 +71,13 @@ public class TestHelper {
         Thread thread = new Thread( runnable );
         thread.start();
 
-        // TODO MV: Waiting is not a good solution. It would be better to recognize if the system is ready.
-        // Wait 30 seconds
-        try {
-            TimeUnit.SECONDS.sleep( 30 );
-        } catch ( InterruptedException e ) {
-            // Ignore
+        // Wait until Polypheny-DB is ready to process queries
+        while ( !polyphenyDb.isReady() ) {
+            try {
+                TimeUnit.SECONDS.sleep( 1 );
+            } catch ( InterruptedException e ) {
+                log.error( "Interrupted exception", e );
+            }
         }
 
         // Hack to get TransactionManager
@@ -82,7 +88,6 @@ public class TestHelper {
         } catch ( NoSuchFieldException | IllegalAccessException e ) {
             throw new RuntimeException( e );
         }
-
     }
 
 
@@ -101,32 +106,52 @@ public class TestHelper {
     }
 
 
-    public static class JdbcConnection implements AutoCloseable {
+    public static void checkResultSet( ResultSet resultSet, List<Object[]> expected ) throws SQLException {
+        int i = 0;
+        while ( resultSet.next() ) {
+            Assert.assertTrue( "Result set has more rows than expected", i < expected.size() );
+            Object[] expectedRow = expected.get( i++ );
+            Assert.assertEquals( "Wrong number of columns", expectedRow.length, resultSet.getMetaData().getColumnCount() );
+            int j = 0;
+            while ( j < expectedRow.length ) {
+                if ( expectedRow.length >= j + 1 ) {
+                    Assert.assertEquals(
+                            "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                            expectedRow[j],
+                            resultSet.getObject( j + 1 ) );
+                    j++;
+                } else {
+                    fail( "More data available then expected." );
+                }
+            }
+        }
+        Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );
+    }
 
-        private Connection conn;
+
+    public static class JdbcConnection implements AutoCloseable {
 
         private final static String dbHost = "localhost";
         private final static int port = 20591;
 
+        private final Connection conn;
 
-        public JdbcConnection() throws SQLException {
+
+        public JdbcConnection( boolean autoCommit ) throws SQLException {
             try {
                 Class.forName( "org.polypheny.jdbc.Driver" );
             } catch ( ClassNotFoundException e ) {
                 log.error( "Polypheny JDBC Driver not found", e );
             }
-            final String url = "jdbc:polypheny://" + dbHost + ":" + port;
-            //String url = "jdbc:polypheny://" + dbHost + ":" + port + "/" + dbName + "?prepareThreshold=0";
+            final String url = "jdbc:polypheny:http://" + dbHost + ":" + port;
             log.debug( "Connecting to database @ {}", url );
 
             Properties props = new Properties();
             props.setProperty( "user", "pa" );
-            //props.setProperty( "password", password );
-            //props.setProperty( "ssl", sslEnabled );
-            //props.setProperty( "serialization", "PROTOBUF" );
+            props.setProperty( "serialization", "PROTOBUF" );
 
             conn = DriverManager.getConnection( url, props );
-            //conn.setAutoCommit( false );
+            conn.setAutoCommit( autoCommit );
         }
 
 
@@ -137,6 +162,7 @@ public class TestHelper {
 
         @Override
         public void close() throws SQLException {
+            conn.commit();
             conn.close();
         }
     }
