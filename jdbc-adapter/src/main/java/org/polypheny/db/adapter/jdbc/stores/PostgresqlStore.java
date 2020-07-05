@@ -25,7 +25,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
@@ -67,6 +70,31 @@ public class PostgresqlStore extends AbstractJdbcStore {
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ) );
+    }
+
+
+    @Override
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "ALTER TABLE " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
+        builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
+        builder.append( " TYPE " ).append( getTypeString( catalogColumn.type ) );
+        if ( catalogColumn.length != null ) {
+            builder.append( "(" );
+            builder.append( catalogColumn.length );
+            if ( catalogColumn.scale != null ) {
+                builder.append( "," ).append( catalogColumn.scale );
+            }
+            builder.append( ")" );
+        }
+        builder.append( " USING " )
+                .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
+                .append( "::" )
+                .append( getTypeString( catalogColumn.type ) );
+        executeUpdate( builder, context );
     }
 
 

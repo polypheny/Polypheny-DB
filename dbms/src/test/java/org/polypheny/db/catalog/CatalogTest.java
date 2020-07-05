@@ -17,15 +17,12 @@
 package org.polypheny.db.catalog;
 
 
-import static org.junit.Assert.fail;
-
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -57,12 +54,12 @@ public class CatalogTest {
 
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private static void addTestData() {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection() ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE SCHEMA schema1" );
                 statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL, PRIMARY KEY(id))" );
-                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD COLUMN name VARCHAR (255) NOT NULL " );
+                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD COLUMN name VARCHAR (255) NULL " );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id USING BTREE" );
                 statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL, PRIMARY KEY(id) )" );
                 statement.executeUpdate( "ALTER TABLE schema1.table2 ADD CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES schema1.table1(id) ON UPDATE CASCADE ON DELETE SET NULL" );
@@ -76,7 +73,7 @@ public class CatalogTest {
 
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private static void deleteOldData() {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection() ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "ALTER TABLE schema1.table2 DROP FOREIGN KEY fk_id" );
@@ -94,7 +91,7 @@ public class CatalogTest {
 
     @Test
     public void testGetCatalogs() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             ResultSet resultSet = connection.getMetaData().getCatalogs();
             ResultSetMetaData rsmd = resultSet.getMetaData();
@@ -111,9 +108,10 @@ public class CatalogTest {
             // Check data
             final Object[] databaseApp = new Object[]{ "APP", "system", "public" };
 
-            checkResultSet(
+            TestHelper.checkResultSet(
                     connection.getMetaData().getCatalogs(),
                     ImmutableList.of( databaseApp ) );
+
         } catch ( SQLException e ) {
             log.error( "Exception while testing getCatalogs()", e );
         }
@@ -122,17 +120,17 @@ public class CatalogTest {
 
     @Test
     public void testGetSchema() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             final Object[] schemaTest = new Object[]{ "schema1", "APP", "pa", "RELATIONAL" };
             final Object[] schemaPublic = new Object[]{ "public", "APP", "system", "RELATIONAL" };
 
-            checkResultSet(
+            TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", null ),
                     ImmutableList.of( schemaPublic, schemaTest ) );
 
-            checkResultSet(
+            TestHelper.checkResultSet(
                     connection.getMetaData().getSchemas( "APP", "schema1" ),
                     ImmutableList.of( schemaTest ) );
 
@@ -144,16 +142,15 @@ public class CatalogTest {
 
     @Test
     public void testGetTable() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             final Object[] table1 = new Object[]{ "APP", "schema1", "table1", "TABLE", "", null, null, null, null, null, "pa", null };
             final Object[] table2 = new Object[]{ "APP", "schema1", "table2", "TABLE", "", null, null, null, null, null, "pa", null };
 
-            checkResultSet(
+            TestHelper.checkResultSet(
                     connection.getMetaData().getTables( "APP", "schema1", null, null ),
                     ImmutableList.of( table1, table2 ) );
-
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getTables()", e );
@@ -163,17 +160,16 @@ public class CatalogTest {
 
     @Test
     public void testGetColumn() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             // Check data
             final Object[] column1 = new Object[]{ "APP", "schema1", "table1", "id", 4, "INTEGER", null, null, null, null, 0, "", null, null, null, null, 1, "NO", null };
-            final Object[] column2 = new Object[]{ "APP", "schema1", "table1", "name", 12, "VARCHAR", 255, null, null, null, 0, "", null, null, null, null, 2, "NO", "CASE_INSENSITIVE" };
+            final Object[] column2 = new Object[]{ "APP", "schema1", "table1", "name", 12, "VARCHAR", 255, null, null, null, 1, "", null, null, null, null, 2, "YES", "CASE_INSENSITIVE" };
 
-            checkResultSet(
+            TestHelper.checkResultSet(
                     connection.getMetaData().getColumns( "APP", "schema1", "table1", null ),
                     ImmutableList.of( column1, column2 ) );
-
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getTables()", e );
@@ -183,16 +179,15 @@ public class CatalogTest {
 
     @Test
     public void testGetIndex() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             // Check data
             final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, null, 1 };
 
-            checkResultSet(
+            TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),
                     ImmutableList.of( index1 ) );
-
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getTables()", e );
@@ -202,39 +197,18 @@ public class CatalogTest {
 
     @Test
     public void testGetForeignKeys() {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection() ) {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             final Object[] foreignKeys = new Object[]{ "APP", "schema1", "table1", "id", "APP", "schema1", "table2", "id", 1, 0, 2, "fk_id", null, null };
 
-            checkResultSet(
+            TestHelper.checkResultSet(
                     connection.getMetaData().getExportedKeys( "APP", "schema1", "table1" ),
                     ImmutableList.of( foreignKeys ) );
-
 
         } catch ( SQLException e ) {
             log.error( "Exception while testing getTables()", e );
         }
-    }
-
-
-    private void checkResultSet( ResultSet resultSet, List<Object[]> expected ) throws SQLException {
-        int i = 0;
-        while ( resultSet.next() ) {
-            Assert.assertTrue( "Result set has more rows than expected", i < expected.size() );
-            Object[] expectedRow = expected.get( i++ );
-
-            Assert.assertEquals( "Wrong number of columns", expectedRow.length, resultSet.getMetaData().getColumnCount() );
-            int j = 0;
-            while ( j < expectedRow.length ) {
-                if ( expectedRow.length >= j + 1 ) {
-                    Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'", expectedRow[j++], resultSet.getObject( j ) );
-                } else {
-                    fail( "More data available then expected." );
-                }
-            }
-        }
-        Assert.assertEquals( "Wrong number of rows in the result set", expected.size(), i );
     }
 
 }

@@ -42,7 +42,6 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -55,7 +54,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
     private final static PolySchemaBuilder INSTANCE = new PolySchemaBuilder();
 
-    private static AbstractPolyphenyDbSchema current;
+    private AbstractPolyphenyDbSchema current;
 
 
     private PolySchemaBuilder() {
@@ -79,7 +78,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
     }
 
 
-    private AbstractPolyphenyDbSchema buildSchema() {
+    private synchronized AbstractPolyphenyDbSchema buildSchema() {
         final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
         if ( false ) {

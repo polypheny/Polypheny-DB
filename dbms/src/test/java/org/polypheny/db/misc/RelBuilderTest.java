@@ -108,7 +108,7 @@ public class RelBuilderTest {
 
     @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
     private static void addTestSchema() {
-        try ( JdbcConnection jdbcConnection = new JdbcConnection() ) {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE department( deptno INTEGER NOT NULL, name VARCHAR(20) NOT NULL, loc VARCHAR(50) NULL, PRIMARY KEY (deptno))" );
