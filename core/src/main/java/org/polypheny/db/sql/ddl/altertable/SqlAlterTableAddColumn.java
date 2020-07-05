@@ -24,7 +24,6 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -187,13 +186,16 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     v = v.substring( 1, v.length() - 1 );
                 }
                 Catalog.getInstance().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
+
+                // Update addedColumn variable
+                addedColumn = Catalog.getInstance().getColumn( columnId );
             }
 
             // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             // TODO MV: Adding the column on all stores which have already a placement for columns of this table. We need a more sophisticated approach here.
             //
 
-            // Add column on underlying data stores
+            // Add column on underlying data stores and insert default value
             for ( int storeId : catalogTable.placementsByStore.keySet() ) {
                 Catalog.getInstance().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
                 StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
