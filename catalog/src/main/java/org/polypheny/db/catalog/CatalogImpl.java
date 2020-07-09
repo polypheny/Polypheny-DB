@@ -1722,6 +1722,25 @@ public class CatalogImpl extends Catalog {
             if ( scale != null && scale > length ) {
                 throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
             }
+
+            // Check that the column is not part of a key
+            for ( CatalogKey key : getKeys() ) {
+                if ( key.columnIds.contains( columnId ) ) {
+                    String name = "UNKNOWN";
+                    if ( key instanceof CatalogPrimaryKey ) {
+                        name = "PRIMARY KEY";
+                    } else if ( key instanceof CatalogForeignKey ) {
+                        name = ((CatalogForeignKey) key).name;
+                    } else {
+                        List<CatalogConstraint> constraints = getConstraints( key );
+                        if ( constraints.size() > 0 ) {
+                            name = constraints.get( 0 ).name;
+                        }
+                    }
+                    throw new GenericCatalogException( "The column \"" + old.name + "\" is part of the key \"" + name + "\". Unable to change the type of a column that is part of a key." );
+                }
+            }
+
             Collation collation = type.getFamily() == PolyTypeFamily.CHARACTER ? Collation.getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() ) : null;
             CatalogColumn column = CatalogColumn.replaceColumnType( old, type, collectionsType, length, scale, dimension, cardinality, collation );
             synchronized ( this ) {
