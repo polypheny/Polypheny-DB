@@ -17,6 +17,10 @@
 package org.polypheny.db.webui.models.requests;
 
 
+import java.util.HashMap;
+import org.polypheny.db.webui.models.HubMeta.TableMapping;
+
+
 public class HubRequest {
 
     public int userId;
@@ -48,7 +52,7 @@ public class HubRequest {
 
     //export dataset
     //schema
-    public String table;
+    public HashMap<String, TableMapping> tables;
     public String hubLink;
 
     //delete user

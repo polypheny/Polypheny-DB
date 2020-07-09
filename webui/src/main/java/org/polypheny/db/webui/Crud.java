@@ -43,6 +43,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Array;
 import java.sql.ResultSetMetaData;
@@ -64,6 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -145,6 +147,8 @@ import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.Debug;
 import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
+import org.polypheny.db.webui.models.HubMeta;
+import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Result;
@@ -2134,8 +2138,6 @@ public class Crud implements InformationObserver {
 
             // extract zip, see https://www.baeldung.com/java-compress-and-uncompress
             dataBuffer = new byte[1024];
-            String jsonFileName = "";
-            String csvFileName = "";
             final File extractedFolder = new File( tempDir, "import" );
             if ( !extractedFolder.mkdirs() ) {
                 log.error( "Unable to create folder for extracting files: {}", tempDir.getAbsolutePath() );
@@ -2144,11 +2146,6 @@ public class Crud implements InformationObserver {
             try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( zipFile ) ) ) {
                 ZipEntry zipEntry = zis.getNextEntry();
                 while ( zipEntry != null ) {
-                    if ( zipEntry.getName().endsWith( ".csv" ) ) {
-                        csvFileName = zipEntry.getName();
-                    } else if ( zipEntry.getName().endsWith( ".json" ) ) {
-                        jsonFileName = zipEntry.getName();
-                    }
                     File newFile = new File( extractedFolder, zipEntry.getName() );
                     try ( FileOutputStream fosEntry = new FileOutputStream( newFile ) ) {
                         int len;
@@ -2164,75 +2161,24 @@ public class Crud implements InformationObserver {
             if ( !zipFile.delete() ) {
                 log.error( "Unable to delete zip file: {}", zipFile.getAbsolutePath() );
             }
-            // table name
-            String tableName = null;
-            if ( request.tableName != null && request.tableName.trim().length() > 0 ) {
-                tableName = request.tableName.trim();
-            }
-            // create table from .json file
-            String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
-            JsonTable table = gson.fromJson( json, JsonTable.class );
+
             transaction = getTransaction();
-            List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
-            int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( table.tableName ) ).count();
-            if ( tableAlreadyExists > 0 ) {
-                return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, table.tableName ) );
-            }
 
-            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, tableName, request.store );
-            executeSqlUpdate( transaction, createTable );
-
-            // import data from .csv file
-            StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
-            for ( JsonColumn col : table.getColumns() ) {
-                columnJoiner.add( "\"" + col.columnName + "\"" );
-            }
-            String columns = columnJoiner.toString();
-            StringJoiner valueJoiner = new StringJoiner( ",", "VALUES", "" );
-            StringJoiner rowJoiner;
-
-            //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
-
-            final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
-            long csvCounter = 0;
-            try (
-                    Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
-                    CSVReader csvReader = new CSVReader( reader );
-            ) {
-                long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
-                Status status = new Status( "tableImport", lineCount );
-                String[] nextRecord;
-                while ( (nextRecord = csvReader.readNext()) != null ) {
-                    rowJoiner = new StringJoiner( ",", "(", ")" );
-                    for ( int i = 0; i < table.getColumns().size(); i++ ) {
-                        if ( PolyType.get( table.getColumns().get( i ).type ).getFamily() == PolyTypeFamily.CHARACTER ) {
-                            rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.DATE ) {
-                            rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIME ) {
-                            rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIMESTAMP ) {
-                            rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else {
-                            rowJoiner.add( nextRecord[i] );
-                        }
-                    }
-                    valueJoiner.add( rowJoiner.toString() );
-                    csvCounter++;
-                    if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
-                        String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
-                        executeSqlUpdate( transaction, insertQuery );
-                        valueJoiner = new StringJoiner( ",", "VALUES", "" );
-                        status.setStatus( csvCounter );
-                        WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                    }
+            for( TableMapping m : request.tables.values() ) {
+                //create table from json
+                Path jsonPath = Paths.get( new File( extractedFolder, m.initialName + ".json" ).getPath() );
+                String json = new String( Files.readAllBytes( jsonPath ), StandardCharsets.UTF_8 );
+                JsonTable table = gson.fromJson( json, JsonTable.class );
+                String newName = m.newName != null ? m.newName : table.tableName;
+                assert( table.tableName.equals( m.initialName ) );
+                HubResult createdTableError = createTableFromJson( json, newName, request, transaction );
+                if( createdTableError != null ) {
+                    transaction.rollback();
+                    return createdTableError;
+                    //todo check
                 }
-                if ( csvCounter % BATCH_SIZE != 0 ) {
-                    String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
-                    executeSqlUpdate( transaction, insertQuery );
-                    status.complete();
-                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                }
+                // import data from .csv file
+                importCsvFile( m.initialName + ".csv", table, transaction, extractedFolder, request, newName );
             }
 
             transaction.commit();
@@ -2283,12 +2229,82 @@ public class Crud implements InformationObserver {
     }
 
 
+    private HubResult createTableFromJson ( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws GenericCatalogException, QueryExecutionException {
+        // create table from .json file
+        List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
+        int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
+        if ( tableAlreadyExists > 0 ) {
+            return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, newName ) );
+        }
+
+        String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, newName, request.store );
+        executeSqlUpdate( transaction, createTable );
+        return null;
+    }
+
+
+    private void importCsvFile ( final String csvFileName, final JsonTable table, final Transaction transaction, final File extractedFolder, final HubRequest request, final String tableName ) throws IOException, QueryExecutionException {
+        StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
+        for ( JsonColumn col : table.getColumns() ) {
+            columnJoiner.add( "\"" + col.columnName + "\"" );
+        }
+        String columns = columnJoiner.toString();
+        StringJoiner valueJoiner = new StringJoiner( ",", "VALUES", "" );
+        StringJoiner rowJoiner;
+
+        //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
+
+        final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
+        long csvCounter = 0;
+        try (
+                Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
+                CSVReader csvReader = new CSVReader( reader );
+        ) {
+            long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
+            Status status = new Status( "tableImport", lineCount );
+            String[] nextRecord;
+            while ( (nextRecord = csvReader.readNext()) != null ) {
+                rowJoiner = new StringJoiner( ",", "(", ")" );
+                for ( int i = 0; i < table.getColumns().size(); i++ ) {
+                    if ( PolyType.get( table.getColumns().get( i ).type ).getFamily() == PolyTypeFamily.CHARACTER ) {
+                        rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.DATE ) {
+                        rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIME ) {
+                        rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIMESTAMP ) {
+                        rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else {
+                        rowJoiner.add( nextRecord[i] );
+                    }
+                }
+                valueJoiner.add( rowJoiner.toString() );
+                csvCounter++;
+                if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
+                    String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
+                    executeSqlUpdate( transaction, insertQuery );
+                    valueJoiner = new StringJoiner( ",", "VALUES", "" );
+                    status.setStatus( csvCounter );
+                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
+                }
+            }
+            if ( csvCounter % BATCH_SIZE != 0 ) {
+                String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
+                executeSqlUpdate( transaction, insertQuery );
+                status.complete();
+                WebSocket.broadcast( gson.toJson( status, Status.class ) );
+            }
+        }
+    }
+
+
     /**
      * Export a table into a .zip consisting of a json file containing information of the table and columns and a csv files with the data
      */
     Result exportTable( final Request req, final Response res ) {
         HubRequest request = gson.fromJson( req.body(), HubRequest.class );
         Transaction transaction = getTransaction( false );
+        HubMeta metaData = new HubMeta( request.schema );
 
         String randomFileName = UUID.randomUUID().toString();
         final Charset charset = StandardCharsets.UTF_8;
@@ -2298,57 +2314,69 @@ public class Crud implements InformationObserver {
             log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
             return new Result( "Unable to create temp folder" );
         }
-        File tableFile = new File( tempDir, "table.csv" );
-        File catalogFile = new File( tempDir, "catalog.json" );
-        File zipFile = new File( tempDir, "table.zip" );
-        try (
+        File tableFile;
+        File catalogFile;
+        ArrayList<File> tableFiles = new ArrayList<>();
+        ArrayList<File> catalogFiles = new ArrayList<>();
+        try {
+            for( TableMapping table: request.tables.values() ) {
+                tableFile = new File( tempDir, table.initialName + ".csv" );
+                catalogFile = new File( tempDir, table.initialName + ".json" );
+                tableFiles.add(tableFile);
+                catalogFiles.add(catalogFile);
                 OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
                 FileOutputStream tableStream = new FileOutputStream( tableFile );
-                FileOutputStream zipStream = new FileOutputStream( zipFile );
-        ) {
-            log.info( String.format( "Exporting %s.%s", request.schema, request.table ) );
-            CatalogTable catalogTable = catalog.getTable( this.databaseName, request.schema, request.table );
+                log.info( String.format( "Exporting %s.%s", request.schema, table.initialName ) );
+                CatalogTable catalogTable = catalog.getTable( this.databaseName, request.schema, table.initialName );
 
-            catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
-            catalogWriter.flush();
+                catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
+                catalogWriter.flush();
+                catalogWriter.close();
 
-            String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, request.table );
-            // TODO use iterator instead of Result
-            Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
-            transaction.commit();
 
-            int totalRows = tableData.getData().length;
-            int counter = 0;
-            Status status = new Status( "tableExport", totalRows );
-            for ( String[] row : tableData.getData() ) {
-                int cols = row.length;
-                for ( int i = 0; i < cols; i++ ) {
-                    if ( row[i].contains( "\n" ) ) {
-                        String line = String.format( "\"%s\"", row[i] );
-                        tableStream.write( line.getBytes( charset ) );
-                    } else {
-                        tableStream.write( row[i].getBytes( charset ) );
+                String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, table.initialName );
+                // TODO use iterator instead of Result
+                Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
+                transaction.commit();
+
+                int totalRows = tableData.getData().length;
+                int counter = 0;
+                Status status = new Status( "tableExport", totalRows );
+                for ( String[] row : tableData.getData() ) {
+                    int cols = row.length;
+                    for ( int i = 0; i < cols; i++ ) {
+                        if ( row[i].contains( "\n" ) ) {
+                            String line = String.format( "\"%s\"", row[i] );
+                            tableStream.write( line.getBytes( charset ) );
+                        } else {
+                            tableStream.write( row[i].getBytes( charset ) );
+                        }
+                        if ( i != cols - 1 ) {
+                            tableStream.write( ",".getBytes( charset ) );
+                        } else {
+                            tableStream.write( "\n".getBytes( charset ) );
+                        }
                     }
-                    if ( i != cols - 1 ) {
-                        tableStream.write( ",".getBytes( charset ) );
-                    } else {
-                        tableStream.write( "\n".getBytes( charset ) );
+                    counter++;
+                    if ( counter % 100 == 0 ) {
+                        status.setStatus( counter );
+                        WebSocket.broadcast( gson.toJson( status, Status.class ) );
                     }
                 }
-                counter++;
-                if ( counter % 100 == 0 ) {
-                    status.setStatus( counter );
-                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                }
+                status.complete();
+                WebSocket.broadcast( gson.toJson( status, Status.class ) );
+                tableStream.flush();
+                tableStream.close();
+                metaData.addTable( table.initialName, counter );
             }
-            status.complete();
-            WebSocket.broadcast( gson.toJson( status, Status.class ) );
-            tableStream.flush();
 
+            File zipFile = new File( tempDir, "table.zip" );
+            FileOutputStream zipStream = new FileOutputStream( zipFile );
             //from https://www.baeldung.com/java-compress-and-uncompress
-            List<File> srcFiles = Arrays.asList( catalogFile, tableFile );
+            ArrayList<File> allFiles = new ArrayList<>(tableFiles);
+            allFiles.addAll(catalogFiles);
             try ( ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset ) ) {
-                for ( File fileToZip : srcFiles ) {
+                for ( File fileToZip : allFiles ) {
                     try ( FileInputStream fis = new FileInputStream( fileToZip ) ) {
                         ZipEntry zipEntry = new ZipEntry( fileToZip.getName() );
                         zipOut.putNextEntry( zipEntry );
@@ -2362,6 +2390,14 @@ public class Crud implements InformationObserver {
                 }
                 zipOut.finish();
             }
+            zipStream.close();
+
+            metaData.setFileSize( zipFile.length() );
+            File metaFile = new File( tempDir, "meta.json" );
+            FileOutputStream metaOutputStream = new FileOutputStream(metaFile);
+            metaOutputStream.write( gson.toJson( metaData, HubMeta.class ).getBytes() );
+            metaOutputStream.flush();
+            metaOutputStream.close();
 
             //send file to php backend using Unirest
             HttpResponse jsonResponse = Unirest.post( request.hubLink )
@@ -2371,13 +2407,14 @@ public class Crud implements InformationObserver {
                     .field( "name", request.name )
                     .field( "pub", String.valueOf( request.pub ) )
                     .field( "dataset", zipFile )
+                    .field( "metaData", metaFile )
                     .asString();
 
             // Get result
             StringWriter writer = new StringWriter();
             IOUtils.copy( jsonResponse.getRawBody(), writer );
             String resultString = writer.toString();
-            log.info( String.format( "Exported %s.%s", request.schema, request.table ) );
+            log.info( String.format( "Exported %s.[%s]", request.schema, request.tables.values().stream().map( n -> n.initialName ).collect( Collectors.joining( "," ))));
 
             try {
                 return gson.fromJson( resultString, Result.class );
