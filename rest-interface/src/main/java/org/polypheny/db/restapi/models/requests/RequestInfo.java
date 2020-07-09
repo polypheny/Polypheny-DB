@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.restapi.RequestColumn;
 import org.polypheny.db.restapi.exception.IllegalColumnException;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlOperator;
@@ -95,7 +96,8 @@ public class RequestInfo {
      * Formatted as URL parameter: <code>?qalColOrAlias=&lt;SOP&gt;&lt;literalValue&gt;</code>
      */
     @Getter
-    private Map<CatalogColumn, List<Pair<SqlOperator, Object>>> literalFilters;
+    @Setter
+    private Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters;
 
     /**
      * Column filters for a request.
@@ -104,7 +106,8 @@ public class RequestInfo {
      * Formatted as URL parameter: <code>?qalColOrAlias=&lt;SOP&gt;&lt;qualColOrAlias&gt;</code>
      */
     @Getter
-    private Map<CatalogColumn, List<Pair<SqlOperator, CatalogColumn>>> columnFilters;
+    @Setter
+    private Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters;
 
     // Projections, Aliases, Aggregates, Groupings
 
@@ -114,7 +117,7 @@ public class RequestInfo {
      * Formatted as URL parameter: <code>?_project=[&lt;qualCol [@&lt;alias&gt; [(&lt;aggFun&gt;)]]]</code>
      */
     @Getter
-    private Pair<List<CatalogColumn>, List<String>> projection;
+    private Pair<List<RequestColumn>, List<String>> projection;
     /**
      * Aggregation functions.
      * <p>
@@ -122,7 +125,7 @@ public class RequestInfo {
      */
     @Getter
     @Setter // FIXME: Proper setter function
-    private List<Pair<CatalogColumn, SqlAggFunction>> aggregateFunctions;
+    private List<Pair<RequestColumn, SqlAggFunction>> aggregateFunctions;
     /**
      * Group by columns.
      * <p>
@@ -130,9 +133,9 @@ public class RequestInfo {
      */
     @Getter
     @Setter // FIXME: Proper setter function
-    private List<CatalogColumn> groupings;
+    private List<RequestColumn> groupings;
 
-    private Map<String, CatalogColumn> nameAndAliasMapping;
+    private Map<String, RequestColumn> nameAndAliasMapping;
 
     // Sorting
     /**
@@ -159,7 +162,7 @@ public class RequestInfo {
      */
     @Getter
     @Setter // FIXME: Proper setter function
-    private List<Pair<CatalogColumn, Boolean>> sort;
+    private List<Pair<RequestColumn, Boolean>> sort;
 
 
     /**
@@ -181,7 +184,7 @@ public class RequestInfo {
     }
 
 
-    public CatalogColumn getColumnForAlias( String alias ) {
+    public RequestColumn getColumnForAlias( String alias ) {
         return this.nameAndAliasMapping.get( alias );
     }
 
@@ -213,22 +216,22 @@ public class RequestInfo {
      * @param literalFilters new literal filters
      * @throws IllegalColumnException thrown if a column is not part of the query
      */
-    public void setLiteralFilters( Map<CatalogColumn, List<Pair<SqlOperator, Object>>> literalFilters ) throws IllegalColumnException {
-        for ( CatalogColumn column : literalFilters.keySet() ) {
+    /*public void setLiteralFilters( Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters ) throws IllegalColumnException {
+        for ( RequestColumn column : literalFilters.keySet() ) {
             if ( ! this.validColumns.contains( column.id ) ) {
                 // FIXME: Logging
                 throw new IllegalColumnException( column );
             }
         }
         this.literalFilters = literalFilters;
-    }
+    }*/
 
     /**
      * Sets column filters. Validates whether all columns are part of the query.
      * @param columnFilters new column filters
      * @throws IllegalColumnException thrown if a column is not part of the query
      */
-    public void setColumnFilters( Map<CatalogColumn, List<Pair<SqlOperator, CatalogColumn>>> columnFilters ) throws IllegalColumnException {
+    /*public void setColumnFilters( Map<CatalogColumn, List<Pair<SqlOperator, CatalogColumn>>> columnFilters ) throws IllegalColumnException {
         for ( Entry<CatalogColumn, List<Pair<SqlOperator, CatalogColumn>>> specificColumnFilters : columnFilters.entrySet() ) {
             if ( ! this.validColumns.contains( specificColumnFilters.getKey().id ) ) {
                 // FIXME: Logging
@@ -244,7 +247,7 @@ public class RequestInfo {
         }
 
         this.columnFilters = columnFilters;
-    }
+    }*/
 
 
     /**
@@ -252,7 +255,7 @@ public class RequestInfo {
      * @param projection new projections
      * @throws IllegalColumnException thrown if a column is not part of the query
      */
-    public void setProjection( Pair<List<CatalogColumn>, List<String>> projection ) throws IllegalColumnException {
+    /*public void setProjection( Pair<List<CatalogColumn>, List<String>> projection ) throws IllegalColumnException {
         Map<String, CatalogColumn> nameAndAliasMapping = new HashMap<>();
         for ( Pair<CatalogColumn, String> proj : Pair.zip( projection.left, projection.right ) ) {
             if ( ! this.validColumns.contains( proj.left.id ) ) {
@@ -269,7 +272,7 @@ public class RequestInfo {
         this.projection = projection;
         this.nameAndAliasMapping.putAll( nameAndAliasMapping );
 //        this.nameAndAliasMapping = nameAndAliasMapping;
-    }
+    }*/
 
 
     /**

@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.restapi.models.requests;
+package org.polypheny.db.restapi;
 
 
-import java.util.List;
-import java.util.Map;
-import lombok.AllArgsConstructor;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.restapi.RequestColumn;
-import org.polypheny.db.restapi.RequestParser.Filters;
+public enum RestErrorCode {
 
+    GENERIC(0, "none", "Generic", "Something went wrong. We don't really know what though."),
 
-@AllArgsConstructor
-public class DeleteValueRequest {
-    public final List<CatalogTable> tables;
-    public final List<RequestColumn> requestColumns;
-    public final Map<String, RequestColumn> nameMapping;
-    public final Filters filters;
+    ;
+
+    public final int code;
+    public final String subsystem;
+    public final String name;
+    public final String description;
+
+    RestErrorCode( int code, String subsystem, String name, String description ) {
+        this.code = code;
+        this.subsystem = subsystem;
+        this.name = name;
+        this.description = description;
+    }
 }

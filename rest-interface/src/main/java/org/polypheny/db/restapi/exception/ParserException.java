@@ -14,21 +14,23 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.restapi.models.requests;
+package org.polypheny.db.restapi.exception;
 
 
-import java.util.List;
-import java.util.Map;
-import lombok.AllArgsConstructor;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.restapi.RequestColumn;
-import org.polypheny.db.restapi.RequestParser.Filters;
+import lombok.Getter;
+import org.polypheny.db.restapi.ParserErrorCode;
 
 
-@AllArgsConstructor
-public class DeleteValueRequest {
-    public final List<CatalogTable> tables;
-    public final List<RequestColumn> requestColumns;
-    public final Map<String, RequestColumn> nameMapping;
-    public final Filters filters;
+public class ParserException extends RuntimeException {
+
+    @Getter
+    private final ParserErrorCode errorCode;
+    @Getter
+    private final String violatingInput;
+
+
+    public ParserException( ParserErrorCode errorCode, String violatingInput ) {
+        this.errorCode = errorCode;
+        this.violatingInput = violatingInput;
+    }
 }

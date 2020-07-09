@@ -55,6 +55,9 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.restapi.RequestParser.Filters;
+import org.polypheny.db.restapi.exception.RestException;
+import org.polypheny.db.restapi.models.requests.GetResourceRequest;
 import org.polypheny.db.restapi.models.requests.RequestInfo;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -96,6 +99,55 @@ public class Rest {
     }
 
 
+    Map<String, Object> processGetResource( final GetResourceRequest getResourceRequest, final Request req, final Response res ) throws RestException {
+        log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
+        Transaction transaction = getTransaction( false );
+        RelBuilder relBuilder = RelBuilder.create( transaction );
+        JavaTypeFactory typeFactory = transaction.getTypeFactory();
+        RexBuilder rexBuilder = new RexBuilder( typeFactory );
+
+        // Table Scans
+        relBuilder = this.tableScans( relBuilder, rexBuilder, getResourceRequest.tables );
+
+        // Initial projection
+        relBuilder = this.initialProjection( relBuilder, rexBuilder, getResourceRequest.requestColumns );
+
+        List<RexNode> filters = this.filters( relBuilder, rexBuilder, getResourceRequest.filters, req );
+        if ( filters != null ) {
+            relBuilder = relBuilder.filter( filters );
+        }
+
+        // Aggregates
+        relBuilder = this.aggregates( relBuilder, rexBuilder, getResourceRequest.requestColumns, getResourceRequest.groupings );
+
+        // Final projection
+        relBuilder = this.finalProjection( relBuilder, rexBuilder, getResourceRequest.requestColumns );
+
+        // Sorts, limit, offset
+        relBuilder = this.sort( relBuilder, rexBuilder, getResourceRequest.sorting, getResourceRequest.limit, getResourceRequest.offset );
+
+
+        log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
+        RelNode relNode = relBuilder.build();
+        log.debug( "RelNode was built." );
+
+        // Wrap RelNode into a RelRoot
+        final RelDataType rowType = relNode.getRowType();
+        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        final RelCollation collation =
+                relNode instanceof Sort
+                        ? ((Sort) relNode).collation
+                        : RelCollations.EMPTY;
+        RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
+        log.debug( "RelRoot was built." );
+
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
+
+        finalResult.put( "uri", req.uri() );
+        finalResult.put( "query", req.queryString() );
+        return finalResult;
+    }
+
     Map<String, Object> processGetResource( final RequestInfo requestInfo, final Request req, final Response res ) {
         log.debug( "Starting to process resource request. Session ID: {}.", req.session().id() );
         Transaction transaction = getTransaction( false );
@@ -128,7 +180,10 @@ public class Rest {
             log.debug( "No projections to add. Session ID: {}.", req.session().id() );
         }*/
 
+        // FIXME: Hotfix, just seeing whether this works
+        boolean aggregated = false;
         if ( ! requestInfo.getAggregateFunctions().isEmpty() ) {
+            aggregated = true;
             RelNode baseNodeForAggregation = relBuilder.peek();
             int groupCount = requestInfo.getGroupings().size();
             List<AggregateCall> aggregateCalls = new ArrayList<>();
@@ -157,12 +212,20 @@ public class Rest {
         if ( requestInfo.getProjection() != null && ! requestInfo.getProjection().left.isEmpty() ) {
             List<RexNode> projectionInputRefs = new ArrayList<>();
             RelNode baseNodeForProjections = relBuilder.peek();
-            for ( CatalogColumn catalogColumn : requestInfo.getProjection().left ) {
-                int inputField = requestInfo.getColumnPosition( catalogColumn );
-                RexNode inputRef = rexBuilder.makeInputRef( baseNodeForProjections, inputField );
-                projectionInputRefs.add( inputRef );
+            if ( ! aggregated ) {
+                for ( CatalogColumn catalogColumn : requestInfo.getProjection().left ) {
+                    int inputField = requestInfo.getColumnPosition( catalogColumn );
+                    RexNode inputRef = rexBuilder.makeInputRef( baseNodeForProjections, inputField );
+                    projectionInputRefs.add( inputRef );
+                }
+            } else {
+                int counter = 0;
+                for ( CatalogColumn catalogColumn : requestInfo.getProjection().left ) {
+                    RexNode inputRef = rexBuilder.makeInputRef( baseNodeForProjections, counter );
+                    projectionInputRefs.add( inputRef );
+                    counter++;
+                }
             }
-
             relBuilder = relBuilder.project( projectionInputRefs, requestInfo.getProjection().right, true );
             log.debug( "Added projections to relation. Session ID: {}.", req.session().id() );
         } else {
@@ -391,6 +454,23 @@ public class Rest {
     }
 
     @VisibleForTesting
+    RelBuilder tableScans( RelBuilder relBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
+        boolean firstTable = true;
+        for ( CatalogTable catalogTable : tables ) {
+            if ( firstTable ) {
+                relBuilder = relBuilder.scan( catalogTable.schemaName, catalogTable.name );
+                firstTable = false;
+            } else {
+                relBuilder = relBuilder
+                        .scan( catalogTable.schemaName, catalogTable.name )
+                        .join( JoinRelType.INNER, rexBuilder.makeLiteral( true ) );
+            }
+        }
+        return relBuilder;
+    }
+
+    @VisibleForTesting
+    @Deprecated
     RelBuilder tableScans( RelBuilder relBuilder, RexBuilder rexBuilder, RequestInfo requestInfo ) {
         boolean firstTable = true;
         for ( CatalogTable catalogTable : requestInfo.getTables() ) {
@@ -407,6 +487,36 @@ public class Rest {
     }
 
     @VisibleForTesting
+    List<RexNode> filters( RelBuilder relBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
+        if ( filters.literalFilters != null ) {
+            log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
+            List<RexNode> filterNodes = new ArrayList<>();
+            RelNode baseNodeForFilters = relBuilder.peek();
+            RelDataType filtersRowType = baseNodeForFilters.getRowType();
+            List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
+            for ( RequestColumn column : filters.literalFilters.keySet() ) {
+                for ( Pair<SqlOperator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
+                    int columnPosition = (int) column.getLogicalIndex();
+                    RelDataTypeField typeField = filtersRows.get( columnPosition );
+                    RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, columnPosition );
+                    RexNode rightHandSide = rexBuilder.makeLiteral( filterOperationPair.right, typeField.getType(), true );
+                    RexNode call = rexBuilder.makeCall( filterOperationPair.left, inputRef, rightHandSide );
+                    filterNodes.add( call );
+                }
+            }
+
+            log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
+//            relBuilder = relBuilder.filter( filterNodes );
+            log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
+            return filterNodes;
+        } else {
+            log.debug( "No filters to add. Session ID: {}.", req.session().id() );
+            return null;
+        }
+    }
+
+    @VisibleForTesting
+    @Deprecated
     List<RexNode> filters( RelBuilder relBuilder, RexBuilder rexBuilder, RequestInfo requestInfo, Request req ) {
         if ( requestInfo.getLiteralFilters() != null ) {
             log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
@@ -436,7 +546,93 @@ public class Rest {
 
     }
 
+    RelBuilder initialProjection( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
+        RelNode baseNode = relBuilder.peek();
+        List<RexNode> inputRefs = new ArrayList<>();
+        List<String> aliases = new ArrayList<>();
+
+        for ( RequestColumn column : columns ) {
+            RexNode inputRef = rexBuilder.makeInputRef( baseNode, (int) column.getTableScanIndex() );
+            inputRefs.add( inputRef );
+            aliases.add( column.getAlias() );
+        }
+
+        relBuilder = relBuilder.project( inputRefs, aliases, true );
+        return relBuilder;
+    }
+
+    RelBuilder finalProjection( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
+        RelNode baseNode = relBuilder.peek();
+        List<RexNode> inputRefs = new ArrayList<>();
+        List<String> aliases = new ArrayList<>();
+
+        for ( RequestColumn column : columns ) {
+            RexNode inputRef = rexBuilder.makeInputRef( baseNode, (int) column.getLogicalIndex() );
+            inputRefs.add( inputRef );
+            aliases.add( column.getAlias() );
+        }
+
+        relBuilder = relBuilder.project( inputRefs, aliases, true );
+        return relBuilder;
+    }
+
+    RelBuilder aggregates( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> requestColumns, List<RequestColumn> groupings ) {
+        RelNode baseNodeForAggregation = relBuilder.peek();
+
+        List<AggregateCall> aggregateCalls = new ArrayList<>();
+        for ( RequestColumn column : requestColumns ) {
+            List<Integer> inputFields = new ArrayList<>();
+            inputFields.add( (int) column.getLogicalIndex() );
+            int fieldNameIndex = (int) column.getLogicalIndex();
+            String fieldName = column.getAlias();
+            AggregateCall aggregateCall = AggregateCall.create( column.getAggregate(), false, false, inputFields, -1, RelCollations.EMPTY, groupings.size(), baseNodeForAggregation, null, fieldName );
+            aggregateCalls.add( aggregateCall );
+        }
+
+        if ( ! aggregateCalls.isEmpty() ) {
+
+            List<Integer> groupByOrdinals = new ArrayList<>();
+            for ( RequestColumn column : groupings ) {
+                groupByOrdinals.add( (int) column.getLogicalIndex() );
+            }
+
+            GroupKey groupKey = relBuilder.groupKey( ImmutableBitSet.of( groupByOrdinals ) );
+
+            relBuilder = relBuilder.aggregate( groupKey, aggregateCalls );
+        }
+        return relBuilder;
+    }
+
+    RelBuilder sort( RelBuilder relBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
+        if ( ( sorts == null || sorts.size() == 0 ) && ( limit >= 0 || offset >= 0 ) ) {
+            relBuilder = relBuilder.limit( offset, limit );
+//            log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
+        } else if ( sorts != null && sorts.size() != 0 ) {
+            List<RexNode> sortingNodes = new ArrayList<>();
+            RelNode baseNodeForSorts = relBuilder.peek();
+            for ( Pair<RequestColumn, Boolean> sort : sorts ) {
+                int inputField = (int) sort.left.getLogicalIndex();
+                RexNode inputRef = rexBuilder.makeInputRef( baseNodeForSorts, inputField );
+                RexNode sortingNode;
+                if ( sort.right ) {
+                    RexNode innerNode = rexBuilder.makeCall( SqlStdOperatorTable.DESC, inputRef );
+                    sortingNode = rexBuilder.makeCall( SqlStdOperatorTable.NULLS_FIRST, innerNode );
+                } else {
+                    sortingNode = rexBuilder.makeCall( SqlStdOperatorTable.NULLS_FIRST, inputRef );
+                }
+
+                sortingNodes.add( sortingNode );
+            }
+
+            relBuilder = relBuilder.sortLimit( offset, limit, sortingNodes );
+//            log.debug( "Added sort, limit and offset to relation. Session ID: {}.", req.session().id() );
+        }
+
+        return relBuilder;
+    }
+
     @VisibleForTesting
+    @Deprecated
     PreparingTable getPreparingTable( RequestInfo requestInfo, Transaction transaction) {
         // RelOptTable
         PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();

@@ -35,7 +35,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
 import org.polypheny.db.restapi.models.requests.InsertValueRequest;
-import org.polypheny.db.restapi.models.requests.ResourceRequest;
+import org.polypheny.db.restapi.models.requests.GetResourceRequest;
 import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -62,55 +62,6 @@ public class RequestParserOld {
         this.userName = userName;
         this.databaseName = databaseName;
     }
-
-
-    public ResourceRequest parseResourceRequest( String resourceName, QueryParamsMap queryParamsMap ) {
-        List<CatalogTable> tables = this.parseTableList( resourceName );
-        Pair<List<CatalogColumn>, List<String>> projections = this.parseRequestProjections( queryParamsMap );
-        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
-
-        Integer limit = this.parseLimit( queryParamsMap );
-        Integer offset = this.parseOffset( queryParamsMap );
-
-        List<Pair<CatalogColumn, Boolean>> sort = this.parseSorting( queryParamsMap );
-
-
-        return new ResourceRequest( tables, projections, filters, limit, offset, sort );
-    }
-
-
-    public InsertValueRequest parseInsertValuePost( String resourceName, QueryParamsMap queryParamsMap, String body, Gson gson ) {
-
-        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
-//        List<Pair<CatalogColumn, Object>> values = this.parseInsertStatementValues( queryParamsMap );
-
-        Object bodyObject = gson.fromJson( body, Object.class );
-        Map bodyMap = (Map) bodyObject;
-        List valuesList = (List) bodyMap.get( "data" );
-        List<List<Pair<CatalogColumn, Object>>> values = this.parseInsertStatementBody( valuesList );
-        return new InsertValueRequest( catalogTable, values );
-    }
-
-
-    public DeleteValueRequest parseDeleteValueRequest( String resourceName, QueryParamsMap queryParamsMap ) {
-        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
-        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
-
-        return new DeleteValueRequest( catalogTable, filters );
-    }
-
-
-    public UpdateResourceRequest parseUpdateResourceRequest( String resourceName, QueryParamsMap queryParamsMap, String body, Gson gson ) {
-        CatalogTable catalogTable = this.parseCatalogTableName( resourceName );
-        Map<CatalogColumn, List<Pair<SqlOperator, Object>>> filters = this.parseRequestFilters( queryParamsMap );
-        Object bodyObject = gson.fromJson( body, Object.class );
-        Map bodyMap = (Map) bodyObject;
-        List valuesList = (List) bodyMap.get( "data" );
-        List<List<Pair<CatalogColumn, Object>>> values = this.parseInsertStatementBody( valuesList );
-
-        return new UpdateResourceRequest( catalogTable, filters, values.get( 0 ) );
-    }
-
 
     // /res/ parsing
 

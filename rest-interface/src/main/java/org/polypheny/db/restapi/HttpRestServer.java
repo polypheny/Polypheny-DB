@@ -85,26 +85,9 @@ public class HttpRestServer extends QueryInterface {
             } );
 //            restServer.get( "/res", restOld::getTableList, gson::toJson );
             restServer.get( "/res/:resName", (q, a) -> {
-                RequestInfo requestInfo = new RequestInfo();
                 requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
-                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
-                requestInfo.initialNameMapping( nameMapping );
-                ProjectionAndAggregation projectionsAndAggregates = requestParser.parseProjectionsAndAggregations( q );
-                requestInfo.setProjection( projectionsAndAggregates.projection );
-                requestInfo.setAggregateFunctions( projectionsAndAggregates.aggregateFunctions );
 
-                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
-
-                requestInfo.setGroupings( requestParser.parseGroupings( q, nameAndAliasMapping ) );
-
-                requestInfo.setLimit( requestParser.parseLimit( q ) );
-                requestInfo.setOffset( requestParser.parseOffset( q ) );
-                requestInfo.setSort( requestParser.parseSorting( q, nameAndAliasMapping ) );
-
-                Filters filters = requestParser.parseFilters( q, nameAndAliasMapping );
-                requestInfo.setLiteralFilters( filters.literalFilters );
-                requestInfo.setColumnFilters( filters.columnFilters );
-
+                requestParser.parseGetResourceRequest( q, q.params( ":resName" ) );
 
                 return rest.processGetResource( requestInfo, q, a );
 
