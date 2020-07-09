@@ -54,6 +54,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -1668,9 +1669,28 @@ public class Crud implements InformationObserver {
         if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) ) {
             return new Result( "Invalid request" );
         }
-        String query = String.format( "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT \"%s\"", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
+        String columnListStr = "";
+        if ( index.getMethod().toUpperCase().equals( "ADD" ) ) {
+            try {
+                CatalogTable table = catalog.getTable( "APP", index.getSchema(), index.getTable() );
+                List<String> columnNames = new LinkedList<>();
+                for ( String columnName : table.columnNames ) {
+                    columnNames.add( "\"" + columnName + "\"" );
+                }
+                columnListStr = "(" + String.join( ",", columnNames ) + ")";
+            } catch ( GenericCatalogException | UnknownTableException e ) {
+                return new Result( "Unknown table: " + index.getSchema() + "." + index.getTable() );
+            }
+        }
+        String query = String.format(
+                "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT %s ON STORE \"%s\"",
+                index.getSchema(),
+                index.getTable(),
+                index.getMethod().toUpperCase(),
+                columnListStr,
+                index.getName() );
         Transaction transaction = getTransaction();
-        int affectedRows = 0;
+        int affectedRows;
         try {
             affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();

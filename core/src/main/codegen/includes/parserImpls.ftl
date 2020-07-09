@@ -223,154 +223,175 @@ SqlAlterTable SqlAlterTable(Span s) :
             <DROP> <CONSTRAINT>
             constraintName = SimpleIdentifier()
             {
-                return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
-            }
-        |
-            <DROP> <FOREIGN> <KEY>
-            constraintName = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
-            }
-        |
-            <ADD> <PLACEMENT>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableAddPlacement(s.end(this), table, store);
-            }
-        |
-            <DROP> <PLACEMENT>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropPlacement(s.end(this), table, store);
-            }
-        |
-            <ADD>
-            (
-                <UNIQUE> { unique = true; }
-                |
-                { unique = false; }
-            )
-            <INDEX>
-            indexName = SimpleIdentifier()
-            <ON>
-            (
-                columnList = ParenthesizedSimpleIdentifierList()
-                |
-                column = SimpleIdentifier() {
-                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
-                }
-            )
-            (
-                <USING> indexType = SimpleIdentifier()
-                |
-                { indexType = null; }
-            )
-            {
-                return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexType, indexName);
-            }
-        |
-            <DROP> <INDEX>
-            indexName = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropIndex(s.end(this), table, indexName);
-            }
-        |
-            <MODIFY> <COLUMN>
-            column = SimpleIdentifier()
-            statement = AlterTableModifyColumn(s, table, column)
-            {
-                return statement;
-            }
-    )
+                    return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
+                    }
+                    |
+                    <DROP>
+                        <FOREIGN>
+                            <KEY>
+                                constraintName = SimpleIdentifier()
+                                {
+                                return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
+                                }
+                                |
+                                <ADD>
+                                    <PLACEMENT>
+                                        (
+                                        (
+                                        columnList = ParenthesizedSimpleIdentifierList()
+                                        |
+                                        column = SimpleIdentifier() {
+                                        columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                                        }
+                                        )
+                                        |
+                                        {
+                                        columnList = SqlNodeList.EMPTY;
+                                        }
+                                        )
+                                        <ON>
+                                            <STORE>
+                                                store = SimpleIdentifier()
+                                                {
+                                                return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store);
+                                                }
+                                                |
+                                                <DROP>
+                                                    <PLACEMENT>
+                                                        <ON>
+                                                            <STORE>
+                                                                store = SimpleIdentifier()
+                                                                {
+                                                                return new SqlAlterTableDropPlacement(s.end(this), table, store);
+                                                                }
+                                                                |
+                                                                <ADD>
+                                                                    (
+                                                                    <UNIQUE> { unique = true; }
+                                                                        |
+                                                                        { unique = false; }
+                                                                        )
+                                                                        <INDEX>
+                                                                            indexName = SimpleIdentifier()
+                                                                            <ON>
+                                                                                (
+                                                                                columnList = ParenthesizedSimpleIdentifierList()
+                                                                                |
+                                                                                column = SimpleIdentifier() {
+                                                                                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                                                                                }
+                                                                                )
+                                                                                (
+                                                                                <USING> indexType = SimpleIdentifier()
+                                                                                    |
+                                                                                    { indexType = null; }
+                                                                                    )
+                                                                                    {
+                                                                                    return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexType, indexName);
+                                                                                    }
+                                                                                    |
+                                                                                    <DROP> <INDEX>
+                                                                                            indexName = SimpleIdentifier()
+                                                                                            {
+                                                                                            return new SqlAlterTableDropIndex(s.end(this), table, indexName);
+                                                                                            }
+                                                                                            |
+                                                                                            <MODIFY> <COLUMN>
+                                                                                                    column = SimpleIdentifier()
+                                                                                                    statement = AlterTableModifyColumn(s, table, column)
+                                                                                                    {
+                                                                                                    return statement;
+                                                                                                    }
+                                                                                                    )
 }
 
-/**
- * Parses the MODIFY COLUMN part of an ALTER TABLE statement.
- */
+                                                                                                    /**
+                                                                                                    * Parses the MODIFY COLUMN part of an ALTER TABLE statement.
+                                                                                                    */
 SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, SqlIdentifier column) :
 {
-    SqlDataTypeSpec type = null;
-    Boolean nullable = null;
-    SqlIdentifier beforeColumn = null;
-    SqlIdentifier afterColumn = null;
-    SqlNode defaultValue = null;
-    Boolean dropDefault = null;
-    String collation = null;
+                                                                                                    SqlDataTypeSpec type = null;
+                                                                                                    Boolean nullable = null;
+                                                                                                    SqlIdentifier beforeColumn = null;
+                                                                                                    SqlIdentifier afterColumn = null;
+                                                                                                    SqlNode defaultValue = null;
+                                                                                                    Boolean dropDefault = null;
+                                                                                                    String collation = null;
 }
 {
-    (
-            <SET> <NOT> <NULL>
-            { nullable = false; }
-        |
-            <DROP> <NOT> <NULL>
-            { nullable = true; }
-        |
-            <SET> <TYPE>
-            type = DataType()
-        |
-            <SET> <POSITION>
-            (
-                <BEFORE>
-                beforeColumn = SimpleIdentifier()
-                |
-                <AFTER>
-                afterColumn = SimpleIdentifier()
-            )
-        |
-            <SET> <COLLATION>
-            (
-                <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
-                |
-                <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
-            )
-        |
-            <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
-        |
-        <DROP> <DEFAULT_> { dropDefault = true; }
-    )
-    {
-        return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
-    }
-}
-
-
-SqlAlterConfig SqlAlterConfig(Span s) :
-{
-    final SqlNode key;
-    final SqlNode value;
-}
-{
-    <CONFIG> key = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <SET> value = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterConfig(s.end(this), key, value);
-    }
+                                                                                                    (
+                                                                                                    <SET> <NOT> <NULL>
+                                                                                                                { nullable = false; }
+                                                                                                                |
+                                                                                                                <DROP> <NOT> <NULL>
+                                                                                                                            { nullable = true; }
+                                                                                                                            |
+                                                                                                                            <SET> <TYPE>
+                                                                                                                                    type = DataType()
+                                                                                                                                    |
+                                                                                                                                    <SET> <POSITION>
+                                                                                                                                            (
+                                                                                                                                            <BEFORE>
+                                                                                                                                                beforeColumn = SimpleIdentifier()
+                                                                                                                                                |
+                                                                                                                                                <AFTER>
+                                                                                                                                                    afterColumn = SimpleIdentifier()
+                                                                                                                                                    )
+                                                                                                                                                    |
+                                                                                                                                                    <SET> <COLLATION>
+                                                                                                                                                            (
+                                                                                                                                                            <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
+                                                                                                                                                                    |
+                                                                                                                                                                    <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+                                                                                                                                                                            )
+                                                                                                                                                                            |
+                                                                                                                                                                            <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                    |
+                                                                                                                                                                                    <DROP> <DEFAULT_> { dropDefault = true; }
+                                                                                                                                                                                            )
+                                                                                                                                                                                            {
+                                                                                                                                                                                            return new SqlAlterTableModifyColumn(s.end(this), table, column, type, nullable, beforeColumn, afterColumn, collation, defaultValue, dropDefault);
+                                                                                                                                                                                            }
 }
 
 
-SqlAlterStoresAdd SqlAlterStoresAdd(Span s) :
+                                                                                                                                                                                            SqlAlterConfig SqlAlterConfig(Span s) :
 {
-    final SqlNode storeName;
-    final SqlNode adapterName;
-    final SqlNode config;
+                                                                                                                                                                                            final SqlNode key;
+                                                                                                                                                                                            final SqlNode value;
 }
 {
-    <STORES> <ADD> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterStoresAdd(s.end(this), storeName, adapterName, config);
-    }
+                                                                                                                                                                                            <CONFIG> key = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                <SET> value = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                    {
+                                                                                                                                                                                                    return new SqlAlterConfig(s.end(this), key, value);
+                                                                                                                                                                                                    }
 }
 
 
-SqlAlterStoresDrop SqlAlterStoresDrop(Span s) :
+                                                                                                                                                                                                    SqlAlterStoresAdd SqlAlterStoresAdd(Span s) :
 {
-    final SqlNode storeName;
+                                                                                                                                                                                                    final SqlNode storeName;
+                                                                                                                                                                                                    final SqlNode adapterName;
+                                                                                                                                                                                                    final SqlNode config;
 }
 {
-    <STORES> <DROP> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
-    {
-        return new SqlAlterStoresDrop(s.end(this), storeName);
-    }
+                                                                                                                                                                                                    <STORES> <ADD> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                            <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                    {
+                                                                                                                                                                                                                    return new SqlAlterStoresAdd(s.end(this), storeName, adapterName, config);
+                                                                                                                                                                                                                    }
+}
+
+
+                                                                                                                                                                                                                    SqlAlterStoresDrop SqlAlterStoresDrop(Span s) :
+{
+                                                                                                                                                                                                                    final SqlNode storeName;
+}
+{
+                                                                                                                                                                                                                    <STORES> <DROP> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
+                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                            return new SqlAlterStoresDrop(s.end(this), storeName);
+                                                                                                                                                                                                                            }
 }

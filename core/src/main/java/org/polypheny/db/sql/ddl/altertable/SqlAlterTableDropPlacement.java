@@ -70,6 +70,8 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "DROP" );
         writer.keyword( "PLACEMENT" );
+        writer.keyword( "ON" );
+        writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
     }
 

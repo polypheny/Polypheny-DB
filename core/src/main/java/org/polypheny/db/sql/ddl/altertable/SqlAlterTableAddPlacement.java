@@ -19,17 +19,23 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
@@ -44,19 +50,21 @@ import org.polypheny.db.util.ImmutableNullableList;
 public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     private final SqlIdentifier table;
+    private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName ) {
+    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
+        this.columnList = Objects.requireNonNull( columnList );
         this.storeName = Objects.requireNonNull( storeName );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( table, storeName );
+        return ImmutableNullableList.of( table, columnList, storeName );
     }
 
 
@@ -67,6 +75,9 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ADD" );
         writer.keyword( "PLACEMENT" );
+        columnList.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "ON" );
+        writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
     }
 
@@ -74,9 +85,16 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     @Override
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+        List<Long> columnIds = new LinkedList<>();
+        for ( SqlNode node : columnList.getList() ) {
+            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
+            columnIds.add( catalogColumn.id );
+        }
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
             // Check whether this placement already exists
@@ -93,21 +111,38 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                         storeName.getParserPosition(),
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
+            // Check whether the list is empty (this is a short hand for a full placement)
+            if ( columnIds.size() == 0 ) {
+                columnIds = ImmutableList.copyOf( catalogTable.columnIds );
+            }
             // Create column placements
-            for ( long id : catalogTable.columnIds ) {
+            for ( Long cid : columnIds ) {
                 Catalog.getInstance().addColumnPlacement(
                         storeInstance.getStoreId(),
-                        id,
+                        cid,
                         PlacementType.MANUAL,
                         null,
                         null,
                         null );
             }
+            //Check if placement includes primary key columns
+            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+            for ( long cid : primaryKey.columnIds ) {
+                if ( !columnIds.contains( cid ) ) {
+                    Catalog.getInstance().addColumnPlacement(
+                            storeInstance.getStoreId(),
+                            cid,
+                            PlacementType.AUTOMATIC,
+                            null,
+                            null,
+                            null );
+                }
+            }
             // Fetch the table again to get the update list of placements
             storeInstance.createTable( context, catalogTable );
             // !!!!!!!!!!!!!!!!!!!!!!!!
             // TODO: Now we should also copy the data
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         }
     }
