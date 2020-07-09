@@ -271,6 +271,30 @@ SqlAlterTable SqlAlterTable(Span s) :
             return new SqlAlterTableDropPlacement(s.end(this), table, store);
         }
     |
+        <MODIFY>
+        <PLACEMENT>
+        (
+            <ADD>
+            <COLUMN>
+            column = SimpleIdentifier()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableModifyPlacementAddColumn(s.end(this), table, column, store);
+            }
+        |
+            <DROP>
+            <COLUMN>
+            column = SimpleIdentifier()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
+            }
+        )
+    |
         <ADD>
         (
             <UNIQUE> { unique = true; }

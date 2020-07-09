@@ -880,6 +880,9 @@ public interface PolyphenyDbResource {
     @BaseMessage("There is no placement of table ''{0}'' on store ''{1}''")
     ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
 
+    @BaseMessage("The column ''{0}'' is part of the primary key and cannot be dropped")
+    ExInst<PolyphenyDbException> placementIsPrimaryKey( String name );
+
     @BaseMessage("There needs to be at least one placement per table")
     ExInst<PolyphenyDbException> onlyOnePlacementLeft();
 

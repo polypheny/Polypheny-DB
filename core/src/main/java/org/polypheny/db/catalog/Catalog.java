@@ -415,6 +415,17 @@ public abstract class Catalog {
 
 
     /**
+     * Checks if there is a column with the specified name in the specified table.
+     *
+     * @param storeId  The id of the store
+     * @param columnId The id of the column
+     * @return true if there is a column placement, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract boolean checkIfExistsColumnPlacement( int storeId, long columnId );
+
+
+    /**
      * Get all placements of a column
      *
      * @param columnId The id of the column
@@ -450,12 +461,22 @@ public abstract class Catalog {
 
 
     /**
+     * Update type of a placement.
+     *
+     * @param storeId       The id of the store
+     * @param columnId      The id of the column
+     * @param placementType The new type of placement
+     */
+    public abstract void updateColumnPlacementType( int storeId, long columnId, PlacementType placementType ) throws UnknownColumnPlacementException;
+
+
+    /**
      * Change physical names of a placement.
      *
-     * @param storeId The id of the store
-     * @param columnId The id of the column
+     * @param storeId            The id of the store
+     * @param columnId           The id of the column
      * @param physicalSchemaName The physical schema name
-     * @param physicalTableName The physical table name
+     * @param physicalTableName  The physical table name
      * @param physicalColumnName The physical column name
      */
     public abstract void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException, UnknownColumnPlacementException;

@@ -24,9 +24,12 @@ import java.util.Objects;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -39,24 +42,26 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name DROP PLACEMENT} statement.
+ * Parse tree for {@code ALTER TABLE name MODIFY PLACEMENT ADD COLUMN columnName ON STORE storeName} statement.
  */
-public class SqlAlterTableDropPlacement extends SqlAlterTable {
+public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
 
     private final SqlIdentifier table;
+    private final SqlIdentifier columnName;
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterTableDropPlacement( SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName ) {
+    public SqlAlterTableModifyPlacementAddColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier columnName, SqlIdentifier storeName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
+        this.columnName = Objects.requireNonNull( columnName );
         this.storeName = Objects.requireNonNull( storeName );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( table, storeName );
+        return ImmutableNullableList.of( table, columnName, storeName );
     }
 
 
@@ -65,8 +70,11 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "DROP" );
+        writer.keyword( "MODIFY" );
         writer.keyword( "PLACEMENT" );
+        writer.keyword( "ADD" );
+        writer.keyword( "COLUMN" );
+        columnName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ON" );
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
@@ -76,14 +84,19 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
     @Override
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
-            // Check whether this placement exists
+            // Check whether this placement already exists
             if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
-                throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
             // Check whether the store supports schema changes
             if ( storeInstance.isSchemaReadOnly() ) {
@@ -91,23 +104,35 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
                         storeName.getParserPosition(),
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
-            // Check if there are is another placement for every column on this store
-            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) ) {
-                List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( placement.columnId );
-                if ( existingPlacements.size() < 2 ) {
-                    throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+            // Make sure that this store does not contain a placement of this column
+            if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) ) {
+                CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), catalogColumn.id );
+                if ( placement.placementType == PlacementType.AUTOMATIC ) {
+                    // Make placement manual
+                    Catalog.getInstance().updateColumnPlacementType(
+                            storeInstance.getStoreId(),
+                            catalogColumn.id,
+                            PlacementType.MANUAL );
+                } else {
+                    throw SqlUtil.newContextException(
+                            storeName.getParserPosition(),
+                            RESOURCE.placementAlreadyExists( storeName.getSimple(), catalogTable.name ) );
                 }
+            } else {
+                // Create column placement
+                Catalog.getInstance().addColumnPlacement(
+                        storeInstance.getStoreId(),
+                        catalogColumn.id,
+                        PlacementType.MANUAL,
+                        null,
+                        null,
+                        null );
+                // Add column on store
+                storeInstance.addColumn( context, catalogTable, catalogColumn );
+                // !!!!!!!!!!!!!!!!!!!!!!!!
+                // TODO: Now we should also copy the data
             }
-            // Physically delete the data from the store
-            storeInstance.dropTable( context, catalogTable );
-            // Inform routing
-            transaction.getRouter().dropPlacements( Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) );
-            // Delete placement in the catalog
-            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id );
-            for ( CatalogColumnPlacement placement : placements ) {
-                Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), placement.columnId );
-            }
-        } catch ( GenericCatalogException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
     }

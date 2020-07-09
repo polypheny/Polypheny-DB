@@ -69,8 +69,4 @@ public class CatalogColumnPlacement implements CatalogEntity {
         return new Serializable[]{ tableName, storeUniqueName, placementType.name(), physicalSchemaName, physicalTableName, physicalColumnName };
     }
 
-    public static CatalogColumnPlacement replacePhysicalNames( CatalogColumnPlacement columnPlacement, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
-        return new CatalogColumnPlacement( columnPlacement.tableId, columnPlacement.tableName, columnPlacement.columnId, columnPlacement.columnName, columnPlacement.storeId, columnPlacement.storeUniqueName, columnPlacement.placementType, physicalSchemaName, physicalTableName, physicalColumnName );
-    }
-
 }

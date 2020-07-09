@@ -1423,6 +1423,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public boolean checkIfExistsColumnPlacement( int storeId, long columnId ) {
+        CatalogColumnPlacement placement = columnPlacements.get( new Object[]{ storeId, columnId } );
+        return placement != null;
+    }
+
+
     /**
      * Get column placements on a store
      *
@@ -1469,6 +1476,31 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public void updateColumnPlacementType( int storeId, long columnId, PlacementType placementType ) throws UnknownColumnPlacementException {
+        try {
+            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
+            CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.tableId,
+                    old.tableName,
+                    old.columnId,
+                    old.columnName,
+                    old.storeId,
+                    old.storeUniqueName,
+                    placementType,
+                    old.physicalSchemaName,
+                    old.physicalTableName,
+                    old.physicalColumnName );
+            synchronized ( this ) {
+                columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
+            }
+            listeners.firePropertyChange( "columnPlacement", old, placement );
+        } catch ( NullPointerException e ) {
+            throw new UnknownColumnPlacementException( storeId, columnId );
+        }
+    }
+
+
     /**
      * Change physical names of a placement.
      *
@@ -1482,7 +1514,17 @@ public class CatalogImpl extends Catalog {
     public void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws UnknownColumnPlacementException {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
-            CatalogColumnPlacement placement = CatalogColumnPlacement.replacePhysicalNames( old, physicalSchemaName, physicalTableName, physicalColumnName );
+            CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.tableId,
+                    old.tableName,
+                    old.columnId,
+                    old.columnName,
+                    old.storeId,
+                    old.storeUniqueName,
+                    old.placementType,
+                    physicalSchemaName,
+                    physicalTableName,
+                    physicalColumnName );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
             }

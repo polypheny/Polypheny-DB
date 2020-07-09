@@ -45,7 +45,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name ADD PLACEMENT} statement.
+ * Parse tree for {@code ALTER TABLE name ADD PLACEMENT [(columnList)] ON STORE storeName} statement.
  */
 public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
@@ -116,7 +116,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 columnIds = ImmutableList.copyOf( catalogTable.columnIds );
             }
             // Create column placements
-            for ( Long cid : columnIds ) {
+            for ( long cid : columnIds ) {
                 Catalog.getInstance().addColumnPlacement(
                         storeInstance.getStoreId(),
                         cid,
@@ -138,7 +138,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                             null );
                 }
             }
-            // Fetch the table again to get the update list of placements
+            // Create table on store
             storeInstance.createTable( context, catalogTable );
             // !!!!!!!!!!!!!!!!!!!!!!!!
             // TODO: Now we should also copy the data
