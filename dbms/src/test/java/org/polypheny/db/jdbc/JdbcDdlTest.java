@@ -474,12 +474,6 @@ public class JdbcDdlTest {
                         statement.executeQuery( "SELECT tdouble FROM ddltest" ),
                         ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ) );
 
-                // Integer --> BigInt
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tinteger SET TYPE BIGINT" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tinteger FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ (long) (int) DDLTEST_DATA[5] } ) );
-
                 // Real --> Double
                 statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN treal SET TYPE DOUBLE" );
                 TestHelper.checkResultSet(
