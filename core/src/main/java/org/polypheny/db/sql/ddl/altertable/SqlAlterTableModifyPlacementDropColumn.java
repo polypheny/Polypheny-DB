@@ -25,6 +25,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -109,6 +110,11 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
                         storeName.getParserPosition(),
                         RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
+            // Check if there are is another placement for this column
+            List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( catalogColumn.id );
+            if ( existingPlacements.size() < 2 ) {
+                throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+            }
             // Check whether the column to drop is a primary key
             CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
             if ( primaryKey.columnIds.contains( catalogColumn.id ) ) {
@@ -120,8 +126,6 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
             storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) );
             // Drop column placement
             Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), catalogColumn.id );
-            // !!!!!!!!!!!!!!!!!!!!!!!!
-            // TODO: Now we should also copy the data
         } catch ( GenericCatalogException | UnknownKeyException e ) {
             throw new RuntimeException( e );
         }

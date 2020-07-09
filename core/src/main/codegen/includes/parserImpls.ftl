@@ -293,6 +293,14 @@ SqlAlterTable SqlAlterTable(Span s) :
             {
                 return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
             }
+        |
+            columnList = ParenthesizedSimpleIdentifierList()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store);
+            }
         )
     |
         <ADD>

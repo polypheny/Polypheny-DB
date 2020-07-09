@@ -39,7 +39,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name DROP PLACEMENT} statement.
+ * Parse tree for {@code ALTER TABLE name DROP PLACEMENT ON STORE storeName} statement.
  */
 public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
