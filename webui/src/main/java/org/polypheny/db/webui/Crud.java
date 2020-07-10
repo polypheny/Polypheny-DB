@@ -2078,7 +2078,7 @@ public class Crud implements InformationObserver {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
         int counter = 0;
         for ( InformationPage page : pages ) {
-            nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ) );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
             counter++;
         }
         try {
