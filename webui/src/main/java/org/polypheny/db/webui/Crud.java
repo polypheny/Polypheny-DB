@@ -148,6 +148,7 @@ import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
@@ -1603,59 +1604,24 @@ public class Crud implements InformationObserver {
     /**
      * Get placements of a table
      */
-    Result getPlacements( final Request req, final Response res ) {
+    Placement getPlacements( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
         String schemaName = index.getSchema();
         String tableName = index.getTable();
-        Result result;
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
             // Map<Integer, List<CatalogColumnPlacement>> placementsByStore = table.placementsByStore;
-            DbColumn[] header = {
-                    new DbColumn( "Store" ),
-                    new DbColumn( "Adapter" ),
-                    new DbColumn( "DataReadOnly" ),
-                    new DbColumn( "SchemaReadOnly" ),
-                    new DbColumn( "Columns" ) };
-
-            ArrayList<String[]> data = new ArrayList<>();
+            Placement p = new Placement();
             for ( CatalogStore catalogStore : catalog.getStores() ) {
                 Store store = StoreManager.getInstance().getStore( catalogStore.id );
                 List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                if ( placements.size() == 0 ) {
-                    continue;
-                }
-                String[] arr = new String[5];
-                arr[0] = store.getUniqueName();
-                arr[1] = store.getAdapterName();
-                arr[2] = String.valueOf( store.isDataReadOnly() );
-                arr[3] = String.valueOf( store.isSchemaReadOnly() );
-                arr[4] = "";
-                boolean first = true;
-                for ( CatalogColumnPlacement p : placements ) {
-                    String prefix = ", ";
-                    String suffix = "";
-                    if ( first ) {
-                        first = false;
-                        prefix = "";
-                    }
-                    if ( p.placementType == PlacementType.MANUAL ) {
-                        prefix += "<b>";
-                        suffix += "</b>";
-                    }
-                    arr[4] += prefix + p.columnName + suffix;
-                }
-
-                data.add( arr );
+                p.addStore( new Placement.Store( store.getUniqueName(), store.getAdapterName(), store.isDataReadOnly(), store.isSchemaReadOnly(), placements ));
             }
-
-            result = new Result( header, data.toArray( new String[0][4] ) );
-
+            return p;
         } catch ( GenericCatalogException | UnknownTableException e ) {
             log.error( "Caught exception while getting placements", e );
-            result = new Result( e );
+            return new Placement( e );
         }
-        return result;
     }
 
 
@@ -1666,22 +1632,18 @@ public class Crud implements InformationObserver {
      */
     Result addDropPlacement( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
-        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) && !index.getMethod().toUpperCase().equals( "MODIFY" ) ) {
             return new Result( "Invalid request" );
         }
-        String columnListStr = "";
-        if ( index.getMethod().toUpperCase().equals( "ADD" ) ) {
-            try {
-                CatalogTable table = catalog.getTable( "APP", index.getSchema(), index.getTable() );
-                List<String> columnNames = new LinkedList<>();
-                for ( String columnName : table.columnNames ) {
-                    columnNames.add( "\"" + columnName + "\"" );
-                }
-                columnListStr = "(" + String.join( ",", columnNames ) + ")";
-            } catch ( GenericCatalogException | UnknownTableException e ) {
-                return new Result( "Unknown table: " + index.getSchema() + "." + index.getTable() );
+        StringJoiner columnJoiner = new StringJoiner( ",", "(", ")");
+        int counter = 0;
+        if ( !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+            for( String col : index.getColumns() ) {
+                columnJoiner.add( col );
+                counter ++;
             }
         }
+        String columnListStr = counter > 0 ? columnJoiner.toString() : "";
         String query = String.format(
                 "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT %s ON STORE \"%s\"",
                 index.getSchema(),
