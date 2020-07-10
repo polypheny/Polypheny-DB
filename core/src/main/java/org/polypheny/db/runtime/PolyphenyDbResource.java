@@ -877,7 +877,7 @@ public interface PolyphenyDbResource {
     @BaseMessage("Table ''{0}'' is already placed on store ''{1}''")
     ExInst<PolyphenyDbException> placementAlreadyExists( String storeName, String tableName );
 
-    @BaseMessage("There is no placement of table ''{0}'' on store ''{1}''")
+    @BaseMessage("There is no placement of table ''{1}'' on store ''{0}''")
     ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
 
     @BaseMessage("The column ''{0}'' is part of the primary key and cannot be dropped")

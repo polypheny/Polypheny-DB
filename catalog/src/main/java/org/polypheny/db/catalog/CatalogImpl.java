@@ -626,7 +626,7 @@ public class CatalogImpl extends Catalog {
         addDefaultColumn( csv, emp, "age", PolyType.INTEGER, null, 2, null );
         addDefaultColumn( csv, emp, "gender", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 3, 20 );
         addDefaultColumn( csv, emp, "maritalstatus", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 4, 20 );
-        addDefaultColumn( csv, emp, "workLifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
+        addDefaultColumn( csv, emp, "worklifebalance", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 5, 20 );
         addDefaultColumn( csv, emp, "education", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 6, 20 );
         addDefaultColumn( csv, emp, "monthlyincome", PolyType.INTEGER, null, 7, null );
         addDefaultColumn( csv, emp, "relationshipjoy", PolyType.VARCHAR, Collation.CASE_INSENSITIVE, 8, 20 );

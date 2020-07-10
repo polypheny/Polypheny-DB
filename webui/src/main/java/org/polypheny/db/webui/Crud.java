@@ -54,7 +54,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -84,7 +83,6 @@ import org.polypheny.db.adapter.StoreManager.AdapterInformation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -1639,8 +1637,8 @@ public class Crud implements InformationObserver {
         int counter = 0;
         if ( !index.getMethod().toUpperCase().equals( "DROP" ) ) {
             for( String col : index.getColumns() ) {
-                columnJoiner.add( col );
-                counter ++;
+                columnJoiner.add( "\"" + col + "\"" );
+                counter++;
             }
         }
         String columnListStr = counter > 0 ? columnJoiner.toString() : "";
