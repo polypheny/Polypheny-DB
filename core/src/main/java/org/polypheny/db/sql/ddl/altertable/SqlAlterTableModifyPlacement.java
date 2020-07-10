@@ -112,7 +112,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
             // Which columns to remove
-            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId() ) ) {
+            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) ) {
                 if ( !columnIds.contains( placement.columnId ) ) {
                     // Check whether the column is a primary key column
                     CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
