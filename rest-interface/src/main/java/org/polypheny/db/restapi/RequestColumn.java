@@ -25,15 +25,15 @@ import org.polypheny.db.sql.SqlAggFunction;
 public class RequestColumn {
 
     private final CatalogColumn column;
-    private final long tableScanIndex;
-    private final long logicalIndex;
+    private final int tableScanIndex;
+    private final int logicalIndex;
     private final String fullyQualifiedName;
     private final String alias;
     private final SqlAggFunction aggregate;
     private final boolean explicit;
 
 
-    RequestColumn( CatalogColumn column, long tableScanIndex, long logicalIndex, String alias, SqlAggFunction aggregate, boolean explicit ) {
+    RequestColumn( CatalogColumn column, int tableScanIndex, int logicalIndex, String alias, SqlAggFunction aggregate, boolean explicit ) {
         this.column = Objects.requireNonNull( column );
         this.tableScanIndex = tableScanIndex;
         this.logicalIndex = logicalIndex;
@@ -48,7 +48,7 @@ public class RequestColumn {
     }
 
 
-    RequestColumn( CatalogColumn column, long tableScanIndex, long logicalIndex, String alias, SqlAggFunction aggregate ) {
+    RequestColumn( CatalogColumn column, int tableScanIndex, int logicalIndex, String alias, SqlAggFunction aggregate ) {
         this(column, tableScanIndex, logicalIndex, alias, aggregate, true);
     }
 
@@ -62,12 +62,12 @@ public class RequestColumn {
     }
 
 
-    public long getTableScanIndex() {
+    public int getTableScanIndex() {
         return tableScanIndex;
     }
 
 
-    public long getLogicalIndex() {
+    public int getLogicalIndex() {
         return logicalIndex;
     }
 
@@ -89,6 +89,11 @@ public class RequestColumn {
 
     public SqlAggFunction getAggregate() {
         return aggregate;
+    }
+
+
+    public boolean isExplicit() {
+        return explicit;
     }
 
     // The alias of a column in a request perfectly identifies it when it comes to uniqueness!

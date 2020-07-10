@@ -16,20 +16,24 @@
 
 package org.polypheny.db.restapi;
 
+
 import com.google.gson.Gson;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
-import org.polypheny.db.restapi.RequestParser.Filters;
-import org.polypheny.db.restapi.RequestParser.ProjectionAndAggregation;
+import org.polypheny.db.restapi.exception.ParserException;
+import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
-import org.polypheny.db.restapi.models.requests.RequestInfo;
+import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
+import org.polypheny.db.restapi.models.requests.GetResourceRequest;
+import org.polypheny.db.restapi.models.requests.InsertValueRequest;
+import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import spark.Service;
 
@@ -68,10 +72,10 @@ public class HttpRestServer extends QueryInterface {
 //            RequestInfo requestInfo;
             restServer.before( "/*", (q, a) -> {
                 log.debug( "Checking authentication of request with id: {}.", q.session().id() );
-                RequestInfo requestInfo = new RequestInfo();
+//                RequestInfo requestInfo = new RequestInfo();
                 try {
                     CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( q );
-                    requestInfo.setAuthenticatedUser( catalogUser );
+//                    requestInfo.setAuthenticatedUser( catalogUser );
                 } catch ( UnauthorizedAccessException e ) {
                     restServer.halt( 401, e.getMessage() );
                 }
@@ -85,55 +89,111 @@ public class HttpRestServer extends QueryInterface {
             } );
 //            restServer.get( "/res", restOld::getTableList, gson::toJson );
             restServer.get( "/res/:resName", (q, a) -> {
-                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
-
-                requestParser.parseGetResourceRequest( q, q.params( ":resName" ) );
-
-                return rest.processGetResource( requestInfo, q, a );
-
-//                ResourceRequest resourceRequest = requestParserOld.parseResourceRequest( q.params( ":resName" ), q.queryMap() );
-//                return rest.getResourceTable( resourceRequest, q, a );
+                try {
+                    GetResourceRequest getResourceRequest = requestParser.parseGetResourceRequest( q, q.params( ":resName" ) );
+                    return rest.processGetResource( getResourceRequest, q, a );
+                } catch ( ParserException e ) {
+                    a.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "parser" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    bodyReturn.put( "violating_input", e.getViolatingInput() );
+                    return bodyReturn;
+                } catch ( RestException e ) {
+                    a.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "rest" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    return bodyReturn;
+                } catch ( Exception e ) {
+                    a.status( 500 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "wtf", "something's fishy" );
+                    bodyReturn.put( "exception", e.getLocalizedMessage() );
+                    bodyReturn.put( "stacktrace", e.getStackTrace() );
+                    return bodyReturn;
+                }
             }, gson::toJson );
             restServer.post( "/res/:resName", (q, a) -> {
-                RequestInfo requestInfo = new RequestInfo();
-                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
-                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
-                requestInfo.initialNameMapping( nameMapping );
-                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
-                requestInfo.setValues( requestParser.parseValues( q, nameAndAliasMapping, gson ) );
-                return rest.processPutResource( requestInfo, q, a );
-
-//                InsertValueRequest insertValueRequest = requestParserOld.parseInsertValuePost( q.params(":resName"), q.queryMap(), q.body(), gson );
-//                return rest.postInsertValue( insertValueRequest, q, a );
+                try {
+                    InsertValueRequest insertValueRequest = requestParser.parsePutResourceRequest( q, q.params( ":resName" ), gson );
+                    return rest.processPostResource( insertValueRequest, q, a );
+                } catch ( ParserException e ) {
+                    a.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "parser" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    bodyReturn.put( "violating_input", e.getViolatingInput() );
+                    return bodyReturn;
+                } catch ( RestException e ) {
+                    a.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "rest" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    return bodyReturn;
+                }
             }, gson::toJson );
             restServer.delete( "/res/:resName", (q, a) -> {
-                RequestInfo requestInfo = new RequestInfo();
-                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
-                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
-                requestInfo.initialNameMapping( nameMapping );
-                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
-                Filters filters = requestParser.parseFilters( q, nameAndAliasMapping );
-                requestInfo.setLiteralFilters( filters.literalFilters );
-                requestInfo.setColumnFilters( filters.columnFilters );
-
-                return rest.processDeleteResource( requestInfo, q, a );
-//                DeleteValueRequest deleteValueRequest = requestParserOld.parseDeleteValueRequest( q.params(":resName"), q.queryMap() );
-//                return rest.deleteValues( deleteValueRequest, q, a );
+               try {
+                   DeleteValueRequest deleteValueRequest = requestParser.parseDeleteResourceRequest( q, q.params( ":resName" ) );
+                   return rest.processDeleteResource( deleteValueRequest, q, a );
+               } catch ( ParserException e ) {
+                   a.status( 400 );
+                   Map<String, Object> bodyReturn = new HashMap<>();
+                   bodyReturn.put( "system", "parser" );
+                   bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                   bodyReturn.put( "error_code", e.getErrorCode().code );
+                   bodyReturn.put( "error", e.getErrorCode().name );
+                   bodyReturn.put( "error_description", e.getErrorCode().description );
+                   bodyReturn.put( "violating_input", e.getViolatingInput() );
+                   return bodyReturn;
+               } catch ( RestException e ) {
+                   a.status( 400 );
+                   Map<String, Object> bodyReturn = new HashMap<>();
+                   bodyReturn.put( "system", "rest" );
+                   bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                   bodyReturn.put( "error_code", e.getErrorCode().code );
+                   bodyReturn.put( "error", e.getErrorCode().name );
+                   bodyReturn.put( "error_description", e.getErrorCode().description );
+                   return bodyReturn;
+               }
             }, gson::toJson );
             restServer.patch( "/res/:resName", (q, a) -> {
-                RequestInfo requestInfo = new RequestInfo();
-                requestInfo.setTables( requestParser.parseTables( q.params( ":resName" ) ) );
-                Map<String, CatalogColumn> nameMapping = requestParser.generateNameMapping( requestInfo.getTables() );
-                requestInfo.initialNameMapping( nameMapping );
-                Map<String, CatalogColumn> nameAndAliasMapping = requestInfo.getNameAndAliasMapping();
-                Filters filters = requestParser.parseFilters( q, nameAndAliasMapping );
-                requestInfo.setLiteralFilters( filters.literalFilters );
-                requestInfo.setColumnFilters( filters.columnFilters );
-                requestInfo.setValues( requestParser.parseValues( q, nameAndAliasMapping, gson ) );
-
-                return rest.processPatchResource( requestInfo, q, a );
-//                UpdateResourceRequest updateResourceRequest = requestParserOld.parseUpdateResourceRequest( q.params(":resName"), q.queryMap(), q.body(), gson );
-//                return rest.updateResource( updateResourceRequest, q, a );
+                try {
+                    UpdateResourceRequest updateResourceRequest = requestParser.parsePatchResourceRequest( q, q.params( ":resName" ), gson );
+                    return rest.processPatchResource( updateResourceRequest, q, a );
+                } catch ( ParserException e ) {
+                    a.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "parser" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    bodyReturn.put( "violating_input", e.getViolatingInput() );
+                    return bodyReturn;
+                } catch ( RestException e ) {
+                    a.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "rest" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    return bodyReturn;
+                }
             }, gson::toJson );
         } );
     }

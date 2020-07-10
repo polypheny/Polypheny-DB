@@ -18,14 +18,18 @@ package org.polypheny.db.restapi.models.requests;
 
 
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.restapi.RequestColumn;
 import org.polypheny.db.util.Pair;
 
 
 @AllArgsConstructor
 public class InsertValueRequest {
     public final List<CatalogTable> tables;
-    public final List<List<Pair<CatalogColumn, Object>>> values;
+    public final List<RequestColumn> requestColumns;
+    public final Map<String, RequestColumn> nameMapping;
+    public final List<List<Pair<RequestColumn, Object>>> values;
 }

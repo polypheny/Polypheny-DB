@@ -31,7 +31,8 @@ import org.polypheny.db.util.Pair;
 @AllArgsConstructor
 public class UpdateResourceRequest {
     public final List<CatalogTable> tables;
-    public final List<List<Pair<CatalogColumn, Object>>> values;
+    public final List<RequestColumn> requestColumns;
+    public final List<List<Pair<RequestColumn, Object>>> values;
     public final Map<String, RequestColumn> nameMapping;
     public final Filters filters;
 }
