@@ -31,6 +31,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.partition.SimplePartition;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -119,20 +120,25 @@ public abstract class AbstractRouter implements Router {
 
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Transaction transaction ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
+            System.out.println("HENNLO: AbstractRouter LOOP build select recursively " + node.getInputs() );
             buildSelect( node.getInput( i ), builder, transaction );
         }
+
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
+                System.out.println("HENNLO: AbstractRouter NODE " + node.toString());
+                System.out.println("HENNLO: AbstractRouter NODE getTable " + ((RelOptTableImpl) node.getTable()).getTable().toString());
                 // Get placements of this table
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
                 List<CatalogColumnPlacement> placements;
 
                 placements = catalog.getColumnPlacements( t.getColumnIds().get( 0 ) );
-
+                System.out.println("HENNLO: AbstractRouter NODE selectPlacement " + node.toString());
                 CatalogColumnPlacement placement = selectPlacement( node, placements );
+                System.out.println("HENNLO: AbstractRouter   " + placement.columnName);
                 return handleTableScan( builder, table, placement );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );

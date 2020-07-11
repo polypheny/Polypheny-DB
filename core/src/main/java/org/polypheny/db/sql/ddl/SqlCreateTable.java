@@ -67,6 +67,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.partition.SimplePartition;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare;
@@ -219,6 +220,19 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 stores = transaction.getRouter().createTable( schemaId, transaction );
             }
 
+            //TODO: HENNLO , messing around
+            System.out.println("HENNLO: SqlCreateTable: " + schemaId+ " " + tableName + " executed on Router: " + Catalog.getInstance());
+
+            /**List<long> partitionIDs = catalog.addPartitions(
+            //        tableName,
+                    schemaId,
+              //      context.getCurrentUserId(),
+                    PartitionType.SIMPLE);
+
+            */
+            //HENNLO
+
+
             long tableId = catalog.addTable(
                     tableName,
                     schemaId,
@@ -303,9 +317,20 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( Store store : stores ) {
                 store.createTable( context, catalogTable );
             }
+
+            //TODO: HENNLO Test CASE
+            SimplePartition basicPartition = new SimplePartition(tableId, catalog.getSchema(schemaId).toString(), tableName, columnList.get(0).toString());
+            System.out.println("HENNLO: SqlCreateTable: Resolved TestCase");
+
+
+
         } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
+
+
+
+
     }
 
 

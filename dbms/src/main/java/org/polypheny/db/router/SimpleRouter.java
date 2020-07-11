@@ -23,6 +23,7 @@ import java.util.Map;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.partition.SimplePartition;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -52,6 +53,7 @@ public class SimpleRouter extends AbstractRouter {
     @Override
     protected CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available ) {
         // Take first
+        System.out.println("HENNLO: SimpleRouter selectPlacement: " + available.get(0).tableName);
         return available.get( 0 );
     }
 
@@ -59,6 +61,7 @@ public class SimpleRouter extends AbstractRouter {
     // Create table on the first store in the list that supports schema changes
     @Override
     public List<Store> createTable( long schemaId, Transaction transaction ) {
+        System.out.println("HENNLO: SimpleRouter createTable() schemaID: " + schemaId);
         Map<String, Store> availableStores = StoreManager.getInstance().getStores();
         for ( Store store : availableStores.values() ) {
             if ( !store.isSchemaReadOnly() ) {

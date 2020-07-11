@@ -235,6 +235,7 @@ public class IcarusRouter extends AbstractRouter {
         }
         for ( CatalogColumnPlacement placement : available ) {
             if ( placement.storeId == selectedStoreId ) {
+
                 return placement;
             }
         }
@@ -257,6 +258,7 @@ public class IcarusRouter extends AbstractRouter {
     // Create table on all stores supporting schema changes
     @Override
     public List<Store> createTable( long schemaId, Transaction transaction ) {
+        System.out.println("HENNLO: HELLLLLLLLLLLLLLLLLOOOOOOOOOOOOOOOOOOOOO am I in here????");
         List<Store> result = new LinkedList<>();
         Map<String, Store> availableStores = StoreManager.getInstance().getStores();
         for ( Store store : availableStores.values() ) {

@@ -2558,8 +2558,10 @@ public class Crud implements InformationObserver {
         SqlNode parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( SqlKind.DDL ) ) {
+            System.out.println("HENNLO:  DDL " + sql);
             signature = sqlProcessor.prepareDdl( parsed );
         } else {
+            System.out.println("HENNLO:  DML " + sql);
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
 

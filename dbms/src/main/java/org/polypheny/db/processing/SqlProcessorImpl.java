@@ -109,9 +109,12 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.start();
         SqlNode parsed;
+        System.out.println("HENNLO: SQLProcessorImpl SQL: " + sql);
+
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
+
         } catch ( SqlParseException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
