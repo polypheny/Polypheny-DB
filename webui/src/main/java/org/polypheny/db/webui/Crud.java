@@ -2463,6 +2463,7 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
+        boolean hasMoreRows = false;
         try {
             signature = processQuery( transaction, sqlSelect, parserConfig );
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
@@ -2475,6 +2476,7 @@ public class Crud implements InformationObserver {
             } else {
                 rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
             }
+            hasMoreRows = iterator.hasNext();
             stopWatch.stop();
             signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
         } catch ( Throwable t ) {
@@ -2586,7 +2588,7 @@ public class Crud implements InformationObserver {
                 data.add( temp );
             }
 
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) ).setHasMoreRows( hasMoreRows );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();
