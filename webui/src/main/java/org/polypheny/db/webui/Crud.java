@@ -110,6 +110,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
@@ -2477,6 +2478,15 @@ public class Crud implements InformationObserver {
             stopWatch.stop();
             signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
         } catch ( Throwable t ) {
+            if( transaction.isAnalyze() ) {
+                InformationManager analyzer = transaction.getQueryAnalyzer();
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" );
+                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
+                analyzer.addPage( exceptionPage );
+                analyzer.addGroup( exceptionGroup );
+                analyzer.registerInformation( exceptionElement );
+            }
             if ( iterator != null ) {
                 try {
                     ((AutoCloseable) iterator).close();
@@ -2619,6 +2629,15 @@ public class Crud implements InformationObserver {
         try {
             signature = processQuery( transaction, sqlUpdate, parserConfig );
         } catch ( Throwable t ) {
+            if( transaction.isAnalyze() ) {
+                InformationManager analyzer = transaction.getQueryAnalyzer();
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" );
+                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
+                analyzer.addPage( exceptionPage );
+                analyzer.addGroup( exceptionGroup );
+                analyzer.registerInformation( exceptionElement );
+            }
             throw new QueryExecutionException( t );
         }
 
