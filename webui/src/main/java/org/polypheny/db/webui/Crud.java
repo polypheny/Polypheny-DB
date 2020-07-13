@@ -630,7 +630,7 @@ public class Crud implements InformationObserver {
                 // Add limit if not specified
                 Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
                 if ( !p2.matcher( query ).find() ) {
-                    query = query + " LIMIT " + getPageSize();
+                    noLimit = false;
                 }
                 //If the user specifies a limit
                 else {
