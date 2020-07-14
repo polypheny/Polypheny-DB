@@ -19,6 +19,7 @@ package org.polypheny.db.information;
 
 import com.google.gson.Gson;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -234,6 +235,7 @@ public class InformationManager {
             pages1[counter] = p;
             counter++;
         }
+        Arrays.sort( pages1, Comparator.comparing( InformationPage::getName ) );
         Gson gson = new Gson();
         return gson.toJson( pages1, InformationPage[].class );
     }
