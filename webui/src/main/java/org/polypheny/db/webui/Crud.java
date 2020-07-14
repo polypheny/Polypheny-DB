@@ -2406,6 +2406,7 @@ public class Crud implements InformationObserver {
                     .field( "userId", String.valueOf( request.userId ) )
                     .field( "secret", request.secret )
                     .field( "name", request.name )
+                    .field( "description", request.description )
                     .field( "pub", String.valueOf( request.pub ) )
                     .field( "dataset", zipFile )
                     .field( "metaData", metaFile )
