@@ -2482,7 +2482,7 @@ public class Crud implements InformationObserver {
         } catch ( Throwable t ) {
             if( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();
-                InformationPage exceptionPage = new InformationPage( "Stacktrace" );
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
                 InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
                 InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
                 analyzer.addPage( exceptionPage );
@@ -2633,7 +2633,7 @@ public class Crud implements InformationObserver {
         } catch ( Throwable t ) {
             if( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();
-                InformationPage exceptionPage = new InformationPage( "Stacktrace" );
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
                 InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
                 InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
                 analyzer.addPage( exceptionPage );
