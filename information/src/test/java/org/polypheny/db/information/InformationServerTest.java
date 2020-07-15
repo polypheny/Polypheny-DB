@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.webui.InformationServer;
@@ -259,6 +260,27 @@ public class InformationServerTest {
         duration3.stop( "test" );
         duration3.setOrder( 3 );
         im.registerInformation( duration3 );
+
+        //InformationKeyValue
+        InformationGroup kvGroup = new InformationGroup( systemPage, "InformationKeyValue" );
+        im.addGroup( kvGroup );
+        InformationKeyValue iKV = new InformationKeyValue( "kv", kvGroup );
+        iKV.putPair( "k1", "value1" ).putPair( "k2", "value2" ).putPair( "k3", "value3" );
+        Assert.assertEquals( iKV.getPair( "k1" ), "value1" );
+        im.registerInformation( iKV );
+        Timer t4 = new Timer();
+        final boolean[] alternate = { true };
+        t4.scheduleAtFixedRate( new TimerTask() {
+            @Override
+            public void run() {
+                if( alternate[0] ) {
+                    iKV.removePair( "k2" );
+                } else {
+                    iKV.putPair( "k2", "value2" );
+                }
+                alternate[0] = !alternate[0];
+            }
+        }, 5000, 5000 );
     }
 
 
