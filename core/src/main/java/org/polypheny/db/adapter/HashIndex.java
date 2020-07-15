@@ -19,8 +19,10 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -31,45 +33,68 @@ import org.polypheny.db.rex.RexLiteral;
 public class HashIndex extends Index {
 
 
-    private Set<List<RexLiteral>> index = new HashSet<>();
+    private Map<List<Object>, List<Object>> index = new HashMap<>();
+    private Map<List<Object>, List<Object>> reverseIndex = new HashMap<>();
 
 
     public HashIndex(
+            final long id,
+            final String name,
             final boolean unique,
             final CatalogSchema schema,
             final CatalogTable table,
-            final List<String> columns ) {
+            final CatalogTable targetTable,
+            final List<String> columns,
+            final List<String> targetColumns ) {
+        this.id = id;
+        this.name = name;
         this.type = IndexType.HASH;
         this.unique = unique;
         this.schema = schema;
         this.table = table;
+        this.targetTable = targetTable;
         this.columns = ImmutableList.copyOf( columns );
+        this.targetColumns = ImmutableList.copyOf( targetColumns );
     }
 
     public HashIndex(
+            final long id,
+            final String name,
             final boolean unique,
             final CatalogSchema schema,
             final CatalogTable table,
-            final String... columns ) {
-        this(unique, schema, table, Arrays.asList(columns));
+            final CatalogTable targetTable,
+            final String[] columns,
+            final String[] targetColumns) {
+        this(id, name, unique, schema, table, targetTable, Arrays.asList(columns), Arrays.asList(targetColumns));
     }
 
 
     @Override
-    public boolean contains( List<RexLiteral> value ) {
-        return index.contains( value );
+    public boolean contains( List<Object> value ) {
+        return index.containsKey( value );
     }
 
 
     @Override
-    public boolean containsAny( Set<List<RexLiteral>> values ) {
-        return index.contains( values );
+    public boolean containsAny( Set<List<Object>> values ) {
+        for (final List<Object> tuple : values) {
+            if ( index.containsKey( tuple ) ) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
     @Override
-    public boolean containsAll( Set<List<RexLiteral>> values ) {
-        return index.containsAll( values );
+    public boolean containsAll( Set<List<Object>> values ) {
+        for (final List<Object> tuple : values) {
+            if ( !index.containsKey( tuple ) ) {
+                return false;
+            }
+        }
+        return true;
     }
 
 
@@ -80,14 +105,24 @@ public class HashIndex extends Index {
 
 
     @Override
-    public void insert( List<RexLiteral> values ) {
-        index.add( values );
+    public void insert( List<Object> key, List<Object> primary ) {
+        System.err.println(String.format( "INDEX [%s] INSERT %s -> %s", name, key, primary ));
+        index.put( key, primary );
+        reverseIndex.put( primary, key );
     }
 
 
     @Override
-    public void delete( List<RexLiteral> values ) {
-        index.remove( values );
+    public void delete( List<Object> values ) {
+        System.err.println(String.format( "INDEX [%s] DELETE %s -> ?", name, values ));
+        List<Object> primary = index.remove( values );
+        reverseIndex.remove( primary );
     }
 
+    @Override
+    public void reverseDelete( List<Object> values ) {
+        System.err.println(String.format( "INDEX [%s] DELETE ? -> %s", name, values ));
+        List<Object> key = reverseIndex.remove( values );
+        index.remove( key );
+    }
 }

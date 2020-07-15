@@ -677,6 +677,8 @@ public abstract class Catalog {
     public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
 
 
+    public abstract List<CatalogIndex> getIndices( );
+
     public abstract List<CatalogIndex> getIndices( CatalogKey key );
 
     public abstract List<CatalogIndex> getForeignKeys( CatalogKey key );
@@ -850,7 +852,6 @@ public abstract class Catalog {
     public abstract void close();
 
     public abstract void clear();
-
 
     public enum TableType {
         TABLE( 1 ),

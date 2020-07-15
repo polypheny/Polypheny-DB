@@ -24,8 +24,11 @@ import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,8 +38,10 @@ import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.adapter.DeferredIndexUpdate;
 import org.polypheny.db.adapter.Index;
 import org.polypheny.db.adapter.IndexManager;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
@@ -65,12 +70,14 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
+import org.polypheny.db.plan.RelOptUtil.Logic;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.rel.RelCollation;
+import org.polypheny.db.rel.RelCollationImpl;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -83,12 +90,16 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
@@ -190,9 +201,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         // Constraint Enforcement Rewrite
         if ( statement.getTransaction().isAnalyze() ) {
             statement.getDuration().stop( "Locking" );
+            statement.getDuration().start( "Index Update" );
+        }
+        RelRoot indexUpdateRoot = indexUpdate( logicalRoot, statement );
+
+        // Constraint Enforcement Rewrite
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Index Update" );
             statement.getDuration().start( "Constraint Enforcement" );
         }
-        RelRoot constraintsRoot = enforceConstraints( logicalRoot, statement );
+        RelRoot constraintsRoot = enforceConstraints( indexUpdateRoot, statement );
 
         // Index Lookup Rewrite
         if ( statement.getTransaction().isAnalyze() ) {
@@ -323,25 +341,160 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
 
 
+
+    private RelRoot indexUpdate( RelRoot root, Statement statement ) {
+        if ( root.kind.belongsTo( SqlKind.DML ) ) {
+            final RelShuttle shuttle = new RelShuttleImpl() {
+
+                @Override
+                public RelNode visit( RelNode node ) {
+                    RexBuilder rexBuilder = new RexBuilder( transaction.getTypeFactory() );
+                    if ( node instanceof LogicalTableModify ) {
+                        final Catalog catalog = Catalog.getInstance();
+                        final CatalogSchema schema = transaction.getDefaultSchema();
+                        final LogicalTableModify ltm = (LogicalTableModify) node;
+                        final CatalogTable table;
+                        try {
+                            table = catalog.getTable( schema.id, ltm.getTable().getQualifiedName().get( 0 ) );
+                        } catch ( UnknownTableException | GenericCatalogException e ) {
+                            // This really should not happen
+                            log.error( String.format( "Table not found: %s", ltm.getTable().getQualifiedName().get( 0 ) ), e );
+                            throw new RuntimeException( e );
+                        }
+                        final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
+
+                        if ( ltm.isInsert() ) {
+                            final LogicalValues values = (LogicalValues) ltm.getInput( 0 );
+                            for ( final Index index : indices ) {
+                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( values.tuples.size() );
+                                for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
+                                    final List<Object> rowValues = new ArrayList<>();
+                                    final List<Object> targetRowValues = new ArrayList<>();
+                                    for ( final String column : index.getColumns() ) {
+                                        final RexLiteral fieldValue = row.get(
+                                                values.getRowType().getField( column, false, false ).getIndex()
+                                        );
+                                        rowValues.add( fieldValue.getValue() );
+                                    }
+                                    for ( final String column : index.getTargetColumns() ) {
+                                        final RexLiteral fieldValue = row.get(
+                                                values.getRowType().getField( column, false, false ).getIndex()
+                                        );
+                                        targetRowValues.add( fieldValue.getValue() );
+                                    }
+                                    tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
+                                }
+                                transaction.deferIndexUpdate( DeferredIndexUpdate.createInsert( index.getId(), tuplesToInsert ) );
+                            }
+                        } else if ( ltm.isDelete() || ltm.isUpdate() ) {
+                            final List<Index> reverseIndices = IndexManager.getInstance().getReverseIndices( schema, table );
+                            final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), root.validatedRowType );
+                            // Built list of columns to query
+                            final Set<String> columnsToFetch = new HashSet<>(  );
+                            for (final Index index : indices) {
+                                columnsToFetch.addAll( index.getColumns() );
+                            }
+                            for (final Index index : reverseIndices) {
+                                columnsToFetch.addAll( index.getTargetColumns() );
+                            }
+                            final List<RexNode> projects = new ArrayList<>(  );
+                            final Map<String, Integer> nameMap = new HashMap<>(  );
+                            for (int i = 0; i < table.getColumnNames().size(); ++i) {
+                                final String column = table.getColumnNames().get( i );
+                                if (columnsToFetch.contains( table.getColumnNames().get( i ) )) {
+                                    projects.add(rexBuilder.makeInputRef( ltm.getInput(), i ) );
+                                    nameMap.put( column, projects.size() - 1 );
+                                }
+                            }
+                            // Prepare subquery
+                            final ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
+                            final Convention resultConvention =
+                                    ENABLE_BINDABLE
+                                            ? BindableConvention.INSTANCE
+                                            : EnumerableConvention.INSTANCE;
+                            final LogicalProject lp = LogicalProject.create( ltm.getInput(), projects, jdbcType );
+                            final RelRoot root = RelRoot.of( lp, SqlKind.SELECT );
+                            final RelRoot routed = route( root, transaction, executionTimeMonitor );
+                            RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
+                                    RelBuilder.create( transaction, routed.rel.getCluster() ),
+                                    rexBuilder,
+                                    ViewExpanders.toRelContext( AbstractQueryProcessor.this, routed.rel.getCluster() ),
+                                    true );
+                            final RelRoot flattenedRoot = routed.withRel( typeFlattener.rewrite( routed.rel ) );
+                            final RelNode optimized = optimize( flattenedRoot, resultConvention );
+                            RelRoot optimalRoot = new RelRoot( optimized, flattenedRoot.validatedRowType, flattenedRoot.kind, flattenedRoot.fields, relCollation( flattenedRoot.rel ) );
+                            // Implement and execute subquery
+                            final PreparedResult pr = implement( optimalRoot, jdbcType );
+                            PolyphenyDbSignature scanSig = createSignature( pr, optimalRoot, resultConvention, executionTimeMonitor );
+                            final Iterable<Object> enumerable = scanSig.enumerable( transaction.getDataContext() );
+                            final Iterator<Object> iterator = enumerable.iterator();
+                            final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
+                            // Schedule the index deletions
+                            for (final Index index : indices) {
+                                final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
+                                for ( List<Object> row : rows ) {
+                                    final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                    for ( final String column : index.getColumns() ) {
+                                        rowProjection.add( row.get( nameMap.get( column ) ) );
+                                    }
+                                    rowsToDelete.add( rowProjection );
+                                }
+                                transaction.deferIndexUpdate( DeferredIndexUpdate.createDelete( index.getId(), rowsToDelete ) );
+                            }
+                            for (final Index index : reverseIndices) {
+                                final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
+                                for ( List<Object> row : rows ) {
+                                    final List<Object> rowProjection = new ArrayList<>( index.getTargetColumns().size() );
+                                    for ( final String column : index.getTargetColumns() ) {
+                                        rowProjection.add( row.get( nameMap.get( column ) ) );
+                                    }
+                                    rowsToDelete.add( rowProjection );
+                                }
+                                transaction.deferIndexUpdate( DeferredIndexUpdate.createReverseDelete( index.getId(), rowsToDelete ) );
+                            }
+                            //Schedule the index insertions for UPDATE operations
+                            if (ltm.isUpdate()) {
+                                // TODO
+                            }
+                        }
+
+                    }
+                    return super.visit( node );
+                }
+
+            };
+            final RelNode newRoot = shuttle.visit( root.rel );
+            return new RelRoot(
+                    newRoot,
+                    root.validatedRowType,
+                    root.kind,
+                    root.fields,
+                    root.collation );
+
+        }
+        return root;
+    }
+
+
     private RelRoot enforceConstraints( RelRoot logicalRoot, Statement statement ) {
         if ( !logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
             return logicalRoot;
         }
-        if ( !(logicalRoot.rel instanceof TableModify) ) {
+        if ( !(logicalRoot.rel instanceof TableModify) || !((TableModify) logicalRoot.rel).isInsert() ) {
             return logicalRoot;
         }
         final TableModify root = (TableModify) logicalRoot.rel;
 
-        if ( root.isInsert() ) {
-            final Values values = (Values) root.getInput();
-            final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
-            final RexBuilder builder = root.getCluster().getRexBuilder();
+        final Values values = (Values) root.getInput();
+        final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
+        final RexBuilder builder = root.getCluster().getRexBuilder();
 
-            final Catalog catalog = Catalog.getInstance();
-            final CatalogSchema schema = transaction.getDefaultSchema();
-            final CatalogTable table;
-            final List<CatalogConstraint> constraints;
-            final List<String> columns;
+        final Catalog catalog = Catalog.getInstance();
+        final CatalogSchema schema = transaction.getDefaultSchema();
+        final CatalogTable table;
+        final List<CatalogConstraint> constraints;
+
+        if ( root.isInsert() ) {
             try {
                 table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
                 constraints = new ArrayList<>( catalog.getConstraints( table.id ) );
@@ -365,15 +518,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
 
                 RexNode condition = builder.makeLiteral( false );
-                final Set<List<RexLiteral>> uniqueSet = new HashSet<>();
+                final Set<List<Object>> uniqueSet = new HashSet<>();
                 for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
                     RexNode rowcheck = builder.makeLiteral( true );
-                    final List<RexLiteral> rowValues = new ArrayList<>();
+                    final List<Object> rowValues = new ArrayList<>();
                     for ( final String column : constraint.key.getColumnNames() ) {
                         final RexLiteral fieldValue = row.get(
                                 values.getRowType().getField( column, false, false ).getIndex()
                         );
-                        rowValues.add( fieldValue );
+                        rowValues.add( fieldValue.getValue() );
                         RexNode comparison = builder.makeCall(
                                 SqlStdOperatorTable.EQUALS,
                                 builder.makeFieldAccess(
@@ -410,15 +563,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             final RelShuttle shuttle = new RelShuttleImpl() {
 
                 @Override
-                public RelNode visit( RelNode node) {
-                    if (node instanceof LogicalConditionalExecute) {
+                public RelNode visit( RelNode node ) {
+                    if ( node instanceof LogicalConditionalExecute ) {
                         final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
                         final Index index = IndexManager.getInstance().getIndex(
                                 lce.getCatalogSchema(),
                                 lce.getCatalogTable(),
                                 lce.getCatalogColumns()
                         );
-                        if (index != null) {
+                        if ( index != null ) {
                             final LogicalConditionalExecute visited = (LogicalConditionalExecute) super.visit( lce );
                             final Condition c = index.containsAny( lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
                             return LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c );

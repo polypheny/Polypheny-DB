@@ -2590,6 +2590,10 @@ public class CatalogImpl extends Catalog {
         return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
+    public List<CatalogIndex> getIndices( ) {
+        return new ArrayList<>( indices.values() );
+    }
+
 
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
         return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );

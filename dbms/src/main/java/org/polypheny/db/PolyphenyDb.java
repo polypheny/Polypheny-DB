@@ -23,12 +23,15 @@ import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.IndexManager;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.ExploreManager;
@@ -106,8 +109,9 @@ public class PolyphenyDb {
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
+            IndexManager.getInstance().restoreIndices( catalog, trx.getPrepareContext() );
             trx.commit();
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException | UnknownTableException | UnknownKeyException e ) {
             if ( trx != null ) {
                 try {
                     trx.rollback();

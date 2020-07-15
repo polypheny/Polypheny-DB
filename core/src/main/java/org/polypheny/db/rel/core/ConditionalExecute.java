@@ -28,7 +28,6 @@ import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexLiteral;
 
 
 public abstract class ConditionalExecute extends BiRel {
@@ -47,7 +46,7 @@ public abstract class ConditionalExecute extends BiRel {
     protected List<String> catalogColumns = null;
     @Getter
     @Setter
-    protected Set<List<RexLiteral>> values = null;
+    protected Set<List<Object>> values = null;
 
     public ConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition ) {
         super( cluster, traitSet, left, right );
