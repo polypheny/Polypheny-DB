@@ -281,6 +281,14 @@ public class InformationServerTest {
                 alternate[0] = !alternate[0];
             }
         }, 5000, 5000 );
+
+        InformationGroup textGroup = new InformationGroup( systemPage, "InformationText" );
+        im.addGroup( textGroup );
+        InformationText text1 = new InformationText( "text1", textGroup, "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas molestie vestibulum est vitae consequat. Vivamus mi dolor, faucibus nec urna sit amet, tempor varius est." );
+        im.registerInformation( text1 );
+        InformationText text2 = new InformationText( "text2", textGroup );
+        im.registerInformation( text2 );
+        text2.setText( "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas molestie vestibulum est vitae consequat. Vivamus mi dolor, faucibus nec urna sit amet, tempor varius est. " );
     }
 
 
