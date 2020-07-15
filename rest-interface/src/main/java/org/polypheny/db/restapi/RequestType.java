@@ -17,6 +17,10 @@
 package org.polypheny.db.restapi;
 
 
-public class RequestContext {
-
+public enum RequestType {
+    DELETE,
+    GET,
+    PATCH,
+    POST,
+    ;
 }

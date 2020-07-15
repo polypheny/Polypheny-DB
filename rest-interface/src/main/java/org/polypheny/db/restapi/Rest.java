@@ -55,10 +55,10 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
-import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
-import org.polypheny.db.restapi.models.requests.GetResourceRequest;
-import org.polypheny.db.restapi.models.requests.InsertValueRequest;
-import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
+import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
+import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -98,7 +98,7 @@ public class Rest {
     }
 
 
-    Map<String, Object> processGetResource( final GetResourceRequest getResourceRequest, final Request req, final Response res ) throws RestException {
+    Map<String, Object> processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
         log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
         Transaction transaction = getTransaction( false );
         RelBuilder relBuilder = RelBuilder.create( transaction );
@@ -106,24 +106,24 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         // Table Scans
-        relBuilder = this.tableScans( relBuilder, rexBuilder, getResourceRequest.tables );
+        relBuilder = this.tableScans( relBuilder, rexBuilder, resourceGetRequest.tables );
 
         // Initial projection
-        relBuilder = this.initialProjection( relBuilder, rexBuilder, getResourceRequest.requestColumns );
+        relBuilder = this.initialProjection( relBuilder, rexBuilder, resourceGetRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( relBuilder, rexBuilder, getResourceRequest.filters, req );
+        List<RexNode> filters = this.filters( relBuilder, rexBuilder, resourceGetRequest.filters, req );
         if ( filters != null ) {
             relBuilder = relBuilder.filter( filters );
         }
 
         // Aggregates
-        relBuilder = this.aggregates( relBuilder, rexBuilder, getResourceRequest.requestColumns, getResourceRequest.groupings );
+        relBuilder = this.aggregates( relBuilder, rexBuilder, resourceGetRequest.requestColumns, resourceGetRequest.groupings );
 
         // Final projection
-        relBuilder = this.finalProjection( relBuilder, rexBuilder, getResourceRequest.requestColumns );
+        relBuilder = this.finalProjection( relBuilder, rexBuilder, resourceGetRequest.requestColumns );
 
         // Sorts, limit, offset
-        relBuilder = this.sort( relBuilder, rexBuilder, getResourceRequest.sorting, getResourceRequest.limit, getResourceRequest.offset );
+        relBuilder = this.sort( relBuilder, rexBuilder, resourceGetRequest.sorting, resourceGetRequest.limit, resourceGetRequest.offset );
 
 
         log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
@@ -147,22 +147,22 @@ public class Rest {
         return finalResult;
     }
 
-    Map<String, Object> processPatchResource ( final UpdateResourceRequest updateResourceRequest, final Request req, final Response res ) throws RestException {
+    Map<String, Object> processPatchResource ( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
         RelBuilder relBuilder = RelBuilder.create( transaction );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( updateResourceRequest.tables.get( 0 ).schemaName, updateResourceRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).schemaName, resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
-        relBuilder = this.tableScans( relBuilder, rexBuilder, updateResourceRequest.tables );
+        relBuilder = this.tableScans( relBuilder, rexBuilder, resourcePatchRequest.tables );
 
 //         Initial projection
-        relBuilder = this.initialProjection( relBuilder, rexBuilder, updateResourceRequest.requestColumns );
+        relBuilder = this.initialProjection( relBuilder, rexBuilder, resourcePatchRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( relBuilder, rexBuilder, updateResourceRequest.filters, req );
+        List<RexNode> filters = this.filters( relBuilder, rexBuilder, resourcePatchRequest.filters, req );
         if ( filters != null ) {
             relBuilder = relBuilder.filter( filters );
         }
@@ -175,8 +175,8 @@ public class Rest {
         // Values
         RelDataType tableRowType = table.getRowType();
         List<RelDataTypeField> tableRows = tableRowType.getFieldList();
-        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
-        List<RexNode> rexValues = this.valuesNode( relBuilder, rexBuilder, updateResourceRequest.values, tableRows ).get( 0 );
+        List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
+        List<RexNode> rexValues = this.valuesNode( relBuilder, rexBuilder, resourcePatchRequest.values, tableRows ).get( 0 );
 
         RelNode relNode = relBuilder.build();
         TableModify tableModify = new LogicalTableModify(
@@ -205,22 +205,22 @@ public class Rest {
         return finalResult;
     }
 
-    Map<String, Object> processDeleteResource( final DeleteValueRequest deleteValueRequest, final Request req, final Response res ) throws RestException {
+    Map<String, Object> processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
         RelBuilder relBuilder = RelBuilder.create( transaction );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( deleteValueRequest.tables.get( 0 ).schemaName, deleteValueRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).schemaName, resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
-        relBuilder = this.tableScans( relBuilder, rexBuilder, deleteValueRequest.tables );
+        relBuilder = this.tableScans( relBuilder, rexBuilder, resourceDeleteRequest.tables );
 
 //         Initial projection
-        relBuilder = this.initialProjection( relBuilder, rexBuilder, deleteValueRequest.requestColumns );
+        relBuilder = this.initialProjection( relBuilder, rexBuilder, resourceDeleteRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( relBuilder, rexBuilder, deleteValueRequest.filters, req );
+        List<RexNode> filters = this.filters( relBuilder, rexBuilder, resourceDeleteRequest.filters, req );
         if ( filters != null ) {
             relBuilder = relBuilder.filter( filters );
         }
@@ -257,7 +257,7 @@ public class Rest {
         return finalResult;
     }
 
-    Map<String, Object> processPostResource( final InsertValueRequest insertValueRequest, final Request req, final Response res ) throws RestException {
+    Map<String, Object> processPostResource( final ResourcePostRequest insertValueRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
         RelBuilder relBuilder = RelBuilder.create( transaction );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();

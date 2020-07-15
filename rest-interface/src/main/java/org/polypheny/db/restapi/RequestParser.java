@@ -47,10 +47,10 @@ import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.restapi.exception.ParserException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
-import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
-import org.polypheny.db.restapi.models.requests.GetResourceRequest;
-import org.polypheny.db.restapi.models.requests.InsertValueRequest;
-import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
+import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
+import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -133,7 +133,7 @@ public class RequestParser {
     }
 
 
-    public GetResourceRequest parseGetResourceRequest( Request request, String resourceName ) throws ParserException {
+    public ResourceGetRequest parseGetResourceRequest( Request request, String resourceName ) throws ParserException {
 
         List<CatalogTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
@@ -149,20 +149,20 @@ public class RequestParser {
 
         Filters filters = this.parseFilters( request, nameMapping );
 
-        return new GetResourceRequest( tables, requestColumns, nameMapping, groupings, limit, offset, sorting, filters );
+        return new ResourceGetRequest( tables, requestColumns, nameMapping, groupings, limit, offset, sorting, filters );
     }
 
 
-    public InsertValueRequest parsePutResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
+    public ResourcePostRequest parsePutResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
         List<CatalogTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
 
-        return new InsertValueRequest( tables, requestColumns, nameMapping, values );
+        return new ResourcePostRequest( tables, requestColumns, nameMapping, values );
     }
 
-    public UpdateResourceRequest parsePatchResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
+    public ResourcePatchRequest parsePatchResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
         // TODO js: make sure there are no actual projections
@@ -173,11 +173,11 @@ public class RequestParser {
 
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
 
-        return new UpdateResourceRequest( tables, requestColumns, values, nameMapping, filters );
+        return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters );
     }
 
 
-    public DeleteValueRequest parseDeleteResourceRequest( Request request, String resourceName ) throws ParserException {
+    public ResourceDeleteRequest parseDeleteResourceRequest( Request request, String resourceName ) throws ParserException {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
 
@@ -189,7 +189,7 @@ public class RequestParser {
         Filters filters = this.parseFilters( request, nameMapping );
 
 
-        return new DeleteValueRequest( tables, requestColumns, nameMapping, filters );
+        return new ResourceDeleteRequest( tables, requestColumns, nameMapping, filters );
     }
 
 

@@ -20,19 +20,15 @@ package org.polypheny.db.restapi.models.requests;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.restapi.RequestColumn;
 import org.polypheny.db.restapi.RequestParser.Filters;
-import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.util.Pair;
 
 
 @AllArgsConstructor
-public class UpdateResourceRequest {
+public class ResourceDeleteRequest {
     public final List<CatalogTable> tables;
     public final List<RequestColumn> requestColumns;
-    public final List<List<Pair<RequestColumn, Object>>> values;
     public final Map<String, RequestColumn> nameMapping;
     public final Filters filters;
 }

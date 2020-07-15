@@ -21,20 +21,19 @@ import com.google.gson.Gson;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.StringUtils;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.restapi.exception.ParserException;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
-import org.polypheny.db.restapi.models.requests.DeleteValueRequest;
-import org.polypheny.db.restapi.models.requests.GetResourceRequest;
-import org.polypheny.db.restapi.models.requests.InsertValueRequest;
-import org.polypheny.db.restapi.models.requests.UpdateResourceRequest;
+import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
+import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.transaction.TransactionManager;
+import spark.Request;
+import spark.Response;
 import spark.Service;
 
 
@@ -69,172 +68,62 @@ public class HttpRestServer extends QueryInterface {
 
     private void restRoutes( Service restServer, Rest rest ) {
         restServer.path( "/restapi/v1", () -> {
-//            RequestInfo requestInfo;
             restServer.before( "/*", (q, a) -> {
                 log.debug( "Checking authentication of request with id: {}.", q.session().id() );
-//                RequestInfo requestInfo = new RequestInfo();
                 try {
                     CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( q );
-//                    requestInfo.setAuthenticatedUser( catalogUser );
                 } catch ( UnauthorizedAccessException e ) {
                     restServer.halt( 401, e.getMessage() );
                 }
-//                boolean authenticated = this.checkBasicAuthentication( q.headers("Authorization") );
-//                CatalogUser catalogUser = this.basicAuthentication( q.headers("Authorization") );
-//                if ( catalogUser == null ) {
-//                    log.debug( "Unauthenticated request with id: {}. Blocking with 401.", q.session().id() );
-//                    restServer.halt( 401, "Not authorized.");
-//                }
-//                requestInfo.setAuthenticatedUser( catalogUser );
             } );
 //            restServer.get( "/res", restOld::getTableList, gson::toJson );
-            restServer.get( "/res/:resName", (q, a) -> {
-                try {
-                    GetResourceRequest getResourceRequest = requestParser.parseGetResourceRequest( q, q.params( ":resName" ) );
-                    return rest.processGetResource( getResourceRequest, q, a );
-                } catch ( ParserException e ) {
-                    a.status( 400 );
-                    Map<String, Object> bodyReturn = new HashMap<>();
-                    bodyReturn.put( "system", "parser" );
-                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                    bodyReturn.put( "error_code", e.getErrorCode().code );
-                    bodyReturn.put( "error", e.getErrorCode().name );
-                    bodyReturn.put( "error_description", e.getErrorCode().description );
-                    bodyReturn.put( "violating_input", e.getViolatingInput() );
-                    return bodyReturn;
-                } catch ( RestException e ) {
-                    a.status( 400 );
-                    Map<String, Object> bodyReturn = new HashMap<>();
-                    bodyReturn.put( "system", "rest" );
-                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                    bodyReturn.put( "error_code", e.getErrorCode().code );
-                    bodyReturn.put( "error", e.getErrorCode().name );
-                    bodyReturn.put( "error_description", e.getErrorCode().description );
-                    return bodyReturn;
-                } catch ( Exception e ) {
-                    a.status( 500 );
-                    Map<String, Object> bodyReturn = new HashMap<>();
-                    bodyReturn.put( "wtf", "something's fishy" );
-                    bodyReturn.put( "exception", e.getLocalizedMessage() );
-                    bodyReturn.put( "stacktrace", e.getStackTrace() );
-                    return bodyReturn;
-                }
-            }, gson::toJson );
-            restServer.post( "/res/:resName", (q, a) -> {
-                try {
-                    InsertValueRequest insertValueRequest = requestParser.parsePutResourceRequest( q, q.params( ":resName" ), gson );
-                    return rest.processPostResource( insertValueRequest, q, a );
-                } catch ( ParserException e ) {
-                    a.status( 400 );
-                    Map<String, Object> bodyReturn = new HashMap<>();
-                    bodyReturn.put( "system", "parser" );
-                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                    bodyReturn.put( "error_code", e.getErrorCode().code );
-                    bodyReturn.put( "error", e.getErrorCode().name );
-                    bodyReturn.put( "error_description", e.getErrorCode().description );
-                    bodyReturn.put( "violating_input", e.getViolatingInput() );
-                    return bodyReturn;
-                } catch ( RestException e ) {
-                    a.status( 400 );
-                    Map<String, Object> bodyReturn = new HashMap<>();
-                    bodyReturn.put( "system", "rest" );
-                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                    bodyReturn.put( "error_code", e.getErrorCode().code );
-                    bodyReturn.put( "error", e.getErrorCode().name );
-                    bodyReturn.put( "error_description", e.getErrorCode().description );
-                    return bodyReturn;
-                }
-            }, gson::toJson );
-            restServer.delete( "/res/:resName", (q, a) -> {
-               try {
-                   DeleteValueRequest deleteValueRequest = requestParser.parseDeleteResourceRequest( q, q.params( ":resName" ) );
-                   return rest.processDeleteResource( deleteValueRequest, q, a );
-               } catch ( ParserException e ) {
-                   a.status( 400 );
-                   Map<String, Object> bodyReturn = new HashMap<>();
-                   bodyReturn.put( "system", "parser" );
-                   bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                   bodyReturn.put( "error_code", e.getErrorCode().code );
-                   bodyReturn.put( "error", e.getErrorCode().name );
-                   bodyReturn.put( "error_description", e.getErrorCode().description );
-                   bodyReturn.put( "violating_input", e.getViolatingInput() );
-                   return bodyReturn;
-               } catch ( RestException e ) {
-                   a.status( 400 );
-                   Map<String, Object> bodyReturn = new HashMap<>();
-                   bodyReturn.put( "system", "rest" );
-                   bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                   bodyReturn.put( "error_code", e.getErrorCode().code );
-                   bodyReturn.put( "error", e.getErrorCode().name );
-                   bodyReturn.put( "error_description", e.getErrorCode().description );
-                   return bodyReturn;
-               }
-            }, gson::toJson );
-            restServer.patch( "/res/:resName", (q, a) -> {
-                try {
-                    UpdateResourceRequest updateResourceRequest = requestParser.parsePatchResourceRequest( q, q.params( ":resName" ), gson );
-                    return rest.processPatchResource( updateResourceRequest, q, a );
-                } catch ( ParserException e ) {
-                    a.status( 400 );
-                    Map<String, Object> bodyReturn = new HashMap<>();
-                    bodyReturn.put( "system", "parser" );
-                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                    bodyReturn.put( "error_code", e.getErrorCode().code );
-                    bodyReturn.put( "error", e.getErrorCode().name );
-                    bodyReturn.put( "error_description", e.getErrorCode().description );
-                    bodyReturn.put( "violating_input", e.getViolatingInput() );
-                    return bodyReturn;
-                } catch ( RestException e ) {
-                    a.status( 400 );
-                    Map<String, Object> bodyReturn = new HashMap<>();
-                    bodyReturn.put( "system", "rest" );
-                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
-                    bodyReturn.put( "error_code", e.getErrorCode().code );
-                    bodyReturn.put( "error", e.getErrorCode().name );
-                    bodyReturn.put( "error_description", e.getErrorCode().description );
-                    return bodyReturn;
-                }
-            }, gson::toJson );
+            restServer.get( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName ") ), gson::toJson );
+            restServer.post( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName ") ), gson::toJson );
+            restServer.delete( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName ") ), gson::toJson );
+            restServer.patch( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName ") ), gson::toJson );
         } );
     }
 
 
-    private CatalogUser basicAuthentication( String basicAuthHeader ) {
-        if ( basicAuthHeader == null ) {
-            return null;
-        }
-
-        String[] decoded = this.decodeAuthorizationHeader( basicAuthHeader );
-
+    private Map<String, Object> processResourceRequest( Rest rest, RequestType type, Request request, Response response, String resourceName ) {
         try {
-            return this.authenticator.authenticate( decoded[0], decoded[1] );
-        } catch ( AuthenticationException e ) {
-//            e.printStackTrace();
-            return null;
+            switch ( type ) {
+                case DELETE:
+                    ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest(  request, resourceName );
+                    return rest.processDeleteResource( resourceDeleteRequest, request, response );
+                case GET:
+                    ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( request, resourceName );
+                    return rest.processGetResource( resourceGetRequest, request, response );
+                case PATCH:
+                    ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( request, resourceName, gson );
+                    return rest.processPatchResource( resourcePatchRequest, request, response );
+                case POST:
+                    ResourcePostRequest resourcePostRequest = requestParser.parsePutResourceRequest(  request, resourceName, gson );
+                    return rest.processPostResource( resourcePostRequest, request, response );
+            }
+        } catch ( ParserException e ) {
+            response.status( 400 );
+            Map<String, Object> bodyReturn = new HashMap<>();
+            bodyReturn.put( "system", "parser" );
+            bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+            bodyReturn.put( "error_code", e.getErrorCode().code );
+            bodyReturn.put( "error", e.getErrorCode().name );
+            bodyReturn.put( "error_description", e.getErrorCode().description );
+            bodyReturn.put( "violating_input", e.getViolatingInput() );
+            return bodyReturn;
+        } catch ( RestException e ) {
+            response.status( 400 );
+            Map<String, Object> bodyReturn = new HashMap<>();
+            bodyReturn.put( "system", "rest" );
+            bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+            bodyReturn.put( "error_code", e.getErrorCode().code );
+            bodyReturn.put( "error", e.getErrorCode().name );
+            bodyReturn.put( "error_description", e.getErrorCode().description );
+            return bodyReturn;
         }
+
+        log.error( "processResourceRequest should never reach this point in the code!" );
+        throw new RuntimeException( "processResourceRequest should never reach this point in the code!" );
     }
 
-    private boolean checkBasicAuthentication( String basicAuthHeader ) {
-        if ( basicAuthHeader == null ) {
-            return false;
-        }
-
-        String[] decoded = this.decodeAuthorizationHeader( basicAuthHeader );
-
-        try {
-            this.authenticator.authenticate( decoded[0], decoded[1] );
-            return true;
-        } catch ( AuthenticationException e ) {
-//            e.printStackTrace();
-            return false;
-        }
-
-    }
-
-
-    private String[] decodeAuthorizationHeader( String header ) {
-        final String encodedHeader = StringUtils.substringAfter( header, "Basic" );
-        final String decodedHeader = new String( Base64.decodeBase64( encodedHeader ) );
-        return StringUtils.splitPreserveAllTokens( decodedHeader, ":" );
-    }
 }
