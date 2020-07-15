@@ -2338,7 +2338,6 @@ public class Crud implements InformationObserver {
                 String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, table.initialName );
                 // TODO use iterator instead of Result
                 Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
-                transaction.commit();
 
                 int totalRows = tableData.getData().length;
                 int counter = 0;
@@ -2423,9 +2422,6 @@ public class Crud implements InformationObserver {
             } catch ( JsonSyntaxException e ) {
                 return new Result( resultString );
             }
-        } catch ( TransactionException e ) {
-            log.error( "Error while fetching table", e );
-            return new Result( "Error while fetching table" );
         } catch ( IOException e ) {
             log.error( "Failed to write temporary file", e );
             return new Result( "Failed to write temporary file" );
@@ -2436,6 +2432,11 @@ public class Crud implements InformationObserver {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
                 log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
+            }
+            try {
+                transaction.commit();
+            } catch ( TransactionException e ) {
+                log.error( "Error while fetching table", e );
             }
         }
     }
