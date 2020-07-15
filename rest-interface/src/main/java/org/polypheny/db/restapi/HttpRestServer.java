@@ -98,7 +98,7 @@ public class HttpRestServer extends QueryInterface {
                     ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( request, resourceName, gson );
                     return rest.processPatchResource( resourcePatchRequest, request, response );
                 case POST:
-                    ResourcePostRequest resourcePostRequest = requestParser.parsePutResourceRequest(  request, resourceName, gson );
+                    ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest(  request, resourceName, gson );
                     return rest.processPostResource( resourcePostRequest, request, response );
             }
         } catch ( ParserException e ) {

@@ -153,7 +153,7 @@ public class RequestParser {
     }
 
 
-    public ResourcePostRequest parsePutResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
+    public ResourcePostRequest parsePostResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
         List<CatalogTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
@@ -200,7 +200,8 @@ public class RequestParser {
      * @return parsed list of tables
      * @throws ParserException thrown if unable to parse table list
      */
-    public List<CatalogTable> parseTables( String tableList ) throws ParserException {
+    @VisibleForTesting
+    List<CatalogTable> parseTables( String tableList ) throws ParserException {
         log.debug( "Starting to parse table list: {}", tableList );
         String[] tableNameList = tableList.split( "," );
 
@@ -245,7 +246,8 @@ public class RequestParser {
     }
 
 
-    public List<RequestColumn> newParseProjectionsAndAggregations( Request request, List<CatalogTable> tables ) throws ParserException {
+    @VisibleForTesting
+    List<RequestColumn> newParseProjectionsAndAggregations( Request request, List<CatalogTable> tables ) throws ParserException {
         // Helper structures & data
         Map<Long, Integer> tableOffsets = new HashMap<>();
         Set<Long> validColumns = new HashSet<>();
@@ -270,7 +272,8 @@ public class RequestParser {
     }
 
 
-    private List<RequestColumn> generateRequestColumnsWithoutProject( List<CatalogTable> tables, Map<Long, Integer> tableOffsets ) {
+    @VisibleForTesting
+    List<RequestColumn> generateRequestColumnsWithoutProject( List<CatalogTable> tables, Map<Long, Integer> tableOffsets ) {
         List<RequestColumn> columns = new ArrayList<>();
         long internalPosition = 0L;
         for ( CatalogTable table : tables ) {
@@ -292,7 +295,8 @@ public class RequestParser {
     }
 
 
-    private List<RequestColumn> generateRequestColumnsWithProject( String projectionString, Map<Long, Integer> tableOffsets, Set<Long> validColumns ) throws ParserException {
+    @VisibleForTesting
+    List<RequestColumn> generateRequestColumnsWithProject( String projectionString, Map<Long, Integer> tableOffsets, Set<Long> validColumns ) throws ParserException {
         List<RequestColumn> columns = new ArrayList<>();
         int internalPosition = 0;
         Set<Long> projectedColumns = new HashSet<>();
@@ -352,7 +356,8 @@ public class RequestParser {
     }
 
 
-    private Map<String, RequestColumn> newGenerateNameMapping( List<RequestColumn> requestColumns ) {
+    @VisibleForTesting
+    Map<String, RequestColumn> newGenerateNameMapping( List<RequestColumn> requestColumns ) {
         Map<String, RequestColumn> nameMapping = new HashMap<>();
         for ( RequestColumn requestColumn : requestColumns ) {
             nameMapping.put( requestColumn.getFullyQualifiedName(), requestColumn );
@@ -364,66 +369,6 @@ public class RequestParser {
 
     private List<RequestColumn> getAggregateColumns( List<RequestColumn> requestColumns ) {
         return requestColumns.stream().filter( RequestColumn::isAggregateColumn ).collect( Collectors.toList() );
-    }
-
-
-    @Deprecated
-    public ProjectionAndAggregation parseProjectionsAndAggregations( Request request ) {
-        List<CatalogColumn> projectionColumns = new ArrayList<>();
-        List<String> projectionNames = new ArrayList<>();
-        List<Pair<CatalogColumn, SqlAggFunction>> aggregates = new ArrayList<>();
-
-        if ( ! request.queryMap().hasKey( "_project" ) ) {
-            // FIXME: how to deal with these?
-            return new ProjectionAndAggregation( new Pair<>( projectionColumns, projectionNames ), aggregates);
-//            return null;
-        }
-        QueryParamsMap projectionMap = request.queryMap().get( "_project" );
-        String[] possibleProjectionValues = projectionMap.values();
-        String possibleProjectionsString = possibleProjectionValues[0];
-        log.debug( "Starting to parse projection: {}", possibleProjectionsString );
-
-        String[] possibleProjections = possibleProjectionsString.split( "," );
-
-//        List<CatalogColumn> aggregateColumns = new ArrayList<>();
-//        List<SqlAggFunction> aggregateFunctions = new ArrayList<>();
-
-        for ( String projectionToParse : possibleProjections ) {
-            Matcher matcher = PROJECTION_ENTRY_PATTERN.matcher( projectionToParse );
-            if ( matcher.find() ) {
-                String columnName = matcher.group( "column" );
-                CatalogColumn catalogColumn;
-
-                try {
-                    catalogColumn = this.getCatalogColumnFromString( columnName );
-                    log.debug( "Fetched catalog column for projection key: {}.", columnName );
-                } catch ( GenericCatalogException | UnknownColumnException e ) {
-                    log.warn( "Unable to fetch column: {}.", columnName, e );
-                    return null; // FIXME
-                }
-
-                projectionColumns.add( catalogColumn );
-
-                if ( matcher.group( "alias" ) == null ) {
-                    // We only have a qualified name
-                    projectionNames.add( columnName );
-                } else {
-                    projectionNames.add( matcher.group( "alias" ) );
-
-                    if ( matcher.group( "agg" ) != null ) {
-                        aggregates.add( new Pair<>( catalogColumn, this.decodeAggregateFunction( matcher.group( "agg" ) ) ) );
-//                        aggregateColumns.add( catalogColumn );
-//                        aggregateFunctions.add( this.decodeAggregateFunction( matcher.group( "agg" ) ) );
-                    }
-                }
-            } else {
-                // FIXME: Proper error handling
-            }
-        }
-
-
-
-        return new ProjectionAndAggregation( new Pair<>( projectionColumns, projectionNames ), aggregates);
     }
 
 
@@ -462,7 +407,8 @@ public class RequestParser {
     }
 
 
-    public List<Pair<RequestColumn, Boolean>> parseSorting( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
+    @VisibleForTesting
+    List<Pair<RequestColumn, Boolean>> parseSorting( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
         if ( ! request.queryMap().hasKey( "_sort" ) ) {
             log.debug( "Request does not contain a sort. Returning null." );
             return null;
@@ -505,7 +451,8 @@ public class RequestParser {
     }
 
 
-    public List<RequestColumn> parseGroupings( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
+    @VisibleForTesting
+    List<RequestColumn> parseGroupings( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
         if ( ! request.queryMap().hasKey( "_groupby" ) ) {
             log.debug( "Request does not contain a grouping. Returning null." );
             return new ArrayList<>();
@@ -530,7 +477,8 @@ public class RequestParser {
     }
 
 
-    public Integer parseLimit( Request request ) throws ParserException {
+    @VisibleForTesting
+    Integer parseLimit( Request request ) throws ParserException {
         if ( ! request.queryMap().hasKey( "_limit" ) ) {
             log.debug( "Request does not contain a limit. Returning -1." );
             return -1;
@@ -548,7 +496,8 @@ public class RequestParser {
     }
 
 
-    public Integer parseOffset( Request request ) throws ParserException {
+    @VisibleForTesting
+    Integer parseOffset( Request request ) throws ParserException {
         if ( ! request.queryMap().hasKey( "_offset" ) ) {
             log.debug( "Request does not contain an offset. Returning -1." );
             return -1;
@@ -558,6 +507,7 @@ public class RequestParser {
 
         return this.parseOffset( possibleOffsetValues[0] );
     }
+
 
     @VisibleForTesting
     Integer parseOffset( String offsetString ) throws ParserException {
@@ -571,7 +521,8 @@ public class RequestParser {
     }
 
 
-    public Filters parseFilters( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
+    @VisibleForTesting
+    Filters parseFilters( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
         Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters = new HashMap<>();
         Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters = new HashMap<>();
 
@@ -701,7 +652,8 @@ public class RequestParser {
     }
 
 
-    public List<List<Pair<RequestColumn, Object>>> parseValues( Request request, Gson gson, Map<String, RequestColumn> nameMapping ) throws ParserException {
+    @VisibleForTesting
+    List<List<Pair<RequestColumn, Object>>> parseValues( Request request, Gson gson, Map<String, RequestColumn> nameMapping ) throws ParserException {
         // FIXME: Verify stuff like applications/json, so on, so forth
         Object bodyObject = gson.fromJson( request.body(), Object.class );
         Map bodyMap = (Map) bodyObject;
@@ -767,12 +719,6 @@ public class RequestParser {
         return nameMapping;
     }
 
-
-    @AllArgsConstructor
-    public static class ProjectionAndAggregation {
-        public final Pair<List<CatalogColumn>, List<String>> projection;
-        public final List<Pair<CatalogColumn, SqlAggFunction>> aggregateFunctions;
-    }
 
     @AllArgsConstructor
     public static class Filters {
