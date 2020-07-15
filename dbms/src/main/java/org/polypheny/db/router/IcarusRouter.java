@@ -51,6 +51,7 @@ import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -307,7 +308,7 @@ public class IcarusRouter extends AbstractRouter {
             // Processing queue size
             InformationGroup processingQueueGroup = new InformationGroup( page, "Processing Queue" );
             im.addGroup( processingQueueGroup );
-            InformationHtml processingQueueSize = new InformationHtml(
+            InformationText processingQueueSize = new InformationText(
                     processingQueueGroup,
                     "Processing queue size: " + processingQueue.size() );
             im.registerInformation( processingQueueSize );
@@ -337,7 +338,7 @@ public class IcarusRouter extends AbstractRouter {
                     routingTableElement.addRow( row );
                 } );
                 // Update processing queue size
-                processingQueueSize.updateHtml( "Processing queue size: " + processingQueue.size() );
+                processingQueueSize.setText( "Processing queue size: " + processingQueue.size() );
             } );
 
             // Background Task

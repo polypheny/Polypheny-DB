@@ -18,16 +18,28 @@ package org.polypheny.db.information;
 
 
 import java.util.HashMap;
+import java.util.UUID;
 
 
 public class InformationKeyValue extends Information {
 
     HashMap<String, String> keyValuePairs = new HashMap<>();
 
+
     /**
      * Constructor
      *
-     * @param id Unique id for this Information object
+     * @param group The InformationGroup to which this information belongs
+     */
+    InformationKeyValue( InformationGroup group ) {
+        super( UUID.randomUUID().toString(), group.getId() );
+    }
+
+
+    /**
+     * Constructor
+     *
+     * @param id    Unique id for this Information object
      * @param group The InformationGroup to which this information belongs
      */
     InformationKeyValue( String id, InformationGroup group ) {
