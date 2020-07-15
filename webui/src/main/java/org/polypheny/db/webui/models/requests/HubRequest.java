@@ -37,7 +37,7 @@ public class HubRequest {
     //editDataset
     public String name;
     public String description;
-    public boolean pub;//public
+    public int pub;//public
 
     //uploadDataset
     public String dataset;
