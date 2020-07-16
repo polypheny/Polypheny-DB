@@ -2165,6 +2165,8 @@ public class Crud implements InformationObserver {
 
             transaction = getTransaction();
 
+            Status status = new Status( "tableImport", request.tables.size() );
+            int ithTable = 0;
             for( TableMapping m : request.tables.values() ) {
                 //create table from json
                 Path jsonPath = Paths.get( new File( extractedFolder, m.initialName + ".json" ).getPath() );
@@ -2179,7 +2181,7 @@ public class Crud implements InformationObserver {
                     //todo check
                 }
                 // import data from .csv file
-                importCsvFile( m.initialName + ".csv", table, transaction, extractedFolder, request, newName );
+                importCsvFile( m.initialName + ".csv", table, transaction, extractedFolder, request, newName, status, ithTable++ );
             }
 
             transaction.commit();
@@ -2244,7 +2246,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private void importCsvFile ( final String csvFileName, final JsonTable table, final Transaction transaction, final File extractedFolder, final HubRequest request, final String tableName ) throws IOException, QueryExecutionException {
+    private void importCsvFile ( final String csvFileName, final JsonTable table, final Transaction transaction, final File extractedFolder, final HubRequest request, final String tableName, final Status status, final int ithTable ) throws IOException, QueryExecutionException {
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         for ( JsonColumn col : table.getColumns() ) {
             columnJoiner.add( "\"" + col.columnName + "\"" );
@@ -2262,7 +2264,6 @@ public class Crud implements InformationObserver {
                 CSVReader csvReader = new CSVReader( reader );
         ) {
             long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
-            Status status = new Status( "tableImport", lineCount );
             String[] nextRecord;
             while ( (nextRecord = csvReader.readNext()) != null ) {
                 rowJoiner = new StringJoiner( ",", "(", ")" );
@@ -2285,14 +2286,14 @@ public class Crud implements InformationObserver {
                     String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
                     executeSqlUpdate( transaction, insertQuery );
                     valueJoiner = new StringJoiner( ",", "VALUES", "" );
-                    status.setStatus( csvCounter );
+                    status.setStatus( csvCounter, lineCount, ithTable );
                     WebSocket.broadcast( gson.toJson( status, Status.class ) );
                 }
             }
             if ( csvCounter % BATCH_SIZE != 0 ) {
                 String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
                 executeSqlUpdate( transaction, insertQuery );
-                status.complete();
+                status.setStatus( csvCounter, lineCount, ithTable );
                 WebSocket.broadcast( gson.toJson( status, Status.class ) );
             }
         }
@@ -2319,6 +2320,9 @@ public class Crud implements InformationObserver {
         File catalogFile;
         ArrayList<File> tableFiles = new ArrayList<>();
         ArrayList<File> catalogFiles = new ArrayList<>();
+        final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
+        int ithTable = 0;
+        Status status = new Status( "tableExport", request.tables.size() );
         try {
             for( TableMapping table: request.tables.values() ) {
                 tableFile = new File( tempDir, table.initialName + ".csv" );
@@ -2341,7 +2345,6 @@ public class Crud implements InformationObserver {
 
                 int totalRows = tableData.getData().length;
                 int counter = 0;
-                Status status = new Status( "tableExport", totalRows );
                 for ( String[] row : tableData.getData() ) {
                     int cols = row.length;
                     for ( int i = 0; i < cols; i++ ) {
@@ -2358,17 +2361,19 @@ public class Crud implements InformationObserver {
                         }
                     }
                     counter++;
-                    if ( counter % 100 == 0 ) {
-                        status.setStatus( counter );
+                    if ( counter % BATCH_SIZE == 0 ) {
+                        status.setStatus( counter, totalRows, ithTable );
                         WebSocket.broadcast( gson.toJson( status, Status.class ) );
                     }
                 }
-                status.complete();
+                status.setStatus( counter, totalRows, ithTable );
                 WebSocket.broadcast( gson.toJson( status, Status.class ) );
                 tableStream.flush();
                 tableStream.close();
                 metaData.addTable( table.initialName, counter );
+                ithTable++;
             }
+            status.complete();
 
             File zipFile = new File( tempDir, "table.zip" );
             FileOutputStream zipStream = new FileOutputStream( zipFile );
