@@ -61,7 +61,11 @@ public class InformationManager {
 
         // Add the information page about the information manager itself
         if ( instanceId.equals( MAIN_MANAGER_IDENTIFIER ) ) {
-            InformationPage page = new InformationPage( "InformationManager", "Information Manager", "Information about the information manager itself." );
+            InformationPage page = new InformationPage(
+                    "InformationManager",
+                    "Information Manager",
+                    "Information about the information manager itself." );
+            page.fullWidth();
             this.addPage( page );
             // Running instances
             InformationGroup runningInstancesGroup = new InformationGroup( page, "Instances" );

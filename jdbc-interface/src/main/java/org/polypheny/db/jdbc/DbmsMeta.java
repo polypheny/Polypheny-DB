@@ -147,7 +147,7 @@ public class DbmsMeta implements ProtobufMeta {
         this.authenticator = authenticator;
 
         // ------ Information Manager -----------
-        final InformationPage informationPage = new InformationPage( "JDBC Interface" );
+        final InformationPage informationPage = new InformationPage( "JDBC Interface" ).fullWidth();
         final InformationGroup informationGroupConnection = new InformationGroup( informationPage, "Connections" );
 
         InformationManager im = InformationManager.getInstance();

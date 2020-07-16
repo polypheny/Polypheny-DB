@@ -17,17 +17,26 @@
 package org.polypheny.db.information;
 
 
+import java.util.UUID;
 import lombok.Getter;
 
 
 public class InformationText extends Information {
 
     @Getter
-    String text;
+    private String text;
+
+
+    public InformationText( final InformationGroup group, final String text ) {
+        super( UUID.randomUUID().toString(), group.getId() );
+        this.text = text;
+    }
+
 
     public InformationText( final String id, final InformationGroup group ) {
         super( id, group.getId() );
     }
+
 
     public InformationText( final String id, final InformationGroup group, final String text ) {
         super( id, group.getId() );

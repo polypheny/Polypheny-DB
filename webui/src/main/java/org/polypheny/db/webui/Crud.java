@@ -110,12 +110,12 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.information.Information;
-import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationStacktrace;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
@@ -709,19 +709,19 @@ public class Crud implements InformationObserver {
         if ( queryAnalyzer != null ) {
             InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
             InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-            InformationHtml html;
+            InformationText text;
             if ( executionTime < 1e4 ) {
-                html = new InformationHtml( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
                 DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
                 String durationText = df.format( new Date( millis ) );
-                html = new InformationHtml( g1, String.format( "Execution time: %s", durationText ) );
+                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
             }
             queryAnalyzer.addPage( p1 );
             queryAnalyzer.addGroup( g1 );
-            queryAnalyzer.registerInformation( html );
+            queryAnalyzer.registerInformation( text );
         }
 
         return results;
