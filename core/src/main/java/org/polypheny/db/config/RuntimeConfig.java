@@ -52,13 +52,6 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN
     ), // Druid
 
-    AUTO_TEMP(
-            "runtime/autoTemp",
-            "Whether to store query results in temporary tables.",
-            false,
-            ConfigType.BOOLEAN
-    ),
-
     CASE_SENSITIVE(
             "runtime/caseSensitive",
             "Whether identifiers are matched case-sensitively.",
@@ -109,7 +102,8 @@ public enum RuntimeConfig {
     QUERY_TIMEOUT( "runtime/queryTimeout",
             "Time after which queries are aborted. 0 means infinite.",
             0,
-            ConfigType.INTEGER ),
+            ConfigType.INTEGER,
+            "runtimExecutionGroup" ),
 
     DEFAULT_INDEX_TYPE( "runtime/defaultIndexType",
             "Index type to use if no type is specified in the create index statement.",
@@ -146,57 +140,68 @@ public enum RuntimeConfig {
     JOIN_COMMUTE( "runtime/joinCommute",
             "Commute joins in planner.",
             false,
-            ConfigType.BOOLEAN ),
+            ConfigType.BOOLEAN,
+            "planningGroup" ),
 
     TWO_PC_MODE( "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
             ConfigType.BOOLEAN,
-            "consistencyGroup" ),
+            "runtimExecutionGroup" ),
+
     DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
             true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
+
     ACTIVE_TRACKING( "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
             true,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
+
     PASSIVE_TRACKING( "statistics/passiveTracking",
             "Reevaluates statistics for all columns constantly, after a set time interval.",
             false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
+
     STATISTIC_BUFFER( "statistics/statisticColumnBuffer",
             "Number of buffered statistics e.g. for unique values.",
             5,
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
+
     UNIQUE_VALUES( "statistics/maxCharUniqueVal",
             "Maximum character of unique values",
             10,
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
+
     STATISTIC_RATE( "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
             BackgroundTask.TaskSchedulingType.EVERY_THIRTY_SECONDS,
             ConfigType.ENUM ),
+
     EXPLORE_BY_EXAMPLE_TO_SQL( "exploreByExample/classificationToSQL",
             "Build SQL query from classification.",
             true,
             ConfigType.BOOLEAN,
             "exploreByExampleGroup" ),
+
     UI_PAGE_SIZE( "ui/pageSize",
             "Number of rows per page in the data view.",
             10,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
+
     HUB_IMPORT_BATCH_SIZE( "hub/hubImportBatchSize",
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
             100,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
+
     SCHEMA_CACHING( "runtime/schemaCaching",
             "Cache polypheny-db schema",
             true,
@@ -230,10 +235,10 @@ public enum RuntimeConfig {
                 "runtimePage",
                 "Runtime Settings",
                 "Settings influencing the runtime behavior of the whole system." );
-        final WebUiGroup consistencyGroup = new WebUiGroup( "consistencyGroup", runtimePage.getId() );
-        consistencyGroup.withTitle( "Consistency" );
+        final WebUiGroup runtimExecutionGroup = new WebUiGroup( "runtimExecutionGroup", runtimePage.getId() );
+        runtimExecutionGroup.withTitle( "Query Execution" );
         configManager.registerWebUiPage( runtimePage );
-        configManager.registerWebUiGroup( consistencyGroup );
+        configManager.registerWebUiGroup( runtimExecutionGroup );
 
         // Statistics and dynamic querying settings
         final WebUiPage queryStatisticsPage = new WebUiPage(
