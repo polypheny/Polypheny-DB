@@ -1954,16 +1954,18 @@ public class Crud implements InformationObserver {
             return new Result( e );
         }
 
-        ArrayList<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
-            String[] temp = new String[row.size()];
-            int counter = 0;
-            for ( Object o : row ) {
-                temp[counter] = o.toString();
-                counter++;
-            }
-            data.add( temp );
+        DbColumn[] header = new DbColumn[signature.columns.size()];
+        int counter = 0;
+        for ( ColumnMetaData col : signature.columns ) {
+            header[counter++] = new DbColumn( col.columnName,
+                    col.type.name,
+                    col.nullable == ResultSetMetaData.columnNullable,
+                    col.displaySize,
+                    null,
+                    null );
         }
+
+        ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ) );
 
         try {
             transaction.commit();
@@ -1972,11 +1974,6 @@ public class Crud implements InformationObserver {
             throw new RuntimeException( e );
         }
 
-        DbColumn[] header = new DbColumn[signature.columns.size()];
-        int counter = 0;
-        for ( ColumnMetaData col : signature.columns ) {
-            header[counter++] = new DbColumn( col.columnName );
-        }
         return new Result( header, data.toArray( new String[0][] ) );
     }
 
@@ -2557,43 +2554,7 @@ public class Crud implements InformationObserver {
                 header.add( dbCol );
             }
 
-            ArrayList<String[]> data = new ArrayList<>();
-            for ( List<Object> row : rows ) {
-                String[] temp = new String[row.size()];
-                int counter = 0;
-                for ( Object o : row ) {
-                    if ( o == null ) {
-                        temp[counter] = null;
-                    } else {
-                        switch ( header.get( counter ).dataType ) {
-                            case "TIMESTAMP":
-                                temp[counter] = TimestampString.fromMillisSinceEpoch( (long) o ).toString();
-                                break;
-                            case "DATE":
-                                temp[counter] = DateString.fromDaysSinceEpoch( (int) o ).toString();
-                                break;
-                            case "TIME":
-                                temp[counter] = TimeString.fromMillisOfDay( (int) o ).toString();
-                                break;
-                            default:
-                                temp[counter] = o.toString();
-                        }
-                        if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
-                            if ( o instanceof Array ) {
-                                try {
-                                    temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
-                                } catch ( SQLException sqlException ) {
-                                    temp[counter] = o.toString();
-                                }
-                            } else {
-                                temp[counter] = o.toString();
-                            }
-                        }
-                    }
-                    counter++;
-                }
-                data.add( temp );
-            }
+            ArrayList<String[]> data = computeResultData( rows, header );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) ).setHasMoreRows( hasMoreRows );
         } finally {
@@ -2603,6 +2564,53 @@ public class Crud implements InformationObserver {
                 log.error( "Exception while closing result iterator", e );
             }
         }
+    }
+
+
+    /**
+     * Convert data from a query result to Strings readable in the UI
+     * @param rows Rows from the enumerable iterator
+     * @param header Header from the UI-ResultSet
+     */
+    ArrayList<String[]> computeResultData ( final List<List<Object>> rows, final List<DbColumn> header ) {
+        ArrayList<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( Object o : row ) {
+                if ( o == null ) {
+                    temp[counter] = null;
+                } else {
+                    switch ( header.get( counter ).dataType ) {
+                        case "TIMESTAMP":
+                            temp[counter] = TimestampString.fromMillisSinceEpoch( (long) o ).toString();
+                            break;
+                        case "DATE":
+                            temp[counter] = DateString.fromDaysSinceEpoch( (int) o ).toString();
+                            break;
+                        case "TIME":
+                            temp[counter] = TimeString.fromMillisOfDay( (int) o ).toString();
+                            break;
+                        default:
+                            temp[counter] = o.toString();
+                    }
+                    if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
+                        if ( o instanceof Array ) {
+                            try {
+                                temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
+                            } catch ( SQLException sqlException ) {
+                                temp[counter] = o.toString();
+                            }
+                        } else {
+                            temp[counter] = o.toString();
+                        }
+                    }
+                }
+                counter++;
+            }
+            data.add( temp );
+        }
+        return data;
     }
 
 
