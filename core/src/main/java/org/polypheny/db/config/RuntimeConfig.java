@@ -152,7 +152,7 @@ public enum RuntimeConfig {
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
             ConfigType.BOOLEAN,
-            "runtimeGroup" ),
+            "consistencyGroup" ),
     DYNAMIC_QUERYING( "statistics/useDynamicQuerying",
             "Use statistics for query assistance.",
             true,
@@ -218,7 +218,9 @@ public enum RuntimeConfig {
                 "Query Processing",
                 "Settings influencing the query processing." );
         final WebUiGroup planningGroup = new WebUiGroup( "planningGroup", processingPage.getId() );
+        planningGroup.withTitle( "Query Planning" );
         final WebUiGroup parsingGroup = new WebUiGroup( "parsingGroup", processingPage.getId() );
+        parsingGroup.withTitle( "Query Parsing" );
         configManager.registerWebUiPage( processingPage );
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
@@ -227,17 +229,19 @@ public enum RuntimeConfig {
         final WebUiPage runtimePage = new WebUiPage(
                 "runtimePage",
                 "Runtime Settings",
-                "Core Settings" );
-        final WebUiGroup runtimeGroup = new WebUiGroup( "runtimeGroup", runtimePage.getId() );
+                "Settings influencing the runtime behavior of the whole system." );
+        final WebUiGroup consistencyGroup = new WebUiGroup( "consistencyGroup", runtimePage.getId() );
+        consistencyGroup.withTitle( "Consistency" );
         configManager.registerWebUiPage( runtimePage );
-        configManager.registerWebUiGroup( runtimeGroup );
+        configManager.registerWebUiGroup( consistencyGroup );
 
         // Statistics and dynamic querying settings
         final WebUiPage queryStatisticsPage = new WebUiPage(
                 "queryStatisticsPage",
                 "Dynamic Querying",
-                "Statistics Settings which can assists with building a query with dynamic assistance." );
-        final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() ).withTitle( "Statistics Settings" );
+                "Settings for the dynamic querying component." );
+        final WebUiGroup statisticSettingsGroup = new WebUiGroup( "statisticSettingsGroup", queryStatisticsPage.getId() );
+        statisticSettingsGroup.withTitle( "Statistics Settings" );
         configManager.registerWebUiPage( queryStatisticsPage );
         configManager.registerWebUiGroup( statisticSettingsGroup );
 
@@ -246,16 +250,18 @@ public enum RuntimeConfig {
                 "exploreByExamplePage",
                 "Explore by Example",
                 "Settings for the Explore-by-Example component." );
-        final WebUiGroup exploreByExampleGroup = new WebUiGroup( "exploreByExampleGroup", exploreByExamplePage.getId() ).withTitle( "Explore by Example" );
+        final WebUiGroup exploreByExampleGroup = new WebUiGroup( "exploreByExampleGroup", exploreByExamplePage.getId() );
+        exploreByExampleGroup.withTitle( "Explore by Example" );
         configManager.registerWebUiPage( exploreByExamplePage );
         configManager.registerWebUiGroup( exploreByExampleGroup );
 
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(
                 "uiSettings",
-                "Polypheny UI",
+                "Polypheny-UI",
                 "Settings for the user interface." );
-        final WebUiGroup uiSettingsDataViewGroup = new WebUiGroup( "uiSettingsDataViewGroup", uiSettingsPage.getId() ).withTitle( "Data View" );
+        final WebUiGroup uiSettingsDataViewGroup = new WebUiGroup( "uiSettingsDataViewGroup", uiSettingsPage.getId() );
+        uiSettingsDataViewGroup.withTitle( "Data View" );
         configManager.registerWebUiPage( uiSettingsPage );
         configManager.registerWebUiGroup( uiSettingsDataViewGroup );
     }
