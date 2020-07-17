@@ -387,6 +387,21 @@ public class Crud implements InformationObserver {
     }
 
 
+    Result renameTable ( final Request req, final Response res ) {
+        Index table = this.gson.fromJson( req.body(), Index.class );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getSchema(), table.getTable(), table.getName() );
+        Transaction transaction = getTransaction();
+        Result result;
+        try {
+            int rows = executeSqlUpdate( transaction, query );
+            result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
+        } catch ( QueryExecutionException e ) {
+            result = new Result( e );
+        }
+        return result;
+    }
+
+
     /**
      * Drop or truncate a table
      */
