@@ -16,19 +16,23 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 
 
-public class IndexManager implements PropertyChangeListener {
+public class IndexManager {
 
     private static final IndexManager INSTANCE = new IndexManager();
 
-    private Context context = null;
     private final Map<Long, Index> indexById = new HashMap<>();
     private final Map<String, Index> indexByName = new HashMap<>();
+    private TransactionManager transactionManager = null;
 
 
     public static IndexManager getInstance() {
@@ -41,62 +45,40 @@ public class IndexManager implements PropertyChangeListener {
     }
 
 
-    public void restoreIndices( final Catalog catalog, final Context context ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException {
-        catalog.addObserver( this );
-        this.context = context;
-        for ( final CatalogIndex index : catalog.getIndices() ) {
+    public void initialize( final TransactionManager transactionManager ) {
+        this.transactionManager = transactionManager;
+    }
+
+
+    public void restoreIndices() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException {
+        for ( final CatalogIndex index : Catalog.getInstance().getIndices() ) {
+            System.err.println( "Restoring index: " + index.name );
             addIndex( index );
         }
     }
 
 
-    @Override
-    public void propertyChange( PropertyChangeEvent propertyChangeEvent ) {
-        // TODO(s3lph): There are separate keys for indexes, so this never gives us the actual primary or foreign key objects
-        if ( !"index".equals( propertyChangeEvent.getPropertyName() ) ) {
-            return;
-        }
-        if ( propertyChangeEvent.getNewValue() == null && propertyChangeEvent.getOldValue() != null ) {
-            assert propertyChangeEvent.getOldValue() instanceof CatalogKey;
-            final long keyId = ((CatalogKey) propertyChangeEvent.getOldValue()).id;
-            indexById.remove( keyId );
-        } else if ( propertyChangeEvent.getNewValue() != null && propertyChangeEvent.getOldValue() == null ) {
-            assert propertyChangeEvent.getNewValue() instanceof Long;
-            final long keyId = (long) propertyChangeEvent.getNewValue();
-            final CatalogKey catalogKey = Catalog.getInstance().getKeys().stream().filter( k -> k.id == keyId ).findFirst().orElse( null );
-            if ( catalogKey == null ) {
-                return;
-            }
-            for ( final CatalogIndex index : Catalog.getInstance().getIndices( catalogKey ) ) {
-                if ( this.indexById.get( index.keyId ) == null ) {
-                    try {
-                        this.addIndex( index );
-                    } catch ( UnknownSchemaException | GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
+    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException {
+        addIndex( index, null );
+    }
+
+    public void addIndex( final CatalogIndex index, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException {
+        addIndex( index.id, index.name, index.key, index.type, index.unique, transaction );
     }
 
 
-    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException {
-        addIndex( context, index.id, index.name, index.key, index.type, index.unique );
-    }
-
-
-    protected void addIndex( final Context context, final long id, final String name, final CatalogKey key, final IndexType type, final boolean unique ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException {
+    protected void addIndex( final long id, final String name, final CatalogKey key, final IndexType type, final boolean unique, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException {
         // TODO(s3lph): INDEX TYPES
         final Index index;
-        if ( key instanceof CatalogPrimaryKey ) {
+        if ( Catalog.getInstance().isPrimaryKey( key.id ) ) {
             index = new HashIndex(
                     id, name, unique, Catalog.getInstance().getSchema( key.schemaId ),
                     Catalog.getInstance().getTable( key.tableId ),
                     Catalog.getInstance().getTable( key.tableId ),
                     key.getColumnNames(),
                     key.getColumnNames() );
-        } else if (key instanceof CatalogForeignKey ) {
-            final CatalogForeignKey cfk = (CatalogForeignKey) key;
+        } else if (Catalog.getInstance().isForeignKey( key.id ) ) {
+            final CatalogForeignKey cfk = Catalog.getInstance().getForeignKeys( key.tableId ).stream().filter( x -> x.id == key.id ).findFirst().get();
             index = new HashIndex(
                     id, name, unique, Catalog.getInstance().getSchema( key.schemaId ),
                     Catalog.getInstance().getTable( key.tableId ),
@@ -116,7 +98,17 @@ public class IndexManager implements PropertyChangeListener {
         }
         indexById.put( id, index );
         indexByName.put( name, index );
-        index.rebuild( context );
+        final Transaction tx = transaction != null ? transaction : transactionManager.startTransaction( "pa", "APP", false );
+        index.rebuild( tx );
+    }
+
+    public void deleteIndex( final CatalogIndex index) {
+        deleteIndex( index.id );
+    }
+
+    public void deleteIndex( final long indexId ) {
+        final Index idx = indexById.remove( indexId );
+        indexByName.remove( idx.name );
     }
 
 

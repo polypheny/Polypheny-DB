@@ -744,6 +744,14 @@ public abstract class Catalog {
     public abstract CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException;
 
     /**
+     * Returns the index with the specified id
+     *
+     * @param indexId The id of the index
+     * @return The Index
+     */
+    public abstract CatalogIndex getIndex( long indexId ) throws UnknownIndexException;
+
+    /**
      * Checks if there is an index with the specified name in the specified table.
      *
      * @param tableId The id of the table

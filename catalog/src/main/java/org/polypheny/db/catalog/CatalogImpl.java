@@ -2301,6 +2301,22 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns the index with the specified id
+     *
+     * @param indexId The id of the index
+     * @return The Index
+     */
+    @Override
+    public CatalogIndex getIndex( long indexId ) throws UnknownIndexException {
+        try {
+            return indices.values().stream().filter( i -> i.id == indexId ).findFirst().orElseThrow( NullPointerException::new );
+        } catch ( NullPointerException e ) {
+            throw new UnknownIndexException( indexId );
+        }
+    }
+
+
+    /**
      * Checks if there is an index with the specified name in the specified table.
      *
      * @param tableId The id of the table

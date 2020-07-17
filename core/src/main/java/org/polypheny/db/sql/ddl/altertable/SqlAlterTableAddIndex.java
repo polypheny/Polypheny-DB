@@ -22,14 +22,20 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.adapter.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -119,8 +125,9 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                 throw SqlUtil.newContextException( indexName.getParserPosition(), RESOURCE.indexExists( indexName.getSimple() ) );
             }
 
-            Catalog.getInstance().addIndex( catalogTable.id, columnIds, unique, type, indexName.getSimple() );
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownIndexTypeException e ) {
+            final long indexId = Catalog.getInstance().addIndex( catalogTable.id, columnIds, unique, type, indexName.getSimple() );
+            IndexManager.getInstance().addIndex( Catalog.getInstance().getIndex( indexId ), transaction );
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownIndexTypeException | UnknownIndexException | UnknownSchemaException | UnknownTableException | UnknownKeyException | UnknownUserException | UnknownDatabaseException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -109,8 +109,9 @@ public class PolyphenyDb {
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
-            IndexManager.getInstance().restoreIndices( catalog, trx.getPrepareContext() );
             trx.commit();
+            IndexManager.getInstance().initialize( transactionManager );
+            IndexManager.getInstance().restoreIndices();
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException | UnknownTableException | UnknownKeyException e ) {
             if ( trx != null ) {
                 try {

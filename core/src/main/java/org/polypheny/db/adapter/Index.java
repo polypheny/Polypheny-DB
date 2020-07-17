@@ -19,10 +19,8 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -30,17 +28,13 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
@@ -88,8 +82,7 @@ public abstract class Index {
     /**
      * Trigger an index rebuild, e.g. at crash recovery.
      */
-    public void rebuild( Context context ) {
-        final Transaction transaction = context.getTransaction();
+    public void rebuild( final Transaction transaction ) {
         // Prepare query
         final RelBuilder builder = RelBuilder.create( transaction );
         List<String> cols = new ArrayList<>( columns );
@@ -100,7 +93,7 @@ public abstract class Index {
                 .scan( table.name )
                 .project( columns.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
-        final QueryProcessor processor = context.getTransaction().getQueryProcessor();
+        final QueryProcessor processor = transaction.getQueryProcessor();
         final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, SqlKind.SELECT ) );
         // Execute query
         final Iterable<Object> enumerable = signature.enumerable( transaction.getDataContext() );
