@@ -906,10 +906,9 @@ public class CatalogImpl extends Catalog {
     @Override
     public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws GenericCatalogException {
         try {
-            CatalogDatabase database = Objects.requireNonNull( databases.get( databaseId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
             long id = schemaIdBuilder.getAndIncrement();
-            CatalogSchema schema = new CatalogSchema( id, name, databaseId, database.name, ownerId, owner.name, schemaType );
+            CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, schemaType );
             synchronized ( this ) {
                 schemas.put( id, schema );
                 schemaNames.put( new Object[]{ databaseId, name }, schema );
@@ -1191,9 +1190,7 @@ public class CatalogImpl extends Catalog {
                     ImmutableList.of(),
                     ImmutableList.of(),
                     schemaId,
-                    schema.name,
                     schema.databaseId,
-                    schema.databaseName,
                     ownerId,
                     owner.name,
                     tableType,
@@ -1365,9 +1362,7 @@ public class CatalogImpl extends Catalog {
             CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
                     column.tableId,
-                    column.tableName,
                     columnId,
-                    column.name,
                     storeId,
                     store.uniqueName,
                     placementType,
@@ -1482,9 +1477,7 @@ public class CatalogImpl extends Catalog {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
                     old.tableId,
-                    old.tableName,
                     old.columnId,
-                    old.columnName,
                     old.storeId,
                     old.storeUniqueName,
                     placementType,
@@ -1516,9 +1509,7 @@ public class CatalogImpl extends Catalog {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
                     old.tableId,
-                    old.tableName,
                     old.columnId,
-                    old.columnName,
                     old.storeId,
                     old.storeUniqueName,
                     old.placementType,
@@ -1668,11 +1659,8 @@ public class CatalogImpl extends Catalog {
                     id,
                     name,
                     tableId,
-                    table.name,
                     table.schemaId,
-                    table.schemaName,
                     table.databaseId,
-                    table.databaseName,
                     position,
                     type,
                     collectionsType,
@@ -2160,22 +2148,14 @@ public class CatalogImpl extends Catalog {
                                 keyId,
                                 constraintName,
                                 tableId,
-                                table.name,
                                 table.schemaId,
-                                table.schemaName,
                                 table.databaseId,
-                                table.databaseName,
                                 refKey.id,
                                 refKey.tableId,
-                                refKey.tableName,
                                 refKey.schemaId,
-                                refKey.schemaName,
                                 refKey.databaseId,
-                                refKey.databaseName,
                                 columnIds,
-                                keyColumnNames,
                                 referencesIds,
-                                referencesNames,
                                 onUpdate,
                                 onDelete );
                         synchronized ( this ) {
@@ -2275,7 +2255,6 @@ public class CatalogImpl extends Catalog {
         long id = indexIdBuilder.getAndIncrement();
         synchronized ( this ) {
             indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
-
         }
         listeners.firePropertyChange( "index", null, keyId );
         return id;
@@ -2443,11 +2422,26 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Get a store by its id
+     *
+     * @return List of stores
+     */
+    @Override
+    public CatalogStore getStore( int storeId ) throws UnknownStoreException {
+        try {
+            return Objects.requireNonNull( stores.get( storeId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownStoreException( storeId );
+        }
+    }
+
+
+    /**
      * Add a store
      *
      * @param uniqueName The unique name of the store
-     * @param adapter The class name of the adapter
-     * @param settings The configuration of the store
+     * @param adapter    The class name of the adapter
+     * @param settings   The configuration of the store
      * @return The id of the newly added store
      */
     @Override
@@ -2578,7 +2572,6 @@ public class CatalogImpl extends Catalog {
      * @throws GenericCatalogException if the key does not exist
      */
     private long getOrAddKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
-
         Long keyId = keyColumns.get( columnIds.stream().mapToLong( Long::longValue ).toArray() );
         if ( keyId != null ) {
             return keyId;
@@ -2591,8 +2584,7 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             long id = keyIdBuilder.getAndIncrement();
-            List<String> names = columnIds.stream().map( columns::get ).filter( Objects::nonNull ).map( c -> c.name ).collect( Collectors.toList() );
-            CatalogKey key = new CatalogKey( id, table.id, table.name, table.schemaId, table.schemaName, table.databaseId, table.databaseName, columnIds, names );
+            CatalogKey key = new CatalogKey( id, table.id, table.schemaId, table.databaseId, columnIds );
             synchronized ( this ) {
                 keys.put( id, key );
                 keyColumns.put( columnIds.stream().mapToLong( Long::longValue ).toArray(), id );
@@ -2616,15 +2608,12 @@ public class CatalogImpl extends Catalog {
             columns.forEach( ( key, column ) -> {
                 assert (databases.containsKey( column.databaseId ));
                 assert (Objects.requireNonNull( databaseChildren.get( column.databaseId ) ).contains( column.schemaId ));
-                assert (databaseNames.containsKey( column.databaseName ));
 
                 assert (schemas.containsKey( column.schemaId ));
                 assert (Objects.requireNonNull( schemaChildren.get( column.schemaId ) ).contains( column.tableId ));
-                assert (schemaNames.containsKey( new Object[]{ column.databaseId, column.schemaName } ));
 
                 assert (tables.containsKey( column.tableId ));
                 assert (Objects.requireNonNull( tableChildren.get( column.tableId ) ).contains( column.id ));
-                assert (tableNames.containsKey( new Object[]{ column.databaseId, column.schemaId, column.tableName } ));
 
                 assert (columnNames.containsKey( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } ));
             } );

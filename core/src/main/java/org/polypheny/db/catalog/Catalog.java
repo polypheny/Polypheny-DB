@@ -806,11 +806,18 @@ public abstract class Catalog {
     public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException, UnknownStoreException;
 
     /**
+     * Get a store by its id
+     *
+     * @return List of stores
+     */
+    public abstract CatalogStore getStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
+
+    /**
      * Add a store
      *
      * @param uniqueName The unique name of the store
-     * @param adapter The class name of the adapter
-     * @param settings The configuration of the store
+     * @param adapter    The class name of the adapter
+     * @param settings   The configuration of the store
      * @return The id of the newly added store
      */
     public abstract int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException;

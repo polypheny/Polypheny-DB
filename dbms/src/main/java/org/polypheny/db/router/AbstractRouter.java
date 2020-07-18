@@ -114,7 +114,7 @@ public abstract class AbstractRouter implements Router {
     protected abstract void wrapUp( Transaction transaction, RelNode routed );
 
     // Select the placement on which a table scan should be executed
-    protected abstract CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available );
+    protected abstract CatalogColumnPlacement selectPlacement( RelNode node, CatalogTable catalogTable );
 
 
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Transaction transaction ) {
@@ -125,14 +125,13 @@ public abstract class AbstractRouter implements Router {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
-                // Get placements of this table
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-                List<CatalogColumnPlacement> placements;
-
-                placements = catalog.getColumnPlacements( t.getColumnIds().get( 0 ) );
-
-                CatalogColumnPlacement placement = selectPlacement( node, placements );
+                CatalogTable catalogTable;
+                try {
+                    catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+                } catch ( UnknownTableException | GenericCatalogException e ) {
+                    throw new RuntimeException( "Unknown table" );
+                }
+                CatalogColumnPlacement placement = selectPlacement( node, catalogTable );
                 return handleTableScan( builder, table, placement );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
@@ -166,8 +165,7 @@ public abstract class AbstractRouter implements Router {
                 // Get placements of this table
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-                List<CatalogColumnPlacement> placements;
-                placements = catalog.getColumnPlacements( t.getColumnIds().get( 0 ) );
+                List<CatalogColumnPlacement> placements = catalog.getColumnPlacements( t.getColumnIds().get( 0 ) );
 
                 // Execute on all placements
                 List<TableModify> modifies = new ArrayList<>( placements.size() );
@@ -181,10 +179,13 @@ public abstract class AbstractRouter implements Router {
                         // This should not happen
                         throw new RuntimeException( e );
                     }
+
+                    // TODO MV: This seems to be expensive
+                    //
                     List<String> tableNames = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(
                                     placement.storeUniqueName,
-                                    catalogTable.schemaName,
+                                    catalogTable.getSchemaName(),
                                     placement.physicalSchemaName ),
                             t.getLogicalTableName() );
                     RelOptTable physical = catalogReader.getTableForMember( tableNames );

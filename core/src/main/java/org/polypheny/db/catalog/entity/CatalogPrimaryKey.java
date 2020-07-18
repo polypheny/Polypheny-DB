@@ -35,12 +35,9 @@ public final class CatalogPrimaryKey extends CatalogKey {
     public CatalogPrimaryKey(
             final long id,
             final long tableId,
-            @NonNull final String tableName,
             final long schemaId,
-            @NonNull final String schemaName,
-            final long databaseId,
-            @NonNull final String databaseName ) {
-        super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName );
+            final long databaseId ) {
+        super( id, tableId, schemaId, databaseId );
     }
 
 
@@ -48,13 +45,9 @@ public final class CatalogPrimaryKey extends CatalogKey {
         super(
                 catalogKey.id,
                 catalogKey.tableId,
-                catalogKey.tableName,
                 catalogKey.schemaId,
-                catalogKey.schemaName,
                 catalogKey.databaseId,
-                catalogKey.databaseName,
-                catalogKey.columnIds,
-                catalogKey.columnNames );
+                catalogKey.columnIds );
     }
 
 
@@ -62,7 +55,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
     public List<CatalogPrimaryKeyColumn> getCatalogPrimaryKeyColumns() {
         int i = 1;
         LinkedList<CatalogPrimaryKeyColumn> list = new LinkedList<>();
-        for ( String columnName : columnNames ) {
+        for ( String columnName : getColumnNames() ) {
             list.add( new CatalogPrimaryKeyColumn( i++, columnName ) );
         }
         return list;
@@ -81,7 +74,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
 
         @Override
         public Serializable[] getParameterArray() {
-            return new Serializable[]{ databaseName, schemaName, tableName, columnName, keySeq, null };
+            return new Serializable[]{ getDatabaseName(), getSchemaName(), getTableName(), columnName, keySeq, null };
         }
 
 

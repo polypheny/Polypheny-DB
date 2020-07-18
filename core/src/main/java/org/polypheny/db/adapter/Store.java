@@ -75,7 +75,7 @@ public abstract class Store {
 
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
-    public abstract Table createTableSchema( CatalogTable combinedTable );
+    public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore );
 
     public abstract Schema getCurrentSchema();
 

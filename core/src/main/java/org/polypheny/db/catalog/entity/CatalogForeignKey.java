@@ -23,6 +23,8 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 
 
@@ -35,84 +37,65 @@ public final class CatalogForeignKey extends CatalogKey {
     public final String name;
     public final long referencedKeyId;
     public final long referencedKeyDatabaseId;
-    public final String referencedKeyDatabaseName;
     public final long referencedKeySchemaId;
-    public final String referencedKeySchemaName;
     public final long referencedKeyTableId;
-    public final String referencedKeyTableName;
     public final ForeignKeyOption updateRule;
     public final ForeignKeyOption deleteRule;
     public List<Long> referencedKeyColumnIds;
-    public List<String> referencedKeyColumnNames;
 
 
     public CatalogForeignKey(
             final long id,
             @NonNull final String name,
             final long tableId,
-            @NonNull final String tableName,
             final long schemaId,
-            @NonNull final String schemaName,
             final long databaseId,
-            @NonNull final String databaseName,
             final long referencedKeyId,
             final long referencedKeyTableId,
-            @NonNull final String referencedKeyTableName,
             final long referencedKeySchemaId,
-            @NonNull final String referencedKeySchemaName,
             final long referencedKeyDatabaseId,
-            @NonNull final String referencedKeyDatabaseName,
+            final List<Long> columnIds,
+            final List<Long> referencedKeyColumnIds,
             final ForeignKeyOption updateRule,
             final ForeignKeyOption deleteRule ) {
-        super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName );
+        super( id, tableId, schemaId, databaseId, columnIds );
         this.name = name;
         this.referencedKeyId = referencedKeyId;
         this.referencedKeyTableId = referencedKeyTableId;
-        this.referencedKeyTableName = referencedKeyTableName;
         this.referencedKeySchemaId = referencedKeySchemaId;
-        this.referencedKeySchemaName = referencedKeySchemaName;
         this.referencedKeyDatabaseId = referencedKeyDatabaseId;
-        this.referencedKeyDatabaseName = referencedKeyDatabaseName;
+        this.referencedKeyColumnIds = referencedKeyColumnIds;
         this.updateRule = updateRule;
         this.deleteRule = deleteRule;
     }
 
 
-    public CatalogForeignKey(
-            final long id,
-            @NonNull final String name,
-            final long tableId,
-            @NonNull final String tableName,
-            final long schemaId,
-            @NonNull final String schemaName,
-            final long databaseId,
-            @NonNull final String databaseName,
-            final long referencedKeyId,
-            final long referencedKeyTableId,
-            @NonNull final String referencedKeyTableName,
-            final long referencedKeySchemaId,
-            @NonNull final String referencedKeySchemaName,
-            final long referencedKeyDatabaseId,
-            @NonNull final String referencedKeyDatabaseName,
-            final List<Long> columnIds,
-            final List<String> columnNames,
-            final List<Long> referencedKeyColumnIds,
-            final List<String> referencedKeyColumnNames,
-            final ForeignKeyOption updateRule,
-            final ForeignKeyOption deleteRule ) {
-        super( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, columnIds, columnNames );
-        this.name = name;
-        this.referencedKeyId = referencedKeyId;
-        this.referencedKeyTableId = referencedKeyTableId;
-        this.referencedKeyTableName = referencedKeyTableName;
-        this.referencedKeySchemaId = referencedKeySchemaId;
-        this.referencedKeySchemaName = referencedKeySchemaName;
-        this.referencedKeyDatabaseId = referencedKeyDatabaseId;
-        this.referencedKeyDatabaseName = referencedKeyDatabaseName;
-        this.referencedKeyColumnIds = referencedKeyColumnIds;
-        this.referencedKeyColumnNames = referencedKeyColumnNames;
-        this.updateRule = updateRule;
-        this.deleteRule = deleteRule;
+    @SneakyThrows
+    public String getReferencedKeyDatabaseName() {
+        return Catalog.getInstance().getDatabase( referencedKeyDatabaseId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getReferencedKeySchemaName() {
+        return Catalog.getInstance().getSchema( referencedKeySchemaId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getReferencedKeyTableName() {
+        return Catalog.getInstance().getTable( referencedKeyTableId ).name;
+    }
+
+
+    @SneakyThrows
+    public List<String> getReferencedKeyColumnNames() {
+        Catalog catalog = Catalog.getInstance();
+        List<String> columnNames = new LinkedList<>();
+        for ( long columnId : referencedKeyColumnIds ) {
+            columnNames.add( catalog.getColumn( columnId ).name );
+        }
+        return columnNames;
     }
 
 
@@ -120,7 +103,8 @@ public final class CatalogForeignKey extends CatalogKey {
     public List<CatalogForeignKeyColumn> getCatalogForeignKeyColumns() {
         int i = 1;
         LinkedList<CatalogForeignKeyColumn> list = new LinkedList<>();
-        for ( String columnName : columnNames ) {
+        List<String> referencedKeyColumnNames = getReferencedKeyColumnNames();
+        for ( String columnName : getColumnNames() ) {
             list.add( new CatalogForeignKeyColumn( i, referencedKeyColumnNames.get( i - 1 ), columnName ) );
             i++;
         }
@@ -142,13 +126,13 @@ public final class CatalogForeignKey extends CatalogKey {
         @Override
         public Serializable[] getParameterArray() {
             return new Serializable[]{
-                    referencedKeyDatabaseName,
-                    referencedKeySchemaName,
-                    referencedKeyTableName,
+                    getReferencedKeyDatabaseName(),
+                    getReferencedKeySchemaName(),
+                    getReferencedKeyTableName(),
                     referencedKeyColumnName,
-                    databaseName,
-                    schemaName,
-                    tableName,
+                    getDatabaseName(),
+                    getSchemaName(),
+                    getTableName(),
                     foreignKeyColumnName,
                     keySeq,
                     updateRule.getId(),

@@ -83,11 +83,11 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    public Table createCsvTable( CatalogTable catalogTable, CsvStore csvStore ) {
+    public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvStore csvStore ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
-        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( csvStore.getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn;
             try {
                 catalogColumn = Catalog.getInstance().getColumn( placement.columnId );

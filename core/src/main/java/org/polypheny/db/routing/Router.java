@@ -19,6 +19,7 @@ package org.polypheny.db.routing;
 import java.util.List;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 
@@ -28,6 +29,7 @@ public interface Router {
 
     List<Store> createTable( long schemaId, Transaction transaction );
 
-    void dropPlacements( List<CatalogColumnPlacement> placements );
+    List<Store> addColumn( CatalogTable catalogTable, Transaction transaction );
 
+    void dropPlacements( List<CatalogColumnPlacement> placements );
 }

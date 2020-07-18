@@ -27,6 +27,8 @@ import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 
 
@@ -43,9 +45,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final ImmutableList<Long> columnIds;
     public final ImmutableList<String> columnNames;
     public final long schemaId;
-    public final String schemaName;
     public final long databaseId;
-    public final String databaseName;
     public final int ownerId;
     public final String ownerName;
     public final TableType tableType;
@@ -60,9 +60,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final ImmutableList<Long> columnIds,
             final ImmutableList<String> columnNames,
             final long schemaId,
-            @NonNull final String schemaName,
             final long databaseId,
-            @NonNull final String databaseName,
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final TableType type,
@@ -74,9 +72,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.columnIds = columnIds;
         this.columnNames = columnNames;
         this.schemaId = schemaId;
-        this.schemaName = schemaName;
         this.databaseId = databaseId;
-        this.databaseName = databaseName;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.tableType = type;
@@ -86,12 +82,24 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     }
 
 
+    @SneakyThrows
+    public String getDatabaseName() {
+        return Catalog.getInstance().getDatabase( databaseId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getSchemaName() {
+        return Catalog.getInstance().getSchema( schemaId ).name;
+    }
+
+
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
-                databaseName,
-                schemaName,
+                getDatabaseName(),
+                getSchemaName(),
                 name,
                 tableType.name(),
                 "",
@@ -144,17 +152,17 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
 
 
     public static CatalogTable rename( CatalogTable table, String name ) {
-        return new CatalogTable( table.id, name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
+        return new CatalogTable( table.id, name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
     }
 
 
     public static CatalogTable replaceOwner( CatalogTable table, int ownerId, String ownerName ) {
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, ownerId, ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
+        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, ownerId, ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
     }
 
 
     public static CatalogTable replacePrimary( CatalogTable table, Long keyId ) {
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, keyId, table.placementsByStore );
+        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, keyId, table.placementsByStore );
     }
 
 
@@ -163,7 +171,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         columnIds.add( columnId );
         List<String> columnNames = new ArrayList<>( table.columnNames );
         columnNames.add( columnName );
-        return new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), ImmutableList.copyOf( columnNames ), table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
+        return new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), ImmutableList.copyOf( columnNames ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
     }
 
 
@@ -172,7 +180,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         columnIds.remove( columnId );
         List<String> columnNames = new ArrayList<>( table.columnNames );
         columnNames.remove( columnName );
-        return new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), ImmutableList.copyOf( columnNames ), table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
+        return new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), ImmutableList.copyOf( columnNames ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
     }
 
 
@@ -181,7 +189,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         List<String> columnNames = new ArrayList<>( table.columnNames );
         columnNames.set( index, columnName );
 
-        return new CatalogTable( table.id, table.name, table.columnIds, ImmutableList.copyOf( columnNames ), table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
+        return new CatalogTable( table.id, table.name, table.columnIds, ImmutableList.copyOf( columnNames ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
     }
 
 
@@ -194,7 +202,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         } else {
             placementsByStore.put( storeId, ImmutableList.of( columnId ) );
         }
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
+        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
     }
 
 
@@ -208,7 +216,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             placementsByStore.remove( storeId );
         }
 
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.schemaName, table.databaseId, table.databaseName, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
+        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
     }
 
 }

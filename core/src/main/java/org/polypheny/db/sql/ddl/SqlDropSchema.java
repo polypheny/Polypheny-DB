@@ -107,7 +107,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
                     new SqlDropTable(
                             SqlParserPos.ZERO,
                             false,
-                            new SqlIdentifier( Arrays.asList( catalogTable.databaseName, catalogTable.schemaName, catalogTable.name ), SqlParserPos.ZERO )
+                            new SqlIdentifier( Arrays.asList( catalogTable.getDatabaseName(), catalogTable.getSchemaName(), catalogTable.name ), SqlParserPos.ZERO )
                     ).execute( context, transaction );
                 } );
 

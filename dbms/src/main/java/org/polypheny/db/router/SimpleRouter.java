@@ -22,7 +22,9 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -50,9 +52,11 @@ public class SimpleRouter extends AbstractRouter {
 
     // Execute the table scan on the first placement of a table
     @Override
-    protected CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available ) {
-        // Take first
-        return available.get( 0 );
+    protected CatalogColumnPlacement selectPlacement( RelNode node, CatalogTable table ) {
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
+        //
+        return Catalog.getInstance().getColumnPlacementsOnStore( table.placementsByStore.keySet().asList().get( 0 ) ).get( 0 );
     }
 
 
@@ -66,6 +70,13 @@ public class SimpleRouter extends AbstractRouter {
             }
         }
         throw new RuntimeException( "No suitable store found" );
+    }
+
+
+    // Add column on the first store holding a placement of this table that supports schema changes
+    @Override
+    public List<Store> addColumn( CatalogTable catalogTable, Transaction transaction ) {
+        return ImmutableList.of( StoreManager.getInstance().getStore( catalogTable.placementsByStore.keySet().asList().get( 0 ) ) );
     }
 
 

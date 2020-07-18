@@ -21,6 +21,8 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 
 
@@ -35,7 +37,6 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
     public final long id;
     public final String name;
     public final long databaseId;
-    public final String databaseName;
     public final int ownerId;
     public final String ownerName;
     public final SchemaType schemaType;
@@ -45,24 +46,28 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
             final long id,
             @NonNull final String name,
             final long databaseId,
-            @NonNull final String databaseName,
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final SchemaType schemaType ) {
         this.id = id;
         this.name = name;
         this.databaseId = databaseId;
-        this.databaseName = databaseName;
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.schemaType = schemaType;
     }
 
 
+    @SneakyThrows
+    public String getDatabaseName() {
+        return Catalog.getInstance().getDatabase( databaseId ).name;
+    }
+
+
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ name, databaseName, ownerName, CatalogEntity.getEnumNameOrNull( schemaType ) };
+        return new Serializable[]{ name, getDatabaseName(), ownerName, CatalogEntity.getEnumNameOrNull( schemaType ) };
     }
 
 
@@ -99,11 +104,11 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
      * @return the new CatalogSchema
      */
     public static CatalogSchema rename( CatalogSchema old, String name ) {
-        return new CatalogSchema( old.id, name, old.databaseId, old.databaseName, old.ownerId, old.ownerName, old.schemaType );
+        return new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.schemaType );
     }
 
 
     public static CatalogSchema changeOwner( CatalogSchema old, int ownerId ) {
-        return new CatalogSchema( old.id, old.name, old.databaseId, old.databaseName, ownerId, old.ownerName, old.schemaType );
+        return new CatalogSchema( old.id, old.name, old.databaseId, ownerId, old.ownerName, old.schemaType );
     }
 }
