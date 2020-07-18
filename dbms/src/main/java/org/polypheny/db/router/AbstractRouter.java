@@ -180,8 +180,6 @@ public abstract class AbstractRouter implements Router {
                         throw new RuntimeException( e );
                     }
 
-                    // TODO MV: This seems to be expensive
-                    //
                     List<String> tableNames = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(
                                     placement.storeUniqueName,

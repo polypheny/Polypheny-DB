@@ -47,7 +47,11 @@ import org.polypheny.db.sql.validate.SqlValidatorImpl;
  */
 public class PolyphenyDbSqlValidator extends SqlValidatorImpl {
 
-    public PolyphenyDbSqlValidator( SqlOperatorTable opTab, PolyphenyDbCatalogReader catalogReader, JavaTypeFactory typeFactory, SqlConformance conformance ) {
+    public PolyphenyDbSqlValidator(
+            SqlOperatorTable opTab,
+            PolyphenyDbCatalogReader catalogReader,
+            JavaTypeFactory typeFactory,
+            SqlConformance conformance ) {
         super( opTab, catalogReader, typeFactory, conformance );
     }
 

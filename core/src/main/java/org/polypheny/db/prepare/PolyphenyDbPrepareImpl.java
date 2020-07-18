@@ -188,8 +188,8 @@ import org.polypheny.db.util.Util.FoundOne;
 public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
     /**
-     * Whether to enable the collation trait. Some extra optimizations are possible if enabled, but queries should work either way. At some point
-     * this will become a preference, or we will run multiple phases: first disabled, then enabled.
+     * Whether to enable the collation trait. Some extra optimizations are possible if enabled, but queries should work
+     * either way. At some point this will become a preference, or we will run multiple phases: first disabled, then enabled.
      */
     private static final boolean ENABLE_COLLATION_TRAIT = true;
 
@@ -416,7 +416,9 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
                         if ( fail ) {
                             throw validator.newValidationError(
                                     sqlNode,
-                                    Static.RESOURCE.moreThanOneMappedColumn( targetRowType.getFieldList().get( index ).getName(), Util.last( tablePath ) ) );
+                                    Static.RESOURCE.moreThanOneMappedColumn(
+                                            targetRowType.getFieldList().get( index ).getName(),
+                                            Util.last( tablePath ) ) );
                         }
                         return new AnalyzeViewResult(
                                 this,
@@ -462,7 +464,8 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
         for ( RelDataTypeField field : targetRowType.getFieldList() ) {
             final int x = columnMapping.indexOf( field.getIndex() );
             if ( x >= 0 ) {
-                assert Util.skip( columnMapping, x + 1 ).indexOf( field.getIndex() ) < 0 : "column projected more than once; should have checked above";
+                assert Util.skip( columnMapping, x + 1 ).indexOf( field.getIndex() ) < 0
+                        : "column projected more than once; should have checked above";
                 continue; // target column is projected
             }
             if ( projectMap.get( field.getIndex() ) != null ) {
@@ -557,11 +560,13 @@ public class PolyphenyDbPrepareImpl implements PolyphenyDbPrepare {
 
     /**
      * Creates a collection of planner factories.
-     *
-     * The collection must have at least one factory, and each factory must create a planner. If the collection has more than one planner, Polypheny-DB will try each planner in turn.
-     *
-     * One of the things you can do with this mechanism is to try a simpler, faster, planner with a smaller rule set first, then fall back to a more complex planner for complex and costly queries.
-     *
+     * <p>
+     * The collection must have at least one factory, and each factory must create a planner. If the collection has more
+     * than one planner, Polypheny-DB will try each planner in turn.
+     * <p>
+     * One of the things you can do with this mechanism is to try a simpler, faster, planner with a smaller rule set first,
+     * then fall back to a more complex planner for complex and costly queries.
+     * <p>
      * The default implementation returns a factory that calls {@link #createPlanner(Context)}.
      */
     protected List<Function1<Context, RelOptPlanner>> createPlannerFactories() {

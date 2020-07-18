@@ -100,13 +100,19 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
     /**
      * Estimate for the row count, or null.
-     *
+     * <p>
      * If not null, overrides the estimate from the actual table.
      */
     private final Double rowCount;
 
 
-    private RelOptTableImpl( RelOptSchema schema, RelDataType rowType, List<String> names, Table table, Function<Class, Expression> expressionFunction, Double rowCount ) {
+    private RelOptTableImpl(
+            RelOptSchema schema,
+            RelDataType rowType,
+            List<String> names,
+            Table table,
+            Function<Class, Expression> expressionFunction,
+            Double rowCount ) {
         this.schema = schema;
         this.rowType = Objects.requireNonNull( rowType );
         this.names = ImmutableList.copyOf( names );
@@ -211,7 +217,13 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     @Override
     protected RelOptTable extend( Table extendedTable ) {
         final RelDataType extendedRowType = extendedTable.getRowType( getRelOptSchema().getTypeFactory() );
-        return new RelOptTableImpl( getRelOptSchema(), extendedRowType, getQualifiedName(), extendedTable, expressionFunction, getRowCount() );
+        return new RelOptTableImpl(
+                getRelOptSchema(),
+                extendedRowType,
+                getQualifiedName(),
+                extendedTable,
+                expressionFunction,
+                getRowCount() );
     }
 
 
@@ -387,7 +399,9 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
      */
     public static List<ColumnStrategy> columnStrategies( final RelOptTable table ) {
         final int fieldCount = table.getRowType().getFieldCount();
-        final InitializerExpressionFactory ief = Util.first( table.unwrap( InitializerExpressionFactory.class ), NullInitializerExpressionFactory.INSTANCE );
+        final InitializerExpressionFactory ief = Util.first(
+                table.unwrap( InitializerExpressionFactory.class ),
+                NullInitializerExpressionFactory.INSTANCE );
         return new AbstractList<ColumnStrategy>() {
             @Override
             public int size() {
@@ -421,7 +435,8 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
 
 
     /**
-     * Returns the row type of a table after any {@link ColumnStrategy#VIRTUAL} columns have been removed. This is the type of the records that are actually stored.
+     * Returns the row type of a table after any {@link ColumnStrategy#VIRTUAL} columns have been removed. This is the type
+     * of the records that are actually stored.
      */
     public static RelDataType realRowType( RelOptTable table ) {
         final RelDataType rowType = table.getRowType();

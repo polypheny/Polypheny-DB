@@ -79,18 +79,11 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
 
     private synchronized AbstractPolyphenyDbSchema buildSchema() {
-        final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
-        if ( false ) {
-            polyphenyDbSchema = new CachingPolyphenyDbSchema( null, schema, "" );
-        } else {
-            polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
-        }
+        final AbstractPolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
-
         Catalog catalog = Catalog.getInstance();
-
         try {
             //
             // Build logical schema

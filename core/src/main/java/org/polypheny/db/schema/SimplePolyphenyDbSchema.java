@@ -39,7 +39,17 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
      * Use {@link AbstractPolyphenyDbSchema#createRootSchema(boolean)} or {@link #add(String, Schema)}.
      */
     SimplePolyphenyDbSchema( AbstractPolyphenyDbSchema parent, Schema schema, String name ) {
-        this( parent, schema, name, null, null, null, null, null, null, null );
+        this(
+                parent,
+                schema,
+                name,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null );
     }
 
 
@@ -185,7 +195,17 @@ class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
 
     @Override
     protected PolyphenyDbSchema snapshot( AbstractPolyphenyDbSchema parent, SchemaVersion version ) {
-        AbstractPolyphenyDbSchema snapshot = new SimplePolyphenyDbSchema( parent, schema.snapshot( version ), name, null, tableMap, typeMap, functionMap, functionNames, nullaryFunctionMap, getPath() );
+        AbstractPolyphenyDbSchema snapshot = new SimplePolyphenyDbSchema(
+                parent,
+                schema.snapshot( version ),
+                name,
+                null,
+                tableMap,
+                typeMap,
+                functionMap,
+                functionNames,
+                nullaryFunctionMap,
+                getPath() );
         for ( PolyphenyDbSchema subSchema : subSchemaMap.map().values() ) {
             PolyphenyDbSchema subSchemaSnapshot = ((AbstractPolyphenyDbSchema) subSchema).snapshot( snapshot, version );
             snapshot.subSchemaMap.put( subSchema.getName(), subSchemaSnapshot );

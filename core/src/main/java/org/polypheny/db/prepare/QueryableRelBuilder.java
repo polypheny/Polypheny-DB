@@ -72,13 +72,14 @@ import org.polypheny.db.schema.impl.AbstractTableQueryable;
 
 /**
  * Implementation of {@link QueryableFactory} that builds a tree of {@link RelNode} planner nodes. Used by {@link LixToRelTranslator}.
- *
- * Each of the methods that implements a {@code Replayer} method creates a tree of {@code RelNode}s equivalent to the arguments, and calls {@link #setRel}
- * to assign the root of that tree to the {@link #rel} member variable.
- *
- * To comply with the {@link org.apache.calcite.linq4j.QueryableFactory} interface, which is after all a factory, each method returns a dummy result such as {@code null} or {@code 0}.
- * The caller will not use the result. The real effect of the method is to call {@link #setRel} with a {@code RelNode}.
- *
+ * <p>
+ * Each of the methods that implements a {@code Replayer} method creates a tree of {@code RelNode}s equivalent to the
+ * arguments, and calls {@link #setRel} to assign the root of that tree to the {@link #rel} member variable.
+ * <p>
+ * To comply with the {@link org.apache.calcite.linq4j.QueryableFactory} interface, which is after all a factory, each method
+ * returns a dummy result such as {@code null} or {@code 0}. The caller will not use the result. The real effect of the method
+ * is to call {@link #setRel} with a {@code RelNode}.
+ * <p>
  * NOTE: Many methods currently throw {@link UnsupportedOperationException}. These method need to be implemented.
  *
  * @param <T> Element type
@@ -107,7 +108,11 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
                     PolyphenyDbSchema
                             .from( tableQueryable.schema )
                             .add( tableQueryable.tableName, tableQueryable.table );
-            final RelOptTableImpl relOptTable = RelOptTableImpl.create( null, table.getRowType( translator.typeFactory ), tableEntry, null );
+            final RelOptTableImpl relOptTable = RelOptTableImpl.create(
+                    null,
+                    table.getRowType( translator.typeFactory ),
+                    tableEntry,
+                    null );
             if ( table instanceof TranslatableTable ) {
                 return ((TranslatableTable) table).toRel( translator.toRelContext(), relOptTable );
             } else {
@@ -143,7 +148,10 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
-    public <TAccumulate> TAccumulate aggregate( Queryable<T> source, TAccumulate seed, FunctionExpression<Function2<TAccumulate, T, TAccumulate>> selector ) {
+    public <TAccumulate> TAccumulate aggregate(
+            Queryable<T> source,
+            TAccumulate seed,
+            FunctionExpression<Function2<TAccumulate, T, TAccumulate>> selector ) {
         throw new UnsupportedOperationException();
     }
 
@@ -335,7 +343,10 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
-    public <TKey> Queryable<Grouping<TKey, T>> groupBy( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, EqualityComparer<TKey> comparer ) {
+    public <TKey> Queryable<Grouping<TKey, T>> groupBy(
+            Queryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector,
+            EqualityComparer<TKey> comparer ) {
         throw new UnsupportedOperationException();
     }
 
@@ -530,25 +541,35 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
-    public <TKey extends Comparable> OrderedQueryable<T> orderBy( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
+    public <TKey extends Comparable> OrderedQueryable<T> orderBy(
+            Queryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TKey> OrderedQueryable<T> orderBy( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
+    public <TKey> OrderedQueryable<T> orderBy(
+            Queryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector,
+            Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TKey extends Comparable> OrderedQueryable<T> orderByDescending( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
+    public <TKey extends Comparable> OrderedQueryable<T> orderByDescending(
+            Queryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TKey> OrderedQueryable<T> orderByDescending( Queryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
+    public <TKey> OrderedQueryable<T> orderByDescending(
+            Queryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector,
+            Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
@@ -569,19 +590,25 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
-    public <TResult> Queryable<TResult> selectN( Queryable<T> source, FunctionExpression<Function2<T, Integer, TResult>> selector ) {
+    public <TResult> Queryable<TResult> selectN(
+            Queryable<T> source,
+            FunctionExpression<Function2<T, Integer, TResult>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TResult> Queryable<TResult> selectMany( Queryable<T> source, FunctionExpression<Function1<T, Enumerable<TResult>>> selector ) {
+    public <TResult> Queryable<TResult> selectMany(
+            Queryable<T> source,
+            FunctionExpression<Function1<T, Enumerable<TResult>>> selector ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TResult> Queryable<TResult> selectManyN( Queryable<T> source, FunctionExpression<Function2<T, Integer, Enumerable<TResult>>> selector ) {
+    public <TResult> Queryable<TResult> selectManyN(
+            Queryable<T> source,
+            FunctionExpression<Function2<T, Integer, Enumerable<TResult>>> selector ) {
         throw new UnsupportedOperationException();
     }
 
@@ -737,25 +764,35 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
-    public <TKey extends Comparable<TKey>> OrderedQueryable<T> thenBy( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
+    public <TKey extends Comparable<TKey>> OrderedQueryable<T> thenBy(
+            OrderedQueryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TKey> OrderedQueryable<T> thenBy( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
+    public <TKey> OrderedQueryable<T> thenBy(
+            OrderedQueryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector,
+            Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TKey extends Comparable<TKey>> OrderedQueryable<T> thenByDescending( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector ) {
+    public <TKey extends Comparable<TKey>> OrderedQueryable<T> thenByDescending(
+            OrderedQueryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector ) {
         throw new UnsupportedOperationException();
     }
 
 
     @Override
-    public <TKey> OrderedQueryable<T> thenByDescending( OrderedQueryable<T> source, FunctionExpression<Function1<T, TKey>> keySelector, Comparator<TKey> comparator ) {
+    public <TKey> OrderedQueryable<T> thenByDescending(
+            OrderedQueryable<T> source,
+            FunctionExpression<Function1<T, TKey>> keySelector,
+            Comparator<TKey> comparator ) {
         throw new UnsupportedOperationException();
     }
 
@@ -788,7 +825,10 @@ class QueryableRelBuilder<T> implements QueryableFactory<T> {
 
 
     @Override
-    public <T1, TResult> Queryable<TResult> zip( Queryable<T> source, Enumerable<T1> source1, FunctionExpression<Function2<T, T1, TResult>> resultSelector ) {
+    public <T1, TResult> Queryable<TResult> zip(
+            Queryable<T> source,
+            Enumerable<T1> source1,
+            FunctionExpression<Function2<T, T1, TResult>> resultSelector ) {
         throw new UnsupportedOperationException();
     }
 }

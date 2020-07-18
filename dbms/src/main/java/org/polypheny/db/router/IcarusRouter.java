@@ -149,7 +149,10 @@ public class IcarusRouter extends AbstractRouter {
                             row2.add( "" );
                         } else {
                             row1.add( e.getValue() + "" );
-                            double mean = StatUtils.mean( ArrayUtils.toPrimitive( timesEntry.get( e.getKey() ).toArray( new Double[0] ) ), 0, timesEntry.get( e.getKey() ).size() );
+                            double mean = StatUtils.mean(
+                                    ArrayUtils.toPrimitive( timesEntry.get( e.getKey() ).toArray( new Double[0] ) ),
+                                    0,
+                                    timesEntry.get( e.getKey() ).size() );
                             row2.add( mean / 1000000.0 + " ms" );
                         }
                     }
@@ -245,6 +248,10 @@ public class IcarusRouter extends AbstractRouter {
         }
         for ( int storeId : table.placementsByStore.keySet() ) {
             if ( storeId == selectedStoreId ) {
+                List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( storeId );
+                if ( placements.size() != table.columnIds.size() ) {
+                    throw new RuntimeException( "The data store '" + storeId + "' does not contain a full table placement!" );
+                }
                 return Catalog.getInstance().getColumnPlacementsOnStore( storeId ).get( 0 );  // TODO: This is not a nice solution
             }
         }
@@ -408,7 +415,10 @@ public class IcarusRouter extends AbstractRouter {
             for ( String queryClass : routingTable.keySet() ) {
                 Map<Integer, Double> meanTimeRow = new HashMap<>();
                 for ( Map.Entry<Integer, CircularFifoQueue<Double>> entry : times.get( queryClass ).entrySet() ) {
-                    double mean = StatUtils.mean( ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ), 0, entry.getValue().size() );
+                    double mean = StatUtils.mean(
+                            ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ),
+                            0,
+                            entry.getValue().size() );
                     meanTimeRow.put( entry.getKey(), mean );
                 }
 
