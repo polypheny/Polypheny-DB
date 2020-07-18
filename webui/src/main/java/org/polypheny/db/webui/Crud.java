@@ -1801,7 +1801,7 @@ public class Crud implements InformationObserver {
 
                     // get tables with its columns
                     DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName() );
-                    for ( String columnName : catalogTable.columnNames ) {
+                    for ( String columnName : catalogTable.getColumnNames() ) {
                         table.addColumn( new DbColumn( columnName ) );
                     }
 

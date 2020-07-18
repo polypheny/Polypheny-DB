@@ -32,15 +32,6 @@ import lombok.RequiredArgsConstructor;
 public final class CatalogPrimaryKey extends CatalogKey {
 
 
-    public CatalogPrimaryKey(
-            final long id,
-            final long tableId,
-            final long schemaId,
-            final long databaseId ) {
-        super( id, tableId, schemaId, databaseId );
-    }
-
-
     public CatalogPrimaryKey( @NonNull final CatalogKey catalogKey ) {
         super(
                 catalogKey.id,
@@ -90,6 +81,5 @@ public final class CatalogPrimaryKey extends CatalogKey {
         }
 
     }
-
 
 }

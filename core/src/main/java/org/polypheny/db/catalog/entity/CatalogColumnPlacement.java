@@ -74,7 +74,13 @@ public class CatalogColumnPlacement implements CatalogEntity {
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ getLogicalTableName(), storeUniqueName, placementType.name(), physicalSchemaName, physicalTableName, physicalColumnName };
+        return new Serializable[]{
+                getLogicalTableName(),
+                storeUniqueName,
+                placementType.name(),
+                physicalSchemaName,
+                physicalTableName,
+                physicalColumnName };
     }
 
 }

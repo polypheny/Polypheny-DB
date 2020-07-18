@@ -51,7 +51,6 @@ public class SchemaToJsonMapperTest {
                 4,
                 "stores",
                 ImmutableList.of(),
-                ImmutableList.of(),
                 1,
                 1,
                 1,

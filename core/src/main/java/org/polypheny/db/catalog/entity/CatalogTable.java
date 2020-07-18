@@ -20,10 +20,8 @@ package org.polypheny.db.catalog.entity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +41,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final long id;
     public final String name;
     public final ImmutableList<Long> columnIds;
-    public final ImmutableList<String> columnNames;
     public final long schemaId;
     public final long databaseId;
     public final int ownerId;
@@ -58,7 +55,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final long id,
             @NonNull final String name,
             final ImmutableList<Long> columnIds,
-            final ImmutableList<String> columnNames,
             final long schemaId,
             final long databaseId,
             final int ownerId,
@@ -70,7 +66,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
-        this.columnNames = columnNames;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
         this.ownerId = ownerId;
@@ -91,6 +86,17 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     @SneakyThrows
     public String getSchemaName() {
         return Catalog.getInstance().getSchema( schemaId ).name;
+    }
+
+
+    @SneakyThrows
+    public List<String> getColumnNames() {
+        Catalog catalog = Catalog.getInstance();
+        List<String> columnNames = new LinkedList<>();
+        for ( long columnId : columnIds ) {
+            columnNames.add( catalog.getColumn( columnId ).name );
+        }
+        return columnNames;
     }
 
 
@@ -148,75 +154,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         public final String refGeneration;
         public final String owner;
         public final String definition;
-    }
-
-
-    public static CatalogTable rename( CatalogTable table, String name ) {
-        return new CatalogTable( table.id, name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
-    }
-
-
-    public static CatalogTable replaceOwner( CatalogTable table, int ownerId, String ownerName ) {
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, ownerId, ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
-    }
-
-
-    public static CatalogTable replacePrimary( CatalogTable table, Long keyId ) {
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, keyId, table.placementsByStore );
-    }
-
-
-    public static CatalogTable addColumn( CatalogTable table, long columnId, String columnName ) {
-        List<Long> columnIds = new ArrayList<>( table.columnIds );
-        columnIds.add( columnId );
-        List<String> columnNames = new ArrayList<>( table.columnNames );
-        columnNames.add( columnName );
-        return new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), ImmutableList.copyOf( columnNames ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
-    }
-
-
-    public static CatalogTable removeColumn( CatalogTable table, long columnId, String columnName ) {
-        List<Long> columnIds = new ArrayList<>( table.columnIds );
-        columnIds.remove( columnId );
-        List<String> columnNames = new ArrayList<>( table.columnNames );
-        columnNames.remove( columnName );
-        return new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), ImmutableList.copyOf( columnNames ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
-    }
-
-
-    public static CatalogTable replaceColumnName( CatalogTable table, long columnId, String columnName ) {
-        int index = table.columnIds.indexOf( columnId );
-        List<String> columnNames = new ArrayList<>( table.columnNames );
-        columnNames.set( index, columnName );
-
-        return new CatalogTable( table.id, table.name, table.columnIds, ImmutableList.copyOf( columnNames ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
-    }
-
-
-    public static CatalogTable addColumnPlacement( CatalogTable table, long columnId, int storeId ) {
-        Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( table.placementsByStore );
-        if ( placementsByStore.containsKey( storeId ) ) {
-            List<Long> placements = new ArrayList<>( placementsByStore.get( storeId ) );
-            placements.add( columnId );
-            placementsByStore.replace( storeId, ImmutableList.copyOf( placements ) );
-        } else {
-            placementsByStore.put( storeId, ImmutableList.of( columnId ) );
-        }
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
-    }
-
-
-    public static CatalogTable removeColumnPlacement( CatalogTable table, long columnId, int storeId ) {
-        Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( table.placementsByStore );
-        List<Long> placements = new ArrayList<>( placementsByStore.get( storeId ) );
-        placements.remove( columnId );
-        if ( placements.size() != 0 ) {
-            placementsByStore.put( storeId, ImmutableList.copyOf( placements ) );
-        } else {
-            placementsByStore.remove( storeId );
-        }
-
-        return new CatalogTable( table.id, table.name, table.columnIds, table.columnNames, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
     }
 
 }
