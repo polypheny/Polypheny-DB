@@ -24,7 +24,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,14 +69,12 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
-import org.polypheny.db.plan.RelOptUtil.Logic;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.rel.RelCollation;
-import org.polypheny.db.rel.RelCollationImpl;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
@@ -91,7 +88,6 @@ import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
@@ -99,7 +95,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
@@ -387,23 +382,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                 transaction.deferIndexUpdate( DeferredIndexUpdate.createInsert( index.getId(), tuplesToInsert ) );
                             }
                         } else if ( ltm.isDelete() || ltm.isUpdate() ) {
-                            final List<Index> reverseIndices = IndexManager.getInstance().getReverseIndices( schema, table );
-                            final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), root.validatedRowType );
-                            // Built list of columns to query
-                            final Set<String> columnsToFetch = new HashSet<>(  );
-                            for (final Index index : indices) {
-                                columnsToFetch.addAll( index.getColumns() );
-                            }
-                            for (final Index index : reverseIndices) {
-                                columnsToFetch.addAll( index.getTargetColumns() );
-                            }
-                            final List<RexNode> projects = new ArrayList<>(  );
-                            final Map<String, Integer> nameMap = new HashMap<>(  );
-                            for (int i = 0; i < table.getColumnNames().size(); ++i) {
-                                final String column = table.getColumnNames().get( i );
-                                if (columnsToFetch.contains( table.getColumnNames().get( i ) )) {
-                                    projects.add(rexBuilder.makeInputRef( ltm.getInput(), i ) );
-                                    nameMap.put( column, projects.size() - 1 );
+                            final Map<String, Integer> nameMap = new HashMap<>();
+                            final Map<String, Integer> newValueMap = new HashMap<>();
+                            final LogicalProject originalProject = ((LogicalProject) ltm.getInput());
+
+                            for ( int i = 0; i < originalProject.getNamedProjects().size(); ++i ) {
+                                final Pair<RexNode, String> np = originalProject.getNamedProjects().get( i );
+                                nameMap.put( np.right, i );
+                                if ( ltm.isUpdate() ) {
+                                    int j = ltm.getUpdateColumnList().indexOf( np.right );
+                                    if ( j >= 0 ) {
+                                        RexNode newValue = ltm.getSourceExpressionList().get( j );
+                                        for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
+                                            if ( originalProject.getNamedProjects().get( k ).left.equals( newValue ) ) {
+                                                newValueMap.put( np.right, k );
+                                                break;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             // Prepare subquery
@@ -412,8 +408,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     ENABLE_BINDABLE
                                             ? BindableConvention.INSTANCE
                                             : EnumerableConvention.INSTANCE;
-                            final LogicalProject lp = LogicalProject.create( ltm.getInput(), projects, jdbcType );
-                            final RelRoot root = RelRoot.of( lp, SqlKind.SELECT );
+                            final RelRoot root = RelRoot.of( originalProject, SqlKind.SELECT );
                             final RelRoot routed = route( root, transaction, executionTimeMonitor );
                             RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                                     RelBuilder.create( transaction, routed.rel.getCluster() ),
@@ -424,13 +419,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                             final RelNode optimized = optimize( flattenedRoot, resultConvention );
                             RelRoot optimalRoot = new RelRoot( optimized, flattenedRoot.validatedRowType, flattenedRoot.kind, flattenedRoot.fields, relCollation( flattenedRoot.rel ) );
                             // Implement and execute subquery
+                            final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), root.validatedRowType );
                             final PreparedResult pr = implement( optimalRoot, jdbcType );
                             PolyphenyDbSignature scanSig = createSignature( pr, optimalRoot, resultConvention, executionTimeMonitor );
                             final Iterable<Object> enumerable = scanSig.enumerable( transaction.getDataContext() );
                             final Iterator<Object> iterator = enumerable.iterator();
                             final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
                             // Schedule the index deletions
-                            for (final Index index : indices) {
+                            for ( final Index index : indices ) {
+                                if ( ltm.isUpdate() ) {
+                                    // Index not affected by this update, skip
+                                    if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                        continue;
+                                    }
+                                }
                                 final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
                                 for ( List<Object> row : rows ) {
                                     final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
@@ -441,20 +443,39 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                 }
                                 transaction.deferIndexUpdate( DeferredIndexUpdate.createDelete( index.getId(), rowsToDelete ) );
                             }
-                            for (final Index index : reverseIndices) {
-                                final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
-                                for ( List<Object> row : rows ) {
-                                    final List<Object> rowProjection = new ArrayList<>( index.getTargetColumns().size() );
-                                    for ( final String column : index.getTargetColumns() ) {
-                                        rowProjection.add( row.get( nameMap.get( column ) ) );
-                                    }
-                                    rowsToDelete.add( rowProjection );
-                                }
-                                transaction.deferIndexUpdate( DeferredIndexUpdate.createReverseDelete( index.getId(), rowsToDelete ) );
-                            }
+                            // TODO(s3lph): These indices should rather be updated when enforcing foreign key constraints by propagating deletes/updates to dependant tables
+//                            for (final Index index : reverseIndices) {
+//                                final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
+//                                for ( List<Object> row : rows ) {
+//                                    final List<Object> rowProjection = new ArrayList<>( index.getTargetColumns().size() );
+//                                    for ( final String column : index.getTargetColumns() ) {
+//                                        rowProjection.add( row.get( nameMap.get( column ) ) );
+//                                    }
+//                                    rowsToDelete.add( rowProjection );
+//                                }
+//                                transaction.deferIndexUpdate( DeferredIndexUpdate.createReverseDelete( index.getId(), rowsToDelete ) );
+//                            }
                             //Schedule the index insertions for UPDATE operations
-                            if (ltm.isUpdate()) {
-                                // TODO
+                            if ( ltm.isUpdate() ) {
+                                for ( final Index index : indices ) {
+                                    // Index not affected by this update, skip
+                                    if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                        continue;
+                                    }
+                                    final Set<Pair<List<Object>, List<Object>>> rowsToReinsert = new HashSet<>( rows.size() );
+                                    for ( List<Object> row : rows ) {
+                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
+                                        for ( final String column : index.getColumns() ) {
+                                            rowProjection.add( row.get( newValueMap.get( column ) ) );
+                                        }
+                                        for ( final String column : index.getTargetColumns() ) {
+                                            targetRowProjection.add( row.get( nameMap.get( column ) ) );
+                                        }
+                                        rowsToReinsert.add( new Pair<>( rowProjection, targetRowProjection ) );
+                                    }
+                                    transaction.deferIndexUpdate( DeferredIndexUpdate.createInsert( index.getId(), rowsToReinsert ) );
+                                }
                             }
                         }
 

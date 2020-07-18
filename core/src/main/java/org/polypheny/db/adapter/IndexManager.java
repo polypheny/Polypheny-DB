@@ -1,8 +1,6 @@
 package org.polypheny.db.adapter;
 
 
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +19,8 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 
 
@@ -50,7 +48,7 @@ public class IndexManager {
     }
 
 
-    public void restoreIndices() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException {
+    public void restoreIndices() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
         for ( final CatalogIndex index : Catalog.getInstance().getIndices() ) {
             System.err.println( "Restoring index: " + index.name );
             addIndex( index );
@@ -58,16 +56,17 @@ public class IndexManager {
     }
 
 
-    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException {
+    public void addIndex( final CatalogIndex index ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
         addIndex( index, null );
     }
 
-    public void addIndex( final CatalogIndex index, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException {
+
+    public void addIndex( final CatalogIndex index, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
         addIndex( index.id, index.name, index.key, index.type, index.unique, transaction );
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final IndexType type, final boolean unique, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException {
+    protected void addIndex( final long id, final String name, final CatalogKey key, final IndexType type, final boolean unique, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
         // TODO(s3lph): INDEX TYPES
         final Index index;
         if ( Catalog.getInstance().isPrimaryKey( key.id ) ) {
@@ -99,12 +98,20 @@ public class IndexManager {
         indexById.put( id, index );
         indexByName.put( name, index );
         final Transaction tx = transaction != null ? transaction : transactionManager.startTransaction( "pa", "APP", false );
-        index.rebuild( tx );
+        try {
+            index.rebuild( tx );
+            tx.commit();
+        } catch ( TransactionException e ) {
+            tx.rollback();
+            throw e;
+        }
     }
 
-    public void deleteIndex( final CatalogIndex index) {
+
+    public void deleteIndex( final CatalogIndex index ) {
         deleteIndex( index.id );
     }
+
 
     public void deleteIndex( final long indexId ) {
         final Index idx = indexById.remove( indexId );
