@@ -20,8 +20,10 @@ package org.polypheny.db.config;
 import com.google.gson.Gson;
 import com.typesafe.config.ConfigFactory;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import lombok.Getter;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
@@ -145,8 +147,9 @@ public class ConfigManager {
         // Angular wants: { id, name, icon, children[] }
         ArrayList<PageListItem> out = new ArrayList<>();
         for ( WebUiPage p : uiPages.values() ) {
-            out.add( new PageListItem( p.getId(), p.getTitle(), p.getIcon() ) );
+            out.add( new PageListItem( p.getId(), p.getTitle(), p.getIcon(), p.getLabel() ) );
         }
+        out.sort( Comparator.comparing( PageListItem::getName ) );
         Gson gson = new Gson();
         return gson.toJson( out );
     }
@@ -193,18 +196,21 @@ public class ConfigManager {
 
         @SuppressWarnings({ "FieldCanBeLocal", "unused" })
         private String id;
-        @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+        @Getter
         private String name;
         @SuppressWarnings({ "FieldCanBeLocal", "unused" })
         private String icon;
+        @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+        private String label;
         @SuppressWarnings({ "unused" })
         private PageListItem[] children;
 
 
-        PageListItem( final String id, final String name, final String icon ) {
+        PageListItem( final String id, final String name, final String icon, final String label ) {
             this.id = id;
             this.name = name;
             this.icon = icon;
+            this.label = label;
         }
 
 

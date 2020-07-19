@@ -24,6 +24,8 @@ import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.Config;
@@ -131,7 +133,15 @@ public class ConfigServer implements ConfigListener {
                         }
                         break;
                     case "ConfigClazz":
+                    case "ConfigEnum":
                         if ( !c.parseStringAndSetValue( (String) entry.getValue() ) ){
+                            allValid = false;
+                            feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
+                        }
+                        break;
+                    case "ConfigClazzList":
+                    case "ConfigEnumList":
+                        if( !c.parseStringAndSetValue( gson.toJson( entry.getValue(), ArrayList.class ) )) {
                             allValid = false;
                             feedback.append( "Could not set " ).append( c.getKey() ).append( " to " ).append( entry.getValue() ).append( " because it was blocked by Java validation. " );
                         }

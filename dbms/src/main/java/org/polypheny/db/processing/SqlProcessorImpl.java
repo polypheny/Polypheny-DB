@@ -190,7 +190,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical Query Plan" );
+            InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
             queryAnalyzer.addPage( page );
