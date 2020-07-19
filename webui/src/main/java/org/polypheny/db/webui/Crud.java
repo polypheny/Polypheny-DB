@@ -43,6 +43,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Array;
 import java.sql.ResultSetMetaData;
@@ -64,6 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -109,10 +111,11 @@ import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationStacktrace;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
@@ -145,6 +148,8 @@ import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.Debug;
 import org.polypheny.db.webui.models.ExploreResult;
 import org.polypheny.db.webui.models.ForeignKey;
+import org.polypheny.db.webui.models.HubMeta;
+import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Result;
@@ -376,6 +381,21 @@ public class Crud implements InformationObserver {
             result = new Result( new Debug().setAffectedRows( tableNames.size() ) ).setTables( tableNames );
         } catch ( GenericCatalogException e ) {
             log.error( "Caught exception while fetching tables", e );
+            result = new Result( e );
+        }
+        return result;
+    }
+
+
+    Result renameTable ( final Request req, final Response res ) {
+        Index table = this.gson.fromJson( req.body(), Index.class );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getSchema(), table.getTable(), table.getName() );
+        Transaction transaction = getTransaction();
+        Result result;
+        try {
+            int rows = executeSqlUpdate( transaction, query );
+            result = new Result( new Debug().setAffectedRows( rows ).setGeneratedQuery( query ) );
+        } catch ( QueryExecutionException e ) {
             result = new Result( e );
         }
         return result;
@@ -625,7 +645,7 @@ public class Crud implements InformationObserver {
                 // Add limit if not specified
                 Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
                 if ( !p2.matcher( query ).find() ) {
-                    query = query + " LIMIT " + getPageSize();
+                    noLimit = false;
                 }
                 //If the user specifies a limit
                 else {
@@ -704,19 +724,19 @@ public class Crud implements InformationObserver {
         if ( queryAnalyzer != null ) {
             InformationPage p1 = new InformationPage( "Query analysis", "Analysis of the query." );
             InformationGroup g1 = new InformationGroup( p1, "Execution time" );
-            InformationHtml html;
+            InformationText text;
             if ( executionTime < 1e4 ) {
-                html = new InformationHtml( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
+                text = new InformationText( g1, String.format( "Execution time: %d nanoseconds", executionTime ) );
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
                 DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
                 String durationText = df.format( new Date( millis ) );
-                html = new InformationHtml( g1, String.format( "Execution time: %s", durationText ) );
+                text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
             }
             queryAnalyzer.addPage( p1 );
             queryAnalyzer.addGroup( g1 );
-            queryAnalyzer.registerInformation( html );
+            queryAnalyzer.registerInformation( text );
         }
 
         return results;
@@ -1949,16 +1969,18 @@ public class Crud implements InformationObserver {
             return new Result( e );
         }
 
-        ArrayList<String[]> data = new ArrayList<>();
-        for ( List<Object> row : rows ) {
-            String[] temp = new String[row.size()];
-            int counter = 0;
-            for ( Object o : row ) {
-                temp[counter] = o.toString();
-                counter++;
-            }
-            data.add( temp );
+        DbColumn[] header = new DbColumn[signature.columns.size()];
+        int counter = 0;
+        for ( ColumnMetaData col : signature.columns ) {
+            header[counter++] = new DbColumn( col.columnName,
+                    col.type.name,
+                    col.nullable == ResultSetMetaData.columnNullable,
+                    col.displaySize,
+                    null,
+                    null );
         }
+
+        ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ) );
 
         try {
             transaction.commit();
@@ -1967,11 +1989,6 @@ public class Crud implements InformationObserver {
             throw new RuntimeException( e );
         }
 
-        DbColumn[] header = new DbColumn[signature.columns.size()];
-        int counter = 0;
-        for ( ColumnMetaData col : signature.columns ) {
-            header[counter++] = new DbColumn( col.columnName );
-        }
         return new Result( header, data.toArray( new String[0][] ) );
     }
 
@@ -2074,7 +2091,7 @@ public class Crud implements InformationObserver {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
         int counter = 0;
         for ( InformationPage page : pages ) {
-            nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ) );
+            nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
             counter++;
         }
         try {
@@ -2134,8 +2151,6 @@ public class Crud implements InformationObserver {
 
             // extract zip, see https://www.baeldung.com/java-compress-and-uncompress
             dataBuffer = new byte[1024];
-            String jsonFileName = "";
-            String csvFileName = "";
             final File extractedFolder = new File( tempDir, "import" );
             if ( !extractedFolder.mkdirs() ) {
                 log.error( "Unable to create folder for extracting files: {}", tempDir.getAbsolutePath() );
@@ -2144,11 +2159,6 @@ public class Crud implements InformationObserver {
             try ( ZipInputStream zis = new ZipInputStream( new FileInputStream( zipFile ) ) ) {
                 ZipEntry zipEntry = zis.getNextEntry();
                 while ( zipEntry != null ) {
-                    if ( zipEntry.getName().endsWith( ".csv" ) ) {
-                        csvFileName = zipEntry.getName();
-                    } else if ( zipEntry.getName().endsWith( ".json" ) ) {
-                        jsonFileName = zipEntry.getName();
-                    }
                     File newFile = new File( extractedFolder, zipEntry.getName() );
                     try ( FileOutputStream fosEntry = new FileOutputStream( newFile ) ) {
                         int len;
@@ -2164,75 +2174,26 @@ public class Crud implements InformationObserver {
             if ( !zipFile.delete() ) {
                 log.error( "Unable to delete zip file: {}", zipFile.getAbsolutePath() );
             }
-            // table name
-            String tableName = null;
-            if ( request.tableName != null && request.tableName.trim().length() > 0 ) {
-                tableName = request.tableName.trim();
-            }
-            // create table from .json file
-            String json = new String( Files.readAllBytes( Paths.get( new File( extractedFolder, jsonFileName ).getPath() ) ), StandardCharsets.UTF_8 );
-            JsonTable table = gson.fromJson( json, JsonTable.class );
+
             transaction = getTransaction();
-            List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
-            int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( table.tableName ) ).count();
-            if ( tableAlreadyExists > 0 ) {
-                return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, table.tableName ) );
-            }
 
-            String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, tableName, request.store );
-            executeSqlUpdate( transaction, createTable );
-
-            // import data from .csv file
-            StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
-            for ( JsonColumn col : table.getColumns() ) {
-                columnJoiner.add( "\"" + col.columnName + "\"" );
-            }
-            String columns = columnJoiner.toString();
-            StringJoiner valueJoiner = new StringJoiner( ",", "VALUES", "" );
-            StringJoiner rowJoiner;
-
-            //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
-
-            final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
-            long csvCounter = 0;
-            try (
-                    Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
-                    CSVReader csvReader = new CSVReader( reader );
-            ) {
-                long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
-                Status status = new Status( "tableImport", lineCount );
-                String[] nextRecord;
-                while ( (nextRecord = csvReader.readNext()) != null ) {
-                    rowJoiner = new StringJoiner( ",", "(", ")" );
-                    for ( int i = 0; i < table.getColumns().size(); i++ ) {
-                        if ( PolyType.get( table.getColumns().get( i ).type ).getFamily() == PolyTypeFamily.CHARACTER ) {
-                            rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.DATE ) {
-                            rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIME ) {
-                            rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIMESTAMP ) {
-                            rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
-                        } else {
-                            rowJoiner.add( nextRecord[i] );
-                        }
-                    }
-                    valueJoiner.add( rowJoiner.toString() );
-                    csvCounter++;
-                    if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
-                        String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
-                        executeSqlUpdate( transaction, insertQuery );
-                        valueJoiner = new StringJoiner( ",", "VALUES", "" );
-                        status.setStatus( csvCounter );
-                        WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                    }
+            Status status = new Status( "tableImport", request.tables.size() );
+            int ithTable = 0;
+            for( TableMapping m : request.tables.values() ) {
+                //create table from json
+                Path jsonPath = Paths.get( new File( extractedFolder, m.initialName + ".json" ).getPath() );
+                String json = new String( Files.readAllBytes( jsonPath ), StandardCharsets.UTF_8 );
+                JsonTable table = gson.fromJson( json, JsonTable.class );
+                String newName = m.newName != null ? m.newName : table.tableName;
+                assert( table.tableName.equals( m.initialName ) );
+                HubResult createdTableError = createTableFromJson( json, newName, request, transaction );
+                if( createdTableError != null ) {
+                    transaction.rollback();
+                    return createdTableError;
+                    //todo check
                 }
-                if ( csvCounter % BATCH_SIZE != 0 ) {
-                    String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, table.tableName, columns, valueJoiner.toString() );
-                    executeSqlUpdate( transaction, insertQuery );
-                    status.complete();
-                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                }
+                // import data from .csv file
+                importCsvFile( m.initialName + ".csv", table, transaction, extractedFolder, request, newName, status, ithTable++ );
             }
 
             transaction.commit();
@@ -2283,12 +2244,81 @@ public class Crud implements InformationObserver {
     }
 
 
+    private HubResult createTableFromJson ( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws GenericCatalogException, QueryExecutionException {
+        // create table from .json file
+        List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
+        int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
+        if ( tableAlreadyExists > 0 ) {
+            return new HubResult( String.format( "Cannot import the dataset since the schema '%s' already contains a table with the name '%s'", request.schema, newName ) );
+        }
+
+        String createTable = SchemaToJsonMapper.getCreateTableStatementFromJson( json, request.createPks, request.defaultValues, request.schema, newName, request.store );
+        executeSqlUpdate( transaction, createTable );
+        return null;
+    }
+
+
+    private void importCsvFile ( final String csvFileName, final JsonTable table, final Transaction transaction, final File extractedFolder, final HubRequest request, final String tableName, final Status status, final int ithTable ) throws IOException, QueryExecutionException {
+        StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
+        for ( JsonColumn col : table.getColumns() ) {
+            columnJoiner.add( "\"" + col.columnName + "\"" );
+        }
+        String columns = columnJoiner.toString();
+        StringJoiner valueJoiner = new StringJoiner( ",", "VALUES", "" );
+        StringJoiner rowJoiner;
+
+        //see https://www.callicoder.com/java-read-write-csv-file-opencsv/
+
+        final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
+        long csvCounter = 0;
+        try (
+                Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
+                CSVReader csvReader = new CSVReader( reader );
+        ) {
+            long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
+            String[] nextRecord;
+            while ( (nextRecord = csvReader.readNext()) != null ) {
+                rowJoiner = new StringJoiner( ",", "(", ")" );
+                for ( int i = 0; i < table.getColumns().size(); i++ ) {
+                    if ( PolyType.get( table.getColumns().get( i ).type ).getFamily() == PolyTypeFamily.CHARACTER ) {
+                        rowJoiner.add( "'" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.DATE ) {
+                        rowJoiner.add( "date '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIME ) {
+                        rowJoiner.add( "time '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else if ( PolyType.get( table.getColumns().get( i ).type ) == PolyType.TIMESTAMP ) {
+                        rowJoiner.add( "timestamp '" + StringEscapeUtils.escapeSql( nextRecord[i] ) + "'" );
+                    } else {
+                        rowJoiner.add( nextRecord[i] );
+                    }
+                }
+                valueJoiner.add( rowJoiner.toString() );
+                csvCounter++;
+                if ( csvCounter % BATCH_SIZE == 0 && csvCounter != 0 ) {
+                    String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
+                    executeSqlUpdate( transaction, insertQuery );
+                    valueJoiner = new StringJoiner( ",", "VALUES", "" );
+                    status.setStatus( csvCounter, lineCount, ithTable );
+                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
+                }
+            }
+            if ( csvCounter % BATCH_SIZE != 0 ) {
+                String insertQuery = String.format( "INSERT INTO \"%s\".\"%s\" %s %s", request.schema, tableName, columns, valueJoiner.toString() );
+                executeSqlUpdate( transaction, insertQuery );
+                status.setStatus( csvCounter, lineCount, ithTable );
+                WebSocket.broadcast( gson.toJson( status, Status.class ) );
+            }
+        }
+    }
+
+
     /**
      * Export a table into a .zip consisting of a json file containing information of the table and columns and a csv files with the data
      */
     Result exportTable( final Request req, final Response res ) {
         HubRequest request = gson.fromJson( req.body(), HubRequest.class );
         Transaction transaction = getTransaction( false );
+        HubMeta metaData = new HubMeta( request.schema );
 
         String randomFileName = UUID.randomUUID().toString();
         final Charset charset = StandardCharsets.UTF_8;
@@ -2298,57 +2328,72 @@ public class Crud implements InformationObserver {
             log.error( "Unable to create temp folder: {}", tempDir.getAbsolutePath() );
             return new Result( "Unable to create temp folder" );
         }
-        File tableFile = new File( tempDir, "table.csv" );
-        File catalogFile = new File( tempDir, "catalog.json" );
-        File zipFile = new File( tempDir, "table.zip" );
-        try (
+        File tableFile;
+        File catalogFile;
+        ArrayList<File> tableFiles = new ArrayList<>();
+        ArrayList<File> catalogFiles = new ArrayList<>();
+        final int BATCH_SIZE = RuntimeConfig.HUB_IMPORT_BATCH_SIZE.getInteger();
+        int ithTable = 0;
+        Status status = new Status( "tableExport", request.tables.size() );
+        try {
+            for( TableMapping table: request.tables.values() ) {
+                tableFile = new File( tempDir, table.initialName + ".csv" );
+                catalogFile = new File( tempDir, table.initialName + ".json" );
+                tableFiles.add(tableFile);
+                catalogFiles.add(catalogFile);
                 OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
                 FileOutputStream tableStream = new FileOutputStream( tableFile );
-                FileOutputStream zipStream = new FileOutputStream( zipFile );
-        ) {
-            log.info( String.format( "Exporting %s.%s", request.schema, request.table ) );
-            CatalogTable catalogTable = catalog.getTable( this.databaseName, request.schema, request.table );
+                log.info( String.format( "Exporting %s.%s", request.schema, table.initialName ) );
+                CatalogTable catalogTable = catalog.getTable( this.databaseName, request.schema, table.initialName );
 
-            catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
-            catalogWriter.flush();
+                catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
+                catalogWriter.flush();
+                catalogWriter.close();
 
-            String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, request.table );
-            // TODO use iterator instead of Result
-            Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
-            transaction.commit();
 
-            int totalRows = tableData.getData().length;
-            int counter = 0;
-            Status status = new Status( "tableExport", totalRows );
-            for ( String[] row : tableData.getData() ) {
-                int cols = row.length;
-                for ( int i = 0; i < cols; i++ ) {
-                    if ( row[i].contains( "\n" ) ) {
-                        String line = String.format( "\"%s\"", row[i] );
-                        tableStream.write( line.getBytes( charset ) );
-                    } else {
-                        tableStream.write( row[i].getBytes( charset ) );
+                String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, table.initialName );
+                // TODO use iterator instead of Result
+                Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
+
+                int totalRows = tableData.getData().length;
+                int counter = 0;
+                for ( String[] row : tableData.getData() ) {
+                    int cols = row.length;
+                    for ( int i = 0; i < cols; i++ ) {
+                        if ( row[i].contains( "\n" ) ) {
+                            String line = String.format( "\"%s\"", row[i] );
+                            tableStream.write( line.getBytes( charset ) );
+                        } else {
+                            tableStream.write( row[i].getBytes( charset ) );
+                        }
+                        if ( i != cols - 1 ) {
+                            tableStream.write( ",".getBytes( charset ) );
+                        } else {
+                            tableStream.write( "\n".getBytes( charset ) );
+                        }
                     }
-                    if ( i != cols - 1 ) {
-                        tableStream.write( ",".getBytes( charset ) );
-                    } else {
-                        tableStream.write( "\n".getBytes( charset ) );
+                    counter++;
+                    if ( counter % BATCH_SIZE == 0 ) {
+                        status.setStatus( counter, totalRows, ithTable );
+                        WebSocket.broadcast( gson.toJson( status, Status.class ) );
                     }
                 }
-                counter++;
-                if ( counter % 100 == 0 ) {
-                    status.setStatus( counter );
-                    WebSocket.broadcast( gson.toJson( status, Status.class ) );
-                }
+                status.setStatus( counter, totalRows, ithTable );
+                WebSocket.broadcast( gson.toJson( status, Status.class ) );
+                tableStream.flush();
+                tableStream.close();
+                metaData.addTable( table.initialName, counter );
+                ithTable++;
             }
             status.complete();
-            WebSocket.broadcast( gson.toJson( status, Status.class ) );
-            tableStream.flush();
 
+            File zipFile = new File( tempDir, "table.zip" );
+            FileOutputStream zipStream = new FileOutputStream( zipFile );
             //from https://www.baeldung.com/java-compress-and-uncompress
-            List<File> srcFiles = Arrays.asList( catalogFile, tableFile );
+            ArrayList<File> allFiles = new ArrayList<>(tableFiles);
+            allFiles.addAll(catalogFiles);
             try ( ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset ) ) {
-                for ( File fileToZip : srcFiles ) {
+                for ( File fileToZip : allFiles ) {
                     try ( FileInputStream fis = new FileInputStream( fileToZip ) ) {
                         ZipEntry zipEntry = new ZipEntry( fileToZip.getName() );
                         zipOut.putNextEntry( zipEntry );
@@ -2362,6 +2407,14 @@ public class Crud implements InformationObserver {
                 }
                 zipOut.finish();
             }
+            zipStream.close();
+
+            metaData.setFileSize( zipFile.length() );
+            File metaFile = new File( tempDir, "meta.json" );
+            FileOutputStream metaOutputStream = new FileOutputStream(metaFile);
+            metaOutputStream.write( gson.toJson( metaData, HubMeta.class ).getBytes() );
+            metaOutputStream.flush();
+            metaOutputStream.close();
 
             //send file to php backend using Unirest
             HttpResponse jsonResponse = Unirest.post( request.hubLink )
@@ -2369,24 +2422,23 @@ public class Crud implements InformationObserver {
                     .field( "userId", String.valueOf( request.userId ) )
                     .field( "secret", request.secret )
                     .field( "name", request.name )
+                    .field( "description", request.description )
                     .field( "pub", String.valueOf( request.pub ) )
                     .field( "dataset", zipFile )
+                    .field( "metaData", metaFile )
                     .asString();
 
             // Get result
             StringWriter writer = new StringWriter();
             IOUtils.copy( jsonResponse.getRawBody(), writer );
             String resultString = writer.toString();
-            log.info( String.format( "Exported %s.%s", request.schema, request.table ) );
+            log.info( String.format( "Exported %s.[%s]", request.schema, request.tables.values().stream().map( n -> n.initialName ).collect( Collectors.joining( "," ))));
 
             try {
                 return gson.fromJson( resultString, Result.class );
             } catch ( JsonSyntaxException e ) {
                 return new Result( resultString );
             }
-        } catch ( TransactionException e ) {
-            log.error( "Error while fetching table", e );
-            return new Result( "Error while fetching table" );
         } catch ( IOException e ) {
             log.error( "Failed to write temporary file", e );
             return new Result( "Failed to write temporary file" );
@@ -2397,6 +2449,11 @@ public class Crud implements InformationObserver {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
                 log.error( "Unable to delete temp folder: {}", tempDir.getAbsolutePath() );
+            }
+            try {
+                transaction.commit();
+            } catch ( TransactionException e ) {
+                log.error( "Error while fetching table", e );
             }
         }
     }
@@ -2425,6 +2482,7 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
+        boolean hasMoreRows = false;
         try {
             signature = processQuery( transaction, sqlSelect, parserConfig );
             final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
@@ -2437,9 +2495,19 @@ public class Crud implements InformationObserver {
             } else {
                 rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, getPageSize() ), new ArrayList<>() );
             }
+            hasMoreRows = iterator.hasNext();
             stopWatch.stop();
             signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
         } catch ( Throwable t ) {
+            if( transaction.isAnalyze() ) {
+                InformationManager analyzer = transaction.getQueryAnalyzer();
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
+                analyzer.addPage( exceptionPage );
+                analyzer.addGroup( exceptionGroup );
+                analyzer.registerInformation( exceptionElement );
+            }
             if ( iterator != null ) {
                 try {
                     ((AutoCloseable) iterator).close();
@@ -2501,45 +2569,9 @@ public class Crud implements InformationObserver {
                 header.add( dbCol );
             }
 
-            ArrayList<String[]> data = new ArrayList<>();
-            for ( List<Object> row : rows ) {
-                String[] temp = new String[row.size()];
-                int counter = 0;
-                for ( Object o : row ) {
-                    if ( o == null ) {
-                        temp[counter] = null;
-                    } else {
-                        switch ( header.get( counter ).dataType ) {
-                            case "TIMESTAMP":
-                                temp[counter] = TimestampString.fromMillisSinceEpoch( (long) o ).toString();
-                                break;
-                            case "DATE":
-                                temp[counter] = DateString.fromDaysSinceEpoch( (int) o ).toString();
-                                break;
-                            case "TIME":
-                                temp[counter] = TimeString.fromMillisOfDay( (int) o ).toString();
-                                break;
-                            default:
-                                temp[counter] = o.toString();
-                        }
-                        if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
-                            if ( o instanceof Array ) {
-                                try {
-                                    temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
-                                } catch ( SQLException sqlException ) {
-                                    temp[counter] = o.toString();
-                                }
-                            } else {
-                                temp[counter] = o.toString();
-                            }
-                        }
-                    }
-                    counter++;
-                }
-                data.add( temp );
-            }
+            ArrayList<String[]> data = computeResultData( rows, header );
 
-            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) );
+            return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) ).setHasMoreRows( hasMoreRows );
         } finally {
             try {
                 ((AutoCloseable) iterator).close();
@@ -2547,6 +2579,53 @@ public class Crud implements InformationObserver {
                 log.error( "Exception while closing result iterator", e );
             }
         }
+    }
+
+
+    /**
+     * Convert data from a query result to Strings readable in the UI
+     * @param rows Rows from the enumerable iterator
+     * @param header Header from the UI-ResultSet
+     */
+    ArrayList<String[]> computeResultData ( final List<List<Object>> rows, final List<DbColumn> header ) {
+        ArrayList<String[]> data = new ArrayList<>();
+        for ( List<Object> row : rows ) {
+            String[] temp = new String[row.size()];
+            int counter = 0;
+            for ( Object o : row ) {
+                if ( o == null ) {
+                    temp[counter] = null;
+                } else {
+                    switch ( header.get( counter ).dataType ) {
+                        case "TIMESTAMP":
+                            temp[counter] = TimestampString.fromMillisSinceEpoch( (long) o ).toString();
+                            break;
+                        case "DATE":
+                            temp[counter] = DateString.fromDaysSinceEpoch( (int) o ).toString();
+                            break;
+                        case "TIME":
+                            temp[counter] = TimeString.fromMillisOfDay( (int) o ).toString();
+                            break;
+                        default:
+                            temp[counter] = o.toString();
+                    }
+                    if ( header.get( counter ).dataType.endsWith( "ARRAY" ) ) {
+                        if ( o instanceof Array ) {
+                            try {
+                                temp[counter] = gson.toJson( ((Array) o).getArray(), Object[].class );
+                            } catch ( SQLException sqlException ) {
+                                temp[counter] = o.toString();
+                            }
+                        } else {
+                            temp[counter] = o.toString();
+                        }
+                    }
+                }
+                counter++;
+            }
+            data.add( temp );
+        }
+        return data;
     }
 
 
@@ -2582,6 +2661,15 @@ public class Crud implements InformationObserver {
         try {
             signature = processQuery( transaction, sqlUpdate, parserConfig );
         } catch ( Throwable t ) {
+            if( transaction.isAnalyze() ) {
+                InformationManager analyzer = transaction.getQueryAnalyzer();
+                InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
+                InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
+                InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
+                analyzer.addPage( exceptionPage );
+                analyzer.addGroup( exceptionGroup );
+                analyzer.registerInformation( exceptionElement );
+            }
             throw new QueryExecutionException( t );
         }
 

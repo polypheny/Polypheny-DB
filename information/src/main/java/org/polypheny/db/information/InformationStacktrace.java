@@ -14,29 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.config;
+package org.polypheny.db.information;
 
 
-/**
- * The type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;) e.g. text or number
- */
-public enum WebUiFormType {
-    TEXT( "text" ),
-    NUMBER( "number" ),
-    BOOLEAN( "boolean" ),
-    SELECT( "select" ),
-    CHECKBOXES( "checkboxes" );
-
-    private final String type;
+import java.util.UUID;
 
 
-    WebUiFormType( final String t ) {
-        this.type = t;
-    }
+public class InformationStacktrace extends Information {
 
+    Throwable exception;
 
-    @Override
-    public String toString() {
-        return this.type;
+    /**
+     * Constructor
+     *
+     * @param group The InformationGroup which this information belongs
+     * @param exception A throwable to display in the UI
+     */
+    public InformationStacktrace( final Throwable exception, final InformationGroup group ) {
+        super( UUID.randomUUID().toString(), group.getId() );
+        this.exception = exception;
     }
 }

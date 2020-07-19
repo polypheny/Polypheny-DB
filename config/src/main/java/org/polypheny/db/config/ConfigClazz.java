@@ -20,6 +20,7 @@ package org.polypheny.db.config;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.TypeAdapter;
 import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.typesafe.config.ConfigException;
@@ -35,6 +36,7 @@ import org.reflections.Reflections;
 public class ConfigClazz extends Config {
 
     @JsonAdapter(ClassesAdapter.class)
+    @SerializedName( "values" )
     private final Set<Class> classes;
     @JsonAdapter(ValueAdapter.class)
     private Class value;

@@ -18,6 +18,7 @@ package org.polypheny.db.config;
 
 
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.annotations.SerializedName;
 import com.typesafe.config.ConfigException;
 import java.util.EnumSet;
 import java.util.Set;
@@ -26,6 +27,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 public class ConfigEnum extends Config {
 
+    @SerializedName( "values" )
     private final Set<Enum> enumValues;
     private Enum value;
 
@@ -35,6 +37,7 @@ public class ConfigEnum extends Config {
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
         setEnum( defaultValue );
+        this.webUiFormType = WebUiFormType.SELECT;
     }
 
 

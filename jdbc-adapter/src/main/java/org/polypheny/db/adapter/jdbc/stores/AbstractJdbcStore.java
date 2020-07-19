@@ -84,7 +84,7 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     protected void registerJdbcPoolSizeInformation( String uniqueName ) {
-        informationPage = new InformationPage( uniqueName );
+        informationPage = new InformationPage( uniqueName ).setLabel( "Stores" );
         informationGroupConnectionPool = new InformationGroup( informationPage, "JDBC Connection Pool" );
 
         informationElements = new ArrayList<>();

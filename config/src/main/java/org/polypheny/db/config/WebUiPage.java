@@ -21,16 +21,25 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 
 /**
  * Page for the WebUi containing WebUiGroups that contain configuration elements.
  */
+@Accessors( chain = true )
 public class WebUiPage {
 
+    @Getter
     private String id;
+    @Getter
     private String title;
+    @Setter @Getter
+    private String label;
     private String description;
+    @Getter
     private String icon;
     private WebUiPage parentPage;
     private ConcurrentMap<String, WebUiGroup> groups = new ConcurrentHashMap<>();
@@ -72,21 +81,6 @@ public class WebUiPage {
 
     public boolean hasTitle() {
         return this.title != null;
-    }
-
-
-    public String getId() {
-        return id;
-    }
-
-
-    public String getTitle() {
-        return title;
-    }
-
-
-    public String getIcon() {
-        return icon;
     }
 
 

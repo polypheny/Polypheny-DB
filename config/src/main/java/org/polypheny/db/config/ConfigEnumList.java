@@ -19,6 +19,8 @@ package org.polypheny.db.config;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import com.typesafe.config.ConfigException;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -29,6 +31,7 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 public class ConfigEnumList extends Config {
 
+    @SerializedName( "values" )
     private final Set<Enum> enumValues;
     private final List<Enum> value;
 
@@ -38,6 +41,7 @@ public class ConfigEnumList extends Config {
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
         this.value = new ArrayList<>();
+        this.webUiFormType = WebUiFormType.CHECKBOXES;
     }
 
 
@@ -121,7 +125,15 @@ public class ConfigEnumList extends Config {
 
     @Override
     public boolean parseStringAndSetValue( String value ) {
-        throw new ConfigRuntimeException( "Parse and set is not implemented for this type." );
+        Gson gson = new Gson();
+        ArrayList<String> val = gson.fromJson( value, ArrayList.class );
+        List<Enum> toAdd = new ArrayList<>();
+        for( Enum e: enumValues ) {
+            if( val.contains( e.name() )){
+                toAdd.add(e);
+            }
+        }
+        return this.setEnumList( toAdd );
     }
 
 

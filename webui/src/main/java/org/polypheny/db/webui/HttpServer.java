@@ -124,6 +124,8 @@ public class HttpServer extends QueryInterface {
 
         post( "/getTables", crud::getTables, gson::toJson );
 
+        post( "/renameTable", crud::renameTable, gson::toJson );
+
         post( "/dropTruncateTable", crud::dropTruncateTable, gson::toJson );
 
         post( "/createTable", crud::createTable, gson::toJson );

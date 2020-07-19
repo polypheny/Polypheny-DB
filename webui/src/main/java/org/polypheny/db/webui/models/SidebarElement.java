@@ -18,18 +18,23 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.ArrayList;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 
 /**
  * Can be used to define data for the left sidebar in the UI.
  * Required for Gson.
  */
+@Accessors( chain = true )
 public class SidebarElement {
 
     private String id;
     private String name;
     private String icon;//todo: enum
     private String routerLink;
+    @Setter
+    private String label;
     private String cssClass;
     private ArrayList<SidebarElement> children = new ArrayList<>();
 
