@@ -238,7 +238,7 @@ public class IcarusRouter extends AbstractRouter {
     // therefore assumes that there is either no placement of a table on a store or a full placement.
     //
     @Override
-    protected CatalogColumnPlacement selectPlacement( RelNode node, CatalogTable table ) {
+    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
         // Update known stores
         updateKnownStores( table.placementsByStore.keySet() );
 
@@ -253,7 +253,7 @@ public class IcarusRouter extends AbstractRouter {
                 if ( placements.size() != table.columnIds.size() ) {
                     throw new RuntimeException( "The data store '" + storeId + "' does not contain a full table placement!" );
                 }
-                return Catalog.getInstance().getColumnPlacementsOnStore( storeId ).get( 0 );  // TODO: This is not a nice solution
+                return Catalog.getInstance().getColumnPlacementsOnStore( storeId );
             }
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedStoreId );

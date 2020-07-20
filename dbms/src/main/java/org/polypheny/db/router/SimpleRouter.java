@@ -18,13 +18,16 @@ package org.polypheny.db.router;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -52,11 +55,32 @@ public class SimpleRouter extends AbstractRouter {
 
     // Execute the table scan on the first placement of a table
     @Override
-    protected CatalogColumnPlacement selectPlacement( RelNode node, CatalogTable table ) {
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-        //
-        return Catalog.getInstance().getColumnPlacementsOnStore( table.placementsByStore.keySet().asList().get( 0 ) ).get( 0 );
+    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
+        // Find the store with the most column placements
+        int storeIdWithMostPlacements = -1;
+        int numOfPlacements = 0;
+        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet() ) {
+            if ( entry.getValue().size() > numOfPlacements ) {
+                storeIdWithMostPlacements = entry.getKey();
+                numOfPlacements = entry.getValue().size();
+            }
+        }
+
+        // Take the store with most placements as base and add missing column placements
+        List<CatalogColumnPlacement> placementList = new LinkedList<>();
+        try {
+            for ( long cid : table.columnIds ) {
+                if ( table.placementsByStore.get( storeIdWithMostPlacements ).contains( cid ) ) {
+                    placementList.add( Catalog.getInstance().getColumnPlacement( storeIdWithMostPlacements, cid ) );
+                } else {
+                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
+                }
+            }
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+
+        return placementList;
     }
 
 
