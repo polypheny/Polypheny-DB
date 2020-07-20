@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -46,10 +47,16 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
+import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.routing.Router;
@@ -173,36 +180,66 @@ public abstract class AbstractRouter implements Router {
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 // Get placements of this table
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
-                List<CatalogColumnPlacement> placements = catalog.getColumnPlacements( t.getColumnIds().get( 0 ) );
-
-                // Execute on all placements
-                List<TableModify> modifies = new ArrayList<>( placements.size() );
-                for ( CatalogColumnPlacement placement : placements ) {
-
-                    CatalogReader catalogReader = transaction.getCatalogReader();
-                    CatalogTable catalogTable;
-                    try {
-                        catalogTable = catalog.getTable( placement.tableId );
-                    } catch ( UnknownTableException | GenericCatalogException e ) {
-                        // This should not happen
-                        throw new RuntimeException( e );
+                CatalogTable catalogTable;
+                List<CatalogColumnPlacement> pkPlacements;
+                try {
+                    catalogTable = catalog.getTable( t.getTableId() );
+                    long pkid = catalogTable.primaryKey;
+                    List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+                    if ( pkColumnIds.size() != 1 ) {
+                        throw new RuntimeException( "Vertical portioning is not supported for tables with composite primary keys!" );
                     }
+                    CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+                    pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+                } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownKeyException e ) {
+                    throw new RuntimeException( e );
+                }
+
+                // Execute on all primary key placements
+                List<TableModify> modifies = new ArrayList<>( pkPlacements.size() );
+                for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
+                    CatalogReader catalogReader = transaction.getCatalogReader();
 
                     List<String> tableNames = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(
-                                    placement.storeUniqueName,
+                                    pkPlacement.storeUniqueName,
                                     catalogTable.getSchemaName(),
-                                    placement.physicalSchemaName ),
+                                    pkPlacement.physicalSchemaName ),
                             t.getLogicalTableName() );
                     RelOptTable physical = catalogReader.getTableForMember( tableNames );
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
+
+                    // Check if we need to execute on this store
+                    List<String> updateColumnList = new LinkedList<>( ((LogicalTableModify) node).getUpdateColumnList() );
+                    List<RexNode> sourceExpressionList = new LinkedList<>( ((LogicalTableModify) node).getSourceExpressionList() );
+                    if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
+                        Iterator<String> updateColumnListIterator = updateColumnList.iterator();
+                        Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
+                        while ( updateColumnListIterator.hasNext() ) {
+                            String columnName = updateColumnListIterator.next();
+                            sourceExpressionListIterator.next();
+                            try {
+                                CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                                if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.storeId, catalogColumn.id ) ) {
+                                    updateColumnListIterator.remove();
+                                    sourceExpressionListIterator.remove();
+                                }
+                            } catch ( GenericCatalogException | UnknownColumnException e ) {
+                                throw new RuntimeException( e );
+                            }
+                        }
+                        if ( updateColumnList.size() == 0 ) {
+                            continue;
+                        }
+                    }
+
+                    // Build DML
                     TableModify modify;
                     RelNode input = buildDml(
                             recursiveCopy( node.getInput( 0 ) ),
                             RelBuilder.create( transaction, cluster ),
-                            placement ).build();
+                            catalogTable,
+                            catalog.getColumnPlacementsOnStore( pkPlacement.storeId, catalogTable.id ) ).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                         modify = modifiableTable.toModificationRel(
                                 cluster,
@@ -210,8 +247,8 @@ public abstract class AbstractRouter implements Router {
                                 catalogReader,
                                 input,
                                 ((LogicalTableModify) node).getOperation(),
-                                ((LogicalTableModify) node).getUpdateColumnList(),
-                                ((LogicalTableModify) node).getSourceExpressionList(),
+                                updateColumnList,
+                                sourceExpressionList,
                                 ((LogicalTableModify) node).isFlattened()
                         );
                     } else {
@@ -220,8 +257,8 @@ public abstract class AbstractRouter implements Router {
                                 catalogReader,
                                 input,
                                 ((LogicalTableModify) node).getOperation(),
-                                ((LogicalTableModify) node).getUpdateColumnList(),
-                                ((LogicalTableModify) node).getSourceExpressionList(),
+                                updateColumnList,
+                                sourceExpressionList,
                                 ((LogicalTableModify) node).isFlattened()
                         );
                     }
@@ -251,19 +288,63 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogColumnPlacement placement ) {
+    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, placement );
+            buildDml( node.getInput( i ), builder, catalogTable, placements );
         }
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
-                return handleTableScan( builder, table, placement );
+                builder = handleTableScan(
+                        builder,
+                        table,
+                        placements.get( 0 ).storeUniqueName,
+                        catalogTable.getSchemaName(),
+                        catalogTable.name,
+                        placements.get( 0 ).physicalSchemaName,
+                        placements.get( 0 ).physicalTableName );
+                return builder;
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
         } else if ( node instanceof LogicalValues ) {
-            return handleValues( (LogicalValues) node, builder );
+            builder = handleValues( (LogicalValues) node, builder );
+            ArrayList<RexNode> rexNodes = new ArrayList<>();
+            for ( CatalogColumnPlacement ccp : placements ) {
+                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
+            }
+            return builder.project( rexNodes );
+        } else if ( node instanceof LogicalProject ) {
+            ArrayList<RexNode> rexNodes = new ArrayList<>();
+            for ( CatalogColumnPlacement ccp : placements ) {
+                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
+            }
+            for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
+                if ( !(rexNode instanceof RexInputRef) ) {
+                    rexNodes.add( rexNode );
+                }
+            }
+            return builder.project( rexNodes );
+        } else if ( node instanceof LogicalFilter ) {
+            RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
+            for ( RexNode operand : call.operands ) {
+                if ( operand instanceof RexInputRef ) {
+                    int index = ((RexInputRef) operand).getIndex();
+                    RelDataTypeField field = ((LogicalFilter) node).getInput().getRowType().getFieldList().get( index );
+                    CatalogColumn column;
+                    try {
+                        column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
+                    } catch ( GenericCatalogException | UnknownColumnException e ) {
+                        throw new RuntimeException( e );
+                    }
+                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).storeId, column.id ) ) {
+                        throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
+                        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                        // TODO: Use indexes
+                    }
+                }
+            }
+            return handleGeneric( node, builder );
         } else {
             return handleGeneric( node, builder );
         }
@@ -348,8 +429,8 @@ public abstract class AbstractRouter implements Router {
                             JoinRelType.INNER,
                             builder.call(
                                     SqlStdOperatorTable.EQUALS,
-                                    builder.field( 2, pkColumn.getTableName(), queue.removeFirst() ),
-                                    builder.field( 2, pkColumn.getTableName(), pkColumn.name ) ) );
+                                    builder.field( 2, pkColumn.getTableName(), pkColumn.name ),
+                                    builder.field( 2, pkColumn.getTableName(), queue.removeFirst() ) ) );
                 }
             }
             // final project
@@ -360,18 +441,6 @@ public abstract class AbstractRouter implements Router {
             builder.project( rexNodes );
             return builder;
         }
-    }
-
-
-    protected RelBuilder handleTableScan( RelBuilder builder, RelOptTableImpl table, CatalogColumnPlacement placement ) {
-        return handleTableScan(
-                builder,
-                table,
-                placement.storeUniqueName,
-                ((LogicalTable) table.getTable()).getLogicalSchemaName(),
-                ((LogicalTable) table.getTable()).getLogicalTableName(),
-                placement.physicalSchemaName,
-                placement.physicalTableName );
     }
 
 

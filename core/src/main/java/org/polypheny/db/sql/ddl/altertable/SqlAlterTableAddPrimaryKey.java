@@ -81,6 +81,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
                 columnIds.add( catalogColumn.id );
             }
             Catalog.getInstance().addPrimaryKey( catalogTable.id, columnIds );
+            // TODO update column placements
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
