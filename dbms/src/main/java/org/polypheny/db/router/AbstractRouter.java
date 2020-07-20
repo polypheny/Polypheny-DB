@@ -210,9 +210,11 @@ public abstract class AbstractRouter implements Router {
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                     // Check if we need to execute on this store
-                    List<String> updateColumnList = new LinkedList<>( ((LogicalTableModify) node).getUpdateColumnList() );
-                    List<RexNode> sourceExpressionList = new LinkedList<>( ((LogicalTableModify) node).getSourceExpressionList() );
+                    List<String> updateColumnList = null;
+                    List<RexNode> sourceExpressionList = null;
                     if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
+                        updateColumnList = new LinkedList<>( ((LogicalTableModify) node).getUpdateColumnList() );
+                        sourceExpressionList = new LinkedList<>( ((LogicalTableModify) node).getSourceExpressionList() );
                         Iterator<String> updateColumnListIterator = updateColumnList.iterator();
                         Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
                         while ( updateColumnListIterator.hasNext() ) {
