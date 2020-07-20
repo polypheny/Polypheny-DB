@@ -19,7 +19,8 @@ package org.polypheny.db.webui.models;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
+import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 
 
@@ -44,12 +45,56 @@ public class Placement {
         return this;
     }
 
-    @AllArgsConstructor
+
     public static class Store {
+
         private final String uniqueName;
         private final String adapterName;
         private final boolean dataReadOnly;
         private final boolean schemaReadOnly;
-        private final List<CatalogColumnPlacement> columnPlacements;
+        private final List<ColumnPlacement> columnPlacements;
+
+
+        public Store(
+                String uniqueName,
+                String adapterName,
+                boolean dataReadOnly,
+                boolean schemaReadOnly,
+                List<CatalogColumnPlacement> columnPlacements ) {
+            this.uniqueName = uniqueName;
+            this.adapterName = adapterName;
+            this.dataReadOnly = dataReadOnly;
+            this.schemaReadOnly = schemaReadOnly;
+            this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
+        }
+    }
+
+
+    private static class ColumnPlacement {
+
+        private final long tableId;
+        private final String tableName;
+        private final long columnId;
+        private final String columnName;
+        private final int storeId;
+        private final String storeUniqueName;
+        private final PlacementType placementType;
+        private final String physicalSchemaName;
+        private final String physicalTableName;
+        private final String physicalColumnName;
+
+
+        public ColumnPlacement( CatalogColumnPlacement catalogColumnPlacement ) {
+            this.tableId = catalogColumnPlacement.tableId;
+            this.tableName = catalogColumnPlacement.getLogicalTableName();
+            this.columnId = catalogColumnPlacement.columnId;
+            this.columnName = catalogColumnPlacement.getLogicalColumnName();
+            this.storeId = catalogColumnPlacement.storeId;
+            this.storeUniqueName = catalogColumnPlacement.storeUniqueName;
+            this.placementType = catalogColumnPlacement.placementType;
+            this.physicalSchemaName = catalogColumnPlacement.physicalSchemaName;
+            this.physicalTableName = catalogColumnPlacement.physicalTableName;
+            this.physicalColumnName = catalogColumnPlacement.physicalColumnName;
+        }
     }
 }
