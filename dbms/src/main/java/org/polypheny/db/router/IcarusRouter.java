@@ -247,14 +247,12 @@ public class IcarusRouter extends AbstractRouter {
             routingTable.initializeRow( queryClassString, table.placementsByStore.keySet() );
             selectedStoreId = table.placementsByStore.keySet().asList().get( 0 );
         }
-        for ( int storeId : table.placementsByStore.keySet() ) {
-            if ( storeId == selectedStoreId ) {
-                List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( storeId, table.id );
-                if ( placements.size() != table.columnIds.size() ) {
-                    throw new RuntimeException( "The data store '" + storeId + "' does not contain a full table placement!" );
-                }
-                return Catalog.getInstance().getColumnPlacementsOnStore( storeId );
+        if ( table.placementsByStore.containsKey( selectedStoreId ) ) {
+            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( selectedStoreId, table.id );
+            if ( placements.size() != table.columnIds.size() ) {
+                throw new RuntimeException( "The data store '" + selectedStoreId + "' does not contain a full table placement!" );
             }
+            return Catalog.getInstance().getColumnPlacementsOnStore( selectedStoreId );
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedStoreId );
     }
