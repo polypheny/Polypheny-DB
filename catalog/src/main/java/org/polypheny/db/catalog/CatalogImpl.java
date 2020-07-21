@@ -2055,7 +2055,7 @@ public class CatalogImpl extends Catalog {
                 // CatalogCombinedKey combinedKey = getCombinedKey( table.primaryKey );
                 if ( getKeyUniqueCount( table.primaryKey ) == 1 && isForeignKey( tableId ) ) {
                     // This primary key is the only constraint for the uniqueness of this key.
-                    throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create an unique constraint." );
+                    throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key, first drop the foreign keys or create a unique constraint." );
                 }
                 synchronized ( this ) {
                     setPrimaryKey( tableId, null );
@@ -2361,7 +2361,7 @@ public class CatalogImpl extends Catalog {
                 // CatalogCombinedKey key = getCombinedKey( table.primaryKey );
                 if ( isForeignKey( table.primaryKey ) ) {
                     if ( getKeyUniqueCount( table.primaryKey ) < 2 ) {
-                        throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key either drop the foreign key or create an unique constraint." );
+                        throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To drop this primary key either drop the foreign key or create a unique constraint." );
                     }
                 }
 
