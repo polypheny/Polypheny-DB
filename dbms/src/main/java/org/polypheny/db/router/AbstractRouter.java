@@ -186,9 +186,6 @@ public abstract class AbstractRouter implements Router {
                     catalogTable = catalog.getTable( t.getTableId() );
                     long pkid = catalogTable.primaryKey;
                     List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-                    if ( pkColumnIds.size() != 1 ) {
-                        throw new RuntimeException( "Vertical portioning is not supported for tables with composite primary keys!" );
-                    }
                     CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
                     pkPlacements = catalog.getColumnPlacements( pkColumn.id );
                 } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownKeyException e ) {
@@ -392,14 +389,14 @@ public abstract class AbstractRouter implements Router {
             // We need to join placements on different stores
 
             // Get primary key
-            CatalogColumn pkColumn;
+            List<CatalogColumn> pkColumns = new LinkedList<>();
+            List<Long> pkColumnIds;
             try {
                 long pkid = catalog.getTable( placements.get( 0 ).tableId ).primaryKey;
-                List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-                if ( pkColumnIds.size() != 1 ) {
-                    throw new RuntimeException( "Vertical portioning is not supported for tables with composite primary keys!" );
+                pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+                for ( long pkColumnId : pkColumnIds ) {
+                    pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
                 }
-                pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
             } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownKeyException e ) {
                 throw new RuntimeException( e );
             }
@@ -407,9 +404,11 @@ public abstract class AbstractRouter implements Router {
             // Add primary key
             try {
                 for ( Entry<Integer, List<CatalogColumnPlacement>> entry : sortedPlacements.entrySet() ) {
-                    CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
-                    if ( !entry.getValue().contains( pkPlacement ) ) {
-                        entry.getValue().add( pkPlacement );
+                    for ( CatalogColumn pkColumn : pkColumns ) {
+                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
+                        if ( !entry.getValue().contains( pkPlacement ) ) {
+                            entry.getValue().add( pkPlacement );
+                        }
                     }
                 }
             } catch ( GenericCatalogException e ) {
@@ -430,24 +429,26 @@ public abstract class AbstractRouter implements Router {
                 if ( first ) {
                     first = false;
                 } else {
-                    queue.addFirst( ccps.get( 0 ).storeUniqueName + "_" + pkColumn.name );
                     ArrayList<RexNode> rexNodes = new ArrayList<>();
                     for ( CatalogColumnPlacement p : ccps ) {
-                        if ( p.columnId == pkColumn.id ) {
-                            rexNodes.add( builder.alias(
-                                    builder.field( p.getLogicalColumnName() ),
-                                    ccps.get( 0 ).storeUniqueName + "_" + p.getLogicalColumnName() ) );
+                        if ( pkColumnIds.contains( p.columnId ) ) {
+                            String alias = ccps.get( 0 ).storeUniqueName + "_" + p.getLogicalColumnName();
+                            rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
+                            queue.addFirst( alias );
+                            queue.addFirst( p.getLogicalColumnName() );
                         } else {
                             rexNodes.add( builder.field( p.getLogicalColumnName() ) );
                         }
                     }
                     builder.project( rexNodes );
-                    builder.join(
-                            JoinRelType.INNER,
-                            builder.call(
-                                    SqlStdOperatorTable.EQUALS,
-                                    builder.field( 2, pkColumn.getTableName(), pkColumn.name ),
-                                    builder.field( 2, pkColumn.getTableName(), queue.removeFirst() ) ) );
+                    List<RexNode> joinConditions = new LinkedList<>();
+                    for ( int i = 0; i < pkColumnIds.size(); i++ ) {
+                        joinConditions.add( builder.call(
+                                SqlStdOperatorTable.EQUALS,
+                                builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ),
+                                builder.field( 2, ccps.get( 0 ).getLogicalTableName(), queue.removeFirst() ) ) );
+                    }
+                    builder.join( JoinRelType.INNER, joinConditions );
                 }
             }
             // final project
