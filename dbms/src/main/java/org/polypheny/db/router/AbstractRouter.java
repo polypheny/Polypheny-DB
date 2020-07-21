@@ -311,38 +311,48 @@ public abstract class AbstractRouter implements Router {
             }
         } else if ( node instanceof LogicalValues ) {
             builder = handleValues( (LogicalValues) node, builder );
-            ArrayList<RexNode> rexNodes = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : placements ) {
-                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-            }
-            return builder.project( rexNodes );
-        } else if ( node instanceof LogicalProject ) {
-            ArrayList<RexNode> rexNodes = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : placements ) {
-                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-            }
-            for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
-                if ( !(rexNode instanceof RexInputRef) ) {
-                    rexNodes.add( rexNode );
+            if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, no additional checks required
+                return builder;
+            } else { // partitioned, add additional project
+                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                for ( CatalogColumnPlacement ccp : placements ) {
+                    rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                 }
+                return builder.project( rexNodes );
             }
-            return builder.project( rexNodes );
-        } else if ( node instanceof LogicalFilter ) {
-            RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
-            for ( RexNode operand : call.operands ) {
-                if ( operand instanceof RexInputRef ) {
-                    int index = ((RexInputRef) operand).getIndex();
-                    RelDataTypeField field = ((LogicalFilter) node).getInput().getRowType().getFieldList().get( index );
-                    CatalogColumn column;
-                    try {
-                        column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
-                    } catch ( GenericCatalogException | UnknownColumnException e ) {
-                        throw new RuntimeException( e );
+        } else if ( node instanceof LogicalProject ) {
+            if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, generic handling is sufficient
+                return handleGeneric( node, builder );
+            } else { // partitioned, adjust project
+                ArrayList<RexNode> rexNodes = new ArrayList<>();
+                for ( CatalogColumnPlacement ccp : placements ) {
+                    rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
+                }
+                for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
+                    if ( !(rexNode instanceof RexInputRef) ) {
+                        rexNodes.add( rexNode );
                     }
-                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).storeId, column.id ) ) {
-                        throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
-                        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                        // TODO: Use indexes
+                }
+                return builder.project( rexNodes );
+            }
+        } else if ( node instanceof LogicalFilter ) {
+            if ( catalogTable.columnIds.size() != placements.size() ) { // partitioned, check if there is a illegal condition
+                RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
+                for ( RexNode operand : call.operands ) {
+                    if ( operand instanceof RexInputRef ) {
+                        int index = ((RexInputRef) operand).getIndex();
+                        RelDataTypeField field = ((LogicalFilter) node).getInput().getRowType().getFieldList().get( index );
+                        CatalogColumn column;
+                        try {
+                            column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
+                        } catch ( GenericCatalogException | UnknownColumnException e ) {
+                            throw new RuntimeException( e );
+                        }
+                        if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).storeId, column.id ) ) {
+                            throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
+                            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            // TODO: Use indexes
+                        }
                     }
                 }
             }
