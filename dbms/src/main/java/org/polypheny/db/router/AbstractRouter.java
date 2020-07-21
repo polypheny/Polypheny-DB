@@ -209,29 +209,34 @@ public abstract class AbstractRouter implements Router {
                     RelOptTable physical = catalogReader.getTableForMember( tableNames );
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
-                    // Check if we need to execute on this store
-                    List<String> updateColumnList = null;
-                    List<RexNode> sourceExpressionList = null;
-                    if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
-                        updateColumnList = new LinkedList<>( ((LogicalTableModify) node).getUpdateColumnList() );
-                        sourceExpressionList = new LinkedList<>( ((LogicalTableModify) node).getSourceExpressionList() );
-                        Iterator<String> updateColumnListIterator = updateColumnList.iterator();
-                        Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
-                        while ( updateColumnListIterator.hasNext() ) {
-                            String columnName = updateColumnListIterator.next();
-                            sourceExpressionListIterator.next();
-                            try {
-                                CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                                if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.storeId, catalogColumn.id ) ) {
-                                    updateColumnListIterator.remove();
-                                    sourceExpressionListIterator.remove();
+                    // Get placements on store
+                    List<CatalogColumnPlacement> placementsOnStore = catalog.getColumnPlacementsOnStore( pkPlacement.storeId, catalogTable.id );
+
+                    // If this is a update, check whether we need to execute on this store at all
+                    List<String> updateColumnList = ((LogicalTableModify) node).getUpdateColumnList();
+                    List<RexNode> sourceExpressionList = ((LogicalTableModify) node).getSourceExpressionList();
+                    if ( placementsOnStore.size() != catalogTable.columnIds.size() ) {
+                        if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
+                            updateColumnList = new LinkedList<>( ((LogicalTableModify) node).getUpdateColumnList() );
+                            sourceExpressionList = new LinkedList<>( ((LogicalTableModify) node).getSourceExpressionList() );
+                            Iterator<String> updateColumnListIterator = updateColumnList.iterator();
+                            Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
+                            while ( updateColumnListIterator.hasNext() ) {
+                                String columnName = updateColumnListIterator.next();
+                                sourceExpressionListIterator.next();
+                                try {
+                                    CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                                    if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.storeId, catalogColumn.id ) ) {
+                                        updateColumnListIterator.remove();
+                                        sourceExpressionListIterator.remove();
+                                    }
+                                } catch ( GenericCatalogException | UnknownColumnException e ) {
+                                    throw new RuntimeException( e );
                                 }
-                            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                                throw new RuntimeException( e );
                             }
-                        }
-                        if ( updateColumnList.size() == 0 ) {
-                            continue;
+                            if ( updateColumnList.size() == 0 ) {
+                                continue;
+                            }
                         }
                     }
 
@@ -241,7 +246,7 @@ public abstract class AbstractRouter implements Router {
                             recursiveCopy( node.getInput( 0 ) ),
                             RelBuilder.create( transaction, cluster ),
                             catalogTable,
-                            catalog.getColumnPlacementsOnStore( pkPlacement.storeId, catalogTable.id ) ).build();
+                            placementsOnStore ).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                         modify = modifiableTable.toModificationRel(
                                 cluster,
