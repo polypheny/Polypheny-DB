@@ -415,6 +415,17 @@ public abstract class Catalog {
 
 
     /**
+     * Checks if there is a column with the specified name in the specified table.
+     *
+     * @param storeId  The id of the store
+     * @param columnId The id of the column
+     * @return true if there is a column placement, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract boolean checkIfExistsColumnPlacement( int storeId, long columnId );
+
+
+    /**
      * Get all placements of a column
      *
      * @param columnId The id of the column
@@ -450,12 +461,22 @@ public abstract class Catalog {
 
 
     /**
+     * Update type of a placement.
+     *
+     * @param storeId       The id of the store
+     * @param columnId      The id of the column
+     * @param placementType The new type of placement
+     */
+    public abstract void updateColumnPlacementType( int storeId, long columnId, PlacementType placementType ) throws UnknownColumnPlacementException;
+
+
+    /**
      * Change physical names of a placement.
      *
-     * @param storeId The id of the store
-     * @param columnId The id of the column
+     * @param storeId            The id of the store
+     * @param columnId           The id of the column
      * @param physicalSchemaName The physical schema name
-     * @param physicalTableName The physical table name
+     * @param physicalTableName  The physical table name
      * @param physicalColumnName The physical column name
      */
     public abstract void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException, UnknownColumnPlacementException;
@@ -785,11 +806,18 @@ public abstract class Catalog {
     public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException, UnknownStoreException;
 
     /**
+     * Get a store by its id
+     *
+     * @return List of stores
+     */
+    public abstract CatalogStore getStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
+
+    /**
      * Add a store
      *
      * @param uniqueName The unique name of the store
-     * @param adapter The class name of the adapter
-     * @param settings The configuration of the store
+     * @param adapter    The class name of the adapter
+     * @param settings   The configuration of the store
      * @return The id of the newly added store
      */
     public abstract int addStore( String uniqueName, String adapter, Map<String, String> settings ) throws GenericCatalogException;

@@ -91,7 +91,7 @@ class QueryColumn {
 
 
     public static QueryColumn fromCatalogColumn( CatalogColumn column ) {
-        return new QueryColumn( column.schemaName, column.tableName, column.name, column.type );
+        return new QueryColumn( column.getSchemaName(), column.getTableName(), column.name, column.type );
     }
 
 

@@ -20,11 +20,17 @@ package org.polypheny.db.sql.ddl.altertable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -74,6 +80,8 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         try {
+            CatalogPrimaryKey oldPk = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+
             List<Long> columnIds = new LinkedList<>();
             for ( SqlNode node : columnList.getList() ) {
                 String columnName = node.toString();
@@ -81,7 +89,28 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
                 columnIds.add( catalogColumn.id );
             }
             Catalog.getInstance().addPrimaryKey( catalogTable.id, columnIds );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+
+            // Add new column placements
+            long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficent to check for one because all get replicated on all stores
+            List<CatalogColumnPlacement> oldPkPlacements = Catalog.getInstance().getColumnPlacements( pkColumnId );
+            for ( CatalogColumnPlacement ccp : oldPkPlacements ) {
+                for ( long columnId : columnIds ) {
+                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( ccp.storeId, columnId ) ) {
+                        Catalog.getInstance().addColumnPlacement(
+                                ccp.storeId,
+                                columnId,
+                                PlacementType.AUTOMATIC,
+                                null, // Will be set later
+                                null, // Will be set later
+                                null ); // Will be set later
+                        StoreManager.getInstance().getStore( ccp.storeId ).addColumn(
+                                context,
+                                Catalog.getInstance().getTable( ccp.tableId ),
+                                Catalog.getInstance().getColumn( columnId ) );
+                    }
+                }
+            }
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownKeyException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

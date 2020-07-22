@@ -18,9 +18,11 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
 
 
 /**
@@ -31,52 +33,66 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
 
     public final long id;
     public final long tableId;
-    public final String tableName;
     public final long schemaId;
-    public final String schemaName;
     public final long databaseId;
-    public final String databaseName;
     public List<Long> columnIds;
-    public List<String> columnNames;
 
 
     public CatalogKey(
             final long id,
             final long tableId,
-            @NonNull final String tableName,
             final long schemaId,
-            @NonNull final String schemaName,
             final long databaseId,
-            @NonNull final String databaseName,
-            final List<Long> columnIds,
-            final List<String> columnNames ) {
+            final List<Long> columnIds ) {
         this.id = id;
         this.tableId = tableId;
-        this.tableName = tableName;
         this.schemaId = schemaId;
-        this.schemaName = schemaName;
         this.databaseId = databaseId;
-        this.databaseName = databaseName;
         this.columnIds = columnIds;
-        this.columnNames = columnNames;
     }
 
 
     public CatalogKey(
             final long id,
             final long tableId,
-            @NonNull final String tableName,
             final long schemaId,
-            @NonNull final String schemaName,
-            final long databaseId,
-            @NonNull final String databaseName ) {
-        this( id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, null, null );
+            final long databaseId ) {
+        this( id, tableId, schemaId, databaseId, null );
+    }
+
+
+    @SneakyThrows
+    public String getDatabaseName() {
+        return Catalog.getInstance().getDatabase( databaseId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getSchemaName() {
+        return Catalog.getInstance().getSchema( schemaId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getTableName() {
+        return Catalog.getInstance().getTable( tableId ).name;
+    }
+
+
+    @SneakyThrows
+    public List<String> getColumnNames() {
+        Catalog catalog = Catalog.getInstance();
+        List<String> columnNames = new LinkedList<>();
+        for ( long columnId : columnIds ) {
+            columnNames.add( catalog.getColumn( columnId ).name );
+        }
+        return columnNames;
     }
 
 
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{id, tableId, tableName, schemaId, schemaName, databaseId, databaseName, null, null};
+        return new Serializable[]{ id, tableId, getTableName(), schemaId, getSchemaName(), databaseId, getDatabaseName(), null, null };
     }
 
 

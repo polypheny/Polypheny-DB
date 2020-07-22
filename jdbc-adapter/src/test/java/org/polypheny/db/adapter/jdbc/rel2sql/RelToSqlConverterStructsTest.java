@@ -208,11 +208,16 @@ public class RelToSqlConverterStructsTest {
         }
     };
 
-    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( false ).add( "myDb", SCHEMA ).plus();
+    private static final SchemaPlus ROOT_SCHEMA = AbstractPolyphenyDbSchema.createRootSchema( "" ).add( "myDb", SCHEMA ).plus();
 
 
     private RelToSqlConverterTest.Sql sql( String sql ) {
-        return new RelToSqlConverterTest.Sql( ROOT_SCHEMA, sql, PolyphenyDbSqlDialect.DEFAULT, RelToSqlConverterTest.DEFAULT_REL_CONFIG, ImmutableList.of() );
+        return new RelToSqlConverterTest.Sql(
+                ROOT_SCHEMA,
+                sql,
+                PolyphenyDbSqlDialect.DEFAULT,
+                RelToSqlConverterTest.DEFAULT_REL_CONFIG,
+                ImmutableList.of() );
     }
 
 

@@ -85,7 +85,6 @@ import org.polypheny.db.adapter.StoreManager.AdapterInformation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
-import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -152,6 +151,7 @@ import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
@@ -1096,7 +1096,7 @@ public class Crud implements InformationObserver {
             ArrayList<String> primaryColumns;
             if ( catalogTable.primaryKey != null ) {
                 CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                primaryColumns = new ArrayList<>( primaryKey.columnNames );
+                primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
             } else {
                 primaryColumns = new ArrayList<>();
             }
@@ -1375,8 +1375,7 @@ public class Crud implements InformationObserver {
             // get primary key
             if ( catalogTable.primaryKey != null ) {
                 CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                // TODO: This does not really make much sense... A table can only have one primary key at the same time.
-                for ( String columnName : primaryKey.columnNames ) {
+                for ( String columnName : primaryKey.getColumnNames() ) {
                     if ( !temp.containsKey( "" ) ) {
                         temp.put( "", new ArrayList<>() );
                     }
@@ -1392,7 +1391,7 @@ public class Crud implements InformationObserver {
             List<CatalogConstraint> constraints = catalog.getConstraints( catalogTable.id );
             for ( CatalogConstraint catalogConstraint : constraints ) {
                 if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
-                    temp.put( catalogConstraint.name, new ArrayList<>( catalogConstraint.key.columnNames ) );
+                    temp.put( catalogConstraint.name, new ArrayList<>( catalogConstraint.key.getColumnNames() ) );
                 }
             }
             for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
@@ -1403,7 +1402,7 @@ public class Crud implements InformationObserver {
             temp.clear();
             List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
             for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                temp.put( catalogForeignKey.name, new ArrayList<>( catalogForeignKey.columnNames ) );
+                temp.put( catalogForeignKey.name, new ArrayList<>( catalogForeignKey.getColumnNames() ) );
             }
             for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
                 resultList.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
@@ -1546,7 +1545,7 @@ public class Crud implements InformationObserver {
             for ( CatalogIndex catalogIndex : catalogIndexes ) {
                 String[] arr = new String[3];
                 arr[0] = catalogIndex.name;
-                arr[1] = String.join( ", ", catalogIndex.key.columnNames );
+                arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
                 arr[2] = catalogIndex.type.name();
                 data.add( arr );
             }
@@ -1622,59 +1621,24 @@ public class Crud implements InformationObserver {
     /**
      * Get placements of a table
      */
-    Result getPlacements( final Request req, final Response res ) {
+    Placement getPlacements( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
         String schemaName = index.getSchema();
         String tableName = index.getTable();
-        Result result;
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
             // Map<Integer, List<CatalogColumnPlacement>> placementsByStore = table.placementsByStore;
-            DbColumn[] header = {
-                    new DbColumn( "Store" ),
-                    new DbColumn( "Adapter" ),
-                    new DbColumn( "DataReadOnly" ),
-                    new DbColumn( "SchemaReadOnly" ),
-                    new DbColumn( "Columns" ) };
-
-            ArrayList<String[]> data = new ArrayList<>();
+            Placement p = new Placement();
             for ( CatalogStore catalogStore : catalog.getStores() ) {
                 Store store = StoreManager.getInstance().getStore( catalogStore.id );
                 List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                if ( placements.size() == 0 ) {
-                    continue;
-                }
-                String[] arr = new String[5];
-                arr[0] = store.getUniqueName();
-                arr[1] = store.getAdapterName();
-                arr[2] = String.valueOf( store.isDataReadOnly() );
-                arr[3] = String.valueOf( store.isSchemaReadOnly() );
-                arr[4] = "";
-                boolean first = true;
-                for ( CatalogColumnPlacement p : placements ) {
-                    String prefix = ", ";
-                    String suffix = "";
-                    if ( first ) {
-                        first = false;
-                        prefix = "";
-                    }
-                    if ( p.placementType == PlacementType.MANUAL ) {
-                        prefix += "<b>";
-                        suffix += "</b>";
-                    }
-                    arr[4] += prefix + p.columnName + suffix;
-                }
-
-                data.add( arr );
+                p.addStore( new Placement.Store( store.getUniqueName(), store.getAdapterName(), store.isDataReadOnly(), store.isSchemaReadOnly(), placements ));
             }
-
-            result = new Result( header, data.toArray( new String[0][4] ) );
-
+            return p;
         } catch ( GenericCatalogException | UnknownTableException e ) {
             log.error( "Caught exception while getting placements", e );
-            result = new Result( e );
+            return new Placement( e );
         }
-        return result;
     }
 
 
@@ -1685,12 +1649,27 @@ public class Crud implements InformationObserver {
      */
     Result addDropPlacement( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
-        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) && !index.getMethod().toUpperCase().equals( "MODIFY" ) ) {
             return new Result( "Invalid request" );
         }
-        String query = String.format( "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT \"%s\"", index.getSchema(), index.getTable(), index.getMethod().toUpperCase(), index.getName() );
+        StringJoiner columnJoiner = new StringJoiner( ",", "(", ")");
+        int counter = 0;
+        if ( !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+            for( String col : index.getColumns() ) {
+                columnJoiner.add( "\"" + col + "\"" );
+                counter++;
+            }
+        }
+        String columnListStr = counter > 0 ? columnJoiner.toString() : "";
+        String query = String.format(
+                "ALTER TABLE \"%s\".\"%s\" %s PLACEMENT %s ON STORE \"%s\"",
+                index.getSchema(),
+                index.getTable(),
+                index.getMethod().toUpperCase(),
+                columnListStr,
+                index.getName() );
         Transaction transaction = getTransaction();
-        int affectedRows = 0;
+        int affectedRows;
         try {
             affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -1826,14 +1805,14 @@ public class Crud implements InformationObserver {
                     // get foreign keys
                     List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
                     for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                        for ( int i = 0; i < catalogForeignKey.referencedKeyColumnNames.size(); i++ ) {
+                        for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
                             fKeys.add( ForeignKey.builder()
-                                    .pkTableSchema( catalogForeignKey.referencedKeySchemaName )
-                                    .pkTableName( catalogForeignKey.referencedKeyTableName )
-                                    .pkColumnName( catalogForeignKey.referencedKeyColumnNames.get( i ) )
-                                    .fkTableSchema( catalogForeignKey.schemaName )
-                                    .fkTableName( catalogForeignKey.tableName )
-                                    .fkColumnName( catalogForeignKey.columnNames.get( i ) )
+                                    .pkTableSchema( catalogForeignKey.getReferencedKeySchemaName() )
+                                    .pkTableName( catalogForeignKey.getReferencedKeyTableName() )
+                                    .pkColumnName( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                    .fkTableSchema( catalogForeignKey.getSchemaName() )
+                                    .fkTableName( catalogForeignKey.getTableName() )
+                                    .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
                                     .fkName( catalogForeignKey.name )
                                     .pkName( "" ) // TODO
                                     .build() );
@@ -1841,15 +1820,15 @@ public class Crud implements InformationObserver {
                     }
 
                     // get tables with its columns
-                    DbTable table = new DbTable( catalogTable.name, catalogTable.schemaName );
-                    for ( String columnName : catalogTable.columnNames ) {
+                    DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName() );
+                    for ( String columnName : catalogTable.getColumnNames() ) {
                         table.addColumn( new DbColumn( columnName ) );
                     }
 
                     // get primary key with its columns
                     if ( catalogTable.primaryKey != null ) {
                         CatalogPrimaryKey catalogPrimaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                        for ( String columnName : catalogPrimaryKey.columnNames ) {
+                        for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
                             table.addPrimaryKeyField( columnName );
                         }
                     }
@@ -1859,10 +1838,10 @@ public class Crud implements InformationObserver {
                     for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
                         if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
                             // TODO: unique constraints can be over multiple columns.
-                            if ( catalogConstraint.key.columnNames.size() == 1 &&
-                                    catalogConstraint.key.schemaName.equals( table.getSchema() ) &&
-                                    catalogConstraint.key.tableName.equals( table.getTableName() ) ) {
-                                table.addUniqueColumn( catalogConstraint.key.columnNames.get( 0 ) );
+                            if ( catalogConstraint.key.getColumnNames().size() == 1 &&
+                                    catalogConstraint.key.getSchemaName().equals( table.getSchema() ) &&
+                                    catalogConstraint.key.getTableName().equals( table.getTableName() ) ) {
+                                table.addUniqueColumn( catalogConstraint.key.getColumnNames().get( 0 ) );
                             }
                             // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
                         }
@@ -1872,10 +1851,10 @@ public class Crud implements InformationObserver {
                     List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, true );
                     for ( CatalogIndex catalogIndex : catalogIndexes ) {
                         // TODO: unique indexes can be over multiple columns.
-                        if ( catalogIndex.key.columnNames.size() == 1 &&
-                                catalogIndex.key.schemaName.equals( table.getSchema() ) &&
-                                catalogIndex.key.tableName.equals( table.getTableName() ) ) {
-                            table.addUniqueColumn( catalogIndex.key.columnNames.get( 0 ) );
+                        if ( catalogIndex.key.getColumnNames().size() == 1 &&
+                                catalogIndex.key.getSchemaName().equals( table.getSchema() ) &&
+                                catalogIndex.key.getTableName().equals( table.getTableName() ) ) {
+                            table.addUniqueColumn( catalogIndex.key.getColumnNames().get( 0 ) );
                         }
                         // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
                     }

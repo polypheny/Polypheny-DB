@@ -215,7 +215,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 }
                 stores = ImmutableList.of( storeInstance );
             } else {
-                // TODO: Ask router on which store(s) the table should be placed
+                // Ask router on which store(s) the table should be placed
                 stores = transaction.getRouter().createTable( schemaId, transaction );
             }
 

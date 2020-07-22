@@ -387,7 +387,8 @@ public class SqlToRelConverter {
         if ( query.isA( SqlKind.DML ) ) {
             return;
         }
-        // Verify that conversion from SQL to relational algebra did not perturb any type information.  (We can't do this if the SQL statement is something like an INSERT which has no
+        // Verify that conversion from SQL to relational algebra did not perturb any type information.
+        // (We can't do this if the SQL statement is something like an INSERT which has no
         // validator type information associated with its result, hence the namespace check above.)
         final List<RelDataTypeField> validatedFields = validator.getValidatedNodeType( query ).getFieldList();
         final RelDataType validatedRowType =

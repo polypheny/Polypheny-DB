@@ -25,6 +25,7 @@ import com.google.common.collect.Lists;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
@@ -54,6 +55,7 @@ import org.polypheny.db.util.Util;
 /**
  * Unit test for {@link RelOptUtil} and other classes in this package.
  */
+@Ignore
 public class RelOptUtilTest {
 
     /**
@@ -61,7 +63,7 @@ public class RelOptUtilTest {
      */
     private static Frameworks.ConfigBuilder config() {
         final SchemaPlus schema = Frameworks
-                .createRootSchema( true )
+                .createRootSchema( false )
                 .add( "scott", new ReflectiveSchema( new ScottSchema() ) );
 
         return Frameworks.newConfigBuilder()
@@ -103,7 +105,9 @@ public class RelOptUtilTest {
                 .add( "f0", null, PolyType.DECIMAL, 5, 2 )
                 .add( "f1", null, PolyType.VARCHAR, 10 )
                 .build();
-        TestUtil.assertEqualsVerbose( TestUtil.fold( "f0 DECIMAL(5, 2) NOT NULL,", "f1 VARCHAR(10) NOT NULL" ), Util.toLinux( RelOptUtil.dumpType( t1 ) + "\n" ) );
+        TestUtil.assertEqualsVerbose(
+                TestUtil.fold( "f0 DECIMAL(5, 2) NOT NULL,", "f1 VARCHAR(10) NOT NULL" ),
+                Util.toLinux( RelOptUtil.dumpType( t1 ) + "\n" ) );
 
         RelDataType t2 = typeFactory.builder()
                 .add( "f0", null, t1 )
@@ -140,14 +144,18 @@ public class RelOptUtilTest {
 
 
     /**
-     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition contains just one which is a EQUAL operator.
+     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition
+     * contains just one which is a EQUAL operator.
      */
     @Test
     public void testSplitJoinConditionEquals() {
         int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
-        RexNode joinCond = REL_BUILDER.call( SqlStdOperatorTable.EQUALS, RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ), RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
+        RexNode joinCond = REL_BUILDER.call(
+                SqlStdOperatorTable.EQUALS,
+                RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
+                RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
         splitJoinConditionHelper(
                 joinCond,
@@ -159,21 +167,31 @@ public class RelOptUtilTest {
 
 
     /**
-     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition contains just one which is a IS NOT DISTINCT operator.
+     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition
+     * contains just one which is a IS NOT DISTINCT operator.
      */
     @Test
     public void testSplitJoinConditionIsNotDistinctFrom() {
         int leftJoinIndex = EMP_SCAN.getRowType().getFieldNames().indexOf( "deptno" );
         int rightJoinIndex = DEPT_ROW.getFieldNames().indexOf( "deptno" );
 
-        RexNode joinCond = REL_BUILDER.call( SqlStdOperatorTable.IS_NOT_DISTINCT_FROM, RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ), RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
+        RexNode joinCond = REL_BUILDER.call(
+                SqlStdOperatorTable.IS_NOT_DISTINCT_FROM,
+                RexInputRef.of( leftJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ),
+                RexInputRef.of( EMP_ROW.getFieldCount() + rightJoinIndex, EMP_DEPT_JOIN_REL_FIELDS ) );
 
-        splitJoinConditionHelper( joinCond, Collections.singletonList( leftJoinIndex ), Collections.singletonList( rightJoinIndex ), Collections.singletonList( false ), REL_BUILDER.literal( true ) );
+        splitJoinConditionHelper(
+                joinCond,
+                Collections.singletonList( leftJoinIndex ),
+                Collections.singletonList( rightJoinIndex ),
+                Collections.singletonList( false ),
+                REL_BUILDER.literal( true ) );
     }
 
 
     /**
-     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition contains an expanded version of IS NOT DISTINCT
+     * Test {@link RelOptUtil#splitJoinCondition(RelNode, RelNode, RexNode, List, List, List)} where the join condition
+     * contains an expanded version of IS NOT DISTINCT
      */
     @Test
     public void testSplitJoinConditionExpandedIsNotDistinctFrom() {
@@ -185,13 +203,26 @@ public class RelOptUtilTest {
         RexNode joinCond = REL_BUILDER.call(
                 SqlStdOperatorTable.OR,
                 REL_BUILDER.call( SqlStdOperatorTable.EQUALS, leftKeyInputRef, rightKeyInputRef ),
-                REL_BUILDER.call( SqlStdOperatorTable.AND, REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, leftKeyInputRef ), REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, rightKeyInputRef ) ) );
+                REL_BUILDER.call(
+                        SqlStdOperatorTable.AND,
+                        REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, leftKeyInputRef ),
+                        REL_BUILDER.call( SqlStdOperatorTable.IS_NULL, rightKeyInputRef ) ) );
 
-        splitJoinConditionHelper( joinCond, Collections.singletonList( leftJoinIndex ), Collections.singletonList( rightJoinIndex ), Collections.singletonList( false ), REL_BUILDER.literal( true ) );
+        splitJoinConditionHelper(
+                joinCond,
+                Collections.singletonList( leftJoinIndex ),
+                Collections.singletonList( rightJoinIndex ),
+                Collections.singletonList( false ),
+                REL_BUILDER.literal( true ) );
     }
 
 
-    private static void splitJoinConditionHelper( RexNode joinCond, List<Integer> expLeftKeys, List<Integer> expRightKeys, List<Boolean> expFilterNulls, RexNode expRemaining ) {
+    private static void splitJoinConditionHelper(
+            RexNode joinCond,
+            List<Integer> expLeftKeys,
+            List<Integer> expRightKeys,
+            List<Boolean> expFilterNulls,
+            RexNode expRemaining ) {
         List<Integer> actLeftKeys = new ArrayList<>();
         List<Integer> actRightKeys = new ArrayList<>();
         List<Boolean> actFilterNulls = new ArrayList<>();

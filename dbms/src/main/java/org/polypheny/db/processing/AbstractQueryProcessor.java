@@ -176,7 +176,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), logicalRoot.validatedRowType );
 
-        // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE).  For anything else (e.g. CALL -> SELECT), use original kind.
+        // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE). For anything else (e.g. CALL -> SELECT), use original kind.
         //if ( !optimalRoot.kind.belongsTo( SqlKind.DML ) ) {
         //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
         //}
@@ -269,7 +269,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             default:
                 x = optimalRoot.validatedRowType;
         }
-        final List<ColumnMetaData> columns = getColumnMetaDataList( transaction.getTypeFactory(), x, makeStruct( transaction.getTypeFactory(), x ), preparedResult.getFieldOrigins() );
+        final List<ColumnMetaData> columns = getColumnMetaDataList(
+                transaction.getTypeFactory(),
+                x,
+                makeStruct( transaction.getTypeFactory(), x ),
+                preparedResult.getFieldOrigins() );
         Class resultClazz = null;
         if ( preparedResult instanceof Typed ) {
             resultClazz = (Class) ((Typed) preparedResult).getElementType();
@@ -533,7 +537,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private ColumnMetaData metaData( JavaTypeFactory typeFactory, int ordinal, String fieldName, RelDataType type, RelDataType fieldType, List<String> origins ) {
+    private ColumnMetaData metaData(
+            JavaTypeFactory typeFactory,
+            int ordinal,
+            String fieldName,
+            RelDataType type,
+            RelDataType fieldType,
+            List<String> origins ) {
         final ColumnMetaData.AvaticaType avaticaType = avaticaType( typeFactory, type, fieldType );
         return new ColumnMetaData(
                 ordinal,

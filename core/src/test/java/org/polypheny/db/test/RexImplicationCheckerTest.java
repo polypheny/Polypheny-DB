@@ -587,7 +587,7 @@ public class RexImplicationCheckerTest {
 
             final Holder<RexExecutorImpl> holder = Holder.of( null );
 
-            PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false );
+            PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
             FrameworkConfig config = Frameworks.newConfigBuilder()
                     .defaultSchema( rootSchema.plus() )
                     .prepareContext( new ContextImpl(

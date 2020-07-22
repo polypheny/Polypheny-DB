@@ -77,11 +77,13 @@ public interface FrameworkConfig {
 
     /**
      * Returns a list of one or more programs used during the course of query evaluation.
-     *
-     * The common use case is when there is a single program created using {@link Programs#of(RuleSet)} and {@link org.polypheny.db.tools.Planner#transform} will only be called once.
-     *
-     * However, consumers may also create programs not based on rule sets, register multiple programs, and do multiple repetitions of {@link Planner#transform} planning cycles using different indices.
-     *
+     * <p>
+     * The common use case is when there is a single program created using {@link Programs#of(RuleSet)} and
+     * {@link org.polypheny.db.tools.Planner#transform} will only be called once.
+     * <p>
+     * However, consumers may also create programs not based on rule sets, register multiple programs, and do multiple
+     * repetitions of {@link Planner#transform} planning cycles using different indices.
+     * <p>
      * The order of programs provided here determines the zero-based indices of programs elsewhere in this class.
      */
     ImmutableList<Program> getPrograms();
@@ -100,9 +102,11 @@ public interface FrameworkConfig {
     /**
      * Returns a list of trait definitions.
      *
-     * If the list is not null, the planner first de-registers any existing {@link RelTraitDef}s, then registers the {@code RelTraitDef}s in this list.
+     * If the list is not null, the planner first de-registers any existing {@link RelTraitDef}s, then registers the
+     * {@code RelTraitDef}s in this list.
      *
-     * The order of {@code RelTraitDef}s in the list matters if the planner is VolcanoPlanner. The planner calls {@link RelTraitDef#convert} in the order of this list. The most important trait comes first in the list,
+     * The order of {@code RelTraitDef}s in the list matters if the planner is VolcanoPlanner. The planner calls
+     * {@link RelTraitDef#convert} in the order of this list. The most important trait comes first in the list,
      * followed by the second most important one, etc.
      */
     ImmutableList<RelTraitDef> getTraitDefs();
