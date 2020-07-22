@@ -17,6 +17,7 @@
 package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +42,12 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.StatUtils;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogStore;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
@@ -51,6 +57,7 @@ import org.polypheny.db.information.InformationHtml;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -143,7 +150,10 @@ public class IcarusRouter extends AbstractRouter {
                             row2.add( "" );
                         } else {
                             row1.add( e.getValue() + "" );
-                            double mean = StatUtils.mean( ArrayUtils.toPrimitive( timesEntry.get( e.getKey() ).toArray( new Double[0] ) ), 0, timesEntry.get( e.getKey() ).size() );
+                            double mean = StatUtils.mean(
+                                    ArrayUtils.toPrimitive( timesEntry.get( e.getKey() ).toArray( new Double[0] ) ),
+                                    0,
+                                    timesEntry.get( e.getKey() ).size() );
                             row2.add( mean / 1000000.0 + " ms" );
                         }
                     }
@@ -222,32 +232,44 @@ public class IcarusRouter extends AbstractRouter {
     }
 
 
-
     // Execute the table scan on the store select in the analysis (in Icarus routing all tables are replicated to all stores)
+    //
+    // Icarus routing is based on a full replication of data to all underlying data stores. This implementation
+    // therefore assumes that there is either no placement of a table on a store or a full placement.
+    //
     @Override
-    protected CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available ) {
+    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
         // Update known stores
-        updateKnownStores( available );
+        updateKnownStores( table.placementsByStore.keySet() );
+
         // Route
         if ( selectedStoreId == -1 ) {
-            routingTable.initializeRow( queryClassString, available );
-            selectedStoreId = available.get( 0 ).storeId;
+            routingTable.initializeRow( queryClassString, table.placementsByStore.keySet() );
+            selectedStoreId = table.placementsByStore.keySet().asList().get( 0 );
         }
-        for ( CatalogColumnPlacement placement : available ) {
-            if ( placement.storeId == selectedStoreId ) {
-                return placement;
+        if ( table.placementsByStore.containsKey( selectedStoreId ) ) {
+            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( selectedStoreId, table.id );
+            if ( placements.size() != table.columnIds.size() ) {
+                throw new RuntimeException( "The data store '" + selectedStoreId + "' does not contain a full table placement!" );
             }
+            return Catalog.getInstance().getColumnPlacementsOnStore( selectedStoreId );
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedStoreId );
     }
 
 
-    public void updateKnownStores( List<CatalogColumnPlacement> available ) {
-        for ( CatalogColumnPlacement placement : available ) {
-            if ( !routingTable.knownStores.containsKey( placement.storeId ) ) {
-                routingTable.knownStores.put( placement.storeId, placement.storeUniqueName );
-                if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( placement.storeId ) ) {
-                    routingTable.routingTable.get( queryClassString ).put( placement.storeId, IcarusRoutingTable.MISSING_VALUE );
+    public void updateKnownStores( ImmutableSet<Integer> stores ) {
+        for ( Integer storeId : stores ) {
+            if ( !routingTable.knownStores.containsKey( storeId ) ) {
+                CatalogStore catalogStore;
+                try {
+                    catalogStore = Catalog.getInstance().getStore( storeId );
+                } catch ( GenericCatalogException | UnknownStoreException e ) {
+                    throw new RuntimeException( e );
+                }
+                routingTable.knownStores.put( storeId, catalogStore.uniqueName );
+                if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( storeId ) ) {
+                    routingTable.routingTable.get( queryClassString ).put( storeId, IcarusRoutingTable.MISSING_VALUE );
                 }
             }
         }
@@ -263,6 +285,19 @@ public class IcarusRouter extends AbstractRouter {
             if ( !store.isSchemaReadOnly() ) {
                 result.add( store );
             }
+        }
+        if ( result.size() == 0 ) {
+            throw new RuntimeException( "No suitable store found" );
+        }
+        return ImmutableList.copyOf( result );
+    }
+
+
+    @Override
+    public List<Store> addColumn( CatalogTable catalogTable, Transaction transaction ) {
+        List<Store> result = new LinkedList<>();
+        for ( int storeId : catalogTable.placementsByStore.keySet() ) {
+            result.add( StoreManager.getInstance().getStore( storeId ) );
         }
         if ( result.size() == 0 ) {
             throw new RuntimeException( "No suitable store found" );
@@ -307,7 +342,7 @@ public class IcarusRouter extends AbstractRouter {
             // Processing queue size
             InformationGroup processingQueueGroup = new InformationGroup( page, "Processing Queue" );
             im.addGroup( processingQueueGroup );
-            InformationHtml processingQueueSize = new InformationHtml(
+            InformationText processingQueueSize = new InformationText(
                     processingQueueGroup,
                     "Processing queue size: " + processingQueue.size() );
             im.registerInformation( processingQueueSize );
@@ -337,7 +372,7 @@ public class IcarusRouter extends AbstractRouter {
                     routingTableElement.addRow( row );
                 } );
                 // Update processing queue size
-                processingQueueSize.updateHtml( "Processing queue size: " + processingQueue.size() );
+                processingQueueSize.setText( "Processing queue size: " + processingQueue.size() );
             } );
 
             // Background Task
@@ -379,7 +414,10 @@ public class IcarusRouter extends AbstractRouter {
             for ( String queryClass : routingTable.keySet() ) {
                 Map<Integer, Double> meanTimeRow = new HashMap<>();
                 for ( Map.Entry<Integer, CircularFifoQueue<Double>> entry : times.get( queryClass ).entrySet() ) {
-                    double mean = StatUtils.mean( ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ), 0, entry.getValue().size() );
+                    double mean = StatUtils.mean(
+                            ArrayUtils.toPrimitive( entry.getValue().toArray( new Double[0] ) ),
+                            0,
+                            entry.getValue().size() );
                     meanTimeRow.put( entry.getKey(), mean );
                 }
 
@@ -430,15 +468,15 @@ public class IcarusRouter extends AbstractRouter {
         }
 
 
-        public void initializeRow( String queryClassString, List<CatalogColumnPlacement> available ) {
+        public void initializeRow( String queryClassString, ImmutableSet<Integer> stores ) {
             Map<Integer, Integer> row = new HashMap<>();
             // Initialize with NO_PLACEMENT
             for ( int storeId : knownStores.keySet() ) {
                 row.put( storeId, NO_PLACEMENT );
             }
             // Set missing values entry
-            for ( CatalogColumnPlacement placement : available ) {
-                row.replace( placement.storeId, MISSING_VALUE );
+            for ( int storeId : stores ) {
+                row.replace( storeId, MISSING_VALUE );
             }
             routingTable.put( queryClassString, row );
             times.put( queryClassString, new HashMap<>() );

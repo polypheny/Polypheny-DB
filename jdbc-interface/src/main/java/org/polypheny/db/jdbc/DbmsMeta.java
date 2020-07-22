@@ -57,7 +57,6 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
@@ -147,7 +146,7 @@ public class DbmsMeta implements ProtobufMeta {
         this.authenticator = authenticator;
 
         // ------ Information Manager -----------
-        final InformationPage informationPage = new InformationPage( "JDBC Interface" );
+        final InformationPage informationPage = new InformationPage( "JDBC Interface" ).fullWidth();
         final InformationGroup informationGroupConnection = new InformationGroup( informationPage, "Connections" );
 
         InformationManager im = InformationManager.getInstance();
@@ -916,7 +915,6 @@ public class DbmsMeta implements ProtobufMeta {
         if ( log.isTraceEnabled() ) {
             log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
         }
-        final StopWatch stopWatch = new StopWatch();
 
         final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
         final PolyphenyDbStatementHandle statement;

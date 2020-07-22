@@ -37,7 +37,7 @@ public class CsvStore extends Store {
 
 
     public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, true );
+        super( storeId, uniqueName, settings, true, true, true );
         setCsvDir( settings );
     }
 
@@ -64,8 +64,8 @@ public class CsvStore extends Store {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable ) {
-        return currentSchema.createCsvTable( catalogTable, this );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+        return currentSchema.createCsvTable( catalogTable, columnPlacementsOnStore, this );
     }
 
 

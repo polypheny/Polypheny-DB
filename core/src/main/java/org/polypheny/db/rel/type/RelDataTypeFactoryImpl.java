@@ -52,6 +52,7 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.sql.SqlCollation;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.JavaToPolyTypeConversionRules;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -357,7 +358,14 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
      * @throws NullPointerException if type is null
      */
     protected RelDataType canonize( final RelDataType type ) {
-        return CACHE.getUnchecked( type );
+        //skip canonize step for ArrayTypes, to not cache cardinality or dimension
+        if( ! (type instanceof ArrayType) ) {
+            return CACHE.getUnchecked( type );
+        } else if ( ((ArrayType)type).getDimension() == -1 && ((ArrayType)type).getCardinality() == -1 ) {
+            return CACHE.getUnchecked( type );
+        }
+        return type;
+        //return CACHE.getUnchecked( type );
     }
 
 
@@ -367,14 +375,34 @@ public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
      * This approach allows us to use a cheap temporary key. A permanent key is more expensive, because it must be immutable and not hold references into other data structures.
      */
     protected RelDataType canonize( final StructKind kind, final List<String> names, final List<String> physicalNames, final List<RelDataType> types ) {
-        final RelDataType type = CACHE.getIfPresent( new Key( kind, names, physicalNames, types ) );
-        if ( type != null ) {
-            return type;
+        // skip canonize step for ArrayTypes, to not cache cardinality or dimension
+        boolean skipCache = false;
+        for( RelDataType t: types ) {
+            if( t instanceof ArrayType ) {
+                if( ((ArrayType)t).getDimension() == -1 && ((ArrayType)t).getCardinality() == -1 ) {
+                    //coming from catalog.Fixture
+                    continue;
+                }
+                skipCache = true;
+                break;
+            }
         }
+
+        if( !skipCache ) {
+            final RelDataType type = CACHE.getIfPresent( new Key( kind, names, physicalNames, types ) );
+            if ( type != null ) {
+                return type;
+            }
+        }
+
         final ImmutableList<String> names2 = ImmutableList.copyOf( names );
         final List<String> physicalNames2 = physicalNames;
         final ImmutableList<RelDataType> types2 = ImmutableList.copyOf( types );
-        return CACHE.getUnchecked( new Key( kind, names2, physicalNames2, types2 ) );
+        if( skipCache ) {
+            return keyToType( new Key( kind, names2, physicalNames2, types2 ) );
+        } else {
+            return CACHE.getUnchecked( new Key( kind, names2, physicalNames2, types2 ) );
+        }
     }
 
 

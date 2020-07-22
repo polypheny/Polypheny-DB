@@ -21,7 +21,11 @@ import java.io.Serializable;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 
 
@@ -36,11 +40,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     public final long id;
     public final String name;
     public final long tableId;
-    public final String tableName;
     public final long schemaId;
-    public final String schemaName;
     public final long databaseId;
-    public final String databaseName;
     public final int position;
     public final PolyType type;
     public final PolyType collectionsType;
@@ -57,11 +58,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
             final long id,
             @NonNull final String name,
             final long tableId,
-            @NonNull final String tableName,
             final long schemaId,
-            @NonNull final String schemaName,
             final long databaseId,
-            @NonNull final String databaseName,
             final int position,
             @NonNull final PolyType type,
             final PolyType collectionsType,
@@ -75,11 +73,8 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         this.id = id;
         this.name = name;
         this.tableId = tableId;
-        this.tableName = tableName;
         this.schemaId = schemaId;
-        this.schemaName = schemaName;
         this.databaseId = databaseId;
-        this.databaseName = databaseName;
         this.position = position;
         this.type = type;
         this.collectionsType = collectionsType;
@@ -93,12 +88,48 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
     }
 
 
+    public RelDataType getRelDataType( final RelDataTypeFactory typeFactory ) {
+        RelDataType elementType;
+        if ( this.length != null && this.scale != null && this.type.allowsPrecScale( true, true ) ) {
+            elementType = typeFactory.createPolyType( this.type, this.length, this.scale );
+        } else if ( this.length != null && this.type.allowsPrecNoScale() ) {
+            elementType = typeFactory.createPolyType( this.type, this.length );
+        } else {
+            assert this.type.allowsNoPrecNoScale();
+            elementType = typeFactory.createPolyType( this.type );
+        }
+        if ( collectionsType == PolyType.ARRAY ) {
+            return typeFactory.createArrayType( elementType, cardinality != null ? cardinality : -1, dimension != null ? dimension : -1 );
+        } else {
+            return elementType;
+        }
+    }
+
+
+    @SneakyThrows
+    public String getDatabaseName() {
+        return Catalog.getInstance().getDatabase( databaseId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getSchemaName() {
+        return Catalog.getInstance().getSchema( schemaId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getTableName() {
+        return Catalog.getInstance().getTable( tableId ).name;
+    }
+
+
     @Override
     public Serializable[] getParameterArray() {
         return new Serializable[]{
-                databaseName,
-                schemaName,
-                tableName,
+                getDatabaseName(),
+                getSchemaName(),
+                getTableName(),
                 name,
                 type.getJdbcOrdinal(),
                 type.name(),
@@ -131,7 +162,6 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
                     } else {
                         return comp;
                     }
-
 
                 } else {
                     return comp;
@@ -168,37 +198,6 @@ public final class CatalogColumn implements CatalogEntity, Comparable<CatalogCol
         public final String isNullable;
 
         public final String collation;
-    }
-
-
-    public static CatalogColumn replaceName( CatalogColumn column, String name ) {
-        return new CatalogColumn( column.id, name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.collation, column.defaultValue );
-    }
-
-
-    public static CatalogColumn replacePosition( CatalogColumn column, int position ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.collation, column.defaultValue );
-    }
-
-
-    public static CatalogColumn replaceColumnType( CatalogColumn column, PolyType type, Integer length, Integer scale, Collation collation ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, type, column.collectionsType, length, scale, column.dimension, column.cardinality, column.nullable, collation, column.defaultValue );
-    }
-
-
-    public static CatalogColumn replaceNullable( CatalogColumn column, boolean nullable ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, nullable, column.collation, column.defaultValue );
-    }
-
-
-    public static CatalogColumn replaceCollation( CatalogColumn column, Collation collation ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, collation, column.defaultValue );
-    }
-
-
-    // TODO: check defaultValue call
-    public static CatalogColumn replaceDefaultValue( CatalogColumn column, CatalogDefaultValue defaultValue ) {
-        return new CatalogColumn( column.id, column.name, column.tableId, column.tableName, column.schemaId, column.schemaName, column.databaseId, column.databaseName, column.position, column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.collation, defaultValue );
     }
 
 }

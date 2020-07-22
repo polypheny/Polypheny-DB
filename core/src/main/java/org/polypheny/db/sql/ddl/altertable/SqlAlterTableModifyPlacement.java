@@ -19,7 +19,6 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.collect.ImmutableList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -28,9 +27,12 @@ import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -45,16 +47,16 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name ADD PLACEMENT [(columnList)] ON STORE storeName} statement.
+ * Parse tree for {@code ALTER TABLE name MODIFY PLACEMENT (columnList) ON STORE storeName} statement.
  */
-public class SqlAlterTableAddPlacement extends SqlAlterTable {
+public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName ) {
+    public SqlAlterTableModifyPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
@@ -73,7 +75,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "ADD" );
+        writer.keyword( "MODIFY" );
         writer.keyword( "PLACEMENT" );
         columnList.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ON" );
@@ -98,12 +100,10 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         }
         try {
             // Check whether this placement already exists
-            for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-                if ( storeId == storeInstance.getStoreId() ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.placementAlreadyExists( storeName.getSimple(), catalogTable.name ) );
-                }
+            if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
             // Check whether the store supports schema changes
             if ( storeInstance.isSchemaReadOnly() ) {
@@ -111,41 +111,61 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                         storeName.getParserPosition(),
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
-            // Check whether the list is empty (this is a short hand for a full placement)
-            if ( columnIds.size() == 0 ) {
-                columnIds = ImmutableList.copyOf( catalogTable.columnIds );
+            // Which columns to remove
+            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) ) {
+                if ( !columnIds.contains( placement.columnId ) ) {
+                    // Check whether the column is a primary key column
+                    CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+                    if ( primaryKey.columnIds.contains( placement.columnId ) ) {
+                        // Check if the placement type is manual. If so, change to automatic
+                        if ( placement.placementType == PlacementType.MANUAL ) {
+                            // Make placement manual
+                            Catalog.getInstance().updateColumnPlacementType(
+                                    storeInstance.getStoreId(),
+                                    placement.columnId,
+                                    PlacementType.AUTOMATIC );
+                        }
+                    } else {
+                        // It is not a primary key. Remove the column
+                        // Check if there are is another placement for this column
+                        List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( placement.columnId );
+                        if ( existingPlacements.size() < 2 ) {
+                            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+                        }
+                        // Drop Column on store
+                        storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), placement.columnId ) );
+                        // Drop column placement
+                        Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), placement.columnId );
+                    }
+                }
             }
-            // Create column placements
+            // Which columns to add
             for ( long cid : columnIds ) {
-                Catalog.getInstance().addColumnPlacement(
-                        storeInstance.getStoreId(),
-                        cid,
-                        PlacementType.MANUAL,
-                        null,
-                        null,
-                        null );
-            }
-            //Check if placement includes primary key columns
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-            for ( long cid : primaryKey.columnIds ) {
-                if ( !columnIds.contains( cid ) ) {
+                if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), cid ) ) {
+                    CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), cid );
+                    if ( placement.placementType == PlacementType.AUTOMATIC ) {
+                        // Make placement manual
+                        Catalog.getInstance().updateColumnPlacementType( storeInstance.getStoreId(), cid, PlacementType.MANUAL );
+                    }
+                } else {
+                    // Create column placement
                     Catalog.getInstance().addColumnPlacement(
                             storeInstance.getStoreId(),
                             cid,
-                            PlacementType.AUTOMATIC,
+                            PlacementType.MANUAL,
                             null,
                             null,
                             null );
+                    // Add column on store
+                    storeInstance.addColumn( context, catalogTable, Catalog.getInstance().getColumn( cid ) );
+                    // !!!!!!!!!!!!!!!!!!!!!!!!
+                    // TODO: Now we should also copy the data
                 }
             }
-            // Create table on store
-            storeInstance.createTable( context, catalogTable );
-            // !!!!!!!!!!!!!!!!!!!!!!!!
-            // TODO: Now we should also copy the data
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
-    }
 
+    }
 }
 

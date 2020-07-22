@@ -12,6 +12,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.Schema;
@@ -41,14 +42,14 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings ), HsqldbSqlDialect.DEFAULT );
+        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
 
     public static ConnectionFactory createConnectionFactory( final String uniqueName, final Map<String, String> settings ) {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
-            throw new RuntimeException( "TWO PC Mode is not implemented" );
+            throw new RuntimeException( "2PC Mode is not implemented" );
         } else {
             BasicDataSource dataSource = new BasicDataSource();
             dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
@@ -70,8 +71,8 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore );
     }
 
 
@@ -141,6 +142,8 @@ public class HsqldbStore extends AbstractJdbcStore {
                 return "TIME";
             case TIMESTAMP:
                 return "TIMESTAMP";
+            case ARRAY:
+                return "LONGVARCHAR";
         }
         throw new RuntimeException( "Unknown type: " + type.name() );
     }

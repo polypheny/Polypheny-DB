@@ -21,12 +21,14 @@ import com.google.gson.Gson;
 import java.util.ArrayList;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.webui.models.requests.UIRequest;
 
 
 /**
  * Contains data from a query, the titles of the columns and information about the pagination
  */
+@Accessors( chain = true )
 public class Result {
 
     /**
@@ -76,6 +78,12 @@ public class Result {
      * Type of the result: if the data is from a table/view/arbitrary query
      */
     private ResultType type;
+
+    /**
+     * Indicate that only a subset of the specified query is being displayed.
+     */
+    @Setter
+    private boolean hasMoreRows;
 
     /**
      * Explore-by-Example, information about classification, because classification is only possible if a table holds at least 10 entries

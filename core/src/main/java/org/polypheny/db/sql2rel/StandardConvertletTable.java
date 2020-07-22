@@ -77,6 +77,7 @@ import org.polypheny.db.sql.fun.SqlBetweenOperator;
 import org.polypheny.db.sql.fun.SqlCase;
 import org.polypheny.db.sql.fun.SqlDatetimeSubtractionOperator;
 import org.polypheny.db.sql.fun.SqlExtractFunction;
+import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.sql.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.fun.SqlMapValueConstructor;
 import org.polypheny.db.sql.fun.SqlMultisetQueryConstructor;
@@ -89,6 +90,7 @@ import org.polypheny.db.sql.fun.SqlTrimFunction;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorImpl;
+import org.polypheny.db.sql2rel.SqlToRelConverter.Blackboard;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -677,7 +679,13 @@ public class StandardConvertletTable extends ReflectiveConvertletTable {
                         ? PolyOperandTypeChecker.Consistency.NONE
                         : op.getOperandTypeChecker().getConsistency();
         final List<RexNode> exprs = convertExpressionList( cx, operands, consistency );
-        RelDataType type = rexBuilder.deriveReturnType( op, exprs );
+        RelDataType type;
+        if( call.getOperator() instanceof SqlItemOperator ) {
+            //taking the type from the sql validation instead. This one will be correct, because it looks at chained itemOperators as well. E.g. a[1][1:1][1] should return the array type
+            type = call.getOperator().deriveType( cx.getValidator(), ((Blackboard) cx).scope, call );
+        } else {
+            type = rexBuilder.deriveReturnType( op, exprs );
+        }
         return rexBuilder.makeCall( type, op, RexUtil.flatten( exprs, op ) );
     }
 

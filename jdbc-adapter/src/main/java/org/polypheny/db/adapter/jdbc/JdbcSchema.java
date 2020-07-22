@@ -75,7 +75,6 @@ import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -139,7 +138,7 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public JdbcTable createJdbcTable( CatalogTable catalogTable ) {
+    public JdbcTable createJdbcTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
         // not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
@@ -148,20 +147,16 @@ public class JdbcSchema implements Schema {
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
         String physicalTableName = null;
-        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( jdbcStore.getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             try {
                 CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-
-                if ( catalogColumn == null ) {
-                    throw new RuntimeException( "Column not found." ); // This should not happen
-                }
                 if ( physicalSchemaName == null ) {
                     physicalSchemaName = placement.physicalSchemaName;
                 }
                 if ( physicalTableName == null ) {
                     physicalTableName = placement.physicalTableName;
                 }
-                RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
+                RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
                 fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
                 logicalColumnNames.add( catalogColumn.name );
                 physicalColumnNames.add( placement.physicalColumnName );
@@ -171,7 +166,7 @@ public class JdbcSchema implements Schema {
         }
         JdbcTable table = new JdbcTable(
                 this,
-                catalogTable.schemaName,
+                catalogTable.getSchemaName(),
                 catalogTable.name,
                 logicalColumnNames,
                 TableType.valueOf( catalogTable.tableType.name() ),
@@ -266,33 +261,6 @@ public class JdbcSchema implements Schema {
 
     public synchronized ImmutableMap<String, JdbcTable> getTableMap() {
         return ImmutableMap.copyOf( tableMap );
-    }
-
-
-    private RelDataType sqlType( RelDataTypeFactory typeFactory, PolyType dataTypeName, Integer precision, Integer scale, String typeString ) {
-        // Fall back to ANY if type is unknown
-        final PolyType polyType = Util.first( dataTypeName, PolyType.ANY );
-        switch ( polyType ) {
-            case ARRAY:
-                RelDataType component = null;
-                if ( typeString != null && typeString.endsWith( " ARRAY" ) ) {
-                    // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type "INTEGER".
-                    final String remaining = typeString.substring( 0, typeString.length() - " ARRAY".length() );
-                    component = parseTypeString( typeFactory, remaining );
-                }
-                if ( component == null ) {
-                    component = typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true );
-                }
-                return typeFactory.createArrayType( component, -1 );
-        }
-        if ( precision != null && scale != null && polyType.allowsPrecScale( true, true ) ) {
-            return typeFactory.createPolyType( polyType, precision, scale );
-        } else if ( precision != null && polyType.allowsPrecNoScale() ) {
-            return typeFactory.createPolyType( polyType, precision );
-        } else {
-            assert polyType.allowsNoPrecNoScale();
-            return typeFactory.createPolyType( polyType );
-        }
     }
 
 

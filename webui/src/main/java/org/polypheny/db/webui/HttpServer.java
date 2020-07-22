@@ -126,6 +126,8 @@ public class HttpServer extends QueryInterface {
 
         webuiServer.post( "/getTables", crud::getTables, gson::toJson );
 
+        webuiServer.post( "/renameTable", crud::renameTable, gson::toJson );
+
         webuiServer.post( "/dropTruncateTable", crud::dropTruncateTable, gson::toJson );
 
         webuiServer.post( "/createTable", crud::createTable, gson::toJson );
@@ -162,7 +164,7 @@ public class HttpServer extends QueryInterface {
 
         webuiServer.post( "/schemaRequest", crud::schemaRequest, gson::toJson );
 
-        webuiServer.get( "/getTypeInfo", crud::getTypeInfo, gson::toJson );
+        webuiServer.get( "/getTypeInfo", crud::getTypeInfo );
 
         webuiServer.get( "/getForeignKeyActions", crud::getForeignKeyActions, gson::toJson );
 

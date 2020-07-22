@@ -19,6 +19,7 @@ package org.polypheny.db.information;
 
 import com.google.gson.Gson;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -60,7 +61,11 @@ public class InformationManager {
 
         // Add the information page about the information manager itself
         if ( instanceId.equals( MAIN_MANAGER_IDENTIFIER ) ) {
-            InformationPage page = new InformationPage( "InformationManager", "Information Manager", "Information about the information manager itself." );
+            InformationPage page = new InformationPage(
+                    "InformationManager",
+                    "Information Manager",
+                    "Information about the information manager itself." );
+            page.fullWidth();
             this.addPage( page );
             // Running instances
             InformationGroup runningInstancesGroup = new InformationGroup( page, "Instances" );
@@ -234,6 +239,7 @@ public class InformationManager {
             pages1[counter] = p;
             counter++;
         }
+        Arrays.sort( pages1, Comparator.comparing( InformationPage::getName ) );
         Gson gson = new Gson();
         return gson.toJson( pages1, InformationPage[].class );
     }

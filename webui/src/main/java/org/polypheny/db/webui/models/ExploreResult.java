@@ -28,7 +28,11 @@ public class ExploreResult {
     private String graph;
 
 
-    public ExploreResult(final DbColumn[] header, final List<String[]> dataAfterClassification, final int exploreManagerId, final String graph) {
+    public ExploreResult(
+            final DbColumn[] header,
+            final List<String[]> dataAfterClassification,
+            final int exploreManagerId,
+            final String graph ) {
         this.header = header;
         this.dataAfterClassification = dataAfterClassification;
         this.exploreManagerId = exploreManagerId;

@@ -22,6 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
@@ -130,7 +131,10 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
         }
 
-        // TODO: Check if the column either allows null values or has a default value defined.
+        // Check if the column either allows null values or has a default value defined.
+        if ( defaultValue == null && !nullable ) {
+            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
+        }
 
         CatalogColumn addedColumn;
         Long columnId = null;
@@ -171,8 +175,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     collectionsType,
                     type.getPrecision() == -1 ? null : type.getPrecision(),
                     type.getScale() == -1 ? null : type.getScale(),
-                    null,
-                    null,
+                    type.getDimension() == -1 ? null : type.getDimension(),
+                    type.getCardinality() == -1 ? null : type.getCardinality(),
                     nullable,
                     Collation.CASE_INSENSITIVE
             );
@@ -186,16 +190,24 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     v = v.substring( 1, v.length() - 1 );
                 }
                 Catalog.getInstance().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
+
+                // Update addedColumn variable
+                addedColumn = Catalog.getInstance().getColumn( columnId );
             }
 
-            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // TODO MV: Adding the column on all stores which have already a placement for columns of this table. We need a more sophisticated approach here.
-            //
+            // Ask router on which stores this column shall be placed
+            List<Store> stores = transaction.getRouter().addColumn( catalogTable, transaction );
 
-            // Add column on underlying data stores
-            for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-                Catalog.getInstance().addColumnPlacement( storeId, addedColumn.id, PlacementType.AUTOMATIC, null, null, null );
-                StoreManager.getInstance().getStore( storeId ).addColumn( context, catalogTable, addedColumn );
+            // Add column on underlying data stores and insert default value
+            for ( Store store : stores ) {
+                Catalog.getInstance().addColumnPlacement(
+                        store.getStoreId(),
+                        addedColumn.id,
+                        PlacementType.AUTOMATIC,
+                        null, // Will be set later
+                        null, // Will be set later
+                        null ); // Will be set later
+                StoreManager.getInstance().getStore( store.getStoreId() ).addColumn( context, catalogTable, addedColumn );
             }
         } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
             if ( columnId != null ) {

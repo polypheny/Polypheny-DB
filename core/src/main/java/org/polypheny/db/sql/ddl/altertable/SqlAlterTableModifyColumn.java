@@ -152,11 +152,16 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                     }
                 }
                 PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
+                final PolyType collectionsType = type.getCollectionsTypeName() == null ?
+                        null : PolyType.get( type.getCollectionsTypeName().getSimple() );
                 catalog.setColumnType(
                         catalogColumn.id,
                         dataType,
+                        collectionsType,
                         type.getPrecision() == -1 ? null : type.getPrecision(),
-                        type.getScale() == -1 ? null : type.getScale() );
+                        type.getScale() == -1 ? null : type.getScale(),
+                        type.getDimension() == -1 ? null : type.getDimension(),
+                        type.getCardinality() == -1 ? null : type.getCardinality());
                 for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
                     StoreManager.getInstance().getStore( placement.storeId ).updateColumnType(
                             context,

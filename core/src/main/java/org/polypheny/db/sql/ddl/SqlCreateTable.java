@@ -215,7 +215,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 }
                 stores = ImmutableList.of( storeInstance );
             } else {
-                // TODO: Ask router on which store(s) the table should be placed
+                // Ask router on which store(s) the table should be placed
                 stores = transaction.getRouter().createTable( schemaId, transaction );
             }
 
@@ -250,8 +250,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             collectionsType,
                             columnDeclaration.dataType.getPrecision() == -1 ? null : columnDeclaration.dataType.getPrecision(),
                             columnDeclaration.dataType.getScale() == -1 ? null : columnDeclaration.dataType.getScale(),
-                            null,
-                            null,
+                            columnDeclaration.dataType.getDimension() == -1 ? null : columnDeclaration.dataType.getDimension(),
+                            columnDeclaration.dataType.getCardinality() == -1 ? null : columnDeclaration.dataType.getCardinality(),
                             columnDeclaration.dataType.getNullable(),
                             collation
                     );

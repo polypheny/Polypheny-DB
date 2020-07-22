@@ -42,7 +42,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 
 /**
  * Stores all available statistics and updates INSERTs dynamically
- * DELETEs and UPADTEs should wait to be reprocessed
+ * DELETEs and UPDATEs should wait to be reprocessed
  */
 @Slf4j
 public class StatisticsManager<T extends Comparable<T>> {

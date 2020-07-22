@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.tools;
+package org.polypheny.db.information;
 
 
-import java.sql.PreparedStatement;
-import org.polypheny.db.rel.RelNode;
+import java.util.UUID;
 
 
-/**
- * Runs a relational expression.
- *
- * Experimental.
- */
-public interface RelRunner {
+public class InformationStacktrace extends Information {
+
+    Throwable exception;
 
     /**
-     * Runs a relational expression.
+     * Constructor
+     *
+     * @param group The InformationGroup which this information belongs
+     * @param exception A throwable to display in the UI
      */
-    PreparedStatement prepare( RelNode rel );
+    public InformationStacktrace( final Throwable exception, final InformationGroup group ) {
+        super( UUID.randomUUID().toString(), group.getId() );
+        this.exception = exception;
+    }
 }
-

@@ -1,25 +1,25 @@
 <#--
-  Add implementations of additional parser statements, literals or data types.
+Add implementations of additional parser statements, literals or data types.
 
-  Example of SqlShowTables() implementation:
-  SqlNode SqlShowTables()
-  {
-    ...local variables...
-  }
-  {
-    <SHOW> <TABLES>
-    ...
-    {
-      return SqlShowTables(...)
-    }
-  }
+Example of SqlShowTables() implementation:
+SqlNode SqlShowTables()
+{
+...local variables...
+}
+{
+<SHOW> <TABLES>
+...
+{
+return SqlShowTables(...)
+}
+}
 -->
 
 <#-- @formatter:off -->
 
 /**
- * Parses a TRUNCATE TABLE statement.
- */
+* Parses a TRUNCATE TABLE statement.
+*/
 SqlTruncate SqlTruncateTable() :
 {
     final Span s;
@@ -35,8 +35,8 @@ SqlTruncate SqlTruncateTable() :
 
 
 /**
- * Parses a ALTER SCHEMA statement.
- */
+* Parses a ALTER SCHEMA statement.
+*/
 SqlAlterSchema SqlAlterSchema(Span s) :
 {
     final SqlIdentifier schema;
@@ -47,24 +47,24 @@ SqlAlterSchema SqlAlterSchema(Span s) :
     <SCHEMA>
     schema = CompoundIdentifier()
     (
-            <RENAME> <TO>
-            name = CompoundIdentifier()
-            {
-                return new SqlAlterSchemaRename(s.end(this), schema, name);
-            }
-        |
-            <OWNER> <TO>
-            owner = SimpleIdentifier()
-            {
-                return new SqlAlterSchemaOwner(s.end(this), schema, owner);
-            }
+        <RENAME> <TO>
+        name = CompoundIdentifier()
+        {
+            return new SqlAlterSchemaRename(s.end(this), schema, name);
+        }
+    |
+        <OWNER> <TO>
+        owner = SimpleIdentifier()
+        {
+            return new SqlAlterSchemaOwner(s.end(this), schema, owner);
+        }
     )
 }
 
 
 /**
- * Parses a ALTER TABLE statement.
- */
+* Parses a ALTER TABLE statement.
+*/
 SqlAlterTable SqlAlterTable(Span s) :
 {
     final SqlIdentifier table;
@@ -93,200 +93,260 @@ SqlAlterTable SqlAlterTable(Span s) :
     <TABLE>
     table = CompoundIdentifier()
     (
-            <RENAME> <TO>
-            name = SimpleIdentifier()
-            {
-                return new SqlAlterTableRename(s.end(this), table, name);
-            }
+        <RENAME> <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterTableRename(s.end(this), table, name);
+        }
+    |
+        <OWNER> <TO>
+        owner = SimpleIdentifier()
+        {
+            return new SqlAlterTableOwner(s.end(this), table, owner);
+        }
+    |
+        <RENAME> <COLUMN>
+        column = SimpleIdentifier()
+        <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterTableRenameColumn(s.end(this), table, column, name);
+        }
+    |
+        <ADD> <COLUMN>
+        name = SimpleIdentifier()
+        type = DataType()
+        (
+            <NULL> { nullable = true; }
         |
-            <OWNER> <TO>
-            owner = SimpleIdentifier()
-            {
-                return new SqlAlterTableOwner(s.end(this), table, owner);
-            }
+            <NOT> <NULL> { nullable = false; }
         |
-            <RENAME> <COLUMN>
+            { nullable = true; }
+        )
+        (
+            <DEFAULT_>
+            defaultValue = Literal()
+        |
+            { defaultValue = null; }
+        )
+        (
+            <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+        |
+            <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+        |
+            { afterColumn = null; beforeColumn = null; }
+        )
+        {
+            return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
+        }
+    |
+        <DROP> <COLUMN>
+        column = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropColumn(s.end(this), table, column);
+        }
+    |
+        <ADD> <PRIMARY> <KEY>
+        (
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
             column = SimpleIdentifier()
-            <TO>
-            name = SimpleIdentifier()
             {
-                return new SqlAlterTableRenameColumn(s.end(this), table, column, name);
+                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
             }
-        |
-            <ADD> <COLUMN>
-            name = SimpleIdentifier()
-            type = DataType()
-            (
-                <NULL> { nullable = true; }
-                |
-                <NOT> <NULL> { nullable = false; }
-                |
-                { nullable = true; }
-            )
-            (
-                <DEFAULT_>
-                defaultValue = Literal()
-                |
-                { defaultValue = null; }
-            )
-            (
-                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
-                |
-                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
-                |
-                { afterColumn = null; beforeColumn = null; }
-            )
-            {
-                return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
-            }
-        |
-            <DROP> <COLUMN>
-            column = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropColumn(s.end(this), table, column);
-            }
-        |
-            <ADD> <PRIMARY> <KEY>
+        )
+        {
+            return new SqlAlterTableAddPrimaryKey(s.end(this), table, columnList);
+        }
+    |
+        <DROP> <PRIMARY> <KEY>
+        {
+            return new SqlAlterTableDropPrimaryKey(s.end(this), table);
+        }
+    |
+        <ADD> <CONSTRAINT>
+        constraintName = SimpleIdentifier()
+        (
+            <UNIQUE>
             (
                 columnList = ParenthesizedSimpleIdentifierList()
-                |
-                column = SimpleIdentifier() {
+            |
+                column = SimpleIdentifier()
+                {
                     columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
                 }
             )
             {
-                return new SqlAlterTableAddPrimaryKey(s.end(this), table, columnList);
+                return new SqlAlterTableAddUniqueConstraint(s.end(this), table, constraintName, columnList);
             }
         |
-            <DROP> <PRIMARY> <KEY>
-            {
-                return new SqlAlterTableDropPrimaryKey(s.end(this), table);
-            }
-        |
-            <ADD> <CONSTRAINT>
-            constraintName = SimpleIdentifier()
+            <FOREIGN> <KEY>
             (
-                    <UNIQUE>
-                    (
-                        columnList = ParenthesizedSimpleIdentifierList()
-                        |
-                        column = SimpleIdentifier() {
-                            columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
-                        }
-                    )
-                    {
-                        return new SqlAlterTableAddUniqueConstraint(s.end(this), table, constraintName, columnList);
-                    }
+                columnList = ParenthesizedSimpleIdentifierList()
+            |
+                column = SimpleIdentifier()
+                {
+                    columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+                }
+            )
+            <REFERENCES>
+            refTable = CompoundIdentifier()
+            referencesList = ParenthesizedSimpleIdentifierList()
+            (
+                <ON> <UPDATE>
+                (
+                    <CASCADE> { onUpdate = "CASCADE"; }
                 |
-                    <FOREIGN> <KEY>
-                    (
-                        columnList = ParenthesizedSimpleIdentifierList()
-                        |
-                        column = SimpleIdentifier() {
-                            columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
-                        }
-                    )
-                    <REFERENCES>
-                    refTable = CompoundIdentifier()
-                    referencesList = ParenthesizedSimpleIdentifierList()
-                    (
-                        <ON> <UPDATE> (
-                            <CASCADE> { onUpdate = "CASCADE"; }
-                            |
-                            <RESTRICT> { onUpdate = "RESTRICT"; }
-                            |
-                            <SET> <NULL> { onUpdate = "SET NULL"; }
-                            |
-                            <SET> <DEFAULT_> { onUpdate = "SET DEFAULT"; }
-                        )
-                        |
-                        { onUpdate = null; }
-                    )
-                    (
-                        <ON> <DELETE> (
-                            <CASCADE> { onDelete = "CASCADE"; }
-                            |
-                            <RESTRICT> { onDelete = "RESTRICT"; }
-                            |
-                            <SET> <NULL> { onDelete = "SET NULL"; }
-                            |
-                            <SET> <DEFAULT_> { onDelete = "SET DEFAULT"; }
-                        )
-                        |
-                        { onDelete = null; }
-                    )
-                    {
-                        return new SqlAlterTableAddForeignKey(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
-                    }
+                    <RESTRICT> { onUpdate = "RESTRICT"; }
+                |
+                    <SET> <NULL> { onUpdate = "SET NULL"; }
+                |
+                    <SET> <DEFAULT_> { onUpdate = "SET DEFAULT"; }
                 )
-        |
-            <DROP> <CONSTRAINT>
-            constraintName = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
-            }
-        |
-            <DROP> <FOREIGN> <KEY>
-            constraintName = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
-            }
-        |
-            <ADD> <PLACEMENT>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableAddPlacement(s.end(this), table, store);
-            }
-        |
-            <DROP> <PLACEMENT>
-            store = SimpleIdentifier()
-            {
-                return new SqlAlterTableDropPlacement(s.end(this), table, store);
-            }
-        |
-            <ADD>
-            (
-                <UNIQUE> { unique = true; }
-                |
-                { unique = false; }
+            |
+                { onUpdate = null; }
             )
-            <INDEX>
-            indexName = SimpleIdentifier()
-            <ON>
+            (
+                <ON> <DELETE>
+                (
+                    <CASCADE> { onDelete = "CASCADE"; }
+                |
+                    <RESTRICT> { onDelete = "RESTRICT"; }
+                |
+                    <SET> <NULL> { onDelete = "SET NULL"; }
+                |
+                    <SET> <DEFAULT_> { onDelete = "SET DEFAULT"; }
+                )
+            |
+                { onDelete = null; }
+            )
+            {
+                return new SqlAlterTableAddForeignKey(s.end(this), table, constraintName, columnList, refTable, referencesList, onUpdate, onDelete);
+            }
+        )
+    |
+        <DROP> <CONSTRAINT>
+        constraintName = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropConstraint(s.end(this), table, constraintName);
+        }
+    |
+        <DROP>
+        <FOREIGN>
+        <KEY>
+        constraintName = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropForeignKey(s.end(this), table, constraintName);
+        }
+    |
+        <ADD>
+        <PLACEMENT>
+        (
             (
                 columnList = ParenthesizedSimpleIdentifierList()
-                |
-                column = SimpleIdentifier() {
+            |
+                column = SimpleIdentifier()
+                {
                     columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
                 }
             )
-            (
-                <USING> indexType = SimpleIdentifier()
-                |
-                { indexType = null; }
-            )
-            {
-                return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexType, indexName);
-            }
         |
-            <DROP> <INDEX>
-            indexName = SimpleIdentifier()
             {
-                return new SqlAlterTableDropIndex(s.end(this), table, indexName);
+                columnList = SqlNodeList.EMPTY;
             }
-        |
-            <MODIFY> <COLUMN>
+        )
+        <ON>
+        <STORE>
+        store = SimpleIdentifier()
+        {
+            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store);
+        }
+    |
+        <DROP>
+        <PLACEMENT>
+        <ON>
+        <STORE>
+        store = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropPlacement(s.end(this), table, store);
+        }
+    |
+        <MODIFY>
+        <PLACEMENT>
+        (
+            <ADD>
+            <COLUMN>
             column = SimpleIdentifier()
-            statement = AlterTableModifyColumn(s, table, column)
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
             {
-                return statement;
+                return new SqlAlterTableModifyPlacementAddColumn(s.end(this), table, column, store);
             }
+        |
+            <DROP>
+            <COLUMN>
+            column = SimpleIdentifier()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableModifyPlacementDropColumn(s.end(this), table, column, store);
+            }
+        |
+            columnList = ParenthesizedSimpleIdentifierList()
+            <ON>
+            <STORE>
+            store = SimpleIdentifier()
+            {
+                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store);
+            }
+        )
+    |
+        <ADD>
+        (
+            <UNIQUE> { unique = true; }
+        |
+            { unique = false; }
+        )
+        <INDEX>
+        indexName = SimpleIdentifier()
+        <ON>
+        (
+            columnList = ParenthesizedSimpleIdentifierList()
+        |
+            column = SimpleIdentifier()
+            {
+                columnList = new SqlNodeList(Arrays.asList( new SqlNode[]{ column }), s.end(this));
+            }
+        )
+        (
+            <USING> indexType = SimpleIdentifier()
+        |
+            { indexType = null; }
+        )
+        {
+            return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexType, indexName);
+        }
+    |
+        <DROP> <INDEX>
+        indexName = SimpleIdentifier()
+        {
+            return new SqlAlterTableDropIndex(s.end(this), table, indexName);
+        }
+    |
+        <MODIFY> <COLUMN>
+        column = SimpleIdentifier()
+        statement = AlterTableModifyColumn(s, table, column)
+        {
+            return statement;
+        }
     )
 }
 
 /**
- * Parses the MODIFY COLUMN part of an ALTER TABLE statement.
- */
+* Parses the MODIFY COLUMN part of an ALTER TABLE statement.
+*/
 SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, SqlIdentifier column) :
 {
     SqlDataTypeSpec type = null;
@@ -299,33 +359,33 @@ SqlAlterTableModifyColumn AlterTableModifyColumn(Span s, SqlIdentifier table, Sq
 }
 {
     (
-            <SET> <NOT> <NULL>
-            { nullable = false; }
+        <SET> <NOT> <NULL>
+        { nullable = false; }
+    |
+        <DROP> <NOT> <NULL>
+        { nullable = true; }
+    |
+        <SET> <TYPE>
+        type = DataType()
+    |
+        <SET> <POSITION>
+        (
+            <BEFORE>
+            beforeColumn = SimpleIdentifier()
         |
-            <DROP> <NOT> <NULL>
-            { nullable = true; }
+            <AFTER>
+            afterColumn = SimpleIdentifier()
+        )
+    |
+        <SET> <COLLATION>
+        (
+            <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
         |
-            <SET> <TYPE>
-            type = DataType()
-        |
-            <SET> <POSITION>
-            (
-                <BEFORE>
-                beforeColumn = SimpleIdentifier()
-                |
-                <AFTER>
-                afterColumn = SimpleIdentifier()
-            )
-        |
-            <SET> <COLLATION>
-            (
-                <CASE> <SENSITIVE> { collation = "CASE SENSITIVE"; }
-                |
-                <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
-            )
-        |
-            <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
-        |
+            <CASE> <INSENSITIVE> { collation = "CASE INSENSITIVE"; }
+        )
+    |
+        <SET><DEFAULT_> defaultValue = Expression(ExprContext.ACCEPT_NONCURSOR)
+    |
         <DROP> <DEFAULT_> { dropDefault = true; }
     )
     {

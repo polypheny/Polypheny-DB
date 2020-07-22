@@ -636,7 +636,12 @@ public abstract class PolyTypeUtil {
             if ( toType.getPolyType() != PolyType.ARRAY ) {
                 return false;
             }
-            return canAssignFrom( toType.getComponentType(), fromType.getComponentType() );
+            ArrayType fromPolyType = (ArrayType) fromType;
+            ArrayType toPolyType = (ArrayType) toType;
+            //check if the nested types can be assigned
+            RelDataType fromComponentType = fromPolyType.getNestedComponentType();
+            RelDataType toComponentType = toPolyType.getNestedComponentType();
+            return canAssignFrom( toComponentType, fromComponentType );
         }
 
         if ( areCharacterSetsMismatched( toType, fromType ) ) {
@@ -899,9 +904,9 @@ public abstract class PolyTypeUtil {
     }
 
 
-    public static RelDataType createArrayType( RelDataTypeFactory typeFactory, RelDataType type, boolean nullable ) {
-        RelDataType ret = typeFactory.createArrayType( type, -1 );
-        return typeFactory.createTypeWithNullability( ret, nullable );
+    public static RelDataType createArrayType( RelDataTypeFactory typeFactory, RelDataType type, boolean nullable, int dimension, int cardinality ) {
+        RelDataType rdt = typeFactory.createArrayType( type, cardinality, dimension );
+        return typeFactory.createTypeWithNullability( rdt, nullable );
     }
 
 

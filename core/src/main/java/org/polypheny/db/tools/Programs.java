@@ -400,8 +400,9 @@ public class Programs {
 
     /**
      * Program that de-correlates a query.
-     *
-     * To work around "Decorrelator gets field offsets confused if fields have been trimmed", disable field-trimming in {@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
+     * <p>
+     * To work around "Decorrelator gets field offsets confused if fields have been trimmed", disable field-trimming in
+     * {@link SqlToRelConverter}, and run {@link TrimFieldsProgram} after this program.
      */
     private static class DecorrelateProgram implements Program {
 

@@ -112,28 +112,11 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
     /**
      * Creates a root schema.
      *
-     * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
-     */
-    public static PolyphenyDbSchema createRootSchema( boolean cache ) {
-        return createRootSchema( cache, "" );
-    }
-
-
-    /**
-     * Creates a root schema.
-     *
-     * @param cache If true create {@link CachingPolyphenyDbSchema}; if false create {@link SimplePolyphenyDbSchema}
      * @param name Schema name
      */
-    public static PolyphenyDbSchema createRootSchema( boolean cache, String name ) {
-        PolyphenyDbSchema rootSchema;
+    public static PolyphenyDbSchema createRootSchema( String name ) {
         final Schema schema = new RootSchema();
-        if ( cache ) {
-            rootSchema = new CachingPolyphenyDbSchema( null, schema, name );
-        } else {
-            rootSchema = new SimplePolyphenyDbSchema( null, schema, name );
-        }
-        return rootSchema;
+        return new SimplePolyphenyDbSchema( null, schema, name );
     }
 
 
@@ -323,9 +306,10 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema {
 
     /**
      * Returns the default path resolving functions from this schema.
-     *
+     * <p>
      * The path consists is a list of lists of strings.
-     * Each list of strings represents the path of a schema from the root schema. For example, [[], [foo], [foo, bar, baz]] represents three schemas: the root schema "/" (level 0), "/foo" (level 1) and "/foo/bar/baz" (level 3).
+     * Each list of strings represents the path of a schema from the root schema. For example, [[], [foo], [foo, bar, baz]]
+     * represents three schemas: the root schema "/" (level 0), "/foo" (level 1) and "/foo/bar/baz" (level 3).
      *
      * @return Path of this schema; never null, may be empty
      */

@@ -51,7 +51,13 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
     private final boolean unique;
 
 
-    public SqlAlterTableAddIndex( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, boolean unique, SqlIdentifier indexType, SqlIdentifier indexName ) {
+    public SqlAlterTableAddIndex(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlNodeList columnList,
+            boolean unique,
+            SqlIdentifier indexType,
+            SqlIdentifier indexName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );

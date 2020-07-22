@@ -87,7 +87,8 @@ public class Frameworks {
 
 
     /**
-     * Piece of code to be run in a context where a planner is available. The planner is accessible from the {@code cluster} parameter, as are several other useful objects.
+     * Piece of code to be run in a context where a planner is available. The planner is accessible from the {@code cluster}
+     * parameter, as are several other useful objects.
      *
      * @param <R> result type
      */
@@ -98,8 +99,9 @@ public class Frameworks {
 
 
     /**
-     * Piece of code to be run in a context where a planner and statement are available. The planner is accessible from the {@code cluster} parameter, as are several other useful objects. The connection and
-     * {@link DataContext} are accessible from the statement.
+     * Piece of code to be run in a context where a planner and statement are available. The planner is accessible from the
+     * {@code cluster} parameter, as are several other useful objects. The connection and {@link DataContext} are accessible
+     * from the statement.
      *
      * @param <R> result type
      */
@@ -199,7 +201,7 @@ public class Frameworks {
      * @param cache Whether to create a caching schema.
      */
     public static SchemaPlus createRootSchema( boolean cache ) {
-        return AbstractPolyphenyDbSchema.createRootSchema( cache ).plus();
+        return AbstractPolyphenyDbSchema.createRootSchema( "" ).plus();
     }
 
 

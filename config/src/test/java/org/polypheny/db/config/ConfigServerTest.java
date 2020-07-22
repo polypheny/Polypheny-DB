@@ -17,6 +17,7 @@
 package org.polypheny.db.config;
 
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -74,11 +75,20 @@ public class ConfigServerTest {
         Config c8 = new ConfigBoolean( "zend.enable_gc", true ).withUi( "g1" );
         cm.registerConfigs( c1, c2, c3, c4, c5, c6, c7, c8 );
 
-        Config c9 = new ConfigBoolean( "expose_php", true ).withUi( "g2" );
+        Config c9 = new ConfigBoolean( "expose_php", true ).withUi( "g2", 1 );
         cm.registerConfig( c9 );
 
-        Config clazz1 = new ConfigClazz( "clazz1", TestClass.class, FooImplementation.class ).withUi( "g2" );
+        Config clazz1 = new ConfigClazz( "clazz1", TestClass.class, FooImplementation.class ).withUi( "g2", 2 );
         cm.registerConfig( clazz1 );
+
+        Config clazzList = new ConfigClazzList( "clazz_list", TestClass.class, Arrays.asList( FooImplementation.class, BarImplementation.class ) ).withUi( "g2", 3 );
+        cm.registerConfig( clazzList );
+
+        Config enum1 = new ConfigEnum( "enum",  TestEnum .class, TestEnum.A ).withUi( "g2", 4 );
+        cm.registerConfig( enum1 );
+
+        Config enumList = new ConfigEnumList( "enumList", TestEnum.class, Arrays.asList( TestEnum.A, TestEnum.B )).withUi( "g2", 5 );
+        cm.registerConfig( enumList );
 
         Config c10 = new ConfigInteger( "max_execution_time", 30 ).withUi( "g3" );
         Config c11 = new ConfigInteger( "max_input_time", 60 ).withUi( "g3" );
@@ -146,6 +156,10 @@ public class ConfigServerTest {
     }
     private static class FooBarImplementation extends TestClass {
         int d;
+    }
+
+    private enum TestEnum {
+        A, B, C
     }
 
 

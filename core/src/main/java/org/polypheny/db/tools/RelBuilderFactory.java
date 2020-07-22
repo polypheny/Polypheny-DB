@@ -42,11 +42,12 @@ import org.polypheny.db.rel.core.RelFactories;
 
 /**
  * A partially-created RelBuilder.
- *
+ * <p>
  * Add a cluster, and optionally a schema, when you want to create a builder.
- *
- * A {@code ProtoRelBuilder} can be shared among queries, and thus can be inside a {@link RelOptRule}. It is a nice way to encapsulate the policy that this particular rule instance should create {@code DrillFilter}
- * and {@code DrillProject} versus {@code HiveFilter} and {@code HiveProject}.
+ * <p>
+ * A {@code ProtoRelBuilder} can be shared among queries, and thus can be inside a {@link RelOptRule}. It is a nice way to
+ * encapsulate the policy that this particular rule instance should create {@code DrillFilter} and {@code DrillProject}
+ * versus {@code HiveFilter} and {@code HiveProject}.
  *
  * @see RelFactories#LOGICAL_BUILDER
  */

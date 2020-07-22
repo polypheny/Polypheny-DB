@@ -60,7 +60,8 @@ public abstract class Store {
             final String uniqueName,
             final Map<String, String> settings,
             final boolean dataReadOnly,
-            final boolean schemaReadOnly ) {
+            final boolean schemaReadOnly,
+            final boolean persistent ) {
         this.storeId = storeId;
         this.uniqueName = uniqueName;
         // Make sure the settings are actually valid
@@ -68,18 +69,13 @@ public abstract class Store {
         this.settings = settings;
         this.dataReadOnly = dataReadOnly;
         this.schemaReadOnly = schemaReadOnly;
-
-        if ( settings.containsKey( "persistent" ) ) {
-            this.persistent = Boolean.parseBoolean( settings.get( "persistent" ) );
-        } else {
-            this.persistent = false;
-        }
+        this.persistent = persistent;
     }
 
 
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
-    public abstract Table createTableSchema( CatalogTable combinedTable );
+    public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore );
 
     public abstract Schema getCurrentSchema();
 
