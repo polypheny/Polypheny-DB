@@ -49,13 +49,14 @@ public class RequestColumn {
 
 
     RequestColumn( CatalogColumn column, int tableScanIndex, int logicalIndex, String alias, SqlAggFunction aggregate ) {
-        this(column, tableScanIndex, logicalIndex, alias, aggregate, true);
+        this( column, tableScanIndex, logicalIndex, alias, aggregate, true );
     }
 
 
     public boolean isAggregateColumn() {
         return this.aggregate != null;
     }
+
 
     public boolean isAliased() {
         return this.alias != null;
@@ -99,6 +100,7 @@ public class RequestColumn {
     // The alias of a column in a request perfectly identifies it when it comes to uniqueness!
     // This is due to the fact that the same CatalogColumn may be present multiple times iff it is aliased to different names.
     // This usually happens if aggregate functions are used.
+
 
     @Override
     public boolean equals( Object o ) {

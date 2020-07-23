@@ -57,8 +57,8 @@ import org.polypheny.db.restapi.RequestParser.Filters;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
 import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
-import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -80,14 +80,17 @@ import spark.Response;
 
 @Slf4j
 public class Rest {
+
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
     private final Catalog catalog;
 
+
     Rest( final TransactionManager transactionManager, final String userName, final String databaseName ) {
         this( Catalog.getInstance(), transactionManager, userName, databaseName );
     }
+
 
     @VisibleForTesting
     Rest( final Catalog catalog, final TransactionManager transactionManager, final String userName, final String databaseName ) {
@@ -100,7 +103,7 @@ public class Rest {
 
     Map<String, Object> processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
         log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
-        Transaction transaction = getTransaction( false );
+        Transaction transaction = getTransaction();
         RelBuilder relBuilder = RelBuilder.create( transaction );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
@@ -125,7 +128,6 @@ public class Rest {
         // Sorts, limit, offset
         relBuilder = this.sort( relBuilder, rexBuilder, resourceGetRequest.sorting, resourceGetRequest.limit, resourceGetRequest.offset );
 
-
         log.debug( "RelNodeBuilder: {}", relBuilder.toString() );
         RelNode relNode = relBuilder.build();
         log.debug( "RelNode was built." );
@@ -147,7 +149,8 @@ public class Rest {
         return finalResult;
     }
 
-    Map<String, Object> processPatchResource ( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res ) throws RestException {
+
+    Map<String, Object> processPatchResource( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
         RelBuilder relBuilder = RelBuilder.create( transaction );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
@@ -159,7 +162,7 @@ public class Rest {
         // Table Scans
         relBuilder = this.tableScans( relBuilder, rexBuilder, resourcePatchRequest.tables );
 
-//         Initial projection
+        // Initial projection
         relBuilder = this.initialProjection( relBuilder, rexBuilder, resourcePatchRequest.requestColumns );
 
         List<RexNode> filters = this.filters( relBuilder, rexBuilder, resourcePatchRequest.filters, req );
@@ -204,6 +207,7 @@ public class Rest {
         Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
         return finalResult;
     }
+
 
     Map<String, Object> processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
@@ -257,6 +261,7 @@ public class Rest {
         return finalResult;
     }
 
+
     Map<String, Object> processPostResource( final ResourcePostRequest insertValueRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
         RelBuilder relBuilder = RelBuilder.create( transaction );
@@ -307,6 +312,7 @@ public class Rest {
         return finalResult;
     }
 
+
     @VisibleForTesting
     RelBuilder tableScans( RelBuilder relBuilder, RexBuilder rexBuilder, List<CatalogTable> tables ) {
         boolean firstTable = true;
@@ -322,6 +328,7 @@ public class Rest {
         }
         return relBuilder;
     }
+
 
     @VisibleForTesting
     List<RexNode> filters( RelBuilder relBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
@@ -352,6 +359,7 @@ public class Rest {
         }
     }
 
+
     List<String> valuesColumnNames( List<List<Pair<RequestColumn, Object>>> values ) {
         List<String> valueColumnNames = new ArrayList<>();
         List<Pair<RequestColumn, Object>> rowsToInsert = values.get( 0 );
@@ -361,6 +369,7 @@ public class Rest {
 
         return valueColumnNames;
     }
+
 
     List<List<RexNode>> valuesNode( RelBuilder relBuilder, RexBuilder rexBuilder, List<List<Pair<RequestColumn, Object>>> values, List<RelDataTypeField> tableRows ) {
         List<List<RexNode>> wrapperList = new ArrayList<>();
@@ -377,6 +386,7 @@ public class Rest {
 
         return wrapperList;
     }
+
 
     List<List<RexLiteral>> valuesLiteral( RelBuilder relBuilder, RexBuilder rexBuilder, List<List<Pair<RequestColumn, Object>>> values, List<RelDataTypeField> tableRows ) {
         // TODO JS: FINISH THIS
@@ -395,6 +405,7 @@ public class Rest {
         return wrapperList;
     }
 
+
     RelBuilder initialProjection( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
         RelNode baseNode = relBuilder.peek();
         List<RexNode> inputRefs = new ArrayList<>();
@@ -409,6 +420,7 @@ public class Rest {
         relBuilder = relBuilder.project( inputRefs, aliases, true );
         return relBuilder;
     }
+
 
     RelBuilder finalProjection( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> columns ) {
         RelNode baseNode = relBuilder.peek();
@@ -427,6 +439,7 @@ public class Rest {
         return relBuilder;
     }
 
+
     RelBuilder aggregates( RelBuilder relBuilder, RexBuilder rexBuilder, List<RequestColumn> requestColumns, List<RequestColumn> groupings ) {
         RelNode baseNodeForAggregation = relBuilder.peek();
 
@@ -437,12 +450,22 @@ public class Rest {
                 inputFields.add( (int) column.getLogicalIndex() );
                 int fieldNameIndex = (int) column.getLogicalIndex();
                 String fieldName = column.getAlias();
-                AggregateCall aggregateCall = AggregateCall.create( column.getAggregate(), false, false, inputFields, -1, RelCollations.EMPTY, groupings.size(), baseNodeForAggregation, null, fieldName );
+                AggregateCall aggregateCall = AggregateCall.create(
+                        column.getAggregate(),
+                        false,
+                        false,
+                        inputFields,
+                        -1,
+                        RelCollations.EMPTY,
+                        groupings.size(),
+                        baseNodeForAggregation,
+                        null,
+                        fieldName );
                 aggregateCalls.add( aggregateCall );
             }
         }
 
-        if ( ! aggregateCalls.isEmpty() ) {
+        if ( !aggregateCalls.isEmpty() ) {
 
             List<Integer> groupByOrdinals = new ArrayList<>();
             for ( RequestColumn column : groupings ) {
@@ -456,8 +479,9 @@ public class Rest {
         return relBuilder;
     }
 
+
     RelBuilder sort( RelBuilder relBuilder, RexBuilder rexBuilder, List<Pair<RequestColumn, Boolean>> sorts, int limit, int offset ) {
-        if ( ( sorts == null || sorts.size() == 0 ) && ( limit >= 0 || offset >= 0 ) ) {
+        if ( (sorts == null || sorts.size() == 0) && (limit >= 0 || offset >= 0) ) {
             relBuilder = relBuilder.limit( offset, limit );
 //            log.debug( "Added limit and offset to relation. Session ID: {}.", req.session().id() );
         } else if ( sorts != null && sorts.size() != 0 ) {
@@ -484,17 +508,15 @@ public class Rest {
         return relBuilder;
     }
 
-    private Transaction getTransaction() {
-        return getTransaction( false );
-    }
 
-    private Transaction getTransaction( boolean analyze ) {
+    private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, analyze );
+            return transactionManager.startTransaction( userName, databaseName, false );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }
+
 
     Map<String, Object> executeAndTransformRelAlg( RelRoot relRoot, final Transaction transaction ) {
         // Prepare
@@ -567,7 +589,7 @@ public class Rest {
             for ( List<Object> row : rows ) {
                 Map<String, Object> temp = new HashMap<>();
                 int counter = 0;
-                for ( Object o: row ) {
+                for ( Object o : row ) {
                     if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIMESTAMP ) ) {
                         Long nanoSeconds = (Long) o;
                         LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );

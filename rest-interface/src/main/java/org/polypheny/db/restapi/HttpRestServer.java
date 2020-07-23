@@ -29,8 +29,8 @@ import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
 import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
-import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.transaction.TransactionManager;
 import spark.Request;
 import spark.Response;
@@ -46,6 +46,7 @@ public class HttpRestServer extends QueryInterface {
 
     private final RequestParser requestParser;
 
+
     public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, final int port ) {
         super( transactionManager, authenticator );
         this.port = port;
@@ -57,7 +58,7 @@ public class HttpRestServer extends QueryInterface {
     public void run() {
 
         Service restServer = Service.ignite();
-        restServer.port(this.port);
+        restServer.port( this.port );
 
         Rest rest = new Rest( transactionManager, "pa", "APP" );
         restRoutes( restServer, rest );
@@ -68,7 +69,7 @@ public class HttpRestServer extends QueryInterface {
 
     private void restRoutes( Service restServer, Rest rest ) {
         restServer.path( "/restapi/v1", () -> {
-            restServer.before( "/*", (q, a) -> {
+            restServer.before( "/*", ( q, a ) -> {
                 log.debug( "Checking authentication of request with id: {}.", q.session().id() );
                 try {
                     CatalogUser catalogUser = this.requestParser.parseBasicAuthentication( q );
@@ -76,11 +77,10 @@ public class HttpRestServer extends QueryInterface {
                     restServer.halt( 401, e.getMessage() );
                 }
             } );
-//            restServer.get( "/res", restOld::getTableList, gson::toJson );
-            restServer.get( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName ") ), gson::toJson );
-            restServer.post( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName ") ), gson::toJson );
-            restServer.delete( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName ") ), gson::toJson );
-            restServer.patch( "/res/:resName", (q, a) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName ") ), gson::toJson );
+            restServer.get( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName " ) ), gson::toJson );
+            restServer.post( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName " ) ), gson::toJson );
+            restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName " ) ), gson::toJson );
+            restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName " ) ), gson::toJson );
         } );
     }
 
@@ -89,7 +89,7 @@ public class HttpRestServer extends QueryInterface {
         try {
             switch ( type ) {
                 case DELETE:
-                    ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest(  request, resourceName );
+                    ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( request, resourceName );
                     return rest.processDeleteResource( resourceDeleteRequest, request, response );
                 case GET:
                     ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( request, resourceName );
@@ -98,7 +98,7 @@ public class HttpRestServer extends QueryInterface {
                     ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( request, resourceName, gson );
                     return rest.processPatchResource( resourcePatchRequest, request, response );
                 case POST:
-                    ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest(  request, resourceName, gson );
+                    ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest( request, resourceName, gson );
                     return rest.processPostResource( resourcePostRequest, request, response );
             }
         } catch ( ParserException e ) {

@@ -27,8 +27,9 @@ public class IncorrectOrderOfOperationsException extends RuntimeException {
     @Getter
     private final String calledOperation;
 
+
     public IncorrectOrderOfOperationsException( final String requiredOperation, final String calledOperation ) {
-        super("Operation '" + requiredOperation + "' must be performed before operation '" + calledOperation + "' can be executed.");
+        super( "Operation '" + requiredOperation + "' must be performed before operation '" + calledOperation + "' can be executed." );
         this.calledOperation = calledOperation;
         this.requiredOperation = requiredOperation;
     }

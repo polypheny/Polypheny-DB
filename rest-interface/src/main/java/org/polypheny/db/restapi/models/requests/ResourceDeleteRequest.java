@@ -27,6 +27,7 @@ import org.polypheny.db.restapi.RequestParser.Filters;
 
 @AllArgsConstructor
 public class ResourceDeleteRequest {
+
     public final List<CatalogTable> tables;
     public final List<RequestColumn> requestColumns;
     public final Map<String, RequestColumn> nameMapping;

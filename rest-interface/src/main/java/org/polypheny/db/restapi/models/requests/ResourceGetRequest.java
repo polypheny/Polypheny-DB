@@ -23,16 +23,16 @@ import lombok.AllArgsConstructor;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.restapi.RequestColumn;
 import org.polypheny.db.restapi.RequestParser.Filters;
-import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.util.Pair;
 
 
 @AllArgsConstructor
 public class ResourceGetRequest {
+
     public final List<CatalogTable> tables;
     public final List<RequestColumn> requestColumns;
     public final Map<String, RequestColumn> nameMapping;
-//    public final List<Pair<RequestColumn, SqlAggFunction>> aggregates;
+    // public final List<Pair<RequestColumn, SqlAggFunction>> aggregates;
     public final List<RequestColumn> groupings;
     public final int limit;
     public final int offset;

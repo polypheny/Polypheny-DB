@@ -18,7 +18,6 @@ package org.polypheny.db.restapi.exception;
 
 
 import lombok.Getter;
-import org.polypheny.db.restapi.ParserErrorCode;
 import org.polypheny.db.restapi.RestErrorCode;
 
 
