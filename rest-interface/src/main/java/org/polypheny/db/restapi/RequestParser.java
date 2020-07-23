@@ -712,7 +712,7 @@ public class RequestParser {
         Map<String, CatalogColumn> nameMapping = new HashMap<>();
         for ( CatalogTable table : tables ) {
             for ( CatalogColumn column : this.catalog.getColumns( table.id ) ) {
-                nameMapping.put(column.schemaName + "." + column.tableName + "." + column.name, column);
+                nameMapping.put(column.getSchemaName() + "." + column.getTableName() + "." + column.name, column);
             }
         }
 

@@ -154,7 +154,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).schemaName, resourcePatchRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
         relBuilder = this.tableScans( relBuilder, rexBuilder, resourcePatchRequest.tables );
@@ -212,7 +212,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).schemaName, resourceDeleteRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
         relBuilder = this.tableScans( relBuilder, rexBuilder, resourceDeleteRequest.tables );
@@ -264,7 +264,7 @@ public class Rest {
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
         PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
-        PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).schemaName, insertValueRequest.tables.get( 0 ).name ) );
+        PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
 
         // Values
         RelDataType tableRowType = table.getRowType();
@@ -312,11 +312,11 @@ public class Rest {
         boolean firstTable = true;
         for ( CatalogTable catalogTable : tables ) {
             if ( firstTable ) {
-                relBuilder = relBuilder.scan( catalogTable.schemaName, catalogTable.name );
+                relBuilder = relBuilder.scan( catalogTable.getSchemaName(), catalogTable.name );
                 firstTable = false;
             } else {
                 relBuilder = relBuilder
-                        .scan( catalogTable.schemaName, catalogTable.name )
+                        .scan( catalogTable.getSchemaName(), catalogTable.name )
                         .join( JoinRelType.INNER, rexBuilder.makeLiteral( true ) );
             }
         }

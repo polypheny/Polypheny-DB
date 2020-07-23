@@ -37,7 +37,7 @@ public class RequestColumn {
         this.column = Objects.requireNonNull( column );
         this.tableScanIndex = tableScanIndex;
         this.logicalIndex = logicalIndex;
-        this.fullyQualifiedName = column.schemaName + "." + column.tableName + "." + column.name;
+        this.fullyQualifiedName = column.getSchemaName() + "." + column.getTableName() + "." + column.name;
         if ( alias == null ) {
             this.alias = this.fullyQualifiedName;
         } else {
