@@ -557,7 +557,9 @@ public class RequestParser {
             if ( ! literalFilterOperators.isEmpty() ) {
                 literalFilters.put( catalogColumn, literalFilterOperators );
             }
+            //noinspection ConstantConditions
             if ( ! columnFilterOperators.isEmpty() ) {
+                // This statement is currently never run! This will change once column filters are added to the interface.
                 columnFilters.put( catalogColumn, columnFilterOperators );
             }
             log.debug( "Finished parsing filters for key: {}.", possibleFilterKey );

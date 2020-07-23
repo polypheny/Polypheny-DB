@@ -31,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -83,18 +82,12 @@ public class Rest {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final Catalog catalog;
+
 
     Rest( final TransactionManager transactionManager, final String userName, final String databaseName ) {
-        this( Catalog.getInstance(), transactionManager, userName, databaseName );
-    }
-
-    @VisibleForTesting
-    Rest( final Catalog catalog, final TransactionManager transactionManager, final String userName, final String databaseName ) {
-        this.catalog = catalog;
         this.transactionManager = transactionManager;
-        this.userName = userName;
         this.databaseName = databaseName;
+        this.userName = userName;
     }
 
 
@@ -364,7 +357,6 @@ public class Rest {
 
     List<List<RexNode>> valuesNode( RelBuilder relBuilder, RexBuilder rexBuilder, List<List<Pair<RequestColumn, Object>>> values, List<RelDataTypeField> tableRows ) {
         List<List<RexNode>> wrapperList = new ArrayList<>();
-        // FIXME
         for ( List<Pair<RequestColumn, Object>> rowsToInsert : values ) {
             List<RexNode> rexValues = new ArrayList<>();
             for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
@@ -379,9 +371,7 @@ public class Rest {
     }
 
     List<List<RexLiteral>> valuesLiteral( RelBuilder relBuilder, RexBuilder rexBuilder, List<List<Pair<RequestColumn, Object>>> values, List<RelDataTypeField> tableRows ) {
-        // TODO JS: FINISH THIS
         List<List<RexLiteral>> wrapperList = new ArrayList<>();
-        List<String> valueColumnNames = new ArrayList<>();
         for ( List<Pair<RequestColumn, Object>> rowsToInsert : values ) {
             List<RexLiteral> rexValues = new ArrayList<>();
             for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
@@ -434,8 +424,7 @@ public class Rest {
         for ( RequestColumn column : requestColumns ) {
             if ( column.getAggregate() != null ) {
                 List<Integer> inputFields = new ArrayList<>();
-                inputFields.add( (int) column.getLogicalIndex() );
-                int fieldNameIndex = (int) column.getLogicalIndex();
+                inputFields.add( column.getLogicalIndex() );
                 String fieldName = column.getAlias();
                 AggregateCall aggregateCall = AggregateCall.create( column.getAggregate(), false, false, inputFields, -1, RelCollations.EMPTY, groupings.size(), baseNodeForAggregation, null, fieldName );
                 aggregateCalls.add( aggregateCall );
@@ -586,7 +575,8 @@ public class Rest {
             }
 
         } catch ( Exception e ) {
-            e.printStackTrace();
+            log.error( "Something went wrong with the transformation of the result iterator.", e );
+            throw new RestException( RestErrorCode.GENERIC );
         }
 
         Map<String, Object> finalResult = new HashMap<>();
