@@ -203,6 +203,9 @@ public class RequestParser {
     @VisibleForTesting
     List<CatalogTable> parseTables( String tableList ) throws ParserException {
         log.debug( "Starting to parse table list: {}", tableList );
+        if ( tableList == null ) {
+            throw new ParserException( ParserErrorCode.TABLE_LIST_GENERIC, "null" );
+        }
         String[] tableNameList = tableList.split( "," );
 
         List<CatalogTable> tables = new ArrayList<>();
