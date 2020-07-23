@@ -19,7 +19,7 @@ package org.polypheny.db.restapi;
 
 public enum RestErrorCode {
 
-    GENERIC(0, "none", "Generic", "Something went wrong. We don't really know what though."),
+    GENERIC( 0, "none", "Generic", "Something went wrong. We don't really know what though." ),
 
     ;
 
@@ -27,6 +27,7 @@ public enum RestErrorCode {
     public final String subsystem;
     public final String name;
     public final String description;
+
 
     RestErrorCode( int code, String subsystem, String name, String description ) {
         this.code = code;

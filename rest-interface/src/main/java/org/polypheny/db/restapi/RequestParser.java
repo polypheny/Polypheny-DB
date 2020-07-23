@@ -49,8 +49,8 @@ import org.polypheny.db.restapi.exception.ParserException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
 import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
 import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
-import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
+import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -66,6 +66,7 @@ import spark.Request;
 
 @Slf4j
 public class RequestParser {
+
     private final Catalog catalog;
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
@@ -123,7 +124,7 @@ public class RequestParser {
 
     @VisibleForTesting
     static Pair<String, String> decodeBasicAuthorization( String encodedAuthorization ) {
-        if ( ! Base64.isBase64( encodedAuthorization ) ) {
+        if ( !Base64.isBase64( encodedAuthorization ) ) {
             throw new UnauthorizedAccessException( "Basic Authorization header is not properly encoded." );
         }
         final String encodedHeader = StringUtils.substringAfter( encodedAuthorization, "Basic" );
@@ -162,6 +163,7 @@ public class RequestParser {
         return new ResourcePostRequest( tables, requestColumns, nameMapping, values );
     }
 
+
     public ResourcePatchRequest parsePatchResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
@@ -185,9 +187,7 @@ public class RequestParser {
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-
         Filters filters = this.parseFilters( request, nameMapping );
-
 
         return new ResourceDeleteRequest( tables, requestColumns, nameMapping, filters );
     }
@@ -259,7 +259,7 @@ public class RequestParser {
         }
 
         List<RequestColumn> columns;
-        if ( ! request.queryMap().hasKey( "_project" ) ) {
+        if ( !request.queryMap().hasKey( "_project" ) ) {
             columns = this.generateRequestColumnsWithoutProject( tables, tableOffsets );
         } else {
             QueryParamsMap projectionMap = request.queryMap().get( "_project" );
@@ -320,7 +320,7 @@ public class RequestParser {
                     throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, columnName );
                 }
 
-                if ( ! validColumns.contains( catalogColumn.id ) ) {
+                if ( !validColumns.contains( catalogColumn.id ) ) {
                     log.warn( "Column isn't valid. Column: {}.", columnName );
                     throw new ParserException( ParserErrorCode.PROJECTION_INVALID_COLUMN, columnName );
                 }
@@ -367,6 +367,7 @@ public class RequestParser {
         return nameMapping;
     }
 
+
     private List<RequestColumn> getAggregateColumns( List<RequestColumn> requestColumns ) {
         return requestColumns.stream().filter( RequestColumn::isAggregateColumn ).collect( Collectors.toList() );
     }
@@ -409,7 +410,7 @@ public class RequestParser {
 
     @VisibleForTesting
     List<Pair<RequestColumn, Boolean>> parseSorting( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
-        if ( ! request.queryMap().hasKey( "_sort" ) ) {
+        if ( !request.queryMap().hasKey( "_sort" ) ) {
             log.debug( "Request does not contain a sort. Returning null." );
             return null;
         }
@@ -453,7 +454,7 @@ public class RequestParser {
 
     @VisibleForTesting
     List<RequestColumn> parseGroupings( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
-        if ( ! request.queryMap().hasKey( "_groupby" ) ) {
+        if ( !request.queryMap().hasKey( "_groupby" ) ) {
             log.debug( "Request does not contain a grouping. Returning null." );
             return new ArrayList<>();
         }
@@ -479,7 +480,7 @@ public class RequestParser {
 
     @VisibleForTesting
     Integer parseLimit( Request request ) throws ParserException {
-        if ( ! request.queryMap().hasKey( "_limit" ) ) {
+        if ( !request.queryMap().hasKey( "_limit" ) ) {
             log.debug( "Request does not contain a limit. Returning -1." );
             return -1;
         }
@@ -498,7 +499,7 @@ public class RequestParser {
 
     @VisibleForTesting
     Integer parseOffset( Request request ) throws ParserException {
-        if ( ! request.queryMap().hasKey( "_offset" ) ) {
+        if ( !request.queryMap().hasKey( "_offset" ) ) {
             log.debug( "Request does not contain an offset. Returning -1." );
             return -1;
         }
@@ -554,11 +555,11 @@ public class RequestParser {
                 literalFilterOperators.add( new Pair<>( rightHandSide.left, literal ) );
             }
             // TODO: Add If Size != 0 checks for both put
-            if ( ! literalFilterOperators.isEmpty() ) {
+            if ( !literalFilterOperators.isEmpty() ) {
                 literalFilters.put( catalogColumn, literalFilterOperators );
             }
             //noinspection ConstantConditions
-            if ( ! columnFilterOperators.isEmpty() ) {
+            if ( !columnFilterOperators.isEmpty() ) {
                 // This statement is currently never run! This will change once column filters are added to the interface.
                 columnFilters.put( catalogColumn, columnFilterOperators );
             }
@@ -567,8 +568,6 @@ public class RequestParser {
 
         return new Filters( literalFilters, columnFilters );
     }
-
-
 
 
     Pair<SqlOperator, String> parseFilterOperation( String filterString ) throws ParserException {
@@ -608,10 +607,11 @@ public class RequestParser {
         return new Pair<>( callOperator, rightHandSide );
     }
 
+
     // TODO: REWRITE THIS METHOD
     @VisibleForTesting
     Object parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
-        if ( ! ( objectLiteral instanceof String ) ) {
+        if ( !(objectLiteral instanceof String) ) {
             return objectLiteral;
         } else {
             Object parsedLiteral;
@@ -632,7 +632,7 @@ public class RequestParser {
                         break;
                     case TIMESTAMP:
                         Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
-                        Long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
+                        long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
                         TimestampString timestampString = TimestampString.fromMillisSinceEpoch( millisecondsSinceEpoch );
                         parsedLiteral = timestampString;
                         break;
@@ -667,6 +667,7 @@ public class RequestParser {
         return this.parseInsertStatementBody( valuesList, nameMapping );
     }
 
+
     @VisibleForTesting
     List<List<Pair<RequestColumn, Object>>> parseInsertStatementBody( List<Object> bodyInsertValues, Map<String, RequestColumn> nameMapping ) throws ParserException {
         List<List<Pair<RequestColumn, Object>>> returnValue = new ArrayList<>();
@@ -679,6 +680,7 @@ public class RequestParser {
 
         return returnValue;
     }
+
 
     private List<Pair<RequestColumn, Object>> parseInsertStatementValues( Map rowValuesMap, Map<String, RequestColumn> nameMapping ) throws ParserException {
         List<Pair<RequestColumn, Object>> result = new ArrayList<>();
@@ -714,7 +716,7 @@ public class RequestParser {
         Map<String, CatalogColumn> nameMapping = new HashMap<>();
         for ( CatalogTable table : tables ) {
             for ( CatalogColumn column : this.catalog.getColumns( table.id ) ) {
-                nameMapping.put(column.getSchemaName() + "." + column.getTableName() + "." + column.name, column);
+                nameMapping.put( column.getSchemaName() + "." + column.getTableName() + "." + column.name, column );
             }
         }
 
@@ -724,6 +726,7 @@ public class RequestParser {
 
     @AllArgsConstructor
     public static class Filters {
+
         public final Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters;
         public final Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters;
     }
