@@ -40,7 +40,7 @@ dependencies {
 
     implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
 
-    implementation group: "com.mashape.unirest", name: "unirest-java", version: unirest_version  // MIT
+    implementation group: 'com.konghq', name: 'unirest-java', version: unirest_version  // MIT
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
 

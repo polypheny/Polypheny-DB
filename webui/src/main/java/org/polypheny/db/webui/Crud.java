@@ -26,8 +26,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,7 +35,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
-import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -69,6 +66,8 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import kong.unirest.HttpResponse;
+import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
@@ -174,7 +173,6 @@ import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import spark.Request;
 import spark.Response;
-import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -2396,7 +2394,7 @@ public class Crud implements InformationObserver {
             metaOutputStream.close();
 
             //send file to php backend using Unirest
-            HttpResponse jsonResponse = Unirest.post( request.hubLink )
+            HttpResponse<String> jsonResponse = Unirest.post( request.hubLink )
                     .field( "action", "uploadDataset" )
                     .field( "userId", String.valueOf( request.userId ) )
                     .field( "secret", request.secret )
@@ -2408,9 +2406,7 @@ public class Crud implements InformationObserver {
                     .asString();
 
             // Get result
-            StringWriter writer = new StringWriter();
-            IOUtils.copy( jsonResponse.getRawBody(), writer );
-            String resultString = writer.toString();
+            String resultString = jsonResponse.getBody();
             log.info( String.format( "Exported %s.[%s]", request.schema, request.tables.values().stream().map( n -> n.initialName ).collect( Collectors.joining( "," ))));
 
             try {
