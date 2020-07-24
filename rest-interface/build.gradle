@@ -18,37 +18,17 @@ sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 
-configurations.all {
-    // check for updates every build
-    resolutionStrategy.cacheChangingModulesFor 0, "seconds"
-}
-
-
-configurations {
-   uiFiles { transitive = false } 
-} 
-
-
 dependencies {
     implementation project(":core")
-    implementation project(":statistic")
-    implementation project(":explore-by-example")
-
-    uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
-
-    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
-
-    implementation group: "com.squareup.okhttp3", name: "okhttp", version: okhttp_version  // Apache 2.0
-
-    implementation group: 'com.konghq', name: 'unirest-java', version: unirest_version  // MIT
-
-    implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
-
+    implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
+    implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
+    implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
-
     testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
 }
 
 
@@ -60,7 +40,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources","$buildDir/webapp"]
+            srcDirs = ["src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -75,21 +55,6 @@ sourceSets {
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
-
-
-
-// unzip ui files
-task unzipUiFIles(type: Copy) {
-   from zipTree(configurations.uiFiles.singleFile)
-   into "$buildDir/webapp"
-   doLast {
-       file("$buildDir/webapp/index").mkdirs()
-       ant.move file: "$buildDir/webapp/webapp/index.html",
-                toDir: "$buildDir/webapp/index/"
-    }
-}
-
-classes.dependsOn(unzipUiFIles)
 
 
 
@@ -117,7 +82,6 @@ jar {
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
         attributes "Version": "$version"
     }
-    from("$buildDir/webapp") // include webapp files
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier "sources"

@@ -205,7 +205,11 @@ public enum RuntimeConfig {
     SCHEMA_CACHING( "runtime/schemaCaching",
             "Cache polypheny-db schema",
             true,
-            ConfigType.BOOLEAN );
+            ConfigType.BOOLEAN ),
+    REST_API_SERVER_PORT( "runtime/restapiServerPort",
+            "The port on which the REST API should listen.",
+            8089,
+            ConfigType.INTEGER);
 
 
     private final String key;
