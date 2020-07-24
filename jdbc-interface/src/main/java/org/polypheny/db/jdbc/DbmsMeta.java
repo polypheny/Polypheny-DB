@@ -121,7 +121,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     public static final int UNLIMITED_COUNT = -2;
 
-    public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = true;
+    public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
 
     private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
@@ -986,6 +986,8 @@ public class DbmsMeta implements ProtobufMeta {
                         h.id,
                         false,
                         signature,
+                        // Due to a bug in Avatica (it wrongly replaces the courser type) I have per default disabled sending data with the first frame.
+                        // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
                         maxRowsInFirstFrame != 0 && SEND_FIRST_FRAME_WITH_RESPONSE
                                 ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
                                 : null //Frame.MORE // Send first frame to together with the response to save a fetch call
