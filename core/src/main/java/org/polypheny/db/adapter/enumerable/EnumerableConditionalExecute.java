@@ -17,24 +17,19 @@
 package org.polypheny.db.adapter.enumerable;
 
 
-import java.lang.reflect.Type;
 import java.util.List;
-import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.ConditionalExecute;
-import org.polypheny.db.util.BuiltInMethod;
 
 
 public class EnumerableConditionalExecute extends ConditionalExecute implements EnumerableRel {
 
-    public EnumerableConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,Condition condition ) {
+    private EnumerableConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,Condition condition ) {
         super( cluster, traitSet, left, right, condition );
     }
 
@@ -81,7 +76,7 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
                 Expressions.ifThenElse(
                         conditionExp,
                         actionResult.block,
-                        Expressions.throw_( Expressions.new_( RuntimeException.class, Expressions.constant( "UNIQUE constraint violated." ) ) )
+                        Expressions.throw_( Expressions.new_( RuntimeException.class, Expressions.constant( "Execution condition not satisifed." ) ) )
                 )
         );
         return implementor.result( actionResult.physType, builder.toBlock() );
@@ -95,6 +90,11 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
 
     @Override
     public EnumerableConditionalExecute copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new EnumerableConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition );
+        final EnumerableConditionalExecute ece = new EnumerableConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition );
+        ece.setCatalogSchema( catalogSchema );
+        ece.setCatalogTable( catalogTable );
+        ece.setCatalogColumns( catalogColumns );
+        ece.setValues( values );
+        return ece;
     }
 }

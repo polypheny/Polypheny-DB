@@ -27,6 +27,7 @@ import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.type.RelDataType;
 
 
@@ -48,6 +49,7 @@ public abstract class ConditionalExecute extends BiRel {
     @Setter
     protected Set<List<Object>> values = null;
 
+
     public ConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition ) {
         super( cluster, traitSet, left, right );
         this.condition = condition;
@@ -57,6 +59,17 @@ public abstract class ConditionalExecute extends BiRel {
     @Override
     protected RelDataType deriveRowType() {
         return right.getRowType();
+    }
+
+
+    @Override
+    public void explain( RelWriter pw ) {
+        pw.item( "condition", condition == null ? "null" : condition );
+        pw.item( "schema", catalogSchema == null ? "null" : catalogSchema.name );
+        pw.item( "table", catalogTable == null ? "null" : catalogTable.name );
+        pw.item( "columns", catalogColumns == null ? "null" : catalogColumns );
+        pw.item( "values", values == null ? "null" : values );
+        super.explain( pw );
     }
 
 

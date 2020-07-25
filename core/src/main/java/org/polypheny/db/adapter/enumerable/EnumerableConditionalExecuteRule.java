@@ -42,6 +42,11 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         final RelNode input = RelOptRule.convert( lce.getLeft(), lce.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final RelNode action = RelOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final Condition condition = lce.getCondition();
-        return EnumerableConditionalExecute.create( input, action, condition );
+        final EnumerableConditionalExecute ece =  EnumerableConditionalExecute.create( input, action, condition );
+        ece.setCatalogSchema( lce.getCatalogSchema() );
+        ece.setCatalogTable( lce.getCatalogTable() );
+        ece.setCatalogColumns( lce.getCatalogColumns() );
+        ece.setValues( lce.getValues() );
+        return ece;
     }
 }

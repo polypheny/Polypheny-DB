@@ -353,13 +353,7 @@ public class RelStructuredTypeFlattener implements ReflectiveVisitor {
 
 
     public void rewriteRel( LogicalConditionalExecute rel ) {
-        LogicalConditionalExecute newRel =
-                new LogicalConditionalExecute(
-                        rel.getCluster(),
-                        rel.getTraitSet(),
-                        rel.getLeft(),
-                        rel.getRight(),
-                        rel.getCondition());
+        LogicalConditionalExecute newRel = LogicalConditionalExecute.create( rel.getLeft(), rel.getRight(), rel );
         setNewForOldRel( rel, newRel );
     }
 

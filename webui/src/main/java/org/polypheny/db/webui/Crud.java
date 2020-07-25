@@ -2680,7 +2680,11 @@ public class Crud implements InformationObserver {
                     rowsChanged = num;
                 }
             } catch ( RuntimeException e ) {
-                throw new QueryExecutionException( e.getCause().getMessage(), e );
+                if (e.getCause() != null) {
+                    throw new QueryExecutionException( e.getCause().getMessage(), e );
+                } else {
+                    throw new QueryExecutionException( e.getMessage(), e );
+                }
             }
             return rowsChanged;
         } else {

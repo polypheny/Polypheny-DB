@@ -76,7 +76,7 @@ public class IndexManager {
                     Catalog.getInstance().getTable( key.tableId ),
                     key.getColumnNames(),
                     key.getColumnNames() );
-        } else if (Catalog.getInstance().isForeignKey( key.id ) ) {
+        } else if ( Catalog.getInstance().isForeignKey( key.id ) ) {
             final CatalogForeignKey cfk = Catalog.getInstance().getForeignKeys( key.tableId ).stream().filter( x -> x.id == key.id ).findFirst().get();
             index = new HashIndex(
                     id, name, unique, Catalog.getInstance().getSchema( key.schemaId ),

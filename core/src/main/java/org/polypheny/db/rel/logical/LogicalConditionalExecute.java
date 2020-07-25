@@ -26,7 +26,7 @@ import org.polypheny.db.rel.core.ConditionalExecute;
 
 public class LogicalConditionalExecute extends ConditionalExecute {
 
-    public LogicalConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition ) {
+    private LogicalConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition ) {
         super( cluster, traitSet, left, right, condition );
     }
 
@@ -36,9 +36,24 @@ public class LogicalConditionalExecute extends ConditionalExecute {
     }
 
 
+    public static LogicalConditionalExecute create( RelNode left, RelNode right, LogicalConditionalExecute copy ) {
+        final LogicalConditionalExecute lce = new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, copy.condition );
+        lce.catalogSchema = copy.catalogSchema;
+        lce.catalogTable = copy.catalogTable;
+        lce.catalogColumns = copy.catalogColumns;
+        lce.values = copy.values;
+        return lce;
+    }
+
+
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new LogicalConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition );
+        final LogicalConditionalExecute lce =  new LogicalConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition );
+        lce.setCatalogSchema( catalogSchema );
+        lce.setCatalogTable( catalogTable );
+        lce.setCatalogColumns( catalogColumns );
+        lce.setValues( values );
+        return lce;
     }
 
 

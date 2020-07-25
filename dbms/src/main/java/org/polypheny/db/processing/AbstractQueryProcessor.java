@@ -53,6 +53,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
+import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -67,6 +68,8 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptSchema;
+import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -507,18 +510,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         final TableModify root = (TableModify) logicalRoot.rel;
 
         final Values values = (Values) root.getInput();
-        final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
         final RexBuilder builder = root.getCluster().getRexBuilder();
 
         final Catalog catalog = Catalog.getInstance();
         final CatalogSchema schema = transaction.getDefaultSchema();
         final CatalogTable table;
         final List<CatalogConstraint> constraints;
+        final List<CatalogForeignKey> foreignKeys;
 
         if ( root.isInsert() ) {
             try {
                 table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
                 constraints = new ArrayList<>( catalog.getConstraints( table.id ) );
+                foreignKeys = new ArrayList<>( catalog.getForeignKeys( table.id ) );
                 // Turn primary key into an artificial unique constraint
                 if ( table.primaryKey != null ) {
                     CatalogPrimaryKey pk = catalog.getPrimaryKey( table.primaryKey );
@@ -539,6 +543,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
 
                 RexNode condition = builder.makeLiteral( false );
+                final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
                 final Set<List<Object>> uniqueSet = new HashSet<>();
                 for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
                     RexNode rowcheck = builder.makeLiteral( true );
@@ -572,6 +577,46 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 lce.setValues( uniqueSet );
                 lceRoot = lce;
             }
+            for ( final CatalogForeignKey foreignKey : foreignKeys ) {
+                final RelOptSchema relOptSchema = root.getCatalogReader();
+                final RelOptTable relOptTable = relOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
+                final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), relOptTable );
+                final Set<List<Object>> uniqueSet = new HashSet<>();
+                RexNode condition = builder.makeLiteral( false );
+                for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
+                    RexNode rowcheck = builder.makeLiteral( true );
+                    final List<Object> rowValues = new ArrayList<>();
+                    for ( int i = 0; i < foreignKey.getColumnNames().size(); ++i ) {
+                        final String column = foreignKey.getColumnNames().get( i );
+                        final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                        final RexLiteral fieldValue = row.get(
+                                values.getRowType().getField( column, false, false ).getIndex()
+                        );
+                        rowValues.add( fieldValue.getValue() );
+                        RexNode comparison = builder.makeCall(
+                                SqlStdOperatorTable.EQUALS,
+                                builder.makeFieldAccess(
+                                        builder.makeRangeReference( scan ), referencedColumn, false
+                                ),
+                                fieldValue
+                        );
+                        rowcheck = builder.makeCall( SqlStdOperatorTable.AND, rowcheck, comparison );
+                    }
+                    uniqueSet.add( rowValues );
+                    condition = builder.makeCall( SqlStdOperatorTable.OR, condition, rowcheck );
+                }
+                final LogicalFilter filter = LogicalFilter.create( scan, condition );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.GREATER_ZERO );
+                lce.setCatalogSchema( schema );
+                try {
+                    lce.setCatalogTable( Catalog.getInstance().getTable( foreignKey.referencedKeyTableId ) );
+                } catch ( UnknownTableException | GenericCatalogException e ) {
+                    e.printStackTrace();
+                }
+                lce.setCatalogColumns( foreignKey.getReferencedKeyColumnNames() );
+                lce.setValues( uniqueSet );
+                lceRoot = lce;
+            }
             return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
         }
 
@@ -594,7 +639,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         );
                         if ( index != null ) {
                             final LogicalConditionalExecute visited = (LogicalConditionalExecute) super.visit( lce );
-                            final Condition c = index.containsAny( lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
+                            Condition c = null;
+                            switch ( lce.getCondition() ) {
+                                case TRUE:
+                                case FALSE:
+                                    c = lce.getCondition();
+                                    break;
+                                case EQUAL_TO_ZERO:
+                                    c = index.containsAny( lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
+                                    break;
+                                case GREATER_ZERO:
+                                    c = index.containsAny( lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
+                                    break;
+                            }
                             return LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c );
                         }
                     }

@@ -189,7 +189,7 @@ public abstract class AbstractRouter implements Router {
         } else {
             throw new IllegalArgumentException(  );
         }
-        return LogicalConditionalExecute.create( builder.build(), action, lce.getCondition() );
+        return LogicalConditionalExecute.create( builder.build(), action, lce );
     }
 
 
