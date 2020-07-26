@@ -26,18 +26,18 @@ import org.polypheny.db.rel.core.ConditionalExecute;
 
 public class LogicalConditionalExecute extends ConditionalExecute {
 
-    private LogicalConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition ) {
-        super( cluster, traitSet, left, right, condition );
+    private LogicalConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+        super( cluster, traitSet, left, right, condition, exceptionClass, exceptionMessage );
     }
 
 
-    public static LogicalConditionalExecute create( RelNode left, RelNode right, Condition condition ) {
-        return new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, condition );
+    public static LogicalConditionalExecute create( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+        return new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, condition, exceptionClass, exceptionMessage );
     }
 
 
     public static LogicalConditionalExecute create( RelNode left, RelNode right, LogicalConditionalExecute copy ) {
-        final LogicalConditionalExecute lce = new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, copy.condition );
+        final LogicalConditionalExecute lce = new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, copy.condition, copy.exceptionClass, copy.exceptionMessage );
         lce.catalogSchema = copy.catalogSchema;
         lce.catalogTable = copy.catalogTable;
         lce.catalogColumns = copy.catalogColumns;
@@ -48,7 +48,7 @@ public class LogicalConditionalExecute extends ConditionalExecute {
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        final LogicalConditionalExecute lce =  new LogicalConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition );
+        final LogicalConditionalExecute lce =  new LogicalConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition, exceptionClass, exceptionMessage );
         lce.setCatalogSchema( catalogSchema );
         lce.setCatalogTable( catalogTable );
         lce.setCatalogColumns( catalogColumns );

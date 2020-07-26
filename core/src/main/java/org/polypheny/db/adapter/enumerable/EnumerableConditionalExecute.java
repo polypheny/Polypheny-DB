@@ -29,8 +29,8 @@ import org.polypheny.db.rel.core.ConditionalExecute;
 
 public class EnumerableConditionalExecute extends ConditionalExecute implements EnumerableRel {
 
-    private EnumerableConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,Condition condition ) {
-        super( cluster, traitSet, left, right, condition );
+    private EnumerableConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right,Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+        super( cluster, traitSet, left, right, condition, exceptionClass, exceptionMessage );
     }
 
 
@@ -39,18 +39,8 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
 
         final BlockBuilder builder = new BlockBuilder();
         final Result conditionResult = implementor.visitChild( this, 0, (EnumerableRel) getLeft(), pref );
-
-//        final Type inputJavaType = conditionResult.physType.getJavaRowType();
-//        final ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType), "inputEnumerator" );
-//        final Expression conditionInput = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
-
         Expression call = Expressions.call( builder.append( builder.newName( "condition" + System.nanoTime() ), conditionResult.block ), "count" );
 
-        // System.err.println(condition.count();
-//        builder.add( Expressions.statement( Expressions.call(
-//                Expressions.field( null, Types.lookupField( System.class, "err" ) ),
-//                "println",
-//                call ) ) );
         Expression conditionExp = null;
         switch (this.condition) {
             case GREATER_ZERO:
@@ -76,21 +66,21 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
                 Expressions.ifThenElse(
                         conditionExp,
                         actionResult.block,
-                        Expressions.throw_( Expressions.new_( RuntimeException.class, Expressions.constant( "Execution condition not satisifed." ) ) )
+                        Expressions.throw_( Expressions.new_( exceptionClass, Expressions.constant( exceptionMessage ) ) )
                 )
         );
         return implementor.result( actionResult.physType, builder.toBlock() );
     }
 
 
-    public static EnumerableConditionalExecute create( RelNode left, RelNode right, Condition condition ) {
-        return new EnumerableConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, condition );
+    public static EnumerableConditionalExecute create( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+        return new EnumerableConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, condition, exceptionClass, exceptionMessage );
     }
 
 
     @Override
     public EnumerableConditionalExecute copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        final EnumerableConditionalExecute ece = new EnumerableConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition );
+        final EnumerableConditionalExecute ece = new EnumerableConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition, exceptionClass, exceptionMessage );
         ece.setCatalogSchema( catalogSchema );
         ece.setCatalogTable( catalogTable );
         ece.setCatalogColumns( catalogColumns );

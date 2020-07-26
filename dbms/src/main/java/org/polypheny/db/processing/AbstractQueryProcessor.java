@@ -88,6 +88,7 @@ import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.exceptions.ConstraintViolationException;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -567,10 +568,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
                 // Validate values in the insert set for uniqueness among each other
                 if ( uniqueSet.size() != values.getTuples().size() ) {
-                    throw new RuntimeException( "UNIQUE constraint violated" );
+                    throw new ConstraintViolationException( "UNIQUE constraint violated" );
                 }
                 final LogicalFilter filter = LogicalFilter.create( scan, condition );
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.EQUAL_TO_ZERO );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class, "UNIQUE constraint violated" );
                 lce.setCatalogSchema( schema );
                 lce.setCatalogTable( table );
                 lce.setCatalogColumns( constraint.key.getColumnNames() );
@@ -606,7 +607,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                     condition = builder.makeCall( SqlStdOperatorTable.OR, condition, rowcheck );
                 }
                 final LogicalFilter filter = LogicalFilter.create( scan, condition );
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.GREATER_ZERO );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.GREATER_ZERO, ConstraintViolationException.class, "Foreign key constraint violated" );
                 lce.setCatalogSchema( schema );
                 try {
                     lce.setCatalogTable( Catalog.getInstance().getTable( foreignKey.referencedKeyTableId ) );
@@ -652,7 +653,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     c = index.containsAny( lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
                                     break;
                             }
-                            return LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c );
+                            return LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c, visited.getExceptionClass(), visited.getExceptionMessage() );
                         }
                     }
                     return super.visit( node );

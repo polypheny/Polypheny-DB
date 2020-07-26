@@ -528,7 +528,7 @@ public class RelFactories {
         /**
          * Creates a {@link ConditionalExecute}.
          */
-        RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition );
+        RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage );
     }
 
 
@@ -538,8 +538,8 @@ public class RelFactories {
     private static class ConditionalExecuteFactoryImpl implements ConditionalExecuteFactory {
 
         @Override
-        public RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition ) {
-            return LogicalConditionalExecute.create( left, right, condition );
+        public RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+            return LogicalConditionalExecute.create( left, right, condition, exceptionClass, exceptionMessage );
         }
     }
 }

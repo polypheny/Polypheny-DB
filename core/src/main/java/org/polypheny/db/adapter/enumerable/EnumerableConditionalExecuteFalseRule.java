@@ -17,10 +17,12 @@
 package org.polypheny.db.adapter.enumerable;
 
 
+import lombok.SneakyThrows;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.ConditionalExecute;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
@@ -36,8 +38,10 @@ public class EnumerableConditionalExecuteFalseRule extends ConverterRule {
     }
 
 
+    @SneakyThrows
     @Override
     public RelNode convert( RelNode rel ) {
-        throw new RuntimeException( "Unsatisfiable condition" );
+        ConditionalExecute ce = (ConditionalExecute) rel;
+        throw ce.getExceptionClass().getConstructor( String.class ).newInstance( ce.getExceptionMessage() );
     }
 }

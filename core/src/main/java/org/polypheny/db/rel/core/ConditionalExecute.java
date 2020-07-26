@@ -35,6 +35,10 @@ public abstract class ConditionalExecute extends BiRel {
 
     @Getter
     protected Condition condition;
+    @Getter
+    protected Class<? extends Exception> exceptionClass;
+    @Getter
+    protected String exceptionMessage;
 
     @Getter
     @Setter
@@ -50,9 +54,11 @@ public abstract class ConditionalExecute extends BiRel {
     protected Set<List<Object>> values = null;
 
 
-    public ConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition ) {
+    public ConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
         super( cluster, traitSet, left, right );
         this.condition = condition;
+        this.exceptionClass = exceptionClass;
+        this.exceptionMessage = exceptionMessage;
     }
 
 
