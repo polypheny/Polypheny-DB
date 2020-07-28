@@ -18,12 +18,16 @@ package org.polypheny.db.router;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.partition.SimplePartition;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -51,17 +55,38 @@ public class SimpleRouter extends AbstractRouter {
 
     // Execute the table scan on the first placement of a table
     @Override
-    protected CatalogColumnPlacement selectPlacement( RelNode node, List<CatalogColumnPlacement> available ) {
-        // Take first
-        System.out.println("HENNLO: SimpleRouter selectPlacement: " + available.get(0).tableName);
-        return available.get( 0 );
+    protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
+        // Find the store with the most column placements
+        int storeIdWithMostPlacements = -1;
+        int numOfPlacements = 0;
+        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet() ) {
+            if ( entry.getValue().size() > numOfPlacements ) {
+                storeIdWithMostPlacements = entry.getKey();
+                numOfPlacements = entry.getValue().size();
+            }
+        }
+
+        // Take the store with most placements as base and add missing column placements
+        List<CatalogColumnPlacement> placementList = new LinkedList<>();
+        try {
+            for ( long cid : table.columnIds ) {
+                if ( table.placementsByStore.get( storeIdWithMostPlacements ).contains( cid ) ) {
+                    placementList.add( Catalog.getInstance().getColumnPlacement( storeIdWithMostPlacements, cid ) );
+                } else {
+                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
+                }
+            }
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
+
+        return placementList;
     }
 
 
     // Create table on the first store in the list that supports schema changes
     @Override
     public List<Store> createTable( long schemaId, Transaction transaction ) {
-        System.out.println("HENNLO: SimpleRouter createTable() schemaID: " + schemaId);
         Map<String, Store> availableStores = StoreManager.getInstance().getStores();
         for ( Store store : availableStores.values() ) {
             if ( !store.isSchemaReadOnly() ) {
@@ -69,6 +94,13 @@ public class SimpleRouter extends AbstractRouter {
             }
         }
         throw new RuntimeException( "No suitable store found" );
+    }
+
+
+    // Add column on the first store holding a placement of this table that supports schema changes
+    @Override
+    public List<Store> addColumn( CatalogTable catalogTable, Transaction transaction ) {
+        return ImmutableList.of( StoreManager.getInstance().getStore( catalogTable.placementsByStore.keySet().asList().get( 0 ) ) );
     }
 
 

@@ -47,23 +47,34 @@ public class SchemaToJsonMapperTest {
     @Ignore
     @Test
     public void exportTest() {
-        CatalogTable catalogTable = new CatalogTable( 4, "stores", ImmutableList.of(), ImmutableList.of(), 1, "public", 1, "APP", 1, "hans", TableType.TABLE, "", 23L, ImmutableMap.of() );
+        CatalogTable catalogTable = new CatalogTable(
+                4,
+                "stores",
+                ImmutableList.of(),
+                1,
+                1,
+                1,
+                "hans",
+                TableType.TABLE,
+                "",
+                23L,
+                ImmutableMap.of() );
         Catalog catalog = Catalog.getInstance();
         Arrays.asList(
-                new CatalogColumn( 5, "sid", 4, "stores", 1, "public", 1, "APP", 1, PolyType.INTEGER, null, null, null, null, null, false, null, null ),
-                new CatalogColumn( 6, "name", 4, "stores", 1, "public", 1, "APP", 2, PolyType.VARCHAR, null, 50, null, null, null, false, null, null ),
-                new CatalogColumn( 7, "location", 4, "stores", 1, "public", 1, "APP", 3, PolyType.VARCHAR, null, 30, null, null, null, true, null, new CatalogDefaultValue( 7, PolyType.VARCHAR, "Basel", null ) )
+                new CatalogColumn( 5, "sid", 4, 1, 1, 1, PolyType.INTEGER, null, null, null, null, null, false, null, null ),
+                new CatalogColumn( 6, "name", 4, 1, 1, 2, PolyType.VARCHAR, null, 50, null, null, null, false, null, null ),
+                new CatalogColumn( 7, "location", 4, 1, 1, 3, PolyType.VARCHAR, null, 30, null, null, null, true, null, new CatalogDefaultValue( 7, PolyType.VARCHAR, "Basel", null ) )
 
         );
 
-        new CatalogSchema( 1, "public", 1, "APP", 1, "hans", SchemaType.RELATIONAL );
+        new CatalogSchema( 1, "public", 1, 1, "hans", SchemaType.RELATIONAL );
         new CatalogDatabase( 1, "APP", 1, "hans", 1L, "public" );
         new CatalogUser( 1, "hans", "secrete" );
         new HashMap<>();
         new HashMap<>();
         Arrays.asList(
-                new CatalogKey( 23L, 4, "stores", 1, "public", 1, "APP", Arrays.asList( 5L, 6L ), Arrays.asList( "sid", "name" ) ),
-                new CatalogKey( 24L, 4, "stores", 1, "public", 1, "APP", Arrays.asList( 6L ), Arrays.asList( "name" ) )
+                new CatalogKey( 23L, 4, 1, 1, Arrays.asList( 5L, 6L ) ),
+                new CatalogKey( 24L, 4, 1, 1, Arrays.asList( 6L ) )
         );
         String json = SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, true, true );
         Assert.assertEquals( json, mockJson );

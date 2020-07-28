@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.tools;
+package org.polypheny.db.restapi.models.requests;
 
 
-import java.sql.PreparedStatement;
-import org.polypheny.db.rel.RelNode;
+import java.util.List;
+import java.util.Map;
+import lombok.AllArgsConstructor;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.restapi.RequestColumn;
+import org.polypheny.db.util.Pair;
 
 
-/**
- * Runs a relational expression.
- *
- * Experimental.
- */
-public interface RelRunner {
+@AllArgsConstructor
+public class ResourcePostRequest {
 
-    /**
-     * Runs a relational expression.
-     */
-    PreparedStatement prepare( RelNode rel );
+    public final List<CatalogTable> tables;
+    public final List<RequestColumn> requestColumns;
+    public final Map<String, RequestColumn> nameMapping;
+    public final List<List<Pair<RequestColumn, Object>>> values;
 }
-

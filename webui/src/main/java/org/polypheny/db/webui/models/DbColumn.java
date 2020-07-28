@@ -47,7 +47,13 @@ public class DbColumn {
     }
 
 
-    public DbColumn( final String name, final String dataType, final boolean nullable, final Integer precision, final SortState sort, final String filter ) {
+    public DbColumn(
+            final String name,
+            final String dataType,
+            final boolean nullable,
+            final Integer precision,
+            final SortState sort,
+            final String filter ) {
         this.name = name;
         this.dataType = dataType;
         this.nullable = nullable;
@@ -59,7 +65,17 @@ public class DbColumn {
     }
 
 
-    public DbColumn( final String name, final String dataType, final String collectionsType, final boolean nullable, final Integer precision, final Integer scale, final Integer dimension, final Integer cardinality, final boolean primary, final String defaultValue ) {
+    public DbColumn(
+            final String name,
+            final String dataType,
+            final String collectionsType,
+            final boolean nullable,
+            final Integer precision,
+            final Integer scale,
+            final Integer dimension,
+            final Integer cardinality,
+            final boolean primary,
+            final String defaultValue ) {
         this.name = name;
         this.dataType = dataType;
         this.collectionsType = collectionsType;

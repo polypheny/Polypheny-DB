@@ -63,7 +63,7 @@ public class SchemaToJsonMapper {
         if ( exportPrimaryKey ) {
             for ( CatalogKey catalogKey : Catalog.getInstance().getTableKeys( catalogTable.id ) ) {
                 if ( catalogKey.id == catalogTable.primaryKey ) {
-                    primaryKeyColumnNames = catalogKey.columnNames;
+                    primaryKeyColumnNames = catalogKey.getColumnNames();
                     break;
                 }
             }

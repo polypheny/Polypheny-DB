@@ -19,11 +19,8 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -42,7 +39,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name DROP PLACEMENT} statement.
+ * Parse tree for {@code ALTER TABLE name DROP PLACEMENT ON STORE storeName} statement.
  */
 public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
@@ -70,6 +67,8 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "DROP" );
         writer.keyword( "PLACEMENT" );
+        writer.keyword( "ON" );
+        writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
     }
 
@@ -82,11 +81,9 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
         try {
-            // Check if there are at least to placements for each column of this table
-            for ( List<CatalogColumnPlacement> placements : catalogTable.columnIds.stream().map( id -> Catalog.getInstance().getColumnPlacements( id ) ).collect( Collectors.toList() ) ) {
-                if ( placements.size() < 2 ) {
-                    throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
-                }
+            // Check whether this placement exists
+            if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
+                throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
             }
             // Check whether the store supports schema changes
             if ( storeInstance.isSchemaReadOnly() ) {
@@ -94,21 +91,22 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
                         storeName.getParserPosition(),
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
-            // Check whether this placement exists
-            Map<Integer, ImmutableList<Long>> placements = catalogTable.placementsByStore;
-            if ( placements.containsKey( storeInstance.getStoreId() ) ) {
-                // Physically delete the data from the store
-                storeInstance.dropTable( context, catalogTable );
-                // Inform routing
-                transaction.getRouter().dropPlacements( Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) );
-                // Delete placement in the catalog
-                for ( long columnId : placements.get( storeInstance.getStoreId() ) ) {
-                    Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), columnId );
+            // Check if there are is another placement for every column on this store
+            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) ) {
+                List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( placement.columnId );
+                if ( existingPlacements.size() < 2 ) {
+                    throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                 }
-                return;
             }
-
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
+            // Physically delete the data from the store
+            storeInstance.dropTable( context, catalogTable );
+            // Inform routing
+            transaction.getRouter().dropPlacements( Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) );
+            // Delete placement in the catalog
+            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id );
+            for ( CatalogColumnPlacement placement : placements ) {
+                Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), placement.columnId );
+            }
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

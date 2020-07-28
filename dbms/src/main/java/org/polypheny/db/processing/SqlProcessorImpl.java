@@ -193,7 +193,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         if ( transaction.isAnalyze() ) {
             InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Logical Query Plan" );
+            InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
             queryAnalyzer.addPage( page );
@@ -289,19 +289,27 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                             //TODO NH handle arrays
                             switch ( column.type ) {
                                 case BOOLEAN:
-                                    newValues[i][pos] = SqlLiteral.createBoolean( Boolean.parseBoolean( column.defaultValue.value ), SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createBoolean(
+                                            Boolean.parseBoolean( column.defaultValue.value ),
+                                            SqlParserPos.ZERO );
                                     break;
                                 case INTEGER:
                                 case DECIMAL:
                                 case BIGINT:
-                                    newValues[i][pos] = SqlLiteral.createExactNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createExactNumeric(
+                                            column.defaultValue.value,
+                                            SqlParserPos.ZERO );
                                     break;
                                 case REAL:
                                 case DOUBLE:
-                                    newValues[i][pos] = SqlLiteral.createApproxNumeric( column.defaultValue.value, SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createApproxNumeric(
+                                            column.defaultValue.value,
+                                            SqlParserPos.ZERO );
                                     break;
                                 case VARCHAR:
-                                    newValues[i][pos] = SqlLiteral.createCharString( column.defaultValue.value, SqlParserPos.ZERO );
+                                    newValues[i][pos] = SqlLiteral.createCharString(
+                                            column.defaultValue.value,
+                                            SqlParserPos.ZERO );
                                     break;
                                 default:
                                     throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
@@ -321,7 +329,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             // Replace value in parser tree
             for ( int i = 0; i < newValues.length; i++ ) {
                 SqlBasicCall call = ((SqlBasicCall) ((SqlBasicCall) insert.getSource()).getOperands()[i]);
-                ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall( call.getFunctionQuantifier(), call.getParserPosition(), newValues[i] );
+                ((SqlBasicCall) insert.getSource()).getOperands()[i] = call.getOperator().createCall(
+                        call.getFunctionQuantifier(),
+                        call.getParserPosition(),
+                        newValues[i] );
             }
         }
     }
@@ -391,7 +402,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     /**
-     * Walks over a tree of relational expressions, replacing each {@link RelNode} with a 'slimmed down' relational expression that projects only the columns required by its consumer.
+     * Walks over a tree of relational expressions, replacing each {@link RelNode} with a 'slimmed down' relational expression
+     * that projects only the columns required by its consumer.
      *
      * @param root Root of relational expression tree
      * @return Trimmed relational expression
@@ -408,7 +420,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     private boolean shouldTrim( RelNode rootRel ) {
-        // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past joins and seem to prevent join-reordering.
+        // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
+        // joins and seem to prevent join-reordering.
         return RelOptUtil.countJoins( rootRel ) < 2;
     }
 

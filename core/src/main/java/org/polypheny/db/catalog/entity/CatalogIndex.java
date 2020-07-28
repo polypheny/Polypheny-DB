@@ -64,7 +64,7 @@ public final class CatalogIndex implements Serializable {
     public List<CatalogIndexColumn> getCatalogIndexColumns() {
         int i = 1;
         LinkedList<CatalogIndexColumn> list = new LinkedList<>();
-        for ( String columnName : key.columnNames ) {
+        for ( String columnName : key.getColumnNames() ) {
             list.add( new CatalogIndexColumn( i++, columnName ) );
         }
         return list;
@@ -84,9 +84,9 @@ public final class CatalogIndex implements Serializable {
         @Override
         public Serializable[] getParameterArray() {
             return new Serializable[]{
-                    key.databaseName,
-                    key.schemaName,
-                    key.tableName,
+                    key.getDatabaseName(),
+                    key.getSchemaName(),
+                    key.getTableName(),
                     !unique,
                     null,
                     name,

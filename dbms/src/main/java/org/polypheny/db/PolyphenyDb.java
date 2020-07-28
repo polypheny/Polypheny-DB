@@ -46,6 +46,7 @@ import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.jdbc.JdbcInterface;
 import org.polypheny.db.partition.SimplePartition;
 import org.polypheny.db.processing.AuthenticatorImpl;
+import org.polypheny.db.restapi.HttpRestServer;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.PUID;
@@ -195,6 +196,7 @@ public class PolyphenyDb {
         final Authenticator authenticator = new AuthenticatorImpl();
         final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        final HttpRestServer restApiServer = new HttpRestServer( transactionManager, authenticator, RuntimeConfig.REST_API_SERVER_PORT.getInteger() );
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
 
@@ -204,9 +206,13 @@ public class PolyphenyDb {
         Thread webUiInterfaceThread = new Thread( httpServer );
         webUiInterfaceThread.start();
 
+        Thread restApiInterfaceThread = new Thread( restApiServer, "REST_API_SERVER" );
+        restApiInterfaceThread.start();
+
         try {
             jdbcInterfaceThread.join();
             webUiInterfaceThread.join();
+            restApiInterfaceThread.join();
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }

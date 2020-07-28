@@ -130,14 +130,15 @@ import org.polypheny.db.util.mapping.Mappings;
 
 /**
  * Builder for relational expressions.
- *
- * {@code RelBuilder} does not make possible anything that you could not also accomplish by calling the factory methods of the particular relational expression.
- * But it makes common tasks more straightforward and concise.
- *
+ * <p>
+ * {@code RelBuilder} does not make possible anything that you could not also accomplish by calling the factory methods of
+ * the particular relational expression. But it makes common tasks more straightforward and concise.
+ * <p>
  * {@code RelBuilder} uses factories to create relational expressions.
- * By default, it uses the default factories, which create logical relational expressions ({@link LogicalFilter}, {@link LogicalProject} and so forth).
- * But you could override those factories so that, say, {@code filter} creates instead a {@code HiveFilter}.
- *
+ * By default, it uses the default factories, which create logical relational expressions ({@link LogicalFilter},
+ * {@link LogicalProject} and so forth). But you could override those factories so that, say, {@code filter} creates
+ * instead a {@code HiveFilter}.
+ * <p>
  * It is not thread-safe.
  */
 public class RelBuilder {
@@ -312,7 +313,8 @@ public class RelBuilder {
     /**
      * Adds a relational expression to be the input to the next relational expression constructed.
      *
-     * This method is usual when you want to weave in relational expressions that are not supported by the builder. If, while creating such expressions, you need to use previously built expressions as inputs, call
+     * This method is usual when you want to weave in relational expressions that are not supported by the builder. If, while
+     * creating such expressions, you need to use previously built expressions as inputs, call
      * {@link #build()} to pop those inputs.
      */
     public RelBuilder push( RelNode node ) {
@@ -495,7 +497,8 @@ public class RelBuilder {
 
 
     /**
-     * As {@link #field(int, int, int)}, but if {@code alias} is true, the method may apply an alias to make sure that the field has the same name as in the input frame. If no alias is applied the expression is definitely a
+     * As {@link #field(int, int, int)}, but if {@code alias} is true, the method may apply an alias to make sure that the
+     * field has the same name as in the input frame. If no alias is applied the expression is definitely a
      * {@link RexInputRef}.
      */
     private RexNode field( int inputCount, int inputOrdinal, int fieldOrdinal, boolean alias ) {
@@ -526,7 +529,8 @@ public class RelBuilder {
 
 
     /**
-     * Creates a reference to a field which originated in a relation with the given alias. Searches for the relation starting at the top of the stack.
+     * Creates a reference to a field which originated in a relation with the given alias. Searches for the relation starting
+     * at the top of the stack.
      */
     public RexNode field( int inputCount, String alias, String fieldName ) {
         Objects.requireNonNull( alias );
@@ -850,7 +854,8 @@ public class RelBuilder {
 
 
     /**
-     * @deprecated Now that indicator is deprecated, use {@link #groupKey(Iterable, Iterable)}, which has the same behavior as calling this method with {@code indicator = false}.
+     * @deprecated Now that indicator is deprecated, use {@link #groupKey(Iterable, Iterable)}, which has the same behavior
+     * as calling this method with {@code indicator = false}.
      */
     @Deprecated // to be removed before 2.0
     public GroupKey groupKey( Iterable<? extends RexNode> nodes, boolean indicator, Iterable<? extends Iterable<? extends RexNode>> nodeLists ) {
@@ -886,7 +891,8 @@ public class RelBuilder {
     /**
      * Creates a group key, identified by field positions in the underlying relational expression.
      *
-     * This method of creating a group key does not allow you to group on new expressions, only column projections, but is efficient, especially when you are coming from an existing {@link Aggregate}.
+     * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
+     * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
     public GroupKey groupKey( @Nonnull ImmutableBitSet groupSet ) {
         return groupKey( groupSet, ImmutableList.of( groupSet ) );
@@ -896,7 +902,8 @@ public class RelBuilder {
     /**
      * Creates a group key with grouping sets, both identified by field positions in the underlying relational expression.
      *
-     * This method of creating a group key does not allow you to group on new expressions, only column projections, but is efficient, especially when you are coming from an existing {@link Aggregate}.
+     * This method of creating a group key does not allow you to group on new expressions, only column projections, but is
+     * efficient, especially when you are coming from an existing {@link Aggregate}.
      */
     public GroupKey groupKey( ImmutableBitSet groupSet, @Nonnull Iterable<? extends ImmutableBitSet> groupSets ) {
         return groupKey_( groupSet, false, ImmutableList.copyOf( groupSets ) );
@@ -989,7 +996,14 @@ public class RelBuilder {
     /**
      * Creates a call to an aggregate function with all applicable operands.
      */
-    protected AggCall aggregateCall( SqlAggFunction aggFunction, boolean distinct, boolean approximate, RexNode filter, ImmutableList<RexNode> orderKeys, String alias, ImmutableList<RexNode> operands ) {
+    protected AggCall aggregateCall(
+            SqlAggFunction aggFunction,
+            boolean distinct,
+            boolean approximate,
+            RexNode filter,
+            ImmutableList<RexNode> orderKeys,
+            String alias,
+            ImmutableList<RexNode> operands ) {
         return new AggCallImpl(
                 aggFunction,
                 distinct,
@@ -1395,7 +1409,8 @@ public class RelBuilder {
 
         if ( frame.rel instanceof Project && shouldMergeProject() ) {
             final Project project = (Project) frame.rel;
-            // Populate field names. If the upper expression is an input ref and does not have a recommended name, use the name of the underlying field.
+            // Populate field names. If the upper expression is an input ref and does not have a recommended name, use the
+            // name of the underlying field.
             for ( int i = 0; i < fieldNameList.size(); i++ ) {
                 if ( fieldNameList.get( i ) == null ) {
                     final RexNode node = nodeList.get( i );
@@ -1507,9 +1522,11 @@ public class RelBuilder {
     /**
      * Creates a {@link Project} of the given expressions and field names, and optionally optimizing.
      *
-     * If {@code fieldNames} is null, or if a particular entry in {@code fieldNames} is null, derives field names from the input expressions.
+     * If {@code fieldNames} is null, or if a particular entry in {@code fieldNames} is null, derives field names from
+     * the input expressions.
      *
-     * If {@code force} is false, and the input is a {@code Project}, and the expressions  make the trivial projection ($0, $1, ...), modifies the input.
+     * If {@code force} is false, and the input is a {@code Project}, and the expressions  make the trivial
+     * projection ($0, $1, ...), modifies the input.
      *
      * @param nodes Expressions
      * @param fieldNames Suggested field names, or null to generate
@@ -1538,7 +1555,11 @@ public class RelBuilder {
                 // Rename columns of child projection if desired field names are given.
                 final Frame frame = stack.pop();
                 final Project childProject = (Project) frame.rel;
-                final Project newInput = childProject.copy( childProject.getTraitSet(), childProject.getInput(), childProject.getProjects(), rowType );
+                final Project newInput = childProject.copy(
+                        childProject.getTraitSet(),
+                        childProject.getInput(),
+                        childProject.getProjects(),
+                        rowType );
                 stack.push( new Frame( newInput, frame.fields ) );
             }
         } else {
@@ -1553,7 +1574,8 @@ public class RelBuilder {
      *
      * If all fields have the same name, adds nothing; if any fields do not have the same name, adds a {@link Project}.
      *
-     * Note that the names can be short-lived. Other {@code RelBuilder} operations make no guarantees about the field names of the rows they produce.
+     * Note that the names can be short-lived. Other {@code RelBuilder} operations make no guarantees about the field names
+     * of the rows they produce.
      *
      * @param fieldNames List of desired field names; may contain null values or have fewer fields than the current row type
      */
@@ -1706,7 +1728,11 @@ public class RelBuilder {
                 RelCollation collation =
                         RelCollations.of( aggCall1.orderKeys
                                 .stream()
-                                .map( orderKey -> collation( orderKey, RelFieldCollation.Direction.ASCENDING, null, Collections.emptyList() ) )
+                                .map( orderKey -> collation(
+                                        orderKey,
+                                        RelFieldCollation.Direction.ASCENDING,
+                                        null,
+                                        Collections.emptyList() ) )
                                 .collect( Collectors.toList() ) );
                 aggregateCall =
                         AggregateCall.create(
@@ -1923,7 +1949,8 @@ public class RelBuilder {
     /**
      * Creates a {@link Join} using USING syntax.
      *
-     * For each of the field names, both left and right inputs must have a field of that name. Constructs a join condition that the left and right fields are equal.
+     * For each of the field names, both left and right inputs must have a field of that name. Constructs a join condition
+     * that the left and right fields are equal.
      *
      * @param joinType Join type
      * @param fieldNames Field names
@@ -1974,9 +2001,11 @@ public class RelBuilder {
     /**
      * Creates a {@link Values}.
      *
-     * The {@code values} array must have the same number of entries as {@code fieldNames}, or an integer multiple if you wish to create multiple rows.
+     * The {@code values} array must have the same number of entries as {@code fieldNames}, or an integer multiple if you
+     * wish to create multiple rows.
      *
-     * If there are zero rows, or if all values of a any column are null, this method cannot deduce the type of columns. For these cases, call {@link #values(Iterable, RelDataType)}.
+     * If there are zero rows, or if all values of a any column are null, this method cannot deduce the type of columns.
+     * For these cases, call {@link #values(Iterable, RelDataType)}.
      *
      * @param fieldNames Field names
      * @param values Values
@@ -2053,10 +2082,12 @@ public class RelBuilder {
     /**
      * Creates a relational expression that reads from an input and throws all of the rows away.
      *
-     * Note that this method always pops one relational expression from the stack. {@code values}, in contrast, does not pop any relational expressions, and always produces a leaf.
+     * Note that this method always pops one relational expression from the stack. {@code values}, in contrast, does not
+     * pop any relational expressions, and always produces a leaf.
      *
-     * The default implementation creates a {@link Values} with the same specified row type as the input, and ignores the input entirely.
-     * But schema-on-query systems such as Drill might override this method to create a relation expression that retains the input, just to read its schema.
+     * The default implementation creates a {@link Values} with the same specified row type as the input, and ignores the
+     * input entirely. But schema-on-query systems such as Drill might override this method to create a relation expression
+     * that retains the input, just to read its schema.
      */
     public RelBuilder empty() {
         final Frame frame = stack.pop();
@@ -2067,7 +2098,8 @@ public class RelBuilder {
     /**
      * Creates a {@link Values} with a specified row type.
      *
-     * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being null, or there being zero rows.
+     * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
+     * null, or there being zero rows.
      *
      * @param rowType Row type
      * @param columnValues Values
@@ -2083,7 +2115,8 @@ public class RelBuilder {
     /**
      * Creates a {@link Values} with a specified row type.
      *
-     * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being null, or there being zero rows.
+     * This method can handle cases that {@link #values(String[], Object...)} cannot, such as all values of a column being
+     * null, or there being zero rows.
      *
      * @param tupleList Tuple list
      * @param rowType Row type
@@ -2106,7 +2139,8 @@ public class RelBuilder {
 
 
     /**
-     * Converts an iterable of lists into an immutable list of immutable lists with the same contents. Returns the same object if possible.
+     * Converts an iterable of lists into an immutable list of immutable lists with the same contents. Returns the same
+     * object if possible.
      */
     private static <E> ImmutableList<ImmutableList<E>> copy( Iterable<? extends List<E>> tupleList ) {
         final ImmutableList.Builder<ImmutableList<E>> builder = ImmutableList.builder();
@@ -2256,7 +2290,11 @@ public class RelBuilder {
     }
 
 
-    private static RelFieldCollation collation( RexNode node, RelFieldCollation.Direction direction, RelFieldCollation.NullDirection nullDirection, List<RexNode> extraNodes ) {
+    private static RelFieldCollation collation(
+            RexNode node,
+            RelFieldCollation.Direction direction,
+            RelFieldCollation.NullDirection nullDirection,
+            List<RexNode> extraNodes ) {
         switch ( node.getKind() ) {
             case INPUT_REF:
                 return new RelFieldCollation(
@@ -2429,12 +2467,14 @@ public class RelBuilder {
         AggCall filter( RexNode condition );
 
         /**
-         * Returns a copy of this AggCall that sorts its input values by {@code orderKeys} before aggregating, as in SQL's {@code WITHIN GROUP} clause.
+         * Returns a copy of this AggCall that sorts its input values by {@code orderKeys} before aggregating, as in SQL's
+         * {@code WITHIN GROUP} clause.
          */
         AggCall sort( Iterable<RexNode> orderKeys );
 
         /**
-         * Returns a copy of this AggCall that sorts its input values by {@code orderKeys} before aggregating, as in SQL's {@code WITHIN GROUP} clause.
+         * Returns a copy of this AggCall that sorts its input values by {@code orderKeys} before aggregating, as in SQL's
+         * {@code WITHIN GROUP} clause.
          */
         AggCall sort( RexNode... orderKeys );
 
@@ -2525,7 +2565,14 @@ public class RelBuilder {
         private final ImmutableList<RexNode> orderKeys; // may be empty, never null
 
 
-        AggCallImpl( SqlAggFunction aggFunction, boolean distinct, boolean approximate, RexNode filter, String alias, ImmutableList<RexNode> operands, ImmutableList<RexNode> orderKeys ) {
+        AggCallImpl(
+                SqlAggFunction aggFunction,
+                boolean distinct,
+                boolean approximate,
+                RexNode filter,
+                String alias,
+                ImmutableList<RexNode> operands,
+                ImmutableList<RexNode> orderKeys ) {
             this.aggFunction = Objects.requireNonNull( aggFunction );
             this.distinct = distinct;
             this.approximate = approximate;
@@ -2657,7 +2704,8 @@ public class RelBuilder {
     /**
      * Collects the extra expressions needed for {@link #aggregate}.
      *
-     * The extra expressions come from the group key and as arguments to aggregate calls, and later there will be a {@link #project} or a {@link #rename(List)} if necessary.
+     * The extra expressions come from the group key and as arguments to aggregate calls, and later there will be
+     * a {@link #project} or a {@link #rename(List)} if necessary.
      */
     private static class Registrar {
 

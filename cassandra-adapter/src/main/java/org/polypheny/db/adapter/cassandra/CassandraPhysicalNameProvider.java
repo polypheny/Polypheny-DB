@@ -182,11 +182,6 @@ public class CassandraPhysicalNameProvider {
     }
 
 
-    public String getPhysicalTableName( String tableName ) {
-        return getPhysicalTableName( DEFAULT_SCHEMA, tableName );
-    }
-
-
     public String getPhysicalTableName( List<String> qualifiedName ) {
         String schemaName;
         String tableName;

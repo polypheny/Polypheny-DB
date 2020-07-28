@@ -18,13 +18,14 @@ package org.polypheny.db.config;
 
 
 /**
- * Th type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;) e.g. text or number
+ * The type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;) e.g. text or number
  */
 public enum WebUiFormType {
     TEXT( "text" ),
     NUMBER( "number" ),
     BOOLEAN( "boolean" ),
-    SELECT( "select" );
+    SELECT( "select" ),
+    CHECKBOXES( "checkboxes" );
 
     private final String type;
 

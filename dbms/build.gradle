@@ -36,6 +36,7 @@ dependencies {
     implementation project(":catalog")
     implementation project(":webui")
     implementation project(":jdbc-interface")
+    implementation project(":rest-interface")
     implementation project(":statistic")
     implementation project(":explore-by-example")
 
@@ -60,6 +61,8 @@ dependencies {
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
+
+    testImplementation group: 'com.konghq', name: 'unirest-java', version: unirest_version
 
     //testCompile group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
     //testCompile group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version

@@ -19,6 +19,8 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import lombok.NonNull;
+import lombok.SneakyThrows;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
@@ -27,9 +29,7 @@ public class CatalogColumnPlacement implements CatalogEntity {
     private static final long serialVersionUID = 4754069156177607149L;
 
     public final long tableId;
-    public final String tableName;
     public final long columnId;
-    public final String columnName;
     public final int storeId;
     public final String storeUniqueName;
     public final PlacementType placementType;
@@ -41,19 +41,15 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
     public CatalogColumnPlacement(
             final long tableId,
-            @NonNull final String tableName,
             final long columnId,
-            @NonNull final String columnName,
             final int storeId,
             @NonNull final String storeUniqueName,
-            final PlacementType placementType,
+            @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
             final String physicalColumnName ) {
         this.tableId = tableId;
-        this.tableName = tableName;
         this.columnId = columnId;
-        this.columnName = columnName;
         this.storeId = storeId;
         this.storeUniqueName = storeUniqueName;
         this.placementType = placementType;
@@ -63,14 +59,28 @@ public class CatalogColumnPlacement implements CatalogEntity {
     }
 
 
+    @SneakyThrows
+    public String getLogicalTableName() {
+        return Catalog.getInstance().getTable( tableId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getLogicalColumnName() {
+        return Catalog.getInstance().getColumn( columnId ).name;
+    }
+
+
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ tableName, storeUniqueName, placementType.name(), physicalSchemaName, physicalTableName, physicalColumnName };
-    }
-
-    public static CatalogColumnPlacement replacePhysicalNames( CatalogColumnPlacement columnPlacement, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
-        return new CatalogColumnPlacement( columnPlacement.tableId, columnPlacement.tableName, columnPlacement.columnId, columnPlacement.columnName, columnPlacement.storeId, columnPlacement.storeUniqueName, columnPlacement.placementType, physicalSchemaName, physicalTableName, physicalColumnName );
+        return new Serializable[]{
+                getLogicalTableName(),
+                storeUniqueName,
+                placementType.name(),
+                physicalSchemaName,
+                physicalTableName,
+                physicalColumnName };
     }
 
 }

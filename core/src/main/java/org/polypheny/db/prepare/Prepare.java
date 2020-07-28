@@ -107,8 +107,9 @@ public abstract class Prepare {
 
     /**
      * Temporary, until "Decorrelate sub-queries in Project and Join" is fixed.
-     *
-     * The default is false, meaning do not expand queries during sql-to-rel, but a few tests override and set it to true. After it is fixed, remove those overrides and use false everywhere.
+     * <p>
+     * The default is false, meaning do not expand queries during sql-to-rel, but a few tests override and set it to true.
+     * After it is fixed, remove those overrides and use false everywhere.
      */
     public static final TryThreadLocal<Boolean> THREAD_EXPAND = TryThreadLocal.of( false );
 
@@ -143,8 +144,10 @@ public abstract class Prepare {
 
         final RelTraitSet desiredTraits = getDesiredRootTraitSet( root );
 
-        // Work around: Allow rules to be registered during planning process by briefly creating each kind of physical table to let it register its rules.
-        // The problem occurs when plans are created via RelBuilder, not the usual process (SQL and SqlToRelConverter.Config.isConvertTableAccess = true).
+        // Work around: Allow rules to be registered during planning process by briefly creating each kind of physical table
+        // to let it register its rules.
+        // The problem occurs when plans are created via RelBuilder, not the usual process
+        // (SQL and SqlToRelConverter.Config.isConvertTableAccess = true).
         final RelVisitor visitor = new RelVisitor() {
             @Override
             public void visit( RelNode node, int ordinal, RelNode parent ) {
@@ -268,7 +271,12 @@ public abstract class Prepare {
                 case PHYSICAL:
                 default:
                     root = optimize( root );
-                    return createPreparedExplanation( null, parameterRowType, root, sqlExplain.getFormat(), sqlExplain.getDetailLevel() );
+                    return createPreparedExplanation(
+                            null,
+                            parameterRowType,
+                            root,
+                            sqlExplain.getFormat(),
+                            sqlExplain.getDetailLevel() );
             }
         }
 
@@ -278,7 +286,8 @@ public abstract class Prepare {
             timingTracer.traceTime( "end optimization" );
         }
 
-        // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE).  For anything else (e.g. CALL -> SELECT), use original kind.
+        // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE).  For anything else
+        // (e.g. CALL -> SELECT), use original kind.
         if ( !root.kind.belongsTo( SqlKind.DML ) ) {
             root = root.withKind( sqlNodeOriginal.getKind() );
         }
@@ -316,7 +325,8 @@ public abstract class Prepare {
 
 
     /**
-     * Walks over a tree of relational expressions, replacing each {@link RelNode} with a 'slimmed down' relational expression that projects only the columns required by its consumer.
+     * Walks over a tree of relational expressions, replacing each {@link RelNode} with a 'slimmed down' relational
+     * expression that projects only the columns required by its consumer.
      *
      * @param root Root of relational expression tree
      * @return Trimmed relational expression
@@ -334,7 +344,8 @@ public abstract class Prepare {
 
 
     private boolean shouldTrim( RelNode rootRel ) {
-        // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past joins and seem to prevent join-reordering.
+        // For now, don't trim if there are more than 3 joins. The projects near the leaves created by trim migrate past
+        // joins and seem to prevent join-reordering.
         return THREAD_TRIM.get() || RelOptUtil.countJoins( rootRel ) < 2;
     }
 
@@ -423,7 +434,12 @@ public abstract class Prepare {
         private final SqlExplainLevel detailLevel;
 
 
-        public PreparedExplain( RelDataType rowType, RelDataType parameterRowType, RelRoot root, SqlExplainFormat format, SqlExplainLevel detailLevel ) {
+        public PreparedExplain(
+                RelDataType rowType,
+                RelDataType parameterRowType,
+                RelRoot root,
+                SqlExplainFormat format,
+                SqlExplainLevel detailLevel ) {
             this.rowType = rowType;
             this.parameterRowType = parameterRowType;
             this.root = root;
@@ -478,17 +494,20 @@ public abstract class Prepare {
         String getCode();
 
         /**
-         * Returns whether this result is for a DML statement, in which case the result set is one row with one column containing the number of rows affected.
+         * Returns whether this result is for a DML statement, in which case the result set is one row with one column
+         * containing the number of rows affected.
          */
         boolean isDml();
 
         /**
-         * Returns the table modification operation corresponding to this statement if it is a table modification statement; otherwise null.
+         * Returns the table modification operation corresponding to this statement if it is a table modification statement;
+         * otherwise null.
          */
         LogicalTableModify.Operation getTableModOp();
 
         /**
-         * Returns a list describing, for each result field, the origin of the field as a 4-element list of (database, schema, table, column).
+         * Returns a list describing, for each result field, the origin of the field as a 4-element list
+         * of (database, schema, table, column).
          */
         List<List<String>> getFieldOrigins();
 
@@ -564,7 +583,8 @@ public abstract class Prepare {
 
 
         /**
-         * Returns the physical row type of this prepared statement. May not be identical to the row type returned by the validator; for example, the field names may have been made unique.
+         * Returns the physical row type of this prepared statement. May not be identical to the row type returned by the
+         * validator; for example, the field names may have been made unique.
          */
         public RelDataType getPhysicalRowType() {
             return rowType;

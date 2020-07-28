@@ -1741,14 +1741,14 @@ public class RelDecorrelator implements ReflectiveVisitor {
                 List<RexNode> correlatedJoinKeys = new ArrayList<>();
                 RelOptUtil.splitCorrelatedFilterCondition( filter, tmpRightJoinKeys, correlatedJoinKeys, false );
 
-                // check that the columns referenced in these comparisons form an unique key of the filterInput
+                // check that the columns referenced in these comparisons form a unique key of the filterInput
                 final List<RexInputRef> rightJoinKeys = new ArrayList<>();
                 for ( RexNode key : tmpRightJoinKeys ) {
                     assert key instanceof RexInputRef;
                     rightJoinKeys.add( (RexInputRef) key );
                 }
 
-                // check that the columns referenced in rightJoinKeys form an unique key of the filterInput
+                // check that the columns referenced in rightJoinKeys form a unique key of the filterInput
                 if ( rightJoinKeys.isEmpty() ) {
                     return;
                 }
@@ -1926,7 +1926,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                 List<RexNode> tmpCorrelatedJoinKeys = new ArrayList<>();
                 RelOptUtil.splitCorrelatedFilterCondition( filter, rightJoinKeys, tmpCorrelatedJoinKeys, true );
 
-                // make sure the correlated reference forms a unique key check that the columns referenced in these comparisons form an unique key of the leftInput
+                // make sure the correlated reference forms a unique key check that the columns referenced in these comparisons form a unique key of the leftInput
                 List<RexFieldAccess> correlatedJoinKeys = new ArrayList<>();
                 List<RexInputRef> correlatedInputRefJoinKeys = new ArrayList<>();
                 for ( RexNode joinKey : tmpCorrelatedJoinKeys ) {
@@ -1937,7 +1937,7 @@ public class RelDecorrelator implements ReflectiveVisitor {
                     correlatedInputRefJoinKeys.add( (RexInputRef) correlatedInputRef );
                 }
 
-                // check that the columns referenced in rightJoinKeys form an unique key of the filterInput
+                // check that the columns referenced in rightJoinKeys form a unique key of the filterInput
                 if ( correlatedInputRefJoinKeys.isEmpty() ) {
                     return;
                 }

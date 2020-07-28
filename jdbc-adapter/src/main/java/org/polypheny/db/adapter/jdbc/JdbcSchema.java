@@ -75,7 +75,6 @@ import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialectFactory;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -139,7 +138,7 @@ public class JdbcSchema implements Schema {
     }
 
 
-    public JdbcTable createJdbcTable( CatalogTable catalogTable ) {
+    public JdbcTable createJdbcTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
         // Temporary type factory, just for the duration of this method. Allowable because we're creating a proto-type,
         // not a type; before being used, the proto-type will be copied into a real type factory.
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
@@ -148,13 +147,9 @@ public class JdbcSchema implements Schema {
         List<String> physicalColumnNames = new LinkedList<>();
         String physicalSchemaName = null;
         String physicalTableName = null;
-        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( jdbcStore.getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             try {
                 CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-
-                if ( catalogColumn == null ) {
-                    throw new RuntimeException( "Column not found." ); // This should not happen
-                }
                 if ( physicalSchemaName == null ) {
                     physicalSchemaName = placement.physicalSchemaName;
                 }
@@ -171,7 +166,7 @@ public class JdbcSchema implements Schema {
         }
         JdbcTable table = new JdbcTable(
                 this,
-                catalogTable.schemaName,
+                catalogTable.getSchemaName(),
                 catalogTable.name,
                 logicalColumnNames,
                 TableType.valueOf( catalogTable.tableType.name() ),

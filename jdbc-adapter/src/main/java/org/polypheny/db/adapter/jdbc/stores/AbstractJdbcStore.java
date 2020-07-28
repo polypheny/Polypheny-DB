@@ -84,7 +84,7 @@ public abstract class AbstractJdbcStore extends Store {
 
 
     protected void registerJdbcPoolSizeInformation( String uniqueName ) {
-        informationPage = new InformationPage( uniqueName );
+        informationPage = new InformationPage( uniqueName ).setLabel( "Stores" );
         informationGroupConnectionPool = new InformationGroup( informationPage, "JDBC Connection Pool" );
 
         informationElements = new ArrayList<>();
@@ -140,7 +140,7 @@ public abstract class AbstractJdbcStore extends Store {
     @Override
     public void createTable( Context context, CatalogTable catalogTable ) {
         List<String> qualifiedNames = new LinkedList<>();
-        qualifiedNames.add( catalogTable.schemaName );
+        qualifiedNames.add( catalogTable.getSchemaName() );
         qualifiedNames.add( catalogTable.name );
         String physicalTableName = getPhysicalTableName( catalogTable.id );
         if ( log.isDebugEnabled() ) {
@@ -219,9 +219,12 @@ public abstract class AbstractJdbcStore extends Store {
 
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
-        String physicalTableName = getPhysicalTableName( catalogColumn.tableId );
         String physicalColumnName = getPhysicalColumnName( catalogColumn.id );
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName; // TODO: Potential bug
+        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
+        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
+        // approach rather than using the default physical schema / table names is that this approach allows adding columns to linked tables.
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );
         executeUpdate( query, context );
         // Insert default value
@@ -327,9 +330,12 @@ public abstract class AbstractJdbcStore extends Store {
 
     @Override
     public void dropTable( Context context, CatalogTable catalogTable ) {
+        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
+        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
+        // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
-        String physicalTableName = getPhysicalTableName( catalogTable.id );
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName; // TODO: Potential bug
         builder.append( "DROP TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )
@@ -352,9 +358,12 @@ public abstract class AbstractJdbcStore extends Store {
 
     @Override
     public void truncate( Context context, CatalogTable catalogTable ) {
+        // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
+        // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
+        // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
-        String physicalTableName = getPhysicalTableName( catalogTable.id );
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName; // TODO: Potential bug
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )

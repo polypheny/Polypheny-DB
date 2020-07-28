@@ -22,6 +22,9 @@ import com.google.gson.GsonBuilder;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.information.InformationDuration.Duration;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
@@ -29,33 +32,47 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
 /**
  * An InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI.
  */
+@Accessors(chain = true)
 public class InformationPage extends Refreshable {
 
 
     /**
      * Id of this page
      */
+    @Getter
     private final String id;
 
     /**
      * Name of this page
      */
+    @Getter
     private String name; // title
 
     /**
      * Description for this page
      */
+    @Getter
     private String description;
 
     /**
      * You can set an icon that will be displayed before the label of this page (in the sidebar).
      */
+    @Getter
+    @Setter
     private String icon;
 
     /**
      * Is true, if the page was created implicit. If it will be created explicit, additional information (title/description/icon) will be added.
      */
+    @Getter
     private boolean implicit = false;
+
+    /**
+     * Pages with the same label will be grouped together
+     */
+    @Getter
+    @Setter
+    private String label;
 
     /**
      * All items on this page will be rendered in full width
@@ -114,55 +131,6 @@ public class InformationPage extends Refreshable {
         for ( InformationGroup g : groups ) {
             this.groups.put( g.getId(), g );
         }
-    }
-
-
-    /**
-     * Get the name of this icon
-     */
-    public String getIcon() {
-        return icon;
-    }
-
-
-    /**
-     * Set the icon for this page
-     */
-    public InformationPage setIcon( final String icon ) {
-        this.icon = icon;
-        return this;
-    }
-
-
-    /**
-     * Get the id of this page
-     */
-    public String getId() {
-        return id;
-    }
-
-
-    /**
-     * Get the name of this page
-     */
-    public String getName() {
-        return name;
-    }
-
-
-    /**
-     * Get the description of this page
-     */
-    public String getDescription() {
-        return description;
-    }
-
-
-    /**
-     * Check if the page was created implicit
-     */
-    public boolean isImplicit() {
-        return this.implicit;
     }
 
 

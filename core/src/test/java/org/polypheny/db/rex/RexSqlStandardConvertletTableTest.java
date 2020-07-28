@@ -94,7 +94,7 @@ public class RexSqlStandardConvertletTableTest extends SqlToRelTestBase {
 
 
     private RelNode convertSqlToRel( String sql, boolean simplifyRex ) {
-        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( false );
+        PolyphenyDbSchema rootSchema = AbstractPolyphenyDbSchema.createRootSchema( "" );
         final FrameworkConfig config = Frameworks.newConfigBuilder()
                 .defaultSchema( rootSchema.plus() )
                 .parserConfig( SqlParser.configBuilder().build() )

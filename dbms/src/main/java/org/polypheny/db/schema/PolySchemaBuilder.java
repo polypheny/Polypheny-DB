@@ -79,39 +79,32 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
 
     private synchronized AbstractPolyphenyDbSchema buildSchema() {
-        final AbstractPolyphenyDbSchema polyphenyDbSchema;
         final Schema schema = new RootSchema();
-        if ( false ) {
-            polyphenyDbSchema = new CachingPolyphenyDbSchema( null, schema, "" );
-        } else {
-            polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
-        }
+        final AbstractPolyphenyDbSchema polyphenyDbSchema = new SimplePolyphenyDbSchema( null, schema, "" );
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
-
         Catalog catalog = Catalog.getInstance();
-
         try {
+            //
+            // Build logical schema
             CatalogDatabase catalogDatabase = catalog.getDatabase( 0 );
             for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
                 Map<String, LogicalTable> tableMap = new HashMap<>();
                 SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name ).plus();
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO MV: This assumes that there are only "complete" placements of tables and no vertical portioning at all.
-                //
                 for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
                     List<String> columnNames = new LinkedList<>();
                     final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
                     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
                     for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                         columnNames.add( catalogColumn.name );
-                        fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) ).nullable( catalogColumn.nullable );
+                        fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
+                        fieldInfo.nullable( catalogColumn.nullable );
                     }
                     List<Long> columnIds = new LinkedList<>();
                     catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
                     LogicalTable table = new LogicalTable(
                             catalogTable.id,
-                            catalogTable.schemaName,
+                            catalogTable.getSchemaName(),
                             catalogTable.name,
                             columnIds,
                             columnNames,
@@ -129,14 +122,12 @@ public class PolySchemaBuilder implements PropertyChangeListener {
             }
 
             //
-            // Build store schema
+            // Build store schema (physical schema)
             List<CatalogStore> stores = Catalog.getInstance().getStores();
             for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
                 for ( CatalogStore catalogStore : stores ) {
                     // Get list of tables on this store
                     Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
-                    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    // TODO: This assumes there are only full table placements !!!!!!!!!!!!!!!!!!
                     for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStoreAndSchema( catalogStore.id, catalogSchema.id ) ) {
                         tableIdsPerSchema.putIfAbsent( placement.physicalSchemaName, new HashSet<>() );
                         tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
@@ -151,7 +142,9 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                         SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, store.getCurrentSchema(), schemaName ).plus();
                         for ( long tableId : tableIds ) {
                             CatalogTable catalogTable = catalog.getTable( tableId );
-                            Table table = store.createTableSchema( catalogTable );
+                            Table table = store.createTableSchema(
+                                    catalogTable,
+                                    Catalog.getInstance().getColumnPlacementsOnStore( store.getStoreId(), catalogTable.id ) );
                             physicalTables.put( catalog.getTable( tableId ).name, table );
                             s.add( catalog.getTable( tableId ).name, table );
                         }

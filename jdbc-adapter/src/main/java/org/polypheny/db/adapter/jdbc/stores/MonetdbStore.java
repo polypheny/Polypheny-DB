@@ -157,8 +157,8 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public Table createTableSchema( CatalogTable catalogTable ) {
-        return currentJdbcSchema.createJdbcTable( catalogTable );
+    public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+        return currentJdbcSchema.createJdbcTable( catalogTable, columnPlacementsOnStore );
     }
 
 

@@ -47,9 +47,11 @@ import org.polypheny.db.util.SourceStringReader;
 
 
 /**
- * A fa&ccedil;ade that covers Polypheny-DB's query planning process: parse SQL, validate the parse tree, convert the parse tree to a relational expression, and optimize the relational expression.
- *
- * Planner is NOT thread safe. However, it can be reused for different queries. The consumer of this interface is responsible for calling reset() after each use of Planner that corresponds to a different query.
+ * A fa&ccedil;ade that covers Polypheny-DB's query planning process: parse SQL, validate the parse tree, convert the parse
+ * tree to a relational expression, and optimize the relational expression.
+ * <p>
+ * Planner is NOT thread safe. However, it can be reused for different queries. The consumer of this interface is responsible
+ * for calling reset() after each use of Planner that corresponds to a different query.
  */
 public interface Planner extends AutoCloseable {
 
