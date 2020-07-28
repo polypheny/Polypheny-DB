@@ -37,6 +37,7 @@ package org.polypheny.db.rel.core;
 import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -242,6 +243,18 @@ public abstract class TableModify extends SingleRel {
         // REVIEW jvs: Just for now...
         double rowCount = mq.getRowCount( this );
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                String.join( ".", table.getQualifiedName() ) + "$" +
+                getInputs().stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
+                getOperation().name() + "$" +
+                (getUpdateColumnList() != null ? String.join( "$", getUpdateColumnList() ) + "$" : "") +
+                (getSourceExpressionList() != null ? getSourceExpressionList().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                isFlattened() + "&";
     }
 }
 

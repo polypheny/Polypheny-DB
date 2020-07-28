@@ -50,8 +50,9 @@ import org.polypheny.db.schema.Table;
 /**
  * A <code>LogicalTableScan</code> reads all the rows from a {@link RelOptTable}.
  *
- * If the table is a <code>net.sf.saffron.ext.JdbcTable</code>, then this is literally possible. But for other kinds of tables, there may be many ways to read the data from the table.
- * For some kinds of table, it may not even be possible to read all of the rows unless some narrowing constraint is applied.
+ * If the table is a <code>net.sf.saffron.ext.JdbcTable</code>, then this is literally possible. But for other kinds of tables,
+ * there may be many ways to read the data from the table. For some kinds of table, it may not even be possible to read all of
+ * the rows unless some narrowing constraint is applied.
  *
  * In the example of the <code>net.sf.saffron.ext.ReflectSchema</code> schema,
  *
@@ -105,12 +106,14 @@ public final class LogicalTableScan extends TableScan {
         final Table table = relOptTable.unwrap( Table.class );
         final RelTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
-                        .replaceIfs( RelCollationTraitDef.INSTANCE, () -> {
-                            if ( table != null ) {
-                                return table.getStatistic().getCollations();
-                            }
-                            return ImmutableList.of();
-                        } );
+                        .replaceIfs(
+                                RelCollationTraitDef.INSTANCE,
+                                () -> {
+                                    if ( table != null ) {
+                                        return table.getStatistic().getCollations();
+                                    }
+                                    return ImmutableList.of();
+                                } );
         return new LogicalTableScan( cluster, traitSet, relOptTable );
     }
 }

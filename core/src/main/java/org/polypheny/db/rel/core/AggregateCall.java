@@ -60,7 +60,8 @@ public class AggregateCall {
     public final RelDataType type;
     public final String name;
 
-    // We considered using ImmutableIntList but we would not save much memory: since all values are small, ImmutableList uses cached Integer values.
+    // We considered using ImmutableIntList but we would not save much memory: since all values are small,
+    // ImmutableList uses cached Integer values.
     private final ImmutableList<Integer> argList;
     public final int filterArg;
     public final RelCollation collation;
@@ -70,15 +71,23 @@ public class AggregateCall {
      * Creates an AggregateCall.
      *
      * @param aggFunction Aggregate function
-     * @param distinct Whether distinct
+     * @param distinct    Whether distinct
      * @param approximate Whether approximate
-     * @param argList List of ordinals of arguments
-     * @param filterArg Ordinal of filter argument (the {@code FILTER (WHERE ...)} clause in SQL), or -1
-     * @param collation How to sort values before aggregation (the {@code WITHIN GROUP} clause in SQL)
-     * @param type Result type
-     * @param name Name (may be null)
+     * @param argList     List of ordinals of arguments
+     * @param filterArg   Ordinal of filter argument (the {@code FILTER (WHERE ...)} clause in SQL), or -1
+     * @param collation   How to sort values before aggregation (the {@code WITHIN GROUP} clause in SQL)
+     * @param type        Result type
+     * @param name        Name (may be null)
      */
-    private AggregateCall( SqlAggFunction aggFunction, boolean distinct, boolean approximate, List<Integer> argList, int filterArg, RelCollation collation, RelDataType type, String name ) {
+    private AggregateCall(
+            SqlAggFunction aggFunction,
+            boolean distinct,
+            boolean approximate,
+            List<Integer> argList,
+            int filterArg,
+            RelCollation collation,
+            RelDataType type,
+            String name ) {
         this.type = Objects.requireNonNull( type );
         this.name = name;
         this.aggFunction = Objects.requireNonNull( aggFunction );
@@ -93,12 +102,26 @@ public class AggregateCall {
     /**
      * Creates an AggregateCall, inferring its type if {@code type} is null.
      */
-    public static AggregateCall create( SqlAggFunction aggFunction, boolean distinct, boolean approximate, List<Integer> argList, int filterArg, RelCollation collation,
-            int groupCount, RelNode input, RelDataType type, String name ) {
+    public static AggregateCall create(
+            SqlAggFunction aggFunction,
+            boolean distinct,
+            boolean approximate,
+            List<Integer> argList,
+            int filterArg,
+            RelCollation collation,
+            int groupCount,
+            RelNode input,
+            RelDataType type,
+            String name ) {
         if ( type == null ) {
             final RelDataTypeFactory typeFactory = input.getCluster().getTypeFactory();
             final List<RelDataType> types = PolyTypeUtil.projectTypes( input.getRowType(), argList );
-            final Aggregate.AggCallBinding callBinding = new Aggregate.AggCallBinding( typeFactory, aggFunction, types, groupCount, filterArg >= 0 );
+            final Aggregate.AggCallBinding callBinding = new Aggregate.AggCallBinding(
+                    typeFactory,
+                    aggFunction,
+                    types,
+                    groupCount,
+                    filterArg >= 0 );
             type = aggFunction.inferReturnType( callBinding );
         }
         return create( aggFunction, distinct, approximate, argList, filterArg, collation, type, name );
@@ -108,7 +131,15 @@ public class AggregateCall {
     /**
      * Creates an AggregateCall.
      */
-    public static AggregateCall create( SqlAggFunction aggFunction, boolean distinct, boolean approximate, List<Integer> argList, int filterArg, RelCollation collation, RelDataType type, String name ) {
+    public static AggregateCall create(
+            SqlAggFunction aggFunction,
+            boolean distinct,
+            boolean approximate,
+            List<Integer> argList,
+            int filterArg,
+            RelCollation collation,
+            RelDataType type,
+            String name ) {
         return new AggregateCall( aggFunction, distinct, approximate, argList, filterArg, collation, type, name );
     }
 
@@ -255,11 +286,11 @@ public class AggregateCall {
 
 
     /**
-     * Creates a binding of this call in the context of an {@link org.polypheny.db.rel.logical.LogicalAggregate}, which can then be used to infer the return type.
+     * Creates a binding of this call in the context of an {@link org.polypheny.db.rel.logical.LogicalAggregate},
+     * which can then be used to infer the return type.
      */
     public Aggregate.AggCallBinding createBinding( Aggregate aggregateRelBase ) {
         final RelDataType rowType = aggregateRelBase.getInput().getRowType();
-
         return new Aggregate.AggCallBinding(
                 aggregateRelBase.getCluster().getTypeFactory(),
                 aggFunction,
@@ -296,9 +327,7 @@ public class AggregateCall {
         final RelDataType newType =
                 oldGroupKeyCount == newGroupKeyCount
                         && argList.equals( this.argList )
-                        && filterArg == this.filterArg
-                        ? type
-                        : null;
+                        && filterArg == this.filterArg ? type : null;
         return create( aggFunction, distinct, approximate, argList, filterArg, collation, newGroupKeyCount, input, newType, getName() );
     }
 
@@ -309,7 +338,9 @@ public class AggregateCall {
     public AggregateCall transform( Mappings.TargetMapping mapping ) {
         return copy(
                 Mappings.apply2( (Mapping) mapping, argList ),
-                hasFilter() ? Mappings.apply( mapping, filterArg ) : -1,
+                hasFilter()
+                        ? Mappings.apply( mapping, filterArg )
+                        : -1,
                 RelCollations.permute( collation, mapping ) );
     }
 }

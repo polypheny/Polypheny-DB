@@ -18,9 +18,9 @@ package org.polypheny.db.rel.core;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.sql.SqlKind;
@@ -36,17 +36,17 @@ public abstract class ModifyCollect extends SetOp {
     }
 
 
-    /**
-     * Creates a Union by parsing serialized output.
-     */
-    protected ModifyCollect( RelInput input ) {
-        super( input );
+    @Override
+    public double estimateRowCount( RelMetadataQuery mq ) {
+        return 1;
     }
 
 
     @Override
-    public double estimateRowCount( RelMetadataQuery mq ) {
-        return 1;
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                inputs.stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
+                all + "&";
     }
 
 }

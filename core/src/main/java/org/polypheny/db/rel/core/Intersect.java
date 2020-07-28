@@ -35,6 +35,7 @@ package org.polypheny.db.rel.core;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelInput;
@@ -75,5 +76,13 @@ public abstract class Intersect extends SetOp {
         }
         dRows *= 0.25;
         return dRows;
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                inputs.stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
+                all + "&";
     }
 }

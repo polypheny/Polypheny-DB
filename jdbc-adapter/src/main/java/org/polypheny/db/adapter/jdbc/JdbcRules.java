@@ -393,6 +393,14 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
+
+        @Override
+        public String relCompareString() {
+            return this.getClass().getSimpleName() + "$" +
+                    input.relCompareString() + "$" +
+                    (program != null ? program.toString() : "") + "&";
+        }
     }
 
 

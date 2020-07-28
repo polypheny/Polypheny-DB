@@ -78,6 +78,12 @@ public class EnumerableBindable extends ConverterImpl implements BindableRel {
 
 
     @Override
+    public String relCompareString() {
+        return "EnumerableBindable$" + input.relCompareString() + "&";
+    }
+
+
+    @Override
     public Class<Object[]> getElementType() {
         return Object[].class;
     }

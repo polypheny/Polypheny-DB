@@ -111,6 +111,12 @@ public class Uncollect extends SingleRel {
     }
 
 
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" + input.relCompareString() + "$" + withOrdinality + "&";
+    }
+
+
     public RelNode copy( RelTraitSet traitSet, RelNode input ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         return new Uncollect( getCluster(), traitSet, input, withOrdinality );

@@ -322,6 +322,11 @@ public interface RelNode extends RelOptNode, Cloneable {
     RelNode accept( RexShuttle shuttle );
 
     /**
+     * Returns a string which allows to compare rel plans.
+     */
+    String relCompareString();
+
+    /**
      * Context of a relational expression, for purposes of checking validity.
      */
     interface Context {

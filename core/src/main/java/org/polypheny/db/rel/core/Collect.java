@@ -90,6 +90,14 @@ public class Collect extends SingleRel {
     }
 
 
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (fieldName != null ? fieldName : "") + "&";
+    }
+
+
     public RelNode copy( RelTraitSet traitSet, RelNode input ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         return new Collect( getCluster(), traitSet, input, fieldName );

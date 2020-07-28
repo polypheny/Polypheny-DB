@@ -405,6 +405,13 @@ public class TraitPropagationTest {
         public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeCost( 1, 1, 1 );
         }
+
+
+        @Override
+        public String relCompareString() {
+            // Compare makes no sense here. Use hashCode() to avoid errors.
+            return this.getClass().getSimpleName() + "$" + hashCode() + "&";
+        }
     }
 
 

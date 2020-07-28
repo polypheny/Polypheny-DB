@@ -63,8 +63,9 @@ import org.polypheny.db.util.Util;
 
 /**
  * Relational expression that combines two relational expressions according to some condition.
- *
- * Each output row has columns from the left and right inputs. The set of output rows is a subset of the cartesian product of the two inputs; precisely which subset depends on the join condition.
+ * <p>
+ * Each output row has columns from the left and right inputs. The set of output rows is a subset of the cartesian product
+ * of the two inputs; precisely which subset depends on the join condition.
  */
 public abstract class Join extends BiRel {
 
@@ -84,7 +85,8 @@ public abstract class Join extends BiRel {
      * Creates a Join.
      *
      * Note: We plan to change the {@code variablesStopped} parameter to {@code Set&lt;CorrelationId&gt; variablesSet}
-     * because {@link #getVariablesSet()} is preferred over {@link #getVariablesStopped()}. This constructor is not deprecated, for now, because maintaining overloaded constructors in multiple sub-classes would be onerous.
+     * because {@link #getVariablesSet()} is preferred over {@link #getVariablesStopped()}. This constructor is not
+     * deprecated, for now, because maintaining overloaded constructors in multiple sub-classes would be onerous.
      *
      * @param cluster Cluster
      * @param traitSet Trait set
@@ -174,7 +176,7 @@ public abstract class Join extends BiRel {
 
 
     @Override
-    public Set<CorrelationId> getVariablesSet() {
+    public ImmutableSet<CorrelationId> getVariablesSet() {
         return variablesSet;
     }
 
@@ -246,6 +248,16 @@ public abstract class Join extends BiRel {
      */
     public JoinInfo analyzeCondition() {
         return JoinInfo.of( left, right, condition );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                left.relCompareString() + "$" +
+                right.relCompareString() + "$" +
+                (condition != null ? condition.hashCode() : "") + "$" +
+                (joinType != null ? joinType.name() : "") + "&";
     }
 }
 

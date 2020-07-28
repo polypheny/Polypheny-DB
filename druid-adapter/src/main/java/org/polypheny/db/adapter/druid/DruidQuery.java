@@ -53,6 +53,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -617,6 +618,14 @@ public class DruidQuery extends AbstractRelNode implements BindableRel {
         for ( RelOptRule rule : Bindables.RULES ) {
             planner.addRule( rule );
         }
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                String.join( ".", table.getQualifiedName() ) + "$" +
+                (rels != null ? rels.stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 

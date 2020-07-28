@@ -37,7 +37,6 @@ package org.polypheny.db.rel.core;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.List;
-import java.util.Set;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -58,7 +57,8 @@ import org.polypheny.db.util.Litmus;
 /**
  * A relational operator that performs nested-loop joins.
  *
- * It behaves like a kind of {@link org.polypheny.db.rel.core.Join}, but works by setting variables in its environment and restarting its right-hand input.
+ * It behaves like a kind of {@link org.polypheny.db.rel.core.Join}, but works by setting variables in its environment and
+ * restarting its right-hand input.
  *
  * Correlate is not a join since: typical rules should not match Correlate.
  *
@@ -199,7 +199,7 @@ public abstract class Correlate extends BiRel {
 
 
     @Override
-    public Set<CorrelationId> getVariablesSet() {
+    public ImmutableSet<CorrelationId> getVariablesSet() {
         return ImmutableSet.of( correlationId );
     }
 
@@ -221,5 +221,15 @@ public abstract class Correlate extends BiRel {
         RelOptCost rescanCost = rightCost.multiplyBy( Math.max( 1.0, restartCount - 1 ) );
 
         return planner.getCostFactory().makeCost( rowCount /* generate results */ + leftRowCount /* scan left results */, 0, 0 ).plus( rescanCost );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                left.relCompareString() + "$" +
+                right.relCompareString() + "$" +
+                (requiredColumns != null ? requiredColumns.toString() : "") + "$" +
+                (joinType != null ? joinType.name() : "") + "&";
     }
 }
