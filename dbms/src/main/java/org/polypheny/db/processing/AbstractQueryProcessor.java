@@ -471,7 +471,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                         final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
                                         final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
                                         for ( final String column : index.getColumns() ) {
-                                            rowProjection.add( row.get( newValueMap.get( column ) ) );
+                                            if ( newValueMap.containsKey( column ) ) {
+                                                rowProjection.add( row.get( newValueMap.get( column ) ) );
+                                            } else {
+                                                // Value unchanged, reuse old value
+                                                rowProjection.add( row.get( nameMap.get( column ) ) );
+                                            }
                                         }
                                         for ( final String column : index.getTargetColumns() ) {
                                             targetRowProjection.add( row.get( nameMap.get( column ) ) );
