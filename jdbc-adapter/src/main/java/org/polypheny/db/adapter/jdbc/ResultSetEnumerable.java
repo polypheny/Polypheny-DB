@@ -335,18 +335,15 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-   /* private Enumerator<T> enumeratorBasedOnPreparedStatement() {
-        Connection connection = null;
+    private Enumerator<T> enumeratorBasedOnPreparedStatement() {
         PreparedStatement preparedStatement = null;
         try {
-            connection = connectionHandler.getConnection();
-            preparedStatement = connection.prepareStatement( sql );
+            preparedStatement = connectionHandler.prepareStatement( sql );
             setTimeoutIfPossible( preparedStatement );
             preparedStatementEnricher.enrich( preparedStatement );
             if ( preparedStatement.execute() ) {
                 final ResultSet resultSet = preparedStatement.getResultSet();
                 preparedStatement = null;
-                connection = null;
                 return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
             } else {
                 Integer updateCount = preparedStatement.getUpdateCount();
@@ -357,11 +354,6 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         } finally {
             closeIfPossible( preparedStatement );
         }
-    } */
-
-
-    private Enumerator<T> enumeratorBasedOnPreparedStatement() {
-        throw new RuntimeException( "Not implemented yet!" );
     }
 
 

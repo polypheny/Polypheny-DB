@@ -259,6 +259,12 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     }
 
 
+    @Override
+    public RelDataType getParameterRowType( SqlNode sqlNode ) {
+        return validator.getParameterRowType( sqlNode );
+    }
+
+
     // Add default values for unset fields
     private void addDefaultValues( SqlInsert insert ) {
         Context prepareContext = transaction.getPrepareContext();

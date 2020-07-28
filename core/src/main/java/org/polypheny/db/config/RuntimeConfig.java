@@ -206,10 +206,29 @@ public enum RuntimeConfig {
             "Cache polypheny-db schema",
             true,
             ConfigType.BOOLEAN ),
+
     REST_API_SERVER_PORT( "runtime/restapiServerPort",
             "The port on which the REST API should listen.",
             8089,
-            ConfigType.INTEGER);
+            ConfigType.INTEGER ),
+
+    QUERY_PLAN_CACHING( "runtime/queryPlanCaching",
+            "Cache planned and optimized query plans.",
+            true,
+            ConfigType.BOOLEAN,
+            "queryPlanCachingGroup" ),
+
+    QUERY_PLAN_CACHING_DML( "runtime/queryPlanCachingDml",
+            "Cache DML query plans.",
+            false,
+            ConfigType.BOOLEAN,
+            "queryPlanCachingGroup" ),
+
+    QUERY_PLAN_CACHING_SIZE( "runtime/queryPlanCachingSize",
+            "Size of the query plan cache. If the limit is reached, the least recently used entry is removed.",
+            1000,
+            ConfigType.INTEGER,
+            "queryPlanCachingGroup" );
 
 
     private final String key;
@@ -230,9 +249,12 @@ public enum RuntimeConfig {
         planningGroup.withTitle( "Query Planning" );
         final WebUiGroup parsingGroup = new WebUiGroup( "parsingGroup", processingPage.getId() );
         parsingGroup.withTitle( "Query Parsing" );
+        final WebUiGroup queryPlanCachingGroup = new WebUiGroup( "queryPlanCachingGroup", processingPage.getId() );
+        queryPlanCachingGroup.withTitle( "Query Plan Caching" );
         configManager.registerWebUiPage( processingPage );
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
+        configManager.registerWebUiGroup( queryPlanCachingGroup );
 
         // Runtime settings
         final WebUiPage runtimePage = new WebUiPage(

@@ -22,11 +22,15 @@ import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -40,6 +44,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -59,12 +64,17 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -114,6 +124,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot ) {
+        return prepareQuery( logicalRoot, rexBuilder.getTypeFactory().builder().build() );
+    }
+
+
+    @Override
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType ) {
 
         final StopWatch stopWatch = new StopWatch();
 
@@ -166,27 +182,56 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
 
         //
-        // Optimization
+        // Plan Caching
         if ( transaction.isAnalyze() ) {
             transaction.getDuration().stop( "Routing" );
-            transaction.getDuration().start( "Optimization" );
+            transaction.getDuration().start( "Caching" );
+        }
+        RelRoot parameterizedRoot;
+        RelNode optimalNode;
+        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean()) ) {
+            Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+            parameterizedRoot = parameterized.left;
+            parameterRowType = parameterized.right;
+            optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
+        } else {
+            parameterizedRoot = routedRoot;
+            optimalNode = null;
         }
 
-        RelRoot optimalRoot = optimize( routedRoot, resultConvention );
-
-        final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), logicalRoot.validatedRowType );
-
-        // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE). For anything else (e.g. CALL -> SELECT), use original kind.
-        //if ( !optimalRoot.kind.belongsTo( SqlKind.DML ) ) {
-        //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
-        //}
-
+        //
+        // Planning & Optimization
         if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Optimization" );
+            transaction.getDuration().stop( "Caching" );
+            transaction.getDuration().start( "Planning & Optimization" );
+        }
+
+        if ( optimalNode == null ) {
+            optimalNode = optimize( parameterizedRoot, resultConvention );
+
+            // For transformation from DML -> DML, use result of rewrite (e.g. UPDATE -> MERGE). For anything else (e.g. CALL -> SELECT), use original kind.
+            //if ( !optimalRoot.kind.belongsTo( SqlKind.DML ) ) {
+            //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
+            //}
+
+            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean()) ) {
+                QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNode );
+            }
+        }
+
+        final RelDataType rowType = parameterizedRoot.rel.getRowType();
+        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
+        RelRoot optimalRoot = new RelRoot( optimalNode, rowType, parameterizedRoot.kind, fields, relCollation( parameterizedRoot.rel ) );
+
+        //
+        // Implementation
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().stop( "Planning & Optimization" );
             transaction.getDuration().start( "Implementation" );
         }
 
-        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention, executionTimeMonitor );
+        final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), optimalRoot.validatedRowType );
+        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention, executionTimeMonitor, parameterRowType );
 
         if ( transaction.isAnalyze() ) {
             transaction.getDuration().stop( "Implementation" );
@@ -222,7 +267,82 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
+    private Pair<RelRoot, RelDataType> parameterize( RelRoot routedRoot, RelDataType parameterRowType ) {
+        RelNode routed = routedRoot.rel;
+        List<RelDataType> types = new ArrayList<>();
+        parameterRowType.getFieldList().forEach( relDataTypeField -> types.add( relDataTypeField.getType() ) );
+        AtomicInteger index = new AtomicInteger( parameterRowType.getFieldCount() );
+        Map<String, Object> values = new HashMap<>();
+
+        RelNode parameterized = routed.accept( new RelShuttleImpl() {
+           /* @Override
+            public RelNode visit( LogicalValues values ) {
+                List<ImmutableList<RexDynamicParam>> tuples = new LinkedList<>();
+                for ( ImmutableList<RexLiteral> rls : values.getTuples() ) {
+                    List<RexDynamicParam> t = new LinkedList<>();
+                    for (RexLiteral rexLiteral : rls ) {
+                        int i = index.getAndIncrement();
+                        t.add( new RexDynamicParam( rexLiteral.getType(), i ) );
+                        rexLiterals.put( i, rexLiteral );
+                    }
+                    tuples.add( ImmutableList.copyOf( t ) );
+                }
+                return new LogicalValues( values.getCluster(), values.getTraitSet(), values.getRowType(), ImmutableList.copyOf( tuples ) );
+            }*/
+
+
+            @Override
+            public RelNode visit( LogicalFilter oFilter ) {
+                LogicalFilter filter = (LogicalFilter) super.visit( oFilter );
+                RexNode condition = filter.getCondition();
+                if ( condition instanceof RexCall ) {
+                    List<RexNode> newOperands = new LinkedList<>();
+                    for ( RexNode operand : ((RexCall) condition).operands ) {
+                        if ( operand instanceof RexLiteral ) {
+                            int i = index.getAndIncrement();
+                            values.put( "?" + i, ((RexLiteral) operand).getValue2() );
+                            types.add( operand.getType() );
+                            newOperands.add( new RexDynamicParam( operand.getType(), i ) );
+                        } else {
+                            newOperands.add( operand );
+                        }
+                    }
+                    condition = new RexCall(
+                            ((RexCall) condition).type,
+                            ((RexCall) condition).op,
+                            newOperands );
+                }
+                return new LogicalFilter( filter.getCluster(), filter.getTraitSet(), filter.getInput(), condition, filter.getVariablesSet() );
+            }
+        } );
+
+        // Add values to data context
+        transaction.getDataContext().addAll( values );
+
+        // parameterRowType
+        RelDataType newParameterRowType = transaction.getTypeFactory().createStructType(
+                types,
+                new AbstractList<String>() {
+                    @Override
+                    public String get( int index ) {
+                        return "?" + index;
+                    }
+
+
+                    @Override
+                    public int size() {
+                        return types.size();
+                    }
+                } );
+
+        return new Pair<>(
+                new RelRoot( parameterized, routedRoot.validatedRowType, routedRoot.kind, routedRoot.fields, routedRoot.collation ),
+                newParameterRowType
+        );
+    }
+
+
+    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, RelDataType parameterRowType ) {
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         if ( log.isTraceEnabled() ) {
@@ -241,7 +361,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
 
-        PreparedResult preparedResult = implement( optimalRoot, fieldOrigins );
+        PreparedResult preparedResult = implement( optimalRoot, fieldOrigins, parameterRowType );
 
         final List<AvaticaParameter> parameters = new ArrayList<>();
         for ( RelDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
@@ -300,33 +420,33 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private RelRoot optimize( RelRoot logicalRoot, Convention resultConvention ) {
+    private RelNode optimize( RelRoot logicalRoot, Convention resultConvention ) {
         RelNode logicalPlan = logicalRoot.rel;
-        final RelDataType rowType = logicalPlan.getRowType();
-        final List<Pair<Integer, String>> fields = Pair.zip( ImmutableIntList.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-        final RelCollation collation =
-                logicalPlan instanceof Sort
-                        ? ((Sort) logicalPlan).collation
-                        : RelCollations.EMPTY;
-        RelRoot root = new RelRoot( logicalPlan, logicalPlan.getRowType(), logicalRoot.kind, fields, collation );
 
-        final RelTraitSet desiredTraits = root.rel.getTraitSet()
+        final RelTraitSet desiredTraits = logicalPlan.getTraitSet()
                 .replace( resultConvention )
-                .replace( root.collation )
+                .replace( relCollation( logicalPlan ) )
                 .simplify();
 
         final Program program = Programs.standard();
-        final RelNode rootRel4 = program.run( getPlanner(), root.rel, desiredTraits );
+        final RelNode rootRel4 = program.run( getPlanner(), logicalPlan, desiredTraits );
 
         //final RelNode relNode = getPlanner().changeTraits( root.rel, desiredTraits );
         //getPlanner().setRoot(relNode);
         //final RelNode rootRel4 = getPlanner().findBestExp();
 
-        return root.withRel( rootRel4 );
+        return rootRel4;
     }
 
 
-    private PreparedResult implement( RelRoot root, List<List<String>> fieldOrigins ) {
+    private RelCollation relCollation( RelNode node ) {
+        return node instanceof Sort
+                ? ((Sort) node).collation
+                : RelCollations.EMPTY;
+    }
+
+
+    private PreparedResult implement( RelRoot root, List<List<String>> fieldOrigins, RelDataType parameterRowType ) {
         final Prefer prefer = Prefer.ARRAY;
         final Convention resultConvention =
                 ENABLE_BINDABLE
@@ -367,7 +487,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         return new PreparedResultImpl(
                 resultType,
-                rexBuilder.getTypeFactory().builder().build(),
+                parameterRowType,
                 fieldOrigins,
                 root.collation.getFieldCollations().isEmpty()
                         ? ImmutableList.of()

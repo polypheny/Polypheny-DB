@@ -36,7 +36,6 @@ package org.polypheny.db.rel.logical;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.Objects;
-import java.util.Set;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -111,7 +110,7 @@ public final class LogicalFilter extends Filter {
 
 
     @Override
-    public Set<CorrelationId> getVariablesSet() {
+    public ImmutableSet<CorrelationId> getVariablesSet() {
         return variablesSet;
     }
 
