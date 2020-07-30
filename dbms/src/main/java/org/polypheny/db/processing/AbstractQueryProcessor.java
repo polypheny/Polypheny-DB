@@ -174,17 +174,39 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
 
         //
-        // Plan Caching
+        // Implementation Caching
         if ( transaction.isAnalyze() ) {
             transaction.getDuration().stop( "Routing" );
-            transaction.getDuration().start( "Caching" );
+            transaction.getDuration().start( "Implementation Caching" );
         }
-        RelRoot parameterizedRoot;
-        RelNode optimalNode;
-        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean()) ) {
+        RelRoot parameterizedRoot = null;
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean()) ) {
             Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
             parameterizedRoot = parameterized.left;
             parameterRowType = parameterized.right;
+            PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
+            if ( preparedResult != null ) {
+                PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
+                if ( transaction.isAnalyze() ) {
+                    transaction.getDuration().stop( "Implementation Caching" );
+                }
+                return signature;
+            }
+        }
+
+        //
+        // Plan Caching
+        if ( transaction.isAnalyze() ) {
+            transaction.getDuration().stop( "Implementation Caching" );
+            transaction.getDuration().start( "Plan Caching" );
+        }
+        RelNode optimalNode;
+        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean()) ) {
+            if ( parameterizedRoot == null ) {
+                Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+                parameterizedRoot = parameterized.left;
+                parameterRowType = parameterized.right;
+            }
             optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
         } else {
             parameterizedRoot = routedRoot;
@@ -194,7 +216,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //
         // Planning & Optimization
         if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Caching" );
+            transaction.getDuration().stop( "Plan Caching" );
             transaction.getDuration().start( "Planning & Optimization" );
         }
 
@@ -222,8 +244,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             transaction.getDuration().start( "Implementation" );
         }
 
-        final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), optimalRoot.validatedRowType );
-        PolyphenyDbSignature signature = implement( optimalRoot, jdbcType, resultConvention, executionTimeMonitor, parameterRowType );
+        PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
+
+        // Cache implementation
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean()) ) {
+            ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
+        }
+
+        PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
 
         if ( transaction.isAnalyze() ) {
             transaction.getDuration().stop( "Implementation" );
@@ -295,27 +323,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private PolyphenyDbSignature implement( RelRoot optimalRoot, RelDataType jdbcType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, RelDataType parameterRowType ) {
-        List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
-
-        if ( log.isTraceEnabled() ) {
-            log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", optimalRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
-        }
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
-            InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
-            page.fullWidth();
-            InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
-            queryAnalyzer.addPage( page );
-            queryAnalyzer.addGroup( group );
-            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
-                    group,
-                    RelOptUtil.dumpPlan( "Physical Query Plan", optimalRoot.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
-            queryAnalyzer.registerInformation( informationQueryPlan );
-        }
-
-        PreparedResult preparedResult = implement( optimalRoot, fieldOrigins, parameterRowType );
-
+    private PolyphenyDbSignature createSignature( PreparedResult preparedResult, RelRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
+        final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), optimalRoot.validatedRowType );
         final List<AvaticaParameter> parameters = new ArrayList<>();
         for ( RelDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
             RelDataType type = field.getType();
@@ -399,7 +408,26 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private PreparedResult implement( RelRoot root, List<List<String>> fieldOrigins, RelDataType parameterRowType ) {
+    private PreparedResult implement( RelRoot root, RelDataType parameterRowType ) {
+        if ( log.isTraceEnabled() ) {
+            log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", root.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
+        }
+        if ( transaction.isAnalyze() ) {
+            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+            InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
+            page.fullWidth();
+            InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
+            queryAnalyzer.addPage( page );
+            queryAnalyzer.addGroup( group );
+            InformationQueryPlan informationQueryPlan = new InformationQueryPlan(
+                    group,
+                    RelOptUtil.dumpPlan( "Physical Query Plan", root.rel, SqlExplainFormat.JSON, SqlExplainLevel.ALL_ATTRIBUTES ) );
+            queryAnalyzer.registerInformation( informationQueryPlan );
+        }
+
+        final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), root.validatedRowType );
+        List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
+
         final Prefer prefer = Prefer.ARRAY;
         final Convention resultConvention =
                 ENABLE_BINDABLE
