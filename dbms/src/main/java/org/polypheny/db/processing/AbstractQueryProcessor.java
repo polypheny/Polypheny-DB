@@ -25,12 +25,9 @@ import java.sql.Types;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -64,17 +61,12 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -269,55 +261,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
     private Pair<RelRoot, RelDataType> parameterize( RelRoot routedRoot, RelDataType parameterRowType ) {
         RelNode routed = routedRoot.rel;
-        List<RelDataType> types = new ArrayList<>();
-        parameterRowType.getFieldList().forEach( relDataTypeField -> types.add( relDataTypeField.getType() ) );
-        AtomicInteger index = new AtomicInteger( parameterRowType.getFieldCount() );
-        Map<String, Object> values = new HashMap<>();
+        List<RelDataType> parameterRowTypeList = new ArrayList<>();
+        parameterRowType.getFieldList().forEach( relDataTypeField -> parameterRowTypeList.add( relDataTypeField.getType() ) );
 
-        RelNode parameterized = routed.accept( new RelShuttleImpl() {
-           /* @Override
-            public RelNode visit( LogicalValues values ) {
-                List<ImmutableList<RexDynamicParam>> tuples = new LinkedList<>();
-                for ( ImmutableList<RexLiteral> rls : values.getTuples() ) {
-                    List<RexDynamicParam> t = new LinkedList<>();
-                    for (RexLiteral rexLiteral : rls ) {
-                        int i = index.getAndIncrement();
-                        t.add( new RexDynamicParam( rexLiteral.getType(), i ) );
-                        rexLiterals.put( i, rexLiteral );
-                    }
-                    tuples.add( ImmutableList.copyOf( t ) );
-                }
-                return new LogicalValues( values.getCluster(), values.getTraitSet(), values.getRowType(), ImmutableList.copyOf( tuples ) );
-            }*/
-
-
-            @Override
-            public RelNode visit( LogicalFilter oFilter ) {
-                LogicalFilter filter = (LogicalFilter) super.visit( oFilter );
-                RexNode condition = filter.getCondition();
-                if ( condition instanceof RexCall ) {
-                    List<RexNode> newOperands = new LinkedList<>();
-                    for ( RexNode operand : ((RexCall) condition).operands ) {
-                        if ( operand instanceof RexLiteral ) {
-                            int i = index.getAndIncrement();
-                            values.put( "?" + i, ((RexLiteral) operand).getValue2() );
-                            types.add( operand.getType() );
-                            newOperands.add( new RexDynamicParam( operand.getType(), i ) );
-                        } else {
-                            newOperands.add( operand );
-                        }
-                    }
-                    condition = new RexCall(
-                            ((RexCall) condition).type,
-                            ((RexCall) condition).op,
-                            newOperands );
-                }
-                return new LogicalFilter( filter.getCluster(), filter.getTraitSet(), filter.getInput(), condition, filter.getVariablesSet() );
-            }
-        } );
+        // Parameterize
+        QueryParameterizer queryParameterizer = new QueryParameterizer( parameterRowType.getFieldCount(), parameterRowTypeList );
+        RelNode parameterized = routed.accept( queryParameterizer );
+        List<RelDataType> types = queryParameterizer.getTypes();
 
         // Add values to data context
-        transaction.getDataContext().addAll( values );
+        transaction.getDataContext().addAll( queryParameterizer.getValues() );
 
         // parameterRowType
         RelDataType newParameterRowType = transaction.getTypeFactory().createStructType(

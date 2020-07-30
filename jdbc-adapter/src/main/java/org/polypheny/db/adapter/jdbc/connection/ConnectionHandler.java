@@ -40,11 +40,6 @@ public abstract class ConnectionHandler {
      */
     protected ConcurrentLinkedQueue<Statement> openStatements;
 
-    /**
-     * Map of all prepared statements which have to be closed to free resources
-     */
-    protected ConcurrentLinkedQueue<Statement> preparedStatements = new ConcurrentLinkedQueue<>();
-
 
     public int executeUpdate( final String sql ) throws SQLException {
         log.trace( "Executing query on database: {}", sql );
@@ -70,8 +65,11 @@ public abstract class ConnectionHandler {
 
 
     public PreparedStatement prepareStatement( String sql ) throws SQLException {
+        if ( openStatements == null ) {
+            openStatements = new ConcurrentLinkedQueue<>();
+        }
         PreparedStatement preparedStatement = connection.prepareStatement( sql );
-        preparedStatements.add( preparedStatement );
+        openStatements.add( preparedStatement );
         return preparedStatement;
     }
 
