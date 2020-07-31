@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
@@ -58,6 +59,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
+import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -107,6 +109,18 @@ public class IcarusRouter extends AbstractRouter {
             "The minimal execution time (in milliseconds) for a query to be considered as long-running. Queries with lower execution times are considered as short-running.",
             1000 );
 
+    private static final ConfigEnum QUERY_CLASS_PROVIDER = new ConfigEnum(
+            "icarusRouting/queryClassProvider",
+            "Which implementation to use for deriving the query class from a query plan.",
+            QUERY_CLASS_PROVIDER_METHOD.class,
+            QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER );
+
+
+    private enum QUERY_CLASS_PROVIDER_METHOD {ICARUS_SHUTTLE, QUERY_PARAMETERIZER}
+
+
+    ;
+
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
     private int selectedStoreId = -2; // Is set in analyze
@@ -121,9 +135,18 @@ public class IcarusRouter extends AbstractRouter {
     @Override
     protected void analyze( Transaction transaction, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
-            IcarusShuttle icarusShuttle = new IcarusShuttle();
-            logicalRoot.rel.accept( icarusShuttle );
-            queryClassString = icarusShuttle.hashBasis.toString();
+            if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.ICARUS_SHUTTLE ) {
+                IcarusShuttle icarusShuttle = new IcarusShuttle();
+                logicalRoot.rel.accept( icarusShuttle );
+                queryClassString = icarusShuttle.hashBasis.toString();
+            } else if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER ) {
+                QueryParameterizer parameterizer = new QueryParameterizer( 0, new LinkedList<>() );
+                RelNode parameterized = logicalRoot.rel.accept( parameterizer );
+                queryClassString = parameterized.relCompareString();
+            } else {
+                throw new RuntimeException( "Unknown value for QUERY_CLASS_PROVIDER config: " + QUERY_CLASS_PROVIDER.getEnum().name() );
+            }
+
             if ( routingTable.contains( queryClassString ) ) {
                 selectedStoreId = routeQuery( routingTable.get( queryClassString ) );
 
@@ -613,6 +636,9 @@ public class IcarusRouter extends AbstractRouter {
 
                 configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
                 SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( icarusGroup.getId() );
+
+                configManager.registerConfig( QUERY_CLASS_PROVIDER );
+                QUERY_CLASS_PROVIDER.withUi( icarusGroup.getId() );
             }
         }
 

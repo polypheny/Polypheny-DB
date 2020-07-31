@@ -355,7 +355,7 @@ public enum RuntimeConfig {
                 break;
 
             case ENUM:
-                config = new ConfigEnum( key, defaultValue.getClass(), (Enum) defaultValue );
+                config = new ConfigEnum( key, description, defaultValue.getClass(), (Enum) defaultValue );
                 break;
 
             case BOOLEAN_TABLE:
