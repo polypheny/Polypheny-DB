@@ -54,6 +54,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
@@ -219,7 +220,11 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         return preparedStatement -> {
             for ( int i = 0; i < indexes.length; i++ ) {
                 final int index = indexes[i];
-                setDynamicParam( preparedStatement, i + 1, context.get( "?" + index ) );
+                setDynamicParam(
+                        preparedStatement,
+                        i + 1,
+                        context.get( "?" + index ),
+                        preparedStatement.getParameterMetaData().getParameterType( i + 1 ) );
             }
         };
     }
@@ -227,9 +232,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
     /**
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
-     * method based on the type of the value.
+     * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, int sqlType ) throws SQLException {
         if ( value == null ) {
             preparedStatement.setObject( i, null, SqlType.ANY.id );
         } else if ( value instanceof Timestamp ) {
@@ -274,6 +279,16 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setURL( i, (URL) value );
         } else if ( value instanceof SQLXML ) {
             preparedStatement.setSQLXML( i, (SQLXML) value );
+        } else if ( value instanceof Calendar ) {
+            if ( SqlType.valueOf( sqlType ) == SqlType.DATE ) {
+                preparedStatement.setDate( i, new java.sql.Date( ((Calendar) value).getTimeInMillis() ) );
+            } else if ( SqlType.valueOf( sqlType ) == SqlType.TIME ) {
+                preparedStatement.setTime( i, new java.sql.Time( ((Calendar) value).getTimeInMillis() ) );
+            } else if ( SqlType.valueOf( sqlType ) == SqlType.TIMESTAMP ) {
+                preparedStatement.setTimestamp( i, new java.sql.Timestamp( ((Calendar) value).getTimeInMillis() ) );
+            } else {
+                throw new RuntimeException( "Unsupported use of Calendar" );
+            }
         } else {
             preparedStatement.setObject( i, value );
         }
