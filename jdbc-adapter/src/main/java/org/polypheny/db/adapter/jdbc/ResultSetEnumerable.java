@@ -67,6 +67,7 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Static;
 
 
@@ -243,6 +244,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setTime( i, (Time) value );
         } else if ( value instanceof String ) {
             preparedStatement.setString( i, (String) value );
+        } else if ( value instanceof NlsString ) {
+            preparedStatement.setString( i, ((NlsString) value).getValue() );
         } else if ( value instanceof Integer ) {
             preparedStatement.setInt( i, (Integer) value );
         } else if ( value instanceof Double ) {
