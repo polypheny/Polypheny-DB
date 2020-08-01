@@ -50,6 +50,10 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final Long primaryKey;
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
 
+    //HENNLO
+    public boolean isPartitioned = false;
+    public Catalog.PartitionType partitionType = Catalog.PartitionType.NONE;
+
 
     public CatalogTable(
             final long id,
@@ -74,6 +78,39 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByStore = placementsByStore;
+    }
+
+    // Hennlo
+    // numPartitons can be empty and calculated based on the partition key
+    // Only used when explicitly working with partitons to not alter existing call stack and logic
+    public CatalogTable(
+            final long id,
+            @NonNull final String name,
+            final ImmutableList<Long> columnIds,
+            final long schemaId,
+            final long databaseId,
+            final int ownerId,
+            @NonNull final String ownerName,
+            @NonNull final TableType type,
+            final String definition,
+            final Long primaryKey,
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore,
+            final long numPartitions,
+            final Catalog.PartitionType partitionType) {
+        this.id = id;
+        this.name = name;
+        this.columnIds = columnIds;
+        this.schemaId = schemaId;
+        this.databaseId = databaseId;
+        this.ownerId = ownerId;
+        this.ownerName = ownerName;
+        this.tableType = type;
+        this.definition = definition;
+        this.primaryKey = primaryKey;
+        this.placementsByStore = placementsByStore;
+        this.partitionType = partitionType;
+
+        isPartitioned = true;
     }
 
 

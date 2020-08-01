@@ -42,19 +42,7 @@ import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogStore;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
@@ -125,6 +113,9 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong schemaIdBuilder = new AtomicLong();
     private static final AtomicLong tableIdBuilder = new AtomicLong();
     private static final AtomicLong columnIdBuilder = new AtomicLong();
+
+    //TODO: HENNLO
+    private static final AtomicLong partitionIdBuilder = new AtomicLong();
 
     private static final AtomicLong keyIdBuilder = new AtomicLong();
     private static final AtomicLong constraintIdBuilder = new AtomicLong();
@@ -1208,6 +1199,9 @@ public class CatalogImpl extends Catalog {
             }
             openTable = id;
             listeners.firePropertyChange( "table", null, table );
+            //HENNLO
+            addPartition(id, schemaId,ownerId, "Range");
+            //
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -2541,6 +2535,48 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownStoreException( storeId );
         }
+    }
+
+    @Override
+    public long addPartition(long tableId, long schemaId, int ownerId, String partitonType) throws GenericCatalogException {
+       //HENNLO
+
+        try {
+            System.out.println("HENNLO: Creating partiton on: " +  partitonType);
+            long id = partitionIdBuilder.getAndIncrement();
+            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
+            CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
+
+            CatalogPartition partition = new CatalogPartition(
+                        id,
+                        tableId,
+                        schemaId,
+                        schema.databaseId,
+                        ownerId,
+                        owner.name,
+                        0);
+
+
+            return id;
+        } catch ( NullPointerException e ) {
+            throw new GenericCatalogException( e );
+        }
+    }
+
+    @Override
+    public List<CatalogPartition> getPartitions(long tableId) {
+
+        //HENNLO
+       ;
+        try {
+            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
+            System.out.println("HENNLO: Selecting partitons for table: " +  tableId + " " + table.name);
+            //return columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values().stream().sorted( columnComparator ).collect( Collectors.toList() );
+
+        } catch ( NullPointerException e ) {
+            return new ArrayList<>();
+        }
+        return null;
     }
 
 

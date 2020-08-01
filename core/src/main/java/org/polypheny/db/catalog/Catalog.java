@@ -24,38 +24,8 @@ import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
-import org.polypheny.db.catalog.entity.CatalogDatabase;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
-import org.polypheny.db.catalog.entity.CatalogIndex;
-import org.polypheny.db.catalog.entity.CatalogKey;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogStore;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.entity.*;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -830,6 +800,11 @@ public abstract class Catalog {
     public abstract void deleteStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
 
 
+
+    public abstract long addPartition( long tableId, long schemaId, int ownerId, String partitonType ) throws GenericCatalogException;
+
+
+    public abstract List<CatalogPartition> getPartitions(long tableId );
     /*
      *
      */
@@ -1124,6 +1099,50 @@ public abstract class Catalog {
             }
             throw new UnknownPlacementTypeException( str );
         }
+
+
+    }
+
+
+    //HENNLO
+    public enum PartitionType {
+        NONE( 0 ),
+        RANGE( 1 ),
+        LIST( 2 ),
+        HASH( 3 ),
+        ROUNDROBIN( 4 );
+        // STREAM, ...
+
+        private final int id;
+
+
+        PartitionType( int id ) { this.id = id; }
+
+        public int getId() {
+            return id;
+        }
+
+
+        //New ExceptionType
+        public static PartitionType getById( final int id ) throws UnknownPartitionTypeException {
+            for ( PartitionType t : values() ) {
+                if ( t.id == id ) {
+                    return t;
+                }
+            }
+            throw new UnknownPartitionTypeException( id );
+        }
+
+
+        public static PartitionType getByName( final String name ) throws UnknownPartitionTypeException {
+            for ( PartitionType t : values() ) {
+                if ( t.name().equalsIgnoreCase( name ) ) {
+                    return t;
+                }
+            }
+            throw new UnknownPartitionTypeException( name );
+        }
+
     }
 
 
