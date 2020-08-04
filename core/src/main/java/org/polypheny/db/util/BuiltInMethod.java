@@ -329,6 +329,7 @@ public enum BuiltInMethod {
     TIME_ZONE( SqlFunctions.class, "timeZone", DataContext.class ),
     BOOLEAN_TO_STRING( SqlFunctions.class, "toString", boolean.class ),
     JDBC_ARRAY_TO_LIST( SqlFunctions.class, "arrayToList", java.sql.Array.class ),
+    JDBC_DEEP_ARRAY_TO_LIST( SqlFunctions.class, "deepArrayToList", java.sql.Array.class ),
     OBJECT_TO_STRING( Object.class, "toString" ),
     OBJECTS_EQUAL( Objects.class, "equals", Object.class, Object.class ),
     HASH( Utilities.class, "hash", int.class, Object.class ),

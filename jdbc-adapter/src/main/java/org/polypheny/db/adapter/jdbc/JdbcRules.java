@@ -408,7 +408,8 @@ public class JdbcRules {
             super( Project.class, (Predicate<Project>) project ->
                             (out.dialect.supportsWindowFunctions()
                                     || !RexOver.containsOver( project.getProjects(), null ))
-                                    && !userDefinedFunctionInProject( project ),
+                                    && !userDefinedFunctionInProject( project )
+                                    && !knnFunctionInProject( project ),
                     Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
 
@@ -418,6 +419,19 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsUserDefinedFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        // TODO js(knn): Make sure this is not just a hotfix.
+        private static boolean knnFunctionInProject( Project project ) {
+            CheckingKnnFunctionVisitor visitor = new CheckingKnnFunctionVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsKnnFunction() ) {
                     return true;
                 }
             }
@@ -1022,6 +1036,32 @@ public class JdbcRules {
             SqlOperator operator = call.getOperator();
             if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isUserDefined() ) {
                 containsUsedDefinedFunction |= true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+    private static class CheckingKnnFunctionVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsKnnFunction = false;
+
+
+        CheckingKnnFunctionVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsKnnFunction() {
+            return containsKnnFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isKnn() ) {
+                containsKnnFunction |= true;
             }
             return super.visitCall( call );
         }

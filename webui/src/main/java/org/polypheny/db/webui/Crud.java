@@ -2591,6 +2591,9 @@ public class Crud implements InformationObserver {
                             } catch ( SQLException sqlException ) {
                                 temp[counter] = o.toString();
                             }
+                        } else if ( o instanceof List ) {
+                            // TODO js(knn): make sure all of this is not just a hotfix.
+                            temp[counter] = gson.toJson( (List) o );
                         } else {
                             temp[counter] = o.toString();
                         }

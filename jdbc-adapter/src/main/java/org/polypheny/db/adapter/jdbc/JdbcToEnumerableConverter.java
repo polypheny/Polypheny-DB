@@ -302,6 +302,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
         final Expression source;
         switch ( polyType ) {
+            // TODO js(knn): Make sure this is more than just a hotfix.
+            case ARRAY:
+                source = Expressions.call(
+                        getMethod( polyType, fieldType.isNullable(), offset ),
+                        Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) )
+                );
+                break;
+
             case DATE:
             case TIME:
             case TIMESTAMP:
@@ -340,6 +348,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
         switch ( polyType ) {
+            case ARRAY:
+                return BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
             case DATE:
                 return (nullable
                         ? BuiltInMethod.DATE_TO_INT_OPTIONAL

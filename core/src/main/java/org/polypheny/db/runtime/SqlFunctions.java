@@ -93,6 +93,7 @@ import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
 import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.TimeWithTimeZoneString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;
@@ -145,6 +146,45 @@ public class SqlFunctions {
 
 
     private SqlFunctions() {
+    }
+
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static double knn( List value, List target, String metric, List weights ) {
+        List<Pair<Number, Number>> numberList = KnnFunctions.makeNumberPairList( value, target );
+        if ( "L2".equals( metric ) ) {
+            return KnnFunctions.l2MetricWeighted( numberList, weights );
+        } else if ( "L1".equals( metric ) ) {
+            return KnnFunctions.l1MetricWeighted( numberList, weights );
+        } else if ( "L2SQUARED".equals( metric ) ) {
+            return KnnFunctions.l2SquaredMetricWeighted( numberList, weights );
+        } else {
+            return 0.0;
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static double knn( List value, List target, String metric, List weights, @SuppressWarnings("unused") int optimisationFactor ) {
+        return knn( value, target, metric, weights );
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static double knn( List value, List target, String metric, @SuppressWarnings("unused") int optimisationFactor ) {
+        return knn( value, target, metric );
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static double knn( List value, List target, String metric ) {
+        List<Pair<Number, Number>> numberList = KnnFunctions.makeNumberPairList( value, target );
+        if ( "L2".equals( metric ) ) {
+            return KnnFunctions.l2Metric( numberList );
+        } else if ( "L1".equals( metric ) ) {
+            return KnnFunctions.l1Metric( numberList );
+        } else if ( "L2SQUARED".equals( metric ) ) {
+            return KnnFunctions.l2SquaredMetric( numberList );
+        } else {
+            return 0.0;
+        }
     }
 
 
@@ -2716,6 +2756,34 @@ public class SqlFunctions {
         } catch ( SQLException e ) {
             throw toUnchecked( e );
         }
+    }
+
+
+    public static List deepArrayToList( final java.sql.Array a ) {
+        if ( a == null ) {
+            return null;
+        }
+        try {
+            List asList = Primitive.asList( a.getArray() );
+            return deepArrayToListRecursive( asList );
+        } catch ( SQLException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    private static List deepArrayToListRecursive( List l ) {
+        if ( l.isEmpty() || !l.get( 0 ).getClass().isArray() ) {
+            return new ArrayList( l );
+        }
+
+        List outer = new ArrayList();
+        for ( Object o : l ) {
+            List asList = Primitive.asList( o );
+            outer.add( deepArrayToListRecursive( asList ) );
+        }
+
+        return outer;
     }
 
 
