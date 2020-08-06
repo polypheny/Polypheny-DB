@@ -524,12 +524,13 @@ public class IcarusRouter extends AbstractRouter {
                 row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestStore );
             } else {
                 row = new HashMap<>();
+                // init row with 0
+                for ( Integer storeId : map.keySet() ) {
+                    row.put( storeId, 0 );
+                }
                 if ( fastestStore != -1 && fastestTime > 0 ) {
                     row.put( fastestStore, 100 );
                 }
-                /*else {
-                    log.error( "Something went wrong while analyzing data. This should not happen!" );
-                }*/
             }
             return row;
         }
