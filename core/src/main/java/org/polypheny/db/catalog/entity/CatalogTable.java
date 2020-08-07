@@ -122,6 +122,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.partitionType = partitionType;
         this.partitionIds = partitionIds;
         this.partitionColumnId = partitionColumnId;
+        this.numPartitions = numPartitions;
         isPartitioned = true;
 
     }

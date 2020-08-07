@@ -150,11 +150,11 @@ public abstract class AbstractRouter implements Router {
                     //HENNLO
                     //Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
-                        System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() + " is partitioned" );
+                        System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() + " is partitioned on column: " + catalogTable.partitionColumnId );
                         System.out.println("HENNLO AbstractRouter: buildSelect() getting all Partitions for table with id: " + catalogTable.id);
                         for (CatalogPartition cp : catalog.getPartitions(catalogTable.id)
                         ) {
-                            System.out.println("HENNLO AbstractRouter: " + cp.tableId + " " + cp.id + "/" + catalogTable.numPartitions);
+                            System.out.println("HENNLO AbstractRouter: " + cp.tableId + " " + (cp.id+1) + "/" + catalogTable.numPartitions);
                         }
                     }
                     else{
