@@ -43,20 +43,7 @@ import org.mapdb.serializer.SerializerArrayTuple;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.*;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -116,6 +103,8 @@ public class CatalogImpl extends Catalog {
 
     //TODO: HENNLO
     private static final AtomicLong partitionIdBuilder = new AtomicLong();
+    private static BTreeMap<Long, CatalogPartition> partitions;
+    //
 
     private static final AtomicLong keyIdBuilder = new AtomicLong();
     private static final AtomicLong constraintIdBuilder = new AtomicLong();
@@ -390,6 +379,7 @@ public class CatalogImpl extends Catalog {
         restoreIdBuilder( indices, indexIdBuilder );
         restoreIdBuilder( stores, storeIdBuilder );
         restoreIdBuilder( foreignKeys, foreignKeyIdBuilder );
+        restoreIdBuilder( partitions, foreignKeyIdBuilder );
 
     }
 
@@ -471,6 +461,7 @@ public class CatalogImpl extends Catalog {
                 .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
                 .valueSerializer( Serializer.JAVA )
                 .createOrOpen();
+        partitions = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
     }
 
 
@@ -1173,6 +1164,7 @@ public class CatalogImpl extends Catalog {
     public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException {
         try {
             long id = tableIdBuilder.getAndIncrement();
+            System.out.println("HENNLO: CatalogImpl: Creating table id: "+ id);
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
             CatalogTable table = new CatalogTable(
@@ -1187,7 +1179,7 @@ public class CatalogImpl extends Catalog {
                     definition,
                     null,
                     ImmutableMap.of() );
-
+            System.out.println("HENNLO: CatalogImpl: Creating table : "+ table);
             synchronized ( this ) {
                 tables.put( id, table );
 
@@ -1199,9 +1191,6 @@ public class CatalogImpl extends Catalog {
             }
             openTable = id;
             listeners.firePropertyChange( "table", null, table );
-            //HENNLO
-            addPartition(id, schemaId,ownerId, "Range");
-            //
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -2538,12 +2527,12 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public long addPartition(long tableId, long schemaId, int ownerId, String partitonType) throws GenericCatalogException {
+    public long addPartition(long tableId, long schemaId, int ownerId, PartitionType partitionType) throws GenericCatalogException {
        //HENNLO
 
         try {
-            System.out.println("HENNLO: Creating partiton on: " +  partitonType);
             long id = partitionIdBuilder.getAndIncrement();
+            System.out.println("HENNLO: CatalogImpl: Creating partiton on: " +  partitionType + " id: "+ id);
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
 
@@ -2556,28 +2545,52 @@ public class CatalogImpl extends Catalog {
                         owner.name,
                         0);
 
-
+            System.out.println("HENNLO: CatalogImpl: Creating Partition : "+ partition);
+            synchronized ( this ) {
+                System.out.println("HENNLO: CatalogImpl: before put");
+                partitions.put( id, partition );
+                System.out.println("HENNLO: CatalogImpl: after put");
+            }
+            //TODO HENNLO Check Listener
+            listeners.firePropertyChange( "partition", null, partition );
+            System.out.println("HENNLO: CatalogImpl: after LISTENER");
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
 
+    //HENNLO
     @Override
-    public List<CatalogPartition> getPartitions(long tableId) {
+    public CatalogPartition getPartition(long partitionId) throws UnknownPartitionException {
+        try {
+            return Objects.requireNonNull( partitions.get( partitionId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownPartitionException( partitionId );
+        }
+    }
+
+    @Override
+    public List<CatalogPartition> getPartitions(long tableId) throws UnknownTableException{
 
         //HENNLO
-       ;
+
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            System.out.println("HENNLO: Selecting partitons for table: " +  tableId + " " + table.name);
+            System.out.println("HENNLO: CatalogImpl: getPartitions() Selecting partitions for table: " +  tableId + " " + table.name);
+            List<CatalogPartition> partitions = new ArrayList<>(  );
+            for (long partId: table.partitionIds) {
+                partitions.add(Catalog.getInstance().getPartition(partId));
+            }
+            return partitions;
+            //return Collections.singletonList(partitions.get()
             //return columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values().stream().sorted( columnComparator ).collect( Collectors.toList() );
 
-        } catch ( NullPointerException e ) {
+        } catch ( NullPointerException | UnknownPartitionException e ) {
             return new ArrayList<>();
         }
-        return null;
     }
+
 
 
     // TODO move

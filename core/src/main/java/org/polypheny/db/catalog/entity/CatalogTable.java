@@ -20,14 +20,16 @@ package org.polypheny.db.catalog.entity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
+
+import lombok.*;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
 
 
 /**
@@ -51,9 +53,13 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
 
     //HENNLO
+    @Getter
     public boolean isPartitioned = false;
-    public Catalog.PartitionType partitionType = Catalog.PartitionType.NONE;
-
+    @Getter
+    public Catalog.PartitionType partitionType = PartitionType.NONE;
+    public ImmutableList<Long> partitionIds;
+    public long partitionColumnId;
+    public long numPartitions;
 
     public CatalogTable(
             final long id,
@@ -78,6 +84,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByStore = placementsByStore;
+
     }
 
     // Hennlo
@@ -96,7 +103,9 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore,
             final long numPartitions,
-            final Catalog.PartitionType partitionType) {
+            final PartitionType partitionType,
+            final ImmutableList<Long> partitionIds,
+            final long partitionColumnId) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -108,9 +117,13 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.definition = definition;
         this.primaryKey = primaryKey;
         this.placementsByStore = placementsByStore;
-        this.partitionType = partitionType;
 
+        //HENNLO added
+        this.partitionType = partitionType;
+        this.partitionIds = partitionIds;
+        this.partitionColumnId = partitionColumnId;
         isPartitioned = true;
+
     }
 
 
@@ -175,6 +188,45 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         return -1;
     }
 
+    public void partition(PartitionType type, long partitionColumnId) throws GenericCatalogException, UnknownPartitionException {
+        System.out.println("HENNLO: CatalogTable: partitioning for table: " + name + " has been started");
+        System.out.println("HENNLO: CatalogTable: partitioning on columnId: " + partitionColumnId + " with type: " + type);
+        this.partitionColumnId = partitionColumnId;
+        partitionType = type;
+        this.numPartitions = 2;
+        this.isPartitioned = true;
+        long partId;
+        List<Long> tempPartIds = new ArrayList<>();
+        //Calculate how many partitions exist if partitioning is applied.
+        //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
+        System.out.println("HENNLO: CatalogTable: Creating " + numPartitions + " partitions");
+        for (int i=0; i < numPartitions; i++) {
+            partId = Catalog.getInstance().addPartition(id, schemaId, ownerId, type);
+            tempPartIds.add(partId);
+        }
+        this.partitionIds = ImmutableList.copyOf(tempPartIds);
+        System.out.println("HENNLO: CatalogTable: partitioning for table: " + name + " has bee finished");
+        System.out.println("HENNLO: CatalogTable: partitioning for table: " + name + " SUMMARY:");
+
+        //Check if all created partitons are correct
+        for (long partition : partitionIds) {
+            try {
+             System.out.println("\t\t" + Catalog.getInstance().getPartition(partition));
+            } catch ( UnknownPartitionException e){
+                throw new UnknownPartitionException( partition );
+            }
+        }
+
+
+
+    }
+
+    //TODO HENNLO To be implemented
+    public void merge() throws GenericCatalogException {
+        System.out.println("HENNLO: CatalogTable: Merging table: " + name + " has bee started");
+
+        System.out.println("HENNLO: CatalogTable: Merging table: " + name + " has bee finished");
+    }
 
     @RequiredArgsConstructor
     public static class PrimitiveCatalogTable {

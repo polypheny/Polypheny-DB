@@ -55,16 +55,11 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.partition.SimplePartition;
@@ -220,7 +215,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 stores = transaction.getRouter().createTable( schemaId, transaction );
             }
 
-            //TODO: HENNLO , messing around
+            //TODO: HENNLO , creation of tables
             System.out.println("HENNLO: SqlCreateTable: " + schemaId+ " " + tableName + " executed on Router: " + Catalog.getInstance());
 
             /**List<long> partitionIDs = catalog.addPartitions(
@@ -318,13 +313,23 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 store.createTable( context, catalogTable );
             }
 
-            //TODO: HENNLO Test CASE
-            SimplePartition basicPartition = new SimplePartition(tableId, catalog.getSchema(schemaId).toString(), tableName, columnList.get(0).toString());
-            System.out.println("HENNLO: SqlCreateTable: Resolved TestCase");
+            //Test as if user put in an PartitionType
+            PartitionType partitionType = PartitionType.RANGE;
 
+            if ( partitionType != PartitionType.NONE) {
+                //TODO HENNLO Check if table was created with partition
+                //Test partitioning: HARD-CODED
+                //Partition based on the second column in table as partionColumnId
+                System.out.println("HENNLO: SqlCreateTable: partition for: " + catalogTable.name);
+                catalogTable.partition(partitionType, catalogTable.columnIds.get(1));
+                //
 
+            }
+            else{
+                System.out.println("HENNLO: SqlCreateTable: EXCEPTION for partitionType " + partitionType);
+            }
 
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException e ) {
+        } catch (GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionException e ) {
             throw new RuntimeException( e );
         }
 

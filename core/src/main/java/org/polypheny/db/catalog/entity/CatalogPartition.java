@@ -55,7 +55,7 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
         this.ownerName = ownerName;
         this.partitionKey = partitionKey;
 
-        System.out.println("HENNLO: Partiton has been created: " + id);
+        System.out.println("HENNLO: CatalogPartiton: Partiton has been created: " + id);
     }
 
 

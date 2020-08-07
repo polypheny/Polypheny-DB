@@ -30,6 +30,7 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -145,6 +146,20 @@ public abstract class AbstractRouter implements Router {
                 CatalogTable catalogTable;
                 try {
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+                    //HENNLO
+                    //Check if table is even partitoned
+                    if ( catalogTable.isPartitioned ) {
+                        System.out.println("HENNLO AbstractRouter: buildSelect() getting all Partitions:");
+                        for (CatalogPartition cp : catalog.getPartitions(catalogTable.id)
+                        ) {
+                            System.out.println("HENNLO AbstractRouter: " + cp.tableId + " " + cp.id + "/" + catalogTable.numPartitions);
+                        }
+                    }
+                    else{
+                        System.out.println("HENNLO AbstractRouter: " + catalogTable.name + " is NOT partitioned...\n\t\tRouting will be easy");
+                    }
+
+                    //
                 } catch ( UnknownTableException | GenericCatalogException e ) {
                     throw new RuntimeException( "Unknown table" );
                 }

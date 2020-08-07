@@ -801,10 +801,11 @@ public abstract class Catalog {
 
 
 
-    public abstract long addPartition( long tableId, long schemaId, int ownerId, String partitonType ) throws GenericCatalogException;
+    public abstract long addPartition( long tableId, long schemaId, int ownerId, PartitionType partitionType ) throws GenericCatalogException;
 
+    public abstract CatalogPartition getPartition(long partitionId ) throws UnknownPartitionException;
 
-    public abstract List<CatalogPartition> getPartitions(long tableId );
+    public abstract List<CatalogPartition> getPartitions(long tableId ) throws UnknownTableException;
     /*
      *
      */
