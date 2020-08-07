@@ -188,45 +188,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         return -1;
     }
 
-    public void partition(PartitionType type, long partitionColumnId) throws GenericCatalogException, UnknownPartitionException {
-        System.out.println("HENNLO: CatalogTable: partitioning for table: " + name + " has been started");
-        System.out.println("HENNLO: CatalogTable: partitioning on columnId: " + partitionColumnId + " with type: " + type);
-        this.partitionColumnId = partitionColumnId;
-        partitionType = type;
-        this.numPartitions = 2;
-        this.isPartitioned = true;
-        long partId;
-        List<Long> tempPartIds = new ArrayList<>();
-        //Calculate how many partitions exist if partitioning is applied.
-        //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
-        System.out.println("HENNLO: CatalogTable: Creating " + numPartitions + " partitions");
-        for (int i=0; i < numPartitions; i++) {
-            partId = Catalog.getInstance().addPartition(id, schemaId, ownerId, type);
-            tempPartIds.add(partId);
-        }
-        this.partitionIds = ImmutableList.copyOf(tempPartIds);
-        System.out.println("HENNLO: CatalogTable: partitioning for table: " + name + " has bee finished");
-        System.out.println("HENNLO: CatalogTable: partitioning for table: " + name + " SUMMARY:");
-
-        //Check if all created partitons are correct
-        for (long partition : partitionIds) {
-            try {
-             System.out.println("\t\t" + Catalog.getInstance().getPartition(partition));
-            } catch ( UnknownPartitionException e){
-                throw new UnknownPartitionException( partition );
-            }
-        }
-
-
-
-    }
-
-    //TODO HENNLO To be implemented
-    public void merge() throws GenericCatalogException {
-        System.out.println("HENNLO: CatalogTable: Merging table: " + name + " has bee started");
-
-        System.out.println("HENNLO: CatalogTable: Merging table: " + name + " has bee finished");
-    }
 
     @RequiredArgsConstructor
     public static class PrimitiveCatalogTable {

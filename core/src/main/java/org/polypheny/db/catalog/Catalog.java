@@ -805,7 +805,11 @@ public abstract class Catalog {
 
     public abstract CatalogPartition getPartition(long partitionId ) throws UnknownPartitionException;
 
-    public abstract List<CatalogPartition> getPartitions(long tableId ) throws UnknownTableException;
+    public abstract void partitionTable(long tableId, PartitionType type, long partitionColumnId ) throws UnknownTableException, UnknownPartitionException, GenericCatalogException;
+
+    public abstract void mergeTable(long tableId ) throws UnknownTableException;
+
+    public abstract List<CatalogPartition> getPartitions(long tableId) throws UnknownTableException;
     /*
      *
      */

@@ -320,8 +320,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 //TODO HENNLO Check if table was created with partition
                 //Test partitioning: HARD-CODED
                 //Partition based on the second column in table as partionColumnId
-                System.out.println("HENNLO: SqlCreateTable: partition for: " + catalogTable.name);
-                catalogTable.partition(partitionType, catalogTable.columnIds.get(1));
+                System.out.println("HENNLO: SqlCreateTable: partition for: " + catalogTable.name + " " + catalogTable.id);
+                catalog.partitionTable(tableId, partitionType, catalogTable.columnIds.get(1));
+                //catalogTable.partition(partitionType, catalogTable.columnIds.get(1));
                 //
 
             }

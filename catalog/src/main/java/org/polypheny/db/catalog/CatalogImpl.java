@@ -2571,6 +2571,77 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
+    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
+
+        try {
+            CatalogTable old = Objects.requireNonNull(tables.get(tableId));
+            System.out.println("HENNLO: CatalogImpl: partitioning for table: " + getTable(tableId) + " has been started");
+            System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
+            int numPartitions = 2;
+            long partId;
+            List<Long> tempPartIds = new ArrayList<>();
+            //Calculate how many partitions exist if partitioning is applied.
+            //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
+            System.out.println("HENNLO: CatalogImpl: Creating " + numPartitions + " partitions");
+            for (int i = 0; i < numPartitions; i++) {
+                partId = Catalog.getInstance().addPartition(tableId, old.schemaId, old.ownerId, partitionType);
+                tempPartIds.add(partId);
+            }
+            //partitionIds = ImmutableList.copyOf(tempPartIds);
+            System.out.println("HENNLO: CatalogImpl: partitioning for table: " + old.name + " has bee finished");
+            System.out.println("HENNLO: CatalogImpl: partitioning for table: " + old.name + " SUMMARY:");
+
+
+            CatalogTable table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.definition,
+                    old.primaryKey,
+                    old.placementsByStore,
+                    numPartitions,
+                    partitionType,
+                    ImmutableList.copyOf(tempPartIds),
+                    partitionColumnId);
+
+            System.out.println("HENNLO: CatalogImpl: Updated table " + table.name + " ");
+
+            synchronized (this) {
+                tables.replace(tableId, table);
+                tableNames.remove(new Object[]{table.databaseId, table.schemaId, old.name});
+                tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
+                System.out.println("HENNLO: CatalogImpl: Replaced table " + table.name + " at ID: " + table.id);
+            }
+            //Check if all created partitons are correct
+            for (long partition : table.partitionIds) {
+                try {
+                    System.out.println("\t\t" + Catalog.getInstance().getPartition(partition));
+                } catch (UnknownPartitionException e) {
+                    throw new UnknownPartitionException(partition);
+                }
+            }
+            listeners.firePropertyChange("table", old, table);
+        } catch (NullPointerException e) {
+            throw new GenericCatalogException(e);
+        }
+    }
+
+
+    //TODO HENNLO To be implemented
+    @Override
+    public void mergeTable(long tableId) throws UnknownTableException {
+
+        System.out.println("HENNLO: CatalogTable: Merging table: " + getTable(tableId).name + " has bee started");
+
+        System.out.println("HENNLO: CatalogTable: Merging table: " + getTable(tableId).name + " has bee finished");
+    }
+
+    @Override
     public List<CatalogPartition> getPartitions(long tableId) throws UnknownTableException{
 
         //HENNLO
