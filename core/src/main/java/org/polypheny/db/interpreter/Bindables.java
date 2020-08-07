@@ -290,6 +290,15 @@ public class Bindables {
         public Node implement( InterpreterImplementor implementor ) {
             throw new UnsupportedOperationException(); // TODO:
         }
+
+
+        //
+        // TODO: This might be to restrictive
+        //
+        @Override
+        public boolean isImplementationCacheable() {
+            return false;
+        }
     }
 
 

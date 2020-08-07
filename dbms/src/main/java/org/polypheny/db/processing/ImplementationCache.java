@@ -44,7 +44,7 @@ public class ImplementationCache {
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
-
+    private final AtomicLong uncacheableCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
 
     public ImplementationCache() {
         implementationCache = CacheBuilder.newBuilder()
@@ -68,6 +68,11 @@ public class ImplementationCache {
 
     public void put( RelNode parameterizedNode, PreparedResult preparedResult ) {
         implementationCache.put( parameterizedNode.relCompareString(), preparedResult );
+    }
+
+
+    public void countUncacheable() {
+        uncacheableCounter.incrementAndGet();
     }
 
 
@@ -110,13 +115,15 @@ public class ImplementationCache {
 
         hitRatioGroup.setRefreshFunction( () -> {
             long hits = hitsCounter.longValue();
-            long misses = missesCounter.longValue();
-            double hitPercent = (double) hits / (hits + misses);
-            double missesPercent = 1.0 - hitPercent;
+            long misses = missesCounter.longValue() - uncacheableCounter.longValue();
+            long uncacheable = uncacheableCounter.longValue();
+            double hitPercent = (double) hits / (hits + misses + uncacheable);
+            double missesPercent = (double) misses / (hits + misses + uncacheable);
+            double uncacheablePercent = 1.0 - hitPercent - missesPercent;
 
             hitInfoGraph.updateGraph(
-                    new String[]{ "Misses", "Hits" },
-                    new GraphData<>( "heap-data", new Long[]{ misses, hits } )
+                    new String[]{ "Misses", "Hits", "Uncacheable" },
+                    new GraphData<>( "heap-data", new Long[]{ misses, hits, uncacheable } )
             );
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
@@ -125,6 +132,7 @@ public class ImplementationCache {
             hitInfoTable.reset();
             hitInfoTable.addRow( "Hits", df.format( hitPercent * 100 ) + " %", hits );
             hitInfoTable.addRow( "Misses", df.format( missesPercent * 100 ) + " %", misses );
+            hitInfoTable.addRow( "Uncacheable", df.format( uncacheablePercent * 100 ) + " %", uncacheable );
         } );
 
         // Invalidate cache

@@ -32,7 +32,7 @@ import spark.Service;
 
 
 /**
- * RESTful server for the WebUis, working with the InformationManager.
+ * RESTful server for requesting data from the information manager. It is primarily used by the Polypheny-UI.
  */
 @Slf4j
 public class InformationServer implements InformationObserver {
@@ -41,7 +41,6 @@ public class InformationServer implements InformationObserver {
 
 
     public InformationServer( final int port ) {
-
         Service http = ignite().port( port );
 
         // Needs to be called before defining routes!
@@ -97,12 +96,20 @@ public class InformationServer implements InformationObserver {
 
         http.post( "/refreshPage", ( req, res ) -> {
             //refresh not necessary, since getPage already triggers a refresh
-            im.getPage( req.body() );
+            try {
+                im.getPage( req.body() );
+            } catch ( Exception e ) {
+                log.error( "Caught exception!", e );
+            }
             return "";
         } );
 
         http.post( "/refreshGroup", ( req, res ) -> {
-            im.getGroup( req.body() ).refresh();
+            try {
+                im.getGroup( req.body() ).refresh();
+            } catch ( Exception e ) {
+                log.error( "Caught exception!", e );
+            }
             return "";
         } );
     }
@@ -126,7 +133,7 @@ public class InformationServer implements InformationObserver {
      */
     @Override
     public void observePageList( final String debugId, final InformationPage[] pages ) {
-        //todo can be implemented if needed
+        // TODO: can be implemented if needed
     }
 
 

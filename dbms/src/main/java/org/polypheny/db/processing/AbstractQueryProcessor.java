@@ -61,6 +61,7 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.type.RelDataType;
@@ -248,7 +249,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         // Cache implementation
         if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean()) ) {
-            ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
+            if ( optimalRoot.rel.isImplementationCacheable() ) {
+                ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
+            } else {
+                ImplementationCache.INSTANCE.countUncacheable();
+            }
         }
 
         PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
@@ -675,5 +680,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     @Override
     public RelRoot expandView( RelDataType rowType, String queryString, List<String> schemaPath, List<String> viewPath ) {
         return null; // TODO
+    }
+
+
+    private static class RelCloneShuttle extends RelShuttleImpl {
+
+        protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
+            stack.push( parent );
+            try {
+                RelNode child2 = child.accept( this );
+                final List<RelNode> newInputs = new ArrayList<>( parent.getInputs() );
+                newInputs.set( i, child2 );
+                //noinspection unchecked
+                return (T) parent.copy( parent.getTraitSet(), newInputs );
+            } finally {
+                stack.pop();
+            }
+        }
+
     }
 }
