@@ -19,6 +19,7 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
@@ -39,6 +40,7 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DeferredIndexUpdate;
 import org.polypheny.db.adapter.Index;
@@ -52,13 +54,16 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -85,23 +90,37 @@ import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.RelShuttle;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
+import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.exceptions.ConstraintViolationException;
+import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalMatch;
+import org.polypheny.db.rel.logical.LogicalMinus;
 import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -510,13 +529,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         if ( !logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
             return logicalRoot;
         }
-        if ( !(logicalRoot.rel instanceof TableModify) || !((TableModify) logicalRoot.rel).isInsert() ) {
+        if ( !(logicalRoot.rel instanceof TableModify) ) {
             return logicalRoot;
         }
         final TableModify root = (TableModify) logicalRoot.rel;
-
-        final Values values = (Values) root.getInput();
-        final RexBuilder builder = root.getCluster().getRexBuilder();
 
         final Catalog catalog = Catalog.getInstance();
         final CatalogSchema schema = transaction.getDefaultSchema();
@@ -541,6 +557,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 return logicalRoot;
             }
 
+            final Values values = (Values) root.getInput();
+            final RexBuilder builder = root.getCluster().getRexBuilder();
             RelNode lceRoot = root;
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
@@ -613,14 +631,85 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
                 final LogicalFilter filter = LogicalFilter.create( scan, condition );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.GREATER_ZERO, ConstraintViolationException.class, "Foreign key constraint violated" );
-                lce.setCatalogSchema( schema );
-                try {
-                    lce.setCatalogTable( Catalog.getInstance().getTable( foreignKey.referencedKeyTableId ) );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    e.printStackTrace();
+//                lce.setCatalogSchema( schema );
+//                try {
+//                    lce.setCatalogTable( Catalog.getInstance().getTable( foreignKey.referencedKeyTableId ) );
+//                } catch ( UnknownTableException | GenericCatalogException e ) {
+//                    e.printStackTrace();
+//                }
+//                lce.setCatalogColumns( foreignKey.getReferencedKeyColumnNames() );
+//                lce.setValues( uniqueSet );
+                lceRoot = lce;
+            }
+            return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        } else if ( root.isDelete() ) {
+            try {
+                table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
+                foreignKeys = Catalog.getInstance().getExportedKeys( table.id );
+            } catch ( UnknownTableException | GenericCatalogException e ) {
+                e.printStackTrace();
+                return logicalRoot;
+            }
+            RelNode lceRoot = root;
+            RelBuilder builder = RelBuilder.create( transaction );
+            for ( final CatalogForeignKey foreignKey : foreignKeys ) {
+                switch ( foreignKey.deleteRule ) {
+                    case RESTRICT:
+                        break;
+                    case CASCADE:
+                    case SET_NULL:
+                    case SET_DEFAULT:
+                    default:
+                        throw new NotImplementedException( String.format( "The foreign key option ON DELETE %s is not yet implemented.", foreignKey.deleteRule.name() ) );
                 }
-                lce.setCatalogColumns( foreignKey.getReferencedKeyColumnNames() );
-                lce.setValues( uniqueSet );
+                // TODO(s3lph): This makes the assumption that DELETES always are TableScan -> Filter -> Project -> TableModify
+                LogicalFilter filter = (LogicalFilter) builder.scan( foreignKey.getReferencedKeyTableName() ).filter( ((LogicalFilter) ((LogicalProject) root.getInput()).getInput()).getCondition() ).build();
+//                LogicalFilter filter = (LogicalFilter) ((LogicalProject) root.getInput()).getInput();
+                final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
+                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
+                final CatalogTable foreignTable;
+                try {
+                    foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
+                } catch ( UnknownTableException | GenericCatalogException e ) {
+                    throw new RuntimeException( e );
+                }
+                RexNode condition = rexBuilder.makeLiteral( true );
+                for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
+                    final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
+                    final String foreignColumnName = foreignKey.getColumnNames().get( i );
+                    final CatalogColumn column, foreignColumn;
+                    try {
+                        column = Catalog.getInstance().getColumn( table.id, columnName );
+                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
+                    } catch ( GenericCatalogException | UnknownColumnException e ) {
+                        throw new RuntimeException( e );
+                    }
+                    final RexNode inputRef = new RexInputRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );
+                    final RexNode foreignInputRef = new RexInputRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
+                    projects.add( inputRef );
+                    foreignProjects.add( foreignInputRef );
+                    RexNode comparison = rexBuilder.makeCall( SqlStdOperatorTable.EQUALS,
+                            new RexInputRef( i, root.getRowType() ),
+                            new RexInputRef( i, root.getRowType() )
+                    );
+                    condition = rexBuilder.makeCall( SqlStdOperatorTable.AND, condition, comparison );
+                }
+                final RelNode check = builder
+                                .push( filter )
+                            .project( projects )
+                                .scan( foreignKey.getTableName() )
+                            .project( foreignProjects )
+                        .join( JoinRelType.INNER, condition )
+                        .build();
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class, "ON DELETE RESTRICT" );
+//                try {
+//                    lce.setCatalogSchema( Catalog.getInstance().getSchema( foreignTable.schemaId ) );
+//                } catch ( UnknownSchemaException e ) {
+//                    throw new RuntimeException( e );
+//                }
+//                lce.setCatalogTable( table );
+//                lce.setCatalogColumns( foreignKey.getColumnNames() );
+//                lce.setValues( new HashSet<>(  ) );
                 lceRoot = lce;
             }
             return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
