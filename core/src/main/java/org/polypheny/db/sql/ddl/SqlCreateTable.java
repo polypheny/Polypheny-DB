@@ -218,15 +218,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             //TODO: HENNLO , creation of tables
             System.out.println("HENNLO: SqlCreateTable: " + schemaId+ " " + tableName + " executed on Router: " + Catalog.getInstance());
 
-            /**List<long> partitionIDs = catalog.addPartitions(
-            //        tableName,
-                    schemaId,
-              //      context.getCurrentUserId(),
-                    PartitionType.SIMPLE);
-
-            */
-            //HENNLO
-
 
             long tableId = catalog.addTable(
                     tableName,
@@ -320,8 +311,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 //TODO HENNLO Check if table was created with partition
                 //Test partitioning: HARD-CODED
                 //Partition based on the second column in table as partionColumnId
-                System.out.println("HENNLO: SqlCreateTable: partition for: " + catalogTable.name + " " + catalogTable.id);
-                catalog.partitionTable(tableId, partitionType, catalogTable.columnIds.get(1));
+                System.out.println("HENNLO: SqlCreateTable: partition for: " + catalogTable.name + " " + catalogTable.id +
+                        " on schema: " + catalogTable.getSchemaName() + " on column: " + catalog.getColumn(catalogTable.columnIds.get(0)));
+                // Test createTable will fail since the column ID is out of bound
+                catalog.partitionTable(tableId, partitionType, catalogTable.columnIds.get(0));
+                System.out.println("HENNLO: SqlCreateTable: table: " + catalogTable.name + " has been partitioned");
                 //
 
             }
@@ -329,7 +323,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 System.out.println("HENNLO: SqlCreateTable: EXCEPTION for partitionType " + partitionType);
             }
 
-        } catch (GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionException e ) {
+
+
+        } catch (GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionException e) {
             throw new RuntimeException( e );
         }
 
