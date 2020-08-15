@@ -25,6 +25,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.CRC32;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
@@ -202,6 +204,38 @@ public abstract class AbstractRouter implements Router {
                 try {
                     catalogTable = catalog.getTable( t.getTableId() );
                     long pkid = catalogTable.primaryKey;
+
+                    //HENNLO
+                    //Check if table is even partitoned
+                    if ( catalogTable.isPartitioned ) {
+                        System.out.println("HENNLO AbstractRouter: routeDml() Table: '"+ catalogTable.name + "' " +
+                                "is partitioned on column: '" + catalog.getColumn(catalogTable.partitionColumnId).name + "'");
+
+                        System.out.println("HENNLO AbstractRouter: routeDml() getting all " + catalogTable.numPartitions +
+                                " partitions for table with id: " + catalogTable.id);
+
+                        String partitionKey = "test123";
+                        String secondPartitionKey = "test123";
+                        CRC32 crc = new CRC32();
+                        crc.update(partitionKey.getBytes());
+                        System.out.println("HENNLO: HASH: " + crc.getValue() + " place on partition "
+                                + crc.getValue() % catalogTable.numPartitions);
+
+                        crc.update(secondPartitionKey.getBytes());
+                        System.out.println("HENNLO: HASH: " + crc.getValue() + " place on partition "
+                                + crc.getValue() % catalogTable.numPartitions);
+
+                        for (CatalogPartition cp : catalog.getPartitions(catalogTable.id)
+                        ) {
+                            System.out.println("HENNLO AbstractRouter: " + cp.tableId + " " + (cp.id+1) + "/" + catalogTable.numPartitions);
+                        }
+                    }
+                    else{
+                        System.out.println("HENNLO AbstractRouter: " + catalogTable.name + " is NOT partitioned...\n\t\tRouting will be easy");
+                    }
+                    //
+                    //
+
                     List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                     CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
                     pkPlacements = catalog.getColumnPlacements( pkColumn.id );
@@ -213,7 +247,7 @@ public abstract class AbstractRouter implements Router {
                 List<TableModify> modifies = new ArrayList<>( pkPlacements.size() );
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
                     CatalogReader catalogReader = transaction.getCatalogReader();
-
+                    System.out.println("HENNLO AbstractRouter: routeDml(): " + pkPlacement.getLogicalColumnName());
                     List<String> tableNames = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(
                                     pkPlacement.storeUniqueName,

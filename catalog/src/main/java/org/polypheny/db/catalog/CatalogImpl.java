@@ -2532,7 +2532,7 @@ public class CatalogImpl extends Catalog {
 
         try {
             long id = partitionIdBuilder.getAndIncrement();
-            System.out.println("HENNLO: CatalogImpl: Creating partiton on: " +  partitionType + " id: "+ id);
+            System.out.println("HENNLO: CatalogImpl: Creating partition on: " +  partitionType + " id: "+ id);
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
 
@@ -2572,7 +2572,7 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
-
+        System.out.println("HENNLO: CatalogImpl: partitionTable: START");
         try {
             CatalogTable old = Objects.requireNonNull(tables.get(tableId));
             System.out.println("HENNLO: CatalogImpl: partitioning for table: " + getTable(tableId) + " has been started");
@@ -2617,7 +2617,7 @@ public class CatalogImpl extends Catalog {
                 tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
                 System.out.println("HENNLO: CatalogImpl: Replaced table " + table.name + " at ID: " + table.id);
             }
-            //Check if all created partitons are correct
+            //Check if all created partitions are correct
             for (long partition : table.partitionIds) {
                 try {
                     System.out.println("\t\t" + Catalog.getInstance().getPartition(partition));
@@ -2648,7 +2648,7 @@ public class CatalogImpl extends Catalog {
 
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            System.out.println("HENNLO: CatalogImpl: getPartitions() Selecting partitions for table: " +  tableId + " " + table.name);
+            System.out.println("HENNLO: CatalogImpl: getPartitions() Selecting partitions for table: " +  tableId + " '" + table.name + "'");
             List<CatalogPartition> partitions = new ArrayList<>(  );
             for (long partId: table.partitionIds) {
                 partitions.add(Catalog.getInstance().getPartition(partId));

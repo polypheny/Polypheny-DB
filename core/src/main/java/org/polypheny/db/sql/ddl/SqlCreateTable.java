@@ -313,6 +313,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 //Partition based on the second column in table as partionColumnId
                 System.out.println("HENNLO: SqlCreateTable: partition for: " + catalogTable.name + " " + catalogTable.id +
                         " on schema: " + catalogTable.getSchemaName() + " on column: " + catalog.getColumn(catalogTable.columnIds.get(0)));
+                //TODO Check on which column to create the partition and if it even exists
+                // CHeck if the specified column is even present in specified table nor out of bound
                 // Test createTable will fail since the column ID is out of bound
                 catalog.partitionTable(tableId, partitionType, catalogTable.columnIds.get(0));
                 System.out.println("HENNLO: SqlCreateTable: table: " + catalogTable.name + " has been partitioned");
@@ -328,9 +330,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         } catch (GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionException e) {
             throw new RuntimeException( e );
         }
-
-
-
 
     }
 

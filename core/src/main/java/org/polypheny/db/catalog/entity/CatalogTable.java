@@ -59,7 +59,13 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public Catalog.PartitionType partitionType = PartitionType.NONE;
     public ImmutableList<Long> partitionIds;
     public long partitionColumnId;
+
+    //if specified explicitly boundPartitions will be set to true
     public long numPartitions;
+
+    //Bound partition states if the partitioning is done on a fixed number of Partitions
+    // Or adjusted automatically as the table grows
+    public boolean boundPartition;
 
     public CatalogTable(
             final long id,
@@ -89,7 +95,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
 
     // Hennlo
     // numPartitons can be empty and calculated based on the partition key
-    // Only used when explicitly working with partitons to not alter existing call stack and logic
+    // Only used when explicitly working with partitions to not alter existing call stack and logic
     public CatalogTable(
             final long id,
             @NonNull final String name,
