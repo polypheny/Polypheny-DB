@@ -30,7 +30,7 @@ public class PartitionHelper {
     //returns the ID of the partition where to place the object
     public long getPartitionHash(CatalogTable catalogTable, String value){
 
-        //IDEA:mySchema_testTable_sales_RANGE_100
+        //IDEA: mySchema_testTable_sales_RANGE_100
 
         long partitionID = 0;
         String partitionKey = "";

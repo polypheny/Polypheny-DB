@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.Adler32;
 import java.util.zip.CRC32;
 
 import lombok.AllArgsConstructor;
@@ -42,6 +43,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.partition.PartitionHelper;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -104,6 +106,14 @@ public abstract class AbstractRouter implements Router {
             builder = buildSelect( logicalRoot.rel, builder, transaction );
             routed = builder.build();
         }
+
+        //HENNLO
+        for (int i = 0; i < logicalRoot.fields.size(); i++){
+
+            System.out.println("HENNLO: AbstractRouter: route(): " + logicalRoot.fields.get(i));
+        }
+
+        //
 
         wrapUp( transaction, routed );
 
@@ -194,6 +204,12 @@ public abstract class AbstractRouter implements Router {
     // Default implementation: Execute DML on all placements
     protected RelNode routeDml( RelNode node, Transaction transaction ) {
         RelOptCluster cluster = node.getCluster();
+        PartitionHelper partHelper = new PartitionHelper();
+
+        for (int i =0; i < node.getInputs().size();i++){
+            System.out.println("HENNLO: " + ((LogicalTableModify) node).getOperation() + " " + ((LogicalTableModify) node).getInput());
+        }
+
         if ( node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
@@ -209,21 +225,24 @@ public abstract class AbstractRouter implements Router {
                     //Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
                         System.out.println("HENNLO AbstractRouter: routeDml() Table: '"+ catalogTable.name + "' " +
-                                "is partitioned on column: '" + catalog.getColumn(catalogTable.partitionColumnId).name + "'");
-
-                        System.out.println("HENNLO AbstractRouter: routeDml() getting all " + catalogTable.numPartitions +
+                                "is partitioned on column: '" + catalog.getColumn(catalogTable.partitionColumnId).name
+                                + "' with TYPE: " + catalogTable.getPartitionType().toString());
+                        System.out.println("HENNLO AbstractRouter: routeDml() Table: '"+ catalogTable.name + "' " +
+                                "is partitioned on column: '" + catalogTable.partitionColumnId
+                                + "' with TYPE: " + catalogTable.getPartitionType().toString());
+                        System.out.println("HENNLO AbstractRouter:" +
+                                " routeDml() getting all " + catalogTable.numPartitions +
                                 " partitions for table with id: " + catalogTable.id);
 
-                        String partitionKey = "test123";
-                        String secondPartitionKey = "test123";
-                        CRC32 crc = new CRC32();
-                        crc.update(partitionKey.getBytes());
-                        System.out.println("HENNLO: HASH: " + crc.getValue() + " place on partition "
-                                + crc.getValue() % catalogTable.numPartitions);
 
-                        crc.update(secondPartitionKey.getBytes());
-                        System.out.println("HENNLO: HASH: " + crc.getValue() + " place on partition "
-                                + crc.getValue() % catalogTable.numPartitions);
+                        //mySchema_testTable_sales_RANGE_100
+
+
+                        //call getPartition with the Value from catalogTable.partitionColumnId
+                        System.out.println("HENNLO AbstractRouter: getPartitionHash(): put on Partition with ID: "
+                                + partHelper.getPartitionHash(catalogTable, "value"));
+                        System.out.println("HENNLO AbstractRouter: getPartitionHash(): put on Partition with ID: "
+                                + partHelper.getPartitionHash(catalogTable, "2"));
 
                         for (CatalogPartition cp : catalog.getPartitions(catalogTable.id)
                         ) {
@@ -259,7 +278,7 @@ public abstract class AbstractRouter implements Router {
 
                     // Get placements on store
                     List<CatalogColumnPlacement> placementsOnStore = catalog.getColumnPlacementsOnStore( pkPlacement.storeId, catalogTable.id );
-
+                    System.out.println("HENNLO AbstractRouter: routeDML(): columns to be updated:");
                     // If this is a update, check whether we need to execute on this store at all
                     List<String> updateColumnList = ((LogicalTableModify) node).getUpdateColumnList();
                     List<RexNode> sourceExpressionList = ((LogicalTableModify) node).getSourceExpressionList();
@@ -271,9 +290,11 @@ public abstract class AbstractRouter implements Router {
                             Iterator<RexNode> sourceExpressionListIterator = sourceExpressionList.iterator();
                             while ( updateColumnListIterator.hasNext() ) {
                                 String columnName = updateColumnListIterator.next();
+                                System.out.println("HENNLO AbstractRouter: routeDML(): column: " + columnName);
                                 sourceExpressionListIterator.next();
                                 try {
                                     CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
+                                    System.out.println("HENNLO AbstractRouter: routeDML(): column: " + catalogColumn.id);
                                     if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.storeId, catalogColumn.id ) ) {
                                         updateColumnListIterator.remove();
                                         sourceExpressionListIterator.remove();
@@ -287,6 +308,54 @@ public abstract class AbstractRouter implements Router {
                             }
                         }
                     }
+
+                    //TODO This is an rather uncharming workaround
+                    //Only seems to work when UPDATE is used.
+                    //CHECK WHERE INSERT IS being processed
+                    if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
+                        int index = 0;
+                        for (String cn : updateColumnList) {
+                            try {
+                                System.out.println("HENNLO AbstractRouter: routeDML(): column: " + cn + " " +
+                                        catalog.getColumn(catalogTable.id, cn).id);
+                                if (catalog.getColumn(catalogTable.id, cn).id == catalogTable.partitionColumnId){
+                                    System.out.println("HENNLO: AbstractRouter: : routeDML(): Found PartitionColumnID Match: '"
+                                            + catalogTable.partitionColumnId +  "' at index: " + index );
+                                    break;
+                                }
+                            } catch (GenericCatalogException | UnknownColumnException e) {
+                                e.printStackTrace();
+                            }
+                            index++;
+                        }
+
+                        System.out.println("HENNLO AbstractRouter: routeDML(): Expression Size: "
+                                + sourceExpressionList.size() + " found index at " + index);
+
+                        //TODO First find partitionColumnID in updateColumnList, get Index
+                        //TODO and then look for the value at  index in sourceExpressionList
+                        //TODO Is this really the best way to get the value ?
+                        //Only possible if partitionColumn is present in statement
+                        String partitionValue = sourceExpressionList.get(index).toString().replace("'","");
+                        System.out.println("HENNLO AbstractRouter: routeDML(): value for partitionColumn: " + partitionValue);
+                        System.out.println("HENNLO AbstractRouter: routeDML(): UPDATE value: " + partitionValue + " should be put on partition: "
+                                + partHelper.getPartitionHash(catalogTable, partitionValue));
+                    }
+                    else if (((LogicalTableModify) node).getOperation() == Operation.INSERT ){
+                        int i;
+                        for (i = 0; i < catalogTable.columnIds.size();i++) {
+                            if ( catalogTable.columnIds.get(i) == catalogTable.partitionColumnId ){
+                                System.out.println("HENNLO: AbstractRouter: : routeDML(): Found PartitionColumnID: '"
+                                        + catalogTable.partitionColumnId +  "' at column index: " + i );
+                                break;
+                            }
+                        }
+                        //TODO Get the value of partitionColumnId ---  but first find if of partitionColumn inside table
+                        String partitionValue = ((LogicalValues)node.getInput( 0 )).tuples.get(0).get(i).toString().replace("'","");
+                        System.out.println("HENNLO AbstractRouter: routeDML(): INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
+                                + partHelper.getPartitionHash(catalogTable, partitionValue));
+                    }
+
 
                     // Build DML
                     TableModify modify;
@@ -347,6 +416,7 @@ public abstract class AbstractRouter implements Router {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             buildDml( node.getInput( i ), builder, catalogTable, placements );
         }
+
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
