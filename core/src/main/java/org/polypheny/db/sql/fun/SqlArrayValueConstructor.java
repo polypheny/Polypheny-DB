@@ -34,6 +34,8 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.gson.Gson;
+import java.lang.reflect.Type;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBasicCall;
@@ -45,6 +47,7 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -52,6 +55,8 @@ import org.polypheny.db.type.PolyTypeUtil;
  * Definition of the SQL:2003 standard ARRAY constructor, <code>ARRAY[&lt;expr&gt;, ...]</code>.
  */
 public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
+
+    private static final Gson gson = new Gson();
 
     public final int dimension;
     public final int maxCardinality;
@@ -125,5 +130,11 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
         //   It probably is not a good idea to not have dimension, cardinality, and max cardinality in
         //   the hash, but right now it works and gets me moving forwards.
         return Objects.hash( kind, "ARRAY" );
+    }
+
+
+    public static Object reparse( PolyType innerType, Long dimension, String stringValue ) {
+        Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+        return gson.fromJson( stringValue.trim(), conversionType );
     }
 }

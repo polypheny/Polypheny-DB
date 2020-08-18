@@ -128,12 +128,15 @@ import org.polypheny.db.sql.SqlJsonConstructorNullClause;
 import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
 import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.type.PolyType;
 
 
 /**
  * Built-in methods.
  */
 public enum BuiltInMethod {
+    JDBC_PARSE_ARRAY_FROM_TEXT( SqlArrayValueConstructor.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
     QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),

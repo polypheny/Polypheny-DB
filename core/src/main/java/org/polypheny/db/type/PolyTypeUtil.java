@@ -38,12 +38,18 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeFamily;
@@ -1269,4 +1275,87 @@ public abstract class PolyTypeUtil {
     }
 
 
+    public static Class<?> polyToJavaType( PolyType polyType ) {
+        switch ( polyType ) {
+            case BOOLEAN:
+                return Boolean.class;
+            case TINYINT:
+                return Byte.class;
+            case SMALLINT:
+                return Short.class;
+            case INTEGER:
+                return Integer.class;
+            case BIGINT:
+                return Long.class;
+            case DECIMAL:
+                return BigDecimal.class;
+            case FLOAT:
+            case REAL:
+                return Float.class;
+            case DOUBLE:
+                return Double.class;
+            case DATE:
+                return Date.class;
+            case TIME:
+                return Time.class;
+            case TIMESTAMP:
+                return Timestamp.class;
+            case CHAR:
+                return char.class;
+            case VARCHAR:
+                return String.class;
+            case BINARY:
+                break;
+            case VARBINARY:
+                return byte[].class;
+            case TIME_WITH_LOCAL_TIME_ZONE:
+            case INTERVAL_SECOND:
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+            case INTERVAL_YEAR:
+            case INTERVAL_YEAR_MONTH:
+            case INTERVAL_MONTH:
+            case INTERVAL_DAY:
+            case INTERVAL_DAY_HOUR:
+            case INTERVAL_DAY_MINUTE:
+            case INTERVAL_DAY_SECOND:
+            case INTERVAL_HOUR:
+            case INTERVAL_HOUR_MINUTE:
+            case INTERVAL_HOUR_SECOND:
+            case INTERVAL_MINUTE:
+            case INTERVAL_MINUTE_SECOND:
+            case NULL:
+            case ANY:
+            case SYMBOL:
+            case MULTISET:
+            case ARRAY:
+            case MAP:
+            case DISTINCT:
+            case STRUCTURED:
+            case ROW:
+            case OTHER:
+            case CURSOR:
+            case COLUMN_LIST:
+            case DYNAMIC_STAR:
+            case GEOMETRY:
+                break;
+        }
+        return Object.class;
+    }
+
+
+    public static Type createNestedListType( Long dimension, PolyType innerType ) {
+        // TODO js(knn): Add type caching
+        Type conversionType;
+        if ( dimension == -1 ) {
+            conversionType = TypeUtils.parameterize( List.class, PolyTypeUtil.polyToJavaType( innerType ) );
+        } else {
+            conversionType = TypeUtils.wrap( PolyTypeUtil.polyToJavaType( innerType ) ).getType();
+            while ( dimension > 0 ) {
+                conversionType = TypeUtils.parameterize( List.class, conversionType );
+                dimension -= 1;
+            }
+        }
+
+        return conversionType;
+    }
 }

@@ -151,13 +151,17 @@ public class SqlFunctions {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static double knn( List value, List target, String metric, List weights ) {
-        List<Pair<Number, Number>> numberList = KnnFunctions.makeNumberPairList( value, target );
+        KnnFunctions.verifyInputs( value, target, weights );
         if ( "L2".equals( metric ) ) {
-            return KnnFunctions.l2MetricWeighted( numberList, weights );
+            return KnnFunctions.l2MetricWeighted( value, target, weights );
         } else if ( "L1".equals( metric ) ) {
-            return KnnFunctions.l1MetricWeighted( numberList, weights );
+            return KnnFunctions.l1MetricWeighted( value, target, weights );
         } else if ( "L2SQUARED".equals( metric ) ) {
-            return KnnFunctions.l2SquaredMetricWeighted( numberList, weights );
+            return KnnFunctions.l2SquaredMetricWeighted( value, target, weights );
+        } else if ( "CHISQUARED".equals( metric ) ) {
+            return KnnFunctions.chiSquaredMetricWeighted( value, target, weights );
+        } else if ( "COSINE".equals( metric ) ) {
+            return KnnFunctions.cosineMetricWeighted( value, target, weights );
         } else {
             return 0.0;
         }
@@ -173,15 +177,19 @@ public class SqlFunctions {
         return knn( value, target, metric );
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static double knn( List value, List target, String metric ) {
-        List<Pair<Number, Number>> numberList = KnnFunctions.makeNumberPairList( value, target );
+        KnnFunctions.verifyInputs( value, target, null );
         if ( "L2".equals( metric ) ) {
-            return KnnFunctions.l2Metric( numberList );
+            return KnnFunctions.l2Metric( value, target );
         } else if ( "L1".equals( metric ) ) {
-            return KnnFunctions.l1Metric( numberList );
+            return KnnFunctions.l1Metric( value, target );
         } else if ( "L2SQUARED".equals( metric ) ) {
-            return KnnFunctions.l2SquaredMetric( numberList );
+            return KnnFunctions.l2SquaredMetric( value, target );
+        } else if ( "CHISQUARED".equals( metric ) ) {
+            return KnnFunctions.chiSquaredMetric( value, target );
+        } else if ( "COSINE".equals( metric ) ) {
+            return KnnFunctions.cosineMetric( value, target );
         } else {
             return 0.0;
         }
