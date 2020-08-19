@@ -6399,7 +6399,7 @@ public abstract class SqlOperatorBaseTest {
         tester.checkScalar(
                 "Array['foo', 'bar']",
                 "[foo, bar]",
-                "CHAR(3) NOT NULL ARRAY(0,0) NOT NULL" );
+                "CHAR(3) NOT NULL ARRAY(2,1) NOT NULL" );
 
         // empty array is illegal per SQL spec. presumably because one can't infer type
         tester.checkFails( "^Array[]^", "Require at least 1 argument", false );
