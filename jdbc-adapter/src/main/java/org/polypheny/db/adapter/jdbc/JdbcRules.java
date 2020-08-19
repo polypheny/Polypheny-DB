@@ -92,6 +92,7 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -409,7 +410,8 @@ public class JdbcRules {
                             (out.dialect.supportsWindowFunctions()
                                     || !RexOver.containsOver( project.getProjects(), null ))
                                     && !userDefinedFunctionInProject( project )
-                                    && !knnFunctionInProject( project ),
+                                    && !knnFunctionInProject( project )
+                                    && ( out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ) ),
                     Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
 
@@ -432,6 +434,17 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean itemOperatorInProject( Project project ) {
+            CheckingItemOperatorVisitor visitor = new CheckingItemOperatorVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsItemOperator() ) {
                     return true;
                 }
             }
@@ -1062,6 +1075,33 @@ public class JdbcRules {
             SqlOperator operator = call.getOperator();
             if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isKnn() ) {
                 containsKnnFunction |= true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingItemOperatorVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsItemOperator = false;
+
+
+        CheckingItemOperatorVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsItemOperator() {
+            return containsItemOperator;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator instanceof SqlItemOperator ) {
+                containsItemOperator |= true;
             }
             return super.visitCall( call );
         }
