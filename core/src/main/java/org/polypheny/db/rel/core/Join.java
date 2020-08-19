@@ -63,7 +63,7 @@ import org.polypheny.db.util.Util;
 
 /**
  * Relational expression that combines two relational expressions according to some condition.
- * <p>
+ *
  * Each output row has columns from the left and right inputs. The set of output rows is a subset of the cartesian product
  * of the two inputs; precisely which subset depends on the join condition.
  */

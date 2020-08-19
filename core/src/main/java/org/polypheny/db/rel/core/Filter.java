@@ -57,7 +57,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * Relational expression that iterates over its input and returns elements for which
  * <code>condition</code> evaluates to <code>true</code>.
- * <p>
+ *
  * If the condition allows nulls, then a null value is treated the same as false.
  *
  * @see org.polypheny.db.rel.logical.LogicalFilter

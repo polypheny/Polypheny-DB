@@ -327,7 +327,7 @@ public interface RelNode extends RelOptNode, Cloneable {
     String relCompareString();
 
     /**
-     * For optimized trees. Returns whether the involved operators support implementation caching. Defult is true.
+     * For optimized trees. Returns whether the involved operators support implementation caching. Default is true.
      * Only override if you need to set this to false.
      */
     default boolean isImplementationCacheable() {
