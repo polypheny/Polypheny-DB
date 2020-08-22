@@ -131,6 +131,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.catalog.Catalog;
 
 import org.slf4j.Logger;
 
@@ -6288,6 +6289,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < GROUP: "GROUP" >
 |   < GROUPING: "GROUPING" >
 |   < GROUPS: "GROUPS" >
+|   < HASH: "HASH" >
 |   < HAVING: "HAVING" >
 |   < HIERARCHY: "HIERARCHY" >
 |   < HOLD: "HOLD" >
@@ -6448,6 +6450,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PARAMETER_SPECIFIC_SCHEMA: "PARAMETER_SPECIFIC_SCHEMA" >
 |   < PARTIAL: "PARTIAL" >
 |   < PARTITION: "PARTITION" >
+|   < PARTITIONS: "PARTITIONS" >
 |   < PASCAL: "PASCAL" >
 |   < PASSING: "PASSING" >
 |   < PASSTHROUGH: "PASSTHROUGH" >
@@ -6520,6 +6523,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ROLE: "ROLE" >
 |   < ROLLBACK: "ROLLBACK" >
 |   < ROLLUP: "ROLLUP" >
+|   < ROUNDROBIN: "ROUNDROBIN" >
 |   < ROUTINE: "ROUTINE" >
 |   < ROUTINE_CATALOG: "ROUTINE_CATALOG" >
 |   < ROUTINE_NAME: "ROUTINE_NAME" >

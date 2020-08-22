@@ -2571,13 +2571,12 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
+    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
         System.out.println("HENNLO: CatalogImpl: partitionTable: START");
         try {
             CatalogTable old = Objects.requireNonNull(tables.get(tableId));
             System.out.println("HENNLO: CatalogImpl: partitioning for table: " + getTable(tableId) + " has been started");
             System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
-            int numPartitions = 2;
             long partId;
             List<Long> tempPartIds = new ArrayList<>();
             //Calculate how many partitions exist if partitioning is applied.

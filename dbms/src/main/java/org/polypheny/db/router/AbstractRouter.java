@@ -238,11 +238,6 @@ public abstract class AbstractRouter implements Router {
                         //mySchema_testTable_sales_RANGE_100
 
 
-                        //call getPartition with the Value from catalogTable.partitionColumnId
-                        System.out.println("HENNLO AbstractRouter: getPartitionHash(): put on Partition with ID: "
-                                + partHelper.getPartitionHash(catalogTable, "value"));
-                        System.out.println("HENNLO AbstractRouter: getPartitionHash(): put on Partition with ID: "
-                                + partHelper.getPartitionHash(catalogTable, "2"));
 
                         for (CatalogPartition cp : catalog.getPartitions(catalogTable.id)
                         ) {
@@ -309,53 +304,53 @@ public abstract class AbstractRouter implements Router {
                         }
                     }
 
-                    //TODO This is an rather uncharming workaround
-                    //Only seems to work when UPDATE is used.
-                    //CHECK WHERE INSERT IS being processed
-                    if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
-                        int index = 0;
-                        for (String cn : updateColumnList) {
-                            try {
-                                System.out.println("HENNLO AbstractRouter: routeDML(): column: " + cn + " " +
-                                        catalog.getColumn(catalogTable.id, cn).id);
-                                if (catalog.getColumn(catalogTable.id, cn).id == catalogTable.partitionColumnId){
-                                    System.out.println("HENNLO: AbstractRouter: : routeDML(): Found PartitionColumnID Match: '"
-                                            + catalogTable.partitionColumnId +  "' at index: " + index );
+                    if ( catalogTable.isPartitioned ) {
+                        //TODO This is an rather uncharming workaround
+                        //Only seems to work when UPDATE is used.
+                        //CHECK WHERE INSERT IS being processed
+                        if (((LogicalTableModify) node).getOperation() == Operation.UPDATE) {
+                            int index = 0;
+                            for (String cn : updateColumnList) {
+                                try {
+                                    System.out.println("HENNLO AbstractRouter: routeDML(): column: " + cn + " " +
+                                            catalog.getColumn(catalogTable.id, cn).id);
+                                    if (catalog.getColumn(catalogTable.id, cn).id == catalogTable.partitionColumnId) {
+                                        System.out.println("HENNLO: AbstractRouter: : routeDML(): Found PartitionColumnID Match: '"
+                                                + catalogTable.partitionColumnId + "' at index: " + index);
+                                        break;
+                                    }
+                                } catch (GenericCatalogException | UnknownColumnException e) {
+                                    e.printStackTrace();
+                                }
+                                index++;
+                            }
+
+                            System.out.println("HENNLO AbstractRouter: routeDML(): Expression Size: "
+                                    + sourceExpressionList.size() + " found index at " + index);
+
+                            //TODO First find partitionColumnID in updateColumnList, get Index
+                            //TODO and then look for the value at  index in sourceExpressionList
+                            //TODO Is this really the best way to get the value ?
+                            //Only possible if partitionColumn is present in statement
+                            String partitionValue = sourceExpressionList.get(index).toString().replace("'", "");
+                            System.out.println("HENNLO AbstractRouter: routeDML(): value for partitionColumn: " + partitionValue);
+                            System.out.println("HENNLO AbstractRouter: routeDML(): UPDATE value: " + partitionValue + " should be put on partition: "
+                                    + partHelper.getPartitionHash(catalogTable, partitionValue));
+                        } else if (((LogicalTableModify) node).getOperation() == Operation.INSERT) {
+                            int i;
+                            for (i = 0; i < catalogTable.columnIds.size(); i++) {
+                                if (catalogTable.columnIds.get(i) == catalogTable.partitionColumnId) {
+                                    System.out.println("HENNLO: AbstractRouter: : routeDML(): Found PartitionColumnID: '"
+                                            + catalogTable.partitionColumnId + "' at column index: " + i);
                                     break;
                                 }
-                            } catch (GenericCatalogException | UnknownColumnException e) {
-                                e.printStackTrace();
                             }
-                            index++;
+                            //TODO Get the value of partitionColumnId ---  but first find if of partitionColumn inside table
+                            String partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
+                            System.out.println("HENNLO AbstractRouter: routeDML(): INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
+                                    + partHelper.getPartitionHash(catalogTable, partitionValue));
                         }
-
-                        System.out.println("HENNLO AbstractRouter: routeDML(): Expression Size: "
-                                + sourceExpressionList.size() + " found index at " + index);
-
-                        //TODO First find partitionColumnID in updateColumnList, get Index
-                        //TODO and then look for the value at  index in sourceExpressionList
-                        //TODO Is this really the best way to get the value ?
-                        //Only possible if partitionColumn is present in statement
-                        String partitionValue = sourceExpressionList.get(index).toString().replace("'","");
-                        System.out.println("HENNLO AbstractRouter: routeDML(): value for partitionColumn: " + partitionValue);
-                        System.out.println("HENNLO AbstractRouter: routeDML(): UPDATE value: " + partitionValue + " should be put on partition: "
-                                + partHelper.getPartitionHash(catalogTable, partitionValue));
                     }
-                    else if (((LogicalTableModify) node).getOperation() == Operation.INSERT ){
-                        int i;
-                        for (i = 0; i < catalogTable.columnIds.size();i++) {
-                            if ( catalogTable.columnIds.get(i) == catalogTable.partitionColumnId ){
-                                System.out.println("HENNLO: AbstractRouter: : routeDML(): Found PartitionColumnID: '"
-                                        + catalogTable.partitionColumnId +  "' at column index: " + i );
-                                break;
-                            }
-                        }
-                        //TODO Get the value of partitionColumnId ---  but first find if of partitionColumn inside table
-                        String partitionValue = ((LogicalValues)node.getInput( 0 )).tuples.get(0).get(i).toString().replace("'","");
-                        System.out.println("HENNLO AbstractRouter: routeDML(): INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
-                                + partHelper.getPartitionHash(catalogTable, partitionValue));
-                    }
-
 
                     // Build DML
                     TableModify modify;

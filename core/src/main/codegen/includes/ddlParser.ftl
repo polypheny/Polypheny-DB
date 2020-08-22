@@ -262,14 +262,32 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNodeList tableElementList = null;
     SqlNode query = null;
     SqlIdentifier store = null;
+    SqlIdentifier partitionColumn = null;
+    Catalog.PartitionType partitionType = Catalog.PartitionType.NONE;
+    int numPartitions = 0;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     [ <ON> <STORE> store = SimpleIdentifier() ]
+    [ <PARTITION> <BY>
+
+        (
+                <HASH> { partitionType = Catalog.PartitionType.HASH; }
+            |
+                <RANGE> { partitionType = Catalog.PartitionType.RANGE; }
+            |
+                <ROUNDROBIN> { partitionType = Catalog.PartitionType.ROUNDROBIN; }
+        )
+
+        <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
+        (
+            [  <PARTITIONS> numPartitions = UnsignedIntLiteral() ]
+        )
+    ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store);
+        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitions);
     }
 }
 

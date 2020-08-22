@@ -107,6 +107,7 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT ( ADD | DROP ) COLUMN columnName ON STORE storeUniqueName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT '(' columnName [ , columnName ]* ')' ON STORE storeUniqueName 
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT ON STORE storeUniqueName
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName PARTITION BY ( HASH | RANGE | ROUNDROBIN | LIST) '(' columnName ')'
      | ALTER CONFIG key SET value
      | ALTER STORES ADD storeName USING adapterClass WITH config 
      | ALTER STORES DROP storeName
@@ -536,6 +537,7 @@ GRANTED,
 **GROUP**,
 **GROUPING**,
 **GROUPS**,
+**HASH**,
 **HAVING**,
 HIERARCHY,
 **HOLD**,
@@ -602,6 +604,7 @@ LIBRARY,
 **LIKE**,
 **LIKE_REGEX**,
 **LIMIT**,
+**LIST**;
 **LN**,
 **LOCAL**,
 **LOCALTIME**,
@@ -771,6 +774,7 @@ RETURNING,
 ROLE,
 **ROLLBACK**,
 **ROLLUP**,
+**ROUNDROBIN**,
 ROUTINE,
 ROUTINE_CATALOG,
 ROUTINE_NAME,
@@ -2203,6 +2207,7 @@ createTableStatement:
       [ '(' tableElement [, tableElement ]* ')' ]
       [ AS query ]
       [ ON STORE store]
+      [ PARTITION BY ( HASH | RANGE | ROUNDROBIN | LIST ) '(' columnName ')' [PARTITIONS ] ]
 
 createTypeStatement:
       CREATE [ OR REPLACE ] TYPE name AS

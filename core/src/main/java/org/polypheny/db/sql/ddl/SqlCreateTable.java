@@ -106,6 +106,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlNodeList columnList;
     private final SqlNode query;
     private final SqlIdentifier store;
+    private final SqlIdentifier partitionColumn;
+    private final Catalog.PartitionType partitionType;
+    private final int numPartitions;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
@@ -113,12 +116,17 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     /**
      * Creates a SqlCreateTable.
      */
-    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store ) {
+    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, Catalog.PartitionType partitionType , SqlIdentifier partitionColumn, int numPartitions) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
         this.query = query; // for "CREATE TABLE ... AS query"; may be null
         this.store = store; // ON STORE [store name]; may be null
+        this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | ROUNDROBIN | LIST); may be null
+        this.partitionColumn = partitionColumn; // may be null
+        this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
+        System.out.println("----->CREATE TABLE: name "+ name + " columnList " + columnList + " query "+ query +" store "+ store
+                            + " partitionType " + partitionType.toString() + " partitionColumn " +partitionColumn + " numPartitions " + numPartitions);
     }
 
 
@@ -130,6 +138,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        System.out.println(">>>>>>>>> "  + leftPrec + " " + rightPrec );
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );
         if ( ifNotExists ) {
@@ -152,6 +161,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         if ( store != null ) {
             writer.keyword( "ON STORE" );
             store.unparse( writer, 0, 0 );
+        }
+        if ( partitionType != Catalog.PartitionType.NONE ) {
+            writer.keyword( " PARTITION" );
+            writer.keyword( " BY" );
+            SqlWriter.Frame frame = writer.startList( "(", ")" );
+            partitionColumn.unparse(writer, 0,0);
+            writer.endList( frame );
         }
     }
 
@@ -305,9 +321,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
             //Test as if user put in an PartitionType
-            PartitionType partitionType = PartitionType.RANGE;
-
+            //PartitionType partitionType = PartitionType.RANGE;
+            System.out.println(partitionType.toString());
             if ( partitionType != PartitionType.NONE) {
+
+                //Check if specified partitionColumn is even part of the table
+                long partitionColumnID = catalog.getColumn(tableId,partitionColumn.toString()).id;
+
                 //TODO HENNLO Check if table was created with partition
                 //Test partitioning: HARD-CODED
                 //Partition based on the second column in table as partionColumnId
@@ -316,8 +336,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 //TODO Check on which column to create the partition and if it even exists
                 // CHeck if the specified column is even present in specified table nor out of bound
                 // Test createTable will fail since the column ID is out of bound
-                catalog.partitionTable(tableId, partitionType, catalogTable.columnIds.get(0));
-                System.out.println("HENNLO: SqlCreateTable: table: " + catalogTable.name + " has been partitioned");
+                // Get column ID of partitionColumn and check if its even part of the table.
+
+                catalog.partitionTable(tableId, partitionType, partitionColumnID, numPartitions);
+                System.out.println("HENNLO: SqlCreateTable: table: " + catalogTable.name + " has been partitioned on '" + catalogTable.columnIds.get(0) +  "' ");
                 //
 
             }

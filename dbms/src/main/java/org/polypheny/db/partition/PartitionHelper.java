@@ -21,14 +21,13 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 
 //Currently exclusively used to generate hashes to identify on which partition to place
 // a object
 public class PartitionHelper {
 
     //returns the ID of the partition where to place the object
-    public long getPartitionHash(CatalogTable catalogTable, String value){
+    public long getPartitionHash(CatalogTable catalogTable, String columnValue){
 
         //IDEA: mySchema_testTable_sales_RANGE_100
 
@@ -39,7 +38,7 @@ public class PartitionHelper {
 
                 case HASH:
                     partitionKey = catalogTable.getSchemaName() + catalogTable.name + catalogTable
-                                + Catalog.getInstance().getColumn(catalogTable.partitionColumnId).name + catalogTable.partitionType + value;
+                                + Catalog.getInstance().getColumn(catalogTable.partitionColumnId).name + catalogTable.partitionType + columnValue;
                     partitionID = partitionKey.hashCode()*-1 ;
                     break;
 
@@ -49,7 +48,7 @@ public class PartitionHelper {
                 case RANGE:
                     //Same as in HASH
                     partitionKey = catalogTable.getSchemaName() + catalogTable.name + catalogTable
-                            + Catalog.getInstance().getColumn(catalogTable.partitionColumnId).name + catalogTable.partitionType + value;
+                            + Catalog.getInstance().getColumn(catalogTable.partitionColumnId).name + catalogTable.partitionType + columnValue;
                     partitionID = partitionKey.hashCode()*-1 ;
                     break;
 
