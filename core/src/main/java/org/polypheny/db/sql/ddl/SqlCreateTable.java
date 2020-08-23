@@ -58,6 +58,7 @@ import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
@@ -125,8 +126,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | ROUNDROBIN | LIST); may be null
         this.partitionColumn = partitionColumn; // may be null
         this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
-        System.out.println("----->CREATE TABLE: name "+ name + " columnList " + columnList + " query "+ query +" store "+ store
-                            + " partitionType " + partitionType.toString() + " partitionColumn " +partitionColumn + " numPartitions " + numPartitions);
     }
 
 
@@ -138,7 +137,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        System.out.println(">>>>>>>>> "  + leftPrec + " " + rightPrec );
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );
         if ( ifNotExists ) {
@@ -231,9 +229,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 stores = transaction.getRouter().createTable( schemaId, transaction );
             }
 
-            //TODO: HENNLO , creation of tables
-            System.out.println("HENNLO: SqlCreateTable: " + schemaId+ " " + tableName + " executed on Router: " + Catalog.getInstance());
-
 
             long tableId = catalog.addTable(
                     tableName,
@@ -320,31 +315,20 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 store.createTable( context, catalogTable );
             }
 
-            //Test as if user put in an PartitionType
-            //PartitionType partitionType = PartitionType.RANGE;
-            System.out.println(partitionType.toString());
+            //TODO HENNLO Think about adding a new CatalogMethod to partiton table while creating table and not sequentially
             if ( partitionType != PartitionType.NONE) {
-
                 //Check if specified partitionColumn is even part of the table
                 long partitionColumnID = catalog.getColumn(tableId,partitionColumn.toString()).id;
+                System.out.println("HENNLO: SqlCreateTable: execute(): Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
+                        " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID);
 
-                //TODO HENNLO Check if table was created with partition
-                //Test partitioning: HARD-CODED
-                //Partition based on the second column in table as partionColumnId
-                System.out.println("HENNLO: SqlCreateTable: partition for: " + catalogTable.name + " " + catalogTable.id +
-                        " on schema: " + catalogTable.getSchemaName() + " on column: " + catalog.getColumn(catalogTable.columnIds.get(0)));
-                //TODO Check on which column to create the partition and if it even exists
-                // CHeck if the specified column is even present in specified table nor out of bound
-                // Test createTable will fail since the column ID is out of bound
-                // Get column ID of partitionColumn and check if its even part of the table.
 
+                //TODO maybe create partitions multithreaded
                 catalog.partitionTable(tableId, partitionType, partitionColumnID, numPartitions);
-                System.out.println("HENNLO: SqlCreateTable: table: " + catalogTable.name + " has been partitioned on '" + catalogTable.columnIds.get(0) +  "' ");
-                //
 
-            }
-            else{
-                System.out.println("HENNLO: SqlCreateTable: EXCEPTION for partitionType " + partitionType);
+                System.out.println("HENNLO: SqlCreateTable: table: '" + catalogTable.name + "' has been partitioned on columnId '"
+                        + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");
+                //
             }
 
 

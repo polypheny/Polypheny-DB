@@ -107,7 +107,7 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT ( ADD | DROP ) COLUMN columnName ON STORE storeUniqueName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT '(' columnName [ , columnName ]* ')' ON STORE storeUniqueName 
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT ON STORE storeUniqueName
-     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName PARTITION BY ( HASH | RANGE | ROUNDROBIN | LIST) '(' columnName ')'
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName PARTITION BY ( HASH | RANGE | ROUNDROBIN | LIST) '(' columnName ')' [PARTITIONS numPartitions]
      | ALTER CONFIG key SET value
      | ALTER STORES ADD storeName USING adapterClass WITH config 
      | ALTER STORES DROP storeName
@@ -604,7 +604,6 @@ LIBRARY,
 **LIKE**,
 **LIKE_REGEX**,
 **LIMIT**,
-**LIST**;
 **LN**,
 **LOCAL**,
 **LOCALTIME**,
@@ -702,6 +701,7 @@ PARAMETER_SPECIFIC_NAME,
 PARAMETER_SPECIFIC_SCHEMA,
 PARTIAL,
 **PARTITION**,
+**PARTITIONS**,
 PASCAL,
 PASSING,
 PASSTHROUGH,
@@ -2207,7 +2207,7 @@ createTableStatement:
       [ '(' tableElement [, tableElement ]* ')' ]
       [ AS query ]
       [ ON STORE store]
-      [ PARTITION BY ( HASH | RANGE | ROUNDROBIN | LIST ) '(' columnName ')' [PARTITIONS ] ]
+      [ PARTITION BY ( HASH | RANGE | ROUNDROBIN | LIST ) '(' columnName ')' [PARTITIONS numberPartitions] ]
 
 createTypeStatement:
       CREATE [ OR REPLACE ] TYPE name AS

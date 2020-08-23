@@ -104,6 +104,8 @@ public class CatalogImpl extends Catalog {
     //TODO: HENNLO
     private static final AtomicLong partitionIdBuilder = new AtomicLong();
     private static BTreeMap<Long, CatalogPartition> partitions;
+    //private static BTreeMap<Long, Object[]> partitionPlacement; //partionID placed on Store.Table
+    private static HTreeMap<Long, List<CatalogColumnPlacement>> partitionPlacement;
     //
 
     private static final AtomicLong keyIdBuilder = new AtomicLong();
@@ -379,7 +381,7 @@ public class CatalogImpl extends Catalog {
         restoreIdBuilder( indices, indexIdBuilder );
         restoreIdBuilder( stores, storeIdBuilder );
         restoreIdBuilder( foreignKeys, foreignKeyIdBuilder );
-        restoreIdBuilder( partitions, foreignKeyIdBuilder );
+        restoreIdBuilder( partitions, partitionIdBuilder );
 
     }
 
@@ -462,6 +464,8 @@ public class CatalogImpl extends Catalog {
                 .valueSerializer( Serializer.JAVA )
                 .createOrOpen();
         partitions = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        partitionPlacement = db.hashMap( "partitionPlacement", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+
     }
 
 
@@ -1164,7 +1168,7 @@ public class CatalogImpl extends Catalog {
     public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException {
         try {
             long id = tableIdBuilder.getAndIncrement();
-            System.out.println("HENNLO: CatalogImpl: Creating table id: "+ id);
+            System.out.println("HENNLO: CatalogImpl: Creating table with id: "+ id);
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
             CatalogTable table = new CatalogTable(
@@ -1179,7 +1183,6 @@ public class CatalogImpl extends Catalog {
                     definition,
                     null,
                     ImmutableMap.of() );
-            System.out.println("HENNLO: CatalogImpl: Creating table : "+ table);
             synchronized ( this ) {
                 tables.put( id, table );
 
@@ -2532,7 +2535,7 @@ public class CatalogImpl extends Catalog {
 
         try {
             long id = partitionIdBuilder.getAndIncrement();
-            System.out.println("HENNLO: CatalogImpl: Creating partition on: " +  partitionType + " id: "+ id);
+            System.out.println("HENNLO: CatalogImpl: Creating partition on: " +  partitionType + " with  id: "+ id);
             CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
 
@@ -2545,15 +2548,11 @@ public class CatalogImpl extends Catalog {
                         owner.name,
                         0);
 
-            System.out.println("HENNLO: CatalogImpl: Creating Partition : "+ partition);
             synchronized ( this ) {
-                System.out.println("HENNLO: CatalogImpl: before put");
                 partitions.put( id, partition );
-                System.out.println("HENNLO: CatalogImpl: after put");
             }
             //TODO HENNLO Check Listener
             listeners.firePropertyChange( "partition", null, partition );
-            System.out.println("HENNLO: CatalogImpl: after LISTENER");
             return id;
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
@@ -2572,10 +2571,8 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
-        System.out.println("HENNLO: CatalogImpl: partitionTable: START");
         try {
             CatalogTable old = Objects.requireNonNull(tables.get(tableId));
-            System.out.println("HENNLO: CatalogImpl: partitioning for table: " + getTable(tableId) + " has been started");
             System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
             long partId;
             List<Long> tempPartIds = new ArrayList<>();
@@ -2583,13 +2580,11 @@ public class CatalogImpl extends Catalog {
             //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
             System.out.println("HENNLO: CatalogImpl: Creating " + numPartitions + " partitions");
             for (int i = 0; i < numPartitions; i++) {
-                partId = Catalog.getInstance().addPartition(tableId, old.schemaId, old.ownerId, partitionType);
+                partId = addPartition(tableId, old.schemaId, old.ownerId, partitionType);
                 tempPartIds.add(partId);
             }
             //partitionIds = ImmutableList.copyOf(tempPartIds);
-            System.out.println("HENNLO: CatalogImpl: partitioning for table: " + old.name + " has bee finished");
-            System.out.println("HENNLO: CatalogImpl: partitioning for table: " + old.name + " SUMMARY:");
-
+            System.out.println("HENNLO: CatalogImpl: partitioning for table: " + old.name + " has been finished");
 
             CatalogTable table = new CatalogTable(
                     old.id,
@@ -2608,21 +2603,18 @@ public class CatalogImpl extends Catalog {
                     ImmutableList.copyOf(tempPartIds),
                     partitionColumnId);
 
-            System.out.println("HENNLO: CatalogImpl: Updated table " + table.name + " ");
+            System.out.println("HENNLO: CatalogImpl: Updated table '" + table.name + "' ");
 
             synchronized (this) {
                 tables.replace(tableId, table);
                 tableNames.remove(new Object[]{table.databaseId, table.schemaId, old.name});
                 tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
-                System.out.println("HENNLO: CatalogImpl: Replaced table " + table.name + " at ID: " + table.id);
+                tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
             }
-            //Check if all created partitions are correct
-            for (long partition : table.partitionIds) {
-                try {
-                    System.out.println("\t\t" + Catalog.getInstance().getPartition(partition));
-                } catch (UnknownPartitionException e) {
-                    throw new UnknownPartitionException(partition);
-                }
+
+            for (long columnId : table.columnIds) {
+                System.out.println("HENNLO: CatalogImpl: Adding all partitions to ColumnPlacement: '" + columnId + "'");
+                addPartitionsToColumnPlacement(columnId, table.partitionIds);
             }
             listeners.firePropertyChange("table", old, table);
         } catch (NullPointerException e) {
@@ -2635,9 +2627,9 @@ public class CatalogImpl extends Catalog {
     @Override
     public void mergeTable(long tableId) throws UnknownTableException {
 
-        System.out.println("HENNLO: CatalogTable: Merging table: " + getTable(tableId).name + " has bee started");
+        System.out.println("HENNLO: CatalogImpl: Merging table: " + getTable(tableId).name + " has bee started");
 
-        System.out.println("HENNLO: CatalogTable: Merging table: " + getTable(tableId).name + " has bee finished");
+        System.out.println("HENNLO: CatalogImpl: Merging table: " + getTable(tableId).name + " has bee finished");
     }
 
     @Override
@@ -2661,6 +2653,88 @@ public class CatalogImpl extends Catalog {
         }
     }
 
+
+
+
+    /**
+     * Get all partitions residing on this placement
+     *
+     * @param storeId The unique id of the store
+     * @param columnId    The unique id of the column
+     * @return List of CatalogPartitions
+     */
+    @Override
+    public List<CatalogPartition> getPartitionsOnPlacement(long storeId, long columnId) {
+        return null;
+    }
+
+
+
+    /**
+     * Get all partitions residing on this store
+     * Use this to identify the location of your partitions
+     *
+     * @param storeId The unique id of the store
+     * @return List of CatalogPartitions
+     */
+    @Override
+    public  List<CatalogPartition> getPartitionsOnStore(long storeId){
+        return null;
+    }
+
+
+
+    /**
+     * Get placements by partition. Identify the location of partitions, even the store
+     *
+     * @param partitionId The unique id of the partition
+     * @return List of CatalogColumnPlacements
+     */
+    @Override
+    public List<CatalogColumnPlacement> getColumnPlacementsByPartition(long partitionId) throws UnknownPartitionException {
+        return partitionPlacement.get(partitionId);
+    }
+
+
+
+    /**
+     * Get stores by partition. Identify the location of partitions/replicas
+     *
+     * @param partitionId The unique id of the partition
+     * @return List of CatalogColumnPlacements
+     */
+    @Override
+    public List<CatalogStore> getStoresByPartition(long partitionId) throws UnknownPartitionException{
+        return null;
+    }
+
+
+
+    /**
+     * Add partitions to a ColumnPlacement
+     * Needed to later on identify the location of all partitions
+     * 1 - ALL partitions of a table can be placed onto a ColumnPlacement
+     *
+     * @param columnId    The unique id of the column
+     * @param partitionIds List of partitions which the placement should hold
+     * @return List of CatalogPartitions
+     */
+    @Override
+    public void addPartitionsToColumnPlacement(long columnId, List<Long> partitionIds) {
+        List<CatalogColumnPlacement> ccP = getColumnPlacements(columnId);
+        System.out.println("HENNLO AbstractRouter(): Listing all placements for columnId: '" + columnId +"'" );
+        for (CatalogColumnPlacement partitionPlace: ccP) {
+            System.out.println("\t\t\t  " + partitionPlace.storeUniqueName + " "+ partitionPlace.physicalTableName);
+        }
+
+        for ( long partitionId : partitionIds) {
+            System.out.println("HENNLO: CatalogImpl: addPartitionsToColumnPlacement(): Add entry for partition: '"
+                    + partitionId + "' for all occurences of column: '" + columnId +"'" );
+
+            partitionPlacement.put(partitionId, ccP);
+        }
+
+    }
 
 
     // TODO move

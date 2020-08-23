@@ -2612,10 +2612,10 @@ public class Crud implements InformationObserver {
         SqlNode parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( SqlKind.DDL ) ) {
-            System.out.println("HENNLO:  DDL " + sql);
+            System.out.println("HENNLO: CRUD: DDL " + sql);
             signature = sqlProcessor.prepareDdl( parsed );
         } else {
-            System.out.println("HENNLO:  DML " + sql);
+            System.out.println("HENNLO: CRUD: DML " + sql);
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
 
@@ -2633,7 +2633,7 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
-
+        System.out.println("HENNLO: CRUD: executeSqlUpdate(): '" + sqlUpdate + "'");
         PolyphenyDbSignature<?> signature;
         try {
             signature = processQuery( transaction, sqlUpdate, parserConfig );

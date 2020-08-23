@@ -65,6 +65,7 @@ public class SimpleRouter extends AbstractRouter {
                 numOfPlacements = entry.getValue().size();
             }
         }
+        //TODO Do something similar with partitionPlacements
         System.out.println("HENNLO: SimpleRouter selectPlacement: " + table.name);
         // Take the store with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
@@ -87,7 +88,7 @@ public class SimpleRouter extends AbstractRouter {
     // Create table on the first store in the list that supports schema changes
     @Override
     public List<Store> createTable( long schemaId, Transaction transaction ) {
-        System.out.println("HENNLO: SimpleRouter createTable() schemaID: " + schemaId);
+        System.out.println("HENNLO: SimpleRouter createTable() schemaID: " + schemaId );
         Map<String, Store> availableStores = StoreManager.getInstance().getStores();
         for ( Store store : availableStores.values() ) {
             if ( !store.isSchemaReadOnly() ) {
