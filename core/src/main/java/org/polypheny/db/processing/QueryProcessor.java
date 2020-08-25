@@ -17,6 +17,9 @@
 package org.polypheny.db.processing;
 
 
+import java.util.List;
+import java.util.Map;
+import org.apache.calcite.avatica.AvaticaParameter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.RelRoot;
@@ -27,7 +30,9 @@ public interface QueryProcessor {
 
     PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters );
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, Map<String, Object> values );
+
+    List<AvaticaParameter> deriveAvaticaParameters( RelRoot logicalRoot );
 
     RelOptPlanner getPlanner();
 
