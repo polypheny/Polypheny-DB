@@ -19,7 +19,6 @@ package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
@@ -63,7 +62,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -92,35 +90,25 @@ import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.exceptions.ConstraintViolationException;
-import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
-import org.polypheny.db.rel.logical.LogicalCorrelate;
-import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalIntersect;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalMatch;
-import org.polypheny.db.rel.logical.LogicalMinus;
 import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -381,7 +369,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         }
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
-                        if ( ltm.isInsert() ) {
+                        if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
                             final LogicalValues values = (LogicalValues) ltm.getInput( 0 );
                             for ( final Index index : indices ) {
                                 final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( values.tuples.size() );
@@ -404,7 +392,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                 }
                                 transaction.deferIndexUpdate( DeferredIndexUpdate.createInsert( index.getId(), tuplesToInsert ) );
                             }
-                        } else if ( ltm.isDelete() || ltm.isUpdate() ) {
+                        } else if ( ltm.isDelete() || ltm.isUpdate() || ( ltm.isInsert() && !( ltm.getInput() instanceof Values ) ) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
                             final Map<String, Integer> newValueMap = new HashMap<>();
                             final LogicalProject originalProject = ((LogicalProject) ltm.getInput());
@@ -416,6 +404,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     int j = ltm.getUpdateColumnList().indexOf( np.right );
                                     if ( j >= 0 ) {
                                         RexNode newValue = ltm.getSourceExpressionList().get( j );
+                                        for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
+                                            if ( originalProject.getNamedProjects().get( k ).left.equals( newValue ) ) {
+                                                newValueMap.put( np.right, k );
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else if ( ltm.isInsert() ) {
+                                    RelNode input = ltm.getInput();
+                                    int j = input.getRowType().getField( np.right, true, false ).getIndex();
+                                    if ( j >= 0 ) {
+                                        RexNode newValue = rexBuilder.makeInputRef( input, j );
                                         for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
                                             if ( originalProject.getNamedProjects().get( k ).left.equals( newValue ) ) {
                                                 newValueMap.put( np.right, k );
@@ -449,40 +449,33 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                             final Iterator<Object> iterator = enumerable.iterator();
                             final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
                             // Schedule the index deletions
-                            for ( final Index index : indices ) {
-                                if ( ltm.isUpdate() ) {
-                                    // Index not affected by this update, skip
-                                    if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
-                                        continue;
+                            if ( !ltm.isInsert()) {
+                                for ( final Index index : indices ) {
+                                    if ( ltm.isUpdate() ) {
+                                        // Index not affected by this update, skip
+                                        if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                            continue;
+                                        }
                                     }
-                                }
-                                final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
-                                for ( List<Object> row : rows ) {
-                                    final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
-                                    for ( final String column : index.getColumns() ) {
-                                        rowProjection.add( row.get( nameMap.get( column ) ) );
+                                    final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
+                                    for ( List<Object> row : rows ) {
+                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        for ( final String column : index.getColumns() ) {
+                                            rowProjection.add( row.get( nameMap.get( column ) ) );
+                                        }
+                                        rowsToDelete.add( rowProjection );
                                     }
-                                    rowsToDelete.add( rowProjection );
+                                    transaction.deferIndexUpdate( DeferredIndexUpdate.createDelete( index.getId(), rowsToDelete ) );
                                 }
-                                transaction.deferIndexUpdate( DeferredIndexUpdate.createDelete( index.getId(), rowsToDelete ) );
                             }
-                            // TODO(s3lph): These indices should rather be updated when enforcing foreign key constraints by propagating deletes/updates to dependant tables
-//                            for (final Index index : reverseIndices) {
-//                                final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
-//                                for ( List<Object> row : rows ) {
-//                                    final List<Object> rowProjection = new ArrayList<>( index.getTargetColumns().size() );
-//                                    for ( final String column : index.getTargetColumns() ) {
-//                                        rowProjection.add( row.get( nameMap.get( column ) ) );
-//                                    }
-//                                    rowsToDelete.add( rowProjection );
-//                                }
-//                                transaction.deferIndexUpdate( DeferredIndexUpdate.createReverseDelete( index.getId(), rowsToDelete ) );
-//                            }
                             //Schedule the index insertions for UPDATE operations
-                            if ( ltm.isUpdate() ) {
+                            if ( !ltm.isDelete() ) {
                                 for ( final Index index : indices ) {
                                     // Index not affected by this update, skip
-                                    if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                    if ( ltm.isUpdate() && index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                        continue;
+                                    }
+                                    if ( ltm.isInsert() && index.getColumns().stream().noneMatch( ltm.getInput().getRowType().getFieldNames()::contains ) ) {
                                         continue;
                                     }
                                     final Set<Pair<List<Object>, List<Object>>> rowsToReinsert = new HashSet<>( rows.size() );
@@ -539,55 +532,57 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         final CatalogTable table;
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
-
-        if ( root.isInsert() ) {
-            try {
-                table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
-                constraints = new ArrayList<>( catalog.getConstraints( table.id ) );
-                foreignKeys = new ArrayList<>( catalog.getForeignKeys( table.id ) );
-                // Turn primary key into an artificial unique constraint
-                if ( table.primaryKey != null ) {
-                    CatalogPrimaryKey pk = catalog.getPrimaryKey( table.primaryKey );
-                    final CatalogConstraint pkc = new CatalogConstraint(
-                            0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
-                    constraints.add( pkc );
-                }
-            } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
-                e.printStackTrace();
-                return logicalRoot;
+        final List<CatalogForeignKey> exportedKeys;
+        try {
+            table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
+            constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
+            foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
+            exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
+            // Turn primary key into an artificial unique constraint
+            if ( table.primaryKey != null ) {
+                CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+                final CatalogConstraint pkc = new CatalogConstraint(
+                        0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+                constraints.add( pkc );
             }
+        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+            e.printStackTrace();
+            return logicalRoot;
+        }
 
+        RelNode lceRoot = root;
+        if ( root.isInsert() && root.getInput() instanceof Values ) {
+            RelBuilder builder = RelBuilder.create( transaction );
             final Values values = (Values) root.getInput();
-            final RexBuilder builder = root.getCluster().getRexBuilder();
-            RelNode lceRoot = root;
+            final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
                     log.warn( "Unknown constraint type: " + constraint.type );
                     continue;
                 }
 
-                RexNode condition = builder.makeLiteral( false );
+                RexNode condition = rexBuilder.makeLiteral( false );
                 final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
                 final Set<List<Object>> uniqueSet = new HashSet<>();
                 for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
-                    RexNode rowcheck = builder.makeLiteral( true );
+                    RexNode rowcheck = rexBuilder.makeLiteral( true );
                     final List<Object> rowValues = new ArrayList<>();
                     for ( final String column : constraint.key.getColumnNames() ) {
                         final RexLiteral fieldValue = row.get(
                                 values.getRowType().getField( column, false, false ).getIndex()
                         );
                         rowValues.add( fieldValue.getValue() );
-                        RexNode comparison = builder.makeCall(
+                        RexNode comparison = rexBuilder.makeCall(
                                 SqlStdOperatorTable.EQUALS,
-                                builder.makeFieldAccess(
-                                        builder.makeRangeReference( scan ), column, false
+                                rexBuilder.makeFieldAccess(
+                                        rexBuilder.makeRangeReference( scan ), column, false
                                 ),
                                 fieldValue
                         );
-                        rowcheck = builder.makeCall( SqlStdOperatorTable.AND, rowcheck, comparison );
+                        rowcheck = rexBuilder.makeCall( SqlStdOperatorTable.AND, rowcheck, comparison );
                     }
                     uniqueSet.add( rowValues );
-                    condition = builder.makeCall( SqlStdOperatorTable.OR, condition, rowcheck );
+                    condition = rexBuilder.makeCall( SqlStdOperatorTable.OR, condition, rowcheck );
                 }
                 // Validate values in the insert set for uniqueness among each other
                 if ( uniqueSet.size() != values.getTuples().size() ) {
@@ -605,64 +600,112 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 final RelOptSchema relOptSchema = root.getCatalogReader();
                 final RelOptTable relOptTable = relOptSchema.getTableForMember( Collections.singletonList( foreignKey.getReferencedKeyTableName() ) );
                 final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), relOptTable );
-                final Set<List<Object>> uniqueSet = new HashSet<>();
-                RexNode condition = builder.makeLiteral( false );
-                for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
-                    RexNode rowcheck = builder.makeLiteral( true );
-                    final List<Object> rowValues = new ArrayList<>();
-                    for ( int i = 0; i < foreignKey.getColumnNames().size(); ++i ) {
-                        final String column = foreignKey.getColumnNames().get( i );
-                        final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
-                        final RexLiteral fieldValue = row.get(
-                                values.getRowType().getField( column, false, false ).getIndex()
-                        );
-                        rowValues.add( fieldValue.getValue() );
-                        RexNode comparison = builder.makeCall(
-                                SqlStdOperatorTable.EQUALS,
-                                builder.makeFieldAccess(
-                                        builder.makeRangeReference( scan ), referencedColumn, false
-                                ),
-                                fieldValue
-                        );
-                        rowcheck = builder.makeCall( SqlStdOperatorTable.AND, rowcheck, comparison );
-                    }
-                    uniqueSet.add( rowValues );
-                    condition = builder.makeCall( SqlStdOperatorTable.OR, condition, rowcheck );
+                RexNode joinCondition = rexBuilder.makeLiteral( true );
+                builder
+                        .push( values )
+                        .push( scan );
+                for ( int i = 0; i < foreignKey.getColumnNames().size(); ++i ) {
+                    final String column = foreignKey.getColumnNames().get( i );
+                    final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
+                    RexNode joinComparison = rexBuilder.makeCall(
+                            SqlStdOperatorTable.EQUALS,
+                            builder.field( 2, 1, referencedColumn ),
+                            builder.field( 2, 0, column )
+                    );
+                    joinCondition = rexBuilder.makeCall( SqlStdOperatorTable.AND, joinCondition, joinComparison );
                 }
-                final LogicalFilter filter = LogicalFilter.create( scan, condition );
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.GREATER_ZERO, ConstraintViolationException.class, "Foreign key constraint violated" );
-//                lce.setCatalogSchema( schema );
-//                try {
-//                    lce.setCatalogTable( Catalog.getInstance().getTable( foreignKey.referencedKeyTableId ) );
-//                } catch ( UnknownTableException | GenericCatalogException e ) {
-//                    e.printStackTrace();
-//                }
-//                lce.setCatalogColumns( foreignKey.getReferencedKeyColumnNames() );
-//                lce.setValues( uniqueSet );
+
+                final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
+                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1) ) );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class, "Foreign key constraint violated" );
                 lceRoot = lce;
             }
             return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
-        } else if ( root.isDelete() ) {
-            try {
-                table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
-                foreignKeys = Catalog.getInstance().getExportedKeys( table.id );
-            } catch ( UnknownTableException | GenericCatalogException e ) {
-                e.printStackTrace();
-                return logicalRoot;
-            }
-            RelNode lceRoot = root;
+        }
+        if ( root.isUpdate() || ( root.isInsert() && !(root.getInput() instanceof Values) ) ) {
             RelBuilder builder = RelBuilder.create( transaction );
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
-                switch ( foreignKey.deleteRule ) {
+                final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
+                // TODO(s3lph): This makes the assumption that UPDATES are always ... -> Project -> TableModify
+                RelNode input = root.getInput();
+                final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
+                final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
+                final CatalogTable foreignTable;
+                try {
+                    foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
+                } catch ( UnknownTableException | GenericCatalogException e ) {
+                    throw new RuntimeException( e );
+                }
+                builder.push( input );
+                for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
+                    final String columnName = foreignKey.getColumnNames().get( i );
+                    final String foreignColumnName = foreignKey.getReferencedKeyColumnNames().get( i );
+                    final CatalogColumn foreignColumn;
+                    try {
+                        foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
+                    } catch ( GenericCatalogException | UnknownColumnException e ) {
+                        throw new RuntimeException( e );
+                    }
+                    RexNode newValue;
+                    int targetIndex;
+                    if ( root.isUpdate() ) {
+                        targetIndex = root.getUpdateColumnList().indexOf( columnName );
+                        newValue = root.getSourceExpressionList().get( targetIndex );
+                        newValue = new RexShuttle() {
+                            @Override
+                            public RexNode visitFieldAccess( RexFieldAccess fieldAccess ) {
+                                return rexBuilder.makeInputRef( input, input.getRowType().getField( fieldAccess.getField().getName(), true, false ).getIndex() );
+                            }
+                        }.apply( newValue );
+                    } else {
+                        RelNode in = root.getInput();
+                        targetIndex = in.getRowType().getField( columnName, true, false ).getIndex();
+                        newValue = rexBuilder.makeInputRef( in, targetIndex );
+                    }
+                    System.err.println(newValue);
+                    RexNode foreignValue = rexBuilder.makeInputRef( foreignColumn.getRelDataType( rexBuilder.getTypeFactory() ) , targetIndex );
+                    projects.add( newValue );
+                    foreignProjects.add( foreignValue );
+                }
+                builder
+                    .project( projects )
+                        .scan( foreignKey.getReferencedKeyTableName() )
+                    .project( foreignProjects );
+                RexNode condition = rexBuilder.makeLiteral( true );
+                for ( int i = 0; i < projects.size(); ++i) {
+                    condition = builder.and(
+                            condition,
+                            builder.equals(
+                                    builder.field( 2, 0, i ),
+                                    builder.field( 2, 1, i )
+                            )
+                    );
+                }
+                final RelNode join = builder.join( JoinRelType.LEFT, condition ).build();
+                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                        String.format("Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
+                                foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ));
+                lceRoot = lce;
+            }
+            if ( root.isInsert() ) {
+                return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+            }
+        }
+        if ( root.isDelete() || root.isUpdate() ) {
+            RelBuilder builder = RelBuilder.create( transaction );
+            for ( final CatalogForeignKey foreignKey : exportedKeys ) {
+                final String constraintRule = root.isDelete() ? "ON DELETE " + foreignKey.deleteRule : "ON UPDATE " + foreignKey.updateRule;
+                switch ( root.isDelete() ? foreignKey.deleteRule : foreignKey.updateRule ) {
                     case RESTRICT:
                         break;
                     case CASCADE:
                     case SET_NULL:
                     case SET_DEFAULT:
                     default:
-                        throw new NotImplementedException( String.format( "The foreign key option ON DELETE %s is not yet implemented.", foreignKey.deleteRule.name() ) );
+                        throw new NotImplementedException( String.format( "The foreign key option %s is not yet implemented.", constraintRule ) );
                 }
-                // TODO(s3lph): This makes the assumption that DELETES always are TableScan -> Filter -> Project -> TableModify
+                // TODO(s3lph): This makes the assumption that DELETE/UPDATE conditions always are TableScan -> Filter -> Project -> TableModify
                 LogicalFilter filter = (LogicalFilter) builder.scan( foreignKey.getReferencedKeyTableName() ).filter( ((LogicalFilter) ((LogicalProject) root.getInput()).getInput()).getCondition() ).build();
 //                LogicalFilter filter = (LogicalFilter) ((LogicalProject) root.getInput()).getInput();
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
@@ -673,7 +716,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 } catch ( UnknownTableException | GenericCatalogException e ) {
                     throw new RuntimeException( e );
                 }
-                RexNode condition = rexBuilder.makeLiteral( true );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
@@ -688,28 +730,27 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                     final RexNode foreignInputRef = new RexInputRef( foreignColumn.position - 1, rexBuilder.getTypeFactory().createPolyType( foreignColumn.type ) );
                     projects.add( inputRef );
                     foreignProjects.add( foreignInputRef );
-                    RexNode comparison = rexBuilder.makeCall( SqlStdOperatorTable.EQUALS,
-                            new RexInputRef( i, root.getRowType() ),
-                            new RexInputRef( i, root.getRowType() )
-                    );
-                    condition = rexBuilder.makeCall( SqlStdOperatorTable.AND, condition, comparison );
                 }
-                final RelNode check = builder
-                                .push( filter )
-                            .project( projects )
-                                .scan( foreignKey.getTableName() )
-                            .project( foreignProjects )
-                        .join( JoinRelType.INNER, condition )
-                        .build();
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class, "ON DELETE RESTRICT" );
-//                try {
-//                    lce.setCatalogSchema( Catalog.getInstance().getSchema( foreignTable.schemaId ) );
-//                } catch ( UnknownSchemaException e ) {
-//                    throw new RuntimeException( e );
-//                }
-//                lce.setCatalogTable( table );
-//                lce.setCatalogColumns( foreignKey.getColumnNames() );
-//                lce.setValues( new HashSet<>(  ) );
+                builder
+                        .push( filter )
+                    .project( projects )
+                        .scan( foreignKey.getTableName() )
+                    .project( foreignProjects );
+                RexNode condition = rexBuilder.makeLiteral( true );
+                for ( int i = 0; i < projects.size(); ++i ) {
+                    condition = builder.and(
+                            condition,
+                            builder.equals(
+                                    builder.field( 2, 0, i ),
+                                    builder.field( 2, 1, i )
+                            )
+                    );
+                }
+                final RelNode join = builder.join( JoinRelType.INNER, condition ).build();
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( join, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                        String.format("%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
+                                root.isUpdate() ? "Update" : "Delete",
+                                foreignKey.name, foreignTable.name, foreignKey.getColumnNames(), table.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ));
                 lceRoot = lce;
             }
             return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );

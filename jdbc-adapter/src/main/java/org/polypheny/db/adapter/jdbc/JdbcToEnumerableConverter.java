@@ -215,7 +215,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                                     DataContext.ROOT ) );
 
             enumerable = builder0.append(
-                    "enumerable",
+                    "enumerable" + System.nanoTime(),
                     Expressions.call(
                             RESULT_SET_ENUMERABLE_OF_PREPARED_METHOD,
                             Expressions.call(
@@ -227,7 +227,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                             preparedStatementConsumer_ ) );
         } else {
             enumerable = builder0.append(
-                    "enumerable",
+                    "enumerable" + System.nanoTime(),
                     Expressions.call(
                             RESULT_SET_ENUMERABLE_OF_METHOD,
                             Expressions.call(
