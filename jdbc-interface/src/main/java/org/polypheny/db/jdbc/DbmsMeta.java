@@ -875,7 +875,7 @@ public class DbmsMeta implements ProtobufMeta {
             }
 
             prepare( connection, h, statement.getPreparedQuery(), values );
-            updateCounts[i++] = execute( h, connection, statement, -1 ).size(); // TODO !!!!!!!!!!!
+            updateCounts[i++] = execute( h, connection, statement, -1 ).size();
         }
         return new ExecuteBatchResult( updateCounts );
     }
@@ -959,38 +959,6 @@ public class DbmsMeta implements ProtobufMeta {
         statement.setSignature( signature );
 
         return h;
-    }
-
-
-    private void prepare( PolyphenyDbConnectionHandle connectionHandle, StatementHandle h, String sql, Map<String, Object> parameterValues ) throws NoSuchStatementException {
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
-        Transaction transaction = connectionHandle.getCurrentOrCreateNewTransaction();
-        transaction.resetQueryProcessor();
-        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
-
-        SqlNode parsed = sqlProcessor.parse( sql );
-
-        PolyphenyDbSignature signature;
-        if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( parsed );
-        } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
-            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
-
-            // Prepare
-            signature = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues );
-        }
-
-        PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
-        h.signature = signature;
-        statement.setSignature( signature );
     }
 
 
@@ -1201,6 +1169,38 @@ public class DbmsMeta implements ProtobufMeta {
 
         prepare( connection, h, statement.getPreparedQuery(), values );
         return new ExecuteResult( execute( h, connection, statement, maxRowsInFirstFrame ) );
+    }
+
+
+    private void prepare( PolyphenyDbConnectionHandle connectionHandle, StatementHandle h, String sql, Map<String, Object> parameterValues ) throws NoSuchStatementException {
+        // Parser Config
+        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
+        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
+        SqlParserConfig parserConfig = configConfigBuilder.build();
+
+        Transaction transaction = connectionHandle.getCurrentOrCreateNewTransaction();
+        transaction.resetQueryProcessor();
+        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+
+        SqlNode parsed = sqlProcessor.parse( sql );
+
+        PolyphenyDbSignature signature;
+        if ( parsed.isA( SqlKind.DDL ) ) {
+            signature = sqlProcessor.prepareDdl( parsed );
+        } else {
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
+
+            // Prepare
+            signature = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues );
+        }
+
+        PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
+        h.signature = signature;
+        statement.setSignature( signature );
     }
 
 
