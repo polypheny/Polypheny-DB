@@ -77,6 +77,9 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnOldName );
         try {
             Catalog.getInstance().renameColumn( catalogColumn.id, columnNewName.getSimple() );
+
+            // Rest plan cache and implementation cache (not sure if required in this case)
+            transaction.getQueryProcessor().resetCaches();
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

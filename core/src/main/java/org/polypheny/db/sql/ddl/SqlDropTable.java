@@ -186,6 +186,9 @@ public class SqlDropTable extends SqlDropObject {
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping the table.", e );
         }
+
+        // Rest plan cache and implementation cache
+        transaction.getQueryProcessor().resetCaches();
     }
 }
 

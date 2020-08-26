@@ -209,6 +209,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                         null ); // Will be set later
                 StoreManager.getInstance().getStore( store.getStoreId() ).addColumn( context, catalogTable, addedColumn );
             }
+
+            // Rest plan cache and implementation cache (not sure if required in this case)
+            transaction.getQueryProcessor().resetCaches();
         } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
             if ( columnId != null ) {
                 try {

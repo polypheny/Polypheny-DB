@@ -36,4 +36,6 @@ public interface QueryProcessor {
 
     RelOptPlanner getPlanner();
 
+    void resetCaches();
+
 }

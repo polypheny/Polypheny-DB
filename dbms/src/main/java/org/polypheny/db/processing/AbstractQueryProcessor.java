@@ -732,4 +732,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         }
 
     }
+
+
+    @Override
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
+    }
 }
