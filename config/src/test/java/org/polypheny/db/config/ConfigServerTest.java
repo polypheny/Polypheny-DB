@@ -84,10 +84,10 @@ public class ConfigServerTest {
         Config clazzList = new ConfigClazzList( "clazz_list", TestClass.class, Arrays.asList( FooImplementation.class, BarImplementation.class ) ).withUi( "g2", 3 );
         cm.registerConfig( clazzList );
 
-        Config enum1 = new ConfigEnum( "enum",  TestEnum .class, TestEnum.A ).withUi( "g2", 4 );
+        Config enum1 = new ConfigEnum( "enum", "Test description", TestEnum.class, TestEnum.A ).withUi( "g2", 4 );
         cm.registerConfig( enum1 );
 
-        Config enumList = new ConfigEnumList( "enumList", TestEnum.class, Arrays.asList( TestEnum.A, TestEnum.B )).withUi( "g2", 5 );
+        Config enumList = new ConfigEnumList( "enumList", "Test description", TestEnum.class, Arrays.asList( TestEnum.A, TestEnum.B ) ).withUi( "g2", 5 );
         cm.registerConfig( enumList );
 
         Config c10 = new ConfigInteger( "max_execution_time", 30 ).withUi( "g3" );

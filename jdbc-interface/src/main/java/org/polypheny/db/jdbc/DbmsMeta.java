@@ -945,9 +945,10 @@ public class DbmsMeta implements ProtobufMeta {
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot );
+            signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType );
         }
 
         // Build response

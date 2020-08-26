@@ -78,6 +78,16 @@ public class CassandraLimit extends SingleRel implements CassandraRel {
 
 
     @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (getConvention() != null ? getConvention().getName() : "") + "$" +
+                (offset != null ? offset.hashCode() + "$" : "") +
+                (fetch != null ? fetch.hashCode() : "") + "&";
+    }
+
+
+    @Override
     public void implement( CassandraImplementContext context ) {
         context.visitChild( 0, getInput() );
         if ( offset != null ) {

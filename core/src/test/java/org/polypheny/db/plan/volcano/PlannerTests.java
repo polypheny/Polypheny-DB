@@ -100,8 +100,7 @@ class PlannerTests {
 
 
         @Override
-        public RelOptCost computeSelfCost( RelOptPlanner planner,
-                RelMetadataQuery mq ) {
+        public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
             return planner.getCostFactory().makeInfiniteCost();
         }
 
@@ -118,6 +117,12 @@ class PlannerTests {
         @Override
         public RelWriter explainTerms( RelWriter pw ) {
             return super.explainTerms( pw ).item( "label", label );
+        }
+
+
+        @Override
+        public String relCompareString() {
+            return this.getClass().getSimpleName() + "$" + label + "&";
         }
     }
 
@@ -141,6 +146,12 @@ class PlannerTests {
         @Override
         protected RelDataType deriveRowType() {
             return getInput().getRowType();
+        }
+
+
+        @Override
+        public String relCompareString() {
+            return this.getClass().getSimpleName() + "$" + input.relCompareString() + "&";
         }
     }
 

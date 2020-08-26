@@ -254,7 +254,7 @@ public abstract class AbstractRelNode implements RelNode {
 
 
     @Override
-    public Set<CorrelationId> getVariablesSet() {
+    public ImmutableSet<CorrelationId> getVariablesSet() {
         return ImmutableSet.of();
     }
 

@@ -34,4 +34,5 @@ public interface SqlProcessor {
 
     PolyphenyDbSignature<?> prepareDdl( SqlNode parsed );
 
+    RelDataType getParameterRowType( SqlNode left );
 }

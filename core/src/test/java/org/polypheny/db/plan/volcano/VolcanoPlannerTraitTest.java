@@ -394,6 +394,12 @@ public class VolcanoPlannerTraitTest {
         public RelWriter explainTerms( RelWriter pw ) {
             return super.explainTerms( pw ).item( "label", label );
         }
+
+
+        @Override
+        public String relCompareString() {
+            return this.getClass().getSimpleName() + "$" + label + "&";
+        }
     }
 
 
@@ -458,6 +464,12 @@ public class VolcanoPlannerTraitTest {
         }
 
         // TODO: SWZ Implement clone?
+
+
+        @Override
+        public String relCompareString() {
+            return this.getClass().getSimpleName() + "$" + input.relCompareString() + "&";
+        }
     }
 
 

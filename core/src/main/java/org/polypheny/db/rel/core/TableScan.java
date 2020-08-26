@@ -178,4 +178,11 @@ public abstract class TableScan extends AbstractRelNode {
     public RelNode accept( RelShuttle shuttle ) {
         return shuttle.visit( this );
     }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                String.join( ".", table.getQualifiedName() ) + "&";
+    }
 }

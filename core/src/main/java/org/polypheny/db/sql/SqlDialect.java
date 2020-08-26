@@ -56,7 +56,6 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.rel.type.RelDataTypeSystemImpl;
 import org.polypheny.db.sql.dialect.JethroDataSqlDialect;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlBuilder;

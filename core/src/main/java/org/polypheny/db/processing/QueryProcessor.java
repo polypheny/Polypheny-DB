@@ -20,11 +20,14 @@ package org.polypheny.db.processing;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.type.RelDataType;
 
 
 public interface QueryProcessor {
 
     PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
+
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters );
 
     RelOptPlanner getPlanner();
 

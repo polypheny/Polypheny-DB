@@ -82,5 +82,11 @@ public final class LogicalDelta extends Delta {
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         return new LogicalDelta( getCluster(), traitSet, AbstractRelNode.sole( inputs ) );
     }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" + input.relCompareString() + "&";
+    }
 }
 

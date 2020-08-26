@@ -38,9 +38,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
@@ -210,6 +213,20 @@ public final class MultiJoin extends AbstractRelNode {
                 projFields,
                 joinFieldRefCountsMap,
                 postJoinFilter );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return "MultiJoin$" +
+                inputs.stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
+                (joinFilter != null ? joinFilter.hashCode() : "") + "$" +
+                rowType.toString() + "$" +
+                isFullOuterJoin + "$" +
+                (outerJoinConditions != null ? outerJoinConditions.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (joinTypes != null ? joinTypes.stream().map( t -> Arrays.toString( JoinRelType.values() ) ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (projFields != null ? projFields.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
+                (postJoinFilter != null ? postJoinFilter.hashCode() : "") + "&";
     }
 
 

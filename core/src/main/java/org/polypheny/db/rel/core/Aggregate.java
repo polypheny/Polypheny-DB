@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -429,6 +430,16 @@ public abstract class Aggregate extends SingleRel {
      */
     public Group getGroupType() {
         return Group.induce( groupSet, groupSets );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (groupSet != null ? groupSet.toString() : "") + "$" +
+                (groupSets != null ? groupSets.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
+                indicator + "&";
     }
 
 

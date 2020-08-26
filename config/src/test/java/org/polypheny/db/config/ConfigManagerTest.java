@@ -132,7 +132,7 @@ public class ConfigManagerTest implements ConfigListener {
 
     @Test
     public void configEnum() {
-        Config c = new ConfigEnum( "enum", testEnum.class, testEnum.FOO );
+        Config c = new ConfigEnum( "enum", "Test description", testEnum.class, testEnum.FOO );
         cm.registerConfig( c );
         ConfigObserver o = new ConfigObserver();
         cm.getConfig( "enum" ).addObserver( o );
@@ -156,7 +156,7 @@ public class ConfigManagerTest implements ConfigListener {
 
     @Test
     public void configEnumList() {
-        Config c = new ConfigEnumList( "enumList", testEnum.class, ImmutableList.of( testEnum.BAR ) );
+        Config c = new ConfigEnumList( "enumList", "Test description", testEnum.class, ImmutableList.of( testEnum.BAR ) );
         cm.registerConfig( c );
         ConfigObserver o = new ConfigObserver();
         cm.getConfig( "enumList" ).addObserver( o );
@@ -346,13 +346,13 @@ public class ConfigManagerTest implements ConfigListener {
         Assert.assertEquals( c.getLong(), Integer.MAX_VALUE + 9999999L );
 
         // Check if it works for Enum values
-        c = new ConfigEnum( "test.junit.enum", testEnum.class, testEnum.FOO_BAR );
+        c = new ConfigEnum( "test.junit.enum", "Test description", testEnum.class, testEnum.FOO_BAR );
         Assert.assertEquals( c.getEnum(), testEnum.FOO_BAR );
         cm.registerConfig( c );
         Assert.assertEquals( c.getEnum(), testEnum.FOO );
 
         // Check if it works for Enum Lists
-        c = new ConfigEnumList( "test.junit.enumList", testEnum.class, ImmutableList.of( testEnum.FOO_BAR ) );
+        c = new ConfigEnumList( "test.junit.enumList", "Test description", testEnum.class, ImmutableList.of( testEnum.FOO_BAR ) );
         Assert.assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO_BAR ) );
         cm.registerConfig( c );
         Assert.assertEquals( c.getEnumList(), ImmutableList.of( testEnum.FOO, testEnum.BAR ) );

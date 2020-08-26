@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollation;
@@ -239,6 +240,25 @@ public abstract class Match extends SingleRel {
                 .item( "subsets", getSubsets().values().asList() )
                 .item( "patternDefinitions", getPatternDefinitions().values().asList() )
                 .item( "inputFields", getInput().getRowType().getFieldNames() );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                rowType.toString() + "$" +
+                (pattern != null ? pattern.hashCode() : "") + "$" +
+                strictStart + "$" +
+                strictEnd + "$" +
+                (patternDefinitions != null ? patternDefinitions.values().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (measures != null ? measures.values().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (after != null ? after.hashCode() : "") + "$" +
+                (subsets != null ? String.join( "$", subsets.keySet() ) : "") + "$" +
+                (subsets != null ? subsets.values().stream().map( s -> String.join( "$", s ) ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                allRows + "$" +
+                (partitionKeys != null ? partitionKeys.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (interval != null ? interval.hashCode() : "") + "&";
     }
 
 

@@ -322,6 +322,23 @@ public interface RelNode extends RelOptNode, Cloneable {
     RelNode accept( RexShuttle shuttle );
 
     /**
+     * Returns a string which allows to compare rel plans.
+     */
+    String relCompareString();
+
+    /**
+     * For optimized trees. Returns whether the involved operators support implementation caching. Default is true.
+     * Only override if you need to set this to false.
+     */
+    default boolean isImplementationCacheable() {
+        boolean isCacheable = true;
+        for ( RelNode child : getInputs() ) {
+            isCacheable &= child.isImplementationCacheable();
+        }
+        return isCacheable;
+    }
+
+    /**
      * Context of a relational expression, for purposes of checking validity.
      */
     interface Context {

@@ -88,5 +88,11 @@ public abstract class ConverterImpl extends SingleRel implements Converter {
         return traitDef;
     }
 
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" + input.relCompareString() + "&";
+    }
+
 }
 
