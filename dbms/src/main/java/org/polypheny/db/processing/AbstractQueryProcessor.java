@@ -590,6 +590,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
                 final LogicalFilter filter = LogicalFilter.create( scan, condition );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( filter, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class, "UNIQUE constraint violated" );
+                lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCatalogSchema( schema );
                 lce.setCatalogTable( table );
                 lce.setCatalogColumns( constraint.key.getColumnNames() );
@@ -618,6 +619,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
                 final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class, "Foreign key constraint violated" );
+                lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
                 lceRoot = lce;
             }
             return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
@@ -686,6 +688,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format("Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ));
+                lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
                 lceRoot = lce;
             }
             if ( root.isInsert() ) {
@@ -751,6 +754,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         String.format("%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 root.isUpdate() ? "Update" : "Delete",
                                 foreignKey.name, foreignTable.name, foreignKey.getColumnNames(), table.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ));
+                lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", foreignTable.name, foreignKey.name ) );
                 lceRoot = lce;
             }
             return new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
@@ -788,7 +792,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     c = index.containsAny( lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
                                     break;
                             }
-                            return LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c, visited.getExceptionClass(), visited.getExceptionMessage() );
+                            final LogicalConditionalExecute simplified =
+                                    LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c, visited.getExceptionClass(), visited.getExceptionMessage() );
+                            simplified.setCheckDescription( lce.getCheckDescription() );
                         }
                     }
                     return super.visit( node );

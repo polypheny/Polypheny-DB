@@ -81,6 +81,7 @@ public class EnumerableConditionalExecute extends ConditionalExecute implements 
     @Override
     public EnumerableConditionalExecute copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         final EnumerableConditionalExecute ece = new EnumerableConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition, exceptionClass, exceptionMessage );
+        ece.setCheckDescription( checkDescription );
         ece.setCatalogSchema( catalogSchema );
         ece.setCatalogTable( catalogTable );
         ece.setCatalogColumns( catalogColumns );

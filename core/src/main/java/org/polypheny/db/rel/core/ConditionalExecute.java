@@ -34,6 +34,9 @@ import org.polypheny.db.rel.type.RelDataType;
 public abstract class ConditionalExecute extends BiRel {
 
     @Getter
+    @Setter
+    protected String checkDescription;
+    @Getter
     protected Condition condition;
     @Getter
     protected Class<? extends Exception> exceptionClass;
@@ -70,6 +73,7 @@ public abstract class ConditionalExecute extends BiRel {
 
     @Override
     public void explain( RelWriter pw ) {
+        pw.item( "description", checkDescription == null ? "null" : checkDescription );
         pw.item( "condition", condition == null ? "null" : condition );
         pw.item( "schema", catalogSchema == null ? "null" : catalogSchema.name );
         pw.item( "table", catalogTable == null ? "null" : catalogTable.name );

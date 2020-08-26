@@ -21,7 +21,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
-import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 
@@ -42,6 +41,7 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         final RelNode input = RelOptRule.convert( lce.getLeft(), lce.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final RelNode action = RelOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final EnumerableConditionalExecute ece =  EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
+        ece.setCheckDescription( lce.getCheckDescription() );
         ece.setCatalogSchema( lce.getCatalogSchema() );
         ece.setCatalogTable( lce.getCatalogTable() );
         ece.setCatalogColumns( lce.getCatalogColumns() );

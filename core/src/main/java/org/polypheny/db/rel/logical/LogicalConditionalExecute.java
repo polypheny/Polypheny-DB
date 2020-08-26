@@ -37,7 +37,12 @@ public class LogicalConditionalExecute extends ConditionalExecute {
 
 
     public static LogicalConditionalExecute create( RelNode left, RelNode right, LogicalConditionalExecute copy ) {
+        return create( left, right, copy, copy.getCheckDescription() );
+    }
+
+    public static LogicalConditionalExecute create( RelNode left, RelNode right, LogicalConditionalExecute copy, String description ) {
         final LogicalConditionalExecute lce = new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, copy.condition, copy.exceptionClass, copy.exceptionMessage );
+        lce.checkDescription = description;
         lce.catalogSchema = copy.catalogSchema;
         lce.catalogTable = copy.catalogTable;
         lce.catalogColumns = copy.catalogColumns;
@@ -49,6 +54,7 @@ public class LogicalConditionalExecute extends ConditionalExecute {
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         final LogicalConditionalExecute lce =  new LogicalConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition, exceptionClass, exceptionMessage );
+        lce.setCheckDescription( checkDescription );
         lce.setCatalogSchema( catalogSchema );
         lce.setCatalogTable( catalogTable );
         lce.setCatalogColumns( catalogColumns );
