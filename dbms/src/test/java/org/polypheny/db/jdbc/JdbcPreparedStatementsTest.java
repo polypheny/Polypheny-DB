@@ -1,0 +1,308 @@
+/*
+ * Copyright 2019-2020 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.jdbc;
+
+import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import org.apache.calcite.avatica.SqlType;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
+
+public class JdbcPreparedStatementsTest {
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    private final static String SCHEMA_SQL = "CREATE TABLE pstest( "
+            + "tbigint BIGINT NULL, "
+            + "tboolean BOOLEAN NULL, "
+            + "tdate DATE NULL, "
+            + "tdecimal DECIMAL(5,2) NULL, "
+            + "tdouble DOUBLE NULL, "
+            + "tinteger INTEGER NOT NULL, "
+            + "treal REAL NULL, "
+            + "tsmallint SMALLINT NULL, "
+            + "ttime TIME NULL, "
+            + "ttimestamp TIMESTAMP NULL, "
+            + "ttinyint TINYINT NULL, "
+            + "tvarchar VARCHAR(20) NOT NULL, "
+            + "PRIMARY KEY (tinteger) )";
+
+    private final static Object[] TEST_DATA = new Object[]{
+            1234L,
+            true,
+            Date.valueOf( "2020-07-03" ),
+            new BigDecimal( "123.45" ),
+            1.999999,
+            9876,
+            0.3333f,
+            (short) 45,
+            Time.valueOf( "11:59:32" ),
+            Timestamp.valueOf( "2021-01-01 10:11:15" ),
+            (byte) 22,
+            "hallo" };
+
+
+    @BeforeClass
+    public static void start() {
+        // Ensures that Polypheny-DB is running
+        //noinspection ResultOfMethodCallIgnored
+        TestHelper.getInstance();
+    }
+
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    @Test
+    public void basicTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
+
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.setString( 2, "Foo" );
+                preparedInsert.execute();
+
+                preparedInsert.setInt( 1, 2 );
+                preparedInsert.setString( 2, "Bar" );
+                preparedInsert.execute();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest WHERE tinteger = ?" );
+                preparedSelect.setInt( 1, 1 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( new Object[]{ 1, "Foo" } ) );
+
+                connection.commit();
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    @Test
+    public void batchInsertTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?, ?)" );
+
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.setString( 2, "Foo" );
+                preparedInsert.addBatch();
+
+                preparedInsert.setInt( 1, 2 );
+                preparedInsert.setString( 2, "Bar" );
+                preparedInsert.addBatch();
+
+                preparedInsert.executeBatch();
+                connection.commit();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest WHERE tinteger >= ?" );
+                preparedSelect.setInt( 1, 1 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of(
+                                new Object[]{ 1, "Foo" },
+                                new Object[]{ 2, "Bar" } ) );
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    @Test
+    public void dataTypesTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                PreparedStatement preparedInsert = connection.prepareStatement(
+                        "INSERT INTO pstest VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" );
+
+                preparedInsert.setLong( 1, (long) TEST_DATA[0] );
+                preparedInsert.setBoolean( 2, (boolean) TEST_DATA[1] );
+                preparedInsert.setDate( 3, (Date) TEST_DATA[2] );
+                preparedInsert.setBigDecimal( 4, (BigDecimal) TEST_DATA[3] );
+                preparedInsert.setDouble( 5, (double) TEST_DATA[4] );
+                preparedInsert.setInt( 6, (int) TEST_DATA[5] );
+                preparedInsert.setFloat( 7, (float) TEST_DATA[6] );
+                preparedInsert.setShort( 8, (short) TEST_DATA[7] );
+                preparedInsert.setTime( 9, (Time) TEST_DATA[8] );
+                preparedInsert.setTimestamp( 10, (Timestamp) TEST_DATA[9] );
+                preparedInsert.setByte( 11, (byte) TEST_DATA[10] );
+                preparedInsert.setString( 12, (String) TEST_DATA[11] );
+                preparedInsert.execute();
+
+                connection.commit();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( ""
+                        + "SELECT * FROM pstest WHERE "
+                        + "tbigint = ? AND "
+                        + "tboolean = ? AND "
+                        + "tdate = ? AND "
+                        + "tdecimal = ? AND "
+                        + "tdouble = ? AND "
+                        + "tinteger = ? AND "
+                        + "treal = ? AND "
+                        + "tsmallint = ? AND "
+                        + "ttime = ? AND "
+                        + "ttimestamp = ? AND "
+                        + "ttinyint = ? AND "
+                        + "tvarchar = ?" );
+                preparedSelect.setLong( 1, (long) TEST_DATA[0] );
+                preparedSelect.setBoolean( 2, (boolean) TEST_DATA[1] );
+                preparedSelect.setDate( 3, (Date) TEST_DATA[2] );
+                preparedSelect.setBigDecimal( 4, (BigDecimal) TEST_DATA[3] );
+                preparedSelect.setDouble( 5, (double) TEST_DATA[4] );
+                preparedSelect.setInt( 6, (int) TEST_DATA[5] );
+                preparedSelect.setFloat( 7, (float) TEST_DATA[6] );
+                preparedSelect.setShort( 8, (short) TEST_DATA[7] );
+                preparedSelect.setTime( 9, (Time) TEST_DATA[8] );
+                preparedSelect.setTimestamp( 10, (Timestamp) TEST_DATA[9] );
+                preparedSelect.setByte( 11, (byte) TEST_DATA[10] );
+                preparedSelect.setString( 12, (String) TEST_DATA[11] );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( TEST_DATA ) );
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    @Test
+    public void batchDataTypesTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                PreparedStatement preparedInsert = connection.prepareStatement(
+                        "INSERT INTO pstest VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" );
+
+                preparedInsert.setLong( 1, (long) TEST_DATA[0] );
+                preparedInsert.setBoolean( 2, (boolean) TEST_DATA[1] );
+                preparedInsert.setDate( 3, (Date) TEST_DATA[2] );
+                preparedInsert.setBigDecimal( 4, (BigDecimal) TEST_DATA[3] );
+                preparedInsert.setDouble( 5, (double) TEST_DATA[4] );
+                preparedInsert.setInt( 6, (int) TEST_DATA[5] );
+                preparedInsert.setFloat( 7, (float) TEST_DATA[6] );
+                preparedInsert.setShort( 8, (short) TEST_DATA[7] );
+                preparedInsert.setTime( 9, (Time) TEST_DATA[8] );
+                preparedInsert.setTimestamp( 10, (Timestamp) TEST_DATA[9] );
+                preparedInsert.setByte( 11, (byte) TEST_DATA[10] );
+                preparedInsert.setString( 12, (String) TEST_DATA[11] );
+                preparedInsert.addBatch();
+
+                preparedInsert.executeBatch();
+                connection.commit();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( ""
+                        + "SELECT * FROM pstest WHERE "
+                        + "tbigint = ? AND "
+                        + "tboolean = ? AND "
+                        + "tdate = ? AND "
+                        + "tdecimal = ? AND "
+                        + "tdouble = ? AND "
+                        + "tinteger = ? AND "
+                        + "treal = ? AND "
+                        + "tsmallint = ? AND "
+                        + "ttime = ? AND "
+                        + "ttimestamp = ? AND "
+                        + "ttinyint = ? AND "
+                        + "tvarchar = ?" );
+                preparedSelect.setLong( 1, (long) TEST_DATA[0] );
+                preparedSelect.setBoolean( 2, (boolean) TEST_DATA[1] );
+                preparedSelect.setDate( 3, (Date) TEST_DATA[2] );
+                preparedSelect.setBigDecimal( 4, (BigDecimal) TEST_DATA[3] );
+                preparedSelect.setDouble( 5, (double) TEST_DATA[4] );
+                preparedSelect.setInt( 6, (int) TEST_DATA[5] );
+                preparedSelect.setFloat( 7, (float) TEST_DATA[6] );
+                preparedSelect.setShort( 8, (short) TEST_DATA[7] );
+                preparedSelect.setTime( 9, (Time) TEST_DATA[8] );
+                preparedSelect.setTimestamp( 10, (Timestamp) TEST_DATA[9] );
+                preparedSelect.setByte( 11, (byte) TEST_DATA[10] );
+                preparedSelect.setString( 12, (String) TEST_DATA[11] );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( TEST_DATA ) );
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    @Test
+    public void nullTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                PreparedStatement preparedInsert = connection.prepareStatement(
+                        "INSERT INTO pstest VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" );
+
+                preparedInsert.setNull( 1, SqlType.BIGINT.id );
+                preparedInsert.setNull( 2, SqlType.BOOLEAN.id );
+                preparedInsert.setNull( 3, SqlType.DATE.id );
+                preparedInsert.setNull( 4, SqlType.DECIMAL.id );
+                preparedInsert.setNull( 5, SqlType.DOUBLE.id );
+                preparedInsert.setNull( 7, SqlType.FLOAT.id );
+                preparedInsert.setNull( 9, SqlType.TIME.id );
+                preparedInsert.setNull( 10, SqlType.TIMESTAMP.id );
+
+                preparedInsert.setInt( 6, 1 );
+                preparedInsert.setString( 12, "Foo" );
+                preparedInsert.setShort( 8, (short) 55 );
+                preparedInsert.setByte( 11, (byte) 11 );
+
+                preparedInsert.execute();
+                connection.commit();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT * FROM pstest WHERE tinteger = ?" );
+                preparedSelect.setInt( 1, 1 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( new Object[]{ null, null, null, null, null, 1, null, (short) 55, null, null, (byte) 11, "Foo" } ) );
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+}

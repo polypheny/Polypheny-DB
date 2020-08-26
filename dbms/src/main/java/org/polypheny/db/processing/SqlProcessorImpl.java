@@ -127,7 +127,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public Pair<SqlNode, RelDataType> validate( SqlNode parsed ) {
+    public Pair<SqlNode, RelDataType> validate( SqlNode parsed, boolean addDefaultValues ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Validating SQL ..." );
@@ -135,7 +135,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         stopWatch.start();
 
         // Add default values for unset fields
-        if ( RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ) {
+        if ( addDefaultValues ) {
             if ( parsed.getKind() == SqlKind.INSERT ) {
                 addDefaultValues( (SqlInsert) parsed );
             }

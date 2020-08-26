@@ -27,6 +27,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -856,29 +858,19 @@ public class DbmsMeta implements ProtobufMeta {
             int index = 0;
             for ( Common.TypedValue v : list ) {
                 switch ( v.getType().name() ) {
-                    case ("INTEGER"):
-                    case ("LONG"):
-                        values.put( "?" + index++, v.getNumberValue() );
-                        break;
-                    case ("DOUBLE"):
-                        values.put( "?" + index++, v.getDoubleValue() );
-                        break;
-                    case ("STRING"):
-                        values.put( "?" + index++, v.getStringValue() );
-                        break;
-                    case ("BOOLEAN"):
-                        values.put( "?" + index++, v.getBoolValue() );
-                        break;
                     case ("JAVA_SQL_TIMESTAMP"):
-                    case ("JAVA_SQL_TIME"):
-                    case ("JAVA_SQL_DATE"):
-                        values.put( "?" + index++, new Date( v.getNumberValue() ) );
+                        values.put( "?" + index++, new Date( v.getNumberValue() ).toInstant()
+                                .atZone( ZoneOffset.UTC )
+                                .toLocalDateTime() );
                         break;
-                    case ("OBJECT"):
-                        values.put( "?" + index++, null );
+                    case ("JAVA_SQL_TIME"):
+                        values.put( "?" + index++, LocalTime.ofNanoOfDay( v.getNumberValue() * 1000000L ) );
+                        break;
+                    case ("JAVA_SQL_DATE"):
+                        values.put( "?" + index++, new Date( v.getNumberValue() * 86400000L ) );
                         break;
                     default:
-                        throw new RuntimeException( "Unknown type: " + v.getType().name() );
+                        values.put( "?" + index++, TypedValue.getSerialFromProto( v ) );
                 }
             }
 
@@ -942,7 +934,9 @@ public class DbmsMeta implements ProtobufMeta {
         SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
 
         SqlNode parsed = sqlProcessor.parse( sql );
-        Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
+        // It is important not to add default values for missing fields in insert statements. If we would do this, the
+        // JDBC driver would expect more parameter fields than there actually are in the query.
+        Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, false );
         RelRoot logicalRoot = sqlProcessor.translate( validated.left );
         RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
@@ -986,7 +980,7 @@ public class DbmsMeta implements ProtobufMeta {
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( parsed );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
@@ -1175,16 +1169,29 @@ public class DbmsMeta implements ProtobufMeta {
             if ( v != null ) {
                 switch ( v.type.name() ) {
                     case ("JAVA_SQL_TIMESTAMP"):
+                        values.put( "?" + index++, new Date( (Long) v.value ).toInstant()
+                                .atZone( ZoneOffset.UTC )
+                                .toLocalDateTime() );
+                        break;
                     case ("JAVA_SQL_TIME"):
+                        values.put( "?" + index++, LocalTime.ofNanoOfDay( (Integer) v.value * 1000000L ) );
+                        break;
                     case ("JAVA_SQL_DATE"):
-                        values.put( "?" + index++, new Date( (Long) v.value ) );
+                        values.put( "?" + index++, new Date( (Integer) v.value * 86400000L ) );
                         break;
                     case ("INTEGER"):
                     case ("LONG"):
                     case ("DOUBLE"):
+                    case ("FLOAT"):
+                    case ("SHORT"):
+                    case ("BYTE"):
                     case ("STRING"):
                     case ("BOOLEAN"):
+                    case ("NUMBER"):
                         values.put( "?" + index++, v.value );
+                        break;
+                    case ("OBJECT"):
+                        values.put( "?" + index++, null );
                         break;
                     default:
                         throw new RuntimeException( "Unknown type: " + v.type.name() );
