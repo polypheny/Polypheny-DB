@@ -70,6 +70,13 @@ public class QueryPlanCache {
     }
 
 
+    public void reset() {
+        planCache.invalidateAll();
+        hitsCounter.set( 0 );
+        missesCounter.set( 0 );
+    }
+
+
     private void registerMonitoringPage() {
         InformationManager im = InformationManager.getInstance();
 
@@ -135,9 +142,7 @@ public class QueryPlanCache {
         im.registerInformation( invalidateText );
 
         InformationAction invalidateAction = new InformationAction( invalidateGroup, "Invalidate", parameters -> {
-            planCache.invalidateAll();
-            hitsCounter.set( 0 );
-            missesCounter.set( 0 );
+            reset();
             return "Successfully invalidated the query plan cache!";
         } );
         invalidateAction.setOrder( 2 );

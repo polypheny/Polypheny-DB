@@ -76,6 +76,13 @@ public class ImplementationCache {
     }
 
 
+    public void reset() {
+        implementationCache.invalidateAll();
+        hitsCounter.set( 0 );
+        missesCounter.set( 0 );
+    }
+
+
     private void registerMonitoringPage() {
         InformationManager im = InformationManager.getInstance();
 
@@ -144,9 +151,7 @@ public class ImplementationCache {
         im.registerInformation( invalidateText );
 
         InformationAction invalidateAction = new InformationAction( invalidateGroup, "Invalidate", parameters -> {
-            implementationCache.invalidateAll();
-            hitsCounter.set( 0 );
-            missesCounter.set( 0 );
+            reset();
             return "Successfully invalidated the implementation cache!";
         } );
         invalidateAction.setOrder( 2 );

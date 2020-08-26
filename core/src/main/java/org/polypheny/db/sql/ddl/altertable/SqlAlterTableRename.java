@@ -84,6 +84,9 @@ public class SqlAlterTableRename extends SqlAlterTable {
                 throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.tableExists( newTableName ) );
             }
             catalog.renameTable( table.id, newTableName );
+
+            // Rest plan cache and implementation cache (not sure if required in this case)
+            transaction.getQueryProcessor().resetCaches();
         } catch ( GenericCatalogException | UnknownTableException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }

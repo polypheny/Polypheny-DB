@@ -100,7 +100,6 @@ import org.polypheny.db.util.Util;
 public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpander {
 
     private final Transaction transaction;
-    private final RexBuilder rexBuilder;
 
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
@@ -111,18 +110,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
     protected AbstractQueryProcessor( Transaction transaction ) {
         this.transaction = transaction;
-        this.rexBuilder = new RexBuilder( transaction.getTypeFactory() );
     }
 
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot ) {
-        return prepareQuery( logicalRoot, rexBuilder.getTypeFactory().builder().build() );
+        return prepareQuery(
+                logicalRoot,
+                logicalRoot.rel.getCluster().getTypeFactory().builder().build(),
+                null );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType ) {
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values ) {
+        // If this is a prepared statement, values is != null
+        if ( values != null ) {
+            transaction.getDataContext().addAll( values );
+        }
 
         final StopWatch stopWatch = new StopWatch();
 
@@ -169,7 +174,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                 RelBuilder.create( transaction, routedRoot.rel.getCluster() ),
-                rexBuilder,
+                routedRoot.rel.getCluster().getRexBuilder(),
                 ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
                 true );
         routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
@@ -181,10 +186,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             transaction.getDuration().start( "Implementation Caching" );
         }
         RelRoot parameterizedRoot = null;
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean()) ) {
-            Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-            parameterizedRoot = parameterized.left;
-            parameterRowType = parameterized.right;
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || values != null) ) {
+            if ( values == null ) {
+                Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+                parameterizedRoot = parameterized.left;
+                parameterRowType = parameterized.right;
+            } else {
+                // This query is an execution of a prepared statement
+                parameterizedRoot = routedRoot;
+            }
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
@@ -202,11 +212,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             transaction.getDuration().start( "Plan Caching" );
         }
         RelNode optimalNode;
-        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean()) ) {
+        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || values != null) ) {
             if ( parameterizedRoot == null ) {
-                Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
-                parameterizedRoot = parameterized.left;
-                parameterRowType = parameterized.right;
+                if ( values == null ) {
+                    Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
+                    parameterizedRoot = parameterized.left;
+                    parameterRowType = parameterized.right;
+                } else {
+                    // This query is an execution of a prepared statement
+                    parameterizedRoot = routedRoot;
+                }
             }
             optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
         } else {
@@ -229,7 +244,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
             //}
 
-            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean()) ) {
+            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || values != null) ) {
                 QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNode );
             }
         }
@@ -248,7 +263,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
 
         // Cache implementation
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean()) ) {
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || values != null) ) {
             if ( optimalRoot.rel.isImplementationCacheable() ) {
                 ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
             } else {
@@ -268,6 +283,24 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         }
 
         return signature;
+    }
+
+
+    public List<AvaticaParameter> deriveAvaticaParameters( RelRoot logicalRoot ) {
+        final List<AvaticaParameter> parameters = new ArrayList<>();
+        for ( RelDataTypeField field : logicalRoot.validatedRowType.getFieldList() ) {
+            RelDataType type = field.getType();
+            parameters.add(
+                    new AvaticaParameter(
+                            false,
+                            getPrecision( type ),
+                            getScale( type ),
+                            getTypeOrdinal( type ),
+                            getTypeName( type ),
+                            getClassName( type ),
+                            field.getName() ) );
+        }
+        return parameters;
     }
 
 
@@ -329,7 +362,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
 
     private PolyphenyDbSignature createSignature( PreparedResult preparedResult, RelRoot optimalRoot, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor ) {
-        final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), optimalRoot.validatedRowType );
+        final RelDataType jdbcType = makeStruct( optimalRoot.rel.getCluster().getTypeFactory(), optimalRoot.validatedRowType );
         final List<AvaticaParameter> parameters = new ArrayList<>();
         for ( RelDataTypeField field : preparedResult.getParameterRowType().getFieldList() ) {
             RelDataType type = field.getType();
@@ -430,7 +463,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             queryAnalyzer.registerInformation( informationQueryPlan );
         }
 
-        final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), root.validatedRowType );
+        final RelDataType jdbcType = makeStruct( root.rel.getCluster().getTypeFactory(), root.validatedRowType );
         List<List<String>> fieldOrigins = Collections.nCopies( jdbcType.getFieldCount(), null );
 
         final Prefer prefer = Prefer.ARRAY;
@@ -698,5 +731,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             }
         }
 
+    }
+
+
+    @Override
+    public void resetCaches() {
+        ImplementationCache.INSTANCE.reset();
+        QueryPlanCache.INSTANCE.reset();
     }
 }

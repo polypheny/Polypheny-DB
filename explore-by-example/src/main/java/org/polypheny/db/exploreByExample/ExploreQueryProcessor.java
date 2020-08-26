@@ -199,7 +199,7 @@ public class ExploreQueryProcessor {
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( parsed );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, false );
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
 
             // Prepare

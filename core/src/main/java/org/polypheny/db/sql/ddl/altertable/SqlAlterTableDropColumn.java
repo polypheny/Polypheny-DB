@@ -129,6 +129,8 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                 }
             }
 
+            // Rest plan cache and implementation cache (not sure if required in this case)
+            transaction.getQueryProcessor().resetCaches();
         } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

@@ -40,8 +40,5 @@ public abstract class SqlAlterTable extends SqlAlter {
         super( OPERATOR, pos );
     }
 
-
-
-
 }
 
