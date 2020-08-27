@@ -197,7 +197,7 @@ public class RelToSqlConverterTest {
     @Test
     public void testSimpleSelectStarFromProductTable() {
         String query = "select * from \"product\"";
-        sql( query ).ok( "SELECT *\nFROM \"foodmart\".\"product\"" );
+        sql( query ).ok( "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\nFROM \"foodmart\".\"product\"" );
     }
 
 
@@ -541,7 +541,7 @@ public class RelToSqlConverterTest {
                 + "    group by \"product\".\"product_id\"\n"
                 + "    having count(*) > 1) where \"product_id\" > 100";
 
-        String expected = "SELECT *\n"
+        String expected = "SELECT \"product_id\", MIN(\"sales_fact_1997\".\"store_id\")\n"
                 + "FROM (SELECT \"product\".\"product_id\", MIN(\"sales_fact_1997\".\"store_id\")\n"
                 + "FROM \"foodmart\".\"product\"\n"
                 + "INNER JOIN \"foodmart\".\"sales_fact_1997\" ON \"product\".\"product_id\" = \"sales_fact_1997\".\"product_id\"\n"
@@ -1071,7 +1071,7 @@ public class RelToSqlConverterTest {
     @Test
     public void testSelectQueryWithParameters() {
         String query = "select * from \"product\" where \"product_id\" = ? AND ? >= \"shelf_width\"";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM \"foodmart\".\"product\"\n"
                 + "WHERE \"product_id\" = ? AND ? >= \"shelf_width\"";
         sql( query ).ok( expected );
@@ -1126,17 +1126,18 @@ public class RelToSqlConverterTest {
                 + "  on p.\"product_class_id\" = pc.\"product_class_id\"\n"
                 + "where c.\"city\" = 'San Francisco'\n"
                 + "and pc.\"product_department\" = 'Snacks'\n";
-        final String expected = "SELECT *\n"
-                + "FROM \"foodmart\".\"sales_fact_1997\"\n"
-                + "INNER JOIN \"foodmart\".\"customer\" "
-                + "ON \"sales_fact_1997\".\"customer_id\" = \"customer\""
-                + ".\"customer_id\"\n"
-                + "INNER JOIN \"foodmart\".\"product\" "
-                + "ON \"sales_fact_1997\".\"product_id\" = \"product\".\"product_id\"\n"
-                + "INNER JOIN \"foodmart\".\"product_class\" "
-                + "ON \"product\".\"product_class_id\" = \"product_class\""
-                + ".\"product_class_id\"\n"
-                + "WHERE \"customer\".\"city\" = 'San Francisco' AND "
+        final String expected =
+                "SELECT \"sales_fact_1997\".\"product_id\", \"sales_fact_1997\".\"time_id\", \"sales_fact_1997\".\"customer_id\", \"sales_fact_1997\".\"promotion_id\", \"sales_fact_1997\".\"store_id\", \"sales_fact_1997\".\"store_sales\", \"sales_fact_1997\".\"store_cost\", \"sales_fact_1997\".\"unit_sales\", \"customer\".\"customer_id\" AS \"customer_id0\", \"customer\".\"account_num\", \"customer\".\"lname\", \"customer\".\"fname\", \"customer\".\"mi\", \"customer\".\"address1\", \"customer\".\"address2\", \"customer\".\"address3\", \"customer\".\"address4\", \"customer\".\"city\", \"customer\".\"state_province\", \"customer\".\"postal_code\", \"customer\".\"country\", \"customer\".\"customer_region_id\", \"customer\".\"phone1\", \"customer\".\"phone2\", \"customer\".\"birthdate\", \"customer\".\"marital_status\", \"customer\".\"yearly_income\", \"customer\".\"gender\", \"customer\".\"total_children\", \"customer\".\"num_children_at_home\", \"customer\".\"education\", \"customer\".\"date_accnt_opened\", \"customer\".\"member_card\", \"customer\".\"occupation\", \"customer\".\"houseowner\", \"customer\".\"num_cars_owned\", \"customer\".\"fullname\", \"product\".\"product_class_id\", \"product\".\"product_id\" AS \"product_id0\", \"product\".\"brand_name\", \"product\".\"product_name\", \"product\".\"SKU\", \"product\".\"SRP\", \"product\".\"gross_weight\", \"product\".\"net_weight\", \"product\".\"recyclable_package\", \"product\".\"low_fat\", \"product\".\"units_per_case\", \"product\".\"cases_per_pallet\", \"product\".\"shelf_width\", \"product\".\"shelf_height\", \"product\".\"shelf_depth\", \"product_class\".\"product_class_id\" AS \"product_class_id0\", \"product_class\".\"product_subcategory\", \"product_class\".\"product_category\", \"product_class\".\"product_department\", \"product_class\".\"product_family\"\n"
+                        + "FROM \"foodmart\".\"sales_fact_1997\"\n"
+                        + "INNER JOIN \"foodmart\".\"customer\" "
+                        + "ON \"sales_fact_1997\".\"customer_id\" = \"customer\""
+                        + ".\"customer_id\"\n"
+                        + "INNER JOIN \"foodmart\".\"product\" "
+                        + "ON \"sales_fact_1997\".\"product_id\" = \"product\".\"product_id\"\n"
+                        + "INNER JOIN \"foodmart\".\"product_class\" "
+                        + "ON \"product\".\"product_class_id\" = \"product_class\""
+                        + ".\"product_class_id\"\n"
+                        + "WHERE \"customer\".\"city\" = 'San Francisco' AND "
                 + "\"product_class\".\"product_department\" = 'Snacks'";
         sql( query ).ok( expected );
     }
@@ -1224,7 +1225,7 @@ public class RelToSqlConverterTest {
                 + "from (select \"customer_id\" from \"sales_fact_1997\") as t1 \n"
                 + "inner join (select \"customer_id\" from \"sales_fact_1997\") t2 \n"
                 + "on t1.\"customer_id\" = t2.\"customer_id\"";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT t.customer_id, t0.customer_id AS customer_id0\n"
                 + "FROM (SELECT sales_fact_1997.customer_id\n"
                 + "FROM foodmart.sales_fact_1997 AS sales_fact_1997) AS t\n"
                 + "INNER JOIN (SELECT sales_fact_19970.customer_id\n"
@@ -1237,7 +1238,7 @@ public class RelToSqlConverterTest {
     @Test
     public void testCartesianProductWithCommaSyntax() {
         String query = "select * from \"department\" , \"employee\"";
-        String expected = "SELECT *\n"
+        String expected = "SELECT \"department\".\"department_id\", \"department\".\"department_description\", \"employee\".\"employee_id\", \"employee\".\"full_name\", \"employee\".\"first_name\", \"employee\".\"last_name\", \"employee\".\"position_id\", \"employee\".\"position_title\", \"employee\".\"store_id\", \"employee\".\"department_id\" AS \"department_id0\", \"employee\".\"birth_date\", \"employee\".\"hire_date\", \"employee\".\"end_date\", \"employee\".\"salary\", \"employee\".\"supervisor_id\", \"employee\".\"education_level\", \"employee\".\"marital_status\", \"employee\".\"gender\", \"employee\".\"management_role\"\n"
                 + "FROM \"foodmart\".\"department\",\n"
                 + "\"foodmart\".\"employee\"";
         sql( query ).ok( expected );
@@ -1248,7 +1249,7 @@ public class RelToSqlConverterTest {
     public void testCartesianProductWithInnerJoinSyntax() {
         String query = "select * from \"department\"\n"
                 + "INNER JOIN \"employee\" ON TRUE";
-        String expected = "SELECT *\n"
+        String expected = "SELECT \"department\".\"department_id\", \"department\".\"department_description\", \"employee\".\"employee_id\", \"employee\".\"full_name\", \"employee\".\"first_name\", \"employee\".\"last_name\", \"employee\".\"position_id\", \"employee\".\"position_title\", \"employee\".\"store_id\", \"employee\".\"department_id\" AS \"department_id0\", \"employee\".\"birth_date\", \"employee\".\"hire_date\", \"employee\".\"end_date\", \"employee\".\"salary\", \"employee\".\"supervisor_id\", \"employee\".\"education_level\", \"employee\".\"marital_status\", \"employee\".\"gender\", \"employee\".\"management_role\"\n"
                 + "FROM \"foodmart\".\"department\",\n"
                 + "\"foodmart\".\"employee\"";
         sql( query ).ok( expected );
@@ -1259,7 +1260,7 @@ public class RelToSqlConverterTest {
     public void testFullJoinOnTrueCondition() {
         String query = "select * from \"department\"\n"
                 + "FULL JOIN \"employee\" ON TRUE";
-        String expected = "SELECT *\n"
+        String expected = "SELECT \"department\".\"department_id\", \"department\".\"department_description\", \"employee\".\"employee_id\", \"employee\".\"full_name\", \"employee\".\"first_name\", \"employee\".\"last_name\", \"employee\".\"position_id\", \"employee\".\"position_title\", \"employee\".\"store_id\", \"employee\".\"department_id\" AS \"department_id0\", \"employee\".\"birth_date\", \"employee\".\"hire_date\", \"employee\".\"end_date\", \"employee\".\"salary\", \"employee\".\"supervisor_id\", \"employee\".\"education_level\", \"employee\".\"marital_status\", \"employee\".\"gender\", \"employee\".\"management_role\"\n"
                 + "FROM \"foodmart\".\"department\"\n"
                 + "FULL JOIN \"foodmart\".\"employee\" ON TRUE";
         sql( query ).ok( expected );
@@ -1290,7 +1291,7 @@ public class RelToSqlConverterTest {
         String query = "select * "
                 + "from \"foodmart\".\"employee\" A join \"foodmart\".\"department\" B\n"
                 + "on A.\"department_id\" = B.\"department_id\"";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT employee.employee_id, employee.full_name, employee.first_name, employee.last_name, employee.position_id, employee.position_title, employee.store_id, employee.department_id, employee.birth_date, employee.hire_date, employee.end_date, employee.salary, employee.supervisor_id, employee.education_level, employee.marital_status, employee.gender, employee.management_role, department.department_id AS department_id0, department.department_description\n"
                 + "FROM foodmart.employee AS employee\n"
                 + "INNER JOIN foodmart.department AS department "
                 + "ON employee.department_id = department.department_id";
@@ -1303,9 +1304,10 @@ public class RelToSqlConverterTest {
         String query = "select * "
                 + "from \"foodmart\".\"employee\" A join \"foodmart\".\"employee\" B\n"
                 + "on A.\"department_id\" = B.\"department_id\"";
-        final String expected = "SELECT *\n"
-                + "FROM foodmart.employee AS employee\n"
-                + "INNER JOIN foodmart.employee AS employee0 ON employee.department_id = employee0.department_id";
+        final String expected =
+                "SELECT employee.employee_id, employee.full_name, employee.first_name, employee.last_name, employee.position_id, employee.position_title, employee.store_id, employee.department_id, employee.birth_date, employee.hire_date, employee.end_date, employee.salary, employee.supervisor_id, employee.education_level, employee.marital_status, employee.gender, employee.management_role, employee0.employee_id AS employee_id0, employee0.full_name AS full_name0, employee0.first_name AS first_name0, employee0.last_name AS last_name0, employee0.position_id AS position_id0, employee0.position_title AS position_title0, employee0.store_id AS store_id0, employee0.department_id AS department_id0, employee0.birth_date AS birth_date0, employee0.hire_date AS hire_date0, employee0.end_date AS end_date0, employee0.salary AS salary0, employee0.supervisor_id AS supervisor_id0, employee0.education_level AS education_level0, employee0.marital_status AS marital_status0, employee0.gender AS gender0, employee0.management_role AS management_role0\n"
+                        + "FROM foodmart.employee AS employee\n"
+                        + "INNER JOIN foodmart.employee AS employee0 ON employee.department_id = employee0.department_id";
         sql( query ).withDb2().ok( expected );
     }
 
@@ -1991,7 +1993,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        String expected = "SELECT *\n"
+        String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "PARTITION BY \"product_class_id\", \"brand_name\"\n"
@@ -2018,7 +2020,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2043,7 +2045,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2068,7 +2070,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2093,7 +2095,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2118,7 +2120,8 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
+
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2143,7 +2146,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2168,7 +2171,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2193,7 +2196,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2219,7 +2222,7 @@ public class RelToSqlConverterTest {
                 + "      B as B.\"net_weight\" > PREV(B.\"net_weight\"),\n"
                 + "      C as C.\"net_weight\" < PREV(C.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2245,8 +2248,8 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
-                + "FROM (SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
+                + "FROM (SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
                 + "AFTER MATCH SKIP TO NEXT ROW\n"
@@ -2270,7 +2273,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr order by MR.\"net_weight\"";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2307,18 +2310,19 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr order by MR.\"net_weight\"";
-        final String expected = "SELECT *\n"
-                + "FROM (SELECT *\n"
-                + "FROM \"foodmart\".\"sales_fact_1997\"\n"
-                + "INNER JOIN \"foodmart\".\"customer\" "
-                + "ON \"sales_fact_1997\".\"customer_id\" = \"customer\".\"customer_id\"\n"
-                + "INNER JOIN \"foodmart\".\"product\" "
-                + "ON \"sales_fact_1997\".\"product_id\" = \"product\".\"product_id\"\n"
-                + "INNER JOIN \"foodmart\".\"product_class\" "
-                + "ON \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\"\n"
-                + "WHERE \"customer\".\"city\" = 'San Francisco' "
-                + "AND \"product_class\".\"product_department\" = 'Snacks') "
-                + "MATCH_RECOGNIZE(\n"
+        final String expected =
+                "SELECT \"product_id\", \"time_id\", \"customer_id\", \"promotion_id\", \"store_id\", \"store_sales\", \"store_cost\", \"unit_sales\", \"customer_id0\", \"account_num\", \"lname\", \"fname\", \"mi\", \"address1\", \"address2\", \"address3\", \"address4\", \"city\", \"state_province\", \"postal_code\", \"country\", \"customer_region_id\", \"phone1\", \"phone2\", \"birthdate\", \"marital_status\", \"yearly_income\", \"gender\", \"total_children\", \"num_children_at_home\", \"education\", \"date_accnt_opened\", \"member_card\", \"occupation\", \"houseowner\", \"num_cars_owned\", \"fullname\", \"product_class_id\", \"product_id0\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\", \"product_class_id0\", \"product_subcategory\", \"product_category\", \"product_department\", \"product_family\"\n"
+                        + "FROM (SELECT \"sales_fact_1997\".\"product_id\", \"sales_fact_1997\".\"time_id\", \"sales_fact_1997\".\"customer_id\", \"sales_fact_1997\".\"promotion_id\", \"sales_fact_1997\".\"store_id\", \"sales_fact_1997\".\"store_sales\", \"sales_fact_1997\".\"store_cost\", \"sales_fact_1997\".\"unit_sales\", \"customer\".\"customer_id\" AS \"customer_id0\", \"customer\".\"account_num\", \"customer\".\"lname\", \"customer\".\"fname\", \"customer\".\"mi\", \"customer\".\"address1\", \"customer\".\"address2\", \"customer\".\"address3\", \"customer\".\"address4\", \"customer\".\"city\", \"customer\".\"state_province\", \"customer\".\"postal_code\", \"customer\".\"country\", \"customer\".\"customer_region_id\", \"customer\".\"phone1\", \"customer\".\"phone2\", \"customer\".\"birthdate\", \"customer\".\"marital_status\", \"customer\".\"yearly_income\", \"customer\".\"gender\", \"customer\".\"total_children\", \"customer\".\"num_children_at_home\", \"customer\".\"education\", \"customer\".\"date_accnt_opened\", \"customer\".\"member_card\", \"customer\".\"occupation\", \"customer\".\"houseowner\", \"customer\".\"num_cars_owned\", \"customer\".\"fullname\", \"product\".\"product_class_id\", \"product\".\"product_id\" AS \"product_id0\", \"product\".\"brand_name\", \"product\".\"product_name\", \"product\".\"SKU\", \"product\".\"SRP\", \"product\".\"gross_weight\", \"product\".\"net_weight\", \"product\".\"recyclable_package\", \"product\".\"low_fat\", \"product\".\"units_per_case\", \"product\".\"cases_per_pallet\", \"product\".\"shelf_width\", \"product\".\"shelf_height\", \"product\".\"shelf_depth\", \"product_class\".\"product_class_id\" AS \"product_class_id0\", \"product_class\".\"product_subcategory\", \"product_class\".\"product_category\", \"product_class\".\"product_department\", \"product_class\".\"product_family\"\n"
+                        + "FROM \"foodmart\".\"sales_fact_1997\"\n"
+                        + "INNER JOIN \"foodmart\".\"customer\" "
+                        + "ON \"sales_fact_1997\".\"customer_id\" = \"customer\".\"customer_id\"\n"
+                        + "INNER JOIN \"foodmart\".\"product\" "
+                        + "ON \"sales_fact_1997\".\"product_id\" = \"product\".\"product_id\"\n"
+                        + "INNER JOIN \"foodmart\".\"product_class\" "
+                        + "ON \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\"\n"
+                        + "WHERE \"customer\".\"city\" = 'San Francisco' "
+                        + "AND \"product_class\".\"product_department\" = 'Snacks') "
+                        + "MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
                 + "AFTER MATCH SKIP TO NEXT ROW\n"
                 + "PATTERN (\"STRT\" \"DOWN\" + \"UP\" +)\n"
@@ -2342,7 +2346,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > NEXT(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2367,7 +2371,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < FIRST(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > LAST(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2392,7 +2396,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\",1),\n"
                 + "      up as up.\"net_weight\" > LAST(up.\"net_weight\" + up.\"gross_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2418,7 +2422,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > "
                 + "PREV(LAST(up.\"net_weight\" + up.\"gross_weight\"),3)\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2450,7 +2454,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"MATCH_NUM\", \"VAR_MATCH\", \"START_NW\", \"BOTTOM_NW\", \"END_NW\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -2486,7 +2490,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"BOTTOM_NW\", \"END_NW\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -2520,7 +2524,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"BOTTOM_NW\", \"END_NW\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -2554,7 +2558,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"UP_CNT\", \"DOWN_CNT\", \"RUNNING_CNT\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -2627,7 +2631,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"UP_CNT\", \"DOWN_CNT\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "MEASURES "
@@ -2662,7 +2666,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr order by start_nw, up_cnt";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"UP_CNT\", \"DOWN_CNT\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "MEASURES "
@@ -2694,7 +2698,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > NEXT(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2720,7 +2724,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > NEXT(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2746,7 +2750,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > NEXT(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2771,7 +2775,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > NEXT(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2797,7 +2801,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > NEXT(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2824,7 +2828,7 @@ public class RelToSqlConverterTest {
                 + "      down as down.\"net_weight\" < PREV(down.\"net_weight\"),\n"
                 + "      up as up.\"net_weight\" > NEXT(up.\"net_weight\")\n"
                 + "  ) mr";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") MATCH_RECOGNIZE(\n"
                 + "ONE ROW PER MATCH\n"
@@ -2893,7 +2897,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"BOTTOM_NW\", \"AVG_STDN\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -2929,7 +2933,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"BOTTOM_NW\", \"AVG_STDN\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -2966,7 +2970,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"START_NW\", \"BOTTOM_NW\", \"AVG_STDN\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -3003,7 +3007,7 @@ public class RelToSqlConverterTest {
                 + "      up as up.\"net_weight\" > prev(up.\"net_weight\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"product_class_id\", \"product_id\", \"brand_name\", \"product_name\", \"SKU\", \"SRP\", \"gross_weight\", \"net_weight\", \"recyclable_package\", \"low_fat\", \"units_per_case\", \"cases_per_pallet\", \"shelf_width\", \"shelf_height\", \"shelf_depth\", \"START_NW\", \"BOTTOM_NW\", \"AVG_STDN\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"product\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -3037,7 +3041,7 @@ public class RelToSqlConverterTest {
                 + "     up as up.\"salary\" > prev(up.\"salary\")\n"
                 + "  ) mr";
 
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT \"employee_id\", \"full_name\", \"first_name\", \"last_name\", \"position_id\", \"position_title\", \"store_id\", \"department_id\", \"birth_date\", \"hire_date\", \"end_date\", \"salary\", \"supervisor_id\", \"education_level\", \"marital_status\", \"gender\", \"management_role\"\n"
                 + "FROM (SELECT *\n"
                 + "FROM \"foodmart\".\"employee\") "
                 + "MATCH_RECOGNIZE(\n"
@@ -3095,7 +3099,7 @@ public class RelToSqlConverterTest {
 
         final String sql2 = "select \"warehouse_class_id\", \"description\"\n"
                 + "from \"warehouse_class\"";
-        final String expected2 = "SELECT *\n"
+        final String expected2 = "SELECT \"warehouse_class_id\", \"description\"\n"
                 + "FROM \"foodmart\".\"warehouse_class\"";
         sql( sql2 ).ok( expected2 );
     }
@@ -3134,7 +3138,7 @@ public class RelToSqlConverterTest {
     @Test
     public void testUnparseSelectMustUseDialect() {
         final String query = "select * from \"product\"";
-        final String expected = "SELECT *\n"
+        final String expected = "SELECT product_class_id, product_id, brand_name, product_name, SKU, SRP, gross_weight, net_weight, recyclable_package, low_fat, units_per_case, cases_per_pallet, shelf_width, shelf_height, shelf_depth\n"
                 + "FROM foodmart.product";
 
         final boolean[] callsUnparseCallOnSqlSelect = { false };
