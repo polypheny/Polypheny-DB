@@ -361,6 +361,54 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    public void batchUpdateTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                // Insert data
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tsmallint,tvarchar) VALUES (?,?,?)" );
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.setShort( 2, (short) 5 );
+                preparedInsert.setString( 3, "Foo" );
+                preparedInsert.addBatch();
+
+                preparedInsert.setInt( 1, 2 );
+                preparedInsert.setShort( 2, (short) 5 );
+                preparedInsert.setString( 3, "Bar" );
+                preparedInsert.addBatch();
+
+                // Update
+                PreparedStatement preparedUpdate = connection.prepareStatement( "UPDATE pstest SET tsmallint = tsmallint + ? WHERE tinteger = ?" );
+                preparedUpdate.setShort( 1, (short) 3 );
+                preparedUpdate.setInt( 2, 1 );
+                preparedUpdate.addBatch();
+
+                preparedUpdate.setInt( 1, 1 );
+                preparedUpdate.setInt( 2, 1 );
+                preparedUpdate.addBatch();
+
+                preparedInsert.executeBatch();
+                preparedUpdate.executeBatch();
+
+                // Check
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tsmallint,tvarchar FROM pstest WHERE tinteger = ? OR tinteger = ? ORDER BY tinteger" );
+                preparedSelect.setInt( 1, 1 );
+                preparedSelect.setInt( 2, 2 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( new Object[]{ 1, (short) 9, "Foo" }, new Object[]{ 2, (short) 5, "Bar" } ) );
+
+                connection.commit();
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @Test
     public void commitTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

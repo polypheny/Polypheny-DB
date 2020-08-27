@@ -945,7 +945,7 @@ public class DbmsMeta implements ProtobufMeta {
         RelRoot logicalRoot = sqlProcessor.translate( validated.left );
         RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
-        List<AvaticaParameter> avaticaParameters = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().deriveAvaticaParameters( logicalRoot );
+        List<AvaticaParameter> avaticaParameters = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().deriveAvaticaParameters( parameterRowType );
 
         PolyphenyDbSignature signature = new PolyphenyDbSignature<>(
                 sql,

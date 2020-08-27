@@ -32,7 +32,7 @@ public interface QueryProcessor {
 
     PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, Map<String, Object> values );
 
-    List<AvaticaParameter> deriveAvaticaParameters( RelRoot logicalRoot );
+    List<AvaticaParameter> deriveAvaticaParameters( RelDataType parameterRowType );
 
     RelOptPlanner getPlanner();
 
