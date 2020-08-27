@@ -24,17 +24,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.tools.RelBuilder;
 
 
 public class HashIndex extends Index {
 
 
-    private Map<List<RexLiteral>, List<RexLiteral>> index = new HashMap<>();
-    private Map<List<RexLiteral>, List<RexLiteral>> reverseIndex = new HashMap<>();
+    private Map<List<Object>, List<Object>> index = new HashMap<>();
+    private Map<List<Object>, List<Object>> reverseIndex = new HashMap<>();
 
 
     public HashIndex(
@@ -99,8 +105,19 @@ public class HashIndex extends Index {
 
 
     @Override
-    public List<List<RexLiteral>> getAll() {
-        return new ArrayList<>( index.keySet() );
+    public Values getAsValues( RelBuilder builder, RelDataType rowType ) {
+        final RexBuilder rexBuilder = builder.getRexBuilder();
+        final List<ImmutableList<RexLiteral>> tuples = new ArrayList<>( index.size() );
+        for (final List<Object> tuple : index.keySet()) {
+            assert rowType.getFieldCount() == tuple.size();
+            List<RexLiteral> row = new ArrayList<>( tuple.size() );
+            for ( int i = 0; i < tuple.size(); ++i ) {
+                row.add( (RexLiteral) rexBuilder.makeLiteral( tuple.get( i ), rowType.getFieldList().get( i ).getType(), false ) );
+            }
+            tuples.add( ImmutableList.copyOf( row ) );
+        }
+
+        return (Values) builder.values( ImmutableList.copyOf( tuples ), rowType ).build();
     }
 
 
@@ -111,7 +128,7 @@ public class HashIndex extends Index {
 
 
     @Override
-    public void insert( List<RexLiteral> key, List<RexLiteral> primary ) {
+    public void insert( List<Object> key, List<Object> primary ) {
         System.err.println(String.format( "INDEX [%s] INSERT %s -> %s", name, key, primary ));
         index.put( key, primary );
         System.err.println("  => " + key);
@@ -120,17 +137,17 @@ public class HashIndex extends Index {
 
 
     @Override
-    public void delete( List<RexLiteral> values ) {
+    public void delete( List<Object> values ) {
         System.err.println(String.format( "INDEX [%s] DELETE %s -> ?", name, values ));
-        List<RexLiteral> primary = index.remove( values );
+        List<Object> primary = index.remove( values );
         System.err.println("  => " + primary);
         reverseIndex.remove( primary );
     }
 
     @Override
-    public void reverseDelete( List<RexLiteral> values ) {
+    public void reverseDelete( List<Object> values ) {
         System.err.println(String.format( "INDEX [%s] DELETE ? -> %s", name, values ));
-        List<RexLiteral> key = reverseIndex.remove( values );
+        List<Object> key = reverseIndex.remove( values );
         System.err.println("  => " + key);
         index.remove( key );
     }

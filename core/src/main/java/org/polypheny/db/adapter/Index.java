@@ -32,6 +32,8 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.SqlKind;
@@ -103,16 +105,12 @@ public abstract class Index {
         final Iterator<Object> iterator = enumerable.iterator();
         // TODO(s3lph): Collecting the entire result set in memory may not be preferrable for large tables, use the Avatica Cursor API instead?
         final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
-        final List<Pair<List<RexLiteral>, List<RexLiteral>>> kv = new ArrayList<>( rows.size() );
+        final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for (final List<Object> row : rows) {
-            final List<RexLiteral> rexrow = new ArrayList<>(row.size());
-            for (int i = 0; i < row.size(); ++i) {
-                rexrow.add( (RexLiteral) rb.makeLiteral( row.get( i ), scan.getRowType().getFieldList().get( i ).getType(), false ) );
-            }
-            if (rexrow.size() > columns.size()) {
-                kv.add( new Pair<>( rexrow.subList( 0, columns.size() ), rexrow.subList( columns.size(), columns.size() + targetColumns.size() ) ) );
+            if (row.size() > columns.size()) {
+                kv.add( new Pair<>( row.subList( 0, columns.size() ), row.subList( columns.size(), columns.size() + targetColumns.size() ) ) );
             } else {
-                kv.add( new Pair<>( rexrow, rexrow ) );
+                kv.add( new Pair<>( row, row ) );
             }
         }
         // Rebuild index
@@ -125,8 +123,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void insertAll( final Iterable<Pair<List<RexLiteral>, List<RexLiteral>>> values ) {
-        for ( final Pair<List<RexLiteral>, List<RexLiteral>> row : values ) {
+    public void insertAll( final Iterable<Pair<List<Object>, List<Object>>> values ) {
+        for ( final Pair<List<Object>, List<Object>> row : values ) {
             this.insert( row.getKey(), row.getValue() );
         }
     }
@@ -136,8 +134,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void deleteAll( final Iterable<List<RexLiteral>> values ) {
-        for ( final List<RexLiteral> value : values ) {
+    public void deleteAll( final Iterable<List<Object>> values ) {
+        for ( final List<Object> value : values ) {
             this.delete( value );
         }
     }
@@ -147,8 +145,8 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void reverseDeleteAll( final Iterable<List<RexLiteral>> values ) {
-        for ( final List<RexLiteral> value : values ) {
+    public void reverseDeleteAll( final Iterable<List<Object>> values ) {
+        for ( final List<Object> value : values ) {
             this.reverseDelete( value );
         }
     }
@@ -159,11 +157,11 @@ public abstract class Index {
      */
     protected abstract void clear();
 
-    public abstract void insert( final List<RexLiteral> key, final List<RexLiteral> value );
+    public abstract void insert( final List<Object> key, final List<Object> value );
 
-    public abstract void delete( final List<RexLiteral> values );
+    public abstract void delete( final List<Object> values );
 
-    public abstract void reverseDelete( final List<RexLiteral> values );
+    public abstract void reverseDelete( final List<Object> values );
 
     public abstract boolean contains( final List<Object> value );
 
@@ -171,6 +169,6 @@ public abstract class Index {
 
     public abstract boolean containsAll( final Set<List<Object>> values );
 
-    public abstract List<List<RexLiteral>> getAll();
+    public abstract Values getAsValues( RelBuilder builder, RelDataType rowType );
 
 }

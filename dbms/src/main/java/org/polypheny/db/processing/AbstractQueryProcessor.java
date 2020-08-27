@@ -92,16 +92,27 @@ import org.polypheny.db.rel.RelShuttle;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.exceptions.ConstraintViolationException;
+import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalMatch;
+import org.polypheny.db.rel.logical.LogicalMinus;
 import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -379,21 +390,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
                             final LogicalValues values = (LogicalValues) ltm.getInput( 0 );
                             for ( final Index index : indices ) {
-                                final Set<Pair<List<RexLiteral>, List<RexLiteral>>> tuplesToInsert = new HashSet<>( values.tuples.size() );
+                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( values.tuples.size() );
                                 for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
-                                    final List<RexLiteral> rowValues = new ArrayList<>();
-                                    final List<RexLiteral> targetRowValues = new ArrayList<>();
+                                    final List<Object> rowValues = new ArrayList<>();
+                                    final List<Object> targetRowValues = new ArrayList<>();
                                     for ( final String column : index.getColumns() ) {
                                         final RexLiteral fieldValue = row.get(
                                                 values.getRowType().getField( column, false, false ).getIndex()
                                         );
-                                        rowValues.add( fieldValue );
+                                        rowValues.add( fieldValue.getValue() );
                                     }
                                     for ( final String column : index.getTargetColumns() ) {
                                         final RexLiteral fieldValue = row.get(
                                                 values.getRowType().getField( column, false, false ).getIndex()
                                         );
-                                        targetRowValues.add( fieldValue );
+                                        targetRowValues.add( fieldValue.getValue() );
                                     }
                                     tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
                                 }
@@ -419,10 +430,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                         }
                                     }
                                 } else if ( ltm.isInsert() ) {
-                                    RelNode input = ltm.getInput();
-                                    int j = input.getRowType().getField( np.right, true, false ).getIndex();
+                                    int j = originalProject.getRowType().getField( np.right, true, false ).getIndex();
                                     if ( j >= 0 ) {
-                                        RexNode newValue = rexBuilder.makeInputRef( input, j );
+                                        RexNode newValue = rexBuilder.makeInputRef( originalProject, j );
                                         for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
                                             if ( originalProject.getNamedProjects().get( k ).left.equals( newValue ) ) {
                                                 newValueMap.put( np.right, k );
@@ -464,14 +474,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                             continue;
                                         }
                                     }
-                                    final Set<List<RexLiteral>> rowsToDelete = new HashSet<>( rows.size() );
+                                    final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
                                     for ( List<Object> row : rows ) {
-                                        final List<RexLiteral> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
                                         for ( final String column : index.getColumns() ) {
-                                            rowProjection.add( (RexLiteral) rexBuilder.makeLiteral( row.get( nameMap.get( column ) ),
-                                                    scanSig.rowType.getFieldList().get( nameMap.get( column ) ).getType(),
-                                                    false
-                                            ) );
+                                            rowProjection.add( row.get( nameMap.get( column ) ) );
                                         }
                                         rowsToDelete.add( rowProjection );
                                     }
@@ -488,29 +495,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     if ( ltm.isInsert() && index.getColumns().stream().noneMatch( ltm.getInput().getRowType().getFieldNames()::contains ) ) {
                                         continue;
                                     }
-                                    final Set<Pair<List<RexLiteral>, List<RexLiteral>>> rowsToReinsert = new HashSet<>( rows.size() );
+                                    final Set<Pair<List<Object>, List<Object>>> rowsToReinsert = new HashSet<>( rows.size() );
                                     for ( List<Object> row : rows ) {
-                                        final List<RexLiteral> rowProjection = new ArrayList<>( index.getColumns().size() );
-                                        final List<RexLiteral> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
+                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
                                         for ( final String column : index.getColumns() ) {
                                             if ( newValueMap.containsKey( column ) ) {
-                                                rowProjection.add( (RexLiteral) rexBuilder.makeLiteral( row.get( newValueMap.get( column ) ),
-                                                        scanSig.rowType.getFieldList().get( newValueMap.get( column ) ).getType(),
-                                                        false
-                                                ) );
+                                                rowProjection.add( row.get( newValueMap.get( column ) ) );
                                             } else {
                                                 // Value unchanged, reuse old value
-                                                rowProjection.add( (RexLiteral) rexBuilder.makeLiteral( row.get( nameMap.get( column ) ),
-                                                        scanSig.rowType.getFieldList().get( nameMap.get( column ) ).getType(),
-                                                        false
-                                                ) );
+                                                rowProjection.add( row.get( nameMap.get( column ) ) );
                                             }
                                         }
                                         for ( final String column : index.getTargetColumns() ) {
-                                            rowProjection.add( (RexLiteral) rexBuilder.makeLiteral( row.get( nameMap.get( column ) ),
-                                                    scanSig.rowType.getFieldList().get( nameMap.get( column ) ).getType(),
-                                                    false
-                                            ) );
+                                            rowProjection.add( row.get( nameMap.get( column ) ) );
                                         }
                                         rowsToReinsert.add( new Pair<>( rowProjection, targetRowProjection ) );
                                     }
@@ -606,15 +604,38 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = lce;
                 // Enforce uniqueness within the values to insert
-                builder.clear();
-                builder.push( input );
-                builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList()) ), builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" ) );
-                builder.filter( builder.call( SqlStdOperatorTable.GREATER_THAN, builder.field( "count" ), builder.literal( 1 ) ) );
-                final RelNode innerCheck = builder.build();
-                final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
-                        String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
-                ilce.setCheckDescription( String.format( "Source-internal enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
-                lceRoot = ilce;
+                if ( input instanceof Values ) { // || (input instanceof Project && input.getInput( 0 ) instanceof Values ) ) {
+                    // If the input is a Values node, check uniqueness right away, as not all stores can implement this check
+                    // (And anyway, pushing this down to stores seems rather inefficient)
+                    final Values values = (Values) (input instanceof Values ? input : input.getInput( 0 ));
+                    final ImmutableList<ImmutableList<RexLiteral>> tuples = values.getTuples();
+                    final Set<List<RexLiteral>> uniqueSet = new HashSet<>( tuples.size() );
+                    final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
+                    for (final String columnName : constraint.key.getColumnNames()) {
+                        int i = values.getRowType().getField( columnName, true, false ).getIndex();
+                        columnMap.put( columnName, i );
+                    }
+                    for ( final ImmutableList<RexLiteral> tuple : tuples ) {
+                        List<RexLiteral> projection = new ArrayList<>( constraint.key.columnIds.size() );
+                        for ( final String columnName : constraint.key.getColumnNames() ) {
+                            projection.add( tuple.get( columnMap.get( columnName ) ) );
+                        }
+                        uniqueSet.add( projection );
+                    }
+                    if ( uniqueSet.size() != tuples.size() ) {
+                        throw new ConstraintViolationException( String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                    }
+                } else {
+                    builder.clear();
+                    builder.push( input );
+                    builder.aggregate( builder.groupKey( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) ), builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" ) );
+                    builder.filter( builder.call( SqlStdOperatorTable.GREATER_THAN, builder.field( "count" ), builder.literal( 1 ) ) );
+                    final RelNode innerCheck = builder.build();
+                    final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                            String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                    ilce.setCheckDescription( String.format( "Source-internal enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                    lceRoot = ilce;
+                }
             }
         }
 
@@ -701,9 +722,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                             }
                         }.apply( newValue );
                     } else {
-                        RelNode in = root.getInput();
-                        targetIndex = in.getRowType().getField( columnName, true, false ).getIndex();
-                        newValue = rexBuilder.makeInputRef( in, targetIndex );
+                        targetIndex = input.getRowType().getField( columnName, true, false ).getIndex();
+                        newValue = rexBuilder.makeInputRef( input, targetIndex );
                     }
                     RexNode foreignValue = rexBuilder.makeInputRef( foreignColumn.getRelDataType( rexBuilder.getTypeFactory() ) , targetIndex );
                     projects.add( newValue );
@@ -818,6 +838,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
 
     private RelRoot indexLookup( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+        final RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
         if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
             final RelShuttle shuttle = new RelShuttleImpl() {
 
@@ -863,13 +884,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         final TableScan scan = (TableScan) project.getInput();
                         final String table = scan.getTable().getQualifiedName().get( 0 );
                         final List<String> columns = new ArrayList<>( project.getChildExps().size() );
+                        final List<RelDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
                         for ( final RexNode expr : project.getChildExps()) {
                             if ( !( expr instanceof RexInputRef ) ) {
                                 return super.visit( project );
                             }
                             final RexInputRef rir = (RexInputRef) expr;
-                            final String column = scan.getRowType().getFieldList().get( rir.getIndex() ).getName();
+                            final RelDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
+                            final String column = field.getName();
                             columns.add( column );
+                            ctypes.add( field.getType() );
                         }
                         // Retrieve the catalog schema and database representations required for index lookup
                         final CatalogSchema schema = transaction.getDefaultSchema();
@@ -887,11 +911,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                             return super.visit( project );
                         }
                         // TODO: Avoid copying stuff around
-                        final ImmutableList<ImmutableList<RexLiteral>> tuples =
-                                ImmutableList.copyOf(idx.getAll().stream().map( ImmutableList::copyOf ).collect( Collectors.toList()));
-                        // TODO: Metadata regarding table name?
-                        // TODO: INSERT SELECT broken? Something, something, optimizer costs
-                        return LogicalValues.create( project.getCluster(), project.getRowType(), tuples );
+                        final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
+                        return idx.getAsValues(builder, compositeType);
+//                        final ImmutableList<ImmutableList<RexLiteral>> tuples =
+//                                ImmutableList.copyOf(idx.getAll().stream().map( ImmutableList::copyOf ).collect( Collectors.toList()));
+//                        // TODO: Metadata regarding table name?
+//                        // TODO: INSERT SELECT broken? Something, something, optimizer costs
+//                        return LogicalValues.create( project.getCluster(), project.getRowType(), tuples );
                     }
                     return super.visit( project );
                 }
