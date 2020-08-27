@@ -130,6 +130,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -1437,6 +1438,20 @@ public abstract class RelOptUtil {
         // if any one of the types is ANY return true
         if ( type1.getPolyType() == PolyType.ANY || type2.getPolyType() == PolyType.ANY ) {
             return litmus.succeed();
+        }
+
+        if ( type1.getPolyType() == PolyType.ARRAY && type2.getPolyType() == PolyType.ARRAY ) {
+            ArrayType arrayType1 = (ArrayType) type1;
+            ArrayType arrayType2 = (ArrayType) type2;
+
+            if ( arrayType1.getComponentType() == arrayType2.getComponentType()
+                    && arrayType1.getCardinality() == arrayType2.getCardinality()
+                    && arrayType1.getDimension() == arrayType2.getDimension()
+            ) {
+                return litmus.succeed();
+            } else {
+                return litmus.fail( "type mismatch:\n{}:\n{}\n{}:\n{}", desc1, type1.getFullTypeString(), desc2, type2.getFullTypeString() );
+            }
         }
 
         if ( type1 != type2 ) {
