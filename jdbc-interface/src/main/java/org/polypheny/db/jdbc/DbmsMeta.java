@@ -874,8 +874,13 @@ public class DbmsMeta implements ProtobufMeta {
                 }
             }
 
-            prepare( connection, h, statement.getPreparedQuery(), values );
-            updateCounts[i++] = execute( h, connection, statement, -1 ).size();
+            try {
+                prepare( connection, h, statement.getPreparedQuery(), values );
+                updateCounts[i++] = execute( h, connection, statement, -1 ).size();
+            } catch ( Exception e ) {
+                log.error( "Exception while preparing query", e );
+                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+            }
         }
         return new ExecuteBatchResult( updateCounts );
     }
@@ -1167,8 +1172,13 @@ public class DbmsMeta implements ProtobufMeta {
             }
         }
 
-        prepare( connection, h, statement.getPreparedQuery(), values );
-        return new ExecuteResult( execute( h, connection, statement, maxRowsInFirstFrame ) );
+        try {
+            prepare( connection, h, statement.getPreparedQuery(), values );
+            return new ExecuteResult( execute( h, connection, statement, maxRowsInFirstFrame ) );
+        } catch ( Exception e ) {
+            log.error( "Exception while preparing query", e );
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+        }
     }
 
 
@@ -1186,7 +1196,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
-        PolyphenyDbSignature signature;
+        PolyphenyDbSignature signature = null;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( parsed );
         } else {

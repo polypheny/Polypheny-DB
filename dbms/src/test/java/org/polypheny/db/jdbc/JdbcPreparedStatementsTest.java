@@ -276,6 +276,8 @@ public class JdbcPreparedStatementsTest {
 
                 PreparedStatement preparedInsert = connection.prepareStatement(
                         "INSERT INTO pstest VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)" );
+                PreparedStatement preparedSelect = connection.prepareStatement(
+                        "SELECT * FROM pstest WHERE tinteger = ?" );
 
                 preparedInsert.setNull( 1, SqlType.BIGINT.id );
                 preparedInsert.setNull( 2, SqlType.BOOLEAN.id );
@@ -294,11 +296,116 @@ public class JdbcPreparedStatementsTest {
                 preparedInsert.execute();
                 connection.commit();
 
-                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT * FROM pstest WHERE tinteger = ?" );
                 preparedSelect.setInt( 1, 1 );
                 TestHelper.checkResultSet(
                         preparedSelect.executeQuery(),
                         ImmutableList.of( new Object[]{ null, null, null, null, null, 1, null, (short) 55, null, null, (byte) 11, "Foo" } ) );
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @Test
+    public void updateTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                // Insert data
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tsmallint,tvarchar) VALUES (?,?,?)" );
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.setShort( 2, (short) 5 );
+                preparedInsert.setString( 3, "Foo" );
+                preparedInsert.execute();
+
+                preparedInsert.setInt( 1, 2 );
+                preparedInsert.setShort( 2, (short) 5 );
+                preparedInsert.setString( 3, "Bar" );
+                preparedInsert.execute();
+
+                // Update
+                PreparedStatement preparedUpdate = connection.prepareStatement( "UPDATE pstest SET tsmallint = tsmallint + ? WHERE tinteger = ?" );
+                preparedUpdate.setInt( 1, 3 );
+                preparedUpdate.setInt( 2, 1 );
+                preparedUpdate.executeUpdate();
+
+                // Check
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tsmallint,tvarchar FROM pstest WHERE tinteger = ? OR tinteger = ? ORDER BY tinteger" );
+                preparedSelect.setInt( 1, 1 );
+                preparedSelect.setInt( 2, 2 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( new Object[]{ 1, (short) 8, "Foo" }, new Object[]{ 2, (short) 5, "Bar" } ) );
+
+                // Update again
+                preparedUpdate.setInt( 1, 5 );
+                preparedUpdate.setInt( 2, 1 );
+                preparedUpdate.executeUpdate();
+
+                // Check
+                preparedSelect.setInt( 1, 1 );
+                preparedSelect.setInt( 2, 2 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( new Object[]{ 1, (short) 13, "Foo" }, new Object[]{ 2, (short) 5, "Bar" } ) );
+
+                connection.commit();
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @Test
+    public void commitTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( SCHEMA_SQL );
+
+                // Insert data
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger,tvarchar) VALUES (?,?)" );
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.setString( 2, "Foo" );
+                preparedInsert.execute();
+
+                connection.commit();
+
+                // Update
+                PreparedStatement preparedUpdate = connection.prepareStatement( "UPDATE pstest SET tvarchar = ? WHERE tinteger = ?" );
+                preparedUpdate.setString( 1, "Bar" );
+                preparedUpdate.setInt( 2, 1 );
+                preparedUpdate.executeUpdate();
+
+                connection.commit();
+
+                // Check
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest WHERE tinteger = ?" );
+                preparedSelect.setInt( 1, 1 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( new Object[]{ 1, "Bar" } ) );
+
+                connection.commit();
+
+                // Update again
+                preparedUpdate.setString( 1, "FooBar" );
+                preparedUpdate.setInt( 2, 1 );
+                preparedUpdate.executeUpdate();
+
+                connection.commit();
+
+                // Check
+                preparedSelect.setInt( 1, 1 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of( new Object[]{ 1, "FooBar" } ) );
+
+                connection.commit();
 
                 statement.executeUpdate( "DROP TABLE pstest" );
             }
