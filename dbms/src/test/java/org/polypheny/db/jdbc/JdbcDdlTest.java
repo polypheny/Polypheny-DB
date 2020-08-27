@@ -499,7 +499,6 @@ public class JdbcDdlTest {
     }
 
 
-    @Ignore
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void testReorderColumns() throws SQLException {

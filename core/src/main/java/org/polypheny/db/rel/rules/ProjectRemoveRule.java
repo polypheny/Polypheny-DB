@@ -39,7 +39,6 @@ import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.RelFactories;
-import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
@@ -98,7 +97,9 @@ public class ProjectRemoveRule extends RelOptRule {
 
 
     public static boolean isTrivial( Project project ) {
-        return RexUtil.isIdentity( project.getProjects(), project.getInput().getRowType() );
+        return false;
+        // TODO
+        //return RexUtil.isIdentity( project.getProjects(), project.getInput().getRowType() );
     }
 
 }
