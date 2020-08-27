@@ -286,9 +286,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    public List<AvaticaParameter> deriveAvaticaParameters( RelRoot logicalRoot ) {
+    public List<AvaticaParameter> deriveAvaticaParameters( RelDataType parameterRowType ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( RelDataTypeField field : logicalRoot.validatedRowType.getFieldList() ) {
+        for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
             RelDataType type = field.getType();
             parameters.add(
                     new AvaticaParameter(

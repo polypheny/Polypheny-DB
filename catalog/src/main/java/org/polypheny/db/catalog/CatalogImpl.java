@@ -1458,7 +1458,14 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId ) {
-        return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).collect( Collectors.toList() );
+        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingInt( p -> {
+            try {
+                return getColumn( p.columnId ).position;
+            } catch ( UnknownColumnException e ) {
+                throw new RuntimeException( e );
+            }
+        } );
+        return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
     }
 
 
@@ -2602,7 +2609,7 @@ public class CatalogImpl extends Catalog {
             if ( constraints.values().stream().anyMatch( c -> c.keyId == keyId ) ) {
                 return;
             }
-            if ( foreignKeys.values().stream().anyMatch( f -> f.referencedKeyId == keyId ) ) {
+            if ( foreignKeys.values().stream().anyMatch( f -> f.id == keyId ) ) {
                 return;
             }
             if ( indices.values().stream().anyMatch( i -> i.keyId == keyId ) ) {
