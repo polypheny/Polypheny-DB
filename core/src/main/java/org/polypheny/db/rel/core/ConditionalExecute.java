@@ -72,21 +72,41 @@ public abstract class ConditionalExecute extends BiRel {
 
 
     @Override
-    public void explain( RelWriter pw ) {
-        pw.item( "description", checkDescription == null ? "null" : checkDescription );
-        pw.item( "condition", condition == null ? "null" : condition );
-        pw.item( "schema", catalogSchema == null ? "null" : catalogSchema.name );
-        pw.item( "table", catalogTable == null ? "null" : catalogTable.name );
-        pw.item( "columns", catalogColumns == null ? "null" : catalogColumns );
-        pw.item( "values", values == null ? "null" : values );
-        super.explain( pw );
+    public RelWriter explainTerms( RelWriter pw ) {
+        return super.explainTerms( pw )
+                .item( "condition", condition)
+                .itemIf( "check", checkDescription, checkDescription != null);
+//        pw.item( "schema", catalogSchema == null ? "null" : catalogSchema.name );
+//        pw.item( "table", catalogTable == null ? "null" : catalogTable.name );
+//        pw.item( "columns", catalogColumns == null ? "null" : catalogColumns );
+//        pw.item( "values", values == null ? "null" : values );
+    }
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                getLeft().relCompareString() + "$" +
+                getRight().relCompareString() + "$" +
+                condition + "$" +
+                exceptionClass.getSimpleName() + "&";
     }
 
 
     public enum Condition {
-        GREATER_ZERO,
-        EQUAL_TO_ZERO,
-        TRUE,
-        FALSE
+        GREATER_ZERO("> 0"),
+        EQUAL_TO_ZERO("= 0"),
+        TRUE("true"),
+        FALSE("false");
+
+        private final String humanReadable;
+
+        Condition(final String humanReadable) {
+            this.humanReadable = humanReadable;
+        }
+
+        @Override
+        public String toString() {
+            return humanReadable;
+        }
     }
 }

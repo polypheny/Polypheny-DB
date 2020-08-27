@@ -180,7 +180,7 @@ public abstract class AbstractRouter implements Router {
     protected RelNode handleConditionalExecute( RelNode node, Statement statement ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
         RelBuilder builder = RelBuilder.create( statement, node.getCluster() );
-        buildSelect( lce.getLeft(), builder, statement );
+        buildSelect( lce.getLeft(), builder );
         RelNode action;
         if (lce.getRight() instanceof LogicalConditionalExecute) {
             action = handleConditionalExecute( lce.getRight(), statement );

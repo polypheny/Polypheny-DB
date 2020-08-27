@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.util.Pair;
 
 
@@ -36,11 +37,11 @@ public class DeferredIndexUpdate {
     private final Operation operation;
     @Getter
     private final long indexId;
-    private final Set<Pair<List<Object>, List<Object>>> insertTuples;
-    private final Set<List<Object>> deleteTuples;
+    private final Set<Pair<List<RexLiteral>, List<RexLiteral>>> insertTuples;
+    private final Set<List<RexLiteral>> deleteTuples;
 
 
-    private DeferredIndexUpdate( final Operation operation, final long indexId, final Set<Pair<List<Object>, List<Object>>> insertTuples, final Set<List<Object>> deleteTuples ) {
+    private DeferredIndexUpdate( final Operation operation, final long indexId, final Set<Pair<List<RexLiteral>, List<RexLiteral>>> insertTuples, final Set<List<RexLiteral>> deleteTuples ) {
         this.operation = operation;
         this.indexId = indexId;
         this.insertTuples = insertTuples;
@@ -67,17 +68,17 @@ public class DeferredIndexUpdate {
     }
 
 
-    public static DeferredIndexUpdate createInsert( final long indexId, final Set<Pair<List<Object>, List<Object>>> tuples ) {
+    public static DeferredIndexUpdate createInsert( final long indexId, final Set<Pair<List<RexLiteral>, List<RexLiteral>>> tuples ) {
         return new DeferredIndexUpdate( Operation.INSERT, indexId, tuples, null );
     }
 
 
-    public static DeferredIndexUpdate createDelete( final long indexId, final Set<List<Object>> tuples ) {
+    public static DeferredIndexUpdate createDelete( final long indexId, final Set<List<RexLiteral>> tuples ) {
         return new DeferredIndexUpdate( Operation.DELETE, indexId, null, tuples );
     }
 
 
-    public static DeferredIndexUpdate createReverseDelete( final long indexId, final Set<List<Object>> tuples ) {
+    public static DeferredIndexUpdate createReverseDelete( final long indexId, final Set<List<RexLiteral>> tuples ) {
         return new DeferredIndexUpdate( Operation.REVERSE_DELETE, indexId, null, tuples );
     }
 

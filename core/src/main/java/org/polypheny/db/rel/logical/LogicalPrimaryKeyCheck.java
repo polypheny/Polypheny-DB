@@ -22,7 +22,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.PrimaryKeyCheck;
 
 
-public class LogicalPrimaryKeyCheck extends PrimaryKeyCheck {
+public abstract class LogicalPrimaryKeyCheck extends PrimaryKeyCheck {
 
     /**
      * Creates an <code>AbstractRelNode</code>.

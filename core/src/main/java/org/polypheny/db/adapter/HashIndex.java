@@ -18,9 +18,9 @@ package org.polypheny.db.adapter;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,8 +33,8 @@ import org.polypheny.db.rex.RexLiteral;
 public class HashIndex extends Index {
 
 
-    private Map<List<Object>, List<Object>> index = new HashMap<>();
-    private Map<List<Object>, List<Object>> reverseIndex = new HashMap<>();
+    private Map<List<RexLiteral>, List<RexLiteral>> index = new HashMap<>();
+    private Map<List<RexLiteral>, List<RexLiteral>> reverseIndex = new HashMap<>();
 
 
     public HashIndex(
@@ -99,30 +99,39 @@ public class HashIndex extends Index {
 
 
     @Override
+    public List<List<RexLiteral>> getAll() {
+        return new ArrayList<>( index.keySet() );
+    }
+
+
+    @Override
     protected void clear() {
         index.clear();
     }
 
 
     @Override
-    public void insert( List<Object> key, List<Object> primary ) {
+    public void insert( List<RexLiteral> key, List<RexLiteral> primary ) {
         System.err.println(String.format( "INDEX [%s] INSERT %s -> %s", name, key, primary ));
         index.put( key, primary );
+        System.err.println("  => " + key);
         reverseIndex.put( primary, key );
     }
 
 
     @Override
-    public void delete( List<Object> values ) {
+    public void delete( List<RexLiteral> values ) {
         System.err.println(String.format( "INDEX [%s] DELETE %s -> ?", name, values ));
-        List<Object> primary = index.remove( values );
+        List<RexLiteral> primary = index.remove( values );
+        System.err.println("  => " + primary);
         reverseIndex.remove( primary );
     }
 
     @Override
-    public void reverseDelete( List<Object> values ) {
+    public void reverseDelete( List<RexLiteral> values ) {
         System.err.println(String.format( "INDEX [%s] DELETE ? -> %s", name, values ));
-        List<Object> key = reverseIndex.remove( values );
+        List<RexLiteral> key = reverseIndex.remove( values );
+        System.err.println("  => " + key);
         index.remove( key );
     }
 }
