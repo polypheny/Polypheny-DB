@@ -2609,7 +2609,7 @@ public class CatalogImpl extends Catalog {
             if ( constraints.values().stream().anyMatch( c -> c.keyId == keyId ) ) {
                 return;
             }
-            if ( foreignKeys.values().stream().anyMatch( f -> f.referencedKeyId == keyId ) ) {
+            if ( foreignKeys.values().stream().anyMatch( f -> f.id == keyId ) ) {
                 return;
             }
             if ( indices.values().stream().anyMatch( i -> i.keyId == keyId ) ) {
