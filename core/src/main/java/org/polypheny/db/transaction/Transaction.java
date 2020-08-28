@@ -20,7 +20,6 @@ package org.polypheny.db.transaction;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DeferredIndexUpdate;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -68,7 +67,5 @@ public interface Transaction {
     String getOrigin();
 
     long getNumberOfStatements();
-
-    void deferIndexUpdate( DeferredIndexUpdate update );
 
 }

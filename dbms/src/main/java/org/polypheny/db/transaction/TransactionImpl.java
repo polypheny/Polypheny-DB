@@ -18,7 +18,6 @@ package org.polypheny.db.transaction;
 
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -31,15 +30,13 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
-import org.polypheny.db.adapter.DeferredIndexUpdate;
-import org.polypheny.db.adapter.IndexManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
@@ -89,7 +86,6 @@ public class TransactionImpl implements Transaction, Comparable {
     private List<Store> involvedStores = new CopyOnWriteArrayList<>();
 
     private Set<Lock> lockList = new HashSet<>();
-    private List<DeferredIndexUpdate> deferredIndexUpdates = new ArrayList<>();
 
 
     TransactionImpl(
@@ -151,15 +147,7 @@ public class TransactionImpl implements Transaction, Comparable {
                 StatisticsManager.getInstance().apply( changedTables );
             }
 
-            // Update indexes
-            for ( final DeferredIndexUpdate update : this.deferredIndexUpdates ) {
-                try {
-                    update.execute();
-                } catch ( UnknownIndexException e ) {
-                    e.printStackTrace();
-                }
-            }
-            this.deferredIndexUpdates.clear();
+            IndexManager.getInstance().commit( this.xid );
         } else {
             log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
             rollback();
@@ -180,7 +168,7 @@ public class TransactionImpl implements Transaction, Comparable {
             for ( Store store : involvedStores ) {
                 store.rollback( xid );
             }
-            this.deferredIndexUpdates.clear();
+            IndexManager.getInstance().rollback( this.xid );
             Catalog.getInstance().rollback();
         } finally {
             // Release locks
@@ -278,11 +266,6 @@ public class TransactionImpl implements Transaction, Comparable {
 
     public long getNumberOfStatements() {
         return statementCounter.get();
-    }
-
-
-    public void deferIndexUpdate( final DeferredIndexUpdate update ) {
-        this.deferredIndexUpdates.add( update );
     }
 
 }

@@ -38,7 +38,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.LinkedList;
 import java.util.List;
-import org.polypheny.db.adapter.IndexManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;

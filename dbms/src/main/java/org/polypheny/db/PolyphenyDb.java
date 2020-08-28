@@ -23,7 +23,7 @@ import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.IndexManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter;
+package org.polypheny.db.adapter.index;
 
 
 import com.google.common.collect.ImmutableList;
@@ -34,10 +34,9 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 
@@ -57,21 +56,15 @@ public abstract class Index {
     // The logical table this index is for
     @Getter
     protected CatalogTable table;
-    // The logical table this index resolves at
-    @Getter
-    protected CatalogTable targetTable;
 
     // The list of columns over which the index was created
     protected List<String> columns;
     // The primary key columns the index resolves to
     protected List<String> targetColumns;
 
-    @Getter
-    protected IndexType type;
+    public abstract IndexType getType();
 
-    // Whether this is an unique index
-    @Getter
-    protected boolean unique;
+    public abstract boolean isUnique();
 
 
     public List<String> getColumns() {
@@ -89,27 +82,26 @@ public abstract class Index {
     public void rebuild( final Transaction transaction ) {
         // Prepare query
         final RelBuilder builder = RelBuilder.create( transaction );
-        final RexBuilder rb = builder.getRexBuilder();
         List<String> cols = new ArrayList<>( columns );
-        if ( table.equals( targetTable ) && !columns.equals( targetColumns )) {
+        if (!columns.equals( targetColumns )) {
             cols.addAll( targetColumns );
         }
         final RelNode scan = builder
                 .scan( table.name )
-                .project( columns.stream().map( builder::field ).collect( Collectors.toList() ) )
+                .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = transaction.getQueryProcessor();
         final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, SqlKind.SELECT ) );
         // Execute query
         final Iterable<Object> enumerable = signature.enumerable( transaction.getDataContext() );
         final Iterator<Object> iterator = enumerable.iterator();
-        // TODO(s3lph): Collecting the entire result set in memory may not be preferrable for large tables, use the Avatica Cursor API instead?
         final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
         for (final List<Object> row : rows) {
             if (row.size() > columns.size()) {
                 kv.add( new Pair<>( row.subList( 0, columns.size() ), row.subList( columns.size(), columns.size() + targetColumns.size() ) ) );
             } else {
+                // Columns and target columns are identical, i.e. this is a primary key index
                 kv.add( new Pair<>( row, row ) );
             }
         }
@@ -118,12 +110,25 @@ public abstract class Index {
         this.insertAll( kv );
     }
 
+    abstract void commit( PolyXid xid );
+
+    abstract void rollback( PolyXid xid );
 
     /**
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void insertAll( final Iterable<Pair<List<Object>, List<Object>>> values ) {
+    public void insertAll( PolyXid xid, final Iterable<Pair<List<Object>, List<Object>>> values ) {
+        for ( final Pair<List<Object>, List<Object>> row : values ) {
+            this.insert( xid, row.getKey(), row.getValue() );
+        }
+    }
+
+    /**
+     * The default implementation is simply a loop over the iterable.
+     * Implementations may choose to override this method.
+     */
+    void insertAll( final Iterable<Pair<List<Object>, List<Object>>> values ) {
         for ( final Pair<List<Object>, List<Object>> row : values ) {
             this.insert( row.getKey(), row.getValue() );
         }
@@ -134,7 +139,29 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void deleteAll( final Iterable<List<Object>> values ) {
+    public void deleteAll( PolyXid xid, final Iterable<List<Object>> values ) {
+        for ( final List<Object> value : values ) {
+            this.delete( xid, value );
+        }
+    }
+
+
+    /**
+     * The default implementation is simply a loop over the iterable.
+     * Implementations may choose to override this method.
+     */
+    public void deleteAllPrimary( PolyXid xid, final Iterable<Pair<List<Object>, List<Object>>> values ) {
+        for ( final Pair<List<Object>, List<Object>> value : values ) {
+            this.deletePrimary( xid, value.left, value.right );
+        }
+    }
+
+
+    /**
+     * The default implementation is simply a loop over the iterable.
+     * Implementations may choose to override this method.
+     */
+    void deleteAll( final Iterable<List<Object>> values ) {
         for ( final List<Object> value : values ) {
             this.delete( value );
         }
@@ -145,9 +172,9 @@ public abstract class Index {
      * The default implementation is simply a loop over the iterable.
      * Implementations may choose to override this method.
      */
-    public void reverseDeleteAll( final Iterable<List<Object>> values ) {
-        for ( final List<Object> value : values ) {
-            this.reverseDelete( value );
+    void deleteAllPrimary( final Iterable<Pair<List<Object>, List<Object>>> values ) {
+        for ( final Pair<List<Object>, List<Object>> value : values ) {
+            this.deletePrimary( value.left, value.right );
         }
     }
 
@@ -157,18 +184,40 @@ public abstract class Index {
      */
     protected abstract void clear();
 
-    public abstract void insert( final List<Object> key, final List<Object> value );
+    public abstract void insert( final PolyXid xid, final List<Object> key, final List<Object> value );
 
-    public abstract void delete( final List<Object> values );
+    abstract void insert( final List<Object> key, final List<Object> value );
 
-    public abstract void reverseDelete( final List<Object> values );
+    public abstract void delete( final PolyXid xid, final List<Object> values );
 
-    public abstract boolean contains( final List<Object> value );
+    abstract void deletePrimary( final PolyXid xid, final List<Object> key, final List<Object> primary );
 
-    public abstract boolean containsAny( final Set<List<Object>> values );
+    abstract void delete( final List<Object> values );
 
-    public abstract boolean containsAll( final Set<List<Object>> values );
+    abstract void deletePrimary( final List<Object> key, final List<Object> primary );
 
-    public abstract Values getAsValues( RelBuilder builder, RelDataType rowType );
+    public abstract boolean contains( final PolyXid xid, final List<Object> value );
+
+    public abstract boolean containsAny( final PolyXid xid, final Set<List<Object>> values );
+
+    public abstract boolean containsAll( final PolyXid xid, final Set<List<Object>> values );
+
+    public abstract Values getAsValues( final PolyXid xid, RelBuilder builder, RelDataType rowType );
+
+    interface IndexFactory {
+
+        boolean isUnique();
+
+        IndexType getType();
+
+        Index create(
+                final long id,
+                final String name,
+                final CatalogSchema schema,
+                final CatalogTable table,
+                final List<String> columns,
+                final List<String> targetColumns);
+
+    }
 
 }

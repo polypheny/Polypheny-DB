@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -41,12 +40,10 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.commons.lang.math.IntRange;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.adapter.DeferredIndexUpdate;
-import org.polypheny.db.adapter.Index;
-import org.polypheny.db.adapter.IndexManager;
+import org.polypheny.db.adapter.index.Index;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
@@ -89,7 +86,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.RelShuttle;
-import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Project;
@@ -149,7 +145,6 @@ import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
-import sun.rmi.runtime.Log;
 
 
 @Slf4j
@@ -408,7 +403,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     }
                                     tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
                                 }
-                                transaction.deferIndexUpdate( DeferredIndexUpdate.createInsert( index.getId(), tuplesToInsert ) );
+                                index.insertAll( transaction.getXid(), tuplesToInsert );
                             }
                         } else if ( ltm.isDelete() || ltm.isUpdate() || ( ltm.isInsert() && !( ltm.getInput() instanceof Values ) ) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
@@ -474,15 +469,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                             continue;
                                         }
                                     }
-                                    final Set<List<Object>> rowsToDelete = new HashSet<>( rows.size() );
+                                    final Set<Pair<List<Object>, List<Object>>> rowsToDelete = new HashSet<>( rows.size() );
                                     for ( List<Object> row : rows ) {
                                         final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
                                         for ( final String column : index.getColumns() ) {
                                             rowProjection.add( row.get( nameMap.get( column ) ) );
                                         }
-                                        rowsToDelete.add( rowProjection );
+                                        for ( final String column : index.getTargetColumns() ) {
+                                            targetRowProjection.add( row.get( nameMap.get( column ) ) );
+                                        }
+                                        rowsToDelete.add( new Pair<>( rowProjection, targetRowProjection) );
                                     }
-                                    transaction.deferIndexUpdate( DeferredIndexUpdate.createDelete( index.getId(), rowsToDelete ) );
+                                    index.deleteAllPrimary( transaction.getXid(), rowsToDelete );
                                 }
                             }
                             //Schedule the index insertions for UPDATE operations
@@ -508,11 +507,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                             }
                                         }
                                         for ( final String column : index.getTargetColumns() ) {
-                                            rowProjection.add( row.get( nameMap.get( column ) ) );
+                                            targetRowProjection.add( row.get( nameMap.get( column ) ) );
                                         }
                                         rowsToReinsert.add( new Pair<>( rowProjection, targetRowProjection ) );
                                     }
-                                    transaction.deferIndexUpdate( DeferredIndexUpdate.createInsert( index.getId(), rowsToReinsert ) );
+                                    index.insertAll( transaction.getXid(), rowsToReinsert );
                                 }
                             }
                         }
@@ -604,18 +603,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = lce;
                 // Enforce uniqueness within the values to insert
-                if ( input instanceof Values ) { // || (input instanceof Project && input.getInput( 0 ) instanceof Values ) ) {
+                //noinspection StatementWithEmptyBody
+                if ( input instanceof Values && ((Values) input).getTuples().size() <= 1 ||
+                        (input instanceof Project && input.getInput( 0 ) instanceof Values && ((Values) input.getInput( 0 )).getTuples().size() <= 1 ) ) {
+                    // no need to check, only one tuple in set
+                } else if ( input instanceof Values ) {
                     // If the input is a Values node, check uniqueness right away, as not all stores can implement this check
                     // (And anyway, pushing this down to stores seems rather inefficient)
-                    final Values values = (Values) (input instanceof Values ? input : input.getInput( 0 ));
-                    final ImmutableList<ImmutableList<RexLiteral>> tuples = values.getTuples();
+                    final Values values = (Values) input;
+                    final List<? extends List<RexLiteral>> tuples = values.getTuples();
                     final Set<List<RexLiteral>> uniqueSet = new HashSet<>( tuples.size() );
                     final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
                     for (final String columnName : constraint.key.getColumnNames()) {
                         int i = values.getRowType().getField( columnName, true, false ).getIndex();
                         columnMap.put( columnName, i );
                     }
-                    for ( final ImmutableList<RexLiteral> tuple : tuples ) {
+                    for ( final List<RexLiteral> tuple : tuples ) {
                         List<RexLiteral> projection = new ArrayList<>( constraint.key.columnIds.size() );
                         for ( final String columnName : constraint.key.getColumnNames() ) {
                             projection.add( tuple.get( columnMap.get( columnName ) ) );
@@ -860,10 +863,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     c = lce.getCondition();
                                     break;
                                 case EQUAL_TO_ZERO:
-                                    c = index.containsAny( lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
+                                    c = index.containsAny( transaction.getXid(), lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
                                     break;
                                 case GREATER_ZERO:
-                                    c = index.containsAny( lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
+                                    c = index.containsAny( transaction.getXid(), lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
                                     break;
                             }
                             final LogicalConditionalExecute simplified =
@@ -912,7 +915,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         }
                         // TODO: Avoid copying stuff around
                         final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
-                        return idx.getAsValues(builder, compositeType);
+                        return idx.getAsValues( transaction.getXid(), builder, compositeType );
 //                        final ImmutableList<ImmutableList<RexLiteral>> tuples =
 //                                ImmutableList.copyOf(idx.getAll().stream().map( ImmutableList::copyOf ).collect( Collectors.toList()));
 //                        // TODO: Metadata regarding table name?

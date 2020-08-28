@@ -22,7 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.IndexManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
