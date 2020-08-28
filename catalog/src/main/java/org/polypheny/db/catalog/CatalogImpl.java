@@ -1367,7 +1367,19 @@ public class CatalogImpl extends Catalog {
                 } else {
                     placementsByStore.put( storeId, ImmutableList.of( columnId ) );
                 }
-                CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
+
+                CatalogTable table;
+                //needed because otherwise a already partitioned table would be reset to a regualr table due to the different constructors.
+                if (old.isPartitioned){
+                    table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId,
+                            old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ),
+                            old.numPartitions, old.partitionType, old.partitionIds, old.partitionColumnId);
+                }
+                else{
+                    table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId,
+                            old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
+                }
+
 
                 tables.replace( column.tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
