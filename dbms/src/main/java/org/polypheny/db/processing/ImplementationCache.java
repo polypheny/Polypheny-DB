@@ -80,6 +80,7 @@ public class ImplementationCache {
         implementationCache.invalidateAll();
         hitsCounter.set( 0 );
         missesCounter.set( 0 );
+        uncacheableCounter.set( 0 );
     }
 
 
@@ -152,6 +153,8 @@ public class ImplementationCache {
 
         InformationAction invalidateAction = new InformationAction( invalidateGroup, "Invalidate", parameters -> {
             reset();
+            generalGroup.refresh();
+            hitRatioGroup.refresh();
             return "Successfully invalidated the implementation cache!";
         } );
         invalidateAction.setOrder( 2 );
