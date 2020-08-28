@@ -821,6 +821,8 @@ public abstract class Catalog {
 
     public abstract void  addPartitionsToColumnPlacement(long columnId, List<Long> partitionIds);
 
+    public abstract void  updatePartitionsOnColumnPlacement(CatalogColumnPlacement catalogColumnPlacement, List<Long> partitionIds);
+
     /*
      *
      */
