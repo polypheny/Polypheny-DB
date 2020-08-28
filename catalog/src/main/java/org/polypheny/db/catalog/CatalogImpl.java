@@ -2785,18 +2785,25 @@ public class CatalogImpl extends Catalog {
     @Override
     public void addPartitionsToColumnPlacement(long columnId, List<Long> partitionIds) {
         List<CatalogColumnPlacement> ccP = getColumnPlacements(columnId);
-        System.out.println("HENNLO AbstractRouter(): Listing all placements for columnId: '" + columnId +"'" );
-        for (CatalogColumnPlacement partitionPlace: ccP) {
-            System.out.println("\t\t\t  " + partitionPlace.storeUniqueName + " "+ partitionPlace.physicalTableName);
+        synchronized (this) {
+            try {
+                for (long partitionId : partitionIds) {
+                    System.out.println("HENNLO: CatalogImpl: addPartitionsToColumnPlacement(): Add entry for partition: '"
+                            + partitionId + "' for all occurences of column: '" + columnId + "'");
+
+                    if (partitionPlacement.containsKey(partitionId)) {
+                        System.out.println("HENNLO: CatalogImpl: addPartitionsToColumnPlacement(): partitionPlacement already contains id: " + partitionId);
+                        List<CatalogColumnPlacement> tempCcp = getColumnPlacementsByPartition(partitionId);
+                        partitionPlacement.replace(partitionId, Stream.concat(ccP.stream(), tempCcp.stream()).distinct().collect(Collectors.toList()));
+                    } else {
+                        System.out.println("HENNLO: CatalogImpl: addPartitionsToColumnPlacement(): partitionPlacement does not contain id: " + partitionId);
+                        partitionPlacement.put(partitionId, ccP);
+                    }
+                }
+            } catch (UnknownPartitionException e) {
+                e.printStackTrace();
+            }
         }
-
-        for ( long partitionId : partitionIds) {
-            System.out.println("HENNLO: CatalogImpl: addPartitionsToColumnPlacement(): Add entry for partition: '"
-                    + partitionId + "' for all occurences of column: '" + columnId +"'" );
-
-            partitionPlacement.put(partitionId, ccP);
-        }
-
     }
 
 
