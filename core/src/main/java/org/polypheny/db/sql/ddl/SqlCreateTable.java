@@ -108,7 +108,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlNode query;
     private final SqlIdentifier store;
     private final SqlIdentifier partitionColumn;
-    private final Catalog.PartitionType partitionType;
+    private final SqlIdentifier partitionType;
     private final int numPartitions;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
@@ -117,7 +117,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     /**
      * Creates a SqlCreateTable.
      */
-    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, Catalog.PartitionType partitionType , SqlIdentifier partitionColumn, int numPartitions) {
+    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType , SqlIdentifier partitionColumn, int numPartitions) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
@@ -160,7 +160,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             writer.keyword( "ON STORE" );
             store.unparse( writer, 0, 0 );
         }
-        if ( partitionType != Catalog.PartitionType.NONE ) {
+        if ( partitionType != null ) {
             writer.keyword( " PARTITION" );
             writer.keyword( " BY" );
             SqlWriter.Frame frame = writer.startList( "(", ")" );
@@ -315,16 +315,18 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 store.createTable( context, catalogTable );
             }
 
-            //TODO HENNLO Think about adding a new CatalogMethod to partiton table while creating table and not sequentially
-            if ( partitionType != PartitionType.NONE) {
+
+            //TODO HENNLO Think about adding a new CatalogMethod to partition table while creating table and not sequentially
+            if ( partitionType != null) {
                 //Check if specified partitionColumn is even part of the table
+                Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName(partitionType.toString());
                 long partitionColumnID = catalog.getColumn(tableId,partitionColumn.toString()).id;
                 System.out.println("HENNLO: SqlCreateTable: execute(): Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
                         " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID);
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, partitionType, partitionColumnID, numPartitions);
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions);
 
                 System.out.println("HENNLO: SqlCreateTable: table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");
@@ -333,7 +335,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
 
-        } catch (GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionException e) {
+        } catch (GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionException | UnknownPartitionTypeException e) {
             throw new RuntimeException( e );
         }
 

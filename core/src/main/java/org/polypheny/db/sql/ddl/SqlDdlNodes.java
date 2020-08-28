@@ -80,7 +80,7 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE TABLE.
      */
-    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, Catalog.PartitionType partitionType, SqlIdentifier partitionColumn, int numPartitions ) {
+    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitions ) {
         return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitions);
     }
 

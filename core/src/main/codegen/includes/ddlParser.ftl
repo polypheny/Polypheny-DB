@@ -263,7 +263,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNode query = null;
     SqlIdentifier store = null;
     SqlIdentifier partitionColumn = null;
-    Catalog.PartitionType partitionType = Catalog.PartitionType.NONE;
+    SqlIdentifier partitionType = null;
     int numPartitions = 0;
 }
 {
@@ -271,16 +271,7 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     [ tableElementList = TableElementList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     [ <ON> <STORE> store = SimpleIdentifier() ]
-    [ <PARTITION> <BY>
-
-        (
-                <HASH> { partitionType = Catalog.PartitionType.HASH; }
-            |
-                <RANGE> { partitionType = Catalog.PartitionType.RANGE; }
-            |
-                <ROUNDROBIN> { partitionType = Catalog.PartitionType.ROUNDROBIN; }
-        )
-
+    [ <PARTITION> <BY> partitionType = SimpleIdentifier()
         <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
         (
             [  <PARTITIONS> numPartitions = UnsignedIntLiteral() ]

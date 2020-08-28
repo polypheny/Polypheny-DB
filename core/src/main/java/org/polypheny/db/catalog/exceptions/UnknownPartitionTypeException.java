@@ -25,7 +25,7 @@ public class UnknownPartitionTypeException extends CatalogException {
 
 
     public UnknownPartitionTypeException( final String name ) {
-        super( "There is no PartitionType with name: " + name );
+        super( "There is no PartitionType with name: '" + name +"'" );
     }
 }
 

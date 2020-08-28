@@ -6289,7 +6289,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < GROUP: "GROUP" >
 |   < GROUPING: "GROUPING" >
 |   < GROUPS: "GROUPS" >
-|   < HASH: "HASH" >
 |   < HAVING: "HAVING" >
 |   < HIERARCHY: "HIERARCHY" >
 |   < HOLD: "HOLD" >
@@ -6523,7 +6522,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ROLE: "ROLE" >
 |   < ROLLBACK: "ROLLBACK" >
 |   < ROLLUP: "ROLLUP" >
-|   < ROUNDROBIN: "ROUNDROBIN" >
 |   < ROUTINE: "ROUTINE" >
 |   < ROUTINE_CATALOG: "ROUTINE_CATALOG" >
 |   < ROUTINE_NAME: "ROUTINE_NAME" >
