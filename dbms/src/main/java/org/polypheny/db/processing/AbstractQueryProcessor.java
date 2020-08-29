@@ -175,6 +175,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values ) {
+        return prepareQuery( logicalRoot, parameterRowType, values, false );
+    }
+
+    private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isSubquery ) {
+        boolean isAnalyze = statement.getTransaction.isAnalyze() && !isSubquery;
+        boolean lock = !isSubquery;
+
         // If this is a prepared statement, values is != null
         if ( values != null ) {
             statement.getDataContext().addAll( values );
@@ -194,44 +201,52 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        // Locking
-        if ( statement.getTransaction().isAnalyze() ) {
-            statement.getDuration().start( "Locking" );
+        if (lock) {
+            // Locking
+            if ( isAnalyze ) {
+                statement.getDuration().start( "Locking" );
 
-        }
-        try {
-            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-            // Get locks for individual tables
-            TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
-            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                }
             }
-        } catch ( DeadlockException e ) {
-            throw new RuntimeException( e );
+            try {
+                // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                // Get locks for individual tables
+                TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                    if ( mode == Mode.READ_ACCESS ) {
+                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                    } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                    }
+                }
+            } catch ( DeadlockException e ) {
+                throw new RuntimeException( e );
+            }
+
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Locking" );
+            }
         }
 
         // Constraint Enforcement Rewrite
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Locking" );
             statement.getDuration().start( "Index Update" );
         }
-        RelRoot indexUpdateRoot = indexUpdate( logicalRoot, statement );
+        IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
+        RelRoot indexUpdateRoot = indexUpdate( logicalRoot, statement, parameterRowType, values );
+//        RelRoot indexUpdateRoot = logicalRoot;
 
         // Constraint Enforcement Rewrite
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Index Update" );
             statement.getDuration().start( "Constraint Enforcement" );
         }
         RelRoot constraintsRoot = enforceConstraints( indexUpdateRoot, statement );
 
         // Index Lookup Rewrite
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Constraint Enforcement" );
             statement.getDuration().start( "Index Lookup Rewrite" );
         }
@@ -239,7 +254,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 //        RelRoot indexLookupRoot = constraintsRoot;
 
         // Route
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Index Lookup Rewrite" );
             statement.getDuration().start( "Routing" );
         }
@@ -254,7 +269,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         //
         // Implementation Caching
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Routing" );
             statement.getDuration().start( "Implementation Caching" );
         }
@@ -271,16 +286,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
-                if ( statement.getTransaction().isAnalyze() ) {
+                if ( isAnalyze ) {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
                 return signature;
             }
+
         }
 
         //
         // Plan Caching
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Implementation Caching" );
             statement.getDuration().start( "Plan Caching" );
         }
@@ -304,7 +320,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         //
         // Planning & Optimization
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Plan Caching" );
             statement.getDuration().start( "Planning & Optimization" );
         }
@@ -328,7 +344,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         //
         // Implementation
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Planning & Optimization" );
             statement.getDuration().start( "Implementation" );
         }
@@ -346,7 +362,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Implementation" );
         }
 
@@ -361,7 +377,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
 
 
-    private RelRoot indexUpdate( RelRoot root, Statement statement ) {
+    private RelRoot indexUpdate( RelRoot root, Statement statement, RelDataType parameterRowType, Map<String, Object> values ) {
         if ( root.kind.belongsTo( SqlKind.DML ) ) {
             final RelShuttle shuttle = new RelShuttleImpl() {
 
@@ -393,17 +409,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                         final RexLiteral fieldValue = row.get(
                                                 values.getRowType().getField( column, false, false ).getIndex()
                                         );
-                                        rowValues.add( fieldValue.getValue() );
+                                        rowValues.add( fieldValue.getValue2() );
                                     }
                                     for ( final String column : index.getTargetColumns() ) {
                                         final RexLiteral fieldValue = row.get(
                                                 values.getRowType().getField( column, false, false ).getIndex()
                                         );
-                                        targetRowValues.add( fieldValue.getValue() );
+                                        targetRowValues.add( fieldValue.getValue2() );
                                     }
                                     tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
                                 }
-                                index.insertAll( transaction.getXid(), tuplesToInsert );
+                                index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
                         } else if ( ltm.isDelete() || ltm.isUpdate() || ( ltm.isInsert() && !( ltm.getInput() instanceof Values ) ) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
@@ -438,26 +454,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                 }
                             }
                             // Prepare subquery
-                            final ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
-                            final Convention resultConvention =
-                                    ENABLE_BINDABLE
-                                            ? BindableConvention.INSTANCE
-                                            : EnumerableConvention.INSTANCE;
-                            final RelRoot root = RelRoot.of( originalProject, SqlKind.SELECT );
-                            final RelRoot routed = route( root, transaction, executionTimeMonitor );
-                            RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
-                                    RelBuilder.create( transaction, routed.rel.getCluster() ),
-                                    rexBuilder,
-                                    ViewExpanders.toRelContext( AbstractQueryProcessor.this, routed.rel.getCluster() ),
-                                    true );
-                            final RelRoot flattenedRoot = routed.withRel( typeFlattener.rewrite( routed.rel ) );
-                            final RelNode optimized = optimize( flattenedRoot, resultConvention );
-                            RelRoot optimalRoot = new RelRoot( optimized, flattenedRoot.validatedRowType, flattenedRoot.kind, flattenedRoot.fields, relCollation( flattenedRoot.rel ) );
-                            // Implement and execute subquery
-                            final RelDataType jdbcType = makeStruct( rexBuilder.getTypeFactory(), root.validatedRowType );
-                            final PreparedResult pr = implement( optimalRoot, jdbcType );
-                            PolyphenyDbSignature scanSig = createSignature( pr, optimalRoot, resultConvention, executionTimeMonitor );
-                            final Iterable<Object> enumerable = scanSig.enumerable( transaction.getDataContext() );
+                            RelRoot scanRoot = RelRoot.of( originalProject, SqlKind.SELECT );
+                            final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, values, true );
+                            final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
                             final Iterator<Object> iterator = enumerable.iterator();
                             final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
                             // Schedule the index deletions
@@ -481,7 +480,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                         }
                                         rowsToDelete.add( new Pair<>( rowProjection, targetRowProjection) );
                                     }
-                                    index.deleteAllPrimary( transaction.getXid(), rowsToDelete );
+                                    index.deleteAllPrimary( statement.getTransaction().getXid(), rowsToDelete );
                                 }
                             }
                             //Schedule the index insertions for UPDATE operations
@@ -511,7 +510,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                         }
                                         rowsToReinsert.add( new Pair<>( rowProjection, targetRowProjection ) );
                                     }
-                                    index.insertAll( transaction.getXid(), rowsToReinsert );
+                                    index.insertAll( statement.getTransaction().getXid(), rowsToReinsert );
                                 }
                             }
                         }
@@ -544,7 +543,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         final TableModify root = (TableModify) logicalRoot.rel;
 
         final Catalog catalog = Catalog.getInstance();
-        final CatalogSchema schema = transaction.getDefaultSchema();
+        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
         final CatalogTable table;
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
@@ -584,9 +583,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 final RelNode scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList()) );
+                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 builder.push( scan );
-                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList()) );
+                builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 for ( final String column : constraint.key.getColumnNames() ) {
                     RexNode joinComparison = rexBuilder.makeCall(
                             SqlStdOperatorTable.EQUALS,
@@ -596,7 +595,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                     joinCondition = rexBuilder.makeCall( SqlStdOperatorTable.AND, joinCondition, joinComparison );
                 }
                 final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1) ) );
+                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO,
                         ConstraintViolationException.class,
                         String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
@@ -646,7 +645,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
         if ( root.isInsert() ) {
-            RelBuilder builder = RelBuilder.create( transaction );
+            RelBuilder builder = RelBuilder.create( statement );
             final RelNode input = root.getInput();
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
@@ -671,7 +670,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
                 final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
                 final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1) ) );
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class, "Foreign key constraint violated" );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                        String.format( "Insert violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
                 lceRoot = lce;
             }
@@ -680,17 +680,32 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //
         //  Enforce UNIQUE constraints in UPDATE operations
         //
-        if ( root.isUpdate() ) {
+        if ( root.isUpdate() || root.isMerge() ) {
             for ( final CatalogConstraint constraint : constraints ) {
-                //TODO(s3lph): Implement
+                if ( constraint.type != ConstraintType.UNIQUE ) {
+                    log.warn( "Unknown constraint type: " + constraint.type );
+                    continue;
+                }
+                // Check if update affects this constraint
+                for ( final String c : root.getUpdateColumnList() ) {
+                    if ( constraint.key.getColumnNames().contains( c ) ) {
+                        final Index index = IndexManager.getInstance().getIndex( schema, table, constraint.key.getColumnNames(), null, true );
+                        // Delegate constraint enforcement to the index' duplicate check, only complain if no unique index is present
+                        if ( index == null ) {
+                            throw new IllegalStateException(
+                                    String.format( "An unique index over `%s`.`%s` columns %s is required to provide enforcement of constraint `%s`.",
+                                    schema.name, table.name, constraint.key.getColumnNames(), constraint.name ) );
+                        }
+                    }
+                }
             }
         }
 
         //
         //  Enforce FOREIGN KEY constraints in UPDATE operations
         //
-        if ( root.isUpdate() ) {
-            RelBuilder builder = RelBuilder.create( transaction );
+        if ( root.isUpdate() || root.isMerge() ) {
+            RelBuilder builder = RelBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
@@ -759,8 +774,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //
         //  Enforce reverse FOREIGN KEY constraints in UPDATE and DELETE operations
         //
-        if ( root.isDelete() || root.isUpdate() ) {
-            RelBuilder builder = RelBuilder.create( transaction );
+        if ( root.isDelete() || root.isUpdate() || root.isMerge() ) {
+            RelBuilder builder = RelBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : exportedKeys ) {
                 final String constraintRule = root.isDelete() ? "ON DELETE " + foreignKey.deleteRule : "ON UPDATE " + foreignKey.updateRule;
@@ -824,8 +839,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         RelRoot enforcementRoot = new RelRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
         // Send the generated tree with all unoptimized constraint enforcement checks to the UI
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+        if ( statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Constraint Enforcement Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Constraint Enforcement Plan" );
@@ -863,10 +878,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     c = lce.getCondition();
                                     break;
                                 case EQUAL_TO_ZERO:
-                                    c = index.containsAny( transaction.getXid(), lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
+                                    c = index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
                                     break;
                                 case GREATER_ZERO:
-                                    c = index.containsAny( transaction.getXid(), lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
+                                    c = index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
                                     break;
                             }
                             final LogicalConditionalExecute simplified =
@@ -899,7 +914,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                             ctypes.add( field.getType() );
                         }
                         // Retrieve the catalog schema and database representations required for index lookup
-                        final CatalogSchema schema = transaction.getDefaultSchema();
+                        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
                         final CatalogTable ctable;
                         try {
                             ctable = Catalog.getInstance().getTable( schema.id, table );
@@ -915,7 +930,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         }
                         // TODO: Avoid copying stuff around
                         final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
-                        return idx.getAsValues( transaction.getXid(), builder, compositeType );
+                        return idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
 //                        final ImmutableList<ImmutableList<RexLiteral>> tuples =
 //                                ImmutableList.copyOf(idx.getAll().stream().map( ImmutableList::copyOf ).collect( Collectors.toList()));
 //                        // TODO: Metadata regarding table name?

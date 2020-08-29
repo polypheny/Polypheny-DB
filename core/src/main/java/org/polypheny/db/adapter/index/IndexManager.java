@@ -74,10 +74,23 @@ public class IndexManager {
         openTransactions.get( xid ).add( index );
     }
 
+    public void barrier( PolyXid xid ) {
+        List<Index> idxs = openTransactions.remove( xid );
+        if (idxs == null) {
+            return;
+        }
+        for (final Index idx : idxs) {
+            idx.barrier( xid );
+        }
+    }
+
     public void commit( PolyXid xid ) {
         List<Index> idxs = openTransactions.remove( xid );
         if (idxs == null) {
             return;
+        }
+        for (final Index idx : idxs) {
+            idx.barrier( xid );
         }
         for (final Index idx : idxs) {
             idx.commit( xid );
@@ -119,7 +132,7 @@ public class IndexManager {
 
 
     protected void addIndex( final long id, final String name, final CatalogKey key, final IndexType type, final boolean unique, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
-        final IndexFactory factory = INDEX_FACTORIES.stream().filter( it -> it.isUnique() == unique && it.getType() == type ).findFirst().orElseThrow( IllegalArgumentException::new );
+        final IndexFactory factory = INDEX_FACTORIES.stream().filter( it -> it.getType() == type && it.isUnique() == unique ).findFirst().orElseThrow( IllegalArgumentException::new );
         final CatalogTable table = Catalog.getInstance().getTable( key.tableId );
         final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
@@ -163,13 +176,13 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns, IndexType type, boolean unique ) {
+    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns, IndexType type, Boolean unique ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
                         && index.columns.equals( columns )
-                        && index.getType() == type
-                        && index.isUnique() == unique
+                        && type == null || ( index.getType() == type )
+                        && unique == null || ( index.isUnique() == unique )
         ).findFirst().orElse( null );
     }
 

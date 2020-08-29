@@ -41,10 +41,11 @@ import org.polypheny.db.util.Pair;
 class CoWHashIndex extends Index {
 
 
-    protected Map<List<Object>, List<Object>> index = new HashMap<>();
+    private Map<List<Object>, List<Object>> index = new HashMap<>();
 
-    protected Map<PolyXid, Map<List<Object>, List<Object>>> cowIndex = new HashMap<>();
-    protected Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
+    private Map<PolyXid, Map<List<Object>, List<Object>>> cowIndex = new HashMap<>();
+    private Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
+    private Map<PolyXid, List<Pair<List<Object>, List<Object>>>> barrierIndex = new HashMap<>();
 
 
     public CoWHashIndex(
@@ -86,9 +87,12 @@ class CoWHashIndex extends Index {
     }
 
 
-
     @Override
     void commit( PolyXid xid ) {
+        begin( xid );
+        if ( barrierIndex.get( xid ).size() > 0 ) {
+            throw new IllegalStateException( "Attempted index commit without invoking barrier first" );
+        }
         for ( final DeferredIndexUpdate update : this.cowOpLog.get( xid ) ) {
             update.execute( this );
         }
@@ -97,9 +101,20 @@ class CoWHashIndex extends Index {
 
 
     @Override
+    public void barrier( PolyXid xid ) {
+        begin( xid );
+        for ( final Pair<List<Object>, List<Object>> tuple : barrierIndex.get( xid ) ) {
+            postBarrier( xid, tuple.left, tuple.right );
+        }
+        barrierIndex.get( xid ).clear();
+    }
+
+
+    @Override
     void rollback( PolyXid xid ) {
         this.cowIndex.remove( xid );
         this.cowOpLog.remove( xid );
+        this.barrierIndex.remove( xid );
     }
 
 
@@ -108,6 +123,7 @@ class CoWHashIndex extends Index {
             IndexManager.getInstance().begin( xid, this );
             cowIndex.put( xid, new HashMap<>() );
             cowOpLog.put( xid, new ArrayList<>() );
+            barrierIndex.put( xid, new ArrayList<>() );
         }
     }
 
@@ -125,7 +141,7 @@ class CoWHashIndex extends Index {
 
 
     @Override
-    public boolean containsAny( PolyXid xid, Set<List<Object>> values ) {
+    public boolean containsAny( PolyXid xid, Iterable<List<Object>> values ) {
         for ( final List<Object> tuple : values ) {
             if ( contains( xid, tuple ) ) {
                 return true;
@@ -136,7 +152,7 @@ class CoWHashIndex extends Index {
 
 
     @Override
-    public boolean containsAll( PolyXid xid, Set<List<Object>> values ) {
+    public boolean containsAll( PolyXid xid, Iterable<List<Object>> values ) {
         for ( final List<Object> tuple : values ) {
             if ( !contains( xid, tuple ) ) {
                 return false;
@@ -145,15 +161,6 @@ class CoWHashIndex extends Index {
         return true;
     }
 
-
-    protected ImmutableList<RexLiteral> makeRexRow( final RelDataType rowType, final RexBuilder rexBuilder, final List<Object> tuple ) {
-        assert rowType.getFieldCount() == tuple.size();
-        List<RexLiteral> row = new ArrayList<>( tuple.size() );
-        for ( int i = 0; i < tuple.size(); ++i ) {
-            row.add( (RexLiteral) rexBuilder.makeLiteral( tuple.get( i ), rowType.getFieldList().get( i ).getType(), false ) );
-        }
-        return ImmutableList.copyOf( row );
-    }
 
     @Override
     public Values getAsValues( PolyXid xid, RelBuilder builder, RelDataType rowType ) {
@@ -179,12 +186,18 @@ class CoWHashIndex extends Index {
         return (Values) builder.values( ImmutableList.copyOf( tuples ), rowType ).build();
     }
 
+    @Override
+    Map<List<Object>, List<Object>> getRaw() {
+        return index;
+    }
+
 
     @Override
     protected void clear() {
         index.clear();
         cowIndex.clear();
         cowOpLog.clear();
+        barrierIndex.clear();
     }
 
 
@@ -209,8 +222,19 @@ class CoWHashIndex extends Index {
 
 
     protected void _insert( PolyXid xid, List<Object> key, List<Object> primary ) {
+        List<Pair<List<Object>, List<Object>>> idx = barrierIndex.get( xid );
+        idx.add( new Pair<>( key, primary ) );
+    }
+
+
+    protected void postBarrier( PolyXid xid, List<Object> key, List<Object> primary ) {
         Map<List<Object>, List<Object>> idx = cowIndex.get( xid );
 
+        if ( primary == null ) {
+            // null = delete
+            idx.put( key, null );
+            return;
+        }
         if ( (idx.containsKey( key ) && idx.get( key ) != null) || index.containsKey( key ) ) {
             throw new ConstraintViolationException(
                     String.format( "Attempt to add duplicate key [%s] to unique index %s", key, name )
@@ -271,8 +295,8 @@ class CoWHashIndex extends Index {
 
 
     protected void _delete( PolyXid xid, List<Object> key ) {
-        Map<List<Object>, List<Object>> idx = cowIndex.get( xid );
-        idx.put( key, null );
+        List<Pair<List<Object>, List<Object>>> idx = barrierIndex.get( xid );
+        idx.add( new Pair<>( key, null ) );
     }
 
 
@@ -280,6 +304,7 @@ class CoWHashIndex extends Index {
     void delete( List<Object> key ) {
         this.index.remove( key );
     }
+
 
     @Override
     void deletePrimary( List<Object> key, List<Object> primary ) {

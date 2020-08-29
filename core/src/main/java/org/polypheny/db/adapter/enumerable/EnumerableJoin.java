@@ -157,9 +157,9 @@ public class EnumerableJoin extends EquiJoin implements EnumerableRel {
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );
-        Expression leftExpression = builder.append( "left", leftResult.block );
+        Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableRel) right, pref );
-        Expression rightExpression = builder.append( "right", rightResult.block );
+        Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
         final PhysType keyPhysType = leftResult.physType.project( leftKeys, JavaRowFormat.LIST );
         return implementor.result(

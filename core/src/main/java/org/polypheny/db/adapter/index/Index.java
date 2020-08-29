@@ -34,6 +34,8 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.PolyXid;
@@ -113,6 +115,8 @@ public abstract class Index {
     abstract void commit( PolyXid xid );
 
     abstract void rollback( PolyXid xid );
+
+    abstract public void barrier( PolyXid xid);
 
     /**
      * The default implementation is simply a loop over the iterable.
@@ -198,11 +202,13 @@ public abstract class Index {
 
     public abstract boolean contains( final PolyXid xid, final List<Object> value );
 
-    public abstract boolean containsAny( final PolyXid xid, final Set<List<Object>> values );
+    public abstract boolean containsAny( final PolyXid xid, final Iterable<List<Object>> values );
 
-    public abstract boolean containsAll( final PolyXid xid, final Set<List<Object>> values );
+    public abstract boolean containsAll( final PolyXid xid, final Iterable<List<Object>> values );
 
     public abstract Values getAsValues( final PolyXid xid, RelBuilder builder, RelDataType rowType );
+
+    abstract Object getRaw();
 
     interface IndexFactory {
 
@@ -218,6 +224,19 @@ public abstract class Index {
                 final List<String> columns,
                 final List<String> targetColumns);
 
+    }
+
+    /*
+     *  Helpers
+     */
+
+    protected ImmutableList<RexLiteral> makeRexRow( final RelDataType rowType, final RexBuilder rexBuilder, final List<Object> tuple ) {
+        assert rowType.getFieldCount() == tuple.size();
+        List<RexLiteral> row = new ArrayList<>( tuple.size() );
+        for ( int i = 0; i < tuple.size(); ++i ) {
+            row.add( (RexLiteral) rexBuilder.makeLiteral( tuple.get( i ), rowType.getFieldList().get( i ).getType(), false ) );
+        }
+        return ImmutableList.copyOf( row );
     }
 
 }
