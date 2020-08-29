@@ -341,8 +341,8 @@ public abstract class AbstractRouter implements Router {
                             System.out.println("HENNLO AbstractRouter(): GET all Placements by identified Partition: " +identPart);
                             for (CatalogColumnPlacement partitionPlace:
                                     catalog.getColumnPlacementsByPartition(catalogTable.partitionIds.get(identPart))) {
-                                System.out.println("HENNLO AbstractRouter(): Statement will be executed on placement " +
-                                        partitionPlace.storeUniqueName + " '"+ partitionPlace.physicalTableName + "' by identified Partiton: '" + identPart );
+                                System.out.println("\t\t Statement will be relevant for placement store=" +
+                                        partitionPlace.storeUniqueName + " tableName='"+ partitionPlace.physicalTableName + "' by identified Partiton: " + identPart );
                             }
                         } catch (UnknownPartitionException e) {
                             e.printStackTrace();

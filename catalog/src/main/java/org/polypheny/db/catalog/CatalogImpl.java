@@ -2639,6 +2639,7 @@ public class CatalogImpl extends Catalog {
             System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
             long partId;
             List<Long> tempPartIds = new ArrayList<>();
+            if ( numPartitions == 0 && partitionType == PartitionType.HASH){ numPartitions = 2; }
             //Calculate how many partitions exist if partitioning is applied.
             //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
             System.out.println("HENNLO: CatalogImpl: Creating " + numPartitions + " partitions");

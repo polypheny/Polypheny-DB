@@ -88,6 +88,10 @@ SqlAlterTable SqlAlterTable(Span s) :
     final String onUpdate;
     final String onDelete;
     final boolean unique;
+    final SqlIdentifier partitionType;
+    final SqlIdentifier partitionColumn;
+    int numPartitions = 0;
+
 }
 {
     <TABLE>
@@ -340,6 +344,17 @@ SqlAlterTable SqlAlterTable(Span s) :
         statement = AlterTableModifyColumn(s, table, column)
         {
             return statement;
+        }
+
+    |
+        <PARTITION> <BY>
+        partitionType = SimpleIdentifier()
+        <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
+        (
+            [  <PARTITIONS> numPartitions = UnsignedIntLiteral() ]
+        )
+        {
+            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions);
         }
     )
 }
