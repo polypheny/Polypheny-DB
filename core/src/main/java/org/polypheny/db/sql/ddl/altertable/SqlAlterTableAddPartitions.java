@@ -51,9 +51,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
         this.table = Objects.requireNonNull(table);
         this.partitionType= Objects.requireNonNull(partitionType);
         this.partitionColumn = Objects.requireNonNull(partitionColumn);
-        this.numPartitions = numPartitions; //May be null
-
-        System.out.println("HENNLO: " + table + "-" + partitionColumn + "-" + partitionType + "-" + numPartitions);
+        this.numPartitions = numPartitions; //May be empty
     }
 
     @Override

@@ -52,13 +52,18 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     private final SqlIdentifier table;
     private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
+    List<Integer> partitionList;
 
 
-    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName ) {
+
+    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
         this.storeName = Objects.requireNonNull( storeName );
+        this.partitionList = partitionList;
+
+        System.out.println("HENNNLO ->" + table + "->"+columnList +"->"+storeName +"->"+partitionList);
     }
 
 
@@ -85,6 +90,11 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     @Override
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+        //You can't partition placements if the table is not partitioned
+        if (catalogTable.isPartitioned == false && partitionList != null){
+            throw new RuntimeException("Partition Placement is not allowed for unpartitioned table '"+ catalogTable.name +"'");
+        }
+
         List<Long> columnIds = new LinkedList<>();
         for ( SqlNode node : columnList.getList() ) {
             CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
@@ -140,6 +150,9 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             }
             // Create table on store
             storeInstance.createTable( context, catalogTable );
+
+
+
             // !!!!!!!!!!!!!!!!!!!!!!!!
             // TODO: Now we should also copy the data
         } catch ( GenericCatalogException | UnknownKeyException e ) {

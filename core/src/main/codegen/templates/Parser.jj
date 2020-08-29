@@ -4432,6 +4432,8 @@ int IntLiteral() :
     }
 }
 
+
+
 // Type name with optional scale and precision
 SqlDataTypeSpec DataType() :
 {

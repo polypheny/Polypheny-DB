@@ -46,8 +46,6 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
     public SqlAlterTableMergePartitions(SqlParserPos pos, SqlIdentifier table) {
         super(pos);
         this.table = Objects.requireNonNull(table);
-
-        System.out.println("HENNLO: " + table);
     }
 
     @Override
@@ -60,8 +58,6 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "MERGE" );
         writer.keyword( "PARTITIONS" );
-
-
     }
 
     @Override

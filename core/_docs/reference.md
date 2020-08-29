@@ -108,6 +108,7 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT '(' columnName [ , columnName ]* ')' ON STORE storeUniqueName 
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT ON STORE storeUniqueName
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName PARTITION BY ( HASH | RANGE | ROUNDROBIN | LIST) '(' columnName ')' [PARTITIONS numPartitions]
+     | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MERGE PARTITIONS
      | ALTER CONFIG key SET value
      | ALTER STORES ADD storeName USING adapterClass WITH config 
      | ALTER STORES DROP storeName

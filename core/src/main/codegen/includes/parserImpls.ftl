@@ -17,6 +17,7 @@ return SqlShowTables(...)
 
 <#-- @formatter:off -->
 
+
 /**
 * Parses a TRUNCATE TABLE statement.
 */
@@ -90,6 +91,8 @@ SqlAlterTable SqlAlterTable(Span s) :
     final boolean unique;
     final SqlIdentifier partitionType;
     final SqlIdentifier partitionColumn;
+    List<Integer> partitionList = new ArrayList<Integer>();
+    int partitionIndex = 0;
     int numPartitions = 0;
 
 }
@@ -262,8 +265,17 @@ SqlAlterTable SqlAlterTable(Span s) :
         <ON>
         <STORE>
         store = SimpleIdentifier()
+            [
+                <WITH> <PARTITIONS>
+                    <LPAREN>
+                    partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    (
+                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    )*
+                    <RPAREN>
+            ]
         {
-            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store);
+            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList);
         }
     |
         <DROP>
