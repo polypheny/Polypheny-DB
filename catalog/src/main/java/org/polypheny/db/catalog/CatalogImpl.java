@@ -2622,6 +2622,23 @@ public class CatalogImpl extends Catalog {
         }
     }
 
+    @Override
+    public void deletePartition(long tableId, long schemaId, long partitionId){
+        System.out.println("HENNLO: CatalogImpl: deleting partition : " +  partitionId + " on table id: "+ tableId);
+        try {
+            CatalogPartition partition = getPartition( partitionId );
+            synchronized (this){
+                partitions.remove(partitionId);
+                partitionPlacement.remove(partitionId);
+
+                //Redistribute data
+            }
+        } catch (UnknownPartitionException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     //HENNLO
     @Override
     public CatalogPartition getPartition(long partitionId) throws UnknownPartitionException {
@@ -2691,10 +2708,41 @@ public class CatalogImpl extends Catalog {
     //TODO HENNLO To be implemented
     @Override
     public void mergeTable(long tableId) throws UnknownTableException {
-
         System.out.println("HENNLO: CatalogImpl: Merging table: " + getTable(tableId).name + " has bee started");
 
+        CatalogTable old = Objects.requireNonNull(tables.get(tableId));
+        //Loop over **old.partitionIds** to delete all partitions which are part of table
+        for (long partitionId : old.partitionIds) {
+            deletePartition(tableId, old.schemaId, partitionId);
+        }
+
+        CatalogTable table = new CatalogTable(
+                old.id,
+                old.name,
+                old.columnIds,
+                old.schemaId,
+                old.databaseId,
+                old.ownerId,
+                old.ownerName,
+                old.tableType,
+                old.definition,
+                old.primaryKey,
+                old.placementsByStore);
+
+        System.out.println("HENNLO: CatalogImpl: Updated table '" + table.name + "' ");
+
+        synchronized (this) {
+            tables.replace(tableId, table);
+            tableNames.remove(new Object[]{table.databaseId, table.schemaId, old.name});
+            tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
+            tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
+        }
+
+        listeners.firePropertyChange("table", old, table);
+
+
         System.out.println("HENNLO: CatalogImpl: Merging table: " + getTable(tableId).name + " has bee finished");
+
     }
 
     @Override

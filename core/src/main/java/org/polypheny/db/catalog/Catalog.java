@@ -803,6 +803,8 @@ public abstract class Catalog {
 
     public abstract long addPartition( long tableId, long schemaId, int ownerId, PartitionType partitionType ) throws GenericCatalogException;
 
+    public abstract void deletePartition( long tableId, long schemaId, long partitionId );
+
     public abstract CatalogPartition getPartition(long partitionId ) throws UnknownPartitionException;
 
     public abstract void partitionTable(long tableId, PartitionType type, long partitionColumnId, int numPartitions ) throws UnknownTableException, UnknownPartitionException, GenericCatalogException;

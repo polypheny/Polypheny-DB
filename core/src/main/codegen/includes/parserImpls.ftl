@@ -356,6 +356,12 @@ SqlAlterTable SqlAlterTable(Span s) :
         {
             return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions);
         }
+
+    |
+        <MERGE> <PARTITIONS>
+        {
+            return new SqlAlterTableMergePartitions(s.end(this), table);
+        }
     )
 }
 
