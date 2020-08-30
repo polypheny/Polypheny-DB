@@ -155,7 +155,8 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                             PlacementType.MANUAL,
                             null,
                             null,
-                            null );
+                            null,
+                            null);
                     // Add column on store
                     storeInstance.addColumn( context, catalogTable, Catalog.getInstance().getColumn( cid ) );
                     // !!!!!!!!!!!!!!!!!!!!!!!!

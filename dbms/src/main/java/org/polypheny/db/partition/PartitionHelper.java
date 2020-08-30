@@ -39,7 +39,9 @@ public class PartitionHelper {
                 case HASH:
                     partitionKey = catalogTable.getSchemaName() + catalogTable.name + catalogTable
                                 + Catalog.getInstance().getColumn(catalogTable.partitionColumnId).name + catalogTable.partitionType + columnValue;
-                    partitionID = partitionKey.hashCode()*-1 ;
+                    //partitionID = partitionKey.hashCode()*-1 ;
+
+                     partitionID = columnValue.hashCode()*-1;
                     break;
 
                 case LIST:
@@ -66,9 +68,9 @@ public class PartitionHelper {
         // Don't want any neg. value for now
         if (partitionID <= 0){ partitionID *= -1; }
 
-        //finally decide on which partition to put it
-        return partitionID % catalogTable.numPartitions;
 
+        //finally decide on which partition to put it
+        return catalogTable.partitionIds.get((int)(partitionID % catalogTable.numPartitions));
 
     }
 

@@ -334,12 +334,12 @@ public class CatalogTest {
         CatalogStore csv = catalog.getStore( "csv" );
         CatalogStore hsqldb = catalog.getStore( "hsqldb" );
 
-        catalog.addColumnPlacement( csv.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name );
+        catalog.addColumnPlacement( csv.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name,null );
 
         assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
         assertEquals( columnId, catalog.getColumnPlacements( columnId ).get( 0 ).columnId );
 
-        catalog.addColumnPlacement( hsqldb.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name );
+        catalog.addColumnPlacement( hsqldb.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name,null );
 
         assertEquals( 2, catalog.getColumnPlacements( columnId ).size() );
         assertTrue( catalog.getColumnPlacements( columnId ).stream().map( p -> p.storeId ).collect( Collectors.toList() ).containsAll( Arrays.asList( hsqldb.id, csv.id ) ) );

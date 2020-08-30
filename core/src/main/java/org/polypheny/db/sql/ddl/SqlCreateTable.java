@@ -274,7 +274,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                                 store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL,
                                 null,
                                 null,
-                                null );
+                                null,
+                                null);
                     }
 
                     // Add default value

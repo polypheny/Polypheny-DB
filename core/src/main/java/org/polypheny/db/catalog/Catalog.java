@@ -360,9 +360,10 @@ public abstract class Catalog {
      * @param physicalSchemaName The schema name on the data store
      * @param physicalTableName The table name on the data store
      * @param physicalColumnName The column name on the data store
+     * @param partitionIds List of partitions to place on this column placement/May be null
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void addColumnPlacement( int storeId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException;
+    public abstract void addColumnPlacement( int storeId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionIds ) throws GenericCatalogException;
 
     /**
      * Deletes a column placement
@@ -823,7 +824,15 @@ public abstract class Catalog {
 
     public abstract void  addPartitionsToColumnPlacement(long columnId, List<Long> partitionIds);
 
+    public abstract void  addPartitionsToColumnPlacement(CatalogColumnPlacement catalogColumnPlacement, List<Long> partitionIds);
+
     public abstract void  updatePartitionsOnColumnPlacement(CatalogColumnPlacement catalogColumnPlacement, List<Long> partitionIds);
+
+    public abstract void  updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds);
+
+    public abstract List<Long>  getPartitionsOnDataPlacement(int storeId, long tableId);
+
+    public abstract void  deletePartitionsOnDataPlacement(int storeId, long tableId);
 
     /*
      *

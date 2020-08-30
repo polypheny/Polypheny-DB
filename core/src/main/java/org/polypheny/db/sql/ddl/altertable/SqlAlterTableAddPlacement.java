@@ -20,6 +20,8 @@ package org.polypheny.db.sql.ddl.altertable;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
+
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -28,6 +30,7 @@ import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -91,8 +94,9 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         //You can't partition placements if the table is not partitioned
-        if (catalogTable.isPartitioned == false && partitionList != null){
-            throw new RuntimeException("Partition Placement is not allowed for unpartitioned table '"+ catalogTable.name +"'");
+        if (catalogTable.isPartitioned == false && !partitionList.isEmpty()){
+
+            throw new RuntimeException(" Partition Placement is not allowed for unpartitioned table '"+ catalogTable.name +"'");
         }
 
         List<Long> columnIds = new LinkedList<>();
@@ -125,6 +129,33 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             if ( columnIds.size() == 0 ) {
                 columnIds = ImmutableList.copyOf( catalogTable.columnIds );
             }
+
+
+            List<Long> tempPartitionList = new ArrayList<Long>();
+            //Select partitions to create on this placement
+            if (catalogTable.isPartitioned) {
+                //if table is partitioned and no concrete partitons had been specified to put on this placement. put all on cP.
+                if (partitionList != null) {
+                    System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has been specified ");
+                    //First convert specified index to correct partitionId
+                    for (int partitionId: partitionList) {
+                        //check if specified partition index is even part of table and if so get corresponding uniquePartId
+                        try {
+                            tempPartitionList.add(catalogTable.partitionIds.get(partitionId));
+                        }catch (IndexOutOfBoundsException e){
+                            throw new RuntimeException("Specified Partition-Index: '" + partitionId +"' is not part of table '"
+                                    + catalogTable.name+"', has only " + catalogTable.numPartitions + " partitions");
+                        }
+                    }
+                }
+                //Simply Place all partitions on placement since nothing has been specified
+                else if (partitionList == null) {
+                    System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has been specified ");
+                    tempPartitionList = catalogTable.partitionIds;
+
+                }
+            }
+
             // Create column placements
             for ( long cid : columnIds ) {
                 Catalog.getInstance().addColumnPlacement(
@@ -133,7 +164,9 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                         PlacementType.MANUAL,
                         null,
                         null,
-                        null );
+                        null,
+                        tempPartitionList);
+
             }
             //Check if placement includes primary key columns
             CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
@@ -145,9 +178,11 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                             PlacementType.AUTOMATIC,
                             null,
                             null,
-                            null );
+                            null,
+                            tempPartitionList);
                 }
             }
+
             // Create table on store
             storeInstance.createTable( context, catalogTable );
 
