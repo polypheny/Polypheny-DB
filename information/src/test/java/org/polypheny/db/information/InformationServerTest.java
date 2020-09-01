@@ -266,7 +266,7 @@ public class InformationServerTest {
         im.addGroup( kvGroup );
         InformationKeyValue iKV = new InformationKeyValue( "kv", kvGroup );
         iKV.putPair( "k1", "value1" ).putPair( "k2", "value2" ).putPair( "k3", "value3" );
-        Assert.assertEquals( iKV.getPair( "k1" ), "value1" );
+        Assert.assertEquals( iKV.getValue( "k1" ), "value1" );
         im.registerInformation( iKV );
         Timer t4 = new Timer();
         final boolean[] alternate = { true };

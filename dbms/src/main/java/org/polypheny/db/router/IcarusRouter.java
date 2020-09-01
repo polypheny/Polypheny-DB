@@ -49,6 +49,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.config.ConfigBoolean;
+import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
 import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.config.WebUiGroup;
@@ -58,6 +59,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
+import org.polypheny.db.processing.QueryParameterizer;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
@@ -97,7 +99,7 @@ public class IcarusRouter extends AbstractRouter {
     private static final ConfigInteger SHORT_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
             "icarusRouting/shortRunningSimilarThreshold",
             "The amount of time (specified as percentage of the fastest time) a store can be slower than the fastest store in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest store.",
-            100 );
+            0 );
     private static final ConfigInteger LONG_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
             "icarusRouting/longRunningSimilarThreshold",
             "The amount of time (specified as percentage of the fastest time) a store can be slower than the fastest store in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest store.",
@@ -106,6 +108,18 @@ public class IcarusRouter extends AbstractRouter {
             "icarusRouting/shortRunningLongRunningThreshold",
             "The minimal execution time (in milliseconds) for a query to be considered as long-running. Queries with lower execution times are considered as short-running.",
             1000 );
+
+    private static final ConfigEnum QUERY_CLASS_PROVIDER = new ConfigEnum(
+            "icarusRouting/queryClassProvider",
+            "Which implementation to use for deriving the query class from a query plan.",
+            QUERY_CLASS_PROVIDER_METHOD.class,
+            QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER );
+
+
+    private enum QUERY_CLASS_PROVIDER_METHOD {ICARUS_SHUTTLE, QUERY_PARAMETERIZER}
+
+
+    ;
 
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
@@ -121,9 +135,18 @@ public class IcarusRouter extends AbstractRouter {
     @Override
     protected void analyze( Transaction transaction, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
-            IcarusShuttle icarusShuttle = new IcarusShuttle();
-            logicalRoot.rel.accept( icarusShuttle );
-            queryClassString = icarusShuttle.hashBasis.toString();
+            if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.ICARUS_SHUTTLE ) {
+                IcarusShuttle icarusShuttle = new IcarusShuttle();
+                logicalRoot.rel.accept( icarusShuttle );
+                queryClassString = icarusShuttle.hashBasis.toString();
+            } else if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.QUERY_PARAMETERIZER ) {
+                QueryParameterizer parameterizer = new QueryParameterizer( 0, new LinkedList<>() );
+                RelNode parameterized = logicalRoot.rel.accept( parameterizer );
+                queryClassString = parameterized.relCompareString();
+            } else {
+                throw new RuntimeException( "Unknown value for QUERY_CLASS_PROVIDER config: " + QUERY_CLASS_PROVIDER.getEnum().name() );
+            }
+
             if ( routingTable.contains( queryClassString ) ) {
                 selectedStoreId = routeQuery( routingTable.get( queryClassString ) );
 
@@ -501,12 +524,13 @@ public class IcarusRouter extends AbstractRouter {
                 row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestStore );
             } else {
                 row = new HashMap<>();
+                // init row with 0
+                for ( Integer storeId : map.keySet() ) {
+                    row.put( storeId, 0 );
+                }
                 if ( fastestStore != -1 && fastestTime > 0 ) {
                     row.put( fastestStore, 100 );
                 }
-                /*else {
-                    log.error( "Something went wrong while analyzing data. This should not happen!" );
-                }*/
             }
             return row;
         }
@@ -613,6 +637,9 @@ public class IcarusRouter extends AbstractRouter {
 
                 configManager.registerConfig( SHORT_RUNNING_LONG_RUNNING_THRESHOLD );
                 SHORT_RUNNING_LONG_RUNNING_THRESHOLD.withUi( icarusGroup.getId() );
+
+                configManager.registerConfig( QUERY_CLASS_PROVIDER );
+                QUERY_CLASS_PROVIDER.withUi( icarusGroup.getId() );
             }
         }
 

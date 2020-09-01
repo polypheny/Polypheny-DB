@@ -98,7 +98,7 @@ public abstract class AbstractRouter implements Router {
             routed = routeDml( logicalRoot.rel, transaction );
         } else {
             RelBuilder builder = RelBuilder.create( transaction, logicalRoot.rel.getCluster() );
-            builder = buildSelect( logicalRoot.rel, builder, transaction );
+            builder = buildSelect( logicalRoot.rel, builder );
             routed = builder.build();
         }
 
@@ -134,9 +134,9 @@ public abstract class AbstractRouter implements Router {
     protected abstract List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable catalogTable );
 
 
-    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Transaction transaction ) {
+    protected RelBuilder buildSelect( RelNode node, RelBuilder builder ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildSelect( node.getInput( i ), builder, transaction );
+            buildSelect( node.getInput( i ), builder );
         }
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -299,6 +299,10 @@ public abstract class AbstractRouter implements Router {
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
+                // Special handling for INSERT INTO foo SELECT * FROM foo2
+                if ( ((LogicalTable) table.getTable()).getTableId() != catalogTable.id ) {
+                    return buildSelect( node, builder );
+                }
                 builder = handleTableScan(
                         builder,
                         table,

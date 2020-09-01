@@ -96,12 +96,7 @@ public abstract class Calc extends SingleRel {
 
     @Override
     public boolean isValid( Litmus litmus, Context context ) {
-        if ( !RelOptUtil.equal(
-                "program's input type",
-                program.getInputRowType(),
-                "child's output type",
-                getInput().getRowType(),
-                litmus ) ) {
+        if ( !RelOptUtil.equal( "program's input type", program.getInputRowType(), "child's output type", getInput().getRowType(), litmus ) ) {
             return litmus.fail( null );
         }
         if ( !program.isValid( litmus, context ) ) {
@@ -157,6 +152,17 @@ public abstract class Calc extends SingleRel {
         if ( exprs == oldExprs && projects == oldProjects && condition == oldCondition ) {
             return this;
         }
-        return copy( traitSet, getInput(), new RexProgram( program.getInputRowType(), exprs, projects, (RexLocalRef) condition, program.getOutputRowType() ) );
+        return copy(
+                traitSet,
+                getInput(),
+                new RexProgram( program.getInputRowType(), exprs, projects, (RexLocalRef) condition, program.getOutputRowType() ) );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (program != null ? program.toString() : "") + "&";
     }
 }

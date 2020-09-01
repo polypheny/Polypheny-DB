@@ -28,10 +28,11 @@ public interface SqlProcessor {
 
     SqlNode parse( String sql );
 
-    Pair<SqlNode, RelDataType> validate( SqlNode parsed );
+    Pair<SqlNode, RelDataType> validate( SqlNode parsed, boolean addDefaultValues );
 
     RelRoot translate( SqlNode sql );
 
     PolyphenyDbSignature<?> prepareDdl( SqlNode parsed );
 
+    RelDataType getParameterRowType( SqlNode left );
 }

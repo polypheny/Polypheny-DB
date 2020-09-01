@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.jdbc.connection;
 
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -63,6 +64,16 @@ public abstract class ConnectionHandler {
     }
 
 
+    public PreparedStatement prepareStatement( String sql ) throws SQLException {
+        if ( openStatements == null ) {
+            openStatements = new ConcurrentLinkedQueue<>();
+        }
+        PreparedStatement preparedStatement = connection.prepareStatement( sql );
+        openStatements.add( preparedStatement );
+        return preparedStatement;
+    }
+
+
     public abstract boolean prepare() throws ConnectionHandlerException;
 
     public abstract void commit() throws ConnectionHandlerException;
@@ -78,5 +89,4 @@ public abstract class ConnectionHandler {
         openStatements.add( statement );
         return statement;
     }
-
 }

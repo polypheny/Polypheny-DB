@@ -225,6 +225,9 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Unknown option" );
             }
+
+            // Rest plan cache and implementation cache (not sure if required in this case)
+            transaction.getQueryProcessor().resetCaches();
         } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }

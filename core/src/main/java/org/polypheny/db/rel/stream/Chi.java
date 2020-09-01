@@ -52,5 +52,11 @@ public class Chi extends SingleRel {
     protected Chi( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
         super( cluster, traits, input );
     }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" + input.relCompareString() + "&";
+    }
 }
 

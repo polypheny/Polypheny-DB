@@ -646,6 +646,9 @@ public abstract class RelToSqlConverter extends SqlImplementor implements Reflec
         for ( CorrelationId id : relNode.getVariablesSet() ) {
             correlTableMap.put( id, x.qualifiedContext() );
         }
+        for ( CorrelationId id : relNode.getCluster().getMapCorrelToRel().keySet() ) {
+            correlTableMap.putIfAbsent( id, x.qualifiedContext() );
+        }
     }
 
 

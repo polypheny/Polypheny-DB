@@ -41,7 +41,6 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.rel.rules.FilterSetOpTransposeRule;
-import org.polypheny.db.rel.rules.ProjectRemoveRule;
 import org.polypheny.db.sql.SqlDialect;
 
 
@@ -92,7 +91,7 @@ public class JdbcConvention extends Convention.Impl {
             planner.addRule( rule );
         }
         planner.addRule( FilterSetOpTransposeRule.INSTANCE );
-        planner.addRule( ProjectRemoveRule.INSTANCE );
+        //planner.addRule( ProjectRemoveRule.INSTANCE );
     }
 
 }

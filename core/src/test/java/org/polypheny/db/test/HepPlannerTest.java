@@ -38,6 +38,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.plan.RelOptListener;
 import org.polypheny.db.plan.hep.HepMatchOrder;
@@ -209,6 +210,7 @@ public class HepPlannerTest extends RelOptTestBase {
 
 
     @Test
+    @Ignore
     public void testReplaceCommonSubexpression() throws Exception {
         // Note that here it may look like the rule is firing twice, but actually it's only firing once on the common sub-expression.  The purpose of this test
         // is to make sure the planner can deal with rewriting something used as a common sub-expression twice by the same parent (the join in this case).

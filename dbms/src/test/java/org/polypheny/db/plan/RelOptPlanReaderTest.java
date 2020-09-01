@@ -99,6 +99,13 @@ public class RelOptPlanReaderTest {
         public MyRel( RelOptCluster cluster, RelTraitSet traitSet ) {
             super( cluster, traitSet );
         }
+
+
+        @Override
+        public String relCompareString() {
+            // Compare makes no sense here. Use hashCode() to avoid errors.
+            return this.getClass().getSimpleName() + "$" + hashCode() + "&";
+        }
     }
 }
 

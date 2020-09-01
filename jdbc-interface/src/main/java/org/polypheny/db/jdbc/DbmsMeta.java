@@ -18,6 +18,7 @@ package org.polypheny.db.jdbc;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -26,10 +27,13 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -40,15 +44,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.AvaticaUtils;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.MetaImpl.MetaTypeInfo;
-import org.apache.calcite.avatica.MissingResultsException;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
+import org.apache.calcite.avatica.proto.Common;
 import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
@@ -838,8 +843,46 @@ public class DbmsMeta implements ProtobufMeta {
             log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
         }
 
-        log.error( "[NOT IMPLEMENTED YET] executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
-        return null;
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
+
+        if ( connection.getCurrentTransaction() == null ) {
+            connection.getCurrentOrCreateNewTransaction();
+        }
+
+        long[] updateCounts = new long[parameterValues.size()];
+        int i = 0;
+        for ( UpdateBatch updateBatch : parameterValues ) {
+            List<Common.TypedValue> list = updateBatch.getParameterValuesList();
+            Map<String, Object> values = new HashMap<>();
+            int index = 0;
+            for ( Common.TypedValue v : list ) {
+                switch ( v.getType().name() ) {
+                    case ("JAVA_SQL_TIMESTAMP"):
+                        values.put( "?" + index++, new Date( v.getNumberValue() ).toInstant()
+                                .atZone( ZoneOffset.UTC )
+                                .toLocalDateTime() );
+                        break;
+                    case ("JAVA_SQL_TIME"):
+                        values.put( "?" + index++, LocalTime.ofNanoOfDay( v.getNumberValue() * 1000000L ) );
+                        break;
+                    case ("JAVA_SQL_DATE"):
+                        values.put( "?" + index++, new Date( v.getNumberValue() * 86400000L ) );
+                        break;
+                    default:
+                        values.put( "?" + index++, TypedValue.getSerialFromProto( v ) );
+                }
+            }
+
+            try {
+                prepare( connection, h, statement.getPreparedQuery(), values );
+                updateCounts[i++] = execute( h, connection, statement, -1 ).size();
+            } catch ( Exception e ) {
+                log.error( "Exception while preparing query", e );
+                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+            }
+        }
+        return new ExecuteBatchResult( updateCounts );
     }
 
 
@@ -874,8 +917,53 @@ public class DbmsMeta implements ProtobufMeta {
             log.trace( "prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
         }
 
-        log.error( "[NOT IMPLEMENTED YET] prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
-        return null;
+        final PolyphenyDbConnectionHandle connectionHandle = OPEN_CONNECTIONS.get( ch.id );
+        StatementHandle h = createStatement( ch );
+        PolyphenyDbStatementHandle statement;
+        try {
+            statement = getPolyphenyDbStatementHandle( h );
+        } catch ( NoSuchStatementException e ) {
+            throw new RuntimeException( e );
+        }
+        statement.setPreparedQuery( sql );
+
+        // Parser Config
+        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
+        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
+        SqlParserConfig parserConfig = configConfigBuilder.build();
+
+        Transaction transaction = connectionHandle.getCurrentOrCreateNewTransaction();
+        transaction.resetQueryProcessor();
+        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+
+        SqlNode parsed = sqlProcessor.parse( sql );
+        // It is important not to add default values for missing fields in insert statements. If we would do this, the
+        // JDBC driver would expect more parameter fields than there actually are in the query.
+        Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, false );
+        RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+        RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
+
+        List<AvaticaParameter> avaticaParameters = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().deriveAvaticaParameters( parameterRowType );
+
+        PolyphenyDbSignature signature = new PolyphenyDbSignature<>(
+                sql,
+                avaticaParameters,
+                ImmutableMap.of(),
+                parameterRowType,
+                null,
+                null,
+                null,
+                ImmutableList.of(),
+                -1,
+                null,
+                StatementType.SELECT,
+                null );
+        h.signature = signature;
+        statement.setSignature( signature );
+
+        return h;
     }
 
 
@@ -911,92 +999,13 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
-
         if ( log.isTraceEnabled() ) {
             log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
         }
 
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
-        final PolyphenyDbStatementHandle statement;
-
-        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
-            statement.unset();
-        } else {
-            throw new RuntimeException( "The connection has no statement associated" );
-        }
-
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
-        Transaction transaction = connection.getCurrentOrCreateNewTransaction();
-        transaction.resetQueryProcessor();
-        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
-
-        SqlNode parsed = sqlProcessor.parse( sql );
-
-        PolyphenyDbSignature signature;
-        if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( parsed );
-        } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
-            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
-
-            // Prepare
-            signature = connection.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot );
-        }
-
-        // Build response
-        List<MetaResultSet> resultSets;
-        if ( signature.statementType == StatementType.OTHER_DDL ) {
-            MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
-            resultSets = ImmutableList.of( resultSet );
-        } else if ( signature.statementType == StatementType.IS_DML ) {
-            Iterator<?> iterator = signature.enumerable( connection.getCurrentTransaction().getDataContext() ).iterator();
-            Object object = null;
-            int rowsChanged = -1;
-            while ( iterator.hasNext() ) {
-                object = iterator.next();
-                int num;
-                if ( object == null ) {
-                    throw new NullPointerException();
-                } else if ( object.getClass().isArray() ) {
-                    num = ((Number) ((Object[]) object)[0]).intValue();
-                } else {
-                    num = ((Number) object).intValue();
-                }
-                // Check if num is equal for all stores
-                if ( rowsChanged != -1 && rowsChanged != num ) {
-                    throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
-                }
-                rowsChanged = num;
-            }
-
-            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, rowsChanged );
-            resultSets = ImmutableList.of( metaResultSet );
-        } else {
-            statement.setSignature( signature );
-            try {
-                resultSets = Collections.singletonList( MetaResultSet.create(
-                        h.connectionId,
-                        h.id,
-                        false,
-                        signature,
-                        // Due to a bug in Avatica (it wrongly replaces the courser type) I have per default disabled sending data with the first frame.
-                        // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
-                        maxRowsInFirstFrame != 0 && SEND_FIRST_FRAME_WITH_RESPONSE
-                                ? fetch( h, 0, (int) Math.min( Math.max( maxRowCount, maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
-                                : null //Frame.MORE // Send first frame to together with the response to save a fetch call
-                ) );
-            } catch ( MissingResultsException e ) {
-                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
-            }
-        }
-        return new ExecuteResult( resultSets );
+        PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+        statementHandle.setPreparedQuery( sql );
+        return execute( h, new LinkedList<>(), maxRowsInFirstFrame );
     }
 
 
@@ -1047,17 +1056,12 @@ public class DbmsMeta implements ProtobufMeta {
      * @return Frame, or null if there are no more
      */
     @Override
-    public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException, MissingResultsException {
+    public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException {
         if ( log.isTraceEnabled() ) {
             log.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
         }
 
-        final PolyphenyDbStatementHandle statement;
-        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
-        } else {
-            throw new NoSuchStatementException( h );
-        }
+        final PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
 
         final PolyphenyDbSignature signature = statement.getSignature();
         final Iterator<Object> iterator;
@@ -1111,8 +1115,7 @@ public class DbmsMeta implements ProtobufMeta {
             log.trace( "execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
         }
 
-        log.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, long {} )", h, parameterValues, maxRowCount );
-        return null;
+        return execute( h, parameterValues, -1 );
     }
 
 
@@ -1130,8 +1133,134 @@ public class DbmsMeta implements ProtobufMeta {
             log.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
         }
 
-        log.error( "[NOT IMPLEMENTED YET] execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
-        return null;
+        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
+
+        Map<String, Object> values = new HashMap<>();
+        int index = 0;
+        for ( TypedValue v : parameterValues ) {
+            if ( v != null ) {
+                switch ( v.type.name() ) {
+                    case ("JAVA_SQL_TIMESTAMP"):
+                        values.put( "?" + index++, new Date( (Long) v.value ).toInstant()
+                                .atZone( ZoneOffset.UTC )
+                                .toLocalDateTime() );
+                        break;
+                    case ("JAVA_SQL_TIME"):
+                        values.put( "?" + index++, LocalTime.ofNanoOfDay( (Integer) v.value * 1000000L ) );
+                        break;
+                    case ("JAVA_SQL_DATE"):
+                        values.put( "?" + index++, new Date( (Integer) v.value * 86400000L ) );
+                        break;
+                    case ("INTEGER"):
+                    case ("LONG"):
+                    case ("DOUBLE"):
+                    case ("FLOAT"):
+                    case ("SHORT"):
+                    case ("BYTE"):
+                    case ("STRING"):
+                    case ("BOOLEAN"):
+                    case ("NUMBER"):
+                        values.put( "?" + index++, v.value );
+                        break;
+                    case ("OBJECT"):
+                        values.put( "?" + index++, null );
+                        break;
+                    default:
+                        throw new RuntimeException( "Unknown type: " + v.type.name() );
+                }
+            }
+        }
+
+        try {
+            prepare( connection, h, statement.getPreparedQuery(), values );
+            return new ExecuteResult( execute( h, connection, statement, maxRowsInFirstFrame ) );
+        } catch ( Exception e ) {
+            log.error( "Exception while preparing query", e );
+            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+        }
+    }
+
+
+    private void prepare( PolyphenyDbConnectionHandle connectionHandle, StatementHandle h, String sql, Map<String, Object> parameterValues ) throws NoSuchStatementException {
+        // Parser Config
+        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
+        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
+        SqlParserConfig parserConfig = configConfigBuilder.build();
+
+        Transaction transaction = connectionHandle.getCurrentOrCreateNewTransaction();
+        transaction.resetQueryProcessor();
+        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+
+        SqlNode parsed = sqlProcessor.parse( sql );
+
+        PolyphenyDbSignature signature = null;
+        if ( parsed.isA( SqlKind.DDL ) ) {
+            signature = sqlProcessor.prepareDdl( parsed );
+        } else {
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+            RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
+
+            // Prepare
+            signature = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues );
+        }
+
+        PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
+        h.signature = signature;
+        statement.setSignature( signature );
+    }
+
+
+    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame ) {
+        List<MetaResultSet> resultSets;
+        if ( statement.getSignature().statementType == StatementType.OTHER_DDL ) {
+            MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
+            resultSets = ImmutableList.of( resultSet );
+        } else if ( statement.getSignature().statementType == StatementType.IS_DML ) {
+            Iterator<?> iterator = statement.getSignature().enumerable( connection.getCurrentTransaction().getDataContext() ).iterator();
+            Object object = null;
+            int rowsChanged = -1;
+            while ( iterator.hasNext() ) {
+                object = iterator.next();
+                int num;
+                if ( object == null ) {
+                    throw new NullPointerException();
+                } else if ( object.getClass().isArray() ) {
+                    num = ((Number) ((Object[]) object)[0]).intValue();
+                } else {
+                    num = ((Number) object).intValue();
+                }
+                // Check if num is equal for all stores
+                if ( rowsChanged != -1 && rowsChanged != num ) {
+                    throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
+                }
+                rowsChanged = num;
+            }
+
+            MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, rowsChanged );
+            resultSets = ImmutableList.of( metaResultSet );
+        } else {
+            statement.setSignature( statement.getSignature() );
+            try {
+                resultSets = Collections.singletonList( MetaResultSet.create(
+                        h.connectionId,
+                        h.id,
+                        false,
+                        statement.getSignature(),
+                        // Due to a bug in Avatica (it wrongly replaces the courser type) I have per default disabled sending data with the first frame.
+                        // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
+                        maxRowsInFirstFrame != 0 && SEND_FIRST_FRAME_WITH_RESPONSE
+                                ? fetch( h, 0, (int) Math.min( Math.max( statement.getMaxRowCount(), maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                : null //Frame.MORE // Send first frame to together with the response to save a fetch call
+                ) );
+            } catch ( NoSuchStatementException e ) {
+                throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
+            }
+        }
+        return resultSets;
     }
 
 
@@ -1288,7 +1417,11 @@ public class DbmsMeta implements ProtobufMeta {
         if ( transaction != null ) {
             log.warn( "There is a running transaction associated with this connection {}", connectionToClose );
             log.warn( "Rollback transaction {}", transaction );
-            rollback( ch );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
         for ( final String key : OPEN_STATEMENTS.keySet() ) {
@@ -1308,6 +1441,17 @@ public class DbmsMeta implements ProtobufMeta {
         } else {
             throw new IllegalStateException( "Unknown connection id `" + connectionId + "`!" );
         }
+    }
+
+
+    private PolyphenyDbStatementHandle getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
+        final PolyphenyDbStatementHandle statement;
+        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+        } else {
+            throw new NoSuchStatementException( h );
+        }
+        return statement;
     }
 
 

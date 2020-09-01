@@ -21,15 +21,13 @@ import java.util.List;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
-import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttle;
 import org.polypheny.db.rel.core.ModifyCollect;
-import org.polypheny.db.rel.core.Union;
 
 
 /**
- * Sub-class of {@link Union} not targeted at any particular engine or calling convention.
+ * Sub-class of {@link ModifyCollect} not targeted at any particular engine or calling convention.
  */
 public final class LogicalModifyCollect extends ModifyCollect {
 
@@ -40,14 +38,6 @@ public final class LogicalModifyCollect extends ModifyCollect {
      */
     public LogicalModifyCollect( RelOptCluster cluster, RelTraitSet traitSet, List<RelNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
-    }
-
-
-    /**
-     * Creates a LogicalUnion by parsing serialized output.
-     */
-    public LogicalModifyCollect( RelInput input ) {
-        super( input );
     }
 
 

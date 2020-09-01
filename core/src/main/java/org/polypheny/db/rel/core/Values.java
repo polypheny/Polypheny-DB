@@ -36,6 +36,7 @@ package org.polypheny.db.rel.core;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
@@ -188,6 +189,14 @@ public abstract class Values extends AbstractRelNode {
                             .collect( Collectors.joining( ", ", "[", "]" ) ) );
         }
         return relWriter;
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                rowType.toString() + "$" +
+                (tuples != null ? tuples.stream().map( t -> t.stream().map( RexLiteral::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 }
 

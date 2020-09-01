@@ -223,8 +223,16 @@ public abstract class AbstractJdbcStore extends Store {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows adding columns to linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        CatalogColumnPlacement ccp = null;
+        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+            // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
+            if ( p.columnId != catalogColumn.id ) {
+                ccp = p;
+                break;
+            }
+        }
+        String physicalTableName = ccp.physicalTableName;
+        String physicalSchemaName = ccp.physicalSchemaName;
         StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );
         executeUpdate( query, context );
         // Insert default value

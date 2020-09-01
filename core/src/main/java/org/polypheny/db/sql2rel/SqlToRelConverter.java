@@ -3868,6 +3868,7 @@ public class SqlToRelConverter {
                 DeferredLookup lookup = new DeferredLookup( this, qualified.identifier.names.get( 0 ) );
                 final CorrelationId correlId = cluster.createCorrel();
                 mapCorrelToDeferred.put( correlId, lookup );
+                cluster.getMapCorrelToRel().put( correlId, lookup.bb.root );
                 if ( resolve.path.steps().get( 0 ).i < 0 ) {
                     return Pair.of( rexBuilder.makeCorrel( rowType, correlId ), null );
                 } else {

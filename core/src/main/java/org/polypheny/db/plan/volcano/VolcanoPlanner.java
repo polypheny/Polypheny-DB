@@ -90,7 +90,6 @@ import org.polypheny.db.rel.rules.CalcRemoveRule;
 import org.polypheny.db.rel.rules.FilterJoinRule;
 import org.polypheny.db.rel.rules.JoinAssociateRule;
 import org.polypheny.db.rel.rules.JoinCommuteRule;
-import org.polypheny.db.rel.rules.ProjectRemoveRule;
 import org.polypheny.db.rel.rules.SemiJoinRule;
 import org.polypheny.db.rel.rules.SortRemoveRule;
 import org.polypheny.db.rel.rules.UnionToDistinctRule;
@@ -827,7 +826,7 @@ public class VolcanoPlanner extends AbstractRelOptPlanner {
         }
         addRule( AggregateRemoveRule.INSTANCE );
         addRule( UnionToDistinctRule.INSTANCE );
-        addRule( ProjectRemoveRule.INSTANCE );
+        //addRule( ProjectRemoveRule.INSTANCE );
         addRule( AggregateJoinTransposeRule.INSTANCE );
         addRule( AggregateProjectMergeRule.INSTANCE );
         addRule( CalcRemoveRule.INSTANCE );

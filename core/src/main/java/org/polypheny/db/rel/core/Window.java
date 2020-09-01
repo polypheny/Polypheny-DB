@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -212,6 +213,17 @@ public abstract class Window extends SingleRel {
             count += group.aggCalls.size();
         }
         return planner.getCostFactory().makeCost( rowsIn, rowsIn * count, 0 );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (constants != null ? constants.stream().map( RexLiteral::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                rowType.toString() + "$" +
+                (groups != null ? groups.hashCode() : "") + "&";
+
     }
 
 
