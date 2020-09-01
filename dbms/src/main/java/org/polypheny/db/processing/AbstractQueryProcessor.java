@@ -31,6 +31,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Ord;
@@ -651,9 +652,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         final String typeName = getTypeName( type );
         if ( type.getComponentType() != null ) {
             final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
-            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
-            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
-            assert rep != null;
+//            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
+//            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+            final ColumnMetaData.Rep rep = Rep.ARRAY;
+//            assert rep != null;
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {
             int typeOrdinal = getTypeOrdinal( type );
