@@ -1440,6 +1440,11 @@ public abstract class RelOptUtil {
             return litmus.succeed();
         }
 
+        // Due to another issue with arrays in db.sql.SqlOperator#deriveType we cannot assume
+        // that two arrays that are equal are also represented by the same type object.
+        // This is why we have to handle it differently here and actually compare the properties
+        // of the array types.
+        // This means we are comparing the component type, cardinality, and dimension.
         if ( type1.getPolyType() == PolyType.ARRAY && type2.getPolyType() == PolyType.ARRAY ) {
             ArrayType arrayType1 = (ArrayType) type1;
             ArrayType arrayType2 = (ArrayType) type2;
@@ -1450,7 +1455,7 @@ public abstract class RelOptUtil {
             ) {
                 return litmus.succeed();
             } else {
-                return litmus.fail( "type mismatch:\n{}:\n{}\n{}:\n{}", desc1, type1.getFullTypeString(), desc2, type2.getFullTypeString() );
+                return litmus.fail( "array type mismatch:\n{}:\n{}\n{}:\n{}", desc1, type1.getFullTypeString(), desc2, type2.getFullTypeString() );
             }
         }
 

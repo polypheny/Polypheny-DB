@@ -86,6 +86,7 @@ import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
@@ -567,7 +568,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 true,
                 false,
                 false,
-                avaticaType.columnClassName() );
+//                avaticaType.columnClassName() );
+                (fieldType instanceof ArrayType ) ? "java.util.List" : avaticaType.columnClassName() );
     }
 
 
