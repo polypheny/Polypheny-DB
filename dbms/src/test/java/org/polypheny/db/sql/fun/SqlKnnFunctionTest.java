@@ -23,10 +23,12 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -50,10 +52,21 @@ public class SqlKnnFunctionTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 //                statement.executeUpdate( "CREATE SCHEMA knn" );
-                statement.executeUpdate( "CREATE TABLE knntest( id INTEGER NOT NULL, myarray INTEGER ARRAY(1,2), PRIMARY KEY (id) )" );
-                statement.executeUpdate( "INSERT INTO knntest VALUES (1, ARRAY[1,1])" );
-                statement.executeUpdate( "INSERT INTO knntest VALUES (2, ARRAY[2,2])" );
-                statement.executeUpdate( "INSERT INTO knntest VALUES (3, ARRAY[0,3])" );
+                statement.executeUpdate( "CREATE TABLE knninttest( id INTEGER NOT NULL, myarray INTEGER ARRAY(1,2), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "INSERT INTO knninttest VALUES (1, ARRAY[1,1])" );
+                statement.executeUpdate( "INSERT INTO knninttest VALUES (2, ARRAY[2,2])" );
+                statement.executeUpdate( "INSERT INTO knninttest VALUES (3, ARRAY[0,3])" );
+
+                statement.executeUpdate( "CREATE TABLE knndoubletest( id INTEGER NOT NULL, myarray DOUBLE ARRAY(1,2), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "INSERT INTO knndoubletest VALUES (1, ARRAY[1.0,1.0])" );
+                statement.executeUpdate( "INSERT INTO knndoubletest VALUES (2, ARRAY[2.0,2.0])" );
+                statement.executeUpdate( "INSERT INTO knndoubletest VALUES (3, ARRAY[0.0,3.0])" );
+
+                statement.executeUpdate( "CREATE TABLE knnbigtest( id INTEGER NOT NULL, myarray BIGINT ARRAY(1,2), PRIMARY KEY (id) )" );
+                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (1, ARRAY[1.0,1.0])" );
+                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (2, ARRAY[2.0,2.0])" );
+                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (3, ARRAY[0.0,3.0])" );
+
                 connection.commit();
             }
         }
@@ -65,8 +78,9 @@ public class SqlKnnFunctionTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "DROP TABLE knntest" );
-//                statement.executeUpdate( "DROP SCHEMA knn" );
+                statement.executeUpdate( "DROP TABLE knninttest" );
+                statement.executeUpdate( "DROP TABLE knndoubletest" );
+                statement.executeUpdate( "DROP TABLE knnbigtest" );
             }
         }
     }
@@ -75,47 +89,124 @@ public class SqlKnnFunctionTest {
 
 
     @Test
-    public void enumerableFunctionImplementationTest() throws SQLException {
+    public void l2SquaredTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
 
             try ( Statement statement = connection.createStatement() ) {
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2SQUARED') as distance FROM knntest" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, 0.0 },
-                                new Object[]{ 2, 2.0 },
-                                new Object[]{ 3, 5.0 }
-                        )
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 0.0 },
+                        new Object[]{ 2, 2.0 },
+                        new Object[]{ 3, 5.0 }
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L1') as distance FROM knntest" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, 0.0 },
-                                new Object[]{ 2, 2.0 },
-                                new Object[]{ 3, 3.0 }
-                        )
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2SQUARED') as distance FROM knninttest" ),
+                        expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knntest" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, 0.0 },
-                                new Object[]{ 2, 0.6666666666666666 },
-                                new Object[]{ 3, 2.0 }
-                        )
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2SQUARED') as distance FROM knndoubletest" ),
+                        expectedResult
                 );
 
-                // Ignoring COSINE for now because apparently some close to zero issues.
-                /*TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'COSINE') as distance FROM knntest" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, 0.0 },
-                                new Object[]{ 2, 2.0 },
-                                new Object[]{ 3, 5.0 }
-                        )
-                );*/
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2SQUARED') as distance FROM knnbigtest" ),
+                        expectedResult
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void l2Test() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try ( Statement statement = connection.createStatement() ) {
+                List<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 0.0 },
+                        new Object[]{ 2, 1.4142135623730951 },
+                        new Object[]{ 3, 2.23606797749979 }
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2') as distance FROM knninttest" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2') as distance FROM knndoubletest" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2') as distance FROM knnbigtest" ),
+                        expectedResult
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void l1Test() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try ( Statement statement = connection.createStatement() ) {
+                ImmutableList<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 0.0 },
+                        new Object[]{ 2, 2.0 },
+                        new Object[]{ 3, 3.0 }
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L1') as distance FROM knninttest" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L1') as distance FROM knndoubletest" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L1') as distance FROM knndoubletest" ),
+                        expectedResult
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void chiSquaredTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try ( Statement statement = connection.createStatement() ) {
+                ImmutableList<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 1, 0.0 },
+                        new Object[]{ 2, 0.6666666666666666 },
+                        new Object[]{ 3, 2.0 }
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knninttest" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knndoubletest" ),
+                        expectedResult
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knndoubletest" ),
+                        expectedResult
+                );
             }
         }
     }
