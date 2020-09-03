@@ -28,7 +28,9 @@ import javax.sql.XADataSource;
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.sql.SqlDialect;
 
 
 /**
@@ -43,13 +45,17 @@ public class XaConnectionFactory implements ConnectionFactory {
     private final int maxConnections;
     private final XADataSource dataSource;
 
+    @Getter
+    private final SqlDialect dialect;
 
-    public XaConnectionFactory( XADataSource dataSource, int maxConnections ) {
+
+    public XaConnectionFactory( XADataSource dataSource, int maxConnections, SqlDialect dialect ) {
         super();
         this.maxConnections = maxConnections;
         this.dataSource = dataSource;
         this.activeInstances = new ConcurrentHashMap<>();
         this.freeInstances = new ConcurrentLinkedQueue<>();
+        this.dialect = dialect;
     }
 
 
@@ -89,7 +95,7 @@ public class XaConnectionFactory implements ConnectionFactory {
             if ( getNumActive() + getNumIdle() < maxConnections ) {
                 log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
                 try {
-                    handler = new XaConnectionHandler( dataSource.getXAConnection() );
+                    handler = new XaConnectionHandler( dataSource.getXAConnection(), dialect );
                 } catch ( SQLException e ) {
                     throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
                 }
@@ -133,13 +139,17 @@ public class XaConnectionFactory implements ConnectionFactory {
         private final XAResource xaResource;
         private Xid xid;
 
+        @Getter
+        protected final SqlDialect dialect;
 
-        XaConnectionHandler( XAConnection xaConnection ) throws ConnectionHandlerException {
+
+        XaConnectionHandler( XAConnection xaConnection, SqlDialect dialect ) throws ConnectionHandlerException {
             super();
             try {
                 xaResource = xaConnection.getXAResource();
                 connection = xaConnection.getConnection();
                 statement = connection.createStatement();
+                this.dialect = dialect;
             } catch ( SQLException e ) {
                 throw new ConnectionHandlerException( "Error while connecting to database!", e );
             }

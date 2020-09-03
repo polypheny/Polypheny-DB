@@ -41,6 +41,7 @@ import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 
 public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<RexNode> {
 
@@ -98,11 +99,35 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitCall( RexCall call ) {
-        List<RexNode> newOperands = new LinkedList<>();
-        for ( RexNode operand : call.operands ) {
-            newOperands.add( operand.accept( this ) );
+        if ( call.op instanceof SqlArrayValueConstructor ) {
+            int i = index.getAndIncrement();
+            List<Object> list = createListForArrays( call.operands );
+            values.put( "?" + i, list );
+            types.add( call.type );
+            return new RexDynamicParam( call.type, i );
+        } else {
+            List<RexNode> newOperands = new LinkedList<>();
+            for ( RexNode operand : call.operands ) {
+                newOperands.add( operand.accept( this ) );
+            }
+            return new RexCall( call.type, call.op, newOperands );
         }
-        return new RexCall( call.type, call.op, newOperands );
+    }
+
+
+    private List<Object> createListForArrays( List<RexNode> operands ) {
+        List<Object> list = new ArrayList<>( operands.size() );
+        for ( RexNode node : operands ) {
+            if ( node instanceof RexLiteral ) {
+                list.add( ((RexLiteral) node).getValue() );
+            } else if ( node instanceof RexCall ) {
+                list.add( createListForArrays( ((RexCall) node).operands ) );
+            } else {
+                throw new RuntimeException( "Invalid array" );
+            }
+
+        }
+        return list;
     }
 
 

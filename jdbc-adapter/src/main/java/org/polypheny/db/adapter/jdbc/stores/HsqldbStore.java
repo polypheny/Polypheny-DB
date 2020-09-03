@@ -17,6 +17,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
@@ -42,11 +43,11 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
+        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings, HsqldbSqlDialect.DEFAULT ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
 
-    public static ConnectionFactory createConnectionFactory( final String uniqueName, final Map<String, String> settings ) {
+    public static ConnectionFactory createConnectionFactory( final String uniqueName, final Map<String, String> settings, SqlDialect dialect ) {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
             throw new RuntimeException( "2PC Mode is not implemented" );
@@ -64,7 +65,7 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.setPassword( "" );
             dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
             dataSource.setDefaultAutoCommit( false );
-            return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ) );
+            return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
         }
 
     }
