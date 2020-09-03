@@ -27,13 +27,10 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -857,20 +854,10 @@ public class DbmsMeta implements ProtobufMeta {
             Map<String, Object> values = new HashMap<>();
             int index = 0;
             for ( Common.TypedValue v : list ) {
-                switch ( v.getType().name() ) {
-                    case ("JAVA_SQL_TIMESTAMP"):
-                        values.put( "?" + index++, new Date( v.getNumberValue() ).toInstant()
-                                .atZone( ZoneOffset.UTC )
-                                .toLocalDateTime() );
-                        break;
-                    case ("JAVA_SQL_TIME"):
-                        values.put( "?" + index++, LocalTime.ofNanoOfDay( v.getNumberValue() * 1000000L ) );
-                        break;
-                    case ("JAVA_SQL_DATE"):
-                        values.put( "?" + index++, new Date( v.getNumberValue() * 86400000L ) );
-                        break;
-                    default:
-                        values.put( "?" + index++, TypedValue.getSerialFromProto( v ) );
+                if ( "ARRAY".equals( v.getType().name() ) ) {
+                    values.put( "?" + index++, convertList( (List<Object>) TypedValue.fromProto( v ).toLocal() ) );
+                } else {
+                    values.put( "?" + index++, TypedValue.fromProto( v ).toJdbc( calendar ) );
                 }
             }
 
@@ -1140,34 +1127,10 @@ public class DbmsMeta implements ProtobufMeta {
         int index = 0;
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {
-                switch ( v.type.name() ) {
-                    case ("JAVA_SQL_TIMESTAMP"):
-                        values.put( "?" + index++, new Date( (Long) v.value ).toInstant()
-                                .atZone( ZoneOffset.UTC )
-                                .toLocalDateTime() );
-                        break;
-                    case ("JAVA_SQL_TIME"):
-                        values.put( "?" + index++, LocalTime.ofNanoOfDay( (Integer) v.value * 1000000L ) );
-                        break;
-                    case ("JAVA_SQL_DATE"):
-                        values.put( "?" + index++, new Date( (Integer) v.value * 86400000L ) );
-                        break;
-                    case ("INTEGER"):
-                    case ("LONG"):
-                    case ("DOUBLE"):
-                    case ("FLOAT"):
-                    case ("SHORT"):
-                    case ("BYTE"):
-                    case ("STRING"):
-                    case ("BOOLEAN"):
-                    case ("NUMBER"):
-                        values.put( "?" + index++, v.value );
-                        break;
-                    case ("OBJECT"):
-                        values.put( "?" + index++, null );
-                        break;
-                    default:
-                        throw new RuntimeException( "Unknown type: " + v.type.name() );
+                if ( "ARRAY".equals( v.type.name() ) ) {
+                    values.put( "?" + index++, convertList( (List<Object>) v.toLocal() ) );
+                } else {
+                    values.put( "?" + index++, v.toJdbc( calendar ) );
                 }
             }
         }
@@ -1179,6 +1142,19 @@ public class DbmsMeta implements ProtobufMeta {
             log.error( "Exception while preparing query", e );
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.FATAL );
         }
+    }
+
+
+    private List<Object> convertList( List<Object> list ) {
+        List<Object> newList = new LinkedList<>();
+        for ( Object o : list ) {
+            if ( o instanceof List ) {
+                newList.add( convertList( list ) );
+            } else if ( o instanceof TypedValue ) {
+                newList.add( ((TypedValue) o).toJdbc( calendar ) );
+            }
+        }
+        return newList;
     }
 
 

@@ -34,8 +34,10 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import com.google.gson.Gson;
 import java.math.BigDecimal;
 import java.net.URL;
+import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Date;
@@ -78,6 +80,8 @@ import org.polypheny.db.util.Static;
  */
 @Slf4j
 public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
+
+    private final static Gson gson = new Gson();
 
     private final ConnectionHandler connectionHandler;
     private final String sql;
@@ -218,14 +222,15 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Called from generated code that proposes to create a {@code ResultSetEnumerable} over a prepared statement.
      */
     public static PreparedStatementEnricher createEnricher( Integer[] indexes, DataContext context ) {
-        return preparedStatement -> {
+        return ( preparedStatement, connectionHandler ) -> {
             for ( int i = 0; i < indexes.length; i++ ) {
                 final int index = indexes[i];
                 setDynamicParam(
                         preparedStatement,
                         i + 1,
                         context.get( "?" + index ),
-                        preparedStatement.getParameterMetaData().getParameterType( i + 1 ) );
+                        preparedStatement.getParameterMetaData().getParameterType( i + 1 ),
+                        connectionHandler );
             }
         };
     }
@@ -235,7 +240,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, int sqlType ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
             preparedStatement.setObject( i, null, SqlType.ANY.id );
         } else if ( value instanceof Timestamp ) {
@@ -250,8 +255,13 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setInt( i, (Integer) value );
         } else if ( value instanceof Double ) {
             preparedStatement.setDouble( i, (Double) value );
-        } else if ( value instanceof java.sql.Array ) {
-            preparedStatement.setArray( i, (java.sql.Array) value );
+        } else if ( value instanceof List ) {
+            if ( connectionHandler.getDialect().supportsNestedArrays() ) {
+                Array array = connectionHandler.createArrayOf( SqlType.valueOf( sqlType ).name(), ((List<?>) value).toArray() );
+                preparedStatement.setArray( i, array );
+            } else {
+                preparedStatement.setString( i, gson.toJson( value ) );
+            }
         } else if ( value instanceof BigDecimal ) {
             preparedStatement.setBigDecimal( i, (BigDecimal) value );
         } else if ( value instanceof Boolean ) {
@@ -358,7 +368,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         try {
             preparedStatement = connectionHandler.prepareStatement( sql );
             setTimeoutIfPossible( preparedStatement );
-            preparedStatementEnricher.enrich( preparedStatement );
+            preparedStatementEnricher.enrich( preparedStatement, connectionHandler );
             if ( preparedStatement.execute() ) {
                 final ResultSet resultSet = preparedStatement.getResultSet();
                 preparedStatement = null;
@@ -519,7 +529,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      */
     public interface PreparedStatementEnricher {
 
-        void enrich( PreparedStatement statement ) throws SQLException;
+        void enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
     }
 }
 

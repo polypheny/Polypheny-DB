@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.jdbc.connection;
 
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -24,6 +25,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.sql.SqlDialect;
 
 
 /**
@@ -34,6 +36,7 @@ public abstract class ConnectionHandler {
 
     protected Connection connection;
     protected Statement statement;
+
 
     /**
      * List of all statements which have to be closed to free resources
@@ -56,6 +59,11 @@ public abstract class ConnectionHandler {
     public void execute( final String sql ) throws SQLException {
         log.trace( "Executing query on database: {}", sql );
         statement.execute( sql );
+    }
+
+
+    public Array createArrayOf( String typeName, Object[] elements ) throws SQLException {
+        return connection.createArrayOf( typeName, elements );
     }
 
 
@@ -89,4 +97,7 @@ public abstract class ConnectionHandler {
         openStatements.add( statement );
         return statement;
     }
+
+
+    public abstract SqlDialect getDialect();
 }

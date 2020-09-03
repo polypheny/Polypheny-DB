@@ -143,6 +143,8 @@ public class QueryPlanCache {
 
         InformationAction invalidateAction = new InformationAction( invalidateGroup, "Invalidate", parameters -> {
             reset();
+            generalGroup.refresh();
+            hitRatioGroup.refresh();
             return "Successfully invalidated the query plan cache!";
         } );
         invalidateAction.setOrder( 2 );
