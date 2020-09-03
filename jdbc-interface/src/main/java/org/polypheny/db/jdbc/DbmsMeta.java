@@ -1195,6 +1195,7 @@ public class DbmsMeta implements ProtobufMeta {
         if ( statement.getSignature().statementType == StatementType.OTHER_DDL ) {
             MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
             resultSets = ImmutableList.of( resultSet );
+            commit( connection.getHandle() );
         } else if ( statement.getSignature().statementType == StatementType.IS_DML ) {
             Iterator<?> iterator = statement.getSignature().enumerable( connection.getCurrentTransaction().getDataContext() ).iterator();
             Object object = null;
