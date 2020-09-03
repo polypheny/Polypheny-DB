@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -352,7 +351,6 @@ public class JdbcDdlTest {
     }
 
 
-    @Ignore
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void addColumnTest() throws SQLException {
@@ -406,7 +404,6 @@ public class JdbcDdlTest {
     }
 
 
-    @Ignore
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void addColumnArrayTest() throws SQLException {
@@ -418,7 +415,7 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
                 // Add column
-                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN bar INTEGER ARRAY(1,3) NULL AFTER tvarchar" );
+                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN bar INTEGER ARRAY(1,3) NULL AFTER ttime" );
 
                 // Check
                 TestHelper.checkResultSet(
@@ -433,10 +430,10 @@ public class JdbcDdlTest {
                                 DDLTEST_DATA[6],
                                 DDLTEST_DATA[7],
                                 DDLTEST_DATA[8],
+                                null,
                                 DDLTEST_DATA[9],
                                 DDLTEST_DATA[10],
-                                DDLTEST_DATA[11],
-                                null
+                                DDLTEST_DATA[11]
                         } ) );
 
                 // Drop ddltest table

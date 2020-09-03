@@ -135,6 +135,9 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
 
     public static Object reparse( PolyType innerType, Long dimension, String stringValue ) {
         Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+        if ( stringValue == null ) {
+            return null;
+        }
         return gson.fromJson( stringValue.trim(), conversionType );
     }
 }

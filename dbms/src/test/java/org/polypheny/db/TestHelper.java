@@ -125,11 +125,15 @@ public class TestHelper {
                     } else {
                         List resultList = SqlFunctions.deepArrayToList( resultSet.getArray( j + 1 ) );
                         Object[] expectedArray = (Object[]) expectedRow[j];
-                        for ( int k = 0; k < expectedArray.length; k++ ) {
-                            Assert.assertEquals(
-                                    "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "' at position: " + k + 1,
-                                    expectedArray[k],
-                                    resultList.get( k ) );
+                        if ( expectedArray == null ) {
+                            Assert.assertNull( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': ", resultList );
+                        } else {
+                            for ( int k = 0; k < expectedArray.length; k++ ) {
+                                Assert.assertEquals(
+                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "' at position: " + k + 1,
+                                        expectedArray[k],
+                                        resultList.get( k ) );
+                            }
                         }
                     }
                     j++;

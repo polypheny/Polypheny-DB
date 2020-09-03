@@ -32,7 +32,6 @@ import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -469,7 +468,6 @@ public class JdbcPreparedStatementsTest {
 
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
-    @Ignore
     public void arrayTest() throws Exception {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -513,7 +511,6 @@ public class JdbcPreparedStatementsTest {
 
     @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
-    @Ignore
     public void arrayBatchTest() throws Exception {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -548,43 +545,6 @@ public class JdbcPreparedStatementsTest {
                         ImmutableList.of(
                                 new Object[]{ 1, new Object[]{ "Hans", "Georg" } },
                                 new Object[]{ 2, new Object[]{ "Lisa", "Livia" } } ) );
-
-                connection.commit();
-
-                statement.executeUpdate( "DROP TABLE psarrtest" );
-            }
-        }
-    }
-
-
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
-    @Ignore
-    @Test
-    public void nestedArrayTest() throws Exception {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE psarrtest( "
-                        + "tinteger INTEGER NOT NULL, "
-                        + "tintarr INTEGER ARRAY(2,2) NOT NULL, "
-                        + "PRIMARY KEY (tinteger) )" );
-
-                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tintarr) VALUES (?, ?)" );
-
-                final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
-
-                preparedInsert.setInt( 1, 1 );
-                preparedInsert.setArray( 2, arrayFactory.createArray(
-                        ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
-                        ImmutableList.of( ImmutableList.of( 11, 12 ), ImmutableList.of( 21, 22 ) ) ) );
-                preparedInsert.execute();
-
-                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tintarr FROM psarrtest WHERE tinteger = ?" );
-                preparedSelect.setInt( 1, 1 );
-                TestHelper.checkResultSet(
-                        preparedSelect.executeQuery(),
-                        ImmutableList.of(
-                                new Object[]{ 1, new Object[]{ new Object[]{ 11, 12 }, new Object[]{ 21, 22 } } } ) );
 
                 connection.commit();
 
