@@ -25,8 +25,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.transaction.xa.Xid;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.sql.SqlDialect;
 
 
 /**
@@ -41,13 +43,16 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     private final int maxConnections;
     private final BasicDataSource dataSource;
 
+    private final SqlDialect dialect;
 
-    public TransactionalConnectionFactory( BasicDataSource dataSource, int maxConnections ) {
+
+    public TransactionalConnectionFactory( BasicDataSource dataSource, int maxConnections, SqlDialect dialect ) {
         super();
         this.maxConnections = maxConnections;
         this.dataSource = dataSource;
         this.activeInstances = new ConcurrentHashMap<>();
         this.freeInstances = new ConcurrentLinkedQueue<>();
+        this.dialect = dialect;
     }
 
 
@@ -87,7 +92,7 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
             if ( getNumActive() + getNumIdle() < maxConnections ) {
                 log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
                 try {
-                    handler = new TransactionalConnectionHandler( dataSource.getConnection() );
+                    handler = new TransactionalConnectionHandler( dataSource.getConnection(), dialect );
                 } catch ( SQLException e ) {
                     throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
                 }
@@ -130,12 +135,16 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
 
         private Xid xid;
 
+        @Getter
+        private final SqlDialect dialect;
 
-        TransactionalConnectionHandler( Connection connection ) throws ConnectionHandlerException {
+
+        TransactionalConnectionHandler( Connection connection, SqlDialect dialect ) throws ConnectionHandlerException {
             super();
             try {
                 this.connection = connection;
                 this.statement = connection.createStatement();
+                this.dialect = dialect;
             } catch ( SQLException e ) {
                 throw new ConnectionHandlerException( "Error while connecting to database!", e );
             }

@@ -25,7 +25,12 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.sql.Types;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.SqlType;
+import org.apache.calcite.avatica.util.ArrayFactoryImpl;
+import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
@@ -456,6 +461,94 @@ public class JdbcPreparedStatementsTest {
                 connection.commit();
 
                 statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    @Test
+    public void arrayTest() throws Exception {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE psarrtest( "
+                        + "tinteger INTEGER NOT NULL, "
+                        + "tintarr INTEGER ARRAY(1,2) NOT NULL, "
+                        + "PRIMARY KEY (tinteger) )" );
+
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tintarr) VALUES (?, ?)" );
+
+                final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
+
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.setArray( 2, arrayFactory.createArray(
+                        ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
+                        ImmutableList.of( 1, 2 ) ) );
+                preparedInsert.execute();
+
+                preparedInsert.setInt( 1, 2 );
+                preparedInsert.setArray( 2, arrayFactory.createArray(
+                        ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.INTEGER ),
+                        ImmutableList.of( 4, 5 ) ) );
+                preparedInsert.execute();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tintarr FROM psarrtest WHERE tinteger < ?" );
+                preparedSelect.setInt( 1, 3 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of(
+                                new Object[]{ 1, new Object[]{ 1, 2 } },
+                                new Object[]{ 2, new Object[]{ 4, 5 } } ) );
+
+                connection.commit();
+
+                statement.executeUpdate( "DROP TABLE psarrtest" );
+            }
+        }
+    }
+
+
+    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+    @Test
+    public void arrayBatchTest() throws Exception {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE psarrtest( "
+                        + "tinteger INTEGER NOT NULL, "
+                        + "tintarr VARCHAR ARRAY(1,2) NOT NULL, "
+                        + "PRIMARY KEY (tinteger) )" );
+
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO psarrtest(tinteger,tintarr) VALUES (?, ?)" );
+
+                final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
+
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.setArray( 2, arrayFactory.createArray(
+                        ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
+                        ImmutableList.of( "Hans", "Georg" ) ) );
+                preparedInsert.addBatch();
+
+                preparedInsert.setInt( 1, 2 );
+                preparedInsert.setArray( 2, arrayFactory.createArray(
+                        ColumnMetaData.scalar( Types.VARCHAR, "VARCHAR", Rep.STRING ),
+                        ImmutableList.of( "Lisa", "Livia" ) ) );
+                preparedInsert.addBatch();
+
+                preparedInsert.executeBatch();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tintarr FROM psarrtest WHERE tinteger < ?" );
+                preparedSelect.setInt( 1, 3 );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of(
+                                new Object[]{ 1, new Object[]{ "Hans", "Georg" } },
+                                new Object[]{ 2, new Object[]{ "Lisa", "Livia" } } ) );
+
+                connection.commit();
+
+                statement.executeUpdate( "DROP TABLE psarrtest" );
             }
         }
     }
