@@ -1406,6 +1406,10 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "columnPlacement", null, placement );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
+        } catch (UnknownStoreException e) {
+            e.printStackTrace();
+        } catch (UnknownTableException e) {
+            e.printStackTrace();
         }
     }
 
@@ -2709,13 +2713,11 @@ public class CatalogImpl extends Catalog {
             CatalogColumn pkColumn = getColumn( pkColumnIds.get( 0 ) );
             //This gets us only one ccp per store (first part of PK)
             for (CatalogColumnPlacement ccp :getColumnPlacements( pkColumn.id )){
-                if( !dataPartitionPlacement.containsKey(new Object[]{ccp.storeId, ccp.tableId}) ) {
                     updatePartitionsOnDataPlacement(ccp.storeId, ccp.tableId, table.partitionIds);
-                }
             }
 
             listeners.firePropertyChange("table", old, table);
-        } catch (NullPointerException | UnknownKeyException |UnknownColumnException e) {
+        } catch (NullPointerException | UnknownKeyException |UnknownColumnException | UnknownStoreException | UnknownTableException e) {
             throw new GenericCatalogException(e);
         }
     }
@@ -2927,18 +2929,20 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds) {
+    public void updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds) throws UnknownTableException, UnknownStoreException{
 
-        try {
-            System.out.println("HENNLO: addPartitionsToDataPlacement() Adding Partitions="+partitionIds + " to DataPlacement="+ getStore(storeId).uniqueName + "." + getTable(tableId).name+ "");
+            System.out.println("HENNLO: updatePartitionsOnDataPlacement() Adding Partitions="+partitionIds + " to DataPlacement="+ getStore(storeId).uniqueName + "." + getTable(tableId).name+ "");
 
             synchronized (this){
-                dataPartitionPlacement.put( new Object[]{ storeId, tableId }, ImmutableList.<Long>builder().build());
-                dataPartitionPlacement.replace(new Object[]{ storeId, tableId }, ImmutableList.copyOf( partitionIds ));
+                if( !dataPartitionPlacement.containsKey(new Object[]{storeId, tableId}) ) {
+                    dataPartitionPlacement.put( new Object[]{ storeId, tableId }, ImmutableList.<Long>builder().build());
+                    dataPartitionPlacement.replace(new Object[]{ storeId, tableId }, ImmutableList.copyOf( partitionIds ));
+                }
+                else{
+                    dataPartitionPlacement.replace(new Object[]{ storeId, tableId }, ImmutableList.copyOf( partitionIds ));
+                }
             }
-        } catch (UnknownStoreException | UnknownTableException e) {
-            e.printStackTrace();
-        }
+
 
     }
 

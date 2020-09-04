@@ -214,8 +214,9 @@ public abstract class AbstractRouter implements Router {
                     throw new RuntimeException( e );
                 }
 
-                System.out.println("\nHENNLO AbstractRouter: routeDml(): Listing all relevant stores for table: '" + catalogTable.name + "'");
+
                 if(catalogTable.isPartitioned) {
+                    System.out.println("\nHENNLO AbstractRouter: routeDml(): Listing all relevant stores for table: '" + catalogTable.name + "'");
                     for (CatalogColumnPlacement dataPlacement : pkPlacements) {
                         //Check
                         System.out.println("\t\t -> '" + dataPlacement.storeUniqueName + "' " +

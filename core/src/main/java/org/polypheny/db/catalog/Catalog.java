@@ -828,7 +828,7 @@ public abstract class Catalog {
 
     public abstract void  updatePartitionsOnColumnPlacement(CatalogColumnPlacement catalogColumnPlacement, List<Long> partitionIds);
 
-    public abstract void  updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds);
+    public abstract void  updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds) throws UnknownTableException, UnknownStoreException;
 
     public abstract List<Long>  getPartitionsOnDataPlacement(int storeId, long tableId);
 

@@ -93,6 +93,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     @Override
     public void execute( Context context, Transaction transaction ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+        Catalog catalog = Catalog.getInstance();
         //You can't partition placements if the table is not partitioned
         if (catalogTable.isPartitioned == false && !partitionList.isEmpty()){
 
@@ -134,8 +135,29 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             List<Long> tempPartitionList = new ArrayList<Long>();
             //Select partitions to create on this placement
             if (catalogTable.isPartitioned) {
-                //if table is partitioned and no concrete partitons had been specified to put on this placement. put all on cP.
-                if (partitionList != null) {
+                boolean isDataPlacementPartitioned = false;
+
+                //Needed to ensure that column placements on the same store contain all the same partitions
+                //Check if this column placement is the first on the dataplacement
+                //If this returns null this means that this is the first placement and partitition list can therefore be specified
+                List<Long> currentPartList = new ArrayList<>();
+                try {
+                    currentPartList = catalog.getPartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id);
+                    isDataPlacementPartitioned = true;
+
+                }
+                catch ( NullPointerException e){
+                    isDataPlacementPartitioned = false;
+                }
+
+                if (!partitionList.isEmpty()) {
+
+                    //Abort if a manual partitionList has been specified even though the data placemnt has already been partitioned
+                    if ( isDataPlacementPartitioned ){
+                        throw new RuntimeException("WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
+                                + storeName + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead");
+                    }
+
                     System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has been specified ");
                     //First convert specified index to correct partitionId
                     for (int partitionId: partitionList) {
@@ -149,10 +171,16 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     }
                 }
                 //Simply Place all partitions on placement since nothing has been specified
-                else if (partitionList == null) {
-                    System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has been specified ");
-                    tempPartitionList = catalogTable.partitionIds;
+                else if (partitionList.isEmpty()) {
+                    System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has NOT been specified ");
 
+                    if ( isDataPlacementPartitioned ){
+                        //If DataPlacement already contains partitions then create new placement with same set of partitions.
+                        tempPartitionList = currentPartList;
+                    }
+                    else{
+                        tempPartitionList = catalogTable.partitionIds;
+                    }
                 }
             }
 
