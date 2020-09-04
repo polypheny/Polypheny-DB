@@ -314,8 +314,17 @@ SqlAlterTable SqlAlterTable(Span s) :
             <ON>
             <STORE>
             store = SimpleIdentifier()
+            [
+                <WITH> <PARTITIONS>
+                <LPAREN>
+                    partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    (
+                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    )*
+                <RPAREN>
+            ]
             {
-                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store);
+                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList);
             }
         )
 

@@ -1381,17 +1381,17 @@ public class CatalogImpl extends Catalog {
                             old.numPartitions, old.partitionType, old.partitionIds, old.partitionColumnId);
 
                     // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacemnt
-                    if ( partitionIds == null) {
-                        partitionIds = table.partitionIds;
-                    }
+                    //if ( partitionIds == null) {
+                    //    partitionIds = table.partitionIds;
+                    //}
 
                     //Add placement to list of placements containing a partition otherwise this partition will not be part of a partiton lookup
-                    addPartitionsToColumnPlacement(placement, partitionIds);
+                    //addPartitionsToColumnPlacement(placement, partitionIds);
 
                     //Only executed if this is the first placement on the store
-                    if( !dataPartitionPlacement.containsKey(new Object[]{storeId, column.tableId}) ){
-                        updatePartitionsOnDataPlacement(storeId, column.tableId, partitionIds);
-                    }
+                    //if( !dataPartitionPlacement.containsKey(new Object[]{storeId, column.tableId}) ){
+                    //    updatePartitionsOnDataPlacement(storeId, column.tableId, partitionIds);
+                    //}
 
                 }
                 else{
@@ -1405,11 +1405,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "columnPlacement", null, placement );
         } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
-        } catch (UnknownStoreException e) {
-            e.printStackTrace();
-        } catch (UnknownTableException e) {
-            e.printStackTrace();
+            throw new GenericCatalogException(e);
         }
     }
 
