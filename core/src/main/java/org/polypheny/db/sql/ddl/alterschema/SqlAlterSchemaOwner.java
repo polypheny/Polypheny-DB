@@ -34,7 +34,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterSchema;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -75,7 +75,7 @@ public class SqlAlterSchemaOwner extends SqlAlterSchema {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         try {
             Catalog catalog = Catalog.getInstance();
             CatalogSchema catalogSchema = catalog.getSchema( context.getDatabaseId(), schema.getSimple() );

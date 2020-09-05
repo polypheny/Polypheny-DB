@@ -31,7 +31,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.advise.SqlAdvisor;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -68,7 +68,7 @@ public interface DataContext {
     void addAll( Map<String, Object> map );
 
 
-    Transaction getTransaction();
+    Statement getStatement();
 
     /**
      * Variable that may be asked for in a call to {@link DataContext#get}.
@@ -185,7 +185,7 @@ public interface DataContext {
 
 
         @Override
-        public Transaction getTransaction() {
+        public Statement getStatement() {
             return null;
         }
     }

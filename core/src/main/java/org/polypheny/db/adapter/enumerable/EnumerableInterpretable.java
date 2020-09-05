@@ -72,7 +72,7 @@ import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.runtime.Utilities;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
 
 
@@ -102,14 +102,14 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
                 implementor.spark,
                 (EnumerableRel) getInput(),
                 EnumerableRel.Prefer.ARRAY,
-                implementor.dataContext.getTransaction() );
+                implementor.dataContext.getStatement() );
         final ArrayBindable arrayBindable = box( bindable );
         final Enumerable<Object[]> enumerable = arrayBindable.bind( implementor.dataContext );
         return new EnumerableNode( enumerable, implementor.compiler, this );
     }
 
 
-    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Transaction transaction ) {
+    public static Bindable toBindable( Map<String, Object> parameters, SparkHandler spark, EnumerableRel rel, EnumerableRel.Prefer prefer, Statement statement ) {
         EnumerableRelImplementor relImplementor = new EnumerableRelImplementor( rel.getCluster().getRexBuilder(), parameters );
 
         final ClassDeclaration expr = relImplementor.implementRoot( rel, prefer );
@@ -119,8 +119,8 @@ public class EnumerableInterpretable extends ConverterImpl implements Interpreta
             Util.debugCode( System.out, s );
         }
 
-        if ( transaction != null && transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+        if ( statement != null && statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Generated Code" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Generated Code" );

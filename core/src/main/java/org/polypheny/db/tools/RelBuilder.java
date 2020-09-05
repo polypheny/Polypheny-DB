@@ -114,7 +114,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Holder;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -252,15 +252,15 @@ public class RelBuilder {
     }
 
 
-    public static RelBuilder create( Transaction transaction ) {
-        final RexBuilder rexBuilder = new RexBuilder( transaction.getTypeFactory() );
-        final RelOptCluster cluster = RelOptCluster.create( transaction.getQueryProcessor().getPlanner(), rexBuilder );
-        return create( transaction, cluster );
+    public static RelBuilder create( Statement statement ) {
+        final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
+        final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
+        return create( statement, cluster );
     }
 
 
-    public static RelBuilder create( Transaction transaction, RelOptCluster cluster ) {
-        return new RelBuilder( Contexts.EMPTY_CONTEXT, cluster, transaction.getCatalogReader() );
+    public static RelBuilder create( Statement statement, RelOptCluster cluster ) {
+        return new RelBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getCatalogReader() );
     }
 
 

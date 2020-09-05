@@ -35,6 +35,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
+            new AdapterSettingList( "tableType", false, true, false, ImmutableList.of( "Memory", "Cached" ) ),
             new AdapterSettingString( "path", false, true, false, "." + File.separator ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
             new AdapterSettingList( "trxControlMode", false, true, false, Arrays.asList( "locks", "mvlocks", "mvcc" ) ),
@@ -55,6 +56,11 @@ public class HsqldbStore extends AbstractJdbcStore {
             BasicDataSource dataSource = new BasicDataSource();
             dataSource.setDriverClassName( "org.hsqldb.jdbcDriver" );
             String trxSettings = ";hsqldb.tx=" + settings.get( "trxControlMode" ) + ";hsqldb.tx_level=" + settings.get( "trxIsolationLevel" );
+            if ( settings.get( "tableType" ).equals( "Memory" ) ) {
+                trxSettings += ";hsqldb.default_table_type=memory";
+            } else {
+                trxSettings += ";hsqldb.default_table_type=cached";
+            }
             if ( settings.get( "type" ).equals( "Memory" ) ) {
                 dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + trxSettings );
             } else {

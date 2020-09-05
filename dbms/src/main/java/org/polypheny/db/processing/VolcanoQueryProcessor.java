@@ -59,7 +59,7 @@ import org.polypheny.db.rel.rules.TableScanRule;
 import org.polypheny.db.rel.rules.ValuesReduceRule;
 import org.polypheny.db.rel.stream.StreamRules;
 import org.polypheny.db.rex.RexExecutorImpl;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {
@@ -126,9 +126,9 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AggregateValuesRule.INSTANCE );
 
 
-    public VolcanoQueryProcessor( Transaction transaction ) {
-        super( transaction );
-        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( transaction.getPrepareContext().config() ) );
+    public VolcanoQueryProcessor( Statement statement ) {
+        super( statement );
+        planner = new VolcanoPlanner( VolcanoCost.FACTORY, Contexts.of( statement.getPrepareContext().config() ) );
         planner.addRelTraitDef( ConventionTraitDef.INSTANCE );
         if ( ENABLE_COLLATION_TRAIT ) {
             planner.addRelTraitDef( RelCollationTraitDef.INSTANCE );
@@ -171,7 +171,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
             }
         }
 
-        final SparkHandler spark = transaction.getPrepareContext().spark();
+        final SparkHandler spark = statement.getPrepareContext().spark();
         if ( spark.enabled() ) {
             spark.registerRules(
                     new RuleSetBuilder() {
@@ -188,7 +188,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     } );
         }
 
-        final DataContext dataContext = transaction.getPrepareContext().getDataContext();
+        final DataContext dataContext = statement.getPrepareContext().getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
     }
 

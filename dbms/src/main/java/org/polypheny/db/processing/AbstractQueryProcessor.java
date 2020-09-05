@@ -84,10 +84,10 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TableAccessMap;
 import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
@@ -99,7 +99,7 @@ import org.polypheny.db.util.Util;
 @Slf4j
 public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpander {
 
-    private final Transaction transaction;
+    private final Statement statement;
 
     protected static final boolean ENABLE_BINDABLE = false;
     protected static final boolean ENABLE_COLLATION_TRAIT = true;
@@ -108,8 +108,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     protected static final boolean ENABLE_STREAM = true;
 
 
-    protected AbstractQueryProcessor( Transaction transaction ) {
-        this.transaction = transaction;
+    protected AbstractQueryProcessor( Statement statement ) {
+        this.statement = statement;
     }
 
 
@@ -126,7 +126,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values ) {
         // If this is a prepared statement, values is != null
         if ( values != null ) {
-            transaction.getDataContext().addAll( values );
+            statement.getDataContext().addAll( values );
         }
 
         final StopWatch stopWatch = new StopWatch();
@@ -144,21 +144,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         : EnumerableConvention.INSTANCE;
 
         // Locking
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().start( "Locking" );
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().start( "Locking" );
 
         }
         try {
             // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.SHARED );
+            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
             // Get locks for individual tables
             TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
             for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                 Mode mode = accessMap.getTableAccessMode( tableIdentifier );
                 if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.SHARED );
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                 } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 }
             }
         } catch ( DeadlockException e ) {
@@ -166,14 +166,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         }
 
         // Route
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Locking" );
-            transaction.getDuration().start( "Routing" );
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Locking" );
+            statement.getDuration().start( "Routing" );
         }
-        RelRoot routedRoot = route( logicalRoot, transaction, executionTimeMonitor );
+        RelRoot routedRoot = route( logicalRoot, statement, executionTimeMonitor );
 
         RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
-                RelBuilder.create( transaction, routedRoot.rel.getCluster() ),
+                RelBuilder.create( statement, routedRoot.rel.getCluster() ),
                 routedRoot.rel.getCluster().getRexBuilder(),
                 ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
                 true );
@@ -181,9 +181,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         //
         // Implementation Caching
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Routing" );
-            transaction.getDuration().start( "Implementation Caching" );
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Routing" );
+            statement.getDuration().start( "Implementation Caching" );
         }
         RelRoot parameterizedRoot = null;
         if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || values != null) ) {
@@ -198,8 +198,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
-                if ( transaction.isAnalyze() ) {
-                    transaction.getDuration().stop( "Implementation Caching" );
+                if ( statement.getTransaction().isAnalyze() ) {
+                    statement.getDuration().stop( "Implementation Caching" );
                 }
                 return signature;
             }
@@ -207,9 +207,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         //
         // Plan Caching
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Implementation Caching" );
-            transaction.getDuration().start( "Plan Caching" );
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Implementation Caching" );
+            statement.getDuration().start( "Plan Caching" );
         }
         RelNode optimalNode;
         if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || values != null) ) {
@@ -231,9 +231,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         //
         // Planning & Optimization
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Plan Caching" );
-            transaction.getDuration().start( "Planning & Optimization" );
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Plan Caching" );
+            statement.getDuration().start( "Planning & Optimization" );
         }
 
         if ( optimalNode == null ) {
@@ -255,9 +255,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         //
         // Implementation
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Planning & Optimization" );
-            transaction.getDuration().start( "Implementation" );
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Planning & Optimization" );
+            statement.getDuration().start( "Implementation" );
         }
 
         PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
@@ -273,8 +273,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
 
-        if ( transaction.isAnalyze() ) {
-            transaction.getDuration().stop( "Implementation" );
+        if ( statement.getTransaction().isAnalyze() ) {
+            statement.getDuration().stop( "Implementation" );
         }
 
         stopWatch.stop();
@@ -286,6 +286,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
+    @Override
     public List<AvaticaParameter> deriveAvaticaParameters( RelDataType parameterRowType ) {
         final List<AvaticaParameter> parameters = new ArrayList<>();
         for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
@@ -304,13 +305,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private RelRoot route( RelRoot logicalRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor ) {
-        RelRoot routedRoot = transaction.getRouter().route( logicalRoot, transaction, executionTimeMonitor );
+    private RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+        RelRoot routedRoot = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
         if ( log.isTraceEnabled() ) {
             log.trace( "Routed query plan: [{}]", RelOptUtil.dumpPlan( "-- Routed Plan", routedRoot.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+        if ( statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Routed Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Routed Query Plan" );
@@ -336,10 +337,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         List<RelDataType> types = queryParameterizer.getTypes();
 
         // Add values to data context
-        transaction.getDataContext().addAll( queryParameterizer.getValues() );
+        statement.getDataContext().addAll( queryParameterizer.getValues() );
 
         // parameterRowType
-        RelDataType newParameterRowType = transaction.getTypeFactory().createStructType(
+        RelDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(
                 types,
                 new AbstractList<String>() {
                     @Override
@@ -384,15 +385,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             case UPDATE:
             case EXPLAIN:
                 // FIXME: getValidatedNodeType is wrong for DML
-                x = RelOptUtil.createDmlRowType( optimalRoot.kind, transaction.getTypeFactory() );
+                x = RelOptUtil.createDmlRowType( optimalRoot.kind, statement.getTransaction().getTypeFactory() );
                 break;
             default:
                 x = optimalRoot.validatedRowType;
         }
         final List<ColumnMetaData> columns = getColumnMetaDataList(
-                transaction.getTypeFactory(),
+                statement.getTransaction().getTypeFactory(),
                 x,
-                makeStruct( transaction.getTypeFactory(), x ),
+                makeStruct( statement.getTransaction().getTypeFactory(), x ),
                 preparedResult.getFieldOrigins() );
         Class resultClazz = null;
         if ( preparedResult instanceof Typed ) {
@@ -411,7 +412,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 jdbcType,
                 columns,
                 cursorFactory,
-                transaction.getSchema(),
+                statement.getTransaction().getSchema(),
                 ImmutableList.of(),
                 -1,
                 bindable,
@@ -450,8 +451,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         if ( log.isTraceEnabled() ) {
             log.trace( "Physical query plan: [{}]", RelOptUtil.dumpPlan( "-- Physical Plan", root.rel, SqlExplainFormat.TEXT, SqlExplainLevel.DIGEST_ATTRIBUTES ) );
         }
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+        if ( statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Physical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Physical Query Plan" );
@@ -488,14 +489,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             }
 
             try {
-                CatalogReader.THREAD_LOCAL.set( transaction.getCatalogReader() );
-                final SqlConformance conformance = transaction.getPrepareContext().config().conformance();
+                CatalogReader.THREAD_LOCAL.set( statement.getCatalogReader() );
+                final SqlConformance conformance = statement.getPrepareContext().config().conformance();
 
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();
                 internalParameters.put( "_conformance", conformance );
 
-                bindable = EnumerableInterpretable.toBindable( internalParameters, transaction.getPrepareContext().spark(), enumerable, prefer, transaction );
-                transaction.getDataContext().addAll( internalParameters );
+                bindable = EnumerableInterpretable.toBindable( internalParameters, statement.getPrepareContext().spark(), enumerable, prefer, statement );
+                statement.getDataContext().addAll( internalParameters );
             } finally {
                 CatalogReader.THREAD_LOCAL.remove();
             }
@@ -610,7 +611,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    private int getTypeOrdinal( RelDataType type ) {
+    private static int getTypeOrdinal( RelDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
     }
 

@@ -70,9 +70,10 @@ public class JavaInformation {
             // Get amount of free memory within the heap in bytes. This size will increase after garbage collection and decrease as new objects are created.
             long free = Runtime.getRuntime().freeMemory();
 
+            long available = max - (current + free);
             heapInfoGraph.updateGraph(
-                    new String[]{ "Current", "Maximum", "Free" },
-                    new GraphData<>( "heap-data", new Long[]{ current, max, free } )
+                    new String[]{ "Current", "Free", "Available" },
+                    new GraphData<>( "heap-data", new Long[]{ current, free, available } )
             );
 
             heapInfoTable.reset();

@@ -71,12 +71,12 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
 
 
     @Override
-    public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters ) {
-        root.getTransaction().registerInvolvedStore( csvStore );
+    public Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters ) {
+        dataContext.getStatement().getTransaction().registerInvolvedStore( csvStore );
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
         final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {

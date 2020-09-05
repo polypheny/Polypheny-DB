@@ -66,6 +66,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilder.GroupKey;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -95,7 +96,8 @@ public class Rest {
     Map<String, Object> processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
         log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
         Transaction transaction = getTransaction();
-        RelBuilder relBuilder = RelBuilder.create( transaction );
+        Statement statement = transaction.createStatement();
+        RelBuilder relBuilder = RelBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
@@ -133,7 +135,7 @@ public class Rest {
         RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
 
         finalResult.put( "uri", req.uri() );
         finalResult.put( "query", req.queryString() );
@@ -143,11 +145,12 @@ public class Rest {
 
     Map<String, Object> processPatchResource( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
-        RelBuilder relBuilder = RelBuilder.create( transaction );
+        Statement statement = transaction.createStatement();
+        RelBuilder relBuilder = RelBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
@@ -163,7 +166,7 @@ public class Rest {
 
         // Table Modify
 
-        RelOptPlanner planner = transaction.getQueryProcessor().getPlanner();
+        RelOptPlanner planner = statement.getQueryProcessor().getPlanner();
         RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
 
         // Values
@@ -195,18 +198,19 @@ public class Rest {
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.UPDATE, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
         return finalResult;
     }
 
 
     Map<String, Object> processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
-        RelBuilder relBuilder = RelBuilder.create( transaction );
+        Statement statement = transaction.createStatement();
+        RelBuilder relBuilder = RelBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
@@ -222,7 +226,7 @@ public class Rest {
 
         // Table Modify
 
-        RelOptPlanner planner = transaction.getQueryProcessor().getPlanner();
+        RelOptPlanner planner = statement.getQueryProcessor().getPlanner();
         RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
 
         RelNode relNode = relBuilder.build();
@@ -248,18 +252,19 @@ public class Rest {
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.DELETE, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
         return finalResult;
     }
 
 
     Map<String, Object> processPostResource( final ResourcePostRequest insertValueRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
-        RelBuilder relBuilder = RelBuilder.create( transaction );
+        Statement statement = transaction.createStatement();
+        RelBuilder relBuilder = RelBuilder.create( statement );
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
 
         // Values
@@ -272,7 +277,7 @@ public class Rest {
 
         // Table Modify
 
-        RelOptPlanner planner = transaction.getQueryProcessor().getPlanner();
+        RelOptPlanner planner = statement.getQueryProcessor().getPlanner();
         RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
 
         RelNode relNode = relBuilder.build();
@@ -298,7 +303,7 @@ public class Rest {
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, transaction );
+        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
 
         return finalResult;
     }
@@ -505,14 +510,14 @@ public class Rest {
     }
 
 
-    Map<String, Object> executeAndTransformRelAlg( RelRoot relRoot, final Transaction transaction ) {
+    Map<String, Object> executeAndTransformRelAlg( RelRoot relRoot, final Statement statement ) {
         // Prepare
-        PolyphenyDbSignature signature = transaction.getQueryProcessor().prepareQuery( relRoot );
+        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
         log.debug( "RelRoot was prepared." );
 
         List<List<Object>> rows;
         try {
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
+            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
             if ( relRoot.kind.belongsTo( SqlKind.DML ) ) {
                 Object object;
@@ -545,11 +550,11 @@ public class Rest {
                 stopWatch.stop();
                 signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
             }
-            transaction.commit();
+            statement.getTransaction().commit();
         } catch ( Exception | TransactionException e ) {
             log.error( "Caught exception while iterating the plan builder tree", e );
             try {
-                transaction.rollback();
+                statement.getTransaction().rollback();
             } catch ( TransactionException transactionException ) {
                 transactionException.printStackTrace();
             }

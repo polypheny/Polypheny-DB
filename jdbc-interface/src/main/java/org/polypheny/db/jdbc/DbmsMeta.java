@@ -254,7 +254,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public Map<DatabaseProperty, Object> getDatabaseProperties( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getDatabaseProperties( ConnectionHandle {} )", ch );
@@ -272,7 +272,7 @@ public class DbmsMeta implements ProtobufMeta {
     // TODO: typeList is ignored
     @Override
     public MetaResultSet getTables( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final List<String> typeList ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
@@ -313,7 +313,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getColumns( final ConnectionHandle ch, final String database, final Pat schemaPattern, final Pat tablePattern, final Pat columnPattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, database, schemaPattern, tablePattern, columnPattern );
@@ -358,7 +358,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSchemas( final ConnectionHandle ch, final String database, final Pat schemaPattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
@@ -390,7 +390,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getCatalogs( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
@@ -418,7 +418,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTableTypes( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTableTypes( ConnectionHandle {} )", ch );
@@ -442,7 +442,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getProcedures( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getProcedures( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern );
@@ -456,7 +456,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getProcedureColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat procedureNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getProcedureColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, procedureNamePattern, columnNamePattern );
@@ -470,7 +470,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getColumnPrivileges( final ConnectionHandle ch, final String catalog, final String schema, final String table, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getColumnPrivileges( ConnectionHandle {}, String {}, String {}, String {}, Pat {} )", ch, catalog, schema, table, columnNamePattern );
@@ -486,7 +486,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTablePrivileges( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTablePrivileges( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
@@ -502,7 +502,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getBestRowIdentifier( final ConnectionHandle ch, final String catalog, final String schema, final String table, final int scope, final boolean nullable ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getBestRowIdentifier( ConnectionHandle {}, String {}, String {}, String {}, int {}, boolean {} )", ch, catalog, schema, table, scope, nullable );
@@ -516,7 +516,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getVersionColumns( final ConnectionHandle ch, final String catalog, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getVersionColumns( ConnectionHandle {}, String {}, String {}, String {} )", ch, catalog, schema, table );
@@ -530,7 +530,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getPrimaryKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
@@ -571,7 +571,7 @@ public class DbmsMeta implements ProtobufMeta {
     @SuppressWarnings("Duplicates")
     @Override
     public MetaResultSet getImportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
@@ -618,7 +618,7 @@ public class DbmsMeta implements ProtobufMeta {
     @SuppressWarnings("Duplicates")
     @Override
     public MetaResultSet getExportedKeys( final ConnectionHandle ch, final String database, final String schema, final String table ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
@@ -664,7 +664,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getCrossReference( final ConnectionHandle ch, final String parentCatalog, final String parentSchema, final String parentTable, final String foreignCatalog, final String foreignSchema, final String foreignTable ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getCrossReference( ConnectionHandle {}, String {}, String {}, String {}, String {}, String {}, String {} )", ch, parentCatalog, parentSchema, parentTable, foreignCatalog, foreignSchema, foreignTable );
@@ -680,7 +680,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getTypeInfo( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTypeInfo( ConnectionHandle {} )", ch );
@@ -739,7 +739,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getIndexInfo( final ConnectionHandle ch, final String database, final String schema, final String table, final boolean unique, final boolean approximate ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
@@ -787,7 +787,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getUDTs( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final int[] types ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getUDTs( ConnectionHandle {}, String {}, Pat {}, Pat {}, int[] {} )", ch, catalog, schemaPattern, typeNamePattern, types );
@@ -801,7 +801,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSuperTypes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getSuperTypes( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern );
@@ -815,7 +815,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getSuperTables( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getSuperTables( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern );
@@ -829,7 +829,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getAttributes( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat typeNamePattern, final Pat attributeNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getAttributes( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, typeNamePattern, attributeNamePattern );
@@ -843,7 +843,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getClientInfoProperties( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getClientInfoProperties( ConnectionHandle {} )", ch );
@@ -857,7 +857,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getFunctions( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getFunctions( ConnectionHandle {}, String {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern );
@@ -871,7 +871,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getFunctionColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat functionNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getFunctionColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, functionNamePattern, columnNamePattern );
@@ -885,7 +885,7 @@ public class DbmsMeta implements ProtobufMeta {
 
     @Override
     public MetaResultSet getPseudoColumns( final ConnectionHandle ch, final String catalog, final Pat schemaPattern, final Pat tableNamePattern, final Pat columnNamePattern ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getPseudoColumns( ConnectionHandle {}, String {}, Pat {}, Pat {}, Pat {} )", ch, catalog, schemaPattern, tableNamePattern, columnNamePattern );
@@ -912,11 +912,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
             }
 
-            final PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
-
-            if ( connection.getCurrentTransaction() == null ) {
-                connection.getCurrentOrCreateNewTransaction();
-            }
+            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
             long[] updateCounts = new long[parameterValues.size()];
             int i = 0;
@@ -929,13 +925,13 @@ public class DbmsMeta implements ProtobufMeta {
                         values.put( "?" + index++, convertList( (List<Object>) TypedValue.fromProto( v ).toLocal() ) );
                     } else {
                         values.put( "?" + index++, TypedValue.fromProto( v ).toJdbc( calendar ) );
-                        values.put( "?" + index++, TypedValue.fromProto( v ).toJdbc( calendar ) );
                     }
                 }
 
                 try {
-                    prepare( connection, h, statement.getPreparedQuery(), values );
-                    updateCounts[i++] = execute( h, connection, statement, -1 ).size();
+                    statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
+                    prepare( h, statementHandle.getPreparedQuery(), values );
+                    updateCounts[i++] = execute( h, connection, statementHandle, -1 ).size();
                 } catch ( Exception e ) {
                     log.error( "Exception while preparing query", e );
                     String message = e.getLocalizedMessage();
@@ -977,21 +973,20 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle prepare( final ConnectionHandle ch, final String sql, final long maxRowCount ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "prepare( ConnectionHandle {}, String {}, long {} )", ch, sql, maxRowCount );
             }
 
-            final PolyphenyDbConnectionHandle connectionHandle = OPEN_CONNECTIONS.get( ch.id );
             StatementHandle h = createStatement( ch );
-            PolyphenyDbStatementHandle statement;
+            PolyphenyDbStatementHandle polyphenyDbStatement;
             try {
-                statement = getPolyphenyDbStatementHandle( h );
+                polyphenyDbStatement = getPolyphenyDbStatementHandle( h );
             } catch ( NoSuchStatementException e ) {
                 throw new RuntimeException( e );
             }
-            statement.setPreparedQuery( sql );
+            polyphenyDbStatement.setPreparedQuery( sql );
 
             // Parser Config
             SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
@@ -1000,9 +995,10 @@ public class DbmsMeta implements ProtobufMeta {
             configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
             SqlParserConfig parserConfig = configConfigBuilder.build();
 
-            Transaction transaction = connectionHandle.getCurrentOrCreateNewTransaction();
-            transaction.resetQueryProcessor();
-            SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+            Transaction transaction = connection.getCurrentOrCreateNewTransaction();
+            org.polypheny.db.transaction.Statement statement = transaction.createStatement();
+            polyphenyDbStatement.setStatement( statement );
+            SqlProcessor sqlProcessor = statement.getSqlProcessor( parserConfig );
 
             SqlNode parsed = sqlProcessor.parse( sql );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
@@ -1011,7 +1007,7 @@ public class DbmsMeta implements ProtobufMeta {
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
-            List<AvaticaParameter> avaticaParameters = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().deriveAvaticaParameters( parameterRowType );
+            List<AvaticaParameter> avaticaParameters = statement.getQueryProcessor().deriveAvaticaParameters( parameterRowType );
 
             PolyphenyDbSignature signature = new PolyphenyDbSignature<>(
                     sql,
@@ -1027,7 +1023,7 @@ public class DbmsMeta implements ProtobufMeta {
                     StatementType.SELECT,
                     null );
             h.signature = signature;
-            statement.setSignature( signature );
+            polyphenyDbStatement.setSignature( signature );
 
             return h;
         }
@@ -1074,6 +1070,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
             statementHandle.setPreparedQuery( sql );
+            statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
             return execute( h, new LinkedList<>(), maxRowsInFirstFrame, connection );
         }
     }
@@ -1139,27 +1136,27 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
             }
 
-            final PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
+            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
-            final PolyphenyDbSignature signature = statement.getSignature();
+            final PolyphenyDbSignature signature = statementHandle.getSignature();
             final Iterator<Object> iterator;
-            if ( statement.getOpenResultSet() == null ) {
-                final Iterable<Object> iterable = createIterable( statement.getConnection().getCurrentTransaction().getDataContext(), signature );
+            if ( statementHandle.getOpenResultSet() == null ) {
+                final Iterable<Object> iterable = createIterable( statementHandle.getStatement().getDataContext(), signature );
                 iterator = iterable.iterator();
-                statement.setOpenResultSet( iterator );
-                statement.getExecutionStopWatch().start();
+                statementHandle.setOpenResultSet( iterator );
+                statementHandle.getExecutionStopWatch().start();
             } else {
-                iterator = statement.getOpenResultSet();
-                statement.getExecutionStopWatch().resume();
+                iterator = statementHandle.getOpenResultSet();
+                statementHandle.getExecutionStopWatch().resume();
             }
             final List rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, fetchMaxRowCount ), new ArrayList<>() );
-            statement.getExecutionStopWatch().suspend();
+            statementHandle.getExecutionStopWatch().suspend();
             boolean done = fetchMaxRowCount == 0 || rows.size() < fetchMaxRowCount;
             @SuppressWarnings("unchecked")
             List<Object> rows1 = (List<Object>) rows;
             if ( done ) {
-                statement.getExecutionStopWatch().stop();
-                signature.getExecutionTimeMonitor().setExecutionTime( statement.getExecutionStopWatch().getNanoTime() );
+                statementHandle.getExecutionStopWatch().stop();
+                signature.getExecutionTimeMonitor().setExecutionTime( statementHandle.getExecutionStopWatch().getNanoTime() );
                 try {
                     ((AutoCloseable) iterator).close();
                 } catch ( Exception e ) {
@@ -1213,14 +1210,15 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
             }
-
+            final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+            statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
             return execute( h, parameterValues, maxRowsInFirstFrame, connection );
         }
     }
 
 
     private ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame, PolyphenyDbConnectionHandle connection ) throws NoSuchStatementException {
-        final PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
+        final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
         Map<String, Object> values = new HashMap<>();
         int index = 0;
@@ -1235,8 +1233,8 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         try {
-            prepare( connection, h, statement.getPreparedQuery(), values );
-            return new ExecuteResult( execute( h, connection, statement, maxRowsInFirstFrame ) );
+            prepare( h, statementHandle.getPreparedQuery(), values );
+            return new ExecuteResult( execute( h, connection, statementHandle, maxRowsInFirstFrame ) );
         } catch ( Exception e ) {
             log.error( "Exception while preparing query", e );
             String message = e.getLocalizedMessage();
@@ -1258,7 +1256,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private void prepare( PolyphenyDbConnectionHandle connectionHandle, StatementHandle h, String sql, Map<String, Object> parameterValues ) throws NoSuchStatementException {
+    private void prepare( StatementHandle h, String sql, Map<String, Object> parameterValues ) throws NoSuchStatementException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -1266,9 +1264,8 @@ public class DbmsMeta implements ProtobufMeta {
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
 
-        Transaction transaction = connectionHandle.getCurrentOrCreateNewTransaction();
-        transaction.resetQueryProcessor();
-        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+        PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
+        SqlProcessor sqlProcessor = statementHandle.getStatement().getSqlProcessor( parserConfig );
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
@@ -1281,23 +1278,22 @@ public class DbmsMeta implements ProtobufMeta {
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = connectionHandle.getCurrentOrCreateNewTransaction().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues );
+            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues );
         }
 
-        PolyphenyDbStatementHandle statement = getPolyphenyDbStatementHandle( h );
         h.signature = signature;
-        statement.setSignature( signature );
+        statementHandle.setSignature( signature );
     }
 
 
-    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle statement, int maxRowsInFirstFrame ) {
+    private List<MetaResultSet> execute( StatementHandle h, PolyphenyDbConnectionHandle connection, PolyphenyDbStatementHandle statementHandle, int maxRowsInFirstFrame ) {
         List<MetaResultSet> resultSets;
-        if ( statement.getSignature().statementType == StatementType.OTHER_DDL ) {
-            MetaResultSet resultSet = MetaResultSet.count( statement.getConnection().getConnectionId().toString(), h.id, 1 );
+        if ( statementHandle.getSignature().statementType == StatementType.OTHER_DDL ) {
+            MetaResultSet resultSet = MetaResultSet.count( statementHandle.getConnection().getConnectionId().toString(), h.id, 1 );
             resultSets = ImmutableList.of( resultSet );
             commit( connection.getHandle() );
-        } else if ( statement.getSignature().statementType == StatementType.IS_DML ) {
-            Iterator<?> iterator = statement.getSignature().enumerable( connection.getCurrentTransaction().getDataContext() ).iterator();
+        } else if ( statementHandle.getSignature().statementType == StatementType.IS_DML ) {
+            Iterator<?> iterator = statementHandle.getSignature().enumerable( statementHandle.getStatement().getDataContext() ).iterator();
             Object object = null;
             int rowsChanged = -1;
             while ( iterator.hasNext() ) {
@@ -1320,18 +1316,17 @@ public class DbmsMeta implements ProtobufMeta {
             MetaResultSet metaResultSet = MetaResultSet.count( h.connectionId, h.id, rowsChanged );
             resultSets = ImmutableList.of( metaResultSet );
         } else {
-            statement.setSignature( statement.getSignature() );
             try {
                 resultSets = Collections.singletonList( MetaResultSet.create(
                         h.connectionId,
                         h.id,
                         false,
-                        statement.getSignature(),
+                        statementHandle.getSignature(),
                         // Due to a bug in Avatica (it wrongly replaces the courser type) I have per default disabled sending data with the first frame.
                         // TODO MV:  Due to the performance benefits of sending data together with the first frame, this issue should be addressed
                         //  Remember that fetch is synchronized
                         maxRowsInFirstFrame != 0 && SEND_FIRST_FRAME_WITH_RESPONSE
-                                ? fetch( h, 0, (int) Math.min( Math.max( statement.getMaxRowCount(), maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
+                                ? fetch( h, 0, (int) Math.min( Math.max( statementHandle.getMaxRowCount(), maxRowsInFirstFrame ), Integer.MAX_VALUE ) )
                                 : null //Frame.MORE // Send first frame to together with the response to save a fetch call
                 ) );
             } catch ( NoSuchStatementException e ) {
@@ -1350,7 +1345,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public StatementHandle createStatement( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "createStatement( ConnectionHandle {} )", ch );
@@ -1484,7 +1479,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void closeConnection( ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "closeConnection( ConnectionHandle {} )", ch );
@@ -1563,7 +1558,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void commit( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "commit( ConnectionHandle {} )", ch );
@@ -1593,7 +1588,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void rollback( final ConnectionHandle ch ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "rollback( ConnectionHandle {} )", ch );
@@ -1626,7 +1621,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ConnectionProperties connectionSync( ConnectionHandle ch, ConnectionProperties connProps ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( ch.id );
+        final PolyphenyDbConnectionHandle connection = getPolyphenyDbConnectionHandle( ch.id );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "connectionSync( ConnectionHandle {}, ConnectionProperties {} )", ch, connProps );
@@ -1640,7 +1635,7 @@ public class DbmsMeta implements ProtobufMeta {
                 throw new IllegalStateException( "Attempt to synchronize the connection `" + ch.id + "` with is either has not been open yet or is already closed." );
             }
 
-            return connectionToSync.mergeConnectionProperties( connProps );
+            return connection.mergeConnectionProperties( connProps );
         }
     }
 

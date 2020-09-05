@@ -24,7 +24,7 @@ import org.polypheny.db.rel.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.rel.rules.CalcSplitRule;
 import org.polypheny.db.rel.rules.FilterTableScanRule;
 import org.polypheny.db.rel.rules.ProjectTableScanRule;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 public class HepQueryProcessor extends AbstractQueryProcessor {
@@ -33,8 +33,8 @@ public class HepQueryProcessor extends AbstractQueryProcessor {
     private final HepPlanner planner;
 
 
-    protected HepQueryProcessor( Transaction transaction ) {
-        super( transaction );
+    protected HepQueryProcessor( Statement statement ) {
+        super( statement );
         HepProgramBuilder hepProgramBuilder =
                 new HepProgramBuilder()
                         .addRuleInstance( CalcSplitRule.INSTANCE )

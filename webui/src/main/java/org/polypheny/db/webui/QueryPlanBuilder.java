@@ -24,7 +24,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.webui.models.SortDirection;
 import org.polypheny.db.webui.models.SortState;
@@ -38,7 +38,7 @@ public class QueryPlanBuilder {
     }
 
 
-    private static RelBuilder createRelBuilder( final Transaction transaction ) {
+    private static RelBuilder createRelBuilder( final Statement statement ) {
         /*final SchemaPlus rootSchema = transaction.getSchema().plus();
         FrameworkConfig config = Frameworks.newConfigBuilder()
                 .parserConfig( SqlParserConfig.DEFAULT )
@@ -59,18 +59,18 @@ public class QueryPlanBuilder {
                         transaction ) ).build();
         return RelBuilder.create( config );
                          */
-        return RelBuilder.create( transaction );
+        return RelBuilder.create( statement );
     }
 
 
     /**
      * Build a tree using the RelBuilder
      *
-     * @param topNode top node from the tree from the user interface, with its children
-     * @param transaction transaction
+     * @param topNode   top node from the tree from the user interface, with its children
+     * @param statement transaction
      */
-    public static RelNode buildFromTree( final UIRelNode topNode, final Transaction transaction ) {
-        RelBuilder b = createRelBuilder( transaction );
+    public static RelNode buildFromTree( final UIRelNode topNode, final Statement statement ) {
+        RelBuilder b = createRelBuilder( statement );
         buildStep( b, topNode );
         return b.build();
     }

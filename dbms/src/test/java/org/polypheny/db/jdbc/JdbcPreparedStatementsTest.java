@@ -307,6 +307,8 @@ public class JdbcPreparedStatementsTest {
                         preparedSelect.executeQuery(),
                         ImmutableList.of( new Object[]{ null, null, null, null, null, 1, null, (short) 55, null, null, (byte) 11, "Foo" } ) );
 
+                connection.commit();
+
                 statement.executeUpdate( "DROP TABLE pstest" );
             }
         }

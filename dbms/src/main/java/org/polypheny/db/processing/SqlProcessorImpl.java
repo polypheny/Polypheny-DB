@@ -81,7 +81,7 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
@@ -90,13 +90,13 @@ import org.polypheny.db.util.SourceStringReader;
 @Slf4j
 public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
-    private final Transaction transaction;
+    private final Statement statement;
     private final SqlParserConfig parserConfig;
     private PolyphenyDbSqlValidator validator;
 
 
-    public SqlProcessorImpl( Transaction transaction, SqlParserConfig parserConfig ) {
-        this.transaction = transaction;
+    public SqlProcessorImpl( Statement statement, SqlParserConfig parserConfig ) {
+        this.statement = statement;
         this.parserConfig = parserConfig;
     }
 
@@ -142,8 +142,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
 
         final SqlConformance conformance = parserConfig.conformance();
-        final PolyphenyDbCatalogReader catalogReader = transaction.getCatalogReader();
-        validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, transaction.getTypeFactory(), conformance );
+        final PolyphenyDbCatalogReader catalogReader = statement.getCatalogReader();
+        validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), catalogReader, statement.getTransaction().getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );
 
         SqlNode validated;
@@ -176,20 +176,20 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
-        final RexBuilder rexBuilder = new RexBuilder( transaction.getTypeFactory() );
+        final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
 
-        final RelOptCluster cluster = RelOptCluster.create( transaction.getQueryProcessor().getPlanner(), rexBuilder );
+        final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
         final SqlToRelConverter.Config config =
                 SqlToRelConverter.configBuilder()
                         .withConfig( sqlToRelConfig )
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, transaction.getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, statement.getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
         RelRoot logicalRoot = sqlToRelConverter.convertQuery( sql, false, true );
 
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+        if ( statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
@@ -227,9 +227,9 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         if ( parsed instanceof SqlExecutableStatement ) {
             try {
                 // Acquire global schema lock
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 // Execute statement
-                ((SqlExecutableStatement) parsed).execute( transaction.getPrepareContext(), transaction );
+                ((SqlExecutableStatement) parsed).execute( statement.getPrepareContext(), statement );
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
                         parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
@@ -238,7 +238,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         null,
                         ImmutableList.of(),
                         Meta.CursorFactory.OBJECT,
-                        transaction.getSchema(),
+                        statement.getTransaction().getSchema(),
                         ImmutableList.of(),
                         -1,
                         null,
@@ -251,7 +251,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             } finally {
                 // Release lock
                 // TODO: This can be removed when auto-commit of ddls is implemented
-                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
+                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
             }
         } else {
             throw new RuntimeException( "All DDL queries should be of a type that inherits SqlExecutableStatement. But this one is of type " + parsed.getClass() );
@@ -267,10 +267,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
     // Add default values for unset fields
     private void addDefaultValues( SqlInsert insert ) {
-        Context prepareContext = transaction.getPrepareContext();
+        Context prepareContext = statement.getPrepareContext();
         SqlNodeList oldColumnList = insert.getTargetColumnList();
         if ( oldColumnList != null ) {
-            CatalogTable catalogTable = getCatalogTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+            CatalogTable catalogTable = getCatalogTable( prepareContext, (SqlIdentifier) insert.getTargetTable() );
             SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][catalogTable.columnIds.size()];
             int pos = 0;
@@ -341,7 +341,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     }
 
 
-    private CatalogTable getCatalogTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
+    private CatalogTable getCatalogTable( Context context, SqlIdentifier tableName ) {
         CatalogTable catalogTable;
         try {
             long schemaId;

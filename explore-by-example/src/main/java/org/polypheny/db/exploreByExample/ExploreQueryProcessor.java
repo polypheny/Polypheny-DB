@@ -40,6 +40,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -96,8 +97,9 @@ public class ExploreQueryProcessor {
     public ExploreQueryResult executeSQL( String query, int pagination ) {
         ExploreQueryResult result = new ExploreQueryResult();
         Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
         try {
-            result = executeSqlSelect( transaction, query, pagination );
+            result = executeSqlSelect( statement, query, pagination );
             transaction.commit();
         } catch ( ExploreQueryProcessor.QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
@@ -115,7 +117,7 @@ public class ExploreQueryProcessor {
     // -----------------------------------------------------------------------
 
 
-    private ExploreQueryResult executeSqlSelect( final Transaction transaction, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
+    private ExploreQueryResult executeSqlSelect( final Statement statement, final String sqlSelect, final int pagination ) throws ExploreQueryProcessor.QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -127,8 +129,8 @@ public class ExploreQueryProcessor {
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         try {
-            signature = processQuery( transaction, sqlSelect, parserConfig );
-            final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
+            signature = processQuery( statement, sqlSelect, parserConfig );
+            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
             rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( iterator, 200 ), new ArrayList<>() );
@@ -189,10 +191,9 @@ public class ExploreQueryProcessor {
     }
 
 
-    private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql, SqlParserConfig parserConfig ) {
         PolyphenyDbSignature signature;
-        transaction.resetQueryProcessor();
-        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+        SqlProcessor sqlProcessor = statement.getSqlProcessor( parserConfig );
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
@@ -203,7 +204,7 @@ public class ExploreQueryProcessor {
             RelRoot logicalRoot = sqlProcessor.translate( validated.left );
 
             // Prepare
-            signature = transaction.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }
         return signature;
     }
