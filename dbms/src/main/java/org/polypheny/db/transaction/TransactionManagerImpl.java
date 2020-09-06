@@ -55,36 +55,37 @@ public class TransactionManagerImpl implements TransactionManager {
         im.addGroup( runningTransactionsGroup );
         InformationTable runningTransactionsTable = new InformationTable(
                 runningTransactionsGroup,
-                Arrays.asList( "ID", "Analyze", "Involved Stores" ) );
+                Arrays.asList( "ID", "Analyze", "Involved Stores", "Origin" ) );
         im.registerInformation( runningTransactionsTable );
         page.setRefreshFunction( () -> {
             runningTransactionsTable.reset();
             transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow(
-                    k.getGlobalTransactionId(),
+                    k.toString().hashCode(),
                     v.isAnalyze(),
-                    v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ) ) );
+                    v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ),
+                    v.getOrigin() ) );
         } );
     }
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze ) {
+    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database, analyze ) );
+        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database, analyze, origin ) );
         return transactions.get( xid );
     }
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
         Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( user );
         CatalogDatabase catalogDatabase = catalog.getDatabase( database );
         CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
-        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze );
+        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin );
     }
 
 

@@ -155,6 +155,12 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
+    STATISTICS_ON_STARTUP( "statistics/statisticsOnStartup",
+            "Whether to build statistics for all stored data on system startup.",
+            false,
+            ConfigType.BOOLEAN,
+            "statisticSettingsGroup" ),
+
     ACTIVE_TRACKING( "statistics/activeTracking",
             "All transactions are tracked and statistics collected during execution.",
             true,

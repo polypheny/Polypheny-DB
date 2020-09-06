@@ -60,6 +60,9 @@ public class TransactionImpl implements Transaction, Comparable {
     private TransactionManagerImpl transactionManager;
 
     @Getter
+    private final String origin;
+
+    @Getter
     private final boolean analyze;
 
     private final List<String> changedTables = new ArrayList<>();
@@ -76,13 +79,15 @@ public class TransactionImpl implements Transaction, Comparable {
             CatalogUser user,
             CatalogSchema defaultSchema,
             CatalogDatabase database,
-            boolean analyze ) {
+            boolean analyze,
+            String origin ) {
         this.xid = xid;
         this.transactionManager = transactionManager;
         this.user = user;
         this.defaultSchema = defaultSchema;
         this.database = database;
         this.analyze = analyze;
+        this.origin = origin;
     }
 
 

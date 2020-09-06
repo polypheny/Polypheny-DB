@@ -101,7 +101,7 @@ public class PolyphenyDbConnectionHandle {
     public Transaction getCurrentOrCreateNewTransaction() {
         synchronized ( this ) {
             if ( currentTransaction == null ) {
-                currentTransaction = transactionManager.startTransaction( user, schema, database, false );
+                currentTransaction = transactionManager.startTransaction( user, schema, database, false, "JDBC Interface" );
             }
             return currentTransaction;
         }

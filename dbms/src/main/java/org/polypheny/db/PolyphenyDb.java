@@ -101,10 +101,10 @@ public class PolyphenyDb {
             Catalog.memoryCatalog = memoryCatalog;
             Catalog.testMode = testMode;
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
-            trx = transactionManager.startTransaction( "pa", "APP", false );
+            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             StoreManager.getInstance().restoreStores( catalog );
             trx.commit();
-            trx = transactionManager.startTransaction( "pa", "APP", false );
+            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
             trx.commit();
         } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {

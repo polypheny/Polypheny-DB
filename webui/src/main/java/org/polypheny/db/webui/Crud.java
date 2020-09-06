@@ -2772,7 +2772,7 @@ public class Crud implements InformationObserver {
 
     private Transaction getTransaction( boolean analyze ) {
         try {
-            return transactionManager.startTransaction( userName, databaseName, analyze );
+            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

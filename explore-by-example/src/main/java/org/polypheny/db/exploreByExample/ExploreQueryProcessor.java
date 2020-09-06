@@ -70,7 +70,7 @@ public class ExploreQueryProcessor {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false );
+            return transactionManager.startTransaction( userName, databaseName, false, "Explore-by-Example" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

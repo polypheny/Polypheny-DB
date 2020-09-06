@@ -1004,7 +1004,6 @@ public class DbmsMeta implements ProtobufMeta {
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
             // JDBC driver would expect more parameter fields than there actually are in the query.
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, false );
-            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             List<AvaticaParameter> avaticaParameters = statement.getQueryProcessor().deriveAvaticaParameters( parameterRowType );
@@ -1439,7 +1438,7 @@ public class DbmsMeta implements ProtobufMeta {
         }
 
         // Create transaction
-        Transaction transaction = transactionManager.startTransaction( user, null, null, false );
+        Transaction transaction = transactionManager.startTransaction( user, null, null, false, "JDBC Interface" );
 
         // Check database access
         final CatalogDatabase database;

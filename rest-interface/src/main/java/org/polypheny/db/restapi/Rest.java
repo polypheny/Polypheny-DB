@@ -503,7 +503,7 @@ public class Rest {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false );
+            return transactionManager.startTransaction( userName, databaseName, false, "REST Interface" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
