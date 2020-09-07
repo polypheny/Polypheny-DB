@@ -19,11 +19,8 @@ package org.polypheny.db.transaction;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 
 public interface Statement {
 
@@ -31,13 +28,9 @@ public interface Statement {
 
     QueryProcessor getQueryProcessor();
 
-    SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
-
     DataContext getDataContext();
 
     Context getPrepareContext();
-
-    PolyphenyDbCatalogReader getCatalogReader();
 
     InformationDuration getDuration();
 

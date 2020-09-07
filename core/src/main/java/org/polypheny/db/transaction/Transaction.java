@@ -23,10 +23,15 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
+import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 
 
 public interface Transaction {
+
+    long getId();
 
     PolyXid getXid();
 
@@ -44,6 +49,10 @@ public interface Transaction {
 
     JavaTypeFactory getTypeFactory();
 
+    PolyphenyDbCatalogReader getCatalogReader();
+
+    SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
+
     boolean isAnalyze();
 
     InformationManager getQueryAnalyzer();
@@ -55,5 +64,7 @@ public interface Transaction {
     void addChangedTable( String qualifiedTableName );
 
     String getOrigin();
+
+    long getNumberOfStatements();
 
 }

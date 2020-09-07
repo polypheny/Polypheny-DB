@@ -90,14 +90,14 @@ public class JavaInformation {
                 groupHeapOverTime,
                 GraphType.LINE,
                 null,
-                new GraphData<Long>( "Total", new Long[]{ Runtime.getRuntime().totalMemory() }, 20 )
+                new GraphData<Long>( "Total", new Long[]{ Runtime.getRuntime().totalMemory() / 1000000 }, 20 )
         );
         heapOverTimeGraph.minY( 1 );
         im.registerInformation( heapOverTimeGraph );
 
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
-                    long current = Runtime.getRuntime().totalMemory();
+                    long current = Runtime.getRuntime().totalMemory() / 1000000;
                     heapOverTimeGraph.addData( "Total", current );
                 },
                 "Update Java runtime information",

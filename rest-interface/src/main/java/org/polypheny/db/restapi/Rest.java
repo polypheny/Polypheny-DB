@@ -150,7 +150,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourcePatchRequest.tables.get( 0 ).getSchemaName(), resourcePatchRequest.tables.get( 0 ).name ) );
 
         // Table Scans
@@ -210,7 +210,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( resourceDeleteRequest.tables.get( 0 ).getSchemaName(), resourceDeleteRequest.tables.get( 0 ).name ) );
 
         // Table Scans
@@ -264,7 +264,7 @@ public class Rest {
         JavaTypeFactory typeFactory = transaction.getTypeFactory();
         RexBuilder rexBuilder = new RexBuilder( typeFactory );
 
-        PolyphenyDbCatalogReader catalogReader = statement.getCatalogReader();
+        PolyphenyDbCatalogReader catalogReader = statement.getTransaction().getCatalogReader();
         PreparingTable table = catalogReader.getTable( Arrays.asList( insertValueRequest.tables.get( 0 ).getSchemaName(), insertValueRequest.tables.get( 0 ).name ) );
 
         // Values

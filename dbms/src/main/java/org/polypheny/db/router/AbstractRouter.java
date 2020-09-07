@@ -195,7 +195,7 @@ public abstract class AbstractRouter implements Router {
                 // Execute on all primary key placements
                 List<TableModify> modifies = new ArrayList<>( pkPlacements.size() );
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
-                    CatalogReader catalogReader = statement.getCatalogReader();
+                    CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
                     List<String> tableNames = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(

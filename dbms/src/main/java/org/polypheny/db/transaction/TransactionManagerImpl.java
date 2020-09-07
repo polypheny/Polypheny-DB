@@ -55,12 +55,14 @@ public class TransactionManagerImpl implements TransactionManager {
         im.addGroup( runningTransactionsGroup );
         InformationTable runningTransactionsTable = new InformationTable(
                 runningTransactionsGroup,
-                Arrays.asList( "ID", "Analyze", "Involved Stores", "Origin" ) );
+                Arrays.asList( "ID", "XID Hash", "Statements", "Analyze", "Involved Stores", "Origin" ) );
         im.registerInformation( runningTransactionsTable );
         page.setRefreshFunction( () -> {
             runningTransactionsTable.reset();
             transactions.forEach( ( k, v ) -> runningTransactionsTable.addRow(
+                    v.getId(),
                     k.toString().hashCode(),
+                    v.getNumberOfStatements(),
                     v.isAnalyze(),
                     v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ),
                     v.getOrigin() ) );

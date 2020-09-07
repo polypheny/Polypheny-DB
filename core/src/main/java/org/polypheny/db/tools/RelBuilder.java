@@ -260,7 +260,7 @@ public class RelBuilder {
 
 
     public static RelBuilder create( Statement statement, RelOptCluster cluster ) {
-        return new RelBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getCatalogReader() );
+        return new RelBuilder( Contexts.EMPTY_CONTEXT, cluster, statement.getTransaction().getCatalogReader() );
     }
 
 

@@ -19,6 +19,7 @@ package org.polypheny.db.transaction;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
@@ -28,19 +29,19 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.ContextImpl;
-import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
-import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
 import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 
 public class StatementImpl implements Statement {
+
+    private static final AtomicLong STATEMENT_COUNTER = new AtomicLong();
+
+    @Getter
+    private final long id;
 
     @Getter
     private final TransactionImpl transaction;
@@ -54,6 +55,7 @@ public class StatementImpl implements Statement {
 
 
     StatementImpl( TransactionImpl transaction ) {
+        this.id = STATEMENT_COUNTER.getAndIncrement();
         this.transaction = transaction;
         this.duration = null;
     }
@@ -65,12 +67,6 @@ public class StatementImpl implements Statement {
             queryProcessor = new VolcanoQueryProcessor( this );
         }
         return queryProcessor;
-    }
-
-
-    @Override
-    public SqlProcessor getSqlProcessor( SqlParserConfig parserConfig ) {
-        return new SqlProcessorImpl( this, parserConfig );
     }
 
 
@@ -110,14 +106,6 @@ public class StatementImpl implements Statement {
         return prepareContext;
     }
 
-
-    @Override
-    public PolyphenyDbCatalogReader getCatalogReader() {
-        return new PolyphenyDbCatalogReader(
-                PolyphenyDbSchema.from( transaction.getSchema().plus() ),
-                PolyphenyDbSchema.from( transaction.getSchema().plus() ).path( null ),
-                transaction.getTypeFactory() );
-    }
 
 
     @Override

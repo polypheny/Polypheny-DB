@@ -90,7 +90,6 @@ import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.ExtraPolyTypes;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -286,24 +285,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    @Override
-    public List<AvaticaParameter> deriveAvaticaParameters( RelDataType parameterRowType ) {
-        final List<AvaticaParameter> parameters = new ArrayList<>();
-        for ( RelDataTypeField field : parameterRowType.getFieldList() ) {
-            RelDataType type = field.getType();
-            parameters.add(
-                    new AvaticaParameter(
-                            false,
-                            getPrecision( type ),
-                            getScale( type ),
-                            getTypeOrdinal( type ),
-                            getTypeName( type ),
-                            getClassName( type ),
-                            field.getName() ) );
-        }
-        return parameters;
-    }
-
 
     private RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         RelRoot routedRoot = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
@@ -373,7 +354,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                             getPrecision( type ),
                             getScale( type ),
                             getTypeOrdinal( type ),
-                            getTypeName( type ),
+                            type.getPolyType().getTypeName(),
                             getClassName( type ),
                             field.getName() ) );
         }
@@ -489,7 +470,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             }
 
             try {
-                CatalogReader.THREAD_LOCAL.set( statement.getCatalogReader() );
+                CatalogReader.THREAD_LOCAL.set( statement.getTransaction().getCatalogReader() );
                 final SqlConformance conformance = statement.getPrepareContext().config().conformance();
 
                 final Map<String, Object> internalParameters = new LinkedHashMap<>();
@@ -579,36 +560,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-    /**
-     * Returns the type name in string form. Does not include precision, scale or whether nulls are allowed.
-     * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
-     */
-    private static String getTypeName( RelDataType type ) {
-        final PolyType polyType = type.getPolyType();
-        switch ( polyType ) {
-            case ARRAY:
-            case MULTISET:
-            case MAP:
-            case ROW:
-                return type.toString(); // e.g. "INTEGER ARRAY"
-            case INTERVAL_YEAR_MONTH:
-                return "INTERVAL_YEAR_TO_MONTH";
-            case INTERVAL_DAY_HOUR:
-                return "INTERVAL_DAY_TO_HOUR";
-            case INTERVAL_DAY_MINUTE:
-                return "INTERVAL_DAY_TO_MINUTE";
-            case INTERVAL_DAY_SECOND:
-                return "INTERVAL_DAY_TO_SECOND";
-            case INTERVAL_HOUR_MINUTE:
-                return "INTERVAL_HOUR_TO_MINUTE";
-            case INTERVAL_HOUR_SECOND:
-                return "INTERVAL_HOUR_TO_SECOND";
-            case INTERVAL_MINUTE_SECOND:
-                return "INTERVAL_MINUTE_TO_SECOND";
-            default:
-                return polyType.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
-        }
-    }
+
 
 
     private static int getTypeOrdinal( RelDataType type ) {
@@ -648,7 +600,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
 
     private ColumnMetaData.AvaticaType avaticaType( JavaTypeFactory typeFactory, RelDataType type, RelDataType fieldType ) {
-        final String typeName = getTypeName( type );
+        final String typeName = type.getPolyType().getTypeName();
         if ( type.getComponentType() != null ) {
             final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
             final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
