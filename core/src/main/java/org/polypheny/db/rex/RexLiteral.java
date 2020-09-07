@@ -792,6 +792,28 @@ public class RexLiteral extends RexNode {
 
 
     /**
+     * Returns the value of this literal as required by the query parameterizer.
+     */
+    public Comparable getValueForQueryParameterizer() {
+        assert valueMatchesType( value, typeName, true ) : value;
+        if ( value == null ) {
+            return null;
+        }
+        switch ( typeName ) {
+            case TIME:
+            case DATE:
+            case TIMESTAMP:
+                return getValueAs( Calendar.class );
+            case CHAR:
+            case VARCHAR:
+                return getValueAs( String.class );
+            default:
+                return value;
+        }
+    }
+
+
+    /**
      * Returns the value of this literal, in the form that the calculator program builder wants it.
      */
     public Object getValue2() {
