@@ -119,13 +119,12 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
         List<Object> list = new ArrayList<>( operands.size() );
         for ( RexNode node : operands ) {
             if ( node instanceof RexLiteral ) {
-                list.add( ((RexLiteral) node).getValue() );
+                list.add( ((RexLiteral) node).getValueForQueryParameterizer() );
             } else if ( node instanceof RexCall ) {
                 list.add( createListForArrays( ((RexCall) node).operands ) );
             } else {
                 throw new RuntimeException( "Invalid array" );
             }
-
         }
         return list;
     }

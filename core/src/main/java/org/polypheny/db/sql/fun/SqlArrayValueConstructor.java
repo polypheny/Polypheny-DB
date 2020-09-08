@@ -36,11 +36,14 @@ package org.polypheny.db.sql.fun;
 
 import com.google.gson.Gson;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlWriter;
@@ -100,28 +103,47 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
         return type;
     }
 
+
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        if(!writer.getDialect().supportsNestedArrays()) {
-
-            if( outermost ) {
-                writer.literal( "'" );
-            }
-
-            final SqlWriter.Frame frame = writer.startList( "[", "]" );
-            for ( SqlNode operand : call.getOperandList() ) {
-                writer.sep( "," );
-                operand.unparse( writer, leftPrec, rightPrec );
-            }
-            writer.endList( frame );
-
-            if( outermost ) {
-                writer.literal( "'" );
-            }
+        if ( !writer.getDialect().supportsNestedArrays() ) {
+            List<Object> list = createListForArrays( call.getOperandList() );
+            writer.literal( "'" + gson.toJson( list ) + "'" );
         } else {
             super.unparse( writer, call, leftPrec, rightPrec );
         }
     }
+
+
+    private List<Object> createListForArrays( List<SqlNode> operands ) {
+        List<Object> list = new ArrayList<>( operands.size() );
+        for ( SqlNode node : operands ) {
+            if ( node instanceof SqlLiteral ) {
+                Object value;
+                switch ( ((SqlLiteral) node).getTypeName() ) {
+                    case CHAR:
+                    case VARCHAR:
+                        value = ((SqlLiteral) node).toValue();
+                        break;
+                    case BOOLEAN:
+                        value = ((SqlLiteral) node).booleanValue();
+                        break;
+                    case DECIMAL:
+                        value = ((SqlLiteral) node).bigDecimalValue();
+                        break;
+                    default:
+                        value = ((SqlLiteral) node).getValue();
+                }
+                list.add( value );
+            } else if ( node instanceof SqlCall ) {
+                list.add( createListForArrays( ((SqlCall) node).getOperandList() ) );
+            } else {
+                throw new RuntimeException( "Invalid array" );
+            }
+        }
+        return list;
+    }
+
 
     @Override
     public int hashCode() {
