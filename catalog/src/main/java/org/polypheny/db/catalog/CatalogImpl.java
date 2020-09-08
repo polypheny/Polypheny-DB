@@ -290,7 +290,7 @@ public class CatalogImpl extends Catalog {
      * Restores all columnPlacements in the dedicated store
      */
     @Override
-    public void restoreColumnPlacements( Transaction trx ) throws GenericCatalogException {
+    public void restoreColumnPlacements( Transaction transaction ) throws GenericCatalogException {
         StoreManager manager = StoreManager.getInstance();
 
         Map<Integer, List<Long>> restoredTables = new HashMap<>();
@@ -312,11 +312,11 @@ public class CatalogImpl extends Catalog {
                     // TODO only full placements atm here
 
                     if ( !restoredTables.containsKey( store.getStoreId() ) ) {
-                        store.createTable( trx.getPrepareContext(), catalogTable );
+                        store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
                         restoredTables.put( store.getStoreId(), Collections.singletonList( catalogTable.id ) );
 
                     } else if ( !(restoredTables.containsKey( store.getStoreId() ) && restoredTables.get( store.getStoreId() ).contains( catalogTable.id )) ) {
-                        store.createTable( trx.getPrepareContext(), catalogTable );
+                        store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
                         List<Long> ids = new ArrayList<>( restoredTables.get( store.getStoreId() ) );
                         ids.add( catalogTable.id );
                         restoredTables.put( store.getStoreId(), ids );
@@ -334,13 +334,13 @@ public class CatalogImpl extends Catalog {
                             Store store = manager.getStore( p.storeId );
 
                             if ( !restoredTables.containsKey( store.getStoreId() ) ) {
-                                store.createTable( trx.getPrepareContext(), table );
+                                store.createTable( transaction.createStatement().getPrepareContext(), table );
                                 List<Long> ids = new ArrayList<>();
                                 ids.add( table.id );
                                 restoredTables.put( store.getStoreId(), ids );
 
                             } else if ( !(restoredTables.containsKey( store.getStoreId() ) && restoredTables.get( store.getStoreId() ).contains( table.id )) ) {
-                                store.createTable( trx.getPrepareContext(), table );
+                                store.createTable( transaction.createStatement().getPrepareContext(), table );
                                 List<Long> ids = new ArrayList<>( restoredTables.get( store.getStoreId() ) );
                                 ids.add( table.id );
                                 restoredTables.put( store.getStoreId(), ids );
@@ -557,6 +557,7 @@ public class CatalogImpl extends Catalog {
         if ( !storeNames.containsKey( "hsqldb" ) ) {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
+            hsqldbSettings.put( "tableType", "Memory" );
             hsqldbSettings.put( "path", "./" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );

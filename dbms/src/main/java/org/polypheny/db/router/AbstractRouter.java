@@ -66,7 +66,7 @@ import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 public abstract class AbstractRouter implements Router {
 
@@ -81,40 +81,40 @@ public abstract class AbstractRouter implements Router {
 
 
     @Override
-    public RelRoot route( RelRoot logicalRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor ) {
+    public RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
         this.selectedStores = new HashMap<>();
 
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+        if ( statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             page = new InformationPage( "Routing" );
             page.fullWidth();
             queryAnalyzer.addPage( page );
         }
 
         RelNode routed;
-        analyze( transaction, logicalRoot );
+        analyze( statement, logicalRoot );
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
-            routed = routeDml( logicalRoot.rel, transaction );
+            routed = routeDml( logicalRoot.rel, statement );
         } else {
-            RelBuilder builder = RelBuilder.create( transaction, logicalRoot.rel.getCluster() );
+            RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
             builder = buildSelect( logicalRoot.rel, builder );
             routed = builder.build();
         }
 
-        wrapUp( transaction, routed );
+        wrapUp( statement, routed );
 
         // Add information to query analyzer
-        if ( transaction.isAnalyze() ) {
+        if ( statement.getTransaction().isAnalyze() ) {
             InformationGroup group = new InformationGroup( page, "Selected Stores" );
-            transaction.getQueryAnalyzer().addGroup( group );
+            statement.getTransaction().getQueryAnalyzer().addGroup( group );
             InformationTable table = new InformationTable(
                     group,
                     ImmutableList.of( "Table", "Store", "Physical Name" ) );
             selectedStores.forEach( ( k, v ) -> {
                 table.addRow( k.getQualifiedName(), v.storeName, v.physicalSchemaName + "." + v.physicalTableName );
             } );
-            transaction.getQueryAnalyzer().registerInformation( table );
+            statement.getTransaction().getQueryAnalyzer().registerInformation( table );
         }
 
         return new RelRoot(
@@ -126,9 +126,9 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected abstract void analyze( Transaction transaction, RelRoot logicalRoot );
+    protected abstract void analyze( Statement statement, RelRoot logicalRoot );
 
-    protected abstract void wrapUp( Transaction transaction, RelNode routed );
+    protected abstract void wrapUp( Statement statement, RelNode routed );
 
     // Select the placement on which a table scan should be executed
     protected abstract List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable catalogTable );
@@ -173,7 +173,7 @@ public abstract class AbstractRouter implements Router {
 
 
     // Default implementation: Execute DML on all placements
-    protected RelNode routeDml( RelNode node, Transaction transaction ) {
+    protected RelNode routeDml( RelNode node, Statement statement ) {
         RelOptCluster cluster = node.getCluster();
         if ( node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -195,7 +195,7 @@ public abstract class AbstractRouter implements Router {
                 // Execute on all primary key placements
                 List<TableModify> modifies = new ArrayList<>( pkPlacements.size() );
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
-                    CatalogReader catalogReader = transaction.getCatalogReader();
+                    CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
                     List<String> tableNames = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(
@@ -241,7 +241,7 @@ public abstract class AbstractRouter implements Router {
                     TableModify modify;
                     RelNode input = buildDml(
                             recursiveCopy( node.getInput( 0 ) ),
-                            RelBuilder.create( transaction, cluster ),
+                            RelBuilder.create( statement, cluster ),
                             catalogTable,
                             placementsOnStore ).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
@@ -271,7 +271,7 @@ public abstract class AbstractRouter implements Router {
                 if ( modifies.size() == 1 ) {
                     return modifies.get( 0 );
                 } else {
-                    RelBuilder builder = RelBuilder.create( transaction, cluster );
+                    RelBuilder builder = RelBuilder.create( statement, cluster );
                     for ( int i = 0; i < modifies.size(); i++ ) {
                         if ( i == 0 ) {
                             builder.push( modifies.get( i ) );

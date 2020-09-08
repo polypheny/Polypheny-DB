@@ -80,7 +80,7 @@ import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.routing.ExecutionTimeMonitor.ExecutionTimeObserver;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -133,7 +133,7 @@ public class IcarusRouter extends AbstractRouter {
 
 
     @Override
-    protected void analyze( Transaction transaction, RelRoot logicalRoot ) {
+    protected void analyze( Statement statement, RelRoot logicalRoot ) {
         if ( !(logicalRoot.rel instanceof LogicalTableModify) ) {
             if ( QUERY_CLASS_PROVIDER.getEnum() == QUERY_CLASS_PROVIDER_METHOD.ICARUS_SHUTTLE ) {
                 IcarusShuttle icarusShuttle = new IcarusShuttle();
@@ -156,9 +156,9 @@ public class IcarusRouter extends AbstractRouter {
                 if ( selectedStoreId == -2 ) {
                     selectedStoreId = -1;
                 }
-                if ( transaction.isAnalyze() ) {
+                if ( statement.getTransaction().isAnalyze() ) {
                     InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
-                    transaction.getQueryAnalyzer().addGroup( group );
+                    statement.getTransaction().getQueryAnalyzer().addGroup( group );
                     InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownStores.values() ) );
                     Map<Integer, Integer> entry = routingTable.get( queryClassString );
                     Map<Integer, CircularFifoQueue<Double>> timesEntry = routingTable.times.get( queryClassString );
@@ -182,26 +182,26 @@ public class IcarusRouter extends AbstractRouter {
                     }
                     table.addRow( row1 );
                     table.addRow( row2 );
-                    transaction.getQueryAnalyzer().registerInformation( table );
+                    statement.getTransaction().getQueryAnalyzer().registerInformation( table );
                 }
             } else {
-                if ( transaction.isAnalyze() ) {
+                if ( statement.getTransaction().isAnalyze() ) {
                     InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
-                    transaction.getQueryAnalyzer().addGroup( group );
+                    statement.getTransaction().getQueryAnalyzer().addGroup( group );
                     InformationHtml html = new InformationHtml( group, "Unknown query class" );
-                    transaction.getQueryAnalyzer().registerInformation( html );
+                    statement.getTransaction().getQueryAnalyzer().registerInformation( html );
                 }
                 selectedStoreId = -1;
             }
         }
-        if ( transaction.isAnalyze() ) {
+        if ( statement.getTransaction().isAnalyze() ) {
             InformationGroup group = new InformationGroup( page, "Icarus Routing" );
-            transaction.getQueryAnalyzer().addGroup( group );
+            statement.getTransaction().getQueryAnalyzer().addGroup( group );
             InformationHtml informationHtml = new InformationHtml(
                     group,
                     "<p><b>Selected Store ID:</b> " + selectedStoreId + "</p>"
                             + "<p><b>Query Class:</b> " + queryClassString + "</p>" );
-            transaction.getQueryAnalyzer().registerInformation( informationHtml );
+            statement.getTransaction().getQueryAnalyzer().registerInformation( informationHtml );
         }
     }
 
@@ -238,17 +238,17 @@ public class IcarusRouter extends AbstractRouter {
 
 
     @Override
-    protected void wrapUp( Transaction transaction, RelNode routed ) {
+    protected void wrapUp( Statement statement, RelNode routed ) {
         if ( TRAINING.getBoolean() ) {
             executionTimeMonitor.subscribe( routingTable, selectedStoreId + "-" + queryClassString );
         }
-        if ( transaction.isAnalyze() ) {
+        if ( statement.getTransaction().isAnalyze() ) {
             InformationGroup executionTimeGroup = new InformationGroup( page, "Execution Time" );
-            transaction.getQueryAnalyzer().addGroup( executionTimeGroup );
+            statement.getTransaction().getQueryAnalyzer().addGroup( executionTimeGroup );
             executionTimeMonitor.subscribe(
                     ( reference, nanoTime ) -> {
                         InformationHtml html = new InformationHtml( executionTimeGroup, nanoTime / 1000000.0 + " ms" );
-                        transaction.getQueryAnalyzer().registerInformation( html );
+                        statement.getTransaction().getQueryAnalyzer().registerInformation( html );
                     },
                     selectedStoreId + "-" + queryClassString );
         }
@@ -301,7 +301,7 @@ public class IcarusRouter extends AbstractRouter {
 
     // Create table on all stores supporting schema changes
     @Override
-    public List<Store> createTable( long schemaId, Transaction transaction ) {
+    public List<Store> createTable( long schemaId, Statement statement ) {
         List<Store> result = new LinkedList<>();
         Map<String, Store> availableStores = StoreManager.getInstance().getStores();
         for ( Store store : availableStores.values() ) {
@@ -317,7 +317,7 @@ public class IcarusRouter extends AbstractRouter {
 
 
     @Override
-    public List<Store> addColumn( CatalogTable catalogTable, Transaction transaction ) {
+    public List<Store> addColumn( CatalogTable catalogTable, Statement statement ) {
         List<Store> result = new LinkedList<>();
         for ( int storeId : catalogTable.placementsByStore.keySet() ) {
             result.add( StoreManager.getInstance().getStore( storeId ) );

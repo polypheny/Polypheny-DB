@@ -70,13 +70,14 @@ public class JavaInformation {
             // Get amount of free memory within the heap in bytes. This size will increase after garbage collection and decrease as new objects are created.
             long free = Runtime.getRuntime().freeMemory();
 
+            long available = max - current;
             heapInfoGraph.updateGraph(
-                    new String[]{ "Current", "Maximum", "Free" },
-                    new GraphData<>( "heap-data", new Long[]{ current, max, free } )
+                    new String[]{ "Current", "Free", "Available" },
+                    new GraphData<>( "heap-data", new Long[]{ current - free, free, available } )
             );
 
             heapInfoTable.reset();
-            heapInfoTable.addRow( "Current", humanReadableByteCount( current, false ) );
+            heapInfoTable.addRow( "Current", humanReadableByteCount( current - free, false ) );
             heapInfoTable.addRow( "Free", humanReadableByteCount( free, false ) );
             heapInfoTable.addRow( "Max", humanReadableByteCount( max, false ) );
         } );
@@ -89,14 +90,14 @@ public class JavaInformation {
                 groupHeapOverTime,
                 GraphType.LINE,
                 null,
-                new GraphData<Long>( "Total", new Long[]{ Runtime.getRuntime().totalMemory() }, 20 )
+                new GraphData<Long>( "Total", new Long[]{ Runtime.getRuntime().totalMemory() / 1000000 }, 20 )
         );
         heapOverTimeGraph.minY( 1 );
         im.registerInformation( heapOverTimeGraph );
 
         BackgroundTaskManager.INSTANCE.registerTask(
                 () -> {
-                    long current = Runtime.getRuntime().totalMemory();
+                    long current = Runtime.getRuntime().totalMemory() / 1000000;
                     heapOverTimeGraph.addData( "Total", current );
                 },
                 "Update Java runtime information",

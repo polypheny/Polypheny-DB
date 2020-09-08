@@ -63,7 +63,7 @@ import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
 import org.polypheny.db.tools.Planner;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -120,7 +120,7 @@ public class InterpreterTest {
 
 
         @Override
-        public Transaction getTransaction() {
+        public Statement getStatement() {
             return null;
         }
     }

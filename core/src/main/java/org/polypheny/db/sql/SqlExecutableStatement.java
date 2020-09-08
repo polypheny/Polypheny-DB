@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -43,6 +43,6 @@ import org.polypheny.db.transaction.Transaction;
  */
 public interface SqlExecutableStatement {
 
-    void execute( Context context, Transaction transaction );
+    void execute( Context context, Statement statement );
 
 }

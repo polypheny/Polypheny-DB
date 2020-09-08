@@ -27,7 +27,7 @@ import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.config.PolyphenyDbConnectionConfigImpl;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 public class ContextImpl implements Context {
@@ -39,7 +39,7 @@ public class ContextImpl implements Context {
     @Getter
     private final DataContext dataContext;
     @Getter
-    private final Transaction transaction;
+    private final Statement statement;
     @Getter
     private final String defaultSchemaName;
     @Getter
@@ -48,12 +48,12 @@ public class ContextImpl implements Context {
     private final int currentUserId;
 
 
-    public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, Transaction transaction ) {
+    public ContextImpl( PolyphenyDbSchema rootSchema, DataContext dataContext, String defaultSchemaName, long databaseId, int currentUserId, Statement statement ) {
         this.rootSchema = rootSchema;
         this.typeFactory = dataContext.getTypeFactory();
         this.dataContext = dataContext;
         this.defaultSchemaName = defaultSchemaName;
-        this.transaction = transaction;
+        this.statement = statement;
         this.currentUserId = currentUserId;
         this.databaseId = databaseId;
     }

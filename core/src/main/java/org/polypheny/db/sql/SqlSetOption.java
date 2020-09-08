@@ -41,7 +41,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -216,7 +216,7 @@ public class SqlSetOption extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         // TODO: Implement
     }
 }

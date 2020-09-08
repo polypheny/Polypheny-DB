@@ -33,7 +33,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -81,7 +81,7 @@ public class SqlAlterStoresAdd extends SqlAlter {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         String storeNameStr = removeQuotationMarks( storeName.toString() );
         String adapterNameStr = removeQuotationMarks( adapterName.toString() );
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );

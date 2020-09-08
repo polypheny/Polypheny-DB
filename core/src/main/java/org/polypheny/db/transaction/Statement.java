@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.transaction;
 
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.information.InformationDuration;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.routing.Router;
 
-import java.util.Map;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+public interface Statement {
 
+    Transaction getTransaction();
 
-public interface QueryProcessor {
+    QueryProcessor getQueryProcessor();
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
+    DataContext getDataContext();
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, Map<String, Object> values );
+    Context getPrepareContext();
 
-    RelOptPlanner getPlanner();
+    InformationDuration getDuration();
 
-    void resetCaches();
+    Router getRouter();
 
 }

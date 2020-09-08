@@ -28,7 +28,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Holder;
 
 
@@ -44,15 +44,15 @@ public class DataContextImpl implements DataContext {
     private final JavaTypeFactory typeFactory;
     private final TimeZone timeZone = TimeZone.getDefault();
     @Getter
-    private final Transaction transaction;
+    private final Statement statement;
 
 
-    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Transaction transaction ) {
+    public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
         this.queryProvider = queryProvider;
         this.typeFactory = typeFactory;
         this.rootSchema = rootSchema;
-        this.transaction = transaction;
-        
+        this.statement = statement;
+
         // Store the time at which the query started executing. The SQL standard says that functions such as CURRENT_TIMESTAMP return the same value throughout the query.
         final Holder<Long> timeHolder = Holder.of( System.currentTimeMillis() );
 

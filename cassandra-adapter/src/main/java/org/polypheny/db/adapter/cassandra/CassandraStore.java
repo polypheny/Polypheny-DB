@@ -238,8 +238,7 @@ public class CassandraStore extends Store {
             }
         }
 
-        // FIXME JS: Cassandra transaction hotfix
-        context.getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         this.session.execute( createTable.build() );
 
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
@@ -263,8 +262,7 @@ public class CassandraStore extends Store {
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogTable.id );
         SimpleStatement dropTable = SchemaBuilder.dropTable( this.dbKeyspace, physicalTableName ).build();
 
-        // FIXME JS: Cassandra transaction hotfix
-        context.getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         this.session.execute( dropTable );
     }
 
@@ -278,8 +276,7 @@ public class CassandraStore extends Store {
         SimpleStatement addColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .addColumn( physicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) ).build();
 
-        // FIXME JS: Cassandra transaction hotfix
-        context.getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         // TODO JS: Wrap with error handling to check whether successful, if not, try iterative revision names to find one that works.
         this.session.execute( addColumn );
 
@@ -299,15 +296,14 @@ public class CassandraStore extends Store {
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
 //        public void dropColumn( Context context, CatalogCombinedTable catalogTable, CatalogColumn catalogColumn ) {
-//        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getTransaction().getCatalog(), this.getStoreId() );
+//        CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( context.getStatement().getTransaction().getCatalog(), this.getStoreId() );
         String physicalTableName = columnPlacement.physicalTableName;
         String physicalColumnName = columnPlacement.physicalColumnName;
 
         SimpleStatement dropColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .dropColumn( physicalColumnName ).build();
 
-        // FIXME JS: Cassandra transaction hotfix
-        context.getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         this.session.execute( dropColumn );
     }
 
@@ -346,8 +342,7 @@ public class CassandraStore extends Store {
         String physicalTableName = physicalNameProvider.getPhysicalTableName( table.id );
         SimpleStatement truncateTable = QueryBuilder.truncate( this.dbKeyspace, physicalTableName ).build();
 
-        // FIXME JS: Cassandra transaction hotfix
-        context.getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         this.session.execute( truncateTable );
     }
 
@@ -355,8 +350,7 @@ public class CassandraStore extends Store {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
 //    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
-        // FIXME JS: Cassandra transaction hotfix
-        context.getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedStore( this );
 
         CassandraPhysicalNameProvider physicalNameProvider = new CassandraPhysicalNameProvider( this.getStoreId() );
         String physicalTableName = physicalNameProvider.getPhysicalTableName( catalogColumn.tableId );

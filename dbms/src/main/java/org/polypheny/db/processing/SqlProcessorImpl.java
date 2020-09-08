@@ -43,7 +43,6 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationQueryPlan;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
@@ -81,6 +80,7 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.DeadlockException;
 import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.Pair;
@@ -90,13 +90,11 @@ import org.polypheny.db.util.SourceStringReader;
 @Slf4j
 public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
-    private final Transaction transaction;
     private final SqlParserConfig parserConfig;
     private PolyphenyDbSqlValidator validator;
 
 
-    public SqlProcessorImpl( Transaction transaction, SqlParserConfig parserConfig ) {
-        this.transaction = transaction;
+    public SqlProcessorImpl( SqlParserConfig parserConfig ) {
         this.parserConfig = parserConfig;
     }
 
@@ -127,7 +125,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public Pair<SqlNode, RelDataType> validate( SqlNode parsed, boolean addDefaultValues ) {
+    public Pair<SqlNode, RelDataType> validate( Transaction transaction, SqlNode parsed, boolean addDefaultValues ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Validating SQL ..." );
@@ -137,7 +135,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         // Add default values for unset fields
         if ( addDefaultValues ) {
             if ( parsed.getKind() == SqlKind.INSERT ) {
-                addDefaultValues( (SqlInsert) parsed );
+                addDefaultValues( transaction, (SqlInsert) parsed );
             }
         }
 
@@ -167,7 +165,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public RelRoot translate( SqlNode sql ) {
+    public RelRoot translate( Statement statement, SqlNode sql ) {
         final StopWatch stopWatch = new StopWatch();
         if ( log.isDebugEnabled() ) {
             log.debug( "Planning Statement ..." );
@@ -176,20 +174,20 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
         SqlToRelConverter.ConfigBuilder sqlToRelConfigBuilder = SqlToRelConverter.configBuilder();
         SqlToRelConverter.Config sqlToRelConfig = sqlToRelConfigBuilder.build();
-        final RexBuilder rexBuilder = new RexBuilder( transaction.getTypeFactory() );
+        final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
 
-        final RelOptCluster cluster = RelOptCluster.create( transaction.getQueryProcessor().getPlanner(), rexBuilder );
+        final RelOptCluster cluster = RelOptCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder );
         final SqlToRelConverter.Config config =
                 SqlToRelConverter.configBuilder()
                         .withConfig( sqlToRelConfig )
                         .withTrimUnusedFields( false )
                         .withConvertTableAccess( false )
                         .build();
-        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, transaction.getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
         RelRoot logicalRoot = sqlToRelConverter.convertQuery( sql, false, true );
 
-        if ( transaction.isAnalyze() ) {
-            InformationManager queryAnalyzer = transaction.getQueryAnalyzer();
+        if ( statement.getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Logical Query Plan" ).setLabel( "plans" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Logical Query Plan" );
@@ -223,13 +221,13 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     @Override
-    public PolyphenyDbSignature<?> prepareDdl( SqlNode parsed ) {
+    public PolyphenyDbSignature<?> prepareDdl( Statement statement, SqlNode parsed ) {
         if ( parsed instanceof SqlExecutableStatement ) {
             try {
                 // Acquire global schema lock
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction, LockMode.EXCLUSIVE );
+                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 // Execute statement
-                ((SqlExecutableStatement) parsed).execute( transaction.getPrepareContext(), transaction );
+                ((SqlExecutableStatement) parsed).execute( statement.getPrepareContext(), statement );
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
                         parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
@@ -238,7 +236,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         null,
                         ImmutableList.of(),
                         Meta.CursorFactory.OBJECT,
-                        transaction.getSchema(),
+                        statement.getTransaction().getSchema(),
                         ImmutableList.of(),
                         -1,
                         null,
@@ -251,7 +249,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             } finally {
                 // Release lock
                 // TODO: This can be removed when auto-commit of ddls is implemented
-                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) transaction );
+                LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
             }
         } else {
             throw new RuntimeException( "All DDL queries should be of a type that inherits SqlExecutableStatement. But this one is of type " + parsed.getClass() );
@@ -266,11 +264,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
 
     // Add default values for unset fields
-    private void addDefaultValues( SqlInsert insert ) {
-        Context prepareContext = transaction.getPrepareContext();
+    private void addDefaultValues( Transaction transaction, SqlInsert insert ) {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
         if ( oldColumnList != null ) {
-            CatalogTable catalogTable = getCatalogTable( prepareContext, transaction, (SqlIdentifier) insert.getTargetTable() );
+            CatalogTable catalogTable = getCatalogTable( transaction, (SqlIdentifier) insert.getTargetTable() );
             SqlNodeList newColumnList = new SqlNodeList( SqlParserPos.ZERO );
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][catalogTable.columnIds.size()];
             int pos = 0;
@@ -341,7 +338,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     }
 
 
-    private CatalogTable getCatalogTable( Context context, Transaction transaction, SqlIdentifier tableName ) {
+    private CatalogTable getCatalogTable( Transaction transaction, SqlIdentifier tableName ) {
         CatalogTable catalogTable;
         try {
             long schemaId;
@@ -350,10 +347,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 schemaId = Catalog.getInstance().getSchema( tableName.names.get( 0 ), tableName.names.get( 1 ) ).id;
                 tableOldName = tableName.names.get( 2 );
             } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-                schemaId = Catalog.getInstance().getSchema( context.getDatabaseId(), tableName.names.get( 0 ) ).id;
+                schemaId = Catalog.getInstance().getSchema( transaction.getDefaultSchema().databaseId, tableName.names.get( 0 ) ).id;
                 tableOldName = tableName.names.get( 1 );
             } else { // TableName
-                schemaId = Catalog.getInstance().getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                schemaId = Catalog.getInstance().getSchema( transaction.getDefaultSchema().databaseId, transaction.getDefaultSchema().name ).id;
                 tableOldName = tableName.names.get( 0 );
             }
             catalogTable = Catalog.getInstance().getTable( schemaId, tableOldName );

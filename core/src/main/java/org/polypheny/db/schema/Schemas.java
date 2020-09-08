@@ -69,7 +69,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.schema.PolyphenyDbSchema.FunctionEntry;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -431,7 +431,7 @@ public final class Schemas {
 
 
             @Override
-            public Transaction getTransaction() {
+            public Statement getStatement() {
                 return null;
             }
 
@@ -595,7 +595,7 @@ public final class Schemas {
 
 
         @Override
-        public Transaction getTransaction() {
+        public Statement getStatement() {
             return null;
         }
     }

@@ -91,7 +91,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
     @Override
     public RexNode visitLiteral( RexLiteral literal ) {
         int i = index.getAndIncrement();
-        values.put( "?" + i, literal.getValue() );
+        values.put( "?" + i, literal.getValueForQueryParameterizer() );
         types.add( literal.getType() );
         return new RexDynamicParam( literal.getType(), i );
     }
