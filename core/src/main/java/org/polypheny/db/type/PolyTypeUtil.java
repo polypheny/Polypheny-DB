@@ -892,6 +892,20 @@ public abstract class PolyTypeUtil {
                     charSetName,
                     null,
                     SqlParserPos.ZERO );
+        } else if ( typeName.getFamily() == PolyTypeFamily.ARRAY ) {
+            ArrayType arrayType = (ArrayType) type;
+            SqlIdentifier componentTypeIdentifier = new SqlIdentifier( arrayType.getComponentType().getPolyType().getName(), SqlParserPos.ZERO );
+            return new SqlDataTypeSpec(
+                    typeIdentifier,
+                    componentTypeIdentifier,
+                    -1,
+                    -1,
+                    (int) arrayType.getDimension(),
+                    (int) arrayType.getCardinality(),
+                    charSetName,
+                    null,
+                    arrayType.isNullable(),
+                    SqlParserPos.ZERO );
         } else {
             return new SqlDataTypeSpec(
                     typeIdentifier,
