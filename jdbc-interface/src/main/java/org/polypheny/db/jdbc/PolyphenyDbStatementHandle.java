@@ -21,6 +21,7 @@ import java.util.Iterator;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.transaction.Statement;
 
 /**
  *
@@ -37,6 +38,10 @@ public class PolyphenyDbStatementHandle {
     @Getter
     @Setter
     private volatile transient int maxRowCount;
+
+    @Setter
+    @Getter
+    private Statement statement;
 
     @Getter
     private final StopWatch executionStopWatch = new StopWatch();

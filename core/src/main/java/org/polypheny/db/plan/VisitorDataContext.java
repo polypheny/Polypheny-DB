@@ -51,7 +51,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlCastFunction;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.Pair;
 
@@ -105,7 +105,7 @@ public class VisitorDataContext implements DataContext {
 
 
     @Override
-    public Transaction getTransaction() {
+    public Statement getStatement() {
         return null;
     }
 

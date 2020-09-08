@@ -386,8 +386,8 @@ public abstract class AbstractJdbcStore extends Store {
 
     protected void executeUpdate( StringBuilder builder, Context context ) {
         try {
-            context.getTransaction().registerInvolvedStore( this );
-            connectionFactory.getOrCreateConnectionHandler( context.getTransaction().getXid() ).executeUpdate( builder.toString() );
+            context.getStatement().getTransaction().registerInvolvedStore( this );
+            connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new RuntimeException( e );
         }

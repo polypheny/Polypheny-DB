@@ -221,8 +221,8 @@ public class JdbcSchema implements Schema {
     // Used by generated code (see class JdbcToEnumerableConverter).
     public ConnectionHandler getConnectionHandler( DataContext dataContext ) {
         try {
-            dataContext.getTransaction().registerInvolvedStore( jdbcStore );
-            return connectionFactory.getOrCreateConnectionHandler( dataContext.getTransaction().getXid() );
+            dataContext.getStatement().getTransaction().registerInvolvedStore( jdbcStore );
+            return connectionFactory.getOrCreateConnectionHandler( dataContext.getStatement().getTransaction().getXid() );
         } catch ( ConnectionHandlerException e ) {
             throw new RuntimeException( e );
         }

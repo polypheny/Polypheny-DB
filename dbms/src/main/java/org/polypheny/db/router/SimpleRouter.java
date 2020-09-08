@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 public class SimpleRouter extends AbstractRouter {
@@ -42,13 +42,13 @@ public class SimpleRouter extends AbstractRouter {
 
 
     @Override
-    protected void analyze( Transaction transaction, RelRoot logicalRoot ) {
+    protected void analyze( Statement statement, RelRoot logicalRoot ) {
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
 
     @Override
-    protected void wrapUp( Transaction transaction, RelNode routed ) {
+    protected void wrapUp( Statement statement, RelNode routed ) {
         // Nothing to do. Simple router does nothing sophisticated...
     }
 
@@ -86,7 +86,7 @@ public class SimpleRouter extends AbstractRouter {
 
     // Create table on the first store in the list that supports schema changes
     @Override
-    public List<Store> createTable( long schemaId, Transaction transaction ) {
+    public List<Store> createTable( long schemaId, Statement statement ) {
         Map<String, Store> availableStores = StoreManager.getInstance().getStores();
         for ( Store store : availableStores.values() ) {
             if ( !store.isSchemaReadOnly() ) {
@@ -99,7 +99,7 @@ public class SimpleRouter extends AbstractRouter {
 
     // Add column on the first store holding a placement of this table that supports schema changes
     @Override
-    public List<Store> addColumn( CatalogTable catalogTable, Transaction transaction ) {
+    public List<Store> addColumn( CatalogTable catalogTable, Statement statement ) {
         return ImmutableList.of( StoreManager.getInstance().getStore( catalogTable.placementsByStore.keySet().asList().get( 0 ) ) );
     }
 

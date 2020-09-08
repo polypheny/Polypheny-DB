@@ -42,7 +42,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -85,7 +85,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         List<Long> columnIds = new LinkedList<>();
         for ( SqlNode node : columnList.getList() ) {

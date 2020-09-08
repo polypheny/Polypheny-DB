@@ -19,18 +19,15 @@ package org.polypheny.db.transaction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.SlimDataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
@@ -38,21 +35,11 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.DataContextImpl;
-import org.polypheny.db.processing.QueryProcessor;
-import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
-import org.polypheny.db.processing.VolcanoQueryProcessor;
-import org.polypheny.db.router.RouterManager;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
@@ -62,33 +49,38 @@ import org.polypheny.db.statistic.StatisticsManager;
 @Slf4j
 public class TransactionImpl implements Transaction, Comparable {
 
+    private static final AtomicLong TRANSACTION_COUNTER = new AtomicLong();
+
+    @Getter
+    private final long id;
+
     @Getter
     private final PolyXid xid;
 
     @Getter
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
-    private QueryProcessor queryProcessor;
-
     @Getter
     private CatalogUser user;
     @Getter
     private CatalogSchema defaultSchema;
+    @Getter
     private CatalogDatabase database;
 
     private TransactionManagerImpl transactionManager;
 
     @Getter
+    private final String origin;
+
+    @Getter
     private final boolean analyze;
 
+    private final AtomicLong statementCounter = new AtomicLong();
+
     private final List<String> changedTables = new ArrayList<>();
-    private DataContext dataContext = null;
-    private ContextImpl prepareContext = null;
 
     @Getter
     private List<Store> involvedStores = new CopyOnWriteArrayList<>();
-
-    private InformationDuration duration;
 
     private Set<Lock> lockList = new HashSet<>();
 
@@ -99,29 +91,16 @@ public class TransactionImpl implements Transaction, Comparable {
             CatalogUser user,
             CatalogSchema defaultSchema,
             CatalogDatabase database,
-            boolean analyze ) {
+            boolean analyze,
+            String origin ) {
+        this.id = TRANSACTION_COUNTER.getAndIncrement();
         this.xid = xid;
         this.transactionManager = transactionManager;
         this.user = user;
         this.defaultSchema = defaultSchema;
         this.database = database;
         this.analyze = analyze;
-        this.duration = null;
-    }
-
-
-    @Override
-    public QueryProcessor getQueryProcessor() {
-        if ( queryProcessor == null ) {
-            queryProcessor = new VolcanoQueryProcessor( this );
-        }
-        return queryProcessor;
-    }
-
-
-    @Override
-    public SqlProcessor getSqlProcessor( SqlParserConfig parserConfig ) {
-        return new SqlProcessorImpl( this, parserConfig );
+        this.origin = origin;
     }
 
 
@@ -195,45 +174,8 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public DataContext getDataContext() {
-        if ( dataContext == null ) {
-            Map<String, Object> map = new LinkedHashMap<>();
-            // Avoid overflow
-            int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
-            if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {
-                map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
-            }
-
-            final AtomicBoolean cancelFlag;
-            cancelFlag = getCancelFlag();
-            map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
-            if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
-                return new SlimDataContext();
-            }
-            dataContext = new DataContextImpl( new QueryProviderImpl(), map, getSchema(), getTypeFactory(), this );
-        }
-        return dataContext;
-    }
-
-
-    @Override
     public JavaTypeFactory getTypeFactory() {
         return new JavaTypeFactoryImpl();
-    }
-
-
-    @Override
-    public ContextImpl getPrepareContext() {
-        if ( prepareContext == null ) {
-            prepareContext = new ContextImpl(
-                    getSchema(),
-                    getDataContext(),
-                    defaultSchema.name,
-                    database.id,
-                    user.id,
-                    this );
-        }
-        return prepareContext;
     }
 
 
@@ -246,15 +188,16 @@ public class TransactionImpl implements Transaction, Comparable {
     }
 
 
-    /*
-     * This should be called in the query interfaces for every new query before we start with processing it.
-     */
     @Override
-    public void resetQueryProcessor() {
-        queryProcessor = null;
-        dataContext = null;
-        prepareContext = null;
-        duration = null;
+    public SqlProcessor getSqlProcessor( SqlParserConfig parserConfig ) {
+        return new SqlProcessorImpl( parserConfig );
+    }
+
+
+    @Override
+    public StatementImpl createStatement() {
+        statementCounter.incrementAndGet();
+        return new StatementImpl( this );
     }
 
 
@@ -264,27 +207,6 @@ public class TransactionImpl implements Transaction, Comparable {
             log.debug( "Add changed table: {}", qualifiedTableName );
             this.changedTables.add( qualifiedTableName );
         }
-    }
-
-
-    @Override
-    public Router getRouter() {
-        return RouterManager.getInstance().getRouter();
-    }
-
-
-    @Override
-    public InformationDuration getDuration() {
-        if ( duration == null ) {
-            InformationManager im = getQueryAnalyzer();
-            InformationPage executionTimePage = new InformationPage( "Execution time", "Query execution time" );
-            im.addPage( executionTimePage );
-            InformationGroup group = new InformationGroup( executionTimePage, "Processing" );
-            im.addGroup( group );
-            duration = new InformationDuration( group );
-            im.registerInformation( duration );
-        }
-        return duration;
     }
 
 
@@ -333,6 +255,11 @@ public class TransactionImpl implements Transaction, Comparable {
 
     void abort() {
         Thread.currentThread().interrupt();
+    }
+
+
+    public long getNumberOfStatements() {
+        return statementCounter.get();
     }
 
 }

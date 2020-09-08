@@ -40,7 +40,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -57,7 +57,7 @@ public class SqlDropType extends SqlDropObject {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         throw new RuntimeException( "Not supported yet" );
     }
 }

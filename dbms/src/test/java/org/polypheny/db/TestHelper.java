@@ -95,7 +95,7 @@ public class TestHelper {
 
     public Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( "pa", "APP", true );
+            return transactionManager.startTransaction( "pa", "APP", true, "Test Helper" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

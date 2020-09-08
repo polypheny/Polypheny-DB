@@ -127,6 +127,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticsManager;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -256,7 +257,7 @@ public class Crud implements InformationObserver {
                 .append( (Math.max( 0, request.currentPage - 1 )) * getPageSize() );
 
         try {
-            result = executeSqlSelect( transaction, request, query.toString() );
+            result = executeSqlSelect( transaction.createStatement(), request, query.toString() );
         } catch ( QueryExecutionException e ) {
             if ( request.filter != null ) {
                 result = new Result( "Error while filtering table " + request.tableId );
@@ -663,7 +664,7 @@ public class Crud implements InformationObserver {
                 }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction, request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
@@ -768,10 +769,11 @@ public class Crud implements InformationObserver {
 
         if ( isConvertedToSql ) {
             Transaction transaction = getTransaction();
+            Statement statement = transaction.createStatement();
             Result result;
 
             try {
-                result = executeSqlSelect( transaction, classifyAllData, explore.getClassifiedSqlStatement(), false ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
+                result = executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false ).setInfo( new Debug().setGeneratedQuery( explore.getClassifiedSqlStatement() ) );
                 transaction.commit();
                 transaction = getTransaction( classifyAllData.analyze );
 
@@ -815,6 +817,8 @@ public class Crud implements InformationObserver {
 
         ExploreTables exploreTables = this.gson.fromJson( request.body(), ExploreTables.class );
         Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+
         Result result;
         ExploreManager exploreManager = ExploreManager.getInstance();
         Explore explore = exploreManager.getExploreInformation( exploreTables.id );
@@ -841,7 +845,7 @@ public class Crud implements InformationObserver {
         }
 
         try {
-            result = executeSqlSelect( transaction, exploreTables, query );
+            result = executeSqlSelect( statement, exploreTables, query );
         } catch ( QueryExecutionException e ) {
             log.error( "Caught exception while fetching a table", e );
             result = new Result( "Could not fetch table " + exploreTables.tableId );
@@ -901,6 +905,7 @@ public class Crud implements InformationObserver {
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
         Transaction transaction = getTransaction( queryExplorationRequest.analyze );
+        Statement statement = transaction.createStatement();
 
         Result result;
 
@@ -911,7 +916,7 @@ public class Crud implements InformationObserver {
 
         String query = explore.getSqlStatement();
         try {
-            result = executeSqlSelect( transaction, queryExplorationRequest, query, false ).setInfo( new Debug().setGeneratedQuery( query ) );
+            result = executeSqlSelect( statement, queryExplorationRequest, query, false ).setInfo( new Debug().setGeneratedQuery( query ) );
             transaction.commit();
             transaction = getTransaction( queryExplorationRequest.analyze );
 
@@ -1907,14 +1912,14 @@ public class Crud implements InformationObserver {
         UIRelNode topNode = gson.fromJson( req.body(), UIRelNode.class );
 
         Transaction transaction = getTransaction( true );
-        transaction.resetQueryProcessor();
+        Statement statement = transaction.createStatement();
 
         InformationManager im = transaction.getQueryAnalyzer().observe( this );
         im.addPage( new InformationPage( "Query analysis" ) );
 
         RelNode result;
         try {
-            result = QueryPlanBuilder.buildFromTree( topNode, transaction );
+            result = QueryPlanBuilder.buildFromTree( topNode, statement );
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
             return new Result( e );
@@ -1930,11 +1935,11 @@ public class Crud implements InformationObserver {
         RelRoot root = new RelRoot( result, result.getRowType(), SqlKind.SELECT, fields, collation );
 
         // Prepare
-        PolyphenyDbSignature signature = transaction.getQueryProcessor().prepareQuery( root );
+        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( root );
 
         List<List<Object>> rows;
         try {
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( transaction.getDataContext() );
+            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
             Iterator<Object> iterator = iterable.iterator();
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
@@ -2295,6 +2300,7 @@ public class Crud implements InformationObserver {
     Result exportTable( final Request req, final Response res ) {
         HubRequest request = gson.fromJson( req.body(), HubRequest.class );
         Transaction transaction = getTransaction( false );
+        Statement statement = transaction.createStatement();
         HubMeta metaData = new HubMeta( request.schema );
 
         String randomFileName = UUID.randomUUID().toString();
@@ -2330,7 +2336,7 @@ public class Crud implements InformationObserver {
 
                 String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, table.initialName );
                 // TODO use iterator instead of Result
-                Result tableData = executeSqlSelect( transaction, new UIRequest(), query, true );
+                Result tableData = executeSqlSelect( statement, new UIRequest(), query, true );
 
                 int totalRows = tableData.getData().length;
                 int counter = 0;
@@ -2441,12 +2447,12 @@ public class Crud implements InformationObserver {
     /**
      * Execute a select statement with default limit
      */
-    private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
-        return executeSqlSelect( transaction, request, sqlSelect, false );
+    private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect ) throws QueryExecutionException {
+        return executeSqlSelect( statement, request, sqlSelect, false );
     }
 
 
-    private Result executeSqlSelect( final Transaction transaction, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
+    private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -2459,8 +2465,8 @@ public class Crud implements InformationObserver {
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
         try {
-            signature = processQuery( transaction, sqlSelect, parserConfig );
-            final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
+            signature = processQuery( statement, sqlSelect, parserConfig );
+            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
             StopWatch stopWatch = new StopWatch();
@@ -2474,8 +2480,8 @@ public class Crud implements InformationObserver {
             stopWatch.stop();
             signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
         } catch ( Throwable t ) {
-            if( transaction.isAnalyze() ) {
-                InformationManager analyzer = transaction.getQueryAnalyzer();
+            if ( statement.getTransaction().isAnalyze() ) {
+                InformationManager analyzer = statement.getTransaction().getQueryAnalyzer();
                 InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
                 InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
                 InformationStacktrace exceptionElement = new InformationStacktrace( t, exceptionGroup );
@@ -2607,21 +2613,20 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql, SqlParserConfig parserConfig ) {
         PolyphenyDbSignature signature;
-        transaction.resetQueryProcessor();
-        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor( parserConfig );
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( parsed );
+            signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
 
             // Prepare
-            signature = transaction.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }
         return signature;
     }
@@ -2635,11 +2640,13 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
 
+        Statement statement = transaction.createStatement();
+
         PolyphenyDbSignature<?> signature;
         try {
-            signature = processQuery( transaction, sqlUpdate, parserConfig );
+            signature = processQuery( statement, sqlUpdate, parserConfig );
         } catch ( Throwable t ) {
-            if( transaction.isAnalyze() ) {
+            if ( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();
                 InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
                 InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
@@ -2656,7 +2663,7 @@ public class Crud implements InformationObserver {
         } else if ( signature.statementType == StatementType.IS_DML ) {
             int rowsChanged = -1;
             try {
-                Iterator<?> iterator = signature.enumerable( transaction.getDataContext() ).iterator();
+                Iterator<?> iterator = signature.enumerable( statement.getDataContext() ).iterator();
                 Object object;
                 while ( iterator.hasNext() ) {
                     object = iterator.next();
@@ -2695,7 +2702,7 @@ public class Crud implements InformationObserver {
         if ( request.filter != null ) {
             query += " " + filterTable( request.filter );
         }
-        Result result = executeSqlSelect( transaction, request, query );
+        Result result = executeSqlSelect( transaction.createStatement(), request, query );
         // We expect the result to be in the first column of the first row
         if ( result.getData().length == 0 ) {
             return 0;
@@ -2768,7 +2775,7 @@ public class Crud implements InformationObserver {
 
     private Transaction getTransaction( boolean analyze ) {
         try {
-            return transactionManager.startTransaction( userName, databaseName, analyze );
+            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }

@@ -32,7 +32,7 @@ import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -74,7 +74,7 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         try {
             List<Long> columnIds = new LinkedList<>();

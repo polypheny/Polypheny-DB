@@ -33,7 +33,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -71,7 +71,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         CatalogTable table = getCatalogTable( context, oldName );
 
         if ( newName.names.size() != 1 ) {
@@ -86,7 +86,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
             catalog.renameTable( table.id, newTableName );
 
             // Rest plan cache and implementation cache (not sure if required in this case)
-            transaction.getQueryProcessor().resetCaches();
+            statement.getQueryProcessor().resetCaches();
         } catch ( GenericCatalogException | UnknownTableException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }

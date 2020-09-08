@@ -19,28 +19,23 @@ package org.polypheny.db.transaction;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
-import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 
 
 public interface Transaction {
 
+    long getId();
+
     PolyXid getXid();
 
-    QueryProcessor getQueryProcessor();
-
-    SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
+    Statement createStatement();
 
     void commit() throws TransactionException;
 
@@ -52,28 +47,24 @@ public interface Transaction {
 
     PolyphenyDbSchema getSchema();
 
+    JavaTypeFactory getTypeFactory();
+
+    PolyphenyDbCatalogReader getCatalogReader();
+
+    SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
+
     boolean isAnalyze();
 
     InformationManager getQueryAnalyzer();
 
-    DataContext getDataContext();
-
-    JavaTypeFactory getTypeFactory();
-
     AtomicBoolean getCancelFlag();
-
-    Context getPrepareContext();
 
     CatalogSchema getDefaultSchema();
 
-    PolyphenyDbCatalogReader getCatalogReader();
-
-    void resetQueryProcessor();
-
     void addChangedTable( String qualifiedTableName );
 
-    Router getRouter();
+    String getOrigin();
 
-    InformationDuration getDuration();
+    long getNumberOfStatements();
 
 }

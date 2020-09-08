@@ -125,9 +125,8 @@ public class CassandraSchema extends AbstractSchema {
     }
 
 
-    // FIXME JS: Temporary hotfix for transaction management until proper cassandra transaction management is implemented!
     public void registerStore( DataContext dataContext ) {
-        dataContext.getTransaction().registerInvolvedStore( this.cassandraStore );
+        dataContext.getStatement().getTransaction().registerInvolvedStore( this.cassandraStore );
     }
 
 

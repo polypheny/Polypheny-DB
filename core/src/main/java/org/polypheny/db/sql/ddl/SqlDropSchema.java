@@ -55,7 +55,7 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -94,7 +94,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         try {
             Catalog catalog = Catalog.getInstance();
             // Check if there is a schema with this name
@@ -108,7 +108,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
                             SqlParserPos.ZERO,
                             false,
                             new SqlIdentifier( Arrays.asList( catalogTable.getDatabaseName(), catalogTable.getSchemaName(), catalogTable.name ), SqlParserPos.ZERO )
-                    ).execute( context, transaction );
+                    ).execute( context, statement );
                 } );
 
                 // Drop schema
