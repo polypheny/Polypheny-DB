@@ -515,7 +515,9 @@ public class JdbcRules {
          */
         public JdbcFilterRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Filter.class,
-                    (Predicate<Filter>) r -> !userDefinedFunctionInFilter( r ),
+                    (Predicate<Filter>) filter -> (
+                            !userDefinedFunctionInFilter( filter )
+                                    && (out.dialect.supportsNestedArrays() || !itemOperatorInFilter( filter ))),
                     Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }
 
@@ -524,6 +526,18 @@ public class JdbcRules {
             CheckingUserDefinedFunctionVisitor visitor = new CheckingUserDefinedFunctionVisitor();
             filter.getCondition().accept( visitor );
             return visitor.containsUserDefinedFunction();
+        }
+
+
+        private static boolean itemOperatorInFilter( Filter filter ) {
+            CheckingItemOperatorVisitor visitor = new CheckingItemOperatorVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsItemOperator() ) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 
