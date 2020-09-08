@@ -77,6 +77,9 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+            return;
+        }
         // MonetDB does not support updating the column type directly. We need to do a work-around
         CatalogTable catalogTable;
         try {

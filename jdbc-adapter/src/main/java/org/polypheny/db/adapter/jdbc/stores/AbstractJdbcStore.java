@@ -318,9 +318,12 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
-    // Make sure to update overriden methods as well
+    // Make sure to update overridden methods as well
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+            return;
+        }
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
