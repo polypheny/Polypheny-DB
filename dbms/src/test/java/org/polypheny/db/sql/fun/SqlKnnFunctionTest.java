@@ -19,16 +19,18 @@ package org.polypheny.db.sql.fun;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
+import org.apache.calcite.avatica.util.ArrayFactoryImpl;
+import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -206,6 +208,32 @@ public class SqlKnnFunctionTest {
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knndoubletest" ),
                         expectedResult
+                );
+            }
+        }
+    }
+
+
+    @Test
+    public void preparedStatementTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, knn(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as distance FROM knninttest" );
+
+                final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
+                preparedStatement.setArray( 1, arrayFactory.createArray(
+                        ColumnMetaData.scalar( Types.INTEGER, "INTEGER", Rep.STRING ),
+                        ImmutableList.of( 1, 1 ) ) );
+                preparedStatement.setString( 2, "L2SQUARED" );
+
+                TestHelper.checkResultSet(
+                        preparedStatement.executeQuery(),
+                        ImmutableList.of(
+                                new Object[]{ 1, 0.0 },
+                                new Object[]{ 2, 2.0 },
+                                new Object[]{ 3, 5.0 }
+                        )
                 );
             }
         }

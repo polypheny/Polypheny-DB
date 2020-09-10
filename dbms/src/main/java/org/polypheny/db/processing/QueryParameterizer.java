@@ -26,6 +26,7 @@ import lombok.Getter;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -69,6 +70,22 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                 filter.getInput(),
                 condition.accept( this ),
                 filter.getVariablesSet() );
+    }
+
+
+    @Override
+    public RelNode visit( LogicalProject oProject ) {
+        LogicalProject project = (LogicalProject) super.visit( oProject );
+        List<RexNode> newProjects = new ArrayList<>();
+        for ( RexNode node : oProject.getProjects() ) {
+            newProjects.add( node.accept( this ) );
+        }
+        return new LogicalProject(
+                project.getCluster(),
+                project.getTraitSet(),
+                project.getInput(),
+                newProjects,
+                project.getRowType() );
     }
 
     //
