@@ -213,6 +213,25 @@ public class SqlKnnFunctionTest {
         }
     }
 
+    
+    @Test
+    public void knnFilterTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+
+            try ( Statement statement = connection.createStatement() ) {
+                ImmutableList<Object[]> expectedResult = ImmutableList.of(
+                        new Object[]{ 2L }
+                );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT COUNT(id) FROM knninttest WHERE knn(myarray, ARRAY[1,1], 'L2') < 2.0" ),
+                        expectedResult
+                );
+            }
+        }
+    }
+
 
     @Test
     public void preparedStatementTest() throws SQLException {
