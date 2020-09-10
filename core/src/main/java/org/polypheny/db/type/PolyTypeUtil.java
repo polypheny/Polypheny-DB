@@ -898,8 +898,8 @@ public abstract class PolyTypeUtil {
             return new SqlDataTypeSpec(
                     typeIdentifier,
                     componentTypeIdentifier,
-                    -1,
-                    -1,
+                    arrayType.getComponentType().getPrecision(),
+                    arrayType.getComponentType().getScale(),
                     (int) arrayType.getDimension(),
                     (int) arrayType.getCardinality(),
                     charSetName,
