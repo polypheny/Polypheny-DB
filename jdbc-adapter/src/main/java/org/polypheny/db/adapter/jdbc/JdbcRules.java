@@ -517,6 +517,7 @@ public class JdbcRules {
             super( Filter.class,
                     (Predicate<Filter>) filter -> (
                             !userDefinedFunctionInFilter( filter )
+                                    && !knnFunctionInFilter( filter )
                                     && (out.dialect.supportsNestedArrays() || !itemOperatorInFilter( filter ))),
                     Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }
@@ -526,6 +527,18 @@ public class JdbcRules {
             CheckingUserDefinedFunctionVisitor visitor = new CheckingUserDefinedFunctionVisitor();
             filter.getCondition().accept( visitor );
             return visitor.containsUserDefinedFunction();
+        }
+
+
+        private static boolean knnFunctionInFilter( Filter filter ) {
+            CheckingKnnFunctionVisitor visitor = new CheckingKnnFunctionVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 
