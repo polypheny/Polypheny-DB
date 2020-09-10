@@ -252,7 +252,31 @@ public enum RuntimeConfig {
             "Size of the implementation cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER,
-            "implementationCachingGroup" );
+            "implementationCachingGroup" ),
+
+    UNIQUE_CONSTRAINT_ENFORCEMENT( "runtime/uniqueConstraintEnforcement",
+            "Enable enforcement of uniqueness constraints.",
+            true,
+            ConfigType.BOOLEAN,
+            "constraintEnforcementGroup" ),
+
+    FOREIGN_KEY_ENFORCEMENT( "runtime/foreignKeyEnforcement",
+            "Enable enforcement of foreign key constraints.",
+            true,
+            ConfigType.BOOLEAN,
+            "constraintEnforcementGroup" ),
+
+    POLYSTORE_INDEXES_ENABLED( "runtime/polystoreIndexesEnabled",
+            "Enable and maintain indexes on the polystore level.",
+            true,
+            ConfigType.BOOLEAN,
+            "polystoreIndexGroup" ),
+
+    POLYSTORE_INDEXES_SIMPLIFY( "runtime/polystoreIndexesSimplify",
+            "Enable query simplification using polystore level indexes.",
+            true,
+            ConfigType.BOOLEAN,
+            "polystoreIndexGroup" );
 
 
     private final String key;
@@ -277,11 +301,17 @@ public enum RuntimeConfig {
         queryPlanCachingGroup.withTitle( "Query Plan Caching" );
         final WebUiGroup implementationCachingGroup = new WebUiGroup( "implementationCachingGroup", processingPage.getId() );
         implementationCachingGroup.withTitle( "Implementation Caching" );
+        final WebUiGroup constraintEnforcementGroup = new WebUiGroup( "constraintEnforcementGroup", processingPage.getId() );
+        constraintEnforcementGroup.withTitle( "Constraint Enforcement" );
+        final WebUiGroup polystoreIndexGroup = new WebUiGroup( "polystoreIndexGroup", processingPage.getId() );
+        polystoreIndexGroup.withTitle( "Polystore Indexes" );
         configManager.registerWebUiPage( processingPage );
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
         configManager.registerWebUiGroup( queryPlanCachingGroup );
         configManager.registerWebUiGroup( implementationCachingGroup );
+        configManager.registerWebUiGroup( constraintEnforcementGroup );
+        configManager.registerWebUiGroup( polystoreIndexGroup );
 
         // Runtime settings
         final WebUiPage runtimePage = new WebUiPage(

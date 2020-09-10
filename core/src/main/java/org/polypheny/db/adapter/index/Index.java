@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.MetaImpl;
@@ -33,6 +32,7 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.externalize.RelJsonWriter;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
@@ -40,6 +40,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
 
 
@@ -67,6 +68,8 @@ public abstract class Index {
     public abstract IndexType getType();
 
     public abstract boolean isUnique();
+
+    public abstract boolean isPersistent();
 
 
     public List<String> getColumns() {
@@ -110,6 +113,7 @@ public abstract class Index {
         // Rebuild index
         this.clear();
         this.insertAll( kv );
+        this.initialize();
     }
 
     abstract void commit( PolyXid xid );
@@ -188,6 +192,12 @@ public abstract class Index {
      */
     protected abstract void clear();
 
+    abstract void initialize();
+
+    abstract boolean isInitialized();
+
+    public abstract int size();
+
     public abstract void insert( final PolyXid xid, final List<Object> key, final List<Object> value );
 
     abstract void insert( final List<Object> key, final List<Object> value );
@@ -208,17 +218,23 @@ public abstract class Index {
 
     public abstract Values getAsValues( final PolyXid xid, RelBuilder builder, RelDataType rowType );
 
+    public abstract Values getAsValues( final PolyXid xid, RelBuilder builder, RelDataType rowType, final List<Object> key );
+
     abstract Object getRaw();
 
     interface IndexFactory {
 
-        boolean isUnique();
-
-        IndexType getType();
+        boolean canProvide(
+                final IndexType type,
+                final Boolean unique,
+                final Boolean persitent);
 
         Index create(
                 final long id,
                 final String name,
+                final IndexType type,
+                final Boolean unique,
+                final Boolean persitent,
                 final CatalogSchema schema,
                 final CatalogTable table,
                 final List<String> columns,
@@ -234,7 +250,9 @@ public abstract class Index {
         assert rowType.getFieldCount() == tuple.size();
         List<RexLiteral> row = new ArrayList<>( tuple.size() );
         for ( int i = 0; i < tuple.size(); ++i ) {
-            row.add( (RexLiteral) rexBuilder.makeLiteral( tuple.get( i ), rowType.getFieldList().get( i ).getType(), false ) );
+            final RelDataType type = rowType.getFieldList().get( i ).getType();
+            final Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) tuple.get( i ), type );
+            row.add( new RexLiteral( converted.left, type, converted.right ) );
         }
         return ImmutableList.copyOf( row );
     }

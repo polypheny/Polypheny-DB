@@ -43,6 +43,7 @@ import org.polypheny.db.util.Pair;
 public class CowMultiHashIndex extends Index {
 
     private Map<List<Object>, Set<List<Object>>> index = new HashMap<>();
+    private boolean initialized = false;
 
     private Map<PolyXid, Map<List<Object>, Set<List<Object>>>> cowIndex = new HashMap<>();
     private Map<PolyXid, List<DeferredIndexUpdate>> cowOpLog = new HashMap<>();
@@ -72,6 +73,12 @@ public class CowMultiHashIndex extends Index {
 
     @Override
     public boolean isUnique() {
+        return false;
+    }
+
+
+    @Override
+    public boolean isPersistent() {
         return false;
     }
 
@@ -110,6 +117,21 @@ public class CowMultiHashIndex extends Index {
         cowIndex.clear();
         cowOpLog.clear();
         barrierIndex.clear();
+    }
+
+    @Override
+    boolean isInitialized() {
+        return initialized;
+    }
+
+    @Override
+    void initialize() {
+        initialized = true;
+    }
+
+    @Override
+    public int size() {
+        return index.size();
     }
 
 
@@ -176,6 +198,24 @@ public class CowMultiHashIndex extends Index {
                     tuples.add( makeRexRow( rowType, rexBuilder, tuple.getKey() ) );
                 }
             }
+        }
+        return (Values) builder.values( ImmutableList.copyOf( tuples ), rowType ).build();
+    }
+
+    @Override
+    public Values getAsValues( PolyXid xid, RelBuilder builder, RelDataType rowType, List<Object> key ) {
+        final Map<List<Object>, Set<List<Object>>> ci = cowIndex.get( xid );
+        final RexBuilder rexBuilder = builder.getRexBuilder();
+        final List<ImmutableList<RexLiteral>> tuples = new ArrayList<>(  );
+        Set<List<Object>> raw = index.get( key );
+        if ( ci != null && ci.containsKey( key ) ) {
+            raw = ci.get( key );
+        }
+        if ( raw == null ) {
+            return (Values) builder.values( ImmutableList.of(), rowType ).build();
+        }
+        for ( int i = 0; i < raw.size(); ++i ) {
+            tuples.add( makeRexRow( rowType, rexBuilder, key ) );
         }
         return (Values) builder.values( ImmutableList.copyOf( tuples ), rowType ).build();
     }
@@ -312,21 +352,17 @@ public class CowMultiHashIndex extends Index {
     static class Factory implements IndexFactory {
 
         @Override
-        public boolean isUnique() {
-            return false;
+        public boolean canProvide( IndexType type, Boolean unique, Boolean persitent ) {
+            return
+                    ( type == null || type == IndexType.HASH )
+                    && ( unique == null || !unique )
+                    && ( persitent == null || !persitent );
         }
 
 
         @Override
-        public IndexType getType() {
-            return IndexType.HASH;
-        }
-
-
-        @Override
-        public Index create( long id, String name, CatalogSchema schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
+        public Index create( long id, String name, IndexType type, Boolean unique, Boolean persitent, CatalogSchema schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
             return new CowMultiHashIndex( id, name, schema, table, columns, targetColumns );
         }
-
     }
 }

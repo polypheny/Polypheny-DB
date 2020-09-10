@@ -26,7 +26,7 @@ import org.polypheny.db.rel.core.ConditionalExecute;
 
 public class LogicalConditionalExecute extends ConditionalExecute {
 
-    private LogicalConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+    public LogicalConditionalExecute( RelOptCluster cluster, RelTraitSet traitSet, RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
         super( cluster, traitSet, left, right, condition, exceptionClass, exceptionMessage );
     }
 

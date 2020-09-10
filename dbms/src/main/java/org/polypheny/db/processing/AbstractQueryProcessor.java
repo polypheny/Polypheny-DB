@@ -16,9 +16,9 @@
 
 package org.polypheny.db.processing;
 
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
@@ -31,8 +31,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -50,6 +53,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcValues;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -87,6 +91,7 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.RelShuttle;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
+import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.Sort;
@@ -95,6 +100,7 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.exceptions.ConstraintViolationException;
+import org.polypheny.db.rel.externalize.RelJsonWriter;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
@@ -114,12 +120,22 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexCorrelVariable;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexOver;
+import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexProgram;
+import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexSubQuery;
+import org.polypheny.db.rex.RexTableInputRef;
+import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -178,8 +194,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         return prepareQuery( logicalRoot, parameterRowType, values, false );
     }
 
-    private PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isSubquery ) {
-        boolean isAnalyze = statement.getTransaction.isAnalyze() && !isSubquery;
+    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isSubquery ) {
+        boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
         // If this is a prepared statement, values is != null
@@ -234,24 +250,32 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             statement.getDuration().stop( "Locking" );
             statement.getDuration().start( "Index Update" );
         }
-        IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
-        RelRoot indexUpdateRoot = indexUpdate( logicalRoot, statement, parameterRowType, values );
-//        RelRoot indexUpdateRoot = logicalRoot;
+        RelRoot indexUpdateRoot = logicalRoot;
+        if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
+            IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
+            indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType, values );
+        }
 
         // Constraint Enforcement Rewrite
         if ( isAnalyze ) {
             statement.getDuration().stop( "Index Update" );
             statement.getDuration().start( "Constraint Enforcement" );
         }
-        RelRoot constraintsRoot = enforceConstraints( indexUpdateRoot, statement );
+
+        RelRoot constraintsRoot = indexUpdateRoot;
+        if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+            constraintsRoot = enforceConstraints( constraintsRoot, statement );
+        }
 
         // Index Lookup Rewrite
         if ( isAnalyze ) {
             statement.getDuration().stop( "Constraint Enforcement" );
             statement.getDuration().start( "Index Lookup Rewrite" );
         }
-        RelRoot indexLookupRoot = indexLookup( constraintsRoot, statement, executionTimeMonitor );
-//        RelRoot indexLookupRoot = constraintsRoot;
+        RelRoot indexLookupRoot = constraintsRoot;
+        if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
+            indexLookupRoot = indexLookup( indexLookupRoot, statement, executionTimeMonitor );
+        }
 
         // Route
         if ( isAnalyze ) {
@@ -399,21 +423,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
 
                         if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
-                            final LogicalValues values = (LogicalValues) ltm.getInput( 0 );
+                            final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new RelDeepCopyShuttle() );
                             for ( final Index index : indices ) {
-                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( values.tuples.size() );
-                                for ( final ImmutableList<RexLiteral> row : values.getTuples() ) {
+                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lvalues.tuples.size() );
+                                for ( final ImmutableList<RexLiteral> row : lvalues.getTuples() ) {
                                     final List<Object> rowValues = new ArrayList<>();
                                     final List<Object> targetRowValues = new ArrayList<>();
                                     for ( final String column : index.getColumns() ) {
                                         final RexLiteral fieldValue = row.get(
-                                                values.getRowType().getField( column, false, false ).getIndex()
+                                                lvalues.getRowType().getField( column, false, false ).getIndex()
                                         );
                                         rowValues.add( fieldValue.getValue2() );
                                     }
                                     for ( final String column : index.getTargetColumns() ) {
                                         final RexLiteral fieldValue = row.get(
-                                                values.getRowType().getField( column, false, false ).getIndex()
+                                                lvalues.getRowType().getField( column, false, false ).getIndex()
                                         );
                                         targetRowValues.add( fieldValue.getValue2() );
                                     }
@@ -421,15 +445,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                 }
                                 index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
-                        } else if ( ltm.isDelete() || ltm.isUpdate() || ( ltm.isInsert() && !( ltm.getInput() instanceof Values ) ) ) {
+                        } else if ( ltm.isDelete() || ltm.isUpdate() || ltm.isMerge() || ( ltm.isInsert() && !( ltm.getInput() instanceof Values ) ) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
                             final Map<String, Integer> newValueMap = new HashMap<>();
-                            final LogicalProject originalProject = ((LogicalProject) ltm.getInput());
+                            RelNode original = ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            if ( !(original instanceof LogicalProject) ) {
+                                original = LogicalProject.identity( original );
+                            }
+                            LogicalProject originalProject = (LogicalProject) original;
 
                             for ( int i = 0; i < originalProject.getNamedProjects().size(); ++i ) {
                                 final Pair<RexNode, String> np = originalProject.getNamedProjects().get( i );
                                 nameMap.put( np.right, i );
-                                if ( ltm.isUpdate() ) {
+                                if ( ltm.isUpdate() || ltm.isMerge() ) {
                                     int j = ltm.getUpdateColumnList().indexOf( np.right );
                                     if ( j >= 0 ) {
                                         RexNode newValue = ltm.getSourceExpressionList().get( j );
@@ -454,11 +482,60 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                 }
                             }
                             // Prepare subquery
+//                            if ( ltm.isUpdate() || ltm.isMerge() ) {
+//                                List<RexNode> expr = new ArrayList<>(  );
+//                                //FIXME(s3lph) some index out of bounds stuff
+//                                for ( final String name : originalProject.getRowType().getFieldNames() ) {
+//                                    if ( ltm.getUpdateColumnList().contains( name )) {
+//                                        expr.add( ltm.getSourceExpressionList().get( ltm.getUpdateColumnList().indexOf( name ) ) );
+//                                    } else {
+//                                        expr.add( rexBuilder.makeInputRef( originalProject, originalProject.getRowType().getField( name, true, false ).getIndex() ) );
+//                                    }
+//                                }
+//                                List<RelDataType> types = ltm.getSourceExpressionList().stream().map( RexNode::getType ).collect( Collectors.toList() );
+//                                RelDataType type = transaction.getTypeFactory().createStructType( types, originalProject.getRowType().getFieldNames() );
+//                                originalProject = LogicalProject.create( originalProject, expr, type );
+//                            }
                             RelRoot scanRoot = RelRoot.of( originalProject, SqlKind.SELECT );
                             final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, values, true );
                             final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
                             final Iterator<Object> iterator = enumerable.iterator();
                             final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
+                            // Build new query tree
+                            final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
+                            for ( final List<Object> row : rows ) {
+                                final List<RexLiteral> record = new ArrayList<>();
+                                for ( int i = 0; i < row.size(); ++i ) {
+                                    RelDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
+                                    Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) row.get( i ), fieldType );
+                                    record.add(new RexLiteral(
+                                            converted.left,
+                                            fieldType,
+                                            converted.right
+                                    ) );
+                                }
+                                records.add( ImmutableList.copyOf( record ) );
+                            }
+                            final ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.copyOf( records );
+                            final RelNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getRowType(), values );
+                            final RelNode newProject = LogicalProject.identity( newValues );
+//                            List<RexNode> sourceExpr = ltm.getSourceExpressionList();
+//                            if ( ltm.isUpdate() || ltm.isMerge() ) {
+//                                //FIXME(s3lph): Wrong index
+//                                sourceExpr = IntStream.range( 0, sourceExpr.size() )
+//                                        .mapToObj( i -> rexBuilder.makeFieldAccess( rexBuilder.makeInputRef( newProject, i ), 0 ) )
+//                                        .collect( Collectors.toList() );
+//                            }
+//                            final RelNode replacement = LogicalTableModify.create(
+//                                    ltm.getTable(),
+//                                    transaction.getCatalogReader(),
+//                                    newProject,
+//                                    ltm.getOperation(),
+//                                    ltm.getUpdateColumnList(),
+//                                    sourceExpr,
+//                                    ltm.isFlattened()
+//                            );
+                            final RelNode replacement = ltm.copy( ltm.getTraitSet(), Collections.singletonList( newProject ) );
                             // Schedule the index deletions
                             if ( !ltm.isInsert()) {
                                 for ( final Index index : indices ) {
@@ -483,7 +560,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     index.deleteAllPrimary( statement.getTransaction().getXid(), rowsToDelete );
                                 }
                             }
-                            //Schedule the index insertions for UPDATE operations
+                            //Schedule the index insertions for INSERT and UPDATE operations
                             if ( !ltm.isDelete() ) {
                                 for ( final Index index : indices ) {
                                     // Index not affected by this update, skip
@@ -513,6 +590,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                     index.insertAll( statement.getTransaction().getXid(), rowsToReinsert );
                                 }
                             }
+                            return replacement;
                         }
 
                     }
@@ -520,13 +598,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
 
             };
+            values.clear();
             final RelNode newRoot = shuttle.visit( root.rel );
-            return new RelRoot(
-                    newRoot,
-                    root.validatedRowType,
-                    root.kind,
-                    root.fields,
-                    root.collation );
+            return RelRoot.of( newRoot, root.kind );
 
         }
         return root;
@@ -545,21 +619,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         final Catalog catalog = Catalog.getInstance();
         final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
         final CatalogTable table;
+        final CatalogPrimaryKey primaryKey;
         final List<CatalogConstraint> constraints;
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
         try {
             table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
+            primaryKey = catalog.getPrimaryKey( table.primaryKey );
             constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
             foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
             exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
             // Turn primary key into an artificial unique constraint
-            if ( table.primaryKey != null ) {
-                CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
-                final CatalogConstraint pkc = new CatalogConstraint(
-                        0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
-                constraints.add( pkc );
-            }
+            CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+            final CatalogConstraint pkc = new CatalogConstraint(
+                    0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+            constraints.add( pkc );
         } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
             e.printStackTrace();
             return logicalRoot;
@@ -570,9 +644,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //
         //  Enforce UNIQUE constraints in INSERT operations
         //
-        if ( root.isInsert() ) {
+        if ( root.isInsert() && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( transaction );
-            final RelNode input = root.getInput();
+            final RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
@@ -644,9 +718,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
-        if ( root.isInsert() ) {
+        if ( root.isInsert() && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
-            final RelNode input = root.getInput();
+            final RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final RelOptSchema relOptSchema = root.getCatalogReader();
@@ -680,36 +754,116 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //
         //  Enforce UNIQUE constraints in UPDATE operations
         //
-        if ( root.isUpdate() || root.isMerge() ) {
+        if ( ( root.isUpdate() || root.isMerge() ) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
+            RelBuilder builder = RelBuilder.create( transaction );
+            RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
                     log.warn( "Unknown constraint type: " + constraint.type );
                     continue;
                 }
                 // Check if update affects this constraint
+                boolean affected = false;
                 for ( final String c : root.getUpdateColumnList() ) {
                     if ( constraint.key.getColumnNames().contains( c ) ) {
-                        final Index index = IndexManager.getInstance().getIndex( schema, table, constraint.key.getColumnNames(), null, true );
-                        // Delegate constraint enforcement to the index' duplicate check, only complain if no unique index is present
-                        if ( index == null ) {
-                            throw new IllegalStateException(
-                                    String.format( "An unique index over `%s`.`%s` columns %s is required to provide enforcement of constraint `%s`.",
-                                    schema.name, table.name, constraint.key.getColumnNames(), constraint.name ) );
-                        }
+                        affected = true;
+                        break;
                     }
                 }
+                if ( !affected ) {
+                    continue;
+                }
+                RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
+                Map<String, Integer> nameMap = new HashMap<>(  );
+                for ( int i = 0; i < root.getUpdateColumnList().size(); ++i ) {
+                    nameMap.put( root.getUpdateColumnList().get( i ), i );
+                }
+                // Enforce uniqueness between updated records and already present records
+                builder.clear();
+                builder.push( input );
+                List<RexNode> projects = new ArrayList<>(  );
+                List<String> names = new ArrayList<>(  );
+                for (final String column : primaryKey.getColumnNames() ) {
+                    projects.add( builder.field( column ) );
+                    names.add( column );
+                }
+                for (final String column : constraint.key.getColumnNames()) {
+                    if ( root.getUpdateColumnList().contains( column ) ) {
+                        projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
+                    } else {
+                        // TODO(s3lph): For now, let's assume that all columns are actually present.
+                        //  Otherwise this would require either some black magic project rewrites or joining against another table scan
+                        projects.add( builder.field( column ) );
+                    }
+                    names.add( "$projected$." + column );
+                }
+                builder.project( projects );
+                builder.scan( table.name );
+                builder.join( JoinRelType.INNER, builder.literal( true ) );
+
+                RexNode condition =
+                        rexBuilder.makeCall( SqlStdOperatorTable.AND,
+                                rexBuilder.makeCall( SqlStdOperatorTable.NOT,
+                                        rexBuilder.makeCall( SqlStdOperatorTable.AND,
+                                                primaryKey.getColumnNames().stream().map( c ->
+                                                        builder.call( SqlStdOperatorTable.EQUALS,
+                                                                builder.field( names.indexOf( c ) ),
+                                                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
+                                                        )
+                                                ).collect( Collectors.toList())
+                                        )
+                                ),
+                                rexBuilder.makeCall( SqlStdOperatorTable.AND,
+                                        constraint.key.getColumnNames().stream().map( c ->
+                                                builder.call( SqlStdOperatorTable.EQUALS,
+                                                        builder.field( names.indexOf( "$projected$." + c ) ),
+                                                        builder.field( names.size() + table.getColumnNames().indexOf( c ) )
+                                                )
+                                        ).collect( Collectors.toList())
+                                )
+                        );
+                RelNode check = builder.build();
+                check = new LogicalFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                        String.format( "Updates violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                lceRoot = lce;
+                // Enforce uniqueness within the values to insert
+                builder.clear();
+                builder.push( input );
+                projects = new ArrayList<>(  );
+                for (final String column : constraint.key.getColumnNames()) {
+                    if ( root.getUpdateColumnList().contains( column ) ) {
+                        projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
+                    } else {
+                        // TODO(s3lph): For now, let's assume that all columns are actually present.
+                        //  Otherwise this would require either some black magic project rewrites or joining against another table scan
+                        projects.add( builder.field( column ) );
+                    }
+                }
+                builder.project( projects );
+                builder.aggregate(
+                        builder.groupKey( IntStream.range( 0, projects.size() ).mapToObj( builder::field ).collect( Collectors.toList()) ),
+                        builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" )
+                );
+                builder.filter( builder.call( SqlStdOperatorTable.GREATER_THAN, builder.field( "count" ), builder.literal( 1 ) ) );
+                final RelNode innerCheck = builder.build();
+                final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                        String.format( "Updates violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                ilce.setCheckDescription( String.format( "Source-internal enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                lceRoot = ilce;
             }
         }
 
         //
         //  Enforce FOREIGN KEY constraints in UPDATE operations
         //
-        if ( root.isUpdate() || root.isMerge() ) {
+        if ( ( root.isUpdate() || root.isMerge() ) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
                 final String constraintRule = "ON UPDATE " + foreignKey.updateRule;
-                RelNode input = root.getInput();
+                RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
                 final CatalogTable foreignTable;
@@ -774,12 +928,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //
         //  Enforce reverse FOREIGN KEY constraints in UPDATE and DELETE operations
         //
-        if ( root.isDelete() || root.isUpdate() || root.isMerge() ) {
+        if ( ( root.isDelete() || root.isUpdate() || root.isMerge() ) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : exportedKeys ) {
                 final String constraintRule = root.isDelete() ? "ON DELETE " + foreignKey.deleteRule : "ON UPDATE " + foreignKey.updateRule;
                 switch ( root.isDelete() ? foreignKey.deleteRule : foreignKey.updateRule ) {
+                    case NONE:
+                        continue;
                     case RESTRICT:
                         break;
                     case CASCADE:
@@ -788,7 +944,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                     default:
                         throw new NotImplementedException( String.format( "The foreign key option %s is not yet implemented.", constraintRule ) );
                 }
-                RelNode pInput = ((LogicalProject) root.getInput()).getInput();
+                RelNode pInput;
+                if ( root.getInput() instanceof Project ) {
+                    pInput = ((LogicalProject) root.getInput()).getInput().accept( new RelDeepCopyShuttle() );
+                } else {
+                    pInput = root.getInput().accept( new RelDeepCopyShuttle() );
+                }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
                 final CatalogTable foreignTable;
@@ -857,6 +1018,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
     private RelRoot indexLookup( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         final RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
+        final RexBuilder rexBuilder = builder.getRexBuilder();
+        RelNode newRoot = logicalRoot.rel;
         if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
             final RelShuttle shuttle = new RelShuttleImpl() {
 
@@ -893,79 +1056,73 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
 
             };
-            final RelShuttle shuttle2 = new RelShuttleImpl() {
-
-                @Override
-                public RelNode visit( LogicalProject project ) {
-                    if ( project.getInput() instanceof TableScan ) {
-                        // Figure out the original column names required for index lookup
-                        final TableScan scan = (TableScan) project.getInput();
-                        final String table = scan.getTable().getQualifiedName().get( 0 );
-                        final List<String> columns = new ArrayList<>( project.getChildExps().size() );
-                        final List<RelDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
-                        for ( final RexNode expr : project.getChildExps()) {
-                            if ( !( expr instanceof RexInputRef ) ) {
-                                return super.visit( project );
-                            }
-                            final RexInputRef rir = (RexInputRef) expr;
-                            final RelDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
-                            final String column = field.getName();
-                            columns.add( column );
-                            ctypes.add( field.getType() );
-                        }
-                        // Retrieve the catalog schema and database representations required for index lookup
-                        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
-                        final CatalogTable ctable;
-                        try {
-                            ctable = Catalog.getInstance().getTable( schema.id, table );
-                        } catch ( UnknownTableException | GenericCatalogException e ) {
-                            log.error( "Could not fetch table", e );
-                            return super.visit( project );
-                        }
-                        // Retrieve any index and use for simplification
-                        final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
-                        if ( idx == null ) {
-                            // No index available for simplification
-                            return super.visit( project );
-                        }
-                        // TODO: Avoid copying stuff around
-                        final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
-                        return idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
-//                        final ImmutableList<ImmutableList<RexLiteral>> tuples =
-//                                ImmutableList.copyOf(idx.getAll().stream().map( ImmutableList::copyOf ).collect( Collectors.toList()));
-//                        // TODO: Metadata regarding table name?
-//                        // TODO: INSERT SELECT broken? Something, something, optimizer costs
-//                        return LogicalValues.create( project.getCluster(), project.getRowType(), tuples );
-                    }
-                    return super.visit( project );
-                }
-
-
-                @Override
-                public RelNode visit( RelNode node ) {
-                    if ( node instanceof LogicalProject) {
-                        final LogicalProject lp = (LogicalProject) node;
-                        lp.getMapping();
-                    }
-                    return super.visit( node );
-                }
-
-            };
-            final RelNode newRoot = shuttle2.visit( shuttle.visit( logicalRoot.rel ) );
-            return new RelRoot(
-                    newRoot,
-                    logicalRoot.validatedRowType,
-                    logicalRoot.kind,
-                    logicalRoot.fields,
-                    logicalRoot.collation );
-
+            newRoot = newRoot.accept( shuttle );
         }
-        return new RelRoot(
-                logicalRoot.rel,
-                logicalRoot.validatedRowType,
-                logicalRoot.kind,
-                logicalRoot.fields,
-                logicalRoot.collation );
+        final RelShuttle shuttle2 = new RelShuttleImpl() {
+
+            @Override
+            public RelNode visit( LogicalProject project ) {
+                if ( project.getInput() instanceof TableScan ) {
+                    // Figure out the original column names required for index lookup
+                    final TableScan scan = (TableScan) project.getInput();
+                    final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
+                    final List<String> columns = new ArrayList<>( project.getChildExps().size() );
+                    final List<RelDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
+                    for ( final RexNode expr : project.getChildExps()) {
+                        if ( !( expr instanceof RexInputRef ) ) {
+                            IndexManager.getInstance().incrementMiss();
+                            return super.visit( project );
+                        }
+                        final RexInputRef rir = (RexInputRef) expr;
+                        final RelDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
+                        final String column = field.getName();
+                        columns.add( column );
+                        ctypes.add( field.getType() );
+                    }
+                    // Retrieve the catalog schema and database representations required for index lookup
+                    final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
+                    final CatalogTable ctable;
+                    try {
+                        ctable = Catalog.getInstance().getTable( schema.id, table );
+                    } catch ( UnknownTableException | GenericCatalogException e ) {
+                        log.error( "Could not fetch table", e );
+                        IndexManager.getInstance().incrementNoIndex();
+                        return super.visit( project );
+                    }
+                    // Retrieve any index and use for simplification
+                    final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
+                    if ( idx == null ) {
+                        // No index available for simplification
+                        IndexManager.getInstance().incrementNoIndex();
+                        return super.visit( project );
+                    }
+                    // TODO: Avoid copying stuff around
+                    final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
+                    final Values replacement = idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
+                    final LogicalProject rProject = new LogicalProject(
+                            replacement.getCluster(), replacement.getTraitSet(), replacement,
+                            IntStream.range( 0, compositeType.getFieldCount() ).mapToObj( i -> rexBuilder.makeInputRef( replacement, i ) ).collect( Collectors.toList()),
+                            compositeType );
+                    IndexManager.getInstance().incrementHit();
+                    return rProject;
+
+                }
+                return super.visit( project );
+            }
+
+
+            @Override
+            public RelNode visit( RelNode node ) {
+                if ( node instanceof LogicalProject) {
+                    final LogicalProject lp = (LogicalProject) node;
+                    lp.getMapping();
+                }
+                return super.visit( node );
+            }
+
+        };
+        newRoot = newRoot.accept( shuttle2 );
+        return RelRoot.of( newRoot, logicalRoot.kind );
     }
 
 
@@ -1366,6 +1523,122 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
     }
 
+    private static class RelDeepCopyShuttle extends RelShuttleImpl {
+
+        private RelTraitSet copy(final RelTraitSet other) {
+            return RelTraitSet.createEmpty().merge( other );
+        }
+
+        @Override
+        public RelNode visit( TableScan scan ) {
+            final RelNode node = super.visit( scan );
+            return new LogicalTableScan( node.getCluster(), copy(node.getTraitSet()), node.getTable() );
+        }
+
+
+        @Override
+        public RelNode visit( TableFunctionScan scan ) {
+            final RelNode node = super.visit( scan );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalValues values ) {
+            final Values node = (Values) super.visit( values );
+            return new LogicalValues( node.getCluster(), copy(node.getTraitSet()), node.getRowType(), node.getTuples() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalFilter filter ) {
+            final LogicalFilter node = (LogicalFilter) super.visit( filter );
+            return new LogicalFilter( node.getCluster(), copy(node.getTraitSet()), node.getInput().accept( this ), node.getCondition(), node.getVariablesSet() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalProject project ) {
+            final Project node = (Project) super.visit( project );
+            return new LogicalProject( node.getCluster(), copy(node.getTraitSet()), node.getInput( ), node.getProjects(), node.getRowType() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalJoin join ) {
+            final RelNode node = super.visit( join );
+            return new LogicalJoin( node.getCluster(), copy(node.getTraitSet()), this.visit( join.getLeft() ), this.visit( join.getRight() ), join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone(), ImmutableList.copyOf( join.getSystemFieldList() ) );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalCorrelate correlate ) {
+            final RelNode node = super.visit( correlate );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalUnion union ) {
+            final RelNode node = super.visit( union );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalIntersect intersect ) {
+            final RelNode node = super.visit( intersect );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMinus minus ) {
+            final RelNode node = super.visit( minus );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalAggregate aggregate ) {
+            final RelNode node = super.visit( aggregate );
+            return new LogicalAggregate( node.getCluster(), copy(node.getTraitSet()), visit( aggregate.getInput() ), aggregate.indicator, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMatch match ) {
+            final RelNode node = super.visit( match );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalSort sort ) {
+            final RelNode node = super.visit( sort );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalExchange exchange ) {
+            final RelNode node = super.visit( exchange );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalConditionalExecute lce ) {
+            return new LogicalConditionalExecute( lce.getCluster(), copy(lce.getTraitSet()), visit(lce.getLeft()), visit( lce.getRight() ), lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
+        }
+
+
+        @Override
+        public RelNode visit( RelNode other ) {
+            final RelNode node = super.visit( other );
+            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+        }
+    }
 
     @Override
     public void resetCaches() {

@@ -122,6 +122,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
@@ -2491,7 +2492,9 @@ public class Crud implements InformationObserver {
             }
             if ( iterator != null ) {
                 try {
-                    ((AutoCloseable) iterator).close();
+                    if ( iterator instanceof Closeable ) {
+                        ( (Closeable) iterator ).close();
+                    }
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -2555,7 +2558,9 @@ public class Crud implements InformationObserver {
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) ).setHasMoreRows( hasMoreRows );
         } finally {
             try {
-                ((AutoCloseable) iterator).close();
+                if ( iterator instanceof Closeable ) {
+                    ( (Closeable) iterator ).close();
+                }
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator", e );
             }

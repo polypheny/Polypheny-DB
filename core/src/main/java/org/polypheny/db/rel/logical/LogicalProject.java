@@ -35,6 +35,8 @@ package org.polypheny.db.rel.logical;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -46,6 +48,7 @@ import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.metadata.RelMdCollation;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
@@ -101,6 +104,19 @@ public final class LogicalProject extends Project {
                 .replace( Convention.NONE )
                 .replaceIfs( RelCollationTraitDef.INSTANCE, () -> RelMdCollation.project( mq, input, projects ) );
         return new LogicalProject( cluster, traitSet, input, projects, rowType );
+    }
+
+
+    public static LogicalProject identity( final RelNode input ) {
+        return create(
+                input,
+                IntStream.range( 0, input.getRowType().getFieldCount() )
+                        .mapToObj( i ->
+                                new RexInputRef( i, input.getRowType().getFieldList().get( i ).getType() )
+                        )
+                        .collect( Collectors.toList() ),
+                input.getRowType()
+        );
     }
 
 

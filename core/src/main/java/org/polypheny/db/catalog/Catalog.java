@@ -1068,7 +1068,8 @@ public abstract class Catalog {
         CASCADE( 0 ),
         RESTRICT( 1 ),
         SET_NULL( 2 ),
-        SET_DEFAULT( 4 );
+        SET_DEFAULT( 4 ),
+        NONE( 5 );
 
         private final int id;
 
@@ -1102,6 +1103,8 @@ public abstract class Catalog {
                 return ForeignKeyOption.SET_NULL;
             } else if ( str.equalsIgnoreCase( "SET DEFAULT" ) ) {
                 return ForeignKeyOption.SET_DEFAULT;
+            } else if ( str.equalsIgnoreCase( "NONE" ) ) {
+                return ForeignKeyOption.NONE;
             }
             throw new UnknownForeignKeyOptionException( str );
         }
