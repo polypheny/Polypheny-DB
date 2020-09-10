@@ -242,7 +242,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
-            preparedStatement.setObject( i, null, SqlType.ANY.id );
+            preparedStatement.setNull( i, SqlType.NULL.id );
         } else if ( value instanceof Timestamp ) {
             preparedStatement.setTimestamp( i, (Timestamp) value );
         } else if ( value instanceof Time ) {
