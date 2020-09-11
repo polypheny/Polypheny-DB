@@ -796,7 +796,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                                                 builder.field( names.indexOf( c ) ),
                                                                 builder.field( names.size() + table.getColumnNames().indexOf( c ) )
                                                         )
-                                                ).collect( Collectors.toList())
+                                                ).collect( Collectors.toList() )
                                         )
                                 ),
                                 rexBuilder.makeCall( SqlStdOperatorTable.AND,
@@ -805,7 +805,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                                                         builder.field( names.indexOf( "$projected$." + c ) ),
                                                         builder.field( names.size() + table.getColumnNames().indexOf( c ) )
                                                 )
-                                        ).collect( Collectors.toList())
+                                        ).collect( Collectors.toList() )
                                 )
                         );
                 RelNode check = builder.build();
