@@ -351,7 +351,7 @@ public abstract class AbstractRouter implements Router {
                             }
                         }
                         else{
-                            System.out.println("HENNLO AbstractRouter(): partition routing will assume worstcase: Routing to ALL PARTITIONS");
+                            System.out.println("HENNLO AbstractRouter(): PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worstcase: Routing to ALL PARTITIONS");
                         }
 
                     }
