@@ -63,7 +63,7 @@ public class UniqueConstraintTest {
                 statement.executeUpdate( "INSERT INTO constraint_test VALUES (4, 4, 2, 2), (5, 4, 3, 2)" );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT COUNT(ctid) FROM constraint_test" ),
-                        ImmutableList.of( new Object[]{ 5 } )
+                        ImmutableList.of( new Object[]{ 5L } )
                 );
                 statement.executeUpdate( "DROP TABLE constraint_test" );
             }
@@ -237,9 +237,9 @@ public class UniqueConstraintTest {
                         statement.executeQuery( "SELECT * FROM constraint_test" ),
                         ImmutableList.of(
                                 new Object[]{ 1, 1, 1, 1 },
-                                new Object[]{ 2, 2, 2, 1 },
-                                new Object[]{ 3, 3, 3, 2 },
-                                new Object[]{ 4, 4, 4, 1 }
+                                new Object[]{ 2, 2, 2, 2 },
+                                new Object[]{ 3, 3, 3, 3 },
+                                new Object[]{ 4, 4, 4, 4 }
                         )
                 );
                 statement.executeUpdate( "DROP TABLE constraint_test" );

@@ -121,6 +121,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -787,27 +788,32 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 builder.scan( table.name );
                 builder.join( JoinRelType.INNER, builder.literal( true ) );
 
+                List<RexNode> conditionList1 = primaryKey.getColumnNames().stream().map( c ->
+                        builder.call( SqlStdOperatorTable.EQUALS,
+                                builder.field( names.indexOf( c ) ),
+                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
+                        )
+                ).collect( Collectors.toList() );
+
+                List<RexNode> conditionList2 = constraint.key.getColumnNames().stream().map( c ->
+                        builder.call( SqlStdOperatorTable.EQUALS,
+                                builder.field( names.indexOf( "$projected$." + c ) ),
+                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
+                        )
+                ).collect( Collectors.toList() );
+
                 RexNode condition =
                         rexBuilder.makeCall( SqlStdOperatorTable.AND,
                                 rexBuilder.makeCall( SqlStdOperatorTable.NOT,
-                                        rexBuilder.makeCall( SqlStdOperatorTable.AND,
-                                                primaryKey.getColumnNames().stream().map( c ->
-                                                        builder.call( SqlStdOperatorTable.EQUALS,
-                                                                builder.field( names.indexOf( c ) ),
-                                                                builder.field( names.size() + table.getColumnNames().indexOf( c ) )
-                                                        )
-                                                ).collect( Collectors.toList() )
-                                        )
+                                        conditionList1.size() > 1 ?
+                                                rexBuilder.makeCall( SqlStdOperatorTable.AND, conditionList1 ) :
+                                                conditionList1.get( 0 )
                                 ),
-                                rexBuilder.makeCall( SqlStdOperatorTable.AND,
-                                        constraint.key.getColumnNames().stream().map( c ->
-                                                builder.call( SqlStdOperatorTable.EQUALS,
-                                                        builder.field( names.indexOf( "$projected$." + c ) ),
-                                                        builder.field( names.size() + table.getColumnNames().indexOf( c ) )
-                                                )
-                                        ).collect( Collectors.toList() )
-                                )
+                                conditionList2.size() > 1 ?
+                                        rexBuilder.makeCall( SqlStdOperatorTable.AND, conditionList2 ) :
+                                        conditionList2.get( 0 )
                         );
+                condition = RexUtil.flatten( rexBuilder, condition );
                 RelNode check = builder.build();
                 check = new LogicalFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
