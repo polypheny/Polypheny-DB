@@ -195,7 +195,7 @@ public class UniqueConstraintTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
                 statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2), (3, 3, 3, 3), (4, 4, 4, 4)" );
-                statement.executeUpdate( "UPDATE constraint_test SET a = tid" );
+                statement.executeUpdate( "UPDATE constraint_test SET a = ctid" );
                 statement.executeUpdate( "UPDATE constraint_test SET a = 2 * ctid, b = 2 * ctid" );
                 statement.executeUpdate( "UPDATE constraint_test SET c = 1" );
                 statement.executeUpdate( "UPDATE constraint_test SET c = 2 WHERE ctid = 3" );

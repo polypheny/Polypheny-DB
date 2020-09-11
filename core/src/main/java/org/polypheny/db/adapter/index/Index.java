@@ -32,13 +32,13 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Values;
-import org.polypheny.db.rel.externalize.RelJsonWriter;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
@@ -85,20 +85,22 @@ public abstract class Index {
      * Trigger an index rebuild, e.g. at crash recovery.
      */
     public void rebuild( final Transaction transaction ) {
+        Statement statement = transaction.createStatement();
+
         // Prepare query
-        final RelBuilder builder = RelBuilder.create( transaction );
+        final RelBuilder builder = RelBuilder.create( statement );
         List<String> cols = new ArrayList<>( columns );
-        if (!columns.equals( targetColumns )) {
+        if ( !columns.equals( targetColumns ) ) {
             cols.addAll( targetColumns );
         }
         final RelNode scan = builder
                 .scan( table.name )
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
-        final QueryProcessor processor = transaction.getQueryProcessor();
+        final QueryProcessor processor = statement.getQueryProcessor();
         final PolyphenyDbSignature signature = processor.prepareQuery( RelRoot.of( scan, SqlKind.SELECT ) );
         // Execute query
-        final Iterable<Object> enumerable = signature.enumerable( transaction.getDataContext() );
+        final Iterable<Object> enumerable = signature.enumerable( statement.getDataContext() );
         final Iterator<Object> iterator = enumerable.iterator();
         final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );

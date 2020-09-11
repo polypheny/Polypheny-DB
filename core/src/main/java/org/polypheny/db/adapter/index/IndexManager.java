@@ -52,6 +52,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -143,14 +144,14 @@ public class IndexManager {
     }
 
 
-    public void addIndex( final CatalogIndex index, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
+    public void addIndex( final CatalogIndex index, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
         // TODO(s3lph): type, persistent
-        addIndex( index.id, index.name, index.key, null, index.unique, null, transaction );
+        addIndex( index.id, index.name, index.key, null, index.unique, null, statement );
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final IndexType type, final Boolean unique, final Boolean persistent, final Transaction transaction ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
-        final IndexFactory factory = INDEX_FACTORIES.stream().filter( it -> it.canProvide( type, unique, persistent) ).findFirst().orElseThrow( IllegalArgumentException::new );
+    protected void addIndex( final long id, final String name, final CatalogKey key, final IndexType type, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
+        final IndexFactory factory = INDEX_FACTORIES.stream().filter( it -> it.canProvide( type, unique, persistent ) ).findFirst().orElseThrow( IllegalArgumentException::new );
         final CatalogTable table = Catalog.getInstance().getTable( key.tableId );
         final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
@@ -162,10 +163,10 @@ public class IndexManager {
                 pk.getColumnNames() );
         indexById.put( id, index );
         indexByName.put( name, index );
-        final Transaction tx = transaction != null ? transaction : transactionManager.startTransaction( "pa", "APP", false );
+        final Transaction tx = statement != null ? statement.getTransaction() : transactionManager.startTransaction( "pa", "APP", false, "Index Manager" );
         try {
             index.rebuild( tx );
-            if (transaction == null) {
+            if ( statement == null ) {
                 tx.commit();
             }
         } catch ( TransactionException e ) {

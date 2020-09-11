@@ -45,9 +45,8 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -128,7 +127,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             }
 
             final long indexId = Catalog.getInstance().addIndex( catalogTable.id, columnIds, unique, type, indexName.getSimple() );
-            IndexManager.getInstance().addIndex( Catalog.getInstance().getIndex( indexId ), transaction );
+            IndexManager.getInstance().addIndex( Catalog.getInstance().getIndex( indexId ), statement );
         } catch ( GenericCatalogException | UnknownColumnException | UnknownIndexTypeException | UnknownIndexException | UnknownSchemaException | UnknownTableException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );
         }

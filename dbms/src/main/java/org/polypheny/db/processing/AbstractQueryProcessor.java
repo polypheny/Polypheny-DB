@@ -31,9 +31,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
@@ -45,16 +43,14 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.adapter.index.Index;
-import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
+import org.polypheny.db.adapter.index.Index;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcValues;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -67,6 +63,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -88,10 +85,9 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.RelShuttle;
+import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.ConditionalExecute.Condition;
-import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.Sort;
@@ -100,7 +96,6 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.exceptions.ConstraintViolationException;
-import org.polypheny.db.rel.externalize.RelJsonWriter;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
@@ -120,22 +115,12 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexCorrelVariable;
-import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.rex.RexOver;
-import org.polypheny.db.rex.RexPatternFieldRef;
 import org.polypheny.db.rex.RexProgram;
-import org.polypheny.db.rex.RexRangeRef;
 import org.polypheny.db.rex.RexShuttle;
-import org.polypheny.db.rex.RexSubQuery;
-import org.polypheny.db.rex.RexTableInputRef;
-import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
@@ -158,6 +143,7 @@ import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.ExtraPolyTypes;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -407,10 +393,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
                 @Override
                 public RelNode visit( RelNode node ) {
-                    RexBuilder rexBuilder = new RexBuilder( transaction.getTypeFactory() );
+                    RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
                     if ( node instanceof LogicalTableModify ) {
                         final Catalog catalog = Catalog.getInstance();
-                        final CatalogSchema schema = transaction.getDefaultSchema();
+                        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
                         final LogicalTableModify ltm = (LogicalTableModify) node;
                         final CatalogTable table;
                         try {
@@ -645,7 +631,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //  Enforce UNIQUE constraints in INSERT operations
         //
         if ( root.isInsert() && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            RelBuilder builder = RelBuilder.create( transaction );
+            RelBuilder builder = RelBuilder.create( statement );
             final RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
@@ -755,7 +741,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         //  Enforce UNIQUE constraints in UPDATE operations
         //
         if ( ( root.isUpdate() || root.isMerge() ) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-            RelBuilder builder = RelBuilder.create( transaction );
+            RelBuilder builder = RelBuilder.create( statement );
             RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
