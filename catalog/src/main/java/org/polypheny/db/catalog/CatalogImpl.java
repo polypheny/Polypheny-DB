@@ -113,7 +113,7 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, CatalogPrimaryKey> primaryKeys;
     private static HTreeMap<Long, CatalogForeignKey> foreignKeys;
     private static HTreeMap<Long, CatalogConstraint> constraints;
-    private static HTreeMap<Long, CatalogIndex> indices;
+    private static HTreeMap<Long, CatalogIndex> indexes;
 
     private static Long openTable;
 
@@ -396,7 +396,7 @@ public class CatalogImpl extends Catalog {
         restoreIdBuilder( users, userIdBuilder );
         restoreIdBuilder( keys, keyIdBuilder );
         restoreIdBuilder( constraints, columnIdBuilder );
-        restoreIdBuilder( indices, indexIdBuilder );
+        restoreIdBuilder( indexes, indexIdBuilder );
         restoreIdBuilder( stores, storeIdBuilder );
         restoreIdBuilder( foreignKeys, foreignKeyIdBuilder );
 
@@ -423,7 +423,7 @@ public class CatalogImpl extends Catalog {
      * primaryKeys: keyId -> CatalogPrimaryKey
      * foreignKeys: keyId -> CatalogForeignKey
      * constraints: constraintId -> CatalogConstraint
-     * indices: indexId -> CatalogIndex
+     * indexes: indexId -> CatalogIndex
      */
     private void initKeysAndConstraintsInfo( DB db ) {
         keyColumns = db.hashMap( "keyColumns", Serializer.LONG_ARRAY, Serializer.LONG ).createOrOpen();
@@ -431,7 +431,7 @@ public class CatalogImpl extends Catalog {
         primaryKeys = db.hashMap( "primaryKeys", Serializer.LONG, new GenericSerializer<CatalogPrimaryKey>() ).createOrOpen();
         foreignKeys = db.hashMap( "foreignKeys", Serializer.LONG, new GenericSerializer<CatalogForeignKey>() ).createOrOpen();
         constraints = db.hashMap( "constraints", Serializer.LONG, new GenericSerializer<CatalogConstraint>() ).createOrOpen();
-        indices = db.hashMap( "indices", Serializer.LONG, new GenericSerializer<CatalogIndex>() ).createOrOpen();
+        indexes = db.hashMap( "indexes", Serializer.LONG, new GenericSerializer<CatalogIndex>() ).createOrOpen();
     }
 
 
@@ -2091,7 +2091,7 @@ public class CatalogImpl extends Catalog {
             }
         }
 
-        for ( CatalogIndex index : getIndices( key ) ) {
+        for ( CatalogIndex index : getIndexes( key ) ) {
             if ( index.unique ) {
                 count++;
             }
@@ -2276,9 +2276,9 @@ public class CatalogImpl extends Catalog {
     @Override
     public List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique ) {
         if ( !onlyUnique ) {
-            return indices.values().stream().filter( i -> i.key.tableId == tableId ).collect( Collectors.toList() );
+            return indexes.values().stream().filter( i -> i.key.tableId == tableId ).collect( Collectors.toList() );
         } else {
-            return indices.values().stream().filter( i -> i.key.tableId == tableId && i.unique ).collect( Collectors.toList() );
+            return indexes.values().stream().filter( i -> i.key.tableId == tableId && i.unique ).collect( Collectors.toList() );
         }
     }
 
@@ -2293,7 +2293,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException {
         try {
-            return indices.values().stream().filter( i -> i.key.tableId == tableId && i.name.equals( indexName ) ).findFirst().orElseThrow( NullPointerException::new );
+            return indexes.values().stream().filter( i -> i.key.tableId == tableId && i.name.equals( indexName ) ).findFirst().orElseThrow( NullPointerException::new );
         } catch ( NullPointerException e ) {
             throw new UnknownIndexException( tableId, indexName );
         }
@@ -2309,7 +2309,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public CatalogIndex getIndex( long indexId ) throws UnknownIndexException {
         try {
-            return indices.values().stream().filter( i -> i.id == indexId ).findFirst().orElseThrow( NullPointerException::new );
+            return indexes.values().stream().filter( i -> i.id == indexId ).findFirst().orElseThrow( NullPointerException::new );
         } catch ( NullPointerException e ) {
             throw new UnknownIndexException( indexId );
         }
@@ -2356,7 +2356,7 @@ public class CatalogImpl extends Catalog {
         }
         long id = indexIdBuilder.getAndIncrement();
         synchronized ( this ) {
-            indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
+            indexes.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
         }
         listeners.firePropertyChange( "index", null, keyId );
         return id;
@@ -2371,7 +2371,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void deleteIndex( long indexId ) throws GenericCatalogException {
         try {
-            CatalogIndex index = Objects.requireNonNull( indices.get( indexId ) );
+            CatalogIndex index = Objects.requireNonNull( indexes.get( indexId ) );
             if ( index.unique ) {
                 if ( getKeyUniqueCount( index.keyId ) == 1 && isForeignKey( index.keyId ) ) {
                     // This unique index is the only constraint for the uniqueness of this key.
@@ -2379,7 +2379,7 @@ public class CatalogImpl extends Catalog {
                 }
             }
             synchronized ( this ) {
-                indices.remove( indexId );
+                indexes.remove( indexId );
 
             }
             listeners.firePropertyChange( "index", index.key, null );
@@ -2602,17 +2602,18 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    public List<CatalogIndex> getIndices( CatalogKey key ) {
-        return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
+    public List<CatalogIndex> getIndexes( CatalogKey key ) {
+        return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
-    public List<CatalogIndex> getIndices( ) {
-        return new ArrayList<>( indices.values() );
+
+    public List<CatalogIndex> getIndexes() {
+        return new ArrayList<>( indexes.values() );
     }
 
 
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
-        return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
+        return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
@@ -2622,7 +2623,7 @@ public class CatalogImpl extends Catalog {
 
 
     public boolean isIndex( long keyId ) {
-        return indices.values().stream().anyMatch( i -> i.keyId == keyId );
+        return indexes.values().stream().anyMatch( i -> i.keyId == keyId );
     }
 
 
@@ -2655,7 +2656,7 @@ public class CatalogImpl extends Catalog {
             if ( foreignKeys.values().stream().anyMatch( f -> f.id == keyId ) ) {
                 return;
             }
-            if ( indices.values().stream().anyMatch( i -> i.keyId == keyId ) ) {
+            if ( indexes.values().stream().anyMatch( i -> i.keyId == keyId ) ) {
                 return;
             }
             synchronized ( this ) {

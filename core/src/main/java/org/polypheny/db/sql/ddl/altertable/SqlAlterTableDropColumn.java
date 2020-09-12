@@ -103,7 +103,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
                     if ( catalog.isPrimaryKey( key.id ) ) {
                         throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the primary key." );
                     } else if ( catalog.isIndex( key.id ) ) {
-                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the index with the name: '" + catalog.getIndices( key ).get( 0 ).name + "'." );
+                        throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the index with the name: '" + catalog.getIndexes( key ).get( 0 ).name + "'." );
                     } else if ( catalog.isForeignKey( key.id ) ) {
                         throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the foreign key with the name: '" + catalog.getForeignKeys( key ).get( 0 ).name + "'." );
                     } else if ( catalog.isConstraint( key.id ) ) {

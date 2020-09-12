@@ -677,9 +677,9 @@ public abstract class Catalog {
     public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
 
 
-    public abstract List<CatalogIndex> getIndices( );
+    public abstract List<CatalogIndex> getIndexes();
 
-    public abstract List<CatalogIndex> getIndices( CatalogKey key );
+    public abstract List<CatalogIndex> getIndexes( CatalogKey key );
 
     public abstract List<CatalogIndex> getForeignKeys( CatalogKey key );
 

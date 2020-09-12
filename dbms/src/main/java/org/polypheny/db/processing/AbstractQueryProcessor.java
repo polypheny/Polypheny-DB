@@ -60,8 +60,12 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
@@ -395,12 +399,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                     RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
                     if ( node instanceof LogicalTableModify ) {
                         final Catalog catalog = Catalog.getInstance();
-                        final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
                         final LogicalTableModify ltm = (LogicalTableModify) node;
                         final CatalogTable table;
+                        final CatalogSchema schema;
                         try {
-                            table = catalog.getTable( schema.id, ltm.getTable().getQualifiedName().get( 0 ) );
-                        } catch ( UnknownTableException | GenericCatalogException e ) {
+                            String tableName;
+                            if ( ltm.getTable().getQualifiedName().size() == 3 ) { // DatabaseName.SchemaName.TableName
+                                schema = catalog.getSchema( ltm.getTable().getQualifiedName().get( 0 ), ltm.getTable().getQualifiedName().get( 1 ) );
+                                tableName = ltm.getTable().getQualifiedName().get( 2 );
+                            } else if ( ltm.getTable().getQualifiedName().size() == 2 ) { // SchemaName.TableName
+                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), ltm.getTable().getQualifiedName().get( 0 ) );
+                                tableName = ltm.getTable().getQualifiedName().get( 1 );
+                            } else { // TableName
+                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), statement.getPrepareContext().getDefaultSchemaName() );
+                                tableName = ltm.getTable().getQualifiedName().get( 0 );
+                            }
+                            table = catalog.getTable( schema.id, tableName );
+                        } catch ( UnknownTableException | GenericCatalogException | UnknownDatabaseException | UnknownCollationException | UnknownSchemaException | UnknownSchemaTypeException e ) {
                             // This really should not happen
                             log.error( String.format( "Table not found: %s", ltm.getTable().getQualifiedName().get( 0 ) ), e );
                             throw new RuntimeException( e );
@@ -589,7 +604,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 }
 
             };
-            values.clear();
+            if ( values != null ) {
+                values.clear();
+            }
             final RelNode newRoot = shuttle.visit( root.rel );
             return RelRoot.of( newRoot, root.kind );
 

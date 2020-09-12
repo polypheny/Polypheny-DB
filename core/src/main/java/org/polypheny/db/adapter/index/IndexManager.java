@@ -133,7 +133,7 @@ public class IndexManager {
 
 
     public void restoreIndices() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
-        for ( final CatalogIndex index : Catalog.getInstance().getIndices() ) {
+        for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
             addIndex( index );
         }
     }

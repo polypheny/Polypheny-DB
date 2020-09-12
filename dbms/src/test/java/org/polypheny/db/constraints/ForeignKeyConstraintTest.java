@@ -109,9 +109,6 @@ public class ForeignKeyConstraintTest {
                 }
 
                 try {
-                    statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST );
-                    statement.executeUpdate( CREATE_TABLE_CONSTRAINT_TEST2 );
-                    statement.executeUpdate( ALTER_TABLE_ADD_FK );
                     statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 1, 1, 1), (2, 2, 2, 2)" );
                     statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 1), (4, 2)" );
                     TestHelper.checkResultSet(

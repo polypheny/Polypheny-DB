@@ -94,7 +94,7 @@ public abstract class Index {
             cols.addAll( targetColumns );
         }
         final RelNode scan = builder
-                .scan( table.name )
+                .scan( ImmutableList.of( table.getSchemaName(), table.name ) )
                 .project( cols.stream().map( builder::field ).collect( Collectors.toList() ) )
                 .build();
         final QueryProcessor processor = statement.getQueryProcessor();
