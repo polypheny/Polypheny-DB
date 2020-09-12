@@ -232,7 +232,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
             }
         }
 
-        // Constraint Enforcement Rewrite
+        // Index Update
         if ( isAnalyze ) {
             statement.getDuration().stop( "Locking" );
             statement.getDuration().start( "Index Update" );
@@ -386,8 +386,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-
-
     private RelRoot indexUpdate( RelRoot root, Statement statement, RelDataType parameterRowType, Map<String, Object> values ) {
         if ( root.kind.belongsTo( SqlKind.DML ) ) {
             final RelShuttle shuttle = new RelShuttleImpl() {
@@ -408,6 +406,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                             throw new RuntimeException( e );
                         }
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
+
+                        // Check if there are any indexes effected by this table modify
+                        if ( indices.size() == 0 ) {
+                            // Nothing to do here
+                            return super.visit( node );
+                        }
 
                         if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
                             final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new RelDeepCopyShuttle() );
@@ -622,7 +626,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                     0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
         } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
-            e.printStackTrace();
+            log.error( "Caught exception", e );
             return logicalRoot;
         }
 
