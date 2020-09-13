@@ -67,6 +67,7 @@ public class SimpleRouter extends AbstractRouter {
         }
         //TODO Do something similar with partitionPlacements
         System.out.println("HENNLO: SimpleRouter selectPlacement: " + table.name);
+        Catalog catalog = Catalog.getInstance();
         // Take the store with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         try {
@@ -79,6 +80,17 @@ public class SimpleRouter extends AbstractRouter {
             }
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
+        }
+
+
+        if ( table.isPartitioned ){
+            System.out.println("HENNLO: SimpleRouter selectPlacements() Table: '" + table.name + "' is partitioned ("
+                    + table.numPartitions +") - " + table.partitionIds);
+
+            for ( CatalogColumnPlacement ccp : placementList){
+                System.out.println("\t\t\t Placement: '" + ccp.storeUniqueName+ "." + ccp.getLogicalColumnName() + "' "
+                        + catalog.getPartitionsOnDataPlacement(ccp.storeId, ccp.tableId));
+            }
         }
 
         return placementList;

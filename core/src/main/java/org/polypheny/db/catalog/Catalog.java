@@ -804,7 +804,7 @@ public abstract class Catalog {
 
     public abstract long addPartition( long tableId, long schemaId, int ownerId, PartitionType partitionType ) throws GenericCatalogException;
 
-    public abstract void deletePartition( long tableId, long schemaId, long partitionId );
+    protected abstract void deletePartition( long tableId, long schemaId, long partitionId );
 
     public abstract CatalogPartition getPartition(long partitionId ) throws UnknownPartitionException;
 
@@ -833,6 +833,10 @@ public abstract class Catalog {
     public abstract List<Long>  getPartitionsOnDataPlacement(int storeId, long tableId);
 
     public abstract void  deletePartitionsOnDataPlacement(int storeId, long tableId);
+
+    public abstract boolean validatePartitionDistribution(long tableId);
+
+    public abstract int getNumberOfPlacementsWithAllPartitions(long columnId, long numPartitions);
 
     /*
      *

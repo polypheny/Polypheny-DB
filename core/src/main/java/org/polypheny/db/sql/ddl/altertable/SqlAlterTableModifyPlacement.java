@@ -41,6 +41,7 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -139,6 +140,12 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         if ( existingPlacements.size() < 2 ) {
                             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                         }
+                        //Check if this placement would be the last columnPlacemnt with all partitions
+                        if ( catalog.getNumberOfPlacementsWithAllPartitions(placement.columnId, catalogTable.numPartitions) <= 1 ){
+                            transaction.rollback();
+                            throw new RuntimeException("Validation of partition distribution failed. Placement: '"
+                                    + placement.storeUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions");
+                        }
                         // Drop Column on store
                         storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), placement.columnId ) );
                         // Drop column placement
@@ -172,6 +179,12 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                     }
                     catalog.updatePartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id, tempPartitionList);
                 }
+                /*else{
+                    if ( !catalog.validatePartitionDistribution(catalogTable.id) ){
+                        transaction.rollback();
+                        throw new RuntimeException("Validation of partition distribution failed");
+                    }
+                }*/
             }
 
 
@@ -204,7 +217,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                     // TODO: Now we should also copy the data
                 }
             }
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownColumnException  | UnknownStoreException | UnknownTableException e ) {
+        } catch (GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownColumnException | UnknownStoreException | UnknownTableException | TransactionException e ) {
             throw new RuntimeException( e );
         }
     }

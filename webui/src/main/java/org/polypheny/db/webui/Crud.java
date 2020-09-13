@@ -2668,9 +2668,10 @@ public class Crud implements InformationObserver {
                     } else {
                         throw new QueryExecutionException( "Result is null" );
                     }
+                    System.out.println("rowsChanged " + rowsChanged + " num: " + num );
                     // Check if num is equal for all stores
                     if ( rowsChanged != -1 && rowsChanged != num ) {
-                        throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                        //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
                     }
                     rowsChanged = num;
                 }

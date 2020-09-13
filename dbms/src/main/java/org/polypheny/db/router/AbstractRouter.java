@@ -147,12 +147,12 @@ public abstract class AbstractRouter implements Router {
                 CatalogTable catalogTable;
                 try {
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
-                    System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() );
                     //HENNLO
                     //Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
-                        System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() + " is partitioned on column: " + catalogTable.partitionColumnId );
-                        System.out.println("HENNLO AbstractRouter: buildSelect() getting all Partitions for table with id: " + catalogTable.id);
+                        System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() + " is partitioned on column: "
+                                + catalogTable.partitionColumnId + " - " + catalog.getColumn(catalogTable.partitionColumnId).name);
+                        System.out.println("HENNLO AbstractRouter: buildSelect() Retrieving all Partitions for table with id: " + catalogTable.id);
                         for (CatalogPartition cp : catalog.getPartitions(catalogTable.id)
                         ) {
                             System.out.println("HENNLO AbstractRouter: " + cp.tableId + " " + (cp.id+1) + "/" + catalogTable.numPartitions);
@@ -163,7 +163,7 @@ public abstract class AbstractRouter implements Router {
                     }
 
                     //
-                } catch ( UnknownTableException | GenericCatalogException e ) {
+                } catch (UnknownTableException | GenericCatalogException | UnknownColumnException e ) {
                     throw new RuntimeException( "Unknown table" );
                 }
                 List<CatalogColumnPlacement> placements = selectPlacement( node, catalogTable );
