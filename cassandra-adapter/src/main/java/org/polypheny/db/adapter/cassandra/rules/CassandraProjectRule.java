@@ -24,9 +24,11 @@ import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
@@ -46,7 +48,9 @@ public class CassandraProjectRule extends CassandraConverterRule {
         Project project = call.rel( 0 );
         for ( RexNode e : project.getProjects() ) {
             if ( !(e instanceof RexInputRef) && !(e instanceof RexLiteral) ) {
-                return false;
+                if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor))) {
+                    return false;
+                }
             }
         }
 
@@ -58,11 +62,20 @@ public class CassandraProjectRule extends CassandraConverterRule {
     public RelNode convert( RelNode rel ) {
         final Project project = (Project) rel;
         final RelTraitSet traitSet = project.getTraitSet().replace( out );
+
+        boolean arrayValueProject = true;
+        for ( RexNode e : project.getProjects() ) {
+            if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) && !(e instanceof RexLiteral) ) {
+                arrayValueProject = false;
+            }
+        }
+
         return new CassandraProject(
                 project.getCluster(),
                 traitSet,
                 convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ),
                 project.getProjects(),
-                project.getRowType() );
+                project.getRowType(),
+                arrayValueProject );
     }
 }

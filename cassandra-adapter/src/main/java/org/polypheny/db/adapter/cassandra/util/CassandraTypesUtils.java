@@ -18,17 +18,35 @@ package org.polypheny.db.adapter.cassandra.util;
 
 
 import com.datastax.oss.driver.api.core.data.CqlDuration;
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.cassandra.CassandraValues;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 @Slf4j
 public class CassandraTypesUtils {
 
-    public static DataType getDataType( PolyType polyType ) {
+    private static final Gson GSON;
+    static {
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.serializer );
+        GSON = gsonBuilder.create();
+    }
+
+    public static DataType getDataType( PolyType polyType, UserDefinedType arrayContainerUdt ) {
         switch ( polyType ) {
             case BOOLEAN:
                 return DataTypes.BOOLEAN;
@@ -78,11 +96,12 @@ public class CassandraTypesUtils {
             case BINARY:
             case VARBINARY:
                 return DataTypes.BLOB;
+            case ARRAY:
+                return arrayContainerUdt;
             case NULL:
             case ANY:
             case SYMBOL:
             case MULTISET:
-            case ARRAY:
             case MAP:
             case DISTINCT:
             case STRUCTURED:
@@ -130,6 +149,8 @@ public class CassandraTypesUtils {
             return PolyType.VARBINARY;
         } else if ( dataType == DataTypes.BOOLEAN ) {
             return PolyType.BOOLEAN;
+        } else if ( dataType instanceof UserDefinedType ) {
+            return PolyType.ARRAY;
         } else {
             log.warn( "Unable to find type for cql type: {}. Returning ANY.", dataType );
             return PolyType.ANY;
@@ -426,5 +447,46 @@ public class CassandraTypesUtils {
         } else {
             throw new RuntimeException( "Unable to cast from " + from.getName() + " to " + to.getName() + "." );
         }
+    }
+
+    public static UdtValue createArrayContainerDataType( UserDefinedType arrayUdt, int dimension, int cardinality, PolyType innerType, RexCall arrayCall ) {
+        return arrayUdt.newValue()
+                .setString( 0, innerType.getTypeName() )
+//                .setString( 0, GSON.toJson( innerType, PolyType.class ) )
+                .setInt( 1, dimension )
+                .setInt( 2, cardinality )
+                .setString( 3, GSON.toJson( createListForArrays( arrayCall.operands ) ) );
+    }
+
+
+    public static List<Object> unparseArrayContainerUdt( UdtValue arrayContainer ) {
+        if ( arrayContainer == null ) {
+            return null;
+        }
+
+        PolyType innerType = GSON.fromJson( arrayContainer.getString( "innertype" ), PolyType.class );
+        long dimension = (long) arrayContainer.getInt( "dimension" );
+        int cardinality = arrayContainer.getInt( "cardinality" );
+        Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+        String stringValue = arrayContainer.getString( "data" );
+        if ( stringValue == null ) {
+            return null;
+        }
+        return GSON.fromJson( stringValue.trim(), conversionType );
+    }
+
+    private static List<Object> createListForArrays( List<RexNode> operands ) {
+        List<Object> list = new ArrayList<>( operands.size() );
+        for ( RexNode node : operands ) {
+            if ( node instanceof RexLiteral ) {
+                Object value = CassandraValues.literalValue( (RexLiteral) node );
+                list.add( value );
+            } else if ( node instanceof RexCall ) {
+                list.add( createListForArrays( ((RexCall) node).operands ) );
+            } else {
+                throw new RuntimeException( "Invalid array" );
+            }
+        }
+        return list;
     }
 }
