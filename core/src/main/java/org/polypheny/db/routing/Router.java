@@ -21,15 +21,15 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 public interface Router {
 
-    RelRoot route( RelRoot relRoot, Transaction transaction, ExecutionTimeMonitor executionTimeMonitor );
+    RelRoot route( RelRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
 
-    List<Store> createTable( long schemaId, Transaction transaction );
+    List<Store> createTable( long schemaId, Statement statement );
 
-    List<Store> addColumn( CatalogTable catalogTable, Transaction transaction );
+    List<Store> addColumn( CatalogTable catalogTable, Statement statement );
 
     void dropPlacements( List<CatalogColumnPlacement> placements );
 }

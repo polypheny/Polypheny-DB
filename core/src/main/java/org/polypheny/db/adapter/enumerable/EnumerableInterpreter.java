@@ -105,6 +105,12 @@ public class EnumerableInterpreter extends SingleRel implements EnumerableRel {
 
 
     @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" + input.relCompareString() + "$" + factor + "&";
+    }
+
+
+    @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();

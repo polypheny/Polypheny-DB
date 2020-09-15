@@ -41,6 +41,7 @@ import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlBetweenOperator;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.util.SqlBasicVisitor;
@@ -459,7 +460,7 @@ public abstract class SqlOperator {
 
         final List<RelDataType> argTypes = constructArgTypeList( validator, scope, call, args, false );
 
-        final SqlOperator sqlOperator =
+        SqlOperator sqlOperator =
                 SqlUtil.lookupRoutine(
                         validator.getOperatorTable(),
                         getNameAsId(),
@@ -468,6 +469,14 @@ public abstract class SqlOperator {
                         null,
                         getSyntax(),
                         getKind() );
+
+        // This is a fix for array usage in calls like `select ARRAY[1,2];`
+        // If we use the result from the lookup above we loose information about the dimension and cardinality of the array call.
+        // This will then cause validation issues.
+        // Because the SqlCall already contains an SqlArrayValueConstructor, we can just reuse it.
+        if ( sqlOperator instanceof SqlArrayValueConstructor ) {
+            sqlOperator = call.getOperator();
+        }
 
         ((SqlBasicCall) call).setOperator( sqlOperator );
         RelDataType type = call.getOperator().validateOperands( validator, scope, call );

@@ -1146,6 +1146,37 @@ public enum PolyType {
 
 
     /**
+     * Returns the type name in string form. Does not include precision, scale or whether nulls are allowed.
+     * Example: "DECIMAL" not "DECIMAL(7, 2)"; "INTEGER" not "JavaType(int)".
+     */
+    public String getTypeName() {
+        switch ( this ) {
+            case ARRAY:
+            case MULTISET:
+            case MAP:
+            case ROW:
+                return this.toString(); // e.g. "INTEGER ARRAY"
+            case INTERVAL_YEAR_MONTH:
+                return "INTERVAL_YEAR_TO_MONTH";
+            case INTERVAL_DAY_HOUR:
+                return "INTERVAL_DAY_TO_HOUR";
+            case INTERVAL_DAY_MINUTE:
+                return "INTERVAL_DAY_TO_MINUTE";
+            case INTERVAL_DAY_SECOND:
+                return "INTERVAL_DAY_TO_SECOND";
+            case INTERVAL_HOUR_MINUTE:
+                return "INTERVAL_HOUR_TO_MINUTE";
+            case INTERVAL_HOUR_SECOND:
+                return "INTERVAL_HOUR_TO_SECOND";
+            case INTERVAL_MINUTE_SECOND:
+                return "INTERVAL_MINUTE_TO_SECOND";
+            default:
+                return this.getName(); // e.g. "DECIMAL", "INTERVAL_YEAR_MONTH"
+        }
+    }
+
+
+    /**
      * Flags indicating precision/scale combinations.
      *
      * Note: for intervals:

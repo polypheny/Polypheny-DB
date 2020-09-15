@@ -19,7 +19,9 @@ package org.polypheny.db.jdbc;
 
 import java.util.Iterator;
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.transaction.Statement;
 
 /**
  *
@@ -30,6 +32,16 @@ public class PolyphenyDbStatementHandle {
     private final int statementId;
     private volatile transient Iterator<Object> openResultSet;
     private volatile transient PolyphenyDbSignature signature;
+    @Getter
+    @Setter
+    private volatile transient String preparedQuery;
+    @Getter
+    @Setter
+    private volatile transient int maxRowCount;
+
+    @Setter
+    @Getter
+    private Statement statement;
 
     @Getter
     private final StopWatch executionStopWatch = new StopWatch();
@@ -66,6 +78,7 @@ public class PolyphenyDbStatementHandle {
 
     public synchronized void setSignature( PolyphenyDbSignature signature ) {
         this.signature = signature;
+        this.openResultSet = null;
         executionStopWatch.reset();
     }
 

@@ -1269,6 +1269,11 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     //-------------------------------------------------------------
 
     /**
+     * k-nearest-neighbour function: <code>KNN(column, ARRAY[], METRIC, WEIGHTS, optimisationNumber)</code>.
+     */
+    public static final SqlFunction KNN = new SqlKnnFunction();
+
+    /**
      * The character substring function: <code>SUBSTRING(string FROM start [FOR length])</code>.
      *
      * If the length parameter is a constant, the length of the result is the minimum of the length of the input and that length. Otherwise it is the length of the input.

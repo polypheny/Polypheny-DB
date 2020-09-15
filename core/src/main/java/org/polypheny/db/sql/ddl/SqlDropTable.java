@@ -56,7 +56,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -76,7 +76,7 @@ public class SqlDropTable extends SqlDropObject {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         // Get table
         final CatalogTable table;
         Catalog catalog = Catalog.getInstance();
@@ -125,7 +125,7 @@ public class SqlDropTable extends SqlDropObject {
                 // Delete table on store
                 StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
                 // Inform routing
-                transaction.getRouter().dropPlacements( catalog.getColumnPlacementsOnStore( storeId, table.id ) );
+                statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnStore( storeId, table.id ) );
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
                     catalog.deleteColumnPlacement( storeId, columnId );
@@ -186,6 +186,9 @@ public class SqlDropTable extends SqlDropObject {
         } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping the table.", e );
         }
+
+        // Rest plan cache and implementation cache
+        statement.getQueryProcessor().resetCaches();
     }
 }
 

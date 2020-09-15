@@ -85,6 +85,13 @@ public class Sample extends SingleRel {
     }
 
 
+    @Override
+    public String relCompareString() {
+        // Compare makes no sense here. Use hashCode() to avoid errors.
+        return this.getClass().getSimpleName() + "$" + hashCode() + "&";
+    }
+
+
     /**
      * Retrieve the sampling parameters for this Sample.
      */

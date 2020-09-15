@@ -34,17 +34,23 @@
 package org.polypheny.db.sql.fun;
 
 
+import com.google.gson.Gson;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.validate.SqlValidator;
 import org.polypheny.db.sql.validate.SqlValidatorScope;
 import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 
 
@@ -52,6 +58,8 @@ import org.polypheny.db.type.PolyTypeUtil;
  * Definition of the SQL:2003 standard ARRAY constructor, <code>ARRAY[&lt;expr&gt;, ...]</code>.
  */
 public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
+
+    private static final Gson gson = new Gson();
 
     public final int dimension;
     public final int maxCardinality;
@@ -95,31 +103,63 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
         return type;
     }
 
+
     @Override
     public void unparse( SqlWriter writer, SqlCall call, int leftPrec, int rightPrec ) {
-        if(!writer.getDialect().supportsNestedArrays()) {
-
-            if( outermost ) {
-                writer.literal( "'" );
-            }
-
-            final SqlWriter.Frame frame = writer.startList( "[", "]" );
-            for ( SqlNode operand : call.getOperandList() ) {
-                writer.sep( "," );
-                operand.unparse( writer, leftPrec, rightPrec );
-            }
-            writer.endList( frame );
-
-            if( outermost ) {
-                writer.literal( "'" );
-            }
+        if ( !writer.getDialect().supportsNestedArrays() ) {
+            List<Object> list = createListForArrays( call.getOperandList() );
+            writer.literal( "'" + gson.toJson( list ) + "'" );
         } else {
             super.unparse( writer, call, leftPrec, rightPrec );
         }
     }
 
+
+    private List<Object> createListForArrays( List<SqlNode> operands ) {
+        List<Object> list = new ArrayList<>( operands.size() );
+        for ( SqlNode node : operands ) {
+            if ( node instanceof SqlLiteral ) {
+                Object value;
+                switch ( ((SqlLiteral) node).getTypeName() ) {
+                    case CHAR:
+                    case VARCHAR:
+                        value = ((SqlLiteral) node).toValue();
+                        break;
+                    case BOOLEAN:
+                        value = ((SqlLiteral) node).booleanValue();
+                        break;
+                    case DECIMAL:
+                        value = ((SqlLiteral) node).bigDecimalValue();
+                        break;
+                    default:
+                        value = ((SqlLiteral) node).getValue();
+                }
+                list.add( value );
+            } else if ( node instanceof SqlCall ) {
+                list.add( createListForArrays( ((SqlCall) node).getOperandList() ) );
+            } else {
+                throw new RuntimeException( "Invalid array" );
+            }
+        }
+        return list;
+    }
+
+
     @Override
     public int hashCode() {
-        return Objects.hash( kind, "ARRAY", dimension, maxCardinality, outermost );
+        // FIXME js(knn): This is a hotfix to make the whole array creation function work properly in
+        //   things like `function(ARRAY[...])`.
+        //   It probably is not a good idea to not have dimension, cardinality, and max cardinality in
+        //   the hash, but right now it works and gets me moving forwards.
+        return Objects.hash( kind, "ARRAY" );
+    }
+
+
+    public static Object reparse( PolyType innerType, Long dimension, String stringValue ) {
+        Type conversionType = PolyTypeUtil.createNestedListType( dimension, innerType );
+        if ( stringValue == null ) {
+            return null;
+        }
+        return gson.fromJson( stringValue.trim(), conversionType );
     }
 }

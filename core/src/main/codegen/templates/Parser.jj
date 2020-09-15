@@ -5745,6 +5745,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <FUSION>
     |   <GROUPING>
     |   <HOUR>
+    |   <KNN>
     |   <LAG>
     |   <LEAD>
     |   <LAST_VALUE>
@@ -6339,6 +6340,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < KEY: "KEY" >
 |   < KEY_MEMBER: "KEY_MEMBER" >
 |   < KEY_TYPE: "KEY_TYPE" >
+|   < KNN: "KNN" >
 |   < LABEL: "LABEL" >
 |   < LAG: "LAG" >
 |   < LANGUAGE: "LANGUAGE" >

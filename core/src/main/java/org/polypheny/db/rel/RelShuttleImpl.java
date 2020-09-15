@@ -67,14 +67,15 @@ public class RelShuttleImpl implements RelShuttle {
     /**
      * Visits a particular child of a parent.
      */
-    protected RelNode visitChild( RelNode parent, int i, RelNode child ) {
+    protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
         stack.push( parent );
         try {
             RelNode child2 = child.accept( this );
             if ( child2 != child ) {
                 final List<RelNode> newInputs = new ArrayList<>( parent.getInputs() );
                 newInputs.set( i, child2 );
-                return parent.copy( parent.getTraitSet(), newInputs );
+                //noinspection unchecked
+                return (T) parent.copy( parent.getTraitSet(), newInputs );
             }
             return parent;
         } finally {
@@ -83,7 +84,7 @@ public class RelShuttleImpl implements RelShuttle {
     }
 
 
-    protected RelNode visitChildren( RelNode rel ) {
+    protected <T extends RelNode> T visitChildren( T rel ) {
         for ( Ord<RelNode> input : Ord.zip( rel.getInputs() ) ) {
             rel = visitChild( rel, input.i, input.e );
         }

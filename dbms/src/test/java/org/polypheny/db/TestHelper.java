@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +36,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.runtime.SqlFunctions;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionManager;
 
@@ -93,7 +95,7 @@ public class TestHelper {
 
     public Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( "pa", "APP", true );
+            return transactionManager.startTransaction( "pa", "APP", true, "Test Helper" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
@@ -115,10 +117,25 @@ public class TestHelper {
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    Assert.assertEquals(
-                            "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
-                            expectedRow[j],
-                            resultSet.getObject( j + 1 ) );
+                    if ( resultSet.getMetaData().getColumnType( j + 1 ) != Types.ARRAY ) {
+                        Assert.assertEquals(
+                                "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                                expectedRow[j],
+                                resultSet.getObject( j + 1 ) );
+                    } else {
+                        List resultList = SqlFunctions.deepArrayToList( resultSet.getArray( j + 1 ) );
+                        Object[] expectedArray = (Object[]) expectedRow[j];
+                        if ( expectedArray == null ) {
+                            Assert.assertNull( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': ", resultList );
+                        } else {
+                            for ( int k = 0; k < expectedArray.length; k++ ) {
+                                Assert.assertEquals(
+                                        "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "' at position: " + k + 1,
+                                        expectedArray[k],
+                                        resultList.get( k ) );
+                            }
+                        }
+                    }
                     j++;
                 } else {
                     fail( "More data available then expected." );

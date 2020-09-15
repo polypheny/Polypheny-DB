@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.CorrelationId;
 import org.polypheny.db.rel.metadata.DefaultRelMetadataProvider;
@@ -58,7 +59,8 @@ public class RelOptCluster {
     private final RelDataTypeFactory typeFactory;
     private final RelOptPlanner planner;
     private final AtomicInteger nextCorrel;
-    private final Map<String, RelNode> mapCorrelToRel;
+    @Getter
+    private final Map<CorrelationId, RelNode> mapCorrelToRel;
     private RexNode originalExpression;
     private final RexBuilder rexBuilder;
     private RelMetadataProvider metadataProvider;
@@ -72,9 +74,9 @@ public class RelOptCluster {
      *
      * For use only from {@link #create} and {@link RelOptQuery}.
      */
-    private RelOptCluster( RelOptPlanner planner, RelDataTypeFactory typeFactory, RexBuilder rexBuilder, AtomicInteger nextCorrel, Map<String, RelNode> mapCorrelToRel ) {
+    private RelOptCluster( RelOptPlanner planner, RelDataTypeFactory typeFactory, RexBuilder rexBuilder, AtomicInteger nextCorrel ) {
         this.nextCorrel = nextCorrel;
-        this.mapCorrelToRel = mapCorrelToRel;
+        this.mapCorrelToRel = new HashMap<>();
         this.planner = Objects.requireNonNull( planner );
         this.typeFactory = Objects.requireNonNull( typeFactory );
         this.rexBuilder = rexBuilder;
@@ -91,7 +93,7 @@ public class RelOptCluster {
      * Creates a cluster.
      */
     public static RelOptCluster create( RelOptPlanner planner, RexBuilder rexBuilder ) {
-        return new RelOptCluster( planner, rexBuilder.getTypeFactory(), rexBuilder, new AtomicInteger( 0 ), new HashMap<>() );
+        return new RelOptCluster( planner, rexBuilder.getTypeFactory(), rexBuilder, new AtomicInteger( 0 ) );
     }
 
 
@@ -172,5 +174,6 @@ public class RelOptCluster {
     public RelTraitSet traitSetOf( RelTrait trait ) {
         return emptyTraitSet.replace( trait );
     }
+
 }
 

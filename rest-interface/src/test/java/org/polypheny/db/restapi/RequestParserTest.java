@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;

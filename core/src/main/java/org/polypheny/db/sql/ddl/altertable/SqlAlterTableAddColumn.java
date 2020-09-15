@@ -40,7 +40,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -115,7 +115,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         if ( column.names.size() != 1 ) {
@@ -196,7 +196,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             }
 
             // Ask router on which stores this column shall be placed
-            List<Store> stores = transaction.getRouter().addColumn( catalogTable, transaction );
+            List<Store> stores = statement.getRouter().addColumn( catalogTable, statement );
 
             // Add column on underlying data stores and insert default value
             for ( Store store : stores ) {
@@ -210,6 +210,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                         null); // Will be set later
                 StoreManager.getInstance().getStore( store.getStoreId() ).addColumn( context, catalogTable, addedColumn );
             }
+
+            // Rest plan cache and implementation cache (not sure if required in this case)
+            statement.getQueryProcessor().resetCaches();
         } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
             if ( columnId != null ) {
                 try {

@@ -99,6 +99,15 @@ public class EnumerableLimit extends SingleRel implements EnumerableRel {
 
 
     @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (offset != null ? offset.hashCode() + "$" : "") +
+                (fetch != null ? fetch.hashCode() : "") + "&";
+    }
+
+
+    @Override
     public RelWriter explainTerms( RelWriter pw ) {
         return super.explainTerms( pw )
                 .itemIf( "offset", offset, offset != null )

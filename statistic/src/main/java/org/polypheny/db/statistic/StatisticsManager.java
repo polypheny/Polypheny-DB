@@ -394,8 +394,9 @@ public class StatisticsManager<T extends Comparable<T>> {
     public void setSqlQueryInterface( StatisticQueryProcessor statisticQueryProcessor ) {
         this.sqlQueryInterface = statisticQueryProcessor;
 
-        this.asyncReevaluateAllStatistics();
-
+        if ( RuntimeConfig.STATISTICS_ON_STARTUP.getBoolean() ) {
+            this.asyncReevaluateAllStatistics();
+        }
     }
 
 

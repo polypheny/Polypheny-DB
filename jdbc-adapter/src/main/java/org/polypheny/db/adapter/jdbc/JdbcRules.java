@@ -92,6 +92,7 @@ import org.polypheny.db.sql.SqlAggFunction;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -393,6 +394,14 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
+
+        @Override
+        public String relCompareString() {
+            return this.getClass().getSimpleName() + "$" +
+                    input.relCompareString() + "$" +
+                    (program != null ? program.toString() : "") + "&";
+        }
     }
 
 
@@ -408,7 +417,9 @@ public class JdbcRules {
             super( Project.class, (Predicate<Project>) project ->
                             (out.dialect.supportsWindowFunctions()
                                     || !RexOver.containsOver( project.getProjects(), null ))
-                                    && !userDefinedFunctionInProject( project ),
+                                    && !userDefinedFunctionInProject( project )
+                                    && !knnFunctionInProject( project )
+                                    && ( out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ) ),
                     Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
 
@@ -418,6 +429,30 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsUserDefinedFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        // TODO js(knn): Make sure this is not just a hotfix.
+        private static boolean knnFunctionInProject( Project project ) {
+            CheckingKnnFunctionVisitor visitor = new CheckingKnnFunctionVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static boolean itemOperatorInProject( Project project ) {
+            CheckingItemOperatorVisitor visitor = new CheckingItemOperatorVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsItemOperator() ) {
                     return true;
                 }
             }
@@ -480,7 +515,10 @@ public class JdbcRules {
          */
         public JdbcFilterRule( JdbcConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Filter.class,
-                    (Predicate<Filter>) r -> !userDefinedFunctionInFilter( r ),
+                    (Predicate<Filter>) filter -> (
+                            !userDefinedFunctionInFilter( filter )
+                                    && !knnFunctionInFilter( filter )
+                                    && (out.dialect.supportsNestedArrays() || !itemOperatorInFilter( filter ))),
                     Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }
 
@@ -489,6 +527,30 @@ public class JdbcRules {
             CheckingUserDefinedFunctionVisitor visitor = new CheckingUserDefinedFunctionVisitor();
             filter.getCondition().accept( visitor );
             return visitor.containsUserDefinedFunction();
+        }
+
+
+        private static boolean knnFunctionInFilter( Filter filter ) {
+            CheckingKnnFunctionVisitor visitor = new CheckingKnnFunctionVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean itemOperatorInFilter( Filter filter ) {
+            CheckingItemOperatorVisitor visitor = new CheckingItemOperatorVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsItemOperator() ) {
+                    return true;
+                }
+            }
+            return false;
         }
 
 
@@ -1022,6 +1084,59 @@ public class JdbcRules {
             SqlOperator operator = call.getOperator();
             if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isUserDefined() ) {
                 containsUsedDefinedFunction |= true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+    private static class CheckingKnnFunctionVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsKnnFunction = false;
+
+
+        CheckingKnnFunctionVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsKnnFunction() {
+            return containsKnnFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isKnn() ) {
+                containsKnnFunction |= true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingItemOperatorVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsItemOperator = false;
+
+
+        CheckingItemOperatorVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsItemOperator() {
+            return containsItemOperator;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator instanceof SqlItemOperator ) {
+                containsItemOperator |= true;
             }
             return super.visitCall( call );
         }

@@ -77,7 +77,7 @@ public class RexCall extends RexNode {
     }
 
 
-    protected RexCall( RelDataType type, SqlOperator op, List<? extends RexNode> operands ) {
+    public RexCall( RelDataType type, SqlOperator op, List<? extends RexNode> operands ) {
         this.type = Objects.requireNonNull( type );
         this.op = Objects.requireNonNull( op );
         this.operands = ImmutableList.copyOf( operands );

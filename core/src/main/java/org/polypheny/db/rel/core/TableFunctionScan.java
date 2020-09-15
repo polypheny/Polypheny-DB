@@ -40,6 +40,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -223,6 +224,15 @@ public abstract class TableFunctionScan extends AbstractRelNode {
      */
     public Type getElementType() {
         return elementType;
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                getInputs().stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
+                (getCall() != null ? getCall().hashCode() : "") + "$" +
+                rowType.toString() + "&";
     }
 }
 

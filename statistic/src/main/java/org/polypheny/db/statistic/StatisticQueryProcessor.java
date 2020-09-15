@@ -47,6 +47,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.parser.SqlParser;
 import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -205,9 +206,10 @@ public class StatisticQueryProcessor {
 
     private StatisticResult executeSqlSelect( String query ) {
         Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
         StatisticResult result = new StatisticResult();
         try {
-            result = executeSqlSelect( transaction, query );
+            result = executeSqlSelect( statement, query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while executing a query from the console", e );
@@ -223,7 +225,7 @@ public class StatisticQueryProcessor {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false );
+            return transactionManager.startTransaction( userName, databaseName, false, "Statistics" );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
@@ -234,7 +236,7 @@ public class StatisticQueryProcessor {
     // -----------------------------------------------------------------------
 
 
-    private StatisticResult executeSqlSelect( final Transaction transaction, final String sqlSelect ) throws QueryExecutionException {
+    private StatisticResult executeSqlSelect( final Statement statement, final String sqlSelect ) throws QueryExecutionException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -247,8 +249,8 @@ public class StatisticQueryProcessor {
         Iterator<Object> iterator = null;
 
         try {
-            signature = processQuery( transaction, sqlSelect, parserConfig );
-            final Enumerable enumerable = signature.enumerable( transaction.getDataContext() );
+            signature = processQuery( statement, sqlSelect, parserConfig );
+            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
             //noinspection unchecked
 
             iterator = enumerable.iterator();
@@ -303,21 +305,20 @@ public class StatisticQueryProcessor {
     }
 
 
-    private PolyphenyDbSignature processQuery( Transaction transaction, String sql, SqlParserConfig parserConfig ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql, SqlParserConfig parserConfig ) {
         PolyphenyDbSignature signature;
-        transaction.resetQueryProcessor();
-        SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor( parserConfig );
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( parsed );
+            signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( parsed );
-            RelRoot logicalRoot = sqlProcessor.translate( validated.left );
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
+            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
 
             // Prepare
-            signature = transaction.getQueryProcessor().prepareQuery( logicalRoot );
+            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }
         return signature;
     }

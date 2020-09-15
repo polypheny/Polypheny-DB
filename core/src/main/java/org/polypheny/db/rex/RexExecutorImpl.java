@@ -120,8 +120,8 @@ public class RexExecutorImpl implements RexExecutor {
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             Util.debugCode( System.out, code );
         }
-        if ( dataContext != null && dataContext.getTransaction() != null && dataContext.getTransaction().isAnalyze() ) {
-            InformationManager queryAnalyzer = dataContext.getTransaction().getQueryAnalyzer();
+        if ( dataContext != null && dataContext.getStatement() != null && dataContext.getStatement().getTransaction().isAnalyze() ) {
+            InformationManager queryAnalyzer = dataContext.getStatement().getTransaction().getQueryAnalyzer();
             InformationPage page = new InformationPage( "Generated Code" );
             page.fullWidth();
             InformationGroup group = new InformationGroup( page, "Generated Code" );

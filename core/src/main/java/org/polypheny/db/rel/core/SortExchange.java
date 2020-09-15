@@ -35,12 +35,14 @@ package org.polypheny.db.rel.core;
 
 
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelDistributionTraitDef;
+import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
@@ -113,6 +115,15 @@ public abstract class SortExchange extends Exchange {
     @Override
     public RelWriter explainTerms( RelWriter pw ) {
         return super.explainTerms( pw ).item( "collation", collation );
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (distribution != null ? distribution.getKeys().stream().map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (collation != null ? collation.getFieldCollations().stream().map( RelFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 }
 

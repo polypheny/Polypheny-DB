@@ -36,6 +36,7 @@ package org.polypheny.db.rel.core;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -119,5 +120,15 @@ public abstract class Exchange extends SingleRel {
     public RelWriter explainTerms( RelWriter pw ) {
         return super.explainTerms( pw ).item( "distribution", distribution );
     }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (distribution != null ? distribution.getType().name() : "") + "$" +
+                (distribution != null ? distribution.getKeys().stream().map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&";
+    }
+
 }
 

@@ -23,7 +23,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.config.PolyphenyDbConnectionConfig;
 import org.polypheny.db.jdbc.PolyphenyDbPrepare.SparkHandler;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 
 
 /**
@@ -59,7 +59,7 @@ public interface Context {
     List<String> getObjectPath();
 
 
-    Transaction getTransaction();
+    Statement getStatement();
 
 
     long getDatabaseId();

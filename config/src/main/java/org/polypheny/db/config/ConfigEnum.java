@@ -27,13 +27,13 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 public class ConfigEnum extends Config {
 
-    @SerializedName( "values" )
+    @SerializedName("values")
     private final Set<Enum> enumValues;
     private Enum value;
 
 
-    public ConfigEnum( final String key, final Class enumClass, final Enum defaultValue ) {
-        super( key );
+    public ConfigEnum( final String key, final String description, final Class enumClass, final Enum defaultValue ) {
+        super( key, description );
         //noinspection unchecked
         enumValues = ImmutableSet.copyOf( EnumSet.allOf( enumClass ) );
         setEnum( defaultValue );

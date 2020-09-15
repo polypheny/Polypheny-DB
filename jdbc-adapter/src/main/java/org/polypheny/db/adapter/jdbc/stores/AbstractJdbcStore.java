@@ -32,7 +32,6 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -223,13 +222,21 @@ public abstract class AbstractJdbcStore extends Store {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows adding columns to linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        CatalogColumnPlacement ccp = null;
+        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+            // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
+            if ( p.columnId != catalogColumn.id ) {
+                ccp = p;
+                break;
+            }
+        }
+        String physicalTableName = ccp.physicalTableName;
+        String physicalSchemaName = ccp.physicalSchemaName;
         StringBuilder query = buildAddColumnQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogTable, catalogColumn );
         executeUpdate( query, context );
         // Insert default value
         if ( catalogColumn.defaultValue != null ) {
-            query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogColumn.defaultValue );
+            query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogColumn );
             executeUpdate( query, context );
         }
         // Add physical name to placement
@@ -274,41 +281,49 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
-    protected StringBuilder buildInsertDefaultValueQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, CatalogDefaultValue defaultValue ) {
+    protected StringBuilder buildInsertDefaultValueQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "UPDATE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " SET " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " = " );
+
+        if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
+            throw new RuntimeException( "Default values are not supported for array types" );
+        }
+
         SqlLiteral literal;
-        switch ( defaultValue.type ) {
+        switch ( catalogColumn.defaultValue.type ) {
             case BOOLEAN:
-                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( defaultValue.value ), SqlParserPos.ZERO );
+                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( catalogColumn.defaultValue.value ), SqlParserPos.ZERO );
                 break;
             case INTEGER:
             case DECIMAL:
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createExactNumeric( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
                 break;
             case REAL:
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createApproxNumeric( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
                 break;
             case VARCHAR:
-                literal = SqlLiteral.createCharString( defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createCharString( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
                 break;
             default:
-                throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
+                throw new PolyphenyDbException( "Not yet supported default value type: " + catalogColumn.defaultValue.type );
         }
         builder.append( literal.toSqlString( dialect ) );
         return builder;
     }
 
 
-    // Make sure to update overriden methods as well
+    // Make sure to update overridden methods as well
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+            return;
+        }
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )
@@ -374,8 +389,8 @@ public abstract class AbstractJdbcStore extends Store {
 
     protected void executeUpdate( StringBuilder builder, Context context ) {
         try {
-            context.getTransaction().registerInvolvedStore( this );
-            connectionFactory.getOrCreateConnectionHandler( context.getTransaction().getXid() ).executeUpdate( builder.toString() );
+            context.getStatement().getTransaction().registerInvolvedStore( this );
+            connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new RuntimeException( e );
         }

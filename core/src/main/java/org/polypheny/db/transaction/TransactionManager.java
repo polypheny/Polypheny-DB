@@ -28,9 +28,9 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 
 public interface TransactionManager {
 
-    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze );
+    Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin );
 
-    Transaction startTransaction( String user, String database, boolean analyze ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
+    Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
 
     void removeTransaction( PolyXid xid ) throws TransactionException;
 }

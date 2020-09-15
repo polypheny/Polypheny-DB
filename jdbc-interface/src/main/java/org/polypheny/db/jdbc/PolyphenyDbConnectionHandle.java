@@ -45,12 +45,12 @@ public class PolyphenyDbConnectionHandle {
     private final CatalogSchema schema;
 
     private final ConnectionId connectionId;
-    private volatile transient Transaction currentTransaction;
-    private volatile transient PolyphenyDbResultSet currentOpenResultSet;
+    private Transaction currentTransaction;
+    private PolyphenyDbResultSet currentOpenResultSet;
 
     private final TransactionManager transactionManager;
 
-    private volatile transient ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, "APP", "public" );
+    private final ConnectionProperties connectionProperties = new ConnectionPropertiesImpl( true, false, java.sql.Connection.TRANSACTION_SERIALIZABLE, "APP", "public" );
 
 
     public PolyphenyDbConnectionHandle( final Meta.ConnectionHandle handle, final CatalogUser catalogUser, final ConnectionId connectionId, final CatalogDatabase database, final CatalogSchema schema, final TransactionManager transactionManager ) {
@@ -101,7 +101,7 @@ public class PolyphenyDbConnectionHandle {
     public Transaction getCurrentOrCreateNewTransaction() {
         synchronized ( this ) {
             if ( currentTransaction == null ) {
-                currentTransaction = transactionManager.startTransaction( user, schema, database, false );
+                currentTransaction = transactionManager.startTransaction( user, schema, database, false, "JDBC Interface" );
             }
             return currentTransaction;
         }

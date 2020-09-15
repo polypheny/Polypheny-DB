@@ -42,6 +42,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.RelationMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
@@ -90,6 +91,8 @@ public class CassandraSchema extends AbstractSchema {
     private final SchemaPlus parentSchema;
     final String name;
 
+    private final UserDefinedType arrayContainerUdt;
+
 
     @Getter
     private final CassandraConvention convention;
@@ -101,7 +104,7 @@ public class CassandraSchema extends AbstractSchema {
     private static final int DEFAULT_CASSANDRA_PORT = 9042;
 
 
-    private CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention, CassandraStore cassandraStore ) {
+    private CassandraSchema( CqlSession session, String keyspace, SchemaPlus parentSchema, String name, CassandraConvention convention, CassandraStore cassandraStore, UserDefinedType arrayContainerUdt ) {
         super();
         this.session = session;
         this.keyspace = keyspace;
@@ -109,6 +112,7 @@ public class CassandraSchema extends AbstractSchema {
         this.name = name;
         this.convention = convention;
         this.cassandraStore = cassandraStore;
+        this.arrayContainerUdt = arrayContainerUdt;
     }
 
 
@@ -118,16 +122,16 @@ public class CassandraSchema extends AbstractSchema {
             CqlSession session,
             String keyspace,
             CassandraPhysicalNameProvider physicalNameProvider,
-            CassandraStore cassandraStore ) {
+            CassandraStore cassandraStore,
+            UserDefinedType arrayContainerUdt ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CassandraSchema.class );
-        final CassandraConvention convention = new CassandraConvention( name, expression, physicalNameProvider );
-        return new CassandraSchema( session, keyspace, parentSchema, name, convention, cassandraStore );
+        final CassandraConvention convention = new CassandraConvention( name, expression, physicalNameProvider, arrayContainerUdt );
+        return new CassandraSchema( session, keyspace, parentSchema, name, convention, cassandraStore, arrayContainerUdt );
     }
 
 
-    // FIXME JS: Temporary hotfix for transaction management until proper cassandra transaction management is implemented!
     public void registerStore( DataContext dataContext ) {
-        dataContext.getTransaction().registerInvolvedStore( this.cassandraStore );
+        dataContext.getStatement().getTransaction().registerInvolvedStore( this.cassandraStore );
     }
 
 
@@ -192,7 +196,15 @@ public class CassandraSchema extends AbstractSchema {
             CatalogColumn logicalColumn = this.logicalColumnFromPhysicalColumn( physicalColumnName );
             String logicalColumnName = this.logicalColumnFromPhysical( physicalColumnName );
 
-            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ) ) );
+            RelDataType relDataType;
+            if ( logicalColumn.collectionsType == PolyType.ARRAY ) {
+                RelDataType innerType = typeFactory.createPolyType( logicalColumn.type );
+                relDataType = typeFactory.createArrayType( innerType, logicalColumn.cardinality, logicalColumn.dimension );
+            } else {
+                relDataType = typeFactory.createPolyType( logicalColumn.type );
+            }
+
+            preorderedList.add( new Pair<>( logicalColumn.position, new RowTypeGeneratorContainer( logicalColumnName, physicalColumnName, relDataType ) ) );
 //            fieldInfo.add( logicalColumnName, physicalColumnName, typeFactory.createPolyType( typeName ) ).nullable( true );
         }
 

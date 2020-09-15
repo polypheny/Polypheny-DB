@@ -71,7 +71,7 @@ import org.polypheny.db.sql.fun.SqlMonotonicBinaryOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.FrameworkConfig;
 import org.polypheny.db.tools.Frameworks;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
@@ -391,7 +391,7 @@ public class RexExecutorTest {
 
 
         @Override
-        public Transaction getTransaction() {
+        public Statement getStatement() {
             return null;
         }
     }

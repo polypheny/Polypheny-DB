@@ -1,4 +1,3 @@
-
 group "org.polypheny"
 
 
@@ -53,7 +52,6 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version  // Apache 2.0
 
 
-
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
 
@@ -70,7 +68,6 @@ dependencies {
     //testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
 
 }
-
 
 
 sourceSets {
@@ -97,12 +94,11 @@ sourceSets {
 }
 
 
-
 /**
  * JavaDoc
  */
 javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
+    if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings
@@ -110,7 +106,6 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
-
 
 
 /**
@@ -142,7 +137,6 @@ artifacts {
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
 
 
 /**

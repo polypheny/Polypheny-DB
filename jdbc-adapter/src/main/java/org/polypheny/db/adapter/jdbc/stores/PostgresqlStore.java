@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.type.PolyType;
 
@@ -54,11 +55,11 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( settings ), PostgresqlSqlDialect.DEFAULT, true );
+        super( storeId, uniqueName, settings, createConnectionFactory( settings, PostgresqlSqlDialect.DEFAULT ), PostgresqlSqlDialect.DEFAULT, true );
     }
 
 
-    public static ConnectionFactory createConnectionFactory( final Map<String, String> settings ) {
+    public static ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect ) {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.postgresql.Driver" );
 
@@ -71,7 +72,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
         dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
-        return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ) );
+        return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 
 
@@ -149,7 +150,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case VARBINARY:
                 return "VARBINARY";
             case TINYINT:
-                return "TINYINT";
+                return "SMALLINT";
             case SMALLINT:
                 return "SMALLINT";
             case INTEGER:

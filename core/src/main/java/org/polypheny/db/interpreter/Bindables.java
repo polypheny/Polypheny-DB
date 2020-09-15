@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.AggImplementor;
@@ -262,6 +263,15 @@ public class Bindables {
         }
 
 
+        @Override
+        public String relCompareString() {
+            return "BindableTableScan$" +
+                    String.join( ".", table.getQualifiedName() ) +
+                    (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                    (projects != null ? projects.toString() : "") + "&";
+        }
+
+
         public static boolean canHandle( RelOptTable table ) {
             return table.unwrap( ScannableTable.class ) != null
                     || table.unwrap( FilterableTable.class ) != null
@@ -279,6 +289,15 @@ public class Bindables {
         @Override
         public Node implement( InterpreterImplementor implementor ) {
             throw new UnsupportedOperationException(); // TODO:
+        }
+
+
+        //
+        // TODO: This might be to restrictive
+        //
+        @Override
+        public boolean isImplementationCacheable() {
+            return false;
         }
     }
 

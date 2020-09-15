@@ -36,6 +36,8 @@ package org.polypheny.db.rel.core;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -193,6 +195,16 @@ public abstract class Sort extends SingleRel {
         pw.itemIf( "offset", offset, offset != null );
         pw.itemIf( "fetch", fetch, fetch != null );
         return pw;
+    }
+
+
+    @Override
+    public String relCompareString() {
+        return this.getClass().getSimpleName() + "$" +
+                input.relCompareString() + "$" +
+                (collation != null ? collation.getFieldCollations().stream().map( RelFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
+                (offset != null ? offset.hashCode() : "") + "$" +
+                (fetch != null ? fetch.hashCode() : "") + "&";
     }
 }
 

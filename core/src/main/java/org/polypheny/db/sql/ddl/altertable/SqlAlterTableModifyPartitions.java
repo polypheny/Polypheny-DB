@@ -26,6 +26,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.*;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -70,7 +71,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
     }
 
     @Override
-    public void execute(Context context, Transaction transaction) {
+    public void execute(Context context, Statement statement) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
         if ( !catalogTable.isPartitioned ) {

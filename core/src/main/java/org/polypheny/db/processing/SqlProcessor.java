@@ -21,6 +21,8 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.Pair;
 
 
@@ -28,10 +30,11 @@ public interface SqlProcessor {
 
     SqlNode parse( String sql );
 
-    Pair<SqlNode, RelDataType> validate( SqlNode parsed );
+    Pair<SqlNode, RelDataType> validate( Transaction transaction, SqlNode parsed, boolean addDefaultValues );
 
-    RelRoot translate( SqlNode sql );
+    RelRoot translate( Statement statement, SqlNode sql );
 
-    PolyphenyDbSignature<?> prepareDdl( SqlNode parsed );
+    PolyphenyDbSignature<?> prepareDdl( Statement statement, SqlNode parsed );
 
+    RelDataType getParameterRowType( SqlNode left );
 }

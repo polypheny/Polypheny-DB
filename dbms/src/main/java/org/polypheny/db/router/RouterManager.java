@@ -48,7 +48,7 @@ public class RouterManager {
         final ConfigManager configManager = ConfigManager.getInstance();
         routingPage = new WebUiPage(
                 "routingPage",
-                "Routing Settings",
+                "Query Routing",
                 "Settings influencing the query routing." );
         final WebUiGroup routingGroup = new WebUiGroup( "routingGroup", routingPage.getId(), 1 );
         routingGroup.withTitle( "General" );

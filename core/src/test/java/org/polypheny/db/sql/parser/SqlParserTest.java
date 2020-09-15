@@ -299,6 +299,7 @@ public class SqlParserTest {
             "JSON_VALUE", "c",
             "KEEP", "2011",
             "KEY", "92", "99",
+            "KNN", "92", "99", "2003", "2011", "2014", "c",          // JS: Added for KNN functions
             "LAG", "2011", "2014", "c",
             "LANGUAGE", "92", "99", "2003", "2011", "2014", "c",
             "LARGE", "99", "2003", "2011", "2014", "c",

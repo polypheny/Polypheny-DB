@@ -39,8 +39,10 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import java.util.Iterator;
 import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 
 
 /**
@@ -95,6 +97,10 @@ class CassandraEnumerator implements Enumerator<Object> {
      */
     private Object currentRowField( int index ) {
         DataType type = this.columnDefinitions.get( index ).getType();
+
+        if ( type instanceof UserDefinedType ) {
+            return CassandraTypesUtils.unparseArrayContainerUdt( current.getUdtValue( index ) );
+        }
 
         if ( type == DataTypes.ASCII || type == DataTypes.TEXT ) {
             return current.getString( index );

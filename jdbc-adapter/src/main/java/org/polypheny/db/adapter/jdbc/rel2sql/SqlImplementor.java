@@ -150,7 +150,8 @@ public abstract class SqlImplementor {
      * Returns whether a list of expressions projects all fields, in order, from the input, with the same names.
      */
     public static boolean isStar( List<RexNode> exps, RelDataType inputRowType, RelDataType projectRowType ) {
-        assert exps.size() == projectRowType.getFieldCount();
+        return false;
+        /*assert exps.size() == projectRowType.getFieldCount();
         int i = 0;
         for ( RexNode ref : exps ) {
             if ( !(ref instanceof RexInputRef) ) {
@@ -160,7 +161,7 @@ public abstract class SqlImplementor {
             }
         }
         return i == inputRowType.getFieldCount()
-                && inputRowType.getFieldNames().equals( projectRowType.getFieldNames() );
+                && inputRowType.getFieldNames().equals( projectRowType.getFieldNames() );*/
     }
 
 
@@ -642,7 +643,11 @@ public abstract class SqlImplementor {
                                 assert nodeList.size() == 1;
                                 return nodeList.get( 0 );
                             } else {
-                                nodeList.add( dialect.getCastSpec( call.getType() ) );
+                                if ( call.getType().getComponentType() != null && !dialect.supportsNestedArrays() ) {
+                                    nodeList.add( dialect.getCastSpec( call.getType().getComponentType() ) );
+                                } else {
+                                    nodeList.add( dialect.getCastSpec( call.getType() ) );
+                                }
                             }
                     }
                     if ( op instanceof SqlBinaryOperator && nodeList.size() > 2 ) {

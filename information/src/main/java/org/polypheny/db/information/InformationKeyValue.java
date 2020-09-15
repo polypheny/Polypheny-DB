@@ -31,7 +31,7 @@ public class InformationKeyValue extends Information {
      *
      * @param group The InformationGroup to which this information belongs
      */
-    InformationKeyValue( InformationGroup group ) {
+    public InformationKeyValue( InformationGroup group ) {
         super( UUID.randomUUID().toString(), group.getId() );
     }
 
@@ -46,6 +46,7 @@ public class InformationKeyValue extends Information {
         super( id, group.getId() );
     }
 
+
     public InformationKeyValue putPair( final String key, final String value ) {
         this.keyValuePairs.put( key, value );
         this.notifyManager();
@@ -56,10 +57,6 @@ public class InformationKeyValue extends Information {
         this.keyValuePairs.remove( key );
         this.notifyManager();
         return this;
-    }
-
-    public String getPair( final String key ) {
-        return this.keyValuePairs.get(key);
     }
 
     public String getValue( final String key ) {

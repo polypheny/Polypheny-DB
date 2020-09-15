@@ -112,7 +112,9 @@ public class InformationManager {
             throw new RuntimeException( "It is not allowed to close the main Information Manager" );
         }
         InformationManager im = instances.remove( id );
-        im.observers.forEach( im.observers::remove );
+        if ( im != null ) {
+            im.observers.forEach( im.observers::remove );
+        }
     }
 
 

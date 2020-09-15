@@ -148,6 +148,53 @@ public class SqlFunctions {
     }
 
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static double knn( List value, List target, String metric, List weights ) {
+        KnnFunctions.verifyInputs( value, target, weights );
+        if ( "L2".equals( metric ) ) {
+            return KnnFunctions.l2MetricWeighted( value, target, weights );
+        } else if ( "L1".equals( metric ) ) {
+            return KnnFunctions.l1MetricWeighted( value, target, weights );
+        } else if ( "L2SQUARED".equals( metric ) ) {
+            return KnnFunctions.l2SquaredMetricWeighted( value, target, weights );
+        } else if ( "CHISQUARED".equals( metric ) ) {
+            return KnnFunctions.chiSquaredMetricWeighted( value, target, weights );
+        } else if ( "COSINE".equals( metric ) ) {
+            return KnnFunctions.cosineMetricWeighted( value, target, weights );
+        } else {
+            return 0.0;
+        }
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static double knn( List value, List target, String metric, List weights, @SuppressWarnings("unused") int optimisationFactor ) {
+        return knn( value, target, metric, weights );
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static double knn( List value, List target, String metric, @SuppressWarnings("unused") int optimisationFactor ) {
+        return knn( value, target, metric );
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static double knn( List value, List target, String metric ) {
+        KnnFunctions.verifyInputs( value, target, null );
+        if ( "L2".equals( metric ) ) {
+            return KnnFunctions.l2Metric( value, target );
+        } else if ( "L1".equals( metric ) ) {
+            return KnnFunctions.l1Metric( value, target );
+        } else if ( "L2SQUARED".equals( metric ) ) {
+            return KnnFunctions.l2SquaredMetric( value, target );
+        } else if ( "CHISQUARED".equals( metric ) ) {
+            return KnnFunctions.chiSquaredMetric( value, target );
+        } else if ( "COSINE".equals( metric ) ) {
+            return KnnFunctions.cosineMetric( value, target );
+        } else {
+            return 0.0;
+        }
+    }
+
+
     /**
      * SQL SUBSTRING(string FROM ... FOR ...) function.
      */
@@ -2716,6 +2763,34 @@ public class SqlFunctions {
         } catch ( SQLException e ) {
             throw toUnchecked( e );
         }
+    }
+
+
+    public static List deepArrayToList( final java.sql.Array a ) {
+        if ( a == null ) {
+            return null;
+        }
+        try {
+            List asList = Primitive.asList( a.getArray() );
+            return deepArrayToListRecursive( asList );
+        } catch ( SQLException e ) {
+            throw toUnchecked( e );
+        }
+    }
+
+
+    private static List deepArrayToListRecursive( List l ) {
+        if ( l.isEmpty() || !l.get( 0 ).getClass().isArray() ) {
+            return new ArrayList( l );
+        }
+
+        List outer = new ArrayList();
+        for ( Object o : l ) {
+            List asList = Primitive.asList( o );
+            outer.add( deepArrayToListRecursive( asList ) );
+        }
+
+        return outer;
     }
 
 

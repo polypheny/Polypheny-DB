@@ -34,7 +34,7 @@ import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -74,7 +74,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
 
 
     @Override
-    public void execute( Context context, Transaction transaction ) {
+    public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
@@ -101,7 +101,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             // Physically delete the data from the store
             storeInstance.dropTable( context, catalogTable );
             // Inform routing
-            transaction.getRouter().dropPlacements( Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) );
+            statement.getRouter().dropPlacements( Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) );
             // Delete placement in the catalog
             List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id );
             for ( CatalogColumnPlacement placement : placements ) {

@@ -92,7 +92,7 @@ public abstract class Catalog {
     /**
      * Restores all columnPlacements in the dedicated store
      */
-    public abstract void restoreColumnPlacements( Transaction trx ) throws GenericCatalogException;
+    public abstract void restoreColumnPlacements( Transaction transaction ) throws GenericCatalogException;
 
 
     protected final boolean isValidIdentifier( final String str ) {
