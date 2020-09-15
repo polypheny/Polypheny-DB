@@ -46,6 +46,7 @@ public class ImplementationCache {
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
     private final AtomicLong uncacheableCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
 
+
     public ImplementationCache() {
         implementationCache = CacheBuilder.newBuilder()
                 .maximumSize( RuntimeConfig.IMPLEMENTATION_CACHING_SIZE.getInteger() )

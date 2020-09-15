@@ -150,7 +150,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
             case VARBINARY:
                 return "VARBINARY";
             case TINYINT:
-                return "TINYINT";
+                return "SMALLINT";
             case SMALLINT:
                 return "SMALLINT";
             case INTEGER:

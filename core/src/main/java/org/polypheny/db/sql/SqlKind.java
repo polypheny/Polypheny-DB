@@ -120,6 +120,11 @@ public enum SqlKind {
     OTHER_FUNCTION,
 
     /**
+     * k-nearest-neighbour functions.
+     */
+    KNN,
+
+    /**
      * POSITION Function
      */
     POSITION,

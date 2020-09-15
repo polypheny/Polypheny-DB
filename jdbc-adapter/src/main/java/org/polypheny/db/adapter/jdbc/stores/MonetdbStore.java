@@ -24,6 +24,8 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -36,6 +38,9 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.MonetdbSqlDialect;
+import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 
 
@@ -58,6 +63,15 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, createConnectionFactory( settings, MonetdbSqlDialect.DEFAULT ), MonetdbSqlDialect.DEFAULT, true );
+        // Create schema public if it does not exist
+        PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
+        try {
+            ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( randomXid );
+            handler.execute( "CREATE SCHEMA IF NOT EXISTS \"public\";" );
+            handler.commit();
+        } catch ( SQLException | ConnectionHandlerException e ) {
+            throw new RuntimeException( "Exception while creating default schema on monetdb store!", e );
+        }
     }
 
 
@@ -77,6 +91,9 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+            return;
+        }
         // MonetDB does not support updating the column type directly. We need to do a work-around
         CatalogTable catalogTable;
         try {

@@ -34,7 +34,7 @@ public class QueryProviderImpl implements QueryProvider {
      * NOTE: The {@link Queryable#getExpression()} property of the returned {@link Queryable} object is equal to {@code expression}.
      *
      * @param expression Expression
-     * @param rowType Row type
+     * @param rowType    Row type
      * @return Queryable
      */
     @Override
@@ -47,7 +47,7 @@ public class QueryProviderImpl implements QueryProvider {
      * Constructs a {@link Queryable} object that can evaluate the query represented by a specified expression tree. The row type may contain generic information.
      *
      * @param expression Expression
-     * @param rowType Row type
+     * @param rowType    Row type
      * @return Queryable
      */
     @Override

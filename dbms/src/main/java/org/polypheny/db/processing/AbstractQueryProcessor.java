@@ -31,6 +31,7 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Ord;
@@ -89,6 +90,7 @@ import org.polypheny.db.transaction.TableAccessMap;
 import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
@@ -283,7 +285,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
         return signature;
     }
-
 
 
     private RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
@@ -560,9 +561,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-
-
-
     private static int getTypeOrdinal( RelDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
     }
@@ -603,9 +601,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         final String typeName = type.getPolyType().getTypeName();
         if ( type.getComponentType() != null ) {
             final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
-            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
-            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
-            assert rep != null;
+//            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
+//            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+            final ColumnMetaData.Rep rep = Rep.ARRAY;
+//            assert rep != null;
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {
             int typeOrdinal = getTypeOrdinal( type );
@@ -659,7 +658,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 true,
                 false,
                 false,
-                avaticaType.columnClassName() );
+//                avaticaType.columnClassName() );
+                (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() );
     }
 
 

@@ -128,12 +128,15 @@ import org.polypheny.db.sql.SqlJsonConstructorNullClause;
 import org.polypheny.db.sql.SqlJsonQueryEmptyOrErrorBehavior;
 import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
 import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.type.PolyType;
 
 
 /**
  * Built-in methods.
  */
 public enum BuiltInMethod {
+    JDBC_PARSE_ARRAY_FROM_TEXT( SqlArrayValueConstructor.class, "reparse", PolyType.class, Long.class, String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
     QUERYABLE_AS_ENUMERABLE( Queryable.class, "asEnumerable" ),
     QUERYABLE_TABLE_AS_QUERYABLE( QueryableTable.class, "asQueryable", DataContext.class, SchemaPlus.class, String.class ),
@@ -329,6 +332,7 @@ public enum BuiltInMethod {
     TIME_ZONE( SqlFunctions.class, "timeZone", DataContext.class ),
     BOOLEAN_TO_STRING( SqlFunctions.class, "toString", boolean.class ),
     JDBC_ARRAY_TO_LIST( SqlFunctions.class, "arrayToList", java.sql.Array.class ),
+    JDBC_DEEP_ARRAY_TO_LIST( SqlFunctions.class, "deepArrayToList", java.sql.Array.class ),
     OBJECT_TO_STRING( Object.class, "toString" ),
     OBJECTS_EQUAL( Objects.class, "equals", Object.class, Object.class ),
     HASH( Utilities.class, "hash", int.class, Object.class ),

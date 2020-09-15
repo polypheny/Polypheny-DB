@@ -46,6 +46,7 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.JoinRelType;
+import org.polypheny.db.rel.core.SetOp;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -98,7 +99,7 @@ public abstract class AbstractRouter implements Router {
             routed = routeDml( logicalRoot.rel, statement );
         } else {
             RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
-            builder = buildSelect( logicalRoot.rel, builder );
+            builder = buildDql( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster() );
             routed = builder.build();
         }
 
@@ -134,9 +135,18 @@ public abstract class AbstractRouter implements Router {
     protected abstract List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable catalogTable );
 
 
-    protected RelBuilder buildSelect( RelNode node, RelBuilder builder ) {
+    protected RelBuilder buildDql( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+        if ( node instanceof SetOp ) {
+            return buildSetOp( node, builder, statement, cluster );
+        } else {
+            return buildSelect( node, builder, statement, cluster );
+        }
+    }
+
+
+    protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildSelect( node.getInput( i ), builder );
+            buildDql( node.getInput( i ), builder, statement, cluster );
         }
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -158,6 +168,17 @@ public abstract class AbstractRouter implements Router {
         } else {
             return handleGeneric( node, builder );
         }
+    }
+
+
+    protected RelBuilder buildSetOp( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
+        buildDql( node.getInput( 0 ), builder, statement, cluster );
+
+        RelBuilder builder0 = RelBuilder.create( statement, cluster );
+        buildDql( node.getInput( 1 ), builder0, statement, cluster );
+
+        builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek(), builder0.build() ) ) );
+        return builder;
     }
 
 
@@ -243,7 +264,9 @@ public abstract class AbstractRouter implements Router {
                             recursiveCopy( node.getInput( 0 ) ),
                             RelBuilder.create( statement, cluster ),
                             catalogTable,
-                            placementsOnStore ).build();
+                            placementsOnStore,
+                            statement,
+                            cluster ).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
                         modify = modifiableTable.toModificationRel(
                                 cluster,
@@ -292,16 +315,16 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements ) {
+    protected RelBuilder buildDml( RelNode node, RelBuilder builder, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            buildDml( node.getInput( i ), builder, catalogTable, placements );
+            buildDml( node.getInput( i ), builder, catalogTable, placements, statement, cluster );
         }
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
                 // Special handling for INSERT INTO foo SELECT * FROM foo2
                 if ( ((LogicalTable) table.getTable()).getTableId() != catalogTable.id ) {
-                    return buildSelect( node, builder );
+                    return buildSelect( node, builder, statement, cluster );
                 }
                 builder = handleTableScan(
                         builder,

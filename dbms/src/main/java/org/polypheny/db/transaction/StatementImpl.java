@@ -107,7 +107,6 @@ public class StatementImpl implements Statement {
     }
 
 
-
     @Override
     public InformationDuration getDuration() {
         if ( duration == null ) {

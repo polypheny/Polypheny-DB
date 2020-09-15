@@ -389,10 +389,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     /**
      * Returns a relational expression that is to be substituted for an access to a SQL view.
      *
-     * @param rowType Row type of the view
+     * @param rowType     Row type of the view
      * @param queryString Body of the view
-     * @param schemaPath Path of a schema wherein to find referenced tables
-     * @param viewPath Path of the view, ending with its name; may be null
+     * @param schemaPath  Path of a schema wherein to find referenced tables
+     * @param viewPath    Path of the view, ending with its name; may be null
      * @return Relational expression
      */
     @Override
