@@ -93,7 +93,6 @@ import org.polypheny.db.sql.SqlJsonQueryWrapperBehavior;
 import org.polypheny.db.sql.SqlJsonValueEmptyOrErrorBehavior;
 import org.polypheny.db.util.Bug;
 import org.polypheny.db.util.NumberUtil;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 import org.polypheny.db.util.TimeWithTimeZoneString;
 import org.polypheny.db.util.TimestampWithTimeZoneString;

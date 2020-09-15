@@ -17,7 +17,6 @@
 package org.polypheny.db.runtime;
 
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.polypheny.db.util.Pair;
@@ -53,6 +52,7 @@ public class KnnFunctions {
         return result;
     }
 
+
     protected static double l2SquaredMetricWeighted( List<Number> value, List<Number> target, List<Number> weights ) {
         double result = 0;
         for ( int i = 0; i < value.size(); i++ ) {
@@ -77,7 +77,7 @@ public class KnnFunctions {
         for ( int i = 0; i < value.size(); i++ ) {
             double a = value.get( i ).doubleValue();
             double b = target.get( i ).doubleValue();
-            result += Math.pow( a - b, 2.0 ) / ( b + a);
+            result += Math.pow( a - b, 2.0 ) / (b + a);
         }
         return result;
     }
@@ -89,14 +89,14 @@ public class KnnFunctions {
             double a = value.get( i ).doubleValue();
             double b = target.get( i ).doubleValue();
             double weight = weights.get( i ).doubleValue();
-            result += Math.pow( a - b, 2.0 ) / ( b + a) * weight;
+            result += Math.pow( a - b, 2.0 ) / (b + a) * weight;
         }
         return result;
     }
 
 
     protected static double cosineMetric( List<Number> value, List<Number> target ) {
-        return 1 - dot( value, target ) / ( norm2( value ) * norm2( target ) );
+        return 1 - dot( value, target ) / (norm2( value ) * norm2( target ));
     }
 
 
@@ -122,20 +122,20 @@ public class KnnFunctions {
 
 
     protected static void verifyInputs( List a, List b, List w ) {
-        if ( a.isEmpty() && b.isEmpty() && ( w == null || w.isEmpty() ) ) {
+        if ( a.isEmpty() && b.isEmpty() && (w == null || w.isEmpty()) ) {
             return;
         }
 
-        if ( ( a.size() != b.size() ) || ( w != null && a.size() != w.size() ) ) {
+        if ( (a.size() != b.size()) || (w != null && a.size() != w.size()) ) {
             throw new RuntimeException( "Sizes of inputs do not match." );
         }
 
-        if ( !a.get( 0 ).getClass().isArray() || !b.get( 0 ).getClass().isArray() || ( w != null && !w.get( 0 ).getClass().isArray() ) ) {
-            if ( !(a.get( 0 ) instanceof Number) || !(b.get( 0 ) instanceof Number) || ( w != null && !(w.get( 0 ) instanceof Number) ) ) {
-                throw new RuntimeException( " Inputs are not Numbers. ");
+        if ( !a.get( 0 ).getClass().isArray() || !b.get( 0 ).getClass().isArray() || (w != null && !w.get( 0 ).getClass().isArray()) ) {
+            if ( !(a.get( 0 ) instanceof Number) || !(b.get( 0 ) instanceof Number) || (w != null && !(w.get( 0 ) instanceof Number)) ) {
+                throw new RuntimeException( "Inputs are not Numbers." );
             }
         } else {
-            throw new RuntimeException( "Not useable Arrays, ask jan. " );
+            throw new RuntimeException( "Not useable Arrays, ask jan." );
         }
     }
 }

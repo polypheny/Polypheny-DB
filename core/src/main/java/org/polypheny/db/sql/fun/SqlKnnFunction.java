@@ -41,6 +41,7 @@ public class SqlKnnFunction extends SqlFunction {
 
     private static final PolyOperandTypeChecker OTC_CUSTOM = OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.ANY, PolyTypeFamily.ANY );
 
+
     public SqlKnnFunction() {
         super(
                 "KNN",
@@ -58,7 +59,7 @@ public class SqlKnnFunction extends SqlFunction {
             case 3:
                 return "{0}({1}, {2}, {3})";
             case 4:
-                return "{0}{1}, {2}, {3}, {4})";
+                return "{0}({1}, {2}, {3}, {4})";
             default:
                 throw new AssertionError();
         }
@@ -78,7 +79,7 @@ public class SqlKnnFunction extends SqlFunction {
 
             // Make sure the first argument is an array of numeric values
             if ( !PolyTypeUtil.isArray( callBinding.getOperandType( 0 ) )
-                || !PolyTypeUtil.isNumeric( callBinding.getOperandType( 0 ).getComponentType() ) ) {
+                    || !PolyTypeUtil.isNumeric( callBinding.getOperandType( 0 ).getComponentType() ) ) {
                 if ( throwOnFailure ) {
                     // TODO js: better throws?
                     throw callBinding.newValidationSignatureError();
@@ -138,7 +139,7 @@ public class SqlKnnFunction extends SqlFunction {
                     }
                 }
 
-                if ( !PolyTypeUtil.isIntType( callBinding.getOperandType( 3 ) ) && ( !PolyTypeUtil.isArray( callBinding.getOperandType( 3 ) ) || !PolyTypeUtil.isNumeric( callBinding.getOperandType( 3 ).getComponentType() ) ) ) {
+                if ( !PolyTypeUtil.isIntType( callBinding.getOperandType( 3 ) ) && (!PolyTypeUtil.isArray( callBinding.getOperandType( 3 ) ) || !PolyTypeUtil.isNumeric( callBinding.getOperandType( 3 ).getComponentType() )) ) {
                     if ( throwOnFailure ) {
                         throw callBinding.newValidationSignatureError();
                     } else {
@@ -200,7 +201,7 @@ public class SqlKnnFunction extends SqlFunction {
 
         @Override
         public String getAllowedSignatures( SqlOperator op, String opName ) {
-            return  "'KNN(<ARRAY>, <ARRAY>, <STRING>)'" + "\n" +
+            return "'KNN(<ARRAY>, <ARRAY>, <STRING>)'" + "\n" +
                     "'KNN(<ARRAY>, <ARRAY>, <STRING>, <INTEGER>)'" + "\n" +
                     "'KNN(<ARRAY>, <ARRAY>, <STRING>, <ARRAY>)'" + "\n" +
                     "'KNN(<ARRAY>, <ARRAY>, <STRING>, <ARRAY>, <INTEGER>)'";
