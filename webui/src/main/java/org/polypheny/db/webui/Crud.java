@@ -640,7 +640,7 @@ public class Crud implements InformationObserver {
                     log.error( "Caught exception while rolling back a query from the console", e );
                     executionTime += System.nanoTime() - temp;
                 }
-            } else if ( Pattern.matches( "(?si:^[\\s]*SELECT.*)", query ) ) {
+            } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
                 // Add limit if not specified
                 Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
                 if ( !p2.matcher( query ).find() ) {
