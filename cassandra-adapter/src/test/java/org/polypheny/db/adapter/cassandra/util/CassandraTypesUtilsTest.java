@@ -48,6 +48,7 @@ public class CassandraTypesUtilsTest {
         // Binary
     }
 
+
     @Test
     public void simplePolyTypeToCassandraType() {
         // Booleans

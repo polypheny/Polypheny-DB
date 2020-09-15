@@ -161,9 +161,9 @@ public class CassandraStore extends Store {
             mySession.execute( "CREATE TYPE IF NOT EXISTS " + this.dbKeyspace + ".arraycontainer ( innertype text, dimension int, cardinality int, data text );" );
             arrayContainerUdt =
                     mySession.getMetadata()
-                            .getKeyspace(this.dbKeyspace)
-                            .flatMap(ks -> ks.getUserDefinedType("arraycontainer"))
-                            .orElseThrow(() -> new IllegalArgumentException("Missing UDT definition"));
+                            .getKeyspace( this.dbKeyspace )
+                            .flatMap( ks -> ks.getUserDefinedType( "arraycontainer" ) )
+                            .orElseThrow( () -> new IllegalArgumentException( "Missing UDT definition" ) );
 
             this.session = mySession;
         } catch ( Exception e ) {
@@ -207,7 +207,6 @@ public class CassandraStore extends Store {
 
         long primaryKeyColumn = -1;
         List<Long> keyColumns = new ArrayList<>();
-
 
         for ( CatalogKey catalogKey : catalog.getTableKeys( catalogTable.id ) ) {
             keyColumns.addAll( catalogKey.columnIds );

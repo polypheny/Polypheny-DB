@@ -48,7 +48,7 @@ public class CassandraProjectRule extends CassandraConverterRule {
         Project project = call.rel( 0 );
         for ( RexNode e : project.getProjects() ) {
             if ( !(e instanceof RexInputRef) && !(e instanceof RexLiteral) ) {
-                if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor))) {
+                if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
                     return false;
                 }
             }

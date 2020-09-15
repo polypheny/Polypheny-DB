@@ -41,10 +41,13 @@ import org.polypheny.db.type.PolyTypeUtil;
 public class CassandraTypesUtils {
 
     private static final Gson GSON;
+
+
     static {
         GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( PolyType.class, PolyType.serializer );
         GSON = gsonBuilder.create();
     }
+
 
     public static DataType getDataType( PolyType polyType, UserDefinedType arrayContainerUdt ) {
         switch ( polyType ) {
@@ -449,6 +452,7 @@ public class CassandraTypesUtils {
         }
     }
 
+
     public static UdtValue createArrayContainerDataType( UserDefinedType arrayUdt, int dimension, int cardinality, PolyType innerType, RexCall arrayCall ) {
         return arrayUdt.newValue()
                 .setString( 0, innerType.getTypeName() )
@@ -474,6 +478,7 @@ public class CassandraTypesUtils {
         }
         return GSON.fromJson( stringValue.trim(), conversionType );
     }
+
 
     private static List<Object> createListForArrays( List<RexNode> operands ) {
         List<Object> list = new ArrayList<>( operands.size() );

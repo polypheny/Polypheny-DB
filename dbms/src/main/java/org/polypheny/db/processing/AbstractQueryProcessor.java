@@ -287,7 +287,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-
     private RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         RelRoot routedRoot = statement.getRouter().route( logicalRoot, statement, executionTimeMonitor );
         if ( log.isTraceEnabled() ) {
@@ -562,9 +561,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     }
 
 
-
-
-
     private static int getTypeOrdinal( RelDataType type ) {
         return type.getPolyType().getJdbcOrdinal();
     }
@@ -663,7 +659,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 false,
                 false,
 //                avaticaType.columnClassName() );
-                (fieldType instanceof ArrayType ) ? "java.util.List" : avaticaType.columnClassName() );
+                (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() );
     }
 
 

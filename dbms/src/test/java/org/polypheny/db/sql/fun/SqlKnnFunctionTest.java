@@ -213,7 +213,7 @@ public class SqlKnnFunctionTest {
         }
     }
 
-    
+
     @Test
     public void knnFilterTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {

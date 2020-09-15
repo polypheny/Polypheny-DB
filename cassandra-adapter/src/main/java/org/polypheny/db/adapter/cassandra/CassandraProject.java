@@ -73,6 +73,7 @@ public class CassandraProject extends Project implements CassandraRel {
 
     private final boolean arrayValueProject;
 
+
     public CassandraProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, boolean arrayValueProject ) {
         super( cluster, traitSet, input, projects, rowType );
         this.arrayValueProject = arrayValueProject;
@@ -113,7 +114,6 @@ public class CassandraProject extends Project implements CassandraRel {
             for ( String fieldName : cassandraFieldNames ) {
                 cassPhysicalFields.add( nameMapping.get( fieldName ) );
             }
-
 
             // Yes I am literally copying what the values implementation is doing
             final List<RelDataTypeField> physicalFields = context.cassandraTable.getRowType( new JavaTypeFactoryImpl() ).getFieldList();
