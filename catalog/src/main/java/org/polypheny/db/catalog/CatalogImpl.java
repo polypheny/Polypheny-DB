@@ -3031,7 +3031,11 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public List<Long> getPartitionsOnDataPlacement(int storeId, long tableId) {
-        return Objects.requireNonNull( dataPartitionPlacement.get(new Object[]{storeId, tableId}));
+        List<Long> partitions = dataPartitionPlacement.get(new Object[]{storeId, tableId});
+        if( partitions == null ) {
+            partitions = new ArrayList<>();
+        }
+        return partitions;
     }
 
 

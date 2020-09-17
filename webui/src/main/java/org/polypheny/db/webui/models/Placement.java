@@ -53,19 +53,19 @@ public class Placement {
         private final boolean dataReadOnly;
         private final boolean schemaReadOnly;
         private final List<ColumnPlacement> columnPlacements;
+        private final List<Long> partitionKeys;
 
 
         public Store(
-                String uniqueName,
-                String adapterName,
-                boolean dataReadOnly,
-                boolean schemaReadOnly,
-                List<CatalogColumnPlacement> columnPlacements ) {
-            this.uniqueName = uniqueName;
-            this.adapterName = adapterName;
-            this.dataReadOnly = dataReadOnly;
-            this.schemaReadOnly = schemaReadOnly;
+                org.polypheny.db.adapter.Store store,
+                List<CatalogColumnPlacement> columnPlacements,
+                List<Long> partitionKeys ) {
+            this.uniqueName = store.getUniqueName();
+            this.adapterName = store.getAdapterName();
+            this.dataReadOnly = store.isDataReadOnly();
+            this.schemaReadOnly = store.isSchemaReadOnly();
             this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
+            this.partitionKeys = partitionKeys;
         }
     }
 

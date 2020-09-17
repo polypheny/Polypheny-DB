@@ -84,6 +84,7 @@ import org.polypheny.db.adapter.StoreManager.AdapterInformation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
+import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -168,6 +169,7 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
+import org.polypheny.db.webui.models.requests.PartitioningRequest;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
@@ -1635,7 +1637,8 @@ public class Crud implements InformationObserver {
             for ( CatalogStore catalogStore : catalog.getStores() ) {
                 Store store = StoreManager.getInstance().getStore( catalogStore.id );
                 List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                p.addStore( new Placement.Store( store.getUniqueName(), store.getAdapterName(), store.isDataReadOnly(), store.isSchemaReadOnly(), placements ));
+                List<Long> partitionKeys = catalog.getPartitionsOnDataPlacement( store.getStoreId(), table.id );
+                p.addStore( new Placement.Store( store, placements, partitionKeys ));
             }
             return p;
         } catch ( GenericCatalogException | UnknownTableException e ) {
@@ -1680,6 +1683,41 @@ public class Crud implements InformationObserver {
             return new Result( e );
         }
         return new Result( new Debug().setAffectedRows( affectedRows ) );
+    }
+
+
+    String getPartitionTypes ( final Request req, final Response res ) {
+        return gson.toJson( PartitionType.values(), PartitionType[].class );
+    }
+
+
+    Result partitionTable ( final Request req, final Response res ) {
+        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") PARTITIONS %d ", request.schemaName, request.tableName, request.method, request.column, request.numPartitions );
+        Transaction trx = getTransaction();
+        try {
+            int i = executeSqlUpdate( trx, query );
+            trx.commit();
+            return new Result( new Debug().setAffectedRows( i ) );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not partition table", e );
+            return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+        }
+    }
+
+
+    Result mergePartitions ( final Request req, final Response res ) {
+        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" MERGE PARTITIONS", request.schemaName, request.tableName );
+        Transaction trx = getTransaction();
+        try {
+            int i = executeSqlUpdate( trx, query );
+            trx.commit();
+            return new Result( new Debug().setAffectedRows( i ) );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not merge partitions", e );
+            return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+        }
     }
 
 
