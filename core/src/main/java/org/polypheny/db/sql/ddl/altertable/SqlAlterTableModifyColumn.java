@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -228,7 +227,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
 
             // Rest plan cache and implementation cache (not sure if required in this case)
             statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException | UnknownCollationException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }

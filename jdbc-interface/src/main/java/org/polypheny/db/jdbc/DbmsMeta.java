@@ -1279,7 +1279,7 @@ public class DbmsMeta implements ProtobufMeta {
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues );
+            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues, false );
         }
 
         h.signature = signature;

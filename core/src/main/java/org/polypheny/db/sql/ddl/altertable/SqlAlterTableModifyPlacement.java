@@ -31,10 +31,11 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
@@ -140,6 +141,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                 }
             }
             // Which columns to add
+            List<CatalogColumn> addedColumns = new LinkedList<>();
             for ( long cid : columnIds ) {
                 if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), cid ) ) {
                     CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), cid );
@@ -158,11 +160,16 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                             null );
                     // Add column on store
                     storeInstance.addColumn( context, catalogTable, Catalog.getInstance().getColumn( cid ) );
-                    // !!!!!!!!!!!!!!!!!!!!!!!!
-                    // TODO: Now we should also copy the data
+                    // Add to list of columns for which we need to copy data
+                    addedColumns.add( Catalog.getInstance().getColumn( cid ) );
                 }
             }
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownColumnException e ) {
+            // Copy the data to the newly added column placements
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            if ( addedColumns.size() > 0 ) {
+                dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
+            }
+        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownStoreException e ) {
             throw new RuntimeException( e );
         }
 

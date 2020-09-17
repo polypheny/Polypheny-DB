@@ -250,7 +250,7 @@ public abstract class TableModify extends SingleRel {
     public String relCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 String.join( ".", table.getQualifiedName() ) + "$" +
-                getInputs().stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
+                (getInputs() != null ? getInputs().stream().map( RelNode::relCompareString ).collect( Collectors.joining( "$" ) ) + "$" : "") +
                 getOperation().name() + "$" +
                 (getUpdateColumnList() != null ? String.join( "$", getUpdateColumnList() ) + "$" : "") +
                 (getSourceExpressionList() != null ? getSourceExpressionList().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +

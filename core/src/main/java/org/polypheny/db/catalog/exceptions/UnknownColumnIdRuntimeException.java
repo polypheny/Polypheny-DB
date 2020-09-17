@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.processing;
+package org.polypheny.db.catalog.exceptions;
 
 
-import java.util.Map;
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+public class UnknownColumnIdRuntimeException extends CatalogRuntimeException {
 
-
-public interface QueryProcessor extends ViewExpander {
-
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
-
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, Map<String, Object> values, boolean isRouted );
-
-    RelOptPlanner getPlanner();
-
-    void resetCaches();
-
+    public UnknownColumnIdRuntimeException( long columnId ) {
+        super( "There is no column with id '" + columnId + "';" );
+    }
 }

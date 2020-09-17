@@ -60,6 +60,12 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
 
     @SneakyThrows
+    public String getLogicalSchemaName() {
+        return Catalog.getInstance().getTable( tableId ).getSchemaName();
+    }
+
+
+    @SneakyThrows
     public String getLogicalTableName() {
         return Catalog.getInstance().getTable( tableId ).name;
     }
@@ -68,6 +74,12 @@ public class CatalogColumnPlacement implements CatalogEntity {
     @SneakyThrows
     public String getLogicalColumnName() {
         return Catalog.getInstance().getColumn( columnId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getStoreUniqueName() {
+        return Catalog.getInstance().getStore( storeId ).uniqueName;
     }
 
 

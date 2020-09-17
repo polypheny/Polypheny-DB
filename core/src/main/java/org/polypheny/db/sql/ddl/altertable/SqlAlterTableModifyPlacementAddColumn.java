@@ -19,6 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.Store;
@@ -30,7 +31,9 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
@@ -129,10 +132,11 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
                         null );
                 // Add column on store
                 storeInstance.addColumn( context, catalogTable, catalogColumn );
-                // !!!!!!!!!!!!!!!!!!!!!!!!
-                // TODO: Now we should also copy the data
+                // Copy the data to the newly added column placements
+                DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+                dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), ImmutableList.of( catalogColumn ) );
             }
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException | UnknownStoreException e ) {
             throw new RuntimeException( e );
         }
     }

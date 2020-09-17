@@ -18,6 +18,7 @@ package org.polypheny.db.router;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
@@ -78,7 +80,7 @@ public abstract class AbstractRouter implements Router {
     final Catalog catalog = Catalog.getInstance();
 
     // For reporting purposes
-    protected Map<RelOptTable, SelectedStoreInfo> selectedStores;
+    protected Map<Long, SelectedStoreInfo> selectedStores;
 
 
     @Override
@@ -113,7 +115,12 @@ public abstract class AbstractRouter implements Router {
                     group,
                     ImmutableList.of( "Table", "Store", "Physical Name" ) );
             selectedStores.forEach( ( k, v ) -> {
-                table.addRow( k.getQualifiedName(), v.storeName, v.physicalSchemaName + "." + v.physicalTableName );
+                try {
+                    CatalogTable catalogTable = Catalog.getInstance().getTable( k );
+                    table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.storeName, v.physicalSchemaName + "." + v.physicalTableName );
+                } catch ( UnknownTableException | GenericCatalogException e ) {
+                    throw new RuntimeException( e );
+                }
             } );
             statement.getTransaction().getQueryAnalyzer().registerInformation( table );
         }
@@ -159,7 +166,7 @@ public abstract class AbstractRouter implements Router {
                     throw new RuntimeException( "Unknown table" );
                 }
                 List<CatalogColumnPlacement> placements = selectPlacement( node, catalogTable );
-                return buildJoinedTableScan( builder, table, placements );
+                return buildJoinedTableScan( builder, placements );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
             }
@@ -209,7 +216,7 @@ public abstract class AbstractRouter implements Router {
                     List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                     CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
                     pkPlacements = catalog.getColumnPlacements( pkColumn.id );
-                } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownKeyException e ) {
+                } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
                     throw new RuntimeException( e );
                 }
 
@@ -218,13 +225,13 @@ public abstract class AbstractRouter implements Router {
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
                     CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
-                    List<String> tableNames = ImmutableList.of(
+                    List<String> qualifiedTableName = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(
                                     pkPlacement.storeUniqueName,
                                     catalogTable.getSchemaName(),
                                     pkPlacement.physicalSchemaName ),
                             t.getLogicalTableName() );
-                    RelOptTable physical = catalogReader.getTableForMember( tableNames );
+                    RelOptTable physical = catalogReader.getTableForMember( qualifiedTableName );
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                     // Get placements on store
@@ -328,7 +335,7 @@ public abstract class AbstractRouter implements Router {
                 }
                 builder = handleTableScan(
                         builder,
-                        table,
+                        placements.get( 0 ).tableId,
                         placements.get( 0 ).storeUniqueName,
                         catalogTable.getSchemaName(),
                         catalogTable.name,
@@ -392,7 +399,7 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    protected RelBuilder buildJoinedTableScan( RelBuilder builder, RelOptTableImpl table, List<CatalogColumnPlacement> placements ) {
+    public RelBuilder buildJoinedTableScan( RelBuilder builder, List<CatalogColumnPlacement> placements ) {
         // Sort by store
         Map<Integer, List<CatalogColumnPlacement>> sortedPlacements = new HashMap<>();
         for ( CatalogColumnPlacement placement : placements ) {
@@ -404,14 +411,21 @@ public abstract class AbstractRouter implements Router {
 
         if ( sortedPlacements.size() == 1 ) {
             List<CatalogColumnPlacement> ccp = sortedPlacements.values().iterator().next();
-            return handleTableScan(
+            builder = handleTableScan(
                     builder,
-                    table,
+                    ccp.get( 0 ).tableId,
                     ccp.get( 0 ).storeUniqueName,
-                    ((LogicalTable) table.getTable()).getLogicalSchemaName(),
-                    ((LogicalTable) table.getTable()).getLogicalTableName(),
+                    ccp.get( 0 ).getLogicalSchemaName(),
+                    ccp.get( 0 ).getLogicalTableName(),
                     ccp.get( 0 ).physicalSchemaName,
                     ccp.get( 0 ).physicalTableName );
+            // final project
+            ArrayList<RexNode> rexNodes = new ArrayList<>();
+            for ( CatalogColumnPlacement catalogColumnPlacement : placements.stream().sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) ).collect( Collectors.toList() ) ) {
+                rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
+            }
+            builder.project( rexNodes );
+            return builder;
         } else {
             // We need to join placements on different stores
 
@@ -424,7 +438,7 @@ public abstract class AbstractRouter implements Router {
                 for ( long pkColumnId : pkColumnIds ) {
                     pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
                 }
-            } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownKeyException e ) {
+            } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
                 throw new RuntimeException( e );
             }
 
@@ -447,10 +461,10 @@ public abstract class AbstractRouter implements Router {
             for ( List<CatalogColumnPlacement> ccps : sortedPlacements.values() ) {
                 handleTableScan(
                         builder,
-                        table,
+                        ccps.get( 0 ).tableId,
                         ccps.get( 0 ).storeUniqueName,
-                        ((LogicalTable) table.getTable()).getLogicalSchemaName(),
-                        ((LogicalTable) table.getTable()).getLogicalTableName(),
+                        ccps.get( 0 ).getLogicalSchemaName(),
+                        ccps.get( 0 ).getLogicalTableName(),
                         ccps.get( 0 ).physicalSchemaName,
                         ccps.get( 0 ).physicalTableName );
                 if ( first ) {
@@ -480,8 +494,8 @@ public abstract class AbstractRouter implements Router {
             }
             // final project
             ArrayList<RexNode> rexNodes = new ArrayList<>();
-            for ( CatalogColumnPlacement p : placements ) {
-                rexNodes.add( builder.field( p.getLogicalColumnName() ) );
+            for ( CatalogColumnPlacement ccp : placements.stream().sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) ).collect( Collectors.toList() ) ) {
+                rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
             }
             builder.project( rexNodes );
             return builder;
@@ -491,13 +505,15 @@ public abstract class AbstractRouter implements Router {
 
     protected RelBuilder handleTableScan(
             RelBuilder builder,
-            RelOptTableImpl table,
+            long tableId,
             String storeUniqueName,
             String logicalSchemaName,
             String logicalTableName,
             String physicalSchemaName,
             String physicalTableName ) {
-        selectedStores.put( table, new SelectedStoreInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
+        if ( selectedStores != null ) {
+            selectedStores.put( tableId, new SelectedStoreInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
+        }
         return builder.scan( ImmutableList.of(
                 PolySchemaBuilder.buildStoreSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName ) );

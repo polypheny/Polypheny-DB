@@ -21,6 +21,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 public interface Router {
@@ -32,4 +33,6 @@ public interface Router {
     List<Store> addColumn( CatalogTable catalogTable, Statement statement );
 
     void dropPlacements( List<CatalogColumnPlacement> placements );
+
+    RelBuilder buildJoinedTableScan( RelBuilder builder, List<CatalogColumnPlacement> placements );
 }

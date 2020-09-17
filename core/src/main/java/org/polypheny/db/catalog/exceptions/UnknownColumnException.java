@@ -28,8 +28,4 @@ public class UnknownColumnException extends CatalogException {
         super( "There is no column with name '" + columnName + "' in the table with the id '" + tableId + "'" );
     }
 
-
-    public UnknownColumnException( long columnId ) {
-        super( "There is no column with id '" + columnId + "';" );
-    }
 }

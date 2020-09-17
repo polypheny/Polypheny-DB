@@ -51,7 +51,6 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.Convention;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.ViewExpanders;
@@ -98,7 +97,7 @@ import org.polypheny.db.util.Util;
 
 
 @Slf4j
-public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpander {
+public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     private final Statement statement;
 
@@ -119,12 +118,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         return prepareQuery(
                 logicalRoot,
                 logicalRoot.rel.getCluster().getTypeFactory().builder().build(),
-                null );
+                null,
+                false );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values ) {
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isRouted ) {
         // If this is a prepared statement, values is != null
         if ( values != null ) {
             statement.getDataContext().addAll( values );
@@ -145,40 +145,47 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         : EnumerableConvention.INSTANCE;
 
         // Locking
-        if ( statement.getTransaction().isAnalyze() ) {
-            statement.getDuration().start( "Locking" );
+        if ( !isRouted ) {
+            if ( statement.getTransaction().isAnalyze() ) {
+                statement.getDuration().start( "Locking" );
 
-        }
-        try {
-            // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-            LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-            // Get locks for individual tables
-            TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
-            for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                if ( mode == Mode.READ_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                    LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                }
             }
-        } catch ( DeadlockException e ) {
-            throw new RuntimeException( e );
+            try {
+                // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                // Get locks for individual tables
+                TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                    if ( mode == Mode.READ_ACCESS ) {
+                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                    } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                    }
+                }
+            } catch ( DeadlockException e ) {
+                throw new RuntimeException( e );
+            }
         }
 
         // Route
-        if ( statement.getTransaction().isAnalyze() ) {
-            statement.getDuration().stop( "Locking" );
-            statement.getDuration().start( "Routing" );
-        }
-        RelRoot routedRoot = route( logicalRoot, statement, executionTimeMonitor );
+        RelRoot routedRoot;
+        if ( isRouted ) {
+            routedRoot = logicalRoot;
+        } else {
+            if ( statement.getTransaction().isAnalyze() ) {
+                statement.getDuration().stop( "Locking" );
+                statement.getDuration().start( "Routing" );
+            }
+            routedRoot = route( logicalRoot, statement, executionTimeMonitor );
 
-        RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
-                RelBuilder.create( statement, routedRoot.rel.getCluster() ),
-                routedRoot.rel.getCluster().getRexBuilder(),
-                ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
-                true );
-        routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+            RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
+                    RelBuilder.create( statement, routedRoot.rel.getCluster() ),
+                    routedRoot.rel.getCluster().getRexBuilder(),
+                    ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
+                    true );
+            routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+        }
 
         //
         // Implementation Caching

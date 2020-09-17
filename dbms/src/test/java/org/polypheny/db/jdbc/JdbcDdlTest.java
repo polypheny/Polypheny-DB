@@ -185,7 +185,7 @@ public class JdbcDdlTest {
                 statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (2, null, null, null, null, null, null, null, null, null, null, null, null)" );
                 // Checks
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM ddltest" ),
+                        statement.executeQuery( "SELECT * FROM ddltest ORDER BY tprimary" ),
                         ImmutableList.of(
                                 new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null },
                                 new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null } ) );
