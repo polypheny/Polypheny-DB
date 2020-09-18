@@ -33,7 +33,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
-@SuppressWarnings("SqlDialectInspection")
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class JdbcMetaTest {
 
@@ -47,7 +47,6 @@ public class JdbcMetaTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private static void addTestData() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -268,8 +267,6 @@ public class JdbcMetaTest {
     }
 
 
-    //@Ignore
-    //TODO DL examine why this tests fails on Travis
     @Test
     public void testGetPrimaryKeys() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {

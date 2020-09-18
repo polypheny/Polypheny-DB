@@ -61,6 +61,7 @@ public class RestTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE SCHEMA test" );
+                //noinspection SqlDialectInspection
                 statement.executeUpdate( "CREATE TABLE test.resttest( "
                         + "tbigint BIGINT NOT NULL, "
                         + "tboolean BOOLEAN NOT NULL, "

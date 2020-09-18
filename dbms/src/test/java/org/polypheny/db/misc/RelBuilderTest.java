@@ -80,6 +80,7 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Unit test for {@link RelBuilder}.
  */
+@SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
 public class RelBuilderTest {
 
@@ -106,7 +107,6 @@ public class RelBuilderTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
     private static void addTestSchema() {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
