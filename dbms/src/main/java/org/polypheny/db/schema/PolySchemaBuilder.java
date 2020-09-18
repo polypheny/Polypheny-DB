@@ -145,6 +145,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             Table table = store.createTableSchema(
                                     catalogTable,
                                     Catalog.getInstance().getColumnPlacementsOnStoreSortedByPhysicalPosition( store.getStoreId(), catalogTable.id ) );
+                            physicalTables.put( catalog.getTable( tableId ).name, table );
                             s.add( catalog.getTable( tableId ).name, table );
                         }
                         rootSchema.add( schemaName, s );
