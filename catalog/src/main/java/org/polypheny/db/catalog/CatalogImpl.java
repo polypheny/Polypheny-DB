@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
+import org.mapdb.DBException.SerializationError;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
@@ -279,14 +280,20 @@ public class CatalogImpl extends Catalog {
      * @param db the databases object on which the layout is created
      */
     private void initDBLayout( DB db ) {
-        initUserInfo( db );
-        initDatabaseInfo( db );
-        initSchemaInfo( db );
-        initTableInfo( db );
-        initColumnInfo( db );
-        initKeysAndConstraintsInfo( db );
-        initStoreInfo( db );
-
+        try {
+            initUserInfo( db );
+            initDatabaseInfo( db );
+            initSchemaInfo( db );
+            initTableInfo( db );
+            initColumnInfo( db );
+            initKeysAndConstraintsInfo( db );
+            initStoreInfo( db );
+        } catch ( SerializationError e ) {
+            log.error( "!!!!!!!!!!! Error while restoring the catalog !!!!!!!!!!!" );
+            log.error( "This usually means that there have been changes to the internal structure of the catalog with the last update of Polypheny-DB." );
+            log.error( "To fix this, you must reset the catalog. To do this, please start Polypheny-DB once with the argument \"-resetCatalog\"." );
+            System.exit( 1 );
+        }
     }
 
 
