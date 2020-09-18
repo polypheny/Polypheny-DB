@@ -1477,6 +1477,13 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
+    public List<CatalogColumnPlacement> getColumnPlacementsOnStoreSortedByPhysicalPosition( int storeId, long tableId ) {
+        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingLong( p -> p.physicalPosition );
+        return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
+    }
+
+
+    @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
         return columnPlacements.values().stream().filter( p -> p.columnId == columnId ).collect( Collectors.toList() );
     }

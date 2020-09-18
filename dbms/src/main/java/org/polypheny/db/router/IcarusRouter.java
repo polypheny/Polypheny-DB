@@ -147,7 +147,7 @@ public class IcarusRouter extends AbstractRouter {
                 throw new RuntimeException( "Unknown value for QUERY_CLASS_PROVIDER config: " + QUERY_CLASS_PROVIDER.getEnum().name() );
             }
 
-            if ( routingTable.contains( queryClassString ) ) {
+            if ( routingTable.contains( queryClassString ) && routingTable.get( queryClassString ).size() > 0 ) {
                 selectedStoreId = routeQuery( routingTable.get( queryClassString ) );
 
                 // In case the query class is known but the table has been dropped and than recreated with the same name,

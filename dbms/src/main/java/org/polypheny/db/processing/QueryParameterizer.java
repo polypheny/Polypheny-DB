@@ -183,7 +183,11 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitSubQuery( RexSubQuery subQuery ) {
-        return subQuery; //TODO
+        List<RexNode> newOperands = new LinkedList<>();
+        for ( RexNode operand : subQuery.operands ) {
+            newOperands.add( operand.accept( this ) );
+        }
+        return subQuery.clone( subQuery.type, newOperands, subQuery.rel.accept( this ) );
     }
 
 

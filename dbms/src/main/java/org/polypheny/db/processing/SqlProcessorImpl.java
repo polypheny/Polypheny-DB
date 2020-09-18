@@ -150,6 +150,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             validated = validator.validate( parsed );
             type = validator.getValidatedNodeType( validated );
         } catch ( RuntimeException e ) {
+            log.error( "Caught exception", e );
             throw new AvaticaRuntimeException( e.getMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         stopWatch.stop();

@@ -435,6 +435,8 @@ public abstract class Catalog {
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId );
 
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStoreSortedByPhysicalPosition( int storeId, long tableId );
+
 
     /**
      * Get column placements on a store
