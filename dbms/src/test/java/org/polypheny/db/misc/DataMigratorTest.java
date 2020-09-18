@@ -121,6 +121,54 @@ public class DataMigratorTest {
 
 
     @Test
+    public void alternativeCommandsTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE datamigratortest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+                statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
+
+                // Add data store
+                statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
+
+                // Add placement
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 5, "foo" } ) );
+
+                // Remove tvarchar column placement on initial store
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT DROP COLUMN tvarchar ON STORE \"hsqldb\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 5, "foo" } ) );
+
+                // Add tinteger column placement on store 1
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT ADD COLUMN tinteger ON STORE \"store1\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 5, "foo" } ) );
+
+                // Remove placement on initial store
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
+
+                // Drop table and store
+                statement.executeUpdate( "DROP TABLE datamigratortest" );
+                statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+            }
+        }
+    }
+
+
+    @Test
     public void threeStoresTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
