@@ -170,6 +170,7 @@ import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.PartitioningRequest;
+import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
@@ -1637,8 +1638,8 @@ public class Crud implements InformationObserver {
             for ( CatalogStore catalogStore : catalog.getStores() ) {
                 Store store = StoreManager.getInstance().getStore( catalogStore.id );
                 List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                List<Long> partitionKeys = catalog.getPartitionsOnDataPlacement( store.getStoreId(), table.id );
-                p.addStore( new Placement.Store( store, placements, partitionKeys ));
+                List<Long> partitionKeys = table.getPartitionIds();
+                p.addStore( new Placement.Store( store, placements, partitionKeys, table.numPartitions ));
             }
             return p;
         } catch ( GenericCatalogException | UnknownTableException e ) {
@@ -1680,6 +1681,11 @@ public class Crud implements InformationObserver {
             affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
             return new Result( e );
         }
         return new Result( new Debug().setAffectedRows( affectedRows ) );
@@ -1701,6 +1707,11 @@ public class Crud implements InformationObserver {
             return new Result( new Debug().setAffectedRows( i ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not partition table", e );
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
             return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
         }
     }
@@ -1716,6 +1727,35 @@ public class Crud implements InformationObserver {
             return new Result( new Debug().setAffectedRows( i ) );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not merge partitions", e );
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+            return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+        }
+    }
+
+
+    Result modifyPartitions ( final Request req, final Response res ) {
+        ModifyPartitionRequest request = gson.fromJson( req.body(), ModifyPartitionRequest.class );
+        StringJoiner partitions = new StringJoiner(",");
+        for( long partition: request.partitions ) {
+            partitions.add( String.valueOf( partition ) );
+        }
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" MODIFY PARTITIONS(%s) ON STORE %s", request.schemaName, request.tableName, partitions.toString(), request.storeUniqueName );
+        Transaction trx = getTransaction();
+        try {
+            int i = executeSqlUpdate( trx, query );
+            trx.commit();
+            return new Result( new Debug().setAffectedRows( i ).setGeneratedQuery( query ) );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not modify partitions", e );
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
             return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
         }
     }

@@ -57,6 +57,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public boolean isPartitioned = false;
     @Getter
     public Catalog.PartitionType partitionType = PartitionType.NONE;
+    @Getter
     public ImmutableList<Long> partitionIds;
     public long partitionColumnId;
 

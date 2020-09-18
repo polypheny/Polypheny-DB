@@ -154,6 +154,8 @@ public class HttpServer extends QueryInterface {
 
         webuiServer.post( "/mergePartitions", crud::mergePartitions, gson::toJson );
 
+        webuiServer.post( "/modifyPartitions", crud::modifyPartitions, gson::toJson );
+
         webuiServer.post( "/getAnalyzerPage", crud::getAnalyzerPage );
 
         webuiServer.post( "/closeAnalyzer", crud::closeAnalyzer );
