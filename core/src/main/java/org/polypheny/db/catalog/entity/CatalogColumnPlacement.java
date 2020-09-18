@@ -34,6 +34,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
     public final String storeUniqueName;
     public final PlacementType placementType;
 
+    public final long physicalPosition;
+
     public final String physicalSchemaName;
     public final String physicalTableName;
     public final String physicalColumnName;
@@ -47,7 +49,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
-            final String physicalColumnName ) {
+            final String physicalColumnName,
+            final long physicalPosition ) {
         this.tableId = tableId;
         this.columnId = columnId;
         this.storeId = storeId;
@@ -56,6 +59,7 @@ public class CatalogColumnPlacement implements CatalogEntity {
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.physicalColumnName = physicalColumnName;
+        this.physicalPosition = physicalPosition;
     }
 
 

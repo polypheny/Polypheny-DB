@@ -111,7 +111,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
         } catch ( SqlParseException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new RuntimeException( e );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {

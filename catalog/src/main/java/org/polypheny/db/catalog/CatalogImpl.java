@@ -131,6 +131,9 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong constraintIdBuilder = new AtomicLong();
     private static final AtomicLong indexIdBuilder = new AtomicLong();
     private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
+
+    private static final AtomicLong physicalPositionBuilder = new AtomicLong();
+
     private final String path;
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
     // TODO DL check solution for all
@@ -1369,7 +1372,8 @@ public class CatalogImpl extends Catalog {
                     placementType,
                     physicalSchemaName,
                     physicalTableName,
-                    physicalColumnName );
+                    physicalColumnName,
+                    physicalPositionBuilder.getAndIncrement() );
 
             synchronized ( this ) {
                 columnPlacements.put( new Object[]{ storeId, columnId }, placement );
@@ -1505,7 +1509,8 @@ public class CatalogImpl extends Catalog {
                     placementType,
                     old.physicalSchemaName,
                     old.physicalTableName,
-                    old.physicalColumnName );
+                    old.physicalColumnName,
+                    physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
             }
@@ -1537,7 +1542,8 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     physicalSchemaName,
                     physicalTableName,
-                    physicalColumnName );
+                    physicalColumnName,
+                    physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
             }

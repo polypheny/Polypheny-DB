@@ -19,12 +19,14 @@ package org.polypheny.db.schema;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
@@ -144,7 +146,11 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                             CatalogTable catalogTable = catalog.getTable( tableId );
                             Table table = store.createTableSchema(
                                     catalogTable,
-                                    Catalog.getInstance().getColumnPlacementsOnStore( store.getStoreId(), catalogTable.id ) );
+                                    Catalog.getInstance()
+                                            .getColumnPlacementsOnStore( store.getStoreId(), catalogTable.id )
+                                            .stream()
+                                            .sorted( Comparator.comparingLong( p -> p.physicalPosition ) )
+                                            .collect( Collectors.toList() ) );
                             physicalTables.put( catalog.getTable( tableId ).name, table );
                             s.add( catalog.getTable( tableId ).name, table );
                         }

@@ -102,7 +102,7 @@ public class DataMigratorTest {
                         ImmutableList.of(
                                 new Object[]{ 1, 5, "foo" } ) );
 
-                // Add tinteger column placement on hsqldb store
+                // Add tinteger column placement on store 1
                 statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar) ON STORE \"store1\"" );
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM datamigratortest" ),
@@ -115,6 +115,84 @@ public class DataMigratorTest {
                 // Drop table and store
                 statement.executeUpdate( "DROP TABLE datamigratortest" );
                 statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+            }
+        }
+    }
+
+
+    @Test
+    public void threeStoresTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE datamigratortest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "tboolean BOOLEAN NOT NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+                statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo',true)" );
+
+                // Add data store 1
+                statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
+                // Add placement
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 5, "foo", true } ) );
+
+                // Add data store 2
+                statement.executeUpdate( "ALTER STORES ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
+                // Add placement
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT (tboolean) ON STORE \"store2\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 5, "foo", true } ) );
+
+                // Remove tvarchar and tboolean column placement on initial store
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 5, "foo", true } ) );
+
+                // Update
+                statement.executeUpdate( "UPDATE datamigratortest SET tinteger = 12 where tprimary = 1" );
+
+                // Add tinteger column placement on store 1
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar) ON STORE \"store1\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 12, "foo", true } ) );
+
+                // Remove placement on initial store
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"hsqldb\"" );
+
+                // Add tinteger and tvarchar column placement on store 2
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" MODIFY PLACEMENT (tinteger,tvarchar,tboolean) ON STORE \"store2\"" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 12, "foo", true } ) );
+
+                // Remove placement on initial store
+                statement.executeUpdate( "ALTER TABLE \"datamigratortest\" DROP PLACEMENT ON STORE \"store1\"" );
+
+                // Check if we still have everything on store 2
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM datamigratortest" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 12, "foo", true } ) );
+
+                // Drop table and store
+                statement.executeUpdate( "DROP TABLE datamigratortest" );
+                statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                statement.executeUpdate( "ALTER STORES DROP \"store2\"" );
             }
         }
     }
