@@ -468,6 +468,10 @@ public class IcarusRouter extends AbstractRouter {
         @Override
         public void executionTime( String reference, long nanoTime ) {
             String storeIdStr = reference.split( "-" )[0]; // Reference starts with "STORE_ID-..."
+            if ( storeIdStr.equals( "" ) ) {
+                // No storeIdStr string. This happens if a query contains no table (e.g. select 1 )
+                return;
+            }
             int storeId = Integer.parseInt( storeIdStr );
             String queryClassString = reference.substring( storeIdStr.length() + 1 );
             processingQueue.add( new ExecutionTime( queryClassString, storeId, nanoTime ) );
