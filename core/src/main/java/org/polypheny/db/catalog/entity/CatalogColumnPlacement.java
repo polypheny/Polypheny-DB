@@ -26,7 +26,7 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 
 public class CatalogColumnPlacement implements CatalogEntity {
 
-    private static final long serialVersionUID = 4754069156177607149L;
+    private static final long serialVersionUID = 3538121146945513108L;
 
     public final long tableId;
     public final long columnId;
