@@ -21,18 +21,12 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -44,7 +38,6 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
 import org.polypheny.db.jdbc.JdbcInterface;
-import org.polypheny.db.partition.SimplePartition;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.restapi.HttpRestServer;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
@@ -228,17 +221,7 @@ public class PolyphenyDb {
         log.info( "****************************************************************************************************" );
         isReady = true;
 
-        //
-        //TODO: HENNLO Created a new Partiton dummy on deptno - name
-        SimplePartition basicPartition = new SimplePartition(0, "public", "emp", "gender");
-        //Get Columns based on partition ID --> table ID
-        List<CatalogColumn> partitionedColumns = catalog.getColumns(basicPartition.getTableId());
-        for (CatalogColumn column: partitionedColumns) {
-            System.out.println("HENNLO: COLUMN for PARTION "+ column.name);
-        }
-        //////// HENNLO END
-        ///
-        //
+
         try {
             log.trace( "Waiting for the Shutdown-Hook to finish ..." );
             sh.join( 0 ); // "forever"

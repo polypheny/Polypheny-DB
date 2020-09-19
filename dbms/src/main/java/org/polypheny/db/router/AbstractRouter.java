@@ -25,8 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.zip.Adler32;
-import java.util.zip.CRC32;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -40,7 +38,8 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.partition.PartitionHelper;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -214,8 +213,6 @@ public abstract class AbstractRouter implements Router {
     // Default implementation: Execute DML on all placements
     protected RelNode routeDml( RelNode node, Statement statement ) {
         RelOptCluster cluster = node.getCluster();
-        PartitionHelper partHelper = new PartitionHelper();
-
 
         if ( node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -297,6 +294,12 @@ public abstract class AbstractRouter implements Router {
 
                     //TODO HENNLO This is an rather uncharming workaround
                     if ( catalogTable.isPartitioned ) {
+
+                        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+                        PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
+                        partitionManager.validPartitionDistribution();
+
+
                         String partitionValue ="";
                         //set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
                         boolean partitionColumnIdentified = false;
@@ -304,6 +307,7 @@ public abstract class AbstractRouter implements Router {
                             // In case of update always use worst case routing for now.
                             //Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
                             int index = 0;
+
                             for (String cn : updateColumnList) {
                                 try {
                                     System.out.println("HENNLO AbstractRouter: routeDML(): UPDATE: column: " + cn + " " +
@@ -315,7 +319,7 @@ public abstract class AbstractRouter implements Router {
                                         partitionColumnIdentified = true;
                                         partitionValue = sourceExpressionList.get(index).toString().replace("'", "");
                                         System.out.println("HENNLO AbstractRouter: routeDML(): UPDATE: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
-                                                + partHelper.getPartitionHash(catalogTable, partitionValue));
+                                                + partitionManager.getTargetPartitionId(catalogTable, partitionValue));
                                         break;
                                     }
                                 } catch (GenericCatalogException | UnknownColumnException e) {
@@ -340,7 +344,7 @@ public abstract class AbstractRouter implements Router {
                             //TODO Get the value of partitionColumnId ---  but first find if of partitionColumn inside table
                             partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
                             System.out.println("HENNLO AbstractRouter: routeDML(): INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
-                                    + partHelper.getPartitionHash(catalogTable, partitionValue));
+                                    + partitionManager.getTargetPartitionId(catalogTable, partitionValue));
                         }
                         else if (((LogicalTableModify) node).getOperation() == Operation.DELETE) {
                             System.out.println("HENNLO AbstractRouter: routeDML(): DELETE ");
@@ -354,7 +358,7 @@ public abstract class AbstractRouter implements Router {
                         if ( partitionColumnIdentified ) {
 
                             //Returns partitionID
-                            long identPart = (int) partHelper.getPartitionHash(catalogTable, partitionValue);
+                            long identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
 
                             System.out.println("HENNLO AbstractRouter(): Gather all relevant placements to execute the statement on");
                             System.out.println("HENNLO AbstractRouter(): GET all Placements by identified Partition: " +identPart);

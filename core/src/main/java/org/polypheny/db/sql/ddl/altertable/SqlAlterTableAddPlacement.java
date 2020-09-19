@@ -141,12 +141,12 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 //Check if this column placement is the first on the dataplacement
                 //If this returns null this means that this is the first placement and partitition list can therefore be specified
                 List<Long> currentPartList = new ArrayList<>();
-                try {
-                    currentPartList = catalog.getPartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id);
-                    isDataPlacementPartitioned = true;
+                currentPartList = catalog.getPartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id);
 
+                if (!currentPartList.isEmpty()) {
+                    isDataPlacementPartitioned = true;
                 }
-                catch ( NullPointerException e){
+                else {
                     isDataPlacementPartitioned = false;
                 }
 
