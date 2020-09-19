@@ -163,5 +163,10 @@ public class RexSubQuery extends RexCall {
     public RexSubQuery clone( RelNode rel ) {
         return new RexSubQuery( type, getOperator(), operands, rel );
     }
+
+
+    public RexSubQuery clone( RelDataType type, List<RexNode> operands, RelNode rel ) {
+        return new RexSubQuery( type, getOperator(), ImmutableList.copyOf( operands ), rel );
+    }
 }
 

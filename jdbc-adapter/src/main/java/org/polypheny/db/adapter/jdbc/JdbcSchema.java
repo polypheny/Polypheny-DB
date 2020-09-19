@@ -58,8 +58,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -148,21 +146,17 @@ public class JdbcSchema implements Schema {
         String physicalSchemaName = null;
         String physicalTableName = null;
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            try {
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-                if ( physicalSchemaName == null ) {
-                    physicalSchemaName = placement.physicalSchemaName;
-                }
-                if ( physicalTableName == null ) {
-                    physicalTableName = placement.physicalTableName;
-                }
-                RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
-                fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-                logicalColumnNames.add( catalogColumn.name );
-                physicalColumnNames.add( placement.physicalColumnName );
-            } catch ( UnknownColumnException | GenericCatalogException e ) {
-                throw new RuntimeException( e );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            if ( physicalSchemaName == null ) {
+                physicalSchemaName = placement.physicalSchemaName;
             }
+            if ( physicalTableName == null ) {
+                physicalTableName = placement.physicalTableName;
+            }
+            RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
+            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
+            logicalColumnNames.add( catalogColumn.name );
+            physicalColumnNames.add( placement.physicalColumnName );
         }
         JdbcTable table = new JdbcTable(
                 this,

@@ -44,8 +44,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -88,13 +86,7 @@ public class CsvSchema extends AbstractSchema {
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            CatalogColumn catalogColumn;
-            try {
-                catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-            } catch ( UnknownColumnException | GenericCatalogException e ) {
-                throw new RuntimeException( "Column not found." ); // This should not happen
-            }
-
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );

@@ -34,7 +34,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
@@ -173,12 +172,7 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( " ( " );
         boolean first = true;
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
-            CatalogColumn catalogColumn;
-            try {
-                catalogColumn = catalog.getColumn( placement.columnId );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                throw new RuntimeException( e );
-            }
+            CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
             }

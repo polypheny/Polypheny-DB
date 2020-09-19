@@ -18,21 +18,25 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
+@EqualsAndHashCode
 public class CatalogColumnPlacement implements CatalogEntity {
 
-    private static final long serialVersionUID = 4754069156177607149L;
+    private static final long serialVersionUID = 3538121146945513108L;
 
     public final long tableId;
     public final long columnId;
     public final int storeId;
     public final String storeUniqueName;
     public final PlacementType placementType;
+
+    public final long physicalPosition;
 
     public final String physicalSchemaName;
     public final String physicalTableName;
@@ -47,7 +51,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
-            final String physicalColumnName ) {
+            final String physicalColumnName,
+            final long physicalPosition ) {
         this.tableId = tableId;
         this.columnId = columnId;
         this.storeId = storeId;
@@ -56,6 +61,13 @@ public class CatalogColumnPlacement implements CatalogEntity {
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
         this.physicalColumnName = physicalColumnName;
+        this.physicalPosition = physicalPosition;
+    }
+
+
+    @SneakyThrows
+    public String getLogicalSchemaName() {
+        return Catalog.getInstance().getTable( tableId ).getSchemaName();
     }
 
 
@@ -68,6 +80,12 @@ public class CatalogColumnPlacement implements CatalogEntity {
     @SneakyThrows
     public String getLogicalColumnName() {
         return Catalog.getInstance().getColumn( columnId ).name;
+    }
+
+
+    @SneakyThrows
+    public String getStoreUniqueName() {
+        return Catalog.getInstance().getStore( storeId ).uniqueName;
     }
 
 

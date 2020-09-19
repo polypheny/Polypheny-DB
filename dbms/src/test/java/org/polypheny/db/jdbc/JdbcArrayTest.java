@@ -30,10 +30,11 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
+@SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
 public class JdbcArrayTest {
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+
     private final static String ARRAYTEST_SQL = "CREATE TABLE arraytest( "
             + "id INTEGER NOT NULL, "
             + "bigintarray BIGINT ARRAY(1,2), "
@@ -47,7 +48,6 @@ public class JdbcArrayTest {
             + "varchararray VARCHAR(20) ARRAY(1,2), "
             + "PRIMARY KEY (id) )";
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private final static String ARRAYTEST_DATA_SQL = "INSERT INTO arraytest(id, bigintarray, booleanarray, decimalarray, doublearray, intarray, realarray, smallintarray, tinyintarray, varchararray) VALUES ("
             + "1,"
             + "ARRAY[9999999,8888888],"

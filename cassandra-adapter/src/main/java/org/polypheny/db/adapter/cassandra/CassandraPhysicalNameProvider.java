@@ -89,26 +89,12 @@ public class CassandraPhysicalNameProvider {
 
 
     public String getLogicalColumnName( long columnId ) {
-        CatalogColumn catalogColumn;
-        try {
-            catalogColumn = catalog.getColumn( columnId );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
-        }
-
-        return catalogColumn.name;
+        return catalog.getColumn( columnId ).name;
     }
 
 
     public CatalogColumn getLogicalColumn( long columnId ) {
-        CatalogColumn catalogColumn;
-        try {
-            catalogColumn = catalog.getColumn( columnId );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
-        }
-
-        return catalogColumn;
+        return catalog.getColumn( columnId );
     }
 
 

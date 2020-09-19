@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
+import org.mapdb.DBException.SerializationError;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
@@ -59,6 +60,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -130,6 +132,9 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong constraintIdBuilder = new AtomicLong();
     private static final AtomicLong indexIdBuilder = new AtomicLong();
     private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
+
+    private static final AtomicLong physicalPositionBuilder = new AtomicLong();
+
     private final String path;
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
     // TODO DL check solution for all
@@ -275,14 +280,20 @@ public class CatalogImpl extends Catalog {
      * @param db the databases object on which the layout is created
      */
     private void initDBLayout( DB db ) {
-        initUserInfo( db );
-        initDatabaseInfo( db );
-        initSchemaInfo( db );
-        initTableInfo( db );
-        initColumnInfo( db );
-        initKeysAndConstraintsInfo( db );
-        initStoreInfo( db );
-
+        try {
+            initUserInfo( db );
+            initDatabaseInfo( db );
+            initSchemaInfo( db );
+            initTableInfo( db );
+            initColumnInfo( db );
+            initKeysAndConstraintsInfo( db );
+            initStoreInfo( db );
+        } catch ( SerializationError e ) {
+            log.error( "!!!!!!!!!!! Error while restoring the catalog !!!!!!!!!!!" );
+            log.error( "This usually means that there have been changes to the internal structure of the catalog with the last update of Polypheny-DB." );
+            log.error( "To fix this, you must reset the catalog. To do this, please start Polypheny-DB once with the argument \"-resetCatalog\"." );
+            System.exit( 1 );
+        }
     }
 
 
@@ -1368,7 +1379,8 @@ public class CatalogImpl extends Catalog {
                     placementType,
                     physicalSchemaName,
                     physicalTableName,
-                    physicalColumnName );
+                    physicalColumnName,
+                    physicalPositionBuilder.getAndIncrement() );
 
             synchronized ( this ) {
                 columnPlacements.put( new Object[]{ storeId, columnId }, placement );
@@ -1420,7 +1432,7 @@ public class CatalogImpl extends Catalog {
                 columnPlacements.remove( new Object[]{ storeId, columnId } );
             }
             listeners.firePropertyChange( "columnPlacement", table, null );
-        } catch ( UnknownTableException | UnknownColumnException e ) {
+        } catch ( UnknownTableException | UnknownColumnIdRuntimeException e ) {
             throw new GenericCatalogException( e );
         }
 
@@ -1459,13 +1471,14 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId ) {
-        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingInt( p -> {
-            try {
-                return getColumn( p.columnId ).position;
-            } catch ( UnknownColumnException e ) {
-                throw new RuntimeException( e );
-            }
-        } );
+        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingInt( p -> getColumn( p.columnId ).position );
+        return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public List<CatalogColumnPlacement> getColumnPlacementsOnStoreSortedByPhysicalPosition( int storeId, long tableId ) {
+        final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingLong( p -> p.physicalPosition );
         return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
     }
 
@@ -1510,7 +1523,8 @@ public class CatalogImpl extends Catalog {
                     placementType,
                     old.physicalSchemaName,
                     old.physicalTableName,
-                    old.physicalColumnName );
+                    old.physicalColumnName,
+                    physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
             }
@@ -1542,7 +1556,8 @@ public class CatalogImpl extends Catalog {
                     old.placementType,
                     physicalSchemaName,
                     physicalTableName,
-                    physicalColumnName );
+                    physicalColumnName,
+                    physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
             }
@@ -1607,11 +1622,11 @@ public class CatalogImpl extends Catalog {
      * @throws UnknownColumnException If there is no column with this id
      */
     @Override
-    public CatalogColumn getColumn( long columnId ) throws UnknownColumnException {
+    public CatalogColumn getColumn( long columnId ) {
         try {
             return Objects.requireNonNull( columns.get( columnId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnException( columnId );
+            throw new UnknownColumnIdRuntimeException( columnId );
         }
     }
 
@@ -1751,7 +1766,7 @@ public class CatalogImpl extends Catalog {
      * @param position The new position of the column
      */
     @Override
-    public void setColumnPosition( long columnId, int position ) throws UnknownColumnException {
+    public void setColumnPosition( long columnId, int position ) {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
             CatalogColumn column = new CatalogColumn( old.id, old.name, old.tableId, old.schemaId, old.databaseId, position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, old.collation, old.defaultValue );
@@ -1761,7 +1776,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnException( columnId );
+            throw new UnknownColumnIdRuntimeException( columnId );
         }
     }
 
@@ -1853,11 +1868,11 @@ public class CatalogImpl extends Catalog {
      * Set the collation of a column.
      * If the column already has the specified collation set, this method is a NoOp.
      *
-     * @param columnId The id of the column
+     * @param columnId  The id of the column
      * @param collation The collation to set
      */
     @Override
-    public void setCollation( long columnId, Collation collation ) throws UnknownColumnException {
+    public void setCollation( long columnId, Collation collation ) {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
 
@@ -1871,7 +1886,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnException( columnId );
+            throw new UnknownColumnIdRuntimeException( columnId );
         }
     }
 
@@ -1927,7 +1942,7 @@ public class CatalogImpl extends Catalog {
                 columns.remove( columnId );
             }
             listeners.firePropertyChange( "column", column, null );
-        } catch ( NullPointerException | UnknownColumnException | UnknownTableException e ) {
+        } catch ( NullPointerException | UnknownColumnIdRuntimeException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1938,12 +1953,12 @@ public class CatalogImpl extends Catalog {
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
      *
-     * @param columnId The id of the column
-     * @param type The type of the default value
+     * @param columnId     The id of the column
+     * @param type         The type of the default value
      * @param defaultValue The default value
      */
     @Override
-    public void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws UnknownColumnException {
+    public void setDefaultValue( long columnId, PolyType type, String defaultValue ) {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
             CatalogColumn column = new CatalogColumn(
@@ -1968,7 +1983,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "column", old, column );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnException( columnId );
+            throw new UnknownColumnIdRuntimeException( columnId );
         }
     }
 
@@ -1979,7 +1994,7 @@ public class CatalogImpl extends Catalog {
      * @param columnId The id of the column
      */
     @Override
-    public void deleteDefaultValue( long columnId ) throws UnknownColumnException {
+    public void deleteDefaultValue( long columnId ) {
         try {
             CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
             CatalogColumn column = new CatalogColumn(
@@ -2006,7 +2021,7 @@ public class CatalogImpl extends Catalog {
                 listeners.firePropertyChange( "column", old, column );
             }
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnException( columnId );
+            throw new UnknownColumnIdRuntimeException( columnId );
         }
     }
 
@@ -2231,7 +2246,7 @@ public class CatalogImpl extends Catalog {
                     }
                 }
             }
-        } catch ( NullPointerException | UnknownColumnException e ) {
+        } catch ( NullPointerException | UnknownColumnIdRuntimeException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -2553,6 +2568,7 @@ public class CatalogImpl extends Catalog {
 
 
     // TODO move
+    @Override
     public List<CatalogKey> getKeys() {
         return new ArrayList<>( keys.values() );
     }
@@ -2564,31 +2580,37 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
     public List<CatalogIndex> getIndices( CatalogKey key ) {
         return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    @Override
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
         return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    @Override
     public List<CatalogConstraint> getConstraints( CatalogKey key ) {
         return constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    @Override
     public boolean isIndex( long keyId ) {
         return indices.values().stream().anyMatch( i -> i.keyId == keyId );
     }
 
 
+    @Override
     public boolean isConstraint( long keyId ) {
         return constraints.values().stream().anyMatch( c -> c.keyId == keyId );
     }
 
 
+    @Override
     public boolean isForeignKey( long keyId ) {
         return foreignKeys.values().stream().anyMatch( f -> f.referencedKeyId == keyId );
     }
