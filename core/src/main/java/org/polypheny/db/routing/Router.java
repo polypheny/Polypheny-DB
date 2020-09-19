@@ -20,8 +20,9 @@ import java.util.List;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
 
 public interface Router {
@@ -34,5 +35,5 @@ public interface Router {
 
     void dropPlacements( List<CatalogColumnPlacement> placements );
 
-    RelBuilder buildJoinedTableScan( RelBuilder builder, List<CatalogColumnPlacement> placements );
+    RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements );
 }

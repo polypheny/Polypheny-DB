@@ -278,10 +278,9 @@ public class DataMigratorImpl implements DataMigrator {
         RelOptCluster cluster = RelOptCluster.create(
                 statement.getQueryProcessor().getPlanner(),
                 new RexBuilder( statement.getTransaction().getTypeFactory() ) );
-        RelBuilder builder = RelBuilder.create( statement, cluster );
 
-        statement.getRouter().buildJoinedTableScan( builder, placements );
-        return RelRoot.of( builder.build(), SqlKind.SELECT );
+        RelNode node = statement.getRouter().buildJoinedTableScan( statement, cluster, placements );
+        return RelRoot.of( node, SqlKind.SELECT );
     }
 
 

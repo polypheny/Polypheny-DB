@@ -19,10 +19,11 @@ package org.polypheny.db.catalog.entity;
 
 import java.io.Serializable;
 import java.util.Map;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
-
+@EqualsAndHashCode
 public class CatalogStore implements CatalogEntity {
 
     private static final long serialVersionUID = -5837600302561930044L;

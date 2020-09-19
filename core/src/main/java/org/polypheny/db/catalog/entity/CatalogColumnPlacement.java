@@ -18,12 +18,14 @@ package org.polypheny.db.catalog.entity;
 
 
 import java.io.Serializable;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 
 
+@EqualsAndHashCode
 public class CatalogColumnPlacement implements CatalogEntity {
 
     private static final long serialVersionUID = 3538121146945513108L;

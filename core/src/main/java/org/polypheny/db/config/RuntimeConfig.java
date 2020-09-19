@@ -252,7 +252,12 @@ public enum RuntimeConfig {
             "Size of the implementation cache. If the limit is reached, the least recently used entry is removed.",
             1000,
             ConfigType.INTEGER,
-            "implementationCachingGroup" );
+            "implementationCachingGroup" ),
+
+    JOINED_TABLE_SCAN_CACHE_SIZE( "runtime/joinedTableScanCacheSize",
+            "Size of the joined table scan cache. If the limit is reached, the least recently used entry is removed.",
+            1000,
+            ConfigType.INTEGER );
 
 
     private final String key;
