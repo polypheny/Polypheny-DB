@@ -36,4 +36,6 @@ public interface Router {
     void dropPlacements( List<CatalogColumnPlacement> placements );
 
     RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements );
+
+    void resetCaches();
 }

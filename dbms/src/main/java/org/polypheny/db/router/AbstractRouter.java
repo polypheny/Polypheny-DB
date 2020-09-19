@@ -559,6 +559,12 @@ public abstract class AbstractRouter implements Router {
     }
 
 
+    @Override
+    public void resetCaches() {
+        joinedTableScanCache.invalidateAll();
+    }
+
+
     @AllArgsConstructor
     @Getter
     private static class SelectedStoreInfo {
