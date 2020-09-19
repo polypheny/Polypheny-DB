@@ -643,8 +643,13 @@ public class Crud implements InformationObserver {
             } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
                 // Add limit if not specified
                 Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
+                if ( !p2.matcher( query ).find() ) {
+                    noLimit = false;
+                }
                 //If the user specifies a limit
-                noLimit = p2.matcher( query ).find();
+                else {
+                    noLimit = true;
+                }
                 // decrease limit if it is too large
                 /*else {
                     Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
