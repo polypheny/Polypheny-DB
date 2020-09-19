@@ -401,16 +401,16 @@ public abstract class AbstractRouter implements Router {
 
     public RelBuilder buildJoinedTableScan( RelBuilder builder, List<CatalogColumnPlacement> placements ) {
         // Sort by store
-        Map<Integer, List<CatalogColumnPlacement>> sortedPlacements = new HashMap<>();
+        Map<Integer, List<CatalogColumnPlacement>> placementsByStore = new HashMap<>();
         for ( CatalogColumnPlacement placement : placements ) {
-            if ( !sortedPlacements.containsKey( placement.storeId ) ) {
-                sortedPlacements.put( placement.storeId, new LinkedList<>() );
+            if ( !placementsByStore.containsKey( placement.storeId ) ) {
+                placementsByStore.put( placement.storeId, new LinkedList<>() );
             }
-            sortedPlacements.get( placement.storeId ).add( placement );
+            placementsByStore.get( placement.storeId ).add( placement );
         }
 
-        if ( sortedPlacements.size() == 1 ) {
-            List<CatalogColumnPlacement> ccp = sortedPlacements.values().iterator().next();
+        if ( placementsByStore.size() == 1 ) {
+            List<CatalogColumnPlacement> ccp = placementsByStore.values().iterator().next();
             builder = handleTableScan(
                     builder,
                     ccp.get( 0 ).tableId,
@@ -421,7 +421,10 @@ public abstract class AbstractRouter implements Router {
                     ccp.get( 0 ).physicalTableName );
             // final project
             ArrayList<RexNode> rexNodes = new ArrayList<>();
-            for ( CatalogColumnPlacement catalogColumnPlacement : placements.stream().sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) ).collect( Collectors.toList() ) ) {
+            List<CatalogColumnPlacement> placementList = placements.stream()
+                    .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
+                    .collect( Collectors.toList() );
+            for ( CatalogColumnPlacement catalogColumnPlacement : placementList ) {
                 rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
             }
             builder.project( rexNodes );
@@ -444,7 +447,7 @@ public abstract class AbstractRouter implements Router {
 
             // Add primary key
             try {
-                for ( Entry<Integer, List<CatalogColumnPlacement>> entry : sortedPlacements.entrySet() ) {
+                for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByStore.entrySet() ) {
                     for ( CatalogColumn pkColumn : pkColumns ) {
                         CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
                         if ( !entry.getValue().contains( pkPlacement ) ) {
@@ -458,7 +461,7 @@ public abstract class AbstractRouter implements Router {
 
             Deque<String> queue = new LinkedList<>();
             boolean first = true;
-            for ( List<CatalogColumnPlacement> ccps : sortedPlacements.values() ) {
+            for ( List<CatalogColumnPlacement> ccps : placementsByStore.values() ) {
                 handleTableScan(
                         builder,
                         ccps.get( 0 ).tableId,
@@ -494,7 +497,10 @@ public abstract class AbstractRouter implements Router {
             }
             // final project
             ArrayList<RexNode> rexNodes = new ArrayList<>();
-            for ( CatalogColumnPlacement ccp : placements.stream().sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) ).collect( Collectors.toList() ) ) {
+            List<CatalogColumnPlacement> placementList = placements.stream()
+                    .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
+                    .collect( Collectors.toList() );
+            for ( CatalogColumnPlacement ccp : placementList ) {
                 rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
             }
             builder.project( rexNodes );
