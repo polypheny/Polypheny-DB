@@ -643,13 +643,8 @@ public class Crud implements InformationObserver {
             } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
                 // Add limit if not specified
                 Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-                if ( !p2.matcher( query ).find() ) {
-                    noLimit = false;
-                }
                 //If the user specifies a limit
-                else {
-                    noLimit = true;
-                }
+                noLimit = p2.matcher( query ).find();
                 // decrease limit if it is too large
                 /*else {
                     Pattern pattern = Pattern.compile( "(.*?LIMIT[\\s+])(\\d+)", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
@@ -2255,7 +2250,7 @@ public class Crud implements InformationObserver {
         long csvCounter = 0;
         try (
                 Reader reader = new BufferedReader( new FileReader( new File( extractedFolder, csvFileName ) ) );
-                CSVReader csvReader = new CSVReader( reader );
+                CSVReader csvReader = new CSVReader( reader )
         ) {
             long lineCount = Files.lines( new File( extractedFolder, csvFileName ).toPath() ).count();
             String[] nextRecord;
@@ -2599,7 +2594,7 @@ public class Crud implements InformationObserver {
                             }
                         } else if ( o instanceof List ) {
                             // TODO js(knn): make sure all of this is not just a hotfix.
-                            temp[counter] = gson.toJson( (List) o );
+                            temp[counter] = gson.toJson( o );
                         } else {
                             temp[counter] = o.toString();
                         }

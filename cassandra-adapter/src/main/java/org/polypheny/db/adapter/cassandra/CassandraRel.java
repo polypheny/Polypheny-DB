@@ -59,7 +59,7 @@ public interface CassandraRel extends RelNode {
     /**
      * Context to convert a tree of {@link CassandraRel} nodes into a CQL query.
      */
-    public class CassandraImplementContext {
+    class CassandraImplementContext {
         // TODO JS: Find a better name for this class
 
         Type type = null;

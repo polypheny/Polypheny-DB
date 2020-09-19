@@ -399,6 +399,7 @@ public abstract class AbstractRouter implements Router {
     }
 
 
+    @Override
     public RelBuilder buildJoinedTableScan( RelBuilder builder, List<CatalogColumnPlacement> placements ) {
         // Sort by store
         Map<Integer, List<CatalogColumnPlacement>> placementsByStore = new HashMap<>();
@@ -420,14 +421,14 @@ public abstract class AbstractRouter implements Router {
                     ccp.get( 0 ).physicalSchemaName,
                     ccp.get( 0 ).physicalTableName );
             // final project
-            /*ArrayList<RexNode> rexNodes = new ArrayList<>();
-            List<CatalogColumnPlacement> placementList = placements.stream()
+            ArrayList<RexNode> rexNodes = new ArrayList<>();
+            /*List<CatalogColumnPlacement> placementList = placements.stream()
                     .sorted( Comparator.comparingInt( p -> Catalog.getInstance().getColumn( p.columnId ).position ) )
-                    .collect( Collectors.toList() );
-            for ( CatalogColumnPlacement catalogColumnPlacement : placementList ) {
+                    .collect( Collectors.toList() );*/
+            for ( CatalogColumnPlacement catalogColumnPlacement : placements ) {
                 rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
             }
-            builder.project( rexNodes );*/
+            builder.project( rexNodes );
             return builder;
         } else {
             // We need to join placements on different stores

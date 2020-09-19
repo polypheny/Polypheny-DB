@@ -678,6 +678,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     private static class RelCloneShuttle extends RelShuttleImpl {
 
+        @Override
         protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
             stack.push( parent );
             try {

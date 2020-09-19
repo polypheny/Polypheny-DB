@@ -119,8 +119,6 @@ public class IcarusRouter extends AbstractRouter {
     private enum QUERY_CLASS_PROVIDER_METHOD {ICARUS_SHUTTLE, QUERY_PARAMETERIZER}
 
 
-    ;
-
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
     private int selectedStoreId = -2; // Is set in analyze
@@ -610,9 +608,9 @@ public class IcarusRouter extends AbstractRouter {
     @AllArgsConstructor
     private static class ExecutionTime {
 
-        private String queryClassString;
-        private int storeId;
-        private long nanoTime;
+        private final String queryClassString;
+        private final int storeId;
+        private final long nanoTime;
     }
 
 
@@ -659,7 +657,7 @@ public class IcarusRouter extends AbstractRouter {
     // TODO MV: This should be improved to include more information on the used tables and columns
     private static class IcarusShuttle extends RelShuttleImpl {
 
-        private HashSet<String> hashBasis = new HashSet<>();
+        private final HashSet<String> hashBasis = new HashSet<>();
 
 
         @Override

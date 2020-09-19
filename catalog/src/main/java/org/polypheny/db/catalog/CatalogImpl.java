@@ -2568,6 +2568,7 @@ public class CatalogImpl extends Catalog {
 
 
     // TODO move
+    @Override
     public List<CatalogKey> getKeys() {
         return new ArrayList<>( keys.values() );
     }
@@ -2579,31 +2580,37 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
     public List<CatalogIndex> getIndices( CatalogKey key ) {
         return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    @Override
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
         return indices.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    @Override
     public List<CatalogConstraint> getConstraints( CatalogKey key ) {
         return constraints.values().stream().filter( c -> c.keyId == key.id ).collect( Collectors.toList() );
     }
 
 
+    @Override
     public boolean isIndex( long keyId ) {
         return indices.values().stream().anyMatch( i -> i.keyId == keyId );
     }
 
 
+    @Override
     public boolean isConstraint( long keyId ) {
         return constraints.values().stream().anyMatch( c -> c.keyId == keyId );
     }
 
 
+    @Override
     public boolean isForeignKey( long keyId ) {
         return foreignKeys.values().stream().anyMatch( f -> f.referencedKeyId == keyId );
     }
