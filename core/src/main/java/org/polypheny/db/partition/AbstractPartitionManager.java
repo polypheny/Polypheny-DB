@@ -77,5 +77,7 @@ public abstract class AbstractPartitionManager implements PartitionManager{
     //returns the Index of the partition where to place the object
     public abstract long getTargetPartitionId(CatalogTable catalogTable, String columnValue);
 
-    public abstract boolean validPartitionDistribution();
+    public abstract boolean validatePartitionDistribution(CatalogTable table);
+
+    public abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
 }

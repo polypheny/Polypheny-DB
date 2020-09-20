@@ -832,11 +832,11 @@ public abstract class Catalog {
 
     public abstract List<Long>  getPartitionsOnDataPlacement(int storeId, long tableId);
 
+    public abstract List<Long> getPartitionsIndexOnDataPlacement(int storeId, long tableId);
+
     public abstract void  deletePartitionsOnDataPlacement(int storeId, long tableId);
 
-    public abstract boolean validatePartitionDistribution(long tableId);
-
-    public abstract int getNumberOfPlacementsWithAllPartitions(long columnId, long numPartitions);
+    public abstract boolean validatePartitionDistribution(int storeId, long tableId, long columnId);
 
     /*
      *

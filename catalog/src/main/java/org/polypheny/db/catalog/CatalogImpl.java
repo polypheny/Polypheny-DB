@@ -41,6 +41,8 @@ import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -1447,15 +1449,20 @@ public class CatalogImpl extends Catalog {
             CatalogTable table;
             synchronized ( this ) {
 
-                //needed because otherwise a already partitioned table would be reset to a regualr table due to the different constructors.
+                //needed because otherwise a already partitioned table would be reset to a regular table due to the different constructors.
                 if (oldTable.isPartitioned){
+
+                    if ( !validatePartitionDistribution(storeId, oldTable.id, columnId) ){
+                        throw new RuntimeException("Partition Distribution failed");
+                    }
+
                     System.out.println("HENNLO: deleteColumnPlacement() table '"+ oldTable.name + "' is partitioned.");
                     table = new CatalogTable( oldTable.id, oldTable.name, oldTable.columnIds, oldTable.schemaId, oldTable.databaseId,
                             oldTable.ownerId, oldTable.ownerName, oldTable.tableType, oldTable.definition, oldTable.primaryKey, ImmutableMap.copyOf( placementsByStore ),
                             oldTable.numPartitions, oldTable.partitionType, oldTable.partitionIds, oldTable.partitionColumnId);
 
                     //ONLY NEEDED when partitioning on every columnPlacement is possible
-                    //remove placement from list of placements containing a partition otherwise this partition will remain part of a partiton lookup
+                    //remove placement from list of placements containing a partition otherwise this partition will remain part of a partition lookup
                     //CatalogColumnPlacement placement = getColumnPlacement(storeId,columnId);
                     /*for (long partitionId: table.partitionIds) {
                         try {
@@ -3015,13 +3022,17 @@ public class CatalogImpl extends Catalog {
                     } else {
                         System.out.println("HENNLO: updatePartitionsOnDataPlacement() Updating Partitions=" + partitionIds + " to DataPlacement=" + getStore(storeId).uniqueName + "." + getTable(tableId).name + "");
                         List<Long> tempPartition = dataPartitionPlacement.get(new Object[]{storeId, tableId});
-                        dataPartitionPlacement.replace(new Object[]{storeId, tableId}, ImmutableList.copyOf(partitionIds));
 
-                        //Validate if partition distriobution after update is successfull otherwise rollback
-                        if ( !validatePartitionDistribution(tableId) ) {
-                            dataPartitionPlacement.replace(new Object[]{storeId, tableId}, ImmutableList.copyOf(tempPartition));
-                            throw new RuntimeException("Validation of partition distribution failed");
+                        //Validate if partition distribution after update is successfull otherwise rollback
+
+                        CatalogTable table = getTable(tableId);
+                        for ( long columnId : table.columnIds) {
+                            if (!validatePartitionDistribution(storeId, tableId, columnId)) {
+                                dataPartitionPlacement.replace(new Object[]{storeId, tableId}, ImmutableList.copyOf(tempPartition));
+                                throw new RuntimeException("Validation of partition distribution failed");
+                            }
                         }
+                        dataPartitionPlacement.replace(new Object[]{storeId, tableId}, ImmutableList.copyOf(partitionIds));
                 }
 
             }
@@ -3029,6 +3040,7 @@ public class CatalogImpl extends Catalog {
 
     }
 
+    //Returns list with the effective partitionIds
     @Override
     public List<Long> getPartitionsOnDataPlacement(int storeId, long tableId) {
         List<Long> partitions = dataPartitionPlacement.get(new Object[]{storeId, tableId});
@@ -3036,6 +3048,29 @@ public class CatalogImpl extends Catalog {
             partitions = new ArrayList<>();
         }
         return partitions;
+    }
+
+    //Returns list with the index of the partitions on this store. 0..numPartitions
+    @Override
+    public List<Long> getPartitionsIndexOnDataPlacement(int storeId, long tableId) {
+
+        List<Long> partitions = dataPartitionPlacement.get(new Object[]{storeId, tableId});
+        if( partitions == null ) {
+            return new ArrayList<>();
+        }
+
+        List<Long> partitionIndexList = new ArrayList<>();
+        try {
+            CatalogTable catalogTable = getTable(tableId);
+            for (int index = 0; index < catalogTable.numPartitions; index++){
+                if ( partitions.contains(catalogTable.partitionIds.get(index)) ){
+                    partitionIndexList.add((long)index);
+                }
+            }
+        } catch (UnknownTableException e) {
+            e.printStackTrace();
+        }
+        return partitionIndexList;
     }
 
 
@@ -3065,68 +3100,33 @@ public class CatalogImpl extends Catalog {
     }
 
 
+
+
     /**
-     *  Validates the table if the partitions are sufficiently distributed.
-     *  There has to be at least on columnPlacement which contains all partitions
+     *  Checks depending on the current partition distribution and partitionType
+     *  If this would be sufficient. Basically a passthrough method to simplify the code
      *
-     * @param tableId  Table to be checked
+     * @param tableId  table to be checked
      * @return If its correctly distributed or not
      */
     @Override
-    public boolean validatePartitionDistribution(long tableId) {
+    public boolean validatePartitionDistribution(int storeId, long tableId, long columnId) {
 
+        CatalogTable catalogTable = null;
         try {
-            CatalogTable table = getTable(tableId);
+            catalogTable = getTable(tableId);
 
-            //Check for every column if there exists at least one placement which contains all partitions
-            for (long columnId : table.columnIds){
-                boolean skip = false;
+            PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+            PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
 
-                    if ( getNumberOfPlacementsWithAllPartitions(columnId, table.numPartitions) >= 1 ){
-                        System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId);
-                        skip = true;
-                        break;
-                    }
-
-                if ( skip ){ continue;}
-                else{
-                    System.out.println("ERROR Column: '" + getColumn(columnId).name +"' has no placement containing all partitions");
-                    return false;
-                }
+            if ( !partitionManager.probePartitionDistributionChange(catalogTable, storeId, columnId) ) {
+                return false;
             }
 
-
-        } catch (UnknownTableException | UnknownColumnException e) {
+        } catch (UnknownTableException e) {
             e.printStackTrace();
         }
-
-
         return true;
-    }
-
-
-    /**
-     *  Returns number of placements for this column which contain all partitions
-     *
-     * @param columnId  column to be checked
-     * @param numPartitions  numPartitions
-     * @return If its correctly distributed or not
-     */
-    @Override
-    public int getNumberOfPlacementsWithAllPartitions(long columnId, long numPartitions){
-
-        //Return every placement of this column
-        List<CatalogColumnPlacement> tempCcps = getColumnPlacements(columnId);
-        int placementCounter = 0;
-        for (CatalogColumnPlacement ccp : tempCcps ){
-            //If the DataPlacement has stored all partitions and therefore all partitions for this placement
-            if ( dataPartitionPlacement.get( new Object[]{ccp.storeId, ccp.tableId}).size() == numPartitions  ){
-                System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId + " " + ccp.storeUniqueName);
-                placementCounter++;
-            }
-        }
-        return placementCounter;
-
     }
 
     // TODO move

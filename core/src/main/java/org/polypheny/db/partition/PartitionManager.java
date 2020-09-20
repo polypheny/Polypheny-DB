@@ -7,8 +7,12 @@ public interface PartitionManager {
 
 
     //returns the Index of the partition where to place the object
-    public abstract long getTargetPartitionId(CatalogTable catalogTable, String columnValue);
+    abstract long getTargetPartitionId(CatalogTable catalogTable, String columnValue);
 
-    public abstract boolean validPartitionDistribution();
+    abstract boolean validatePartitionDistribution(CatalogTable table);
+
+    abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
+
+
 
 }

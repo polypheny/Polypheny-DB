@@ -34,10 +34,20 @@ public class RoundRobinPartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public boolean validPartitionDistribution() {
+    public boolean validatePartitionDistribution(CatalogTable table) {
         System.out.println("HENNLO  RoundRobinPartitionManager validPartitionDistribution()");
         return false;
     }
+
+    //Needed when columnPlacements are being dropped
+    @Override
+    public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
+    //TODO nOt implemented yet
+        return false;
+
+    }
+
+
 
 
 }

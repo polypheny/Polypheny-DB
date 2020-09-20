@@ -239,7 +239,8 @@ public abstract class AbstractRouter implements Router {
                     for (CatalogColumnPlacement dataPlacement : pkPlacements) {
                         //Check
                         System.out.println("\t\t -> '" + dataPlacement.storeUniqueName + "' " +
-                                catalog.getPartitionsOnDataPlacement(dataPlacement.storeId, dataPlacement.tableId));
+                                catalog.getPartitionsOnDataPlacement(dataPlacement.storeId, dataPlacement.tableId) +
+                                "\t" + catalog.getPartitionsIndexOnDataPlacement(dataPlacement.storeId, dataPlacement.tableId));
                     }
                 }
 
@@ -297,7 +298,7 @@ public abstract class AbstractRouter implements Router {
 
                         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
                         PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
-                        partitionManager.validPartitionDistribution();
+                        partitionManager.validatePartitionDistribution(catalogTable);
 
 
                         String partitionValue ="";

@@ -33,6 +33,8 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
@@ -140,9 +142,14 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                         }
                         //Check if this placement would be the last columnPlacemnt with all partitions
-                        if ( catalog.getNumberOfPlacementsWithAllPartitions(placement.columnId, catalogTable.numPartitions) <= 1 ){
-                            throw new RuntimeException("Validation of partition distribution failed. Placement: '"
-                                    + placement.storeUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions");
+                        if ( catalogTable.isPartitioned ){
+                            PartitionManagerFactory managerFactory = new PartitionManagerFactory();
+                            PartitionManager partitionManager = managerFactory.getInstance(catalogTable.partitionType);
+
+                            if ( !partitionManager.probePartitionDistributionChange(catalogTable, placement.storeId, placement.columnId )) {
+                                throw new RuntimeException("Validation of partition distribution failed. Placement: '"
+                                        + placement.storeUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions");
+                            }
                         }
                         // Drop Column on store
                         storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), placement.columnId ) );
