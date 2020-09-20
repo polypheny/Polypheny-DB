@@ -26,6 +26,8 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.RelationMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.UserDefinedType;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
@@ -48,7 +50,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -85,6 +86,9 @@ public class CassandraStore extends Store {
     private String dbKeyspace;
     private String dbUsername;
     private String dbPassword;
+
+    // Array Container UDT
+    private final UserDefinedType arrayContainerUdt;
 
 
     // Only display specific logging messages once
@@ -152,6 +156,14 @@ public class CassandraStore extends Store {
                 mySession.execute( "CREATE KEYSPACE " + this.dbKeyspace + " WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1}" );
                 mySession.execute( "USE KEYSPACE " + this.dbKeyspace );
             }
+
+            mySession.execute( "CREATE TYPE IF NOT EXISTS " + this.dbKeyspace + ".arraycontainer ( innertype text, dimension int, cardinality int, data text );" );
+            arrayContainerUdt =
+                    mySession.getMetadata()
+                            .getKeyspace( this.dbKeyspace )
+                            .flatMap( ks -> ks.getUserDefinedType( "arraycontainer" ) )
+                            .orElseThrow( () -> new IllegalArgumentException( "Missing UDT definition" ) );
+
             this.session = mySession;
         } catch ( Exception e ) {
             throw new RuntimeException( e );
@@ -167,7 +179,8 @@ public class CassandraStore extends Store {
                 this.session,
                 this.dbKeyspace,
                 new CassandraPhysicalNameProvider( this.getStoreId() ),
-                this );
+                this,
+                this.arrayContainerUdt );
     }
 
 
@@ -194,7 +207,6 @@ public class CassandraStore extends Store {
         long primaryKeyColumn = -1;
         List<Long> keyColumns = new ArrayList<>();
 
-
         for ( CatalogKey catalogKey : catalog.getTableKeys( catalogTable.id ) ) {
             keyColumns.addAll( catalogKey.columnIds );
             // TODO JS: make sure there's only one primary key!
@@ -214,27 +226,26 @@ public class CassandraStore extends Store {
         // List<CatalogColumn> columns = combinedTable.getColumns();
         List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id );
         CatalogColumnPlacement primaryColumnPlacement = columns.stream().filter( c -> c.columnId == primaryKeyColumnLambda ).findFirst().get();
-        CatalogColumn catalogColumn;
-        try {
-            catalogColumn = catalog.getColumn( primaryColumnPlacement.columnId );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogColumn catalogColumn = catalog.getColumn( primaryColumnPlacement.columnId );
+
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
-                .withPartitionKey( physicalNameProvider.generatePhysicalColumnName( catalogColumn.id ), CassandraTypesUtils.getDataType( catalogColumn.type ) );
+                .withPartitionKey( physicalNameProvider.generatePhysicalColumnName( catalogColumn.id ), CassandraTypesUtils.getDataType( catalogColumn.type, this.arrayContainerUdt ) );
 
         for ( CatalogColumnPlacement placement : columns ) {
-            try {
-                catalogColumn = catalog.getColumn( placement.columnId );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                throw new RuntimeException( e );
+            catalogColumn = catalog.getColumn( placement.columnId );
+            DataType fieldType;
+            if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
+                fieldType = this.arrayContainerUdt;
+            } else {
+                fieldType = CassandraTypesUtils.getDataType( catalogColumn.type, null );
             }
+
             if ( keyColumns.contains( placement.columnId ) ) {
                 if ( placement.columnId != primaryKeyColumn ) {
-                    createTable = createTable.withClusteringColumn( physicalNameProvider.generatePhysicalColumnName( placement.columnId ), CassandraTypesUtils.getDataType( catalogColumn.type ) );
+                    createTable = createTable.withClusteringColumn( physicalNameProvider.generatePhysicalColumnName( placement.columnId ), CassandraTypesUtils.getDataType( catalogColumn.type, this.arrayContainerUdt ) );
                 }
             } else {
-                createTable = createTable.withColumn( physicalNameProvider.generatePhysicalColumnName( placement.columnId ), CassandraTypesUtils.getDataType( catalogColumn.type ) );
+                createTable = createTable.withColumn( physicalNameProvider.generatePhysicalColumnName( placement.columnId ), fieldType );
             }
         }
 
@@ -274,7 +285,7 @@ public class CassandraStore extends Store {
         String physicalColumnName = physicalNameProvider.generatePhysicalColumnName( catalogColumn.id );
 
         SimpleStatement addColumn = SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
-                .addColumn( physicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) ).build();
+                .addColumn( physicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type, this.arrayContainerUdt ) ).build();
 
         context.getStatement().getTransaction().registerInvolvedStore( this );
         // TODO JS: Wrap with error handling to check whether successful, if not, try iterative revision names to find one that works.
@@ -381,7 +392,7 @@ public class CassandraStore extends Store {
         Function<Object, Object> converter = CassandraTypesUtils.convertToFrom( catalogColumn.type, oldType );
 
         session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
-                .addColumn( newPhysicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type ) )
+                .addColumn( newPhysicalColumnName, CassandraTypesUtils.getDataType( catalogColumn.type, this.arrayContainerUdt ) )
                 .build() );
 
         for ( Row r : rs ) {

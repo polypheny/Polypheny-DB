@@ -32,7 +32,6 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.Holder;
 
 
-
 /**
  * Implementation of DataContext.
  */

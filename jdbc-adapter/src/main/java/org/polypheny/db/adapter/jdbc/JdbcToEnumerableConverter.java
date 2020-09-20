@@ -77,6 +77,7 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
@@ -302,6 +303,24 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
         final Expression source;
         switch ( polyType ) {
+            // TODO js(knn): Make sure this is more than just a hotfix.
+            //  add nullability stuff as well
+            case ARRAY:
+                if ( dialect.supportsNestedArrays() ) {
+                    source = Expressions.call(
+                            BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method,
+                            Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) )
+                    );
+                } else {
+                    source = Expressions.call(
+                            BuiltInMethod.JDBC_PARSE_ARRAY_FROM_TEXT.method,
+                            Expressions.constant( fieldType.getComponentType().getPolyType() ),
+                            Expressions.constant( ((ArrayType) fieldType).getDimension() ),
+                            Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
+                    );
+                }
+                break;
+
             case DATE:
             case TIME:
             case TIMESTAMP:
@@ -340,6 +359,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     private Method getMethod( PolyType polyType, boolean nullable, boolean offset ) {
         switch ( polyType ) {
+            case ARRAY:
+                return BuiltInMethod.JDBC_DEEP_ARRAY_TO_LIST.method;
             case DATE:
                 return (nullable
                         ? BuiltInMethod.DATE_TO_INT_OPTIONAL

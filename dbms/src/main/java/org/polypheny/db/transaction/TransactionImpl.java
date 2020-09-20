@@ -41,6 +41,8 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
+import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
@@ -64,13 +66,13 @@ public class TransactionImpl implements Transaction, Comparable {
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     @Getter
-    private CatalogUser user;
+    private final CatalogUser user;
     @Getter
-    private CatalogSchema defaultSchema;
+    private final CatalogSchema defaultSchema;
     @Getter
-    private CatalogDatabase database;
+    private final CatalogDatabase database;
 
-    private TransactionManagerImpl transactionManager;
+    private final TransactionManagerImpl transactionManager;
 
     @Getter
     private final String origin;
@@ -83,9 +85,9 @@ public class TransactionImpl implements Transaction, Comparable {
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private List<Store> involvedStores = new CopyOnWriteArrayList<>();
+    private final List<Store> involvedStores = new CopyOnWriteArrayList<>();
 
-    private Set<Lock> lockList = new HashSet<>();
+    private final Set<Lock> lockList = new HashSet<>();
 
 
     TransactionImpl(
@@ -264,8 +266,15 @@ public class TransactionImpl implements Transaction, Comparable {
     }
 
 
+    @Override
     public long getNumberOfStatements() {
         return statementCounter.get();
+    }
+
+
+    @Override
+    public DataMigrator getDataMigrator() {
+        return new DataMigratorImpl();
     }
 
 }

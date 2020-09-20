@@ -174,6 +174,7 @@ public class SqlAdvisorTest extends SqlValidatorTestCase {
                     "KEYWORD(JSON_OBJECTAGG)",
                     "KEYWORD(JSON_QUERY)",
                     "KEYWORD(JSON_VALUE)",
+                    "KEYWORD(KNN)",
                     "KEYWORD(LAG)",
                     "KEYWORD(LAST_VALUE)",
                     "KEYWORD(LEAD)",

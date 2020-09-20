@@ -26,6 +26,7 @@ import lombok.Getter;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexCorrelVariable;
@@ -69,6 +70,22 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
                 filter.getInput(),
                 condition.accept( this ),
                 filter.getVariablesSet() );
+    }
+
+
+    @Override
+    public RelNode visit( LogicalProject oProject ) {
+        LogicalProject project = (LogicalProject) super.visit( oProject );
+        List<RexNode> newProjects = new ArrayList<>();
+        for ( RexNode node : oProject.getProjects() ) {
+            newProjects.add( node.accept( this ) );
+        }
+        return new LogicalProject(
+                project.getCluster(),
+                project.getTraitSet(),
+                project.getInput(),
+                newProjects,
+                project.getRowType() );
     }
 
     //
@@ -119,13 +136,12 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
         List<Object> list = new ArrayList<>( operands.size() );
         for ( RexNode node : operands ) {
             if ( node instanceof RexLiteral ) {
-                list.add( ((RexLiteral) node).getValue() );
+                list.add( ((RexLiteral) node).getValueForQueryParameterizer() );
             } else if ( node instanceof RexCall ) {
                 list.add( createListForArrays( ((RexCall) node).operands ) );
             } else {
                 throw new RuntimeException( "Invalid array" );
             }
-
         }
         return list;
     }
@@ -167,7 +183,11 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitSubQuery( RexSubQuery subQuery ) {
-        return subQuery; //TODO
+        List<RexNode> newOperands = new LinkedList<>();
+        for ( RexNode operand : subQuery.operands ) {
+            newOperands.add( operand.accept( this ) );
+        }
+        return subQuery.clone( subQuery.type, newOperands, subQuery.rel.accept( this ) );
     }
 
 

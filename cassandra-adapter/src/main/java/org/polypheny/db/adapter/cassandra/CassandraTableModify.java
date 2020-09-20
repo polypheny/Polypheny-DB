@@ -17,12 +17,15 @@
 package org.polypheny.db.adapter.cassandra;
 
 
+import com.datastax.oss.driver.api.core.data.UdtValue;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.term.Term;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.cassandra.CassandraRel.CassandraImplementContext.Type;
+import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -33,8 +36,10 @@ import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.util.Pair;
 
 
@@ -123,12 +128,27 @@ public class CassandraTableModify extends TableModify implements CassandraRel {
 
                 List<Assignment> setAssignments = new ArrayList<>();
                 for ( Pair<String, RexNode> entry : Pair.zip( this.getUpdateColumnList(), this.getSourceExpressionList() ) ) {
-                    if ( !(entry.right instanceof RexLiteral) ) {
+                    if ( !(entry.right instanceof RexLiteral) && !((entry.right instanceof RexCall) && (((RexCall) entry.right).getOperator() instanceof SqlArrayValueConstructor)) ) {
                         throw new RuntimeException( "Non literal values are not yet supported." );
                     }
 
                     String physicalColumnName = ((CassandraConvention) getConvention()).physicalNameProvider.getPhysicalColumnName( cassandraTable.getColumnFamily(), entry.left );
-                    setAssignments.add( Assignment.setColumn( physicalColumnName, QueryBuilder.literal( CassandraValues.literalValue( (RexLiteral) entry.right ) ) ) );
+
+                    Term term;
+                    if ( entry.right instanceof RexLiteral ) {
+                        term = QueryBuilder.literal( CassandraValues.literalValue( (RexLiteral) entry.right ) );
+                    } else {
+                        SqlArrayValueConstructor arrayValueConstructor = (SqlArrayValueConstructor) ((RexCall) entry.right).op;
+                        UdtValue udtValue = CassandraTypesUtils.createArrayContainerDataType(
+                                context.cassandraTable.getUnderlyingConvention().arrayContainerUdt,
+                                arrayValueConstructor.dimension,
+                                arrayValueConstructor.maxCardinality,
+                                ((RexCall) entry.right).type.getComponentType().getPolyType(),
+                                (RexCall) entry.right );
+                        String udtString = udtValue.getFormattedContents();
+                        term = QueryBuilder.raw( udtString );
+                    }
+                    setAssignments.add( Assignment.setColumn( physicalColumnName, term ) );
                 }
 
                 context.addAssignments( setAssignments );

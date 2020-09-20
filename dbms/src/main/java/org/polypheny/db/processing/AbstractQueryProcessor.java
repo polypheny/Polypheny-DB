@@ -37,6 +37,7 @@ import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
@@ -147,6 +148,7 @@ import org.polypheny.db.transaction.TableAccessMap;
 import org.polypheny.db.transaction.TableAccessMap.Mode;
 import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
@@ -155,7 +157,7 @@ import org.polypheny.db.util.Util;
 
 
 @Slf4j
-public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpander {
+public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     private final Statement statement;
 
@@ -176,16 +178,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         return prepareQuery(
                 logicalRoot,
                 logicalRoot.rel.getCluster().getTypeFactory().builder().build(),
-                null );
+                null,
+                false );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values ) {
-        return prepareQuery( logicalRoot, parameterRowType, values, false );
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isRouted ) {
+        return prepareQuery( logicalRoot, parameterRowType, values, false, isRouted );
     }
 
-    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isSubquery ) {
+    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
@@ -208,79 +211,82 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        if (lock) {
-            // Locking
-            if ( isAnalyze ) {
-                statement.getDuration().start( "Locking" );
+        RelRoot routedRoot;
+        if ( !isRouted) {
+            if ( lock ) {
+                // Locking
+                if ( isAnalyze ) {
+                    statement.getDuration().start( "Locking" );
 
-            }
-            try {
-                // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
-                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                    if ( mode == Mode.READ_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                    } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                    }
                 }
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( e );
+                try {
+                    // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+                    LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                    // Get locks for individual tables
+                    TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+                    for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                        Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                        if ( mode == Mode.READ_ACCESS ) {
+                            LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                        } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                            LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                        }
+                    }
+                } catch ( DeadlockException e ) {
+                    throw new RuntimeException( e );
+                }
+
+                if ( isAnalyze ) {
+                    statement.getDuration().stop( "Locking" );
+                }
             }
 
+            // Index Update
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Locking" );
+                statement.getDuration().start( "Index Update" );
             }
-        }
+            RelRoot indexUpdateRoot = logicalRoot;
+            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
+                IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
+                indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType, values );
+            }
 
-        // Index Update
-        if ( isAnalyze ) {
-            statement.getDuration().stop( "Locking" );
-            statement.getDuration().start( "Index Update" );
-        }
-        RelRoot indexUpdateRoot = logicalRoot;
-        if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
-            IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
-            indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType, values );
-        }
+            // Constraint Enforcement Rewrite
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Index Update" );
+                statement.getDuration().start( "Constraint Enforcement" );
+            }
 
-        // Constraint Enforcement Rewrite
-        if ( isAnalyze ) {
-            statement.getDuration().stop( "Index Update" );
-            statement.getDuration().start( "Constraint Enforcement" );
-        }
+            RelRoot constraintsRoot = indexUpdateRoot;
+            if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+                constraintsRoot = enforceConstraints( constraintsRoot, statement );
+            }
 
-        RelRoot constraintsRoot = indexUpdateRoot;
-        if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
-            constraintsRoot = enforceConstraints( constraintsRoot, statement );
-        }
+            // Index Lookup Rewrite
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Constraint Enforcement" );
+                statement.getDuration().start( "Index Lookup Rewrite" );
+            }
+            RelRoot indexLookupRoot = constraintsRoot;
+            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
+                indexLookupRoot = indexLookup( indexLookupRoot, statement, executionTimeMonitor );
+            }
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Index Lookup Rewrite" );
+                statement.getDuration().start( "Routing" );
+            }
+            routedRoot = route( indexLookupRoot, statement, executionTimeMonitor );
 
-        // Index Lookup Rewrite
-        if ( isAnalyze ) {
-            statement.getDuration().stop( "Constraint Enforcement" );
-            statement.getDuration().start( "Index Lookup Rewrite" );
+            RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
+                    RelBuilder.create( statement, routedRoot.rel.getCluster() ),
+                    routedRoot.rel.getCluster().getRexBuilder(),
+                    ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
+                    true );
+            routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+        } else {
+            routedRoot = logicalRoot;
         }
-        RelRoot indexLookupRoot = constraintsRoot;
-        if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
-            indexLookupRoot = indexLookup( indexLookupRoot, statement, executionTimeMonitor );
-        }
-
-        // Route
-        if ( isAnalyze ) {
-            statement.getDuration().stop( "Index Lookup Rewrite" );
-            statement.getDuration().start( "Routing" );
-        }
-        RelRoot routedRoot = route( indexLookupRoot, statement, executionTimeMonitor );
-
-        RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
-                RelBuilder.create( statement, routedRoot.rel.getCluster() ),
-                routedRoot.rel.getCluster().getRexBuilder(),
-                ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
-                true );
-        routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
 
         //
         // Implementation Caching
@@ -1453,9 +1459,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
         final String typeName = type.getPolyType().getTypeName();
         if ( type.getComponentType() != null ) {
             final ColumnMetaData.AvaticaType componentType = avaticaType( typeFactory, type.getComponentType(), null );
-            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
-            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
-            assert rep != null;
+//            final Type clazz = typeFactory.getJavaClass( type.getComponentType() );
+//            final ColumnMetaData.Rep rep = ColumnMetaData.Rep.of( clazz );
+            final ColumnMetaData.Rep rep = Rep.ARRAY;
+//            assert rep != null;
             return ColumnMetaData.array( componentType, typeName, rep );
         } else {
             int typeOrdinal = getTypeOrdinal( type );
@@ -1509,7 +1516,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
                 true,
                 false,
                 false,
-                avaticaType.columnClassName() );
+//                avaticaType.columnClassName() );
+                (fieldType instanceof ArrayType) ? "java.util.List" : avaticaType.columnClassName() );
     }
 
 
@@ -1521,6 +1529,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
 
     private static class RelCloneShuttle extends RelShuttleImpl {
 
+        @Override
         protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
             stack.push( parent );
             try {
@@ -1657,5 +1666,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, ViewExpa
     public void resetCaches() {
         ImplementationCache.INSTANCE.reset();
         QueryPlanCache.INSTANCE.reset();
+        statement.getRouter().resetCaches();
     }
 }

@@ -32,7 +32,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
-@SuppressWarnings("SqlDialectInspection")
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class CatalogTest {
 
@@ -52,7 +52,6 @@ public class CatalogTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private static void addTestData() {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -71,7 +70,6 @@ public class CatalogTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private static void deleteOldData() {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();

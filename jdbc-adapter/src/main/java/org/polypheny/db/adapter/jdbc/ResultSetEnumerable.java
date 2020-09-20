@@ -242,7 +242,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      */
     private static void setDynamicParam( PreparedStatement preparedStatement, int i, Object value, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null ) {
-            preparedStatement.setObject( i, null, SqlType.ANY.id );
+            preparedStatement.setNull( i, SqlType.NULL.id );
         } else if ( value instanceof Timestamp ) {
             preparedStatement.setTimestamp( i, (Timestamp) value );
         } else if ( value instanceof Time ) {
@@ -257,7 +257,25 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setDouble( i, (Double) value );
         } else if ( value instanceof List ) {
             if ( connectionHandler.getDialect().supportsNestedArrays() ) {
-                Array array = connectionHandler.createArrayOf( SqlType.valueOf( sqlType ).name(), ((List<?>) value).toArray() );
+                SqlType componentType;
+                if ( ((List<?>) value).get( 0 ) instanceof String ) {
+                    componentType = SqlType.VARCHAR;
+                } else if ( ((List<?>) value).get( 0 ) instanceof Integer ) {
+                    componentType = SqlType.INTEGER;
+                } else if ( ((List<?>) value).get( 0 ) instanceof Double ) {
+                    componentType = SqlType.DOUBLE;
+                } else if ( ((List<?>) value).get( 0 ) instanceof BigDecimal ) {
+                    componentType = SqlType.DECIMAL;
+                } else if ( ((List<?>) value).get( 0 ) instanceof Boolean ) {
+                    componentType = SqlType.BOOLEAN;
+                } else if ( ((List<?>) value).get( 0 ) instanceof Float ) {
+                    componentType = SqlType.FLOAT;
+                } else if ( ((List<?>) value).get( 0 ) instanceof Long ) {
+                    componentType = SqlType.BIGINT;
+                } else {
+                    throw new RuntimeException( "Unknown data type: " + ((List<?>) value).get( 0 ).getClass() );
+                }
+                Array array = connectionHandler.createArrayOf( componentType.name(), ((List<?>) value).toArray() );
                 preparedStatement.setArray( i, array );
             } else {
                 preparedStatement.setString( i, gson.toJson( value ) );

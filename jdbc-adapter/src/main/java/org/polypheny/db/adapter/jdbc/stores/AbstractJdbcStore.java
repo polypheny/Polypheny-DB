@@ -32,10 +32,8 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
@@ -174,12 +172,7 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( " ( " );
         boolean first = true;
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
-            CatalogColumn catalogColumn;
-            try {
-                catalogColumn = catalog.getColumn( placement.columnId );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                throw new RuntimeException( e );
-            }
+            CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
             }
@@ -237,7 +230,7 @@ public abstract class AbstractJdbcStore extends Store {
         executeUpdate( query, context );
         // Insert default value
         if ( catalogColumn.defaultValue != null ) {
-            query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogColumn.defaultValue );
+            query = buildInsertDefaultValueQuery( physicalSchemaName, physicalTableName, physicalColumnName, catalogColumn );
             executeUpdate( query, context );
         }
         // Add physical name to placement
@@ -282,41 +275,49 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
-    protected StringBuilder buildInsertDefaultValueQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, CatalogDefaultValue defaultValue ) {
+    protected StringBuilder buildInsertDefaultValueQuery( String physicalSchemaName, String physicalTableName, String physicalColumnName, CatalogColumn catalogColumn ) {
         StringBuilder builder = new StringBuilder();
         builder.append( "UPDATE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
                 .append( "." )
                 .append( dialect.quoteIdentifier( physicalTableName ) );
         builder.append( " SET " ).append( dialect.quoteIdentifier( physicalColumnName ) ).append( " = " );
+
+        if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
+            throw new RuntimeException( "Default values are not supported for array types" );
+        }
+
         SqlLiteral literal;
-        switch ( defaultValue.type ) {
+        switch ( catalogColumn.defaultValue.type ) {
             case BOOLEAN:
-                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( defaultValue.value ), SqlParserPos.ZERO );
+                literal = SqlLiteral.createBoolean( Boolean.parseBoolean( catalogColumn.defaultValue.value ), SqlParserPos.ZERO );
                 break;
             case INTEGER:
             case DECIMAL:
             case BIGINT:
-                literal = SqlLiteral.createExactNumeric( defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createExactNumeric( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
                 break;
             case REAL:
             case DOUBLE:
-                literal = SqlLiteral.createApproxNumeric( defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createApproxNumeric( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
                 break;
             case VARCHAR:
-                literal = SqlLiteral.createCharString( defaultValue.value, SqlParserPos.ZERO );
+                literal = SqlLiteral.createCharString( catalogColumn.defaultValue.value, SqlParserPos.ZERO );
                 break;
             default:
-                throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
+                throw new PolyphenyDbException( "Not yet supported default value type: " + catalogColumn.defaultValue.type );
         }
         builder.append( literal.toSqlString( dialect ) );
         return builder;
     }
 
 
-    // Make sure to update overriden methods as well
+    // Make sure to update overridden methods as well
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+        if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
+            return;
+        }
         StringBuilder builder = new StringBuilder();
         builder.append( "ALTER TABLE " )
                 .append( dialect.quoteIdentifier( columnPlacement.physicalSchemaName ) )

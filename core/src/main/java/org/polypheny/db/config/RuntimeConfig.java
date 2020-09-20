@@ -254,6 +254,11 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "implementationCachingGroup" ),
 
+    JOINED_TABLE_SCAN_CACHE_SIZE( "runtime/joinedTableScanCacheSize",
+            "Size of the joined table scan cache. If the limit is reached, the least recently used entry is removed.",
+            1000,
+            ConfigType.INTEGER ),
+
     UNIQUE_CONSTRAINT_ENFORCEMENT( "runtime/uniqueConstraintEnforcement",
             "Enable enforcement of uniqueness constraints.",
             true,

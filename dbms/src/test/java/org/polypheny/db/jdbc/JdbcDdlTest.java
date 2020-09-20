@@ -29,18 +29,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.type.PolyType;
 
 
-@SuppressWarnings("SqlDialectInspection")
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
 public class JdbcDdlTest {
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+
     private final static String DDLTEST_SQL = "CREATE TABLE ddltest( "
             + "tbigint BIGINT NOT NULL, "
             + "tboolean BOOLEAN NOT NULL, "
@@ -56,7 +55,6 @@ public class JdbcDdlTest {
             + "tvarchar VARCHAR(20) NOT NULL, "
             + "PRIMARY KEY (tinteger) )";
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private final static String DDLTEST_DATA_SQL = "INSERT INTO ddltest VALUES ("
             + "1234,"
             + "true,"
@@ -72,7 +70,6 @@ public class JdbcDdlTest {
             + "'hallo'"
             + ")";
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     private final static Object[] DDLTEST_DATA = new Object[]{
             1234L,
             true,
@@ -96,7 +93,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void testTypes() throws SQLException {
         // Check if there are new types missing in this test
@@ -157,7 +153,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test
@@ -186,7 +181,7 @@ public class JdbcDdlTest {
                 statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (2, null, null, null, null, null, null, null, null, null, null, null, null)" );
                 // Checks
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM ddltest" ),
+                        statement.executeQuery( "SELECT * FROM ddltest ORDER BY tprimary" ),
                         ImmutableList.of(
                                 new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null },
                                 new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null } ) );
@@ -198,7 +193,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void notNullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -221,7 +215,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void renameColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -290,7 +283,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void renameTableTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -315,7 +307,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void dropColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -352,8 +343,6 @@ public class JdbcDdlTest {
     }
 
 
-    @Ignore
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void addColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -406,8 +395,6 @@ public class JdbcDdlTest {
     }
 
 
-    @Ignore
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void addColumnArrayTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -418,7 +405,7 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
                 // Add column
-                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN bar INTEGER ARRAY(1,3) NULL AFTER tvarchar" );
+                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN bar INTEGER ARRAY(1,3) NULL AFTER ttime" );
 
                 // Check
                 TestHelper.checkResultSet(
@@ -433,10 +420,10 @@ public class JdbcDdlTest {
                                 DDLTEST_DATA[6],
                                 DDLTEST_DATA[7],
                                 DDLTEST_DATA[8],
+                                null,
                                 DDLTEST_DATA[9],
                                 DDLTEST_DATA[10],
-                                DDLTEST_DATA[11],
-                                null
+                                DDLTEST_DATA[11]
                         } ) );
 
                 // Drop ddltest table
@@ -446,7 +433,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void changeColumnTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
@@ -499,7 +485,6 @@ public class JdbcDdlTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void testReorderColumns() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {

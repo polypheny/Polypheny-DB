@@ -80,6 +80,7 @@ import org.polypheny.db.util.mapping.Mappings;
 /**
  * Unit test for {@link RelBuilder}.
  */
+@SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 @Slf4j
 public class RelBuilderTest {
 
@@ -99,6 +100,7 @@ public class RelBuilderTest {
     @AfterClass
     public static void tearDown() {
         try {
+            dropTestSchema();
             transaction.commit();
         } catch ( TransactionException e ) {
             throw new RuntimeException( e );
@@ -106,13 +108,26 @@ public class RelBuilderTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
     private static void addTestSchema() {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE department( deptno INTEGER NOT NULL, name VARCHAR(20) NOT NULL, loc VARCHAR(50) NULL, PRIMARY KEY (deptno))" );
                 statement.executeUpdate( "CREATE TABLE employee( empid BIGINT NOT NULL, ename VARCHAR(20), job VARCHAR(10), mgr INTEGER, hiredate DATE, salary DECIMAL(7,2), commission DECIMAL(7,2), deptno INTEGER NOT NULL, PRIMARY KEY (empid)) " );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while testing getTables()", e );
+        }
+    }
+
+
+    private static void dropTestSchema() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE department" );
+                statement.executeUpdate( "DROP TABLE employee" );
                 connection.commit();
             }
         } catch ( SQLException e ) {

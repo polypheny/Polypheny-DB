@@ -28,7 +28,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -131,7 +130,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
             // Rest plan cache and implementation cache (not sure if required in this case)
             statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

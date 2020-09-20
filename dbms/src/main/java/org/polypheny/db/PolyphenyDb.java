@@ -215,7 +215,7 @@ public class PolyphenyDb {
         statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
 
         ExploreManager explore = ExploreManager.getInstance();
-        explore.setExploreQueryProcessor(exploreQueryProcessor);
+        explore.setExploreQueryProcessor( exploreQueryProcessor );
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
