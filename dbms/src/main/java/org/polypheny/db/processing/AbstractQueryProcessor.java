@@ -79,7 +79,6 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptSchema;
 import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.ViewExpanders;
@@ -185,7 +184,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isRouted ) {
-        return prepareQuery( logicalRoot, parameterRowType, values, false, isRouted );
+        return prepareQuery( logicalRoot, parameterRowType, values, isRouted, false );
     }
 
     protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isRouted, boolean isSubquery ) {
@@ -235,7 +234,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 } catch ( DeadlockException e ) {
                     throw new RuntimeException( e );
                 }
-
                 if ( isAnalyze ) {
                     statement.getDuration().stop( "Locking" );
                 }
@@ -257,7 +255,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getDuration().stop( "Index Update" );
                 statement.getDuration().start( "Constraint Enforcement" );
             }
-
             RelRoot constraintsRoot = indexUpdateRoot;
             if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
                 constraintsRoot = enforceConstraints( constraintsRoot, statement );
@@ -272,6 +269,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
                 indexLookupRoot = indexLookup( indexLookupRoot, statement, executionTimeMonitor );
             }
+
+            // Routing
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Index Lookup Rewrite" );
                 statement.getDuration().start( "Routing" );
@@ -509,7 +508,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 //                                originalProject = LogicalProject.create( originalProject, expr, type );
 //                            }
                             RelRoot scanRoot = RelRoot.of( originalProject, SqlKind.SELECT );
-                            final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, values, true );
+                            final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, values, false, true );
                             final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
                             final Iterator<Object> iterator = enumerable.iterator();
                             final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );

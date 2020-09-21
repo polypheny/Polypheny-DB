@@ -50,13 +50,13 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.core.ConditionalExecute;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.SetOp;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.core.ConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableModify;
@@ -215,7 +215,7 @@ public abstract class AbstractRouter implements Router {
     protected RelNode handleConditionalExecute( RelNode node, Statement statement ) {
         LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
         RelBuilder builder = RelBuilder.create( statement, node.getCluster() );
-        buildSelect( lce.getLeft(), builder );
+        buildSelect( lce.getLeft(), builder, statement, node.getCluster() );
         RelNode action;
         if (lce.getRight() instanceof LogicalConditionalExecute) {
             action = handleConditionalExecute( lce.getRight(), statement );
@@ -431,10 +431,12 @@ public abstract class AbstractRouter implements Router {
     public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements ) {
         RelBuilder builder = RelBuilder.create( statement, cluster );
 
-        RelNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
-        if ( cachedNode != null ) {
-            return cachedNode;
-        }
+        // TODO: Temporarily disable caching
+        //RelNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
+        //if ( cachedNode != null ) {
+        //return builder.push( cachedNode ).build();
+        //return cachedNode;
+        //}
 
         // Sort by store
         Map<Integer, List<CatalogColumnPlacement>> placementsByStore = new HashMap<>();
@@ -541,7 +543,8 @@ public abstract class AbstractRouter implements Router {
             builder.project( rexNodes );
         }
         RelNode node = builder.build();
-        joinedTableScanCache.put( placements.hashCode(), node );
+        // TODO: Temporarily disable caching
+        //joinedTableScanCache.put( placements.hashCode(), node );
         return node;
     }
 
