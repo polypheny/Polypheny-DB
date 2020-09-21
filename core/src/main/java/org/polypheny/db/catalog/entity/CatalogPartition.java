@@ -75,7 +75,6 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
         return Catalog.getInstance().getDatabase( databaseId ).name;
     }
 
-
     @SneakyThrows
     public String getSchemaName() {
         return Catalog.getInstance().getSchema( schemaId ).name;

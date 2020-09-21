@@ -106,6 +106,7 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, List<CatalogColumnPlacement>> partitionPlacement;
     // <Schema.Table, List of partitionIds>
     private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionPlacement;
+    private BTreeMap<Long,Object> partitionQualifier;
     //
 
     private static final AtomicLong keyIdBuilder = new AtomicLong();
@@ -469,6 +470,7 @@ public class CatalogImpl extends Catalog {
                 .keySerializer(new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ))
                 .valueSerializer(new GenericSerializer<ImmutableList<Long>>())
                 .createOrOpen();
+        partitionQualifier = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
 
     }
 
@@ -2731,8 +2733,23 @@ public class CatalogImpl extends Catalog {
             System.out.println("HENNLO: CatalogImpl: Creating " + numPartitions + " partitions");
             for (int i = 0; i < numPartitions; i++) {
                 partId = addPartition(tableId, old.schemaId, old.ownerId, partitionType);
+
+                if ( partitionType == PartitionType.LIST) {
+                    partitionQualifier.put(partId, new ArrayList<>(
+                            Arrays.asList("Geeks",
+                                    "for",
+                                    "Geek")));
+                    partitionQualifier.put(partId*100, new ArrayList<>(
+                            Arrays.asList(0,
+                                    1,
+                                    2)));
+                }
+
                 tempPartIds.add(partId);
             }
+
+
+
             //partitionIds = ImmutableList.copyOf(tempPartIds);
             System.out.println("HENNLO: CatalogImpl: partitioning for table: " + old.name + " has been finished");
 
@@ -2753,6 +2770,8 @@ public class CatalogImpl extends Catalog {
                     ImmutableList.copyOf(tempPartIds),
                     partitionColumnId);
 
+
+
             System.out.println("HENNLO: CatalogImpl: Updated table '" + table.name + "' ");
 
             synchronized (this) {
@@ -2762,6 +2781,16 @@ public class CatalogImpl extends Catalog {
                 tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
             }
 
+            for (int i = 0; i < numPartitions; i++) {
+
+
+                if ( partitionType == PartitionType.LIST) {
+                    System.out.println("---------------"+  partitionQualifier.get(table.partitionIds.get(i)));
+                    System.out.println("---------------"+  partitionQualifier.get(table.partitionIds.get(i)*100));
+                }
+
+
+            }
 
             //ONLY NEEDED when partitioning on every columnPlacement is possible
             //For all existing column placements since they already have all data just logically add ccPs o the all partitions
@@ -3016,7 +3045,7 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds) throws UnknownTableException, UnknownStoreException{
+    public void updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds) throws UnknownTableException, UnknownStoreException {
 
             synchronized (this){
 
@@ -3029,12 +3058,15 @@ public class CatalogImpl extends Catalog {
                         List<Long> tempPartition = dataPartitionPlacement.get(new Object[]{storeId, tableId});
 
                         //Validate if partition distribution after update is successfull otherwise rollback
-
+                        //Check if partition change has impact on the complete partition distribution for current Part.Type
                         CatalogTable table = getTable(tableId);
-                        for ( long columnId : table.columnIds) {
+                        for ( CatalogColumnPlacement ccp : getColumnPlacementsOnStore(storeId,tableId)) {
+                            long columnId = ccp.columnId;
+                            System.out.println("\t\t\t --> "+ ccp.getLogicalColumnName());
                             if (!validatePartitionDistribution(storeId, tableId, columnId)) {
                                 dataPartitionPlacement.replace(new Object[]{storeId, tableId}, ImmutableList.copyOf(tempPartition));
-                                throw new RuntimeException("Validation of partition distribution failed");
+                                throw new RuntimeException("Validation of partition distribution failed for column: '"
+                                        + ccp.getLogicalColumnName() + "'");
                             }
                         }
                         dataPartitionPlacement.replace(new Object[]{storeId, tableId}, ImmutableList.copyOf(partitionIds));

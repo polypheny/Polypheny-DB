@@ -28,6 +28,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -56,43 +58,50 @@ public class SimpleRouter extends AbstractRouter {
     // Execute the table scan on the first placement of a table
     @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
-        // Find the store with the most column placements
-        int storeIdWithMostPlacements = -1;
-        int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet() ) {
-            if ( entry.getValue().size() > numOfPlacements ) {
-                storeIdWithMostPlacements = entry.getKey();
-                numOfPlacements = entry.getValue().size();
-            }
-        }
+
         //TODO Do something similar with partitionPlacements
         System.out.println("HENNLO: SimpleRouter selectPlacement: " + table.name);
         Catalog catalog = Catalog.getInstance();
-        // Take the store with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        try {
-            for ( long cid : table.columnIds ) {
-                if ( table.placementsByStore.get( storeIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( storeIdWithMostPlacements, cid ) );
-                } else {
-                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
-                }
-            }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
 
 
-        if ( table.isPartitioned ){
+        if ( table.isPartitioned ) {
             System.out.println("HENNLO: SimpleRouter selectPlacements() Table: '" + table.name + "' is partitioned ("
-                    + table.numPartitions +") - " + table.partitionIds);
+                    + table.numPartitions + ") - " + table.partitionIds);
 
-            for ( CatalogColumnPlacement ccp : placementList){
-                System.out.println("\t\t\t Placement: '" + ccp.storeUniqueName+ "." + ccp.getLogicalColumnName() + "' "
+            PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+            PartitionManager partitionManager = partitionManagerFactory.getInstance(table.partitionType);
+            placementList = partitionManager.getRelevantPlacements(table, -1);
+
+            for (CatalogColumnPlacement ccp : placementList) {
+                System.out.println("\t\t\t Placement: '" + ccp.storeUniqueName + "." + ccp.getLogicalColumnName() + "' "
                         + catalog.getPartitionsOnDataPlacement(ccp.storeId, ccp.tableId));
             }
         }
+        else {
+            // Find the store with the most column placements
+            int storeIdWithMostPlacements = -1;
+            int numOfPlacements = 0;
+            for (Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet()) {
+                if (entry.getValue().size() > numOfPlacements) {
+                    storeIdWithMostPlacements = entry.getKey();
+                    numOfPlacements = entry.getValue().size();
+                }
+            }
 
+            // Take the store with most placements as base and add missing column placements
+            try {
+                for (long cid : table.columnIds) {
+                    if (table.placementsByStore.get(storeIdWithMostPlacements).contains(cid)) {
+                        placementList.add(Catalog.getInstance().getColumnPlacement(storeIdWithMostPlacements, cid));
+                    } else {
+                        placementList.add(Catalog.getInstance().getColumnPlacements(cid).get(0));
+                    }
+                }
+            } catch (GenericCatalogException e) {
+                throw new RuntimeException(e);
+            }
+        }
         return placementList;
     }
 

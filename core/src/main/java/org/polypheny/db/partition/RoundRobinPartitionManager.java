@@ -17,10 +17,13 @@
 package org.polypheny.db.partition;
 
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.routing.Router;
+
+import java.util.List;
 
 public class RoundRobinPartitionManager extends AbstractPartitionManager{
 
@@ -45,6 +48,11 @@ public class RoundRobinPartitionManager extends AbstractPartitionManager{
     //TODO nOt implemented yet
         return false;
 
+    }
+
+    @Override
+    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
+        return null;
     }
 
 

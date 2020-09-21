@@ -22,6 +22,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class HashPartitionManager extends AbstractPartitionManager{
@@ -63,7 +64,8 @@ public class HashPartitionManager extends AbstractPartitionManager{
                 for (long columnId : table.columnIds){
                     boolean skip = false;
 
-                    if ( getNumberOfPlacementsWithAllPartitions(columnId, table.numPartitions) >= 1 ){
+                    int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, table.numPartitions).size();
+                    if ( numberOfFullPlacements >= 1 ){
                         System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId);
                         skip = true;
                         break;
@@ -92,7 +94,8 @@ public class HashPartitionManager extends AbstractPartitionManager{
     public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
 
         //change is only critical if there is only one column left with the charecteristics
-        if ( getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions) <= 1 ){
+        int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).size();
+        if ( numberOfFullPlacements <= 1 ){
             Catalog catalog = Catalog.getInstance();
             //Check if this one column is the column we are about to delete
             if ( catalog.getPartitionsOnDataPlacement(storeId, catalogTable.id).size() == catalogTable.numPartitions ){
@@ -103,6 +106,21 @@ public class HashPartitionManager extends AbstractPartitionManager{
         return true;
     }
 
+    @Override
+    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
+
+        Catalog catalog = Catalog.getInstance();
+        List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
+        //Find stores with fullplacements (partitions)
+        //Pick for each column the columnplacemnt which has full partitiotning //SELECT WORSTCASE ergo Fallback
+        for ( long columnId : catalogTable.columnIds ){
+            //Take the first column placement
+            relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
+        }
+
+        return relevantCcps;
+    }
+
     /**
      *  Returns number of placements for this column which contain all partitions
      *
@@ -110,23 +128,25 @@ public class HashPartitionManager extends AbstractPartitionManager{
      * @param numPartitions  numPartitions
      * @return If its correctly distributed or not
      */
-    private int getNumberOfPlacementsWithAllPartitions(long columnId, long numPartitions){
+    private List<CatalogColumnPlacement> getNumberOfPlacementsWithAllPartitions(long columnId, long numPartitions){
 
         Catalog catalog = Catalog.getInstance();
 
         //Return every placement of this column
         List<CatalogColumnPlacement> tempCcps = catalog.getColumnPlacements(columnId);
+        List<CatalogColumnPlacement> returnCcps = new ArrayList<>();
         int placementCounter = 0;
         for (CatalogColumnPlacement ccp : tempCcps ){
             //If the DataPlacement has stored all partitions and therefore all partitions for this placement
             if ( catalog.getPartitionsOnDataPlacement(ccp.storeId, ccp.tableId).size() == numPartitions  ){
-                System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId + " " + ccp.storeUniqueName);
+                returnCcps.add(ccp);
                 placementCounter++;
             }
         }
-        System.out.println("\t\t\t--> "+ placementCounter);
-        return placementCounter;
+        return returnCcps;
 
     }
+
+
 
 }

@@ -149,6 +149,7 @@ public abstract class AbstractRouter implements Router {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             buildDql( node.getInput( i ), builder, statement, cluster );
         }
+
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
@@ -159,6 +160,7 @@ public abstract class AbstractRouter implements Router {
                     //HENNLO
                     //Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
+
                         System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() + " is partitioned on column: "
                                 + catalogTable.partitionColumnId + " - " + catalog.getColumn(catalogTable.partitionColumnId).name);
                         System.out.println("HENNLO AbstractRouter: buildSelect() Retrieving all Partitions for table with id: " + catalogTable.id);

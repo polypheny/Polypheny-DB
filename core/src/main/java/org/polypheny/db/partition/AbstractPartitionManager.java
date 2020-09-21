@@ -19,6 +19,7 @@ package org.polypheny.db.partition;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -80,4 +81,6 @@ public abstract class AbstractPartitionManager implements PartitionManager{
     public abstract boolean validatePartitionDistribution(CatalogTable table);
 
     public abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
+
+    public abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId);
 }

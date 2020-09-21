@@ -1,6 +1,9 @@
 package org.polypheny.db.partition;
 
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+
+import java.util.List;
 
 public class RangePartitionManager extends AbstractPartitionManager{
 
@@ -21,6 +24,11 @@ public class RangePartitionManager extends AbstractPartitionManager{
         //TODO nOt implemented yet
         return false;
 
+    }
+
+    @Override
+    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
+        return null;
     }
 
 
