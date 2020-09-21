@@ -1633,16 +1633,21 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            // Map<Integer, List<CatalogColumnPlacement>> placementsByStore = table.placementsByStore;
-            Placement p = new Placement();
-            for ( CatalogStore catalogStore : catalog.getStores() ) {
-                Store store = StoreManager.getInstance().getStore( catalogStore.id );
-                List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                List<Long> partitionKeys = table.getPartitionIds();
-                p.addStore( new Placement.Store( store, placements, partitionKeys, table.numPartitions ));
+            Placement p = new Placement( table.isPartitioned() );
+            long pkid = table.primaryKey;
+            List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+            CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+            List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+            for( CatalogColumnPlacement placement: pkPlacements ) {
+                Store store = StoreManager.getInstance().getStore( placement.storeId );
+                p.addStore( new Placement.Store(
+                        store,
+                        catalog.getColumnPlacementsOnStore( store.getStoreId(), table.id ),
+                        catalog.getPartitionsOnDataPlacement( placement.storeId, placement.tableId ),
+                        table.numPartitions ));
             }
             return p;
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException | UnknownColumnException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
         }
