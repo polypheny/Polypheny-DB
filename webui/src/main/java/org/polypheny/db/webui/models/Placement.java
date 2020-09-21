@@ -31,8 +31,11 @@ public class Placement {
 
     Throwable exception;
     List<Store> stores = new ArrayList<>();
+    boolean isPartitioned;
 
-    public Placement () {}
+    public Placement ( final boolean isPartitioned ) {
+        this.isPartitioned = isPartitioned;
+    }
 
     public Placement ( final Throwable exception ) {
         this.exception = exception;
