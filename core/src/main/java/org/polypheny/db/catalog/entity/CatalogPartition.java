@@ -22,6 +22,7 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 
 import java.io.Serializable;
+import java.util.List;
 
 @EqualsAndHashCode
 public final class CatalogPartition implements CatalogEntity, Comparable<CatalogTable> {
@@ -39,6 +40,8 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
     public final long databaseId;
     public final int ownerId;
     public final String ownerName;
+    public final List partitionQualifiers;
+    public final boolean isUnbound;
 
     //Technically a compound between primary key and partition column (+range/list)
     public final long partitionKey;
@@ -51,7 +54,9 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
                             final long databaseId,
                             final int ownerId,
                             @NonNull final String ownerName,
-                            final long partitionKey) {
+                            final long partitionKey,
+                            final List partitionQualifiers,
+                            final boolean isUnbound) {
 
         this.id = id;
         this.tableId = tableId;
@@ -60,7 +65,10 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
         this.ownerId = ownerId;
         this.ownerName = ownerName;
         this.partitionKey = partitionKey;
+        this.partitionQualifiers = partitionQualifiers;
+        this.isUnbound = isUnbound;
 
+        System.out.println("\t\t\t\t\taddPartition" + " - " + partitionQualifiers);
         System.out.println("HENNLO: CatalogPartition: Partition has been created: " + id);
     }
 

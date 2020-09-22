@@ -65,6 +65,8 @@ public class SimpleRouter extends AbstractRouter {
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
 
 
+
+
         if ( table.isPartitioned ) {
             System.out.println("HENNLO: SimpleRouter selectPlacements() Table: '" + table.name + "' is partitioned ("
                     + table.numPartitions + ") - " + table.partitionIds);

@@ -27,6 +27,7 @@ import java.util.List;
 
 public class RoundRobinPartitionManager extends AbstractPartitionManager{
 
+    boolean hasUnboundPartition = false;
 
     @Override
     public long getTargetPartitionId(CatalogTable catalogTable, String columnValue) {
@@ -55,7 +56,14 @@ public class RoundRobinPartitionManager extends AbstractPartitionManager{
         return null;
     }
 
+    @Override
+    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions) {
+        return false;
+    }
 
-
+    @Override
+    public boolean allowsUnboundPartition() {
+        return false;
+    }
 
 }

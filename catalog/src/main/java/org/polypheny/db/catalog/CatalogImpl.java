@@ -2636,9 +2636,9 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public long addPartition(long tableId, long schemaId, int ownerId, PartitionType partitionType) throws GenericCatalogException {
+    public long addPartition(long tableId, long schemaId, int ownerId, PartitionType partitionType, List effectivePartitionQualifier, boolean isUnbound) throws GenericCatalogException {
        //HENNLO
-
+        System.out.println("\t\t\t\t\taddPartition" + " - " + effectivePartitionQualifier);
         try {
             long id = partitionIdBuilder.getAndIncrement();
             System.out.println("HENNLO: CatalogImpl: Creating partition on: " +  partitionType + " with  id: "+ id);
@@ -2652,7 +2652,9 @@ public class CatalogImpl extends Catalog {
                         schema.databaseId,
                         ownerId,
                         owner.name,
-                        0);
+                        0,
+                    effectivePartitionQualifier,
+                    isUnbound);
 
             synchronized ( this ) {
                 partitions.put( id, partition );
@@ -2721,7 +2723,7 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
+    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List partitionQualifiers) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
         try {
             CatalogTable old = Objects.requireNonNull(tables.get(tableId));
             System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
@@ -2731,23 +2733,32 @@ public class CatalogImpl extends Catalog {
             //Calculate how many partitions exist if partitioning is applied.
             //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
             System.out.println("HENNLO: CatalogImpl: Creating " + numPartitions + " partitions");
-            for (int i = 0; i < numPartitions; i++) {
-                partId = addPartition(tableId, old.schemaId, old.ownerId, partitionType);
 
-                if ( partitionType == PartitionType.LIST) {
-                    partitionQualifier.put(partId, new ArrayList<>(
-                            Arrays.asList("Geeks",
-                                    "for",
-                                    "Geek")));
-                    partitionQualifier.put(partId*100, new ArrayList<>(
-                            Arrays.asList(0,
-                                    1,
-                                    2)));
+            PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+            PartitionManager partitionManager = partitionManagerFactory.getInstance(partitionType);
+
+            if ( !partitionManager.validatePartitionSetup(partitionQualifiers, numPartitions)){
+                throw new RuntimeException("Partition Table failed for table:" + old.name);
+            }
+
+            System.out.println("---------------> "+ partitionQualifiers);
+            for (int i = 0; i < numPartitions; i++) {
+
+                //Make last partition unbound partition
+                System.out.println(partitionManager.allowsUnboundPartition());
+                if ( partitionManager.allowsUnboundPartition() && i == numPartitions-1 ){
+                    partId = addPartition(tableId, old.schemaId, old.ownerId, partitionType, new ArrayList<>(), true);
+                    System.out.println("\t\t\t\t\t"+ partId + " - Created Unbound Partition");
+                    break;
                 }
+                else{
+                    partId = addPartition(tableId, old.schemaId, old.ownerId, partitionType, new ArrayList<>( Arrays.asList( partitionQualifiers.get(i))), false);
+                    System.out.println("\t\t\t\t\t"+ partId + " - " + partitionQualifiers.get(i));
+                }
+
 
                 tempPartIds.add(partId);
             }
-
 
 
             //partitionIds = ImmutableList.copyOf(tempPartIds);
@@ -2781,16 +2792,6 @@ public class CatalogImpl extends Catalog {
                 tableNames.put(new Object[]{table.databaseId, table.schemaId, table.name}, table);
             }
 
-            for (int i = 0; i < numPartitions; i++) {
-
-
-                if ( partitionType == PartitionType.LIST) {
-                    System.out.println("---------------"+  partitionQualifier.get(table.partitionIds.get(i)));
-                    System.out.println("---------------"+  partitionQualifier.get(table.partitionIds.get(i)*100));
-                }
-
-
-            }
 
             //ONLY NEEDED when partitioning on every columnPlacement is possible
             //For all existing column placements since they already have all data just logically add ccPs o the all partitions

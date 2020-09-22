@@ -38,11 +38,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
@@ -324,7 +321,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions);
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList("My", "first", "List")) );
 
                 System.out.println("HENNLO: SqlCreateTable: table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");

@@ -7,6 +7,8 @@ import java.util.List;
 
 public class RangePartitionManager extends AbstractPartitionManager{
 
+    boolean hasUnboundPartition = true;
+
     @Override
     public long getTargetPartitionId(CatalogTable catalogTable, String columnValue) {
         System.out.println("HENNLO  RangePartitionManager getPartitionId()");
@@ -31,5 +33,14 @@ public class RangePartitionManager extends AbstractPartitionManager{
         return null;
     }
 
+    @Override
+    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions) {
+        return false;
+    }
+
+    @Override
+    public boolean allowsUnboundPartition() {
+        return true;
+    }
 
 }

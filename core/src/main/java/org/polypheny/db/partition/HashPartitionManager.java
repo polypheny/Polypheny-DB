@@ -27,6 +27,7 @@ import java.util.List;
 
 public class HashPartitionManager extends AbstractPartitionManager{
 
+    public boolean allowsUnboundPartition = false;
 
     @Override
     public long getTargetPartitionId(CatalogTable catalogTable, String columnValue) {
@@ -112,13 +113,23 @@ public class HashPartitionManager extends AbstractPartitionManager{
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
         //Find stores with fullplacements (partitions)
-        //Pick for each column the columnplacemnt which has full partitiotning //SELECT WORSTCASE ergo Fallback
+        //Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
         for ( long columnId : catalogTable.columnIds ){
             //Take the first column placement
             relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
         }
 
         return relevantCcps;
+    }
+
+    @Override
+    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions) {
+        return true;
+    }
+
+    @Override
+    public boolean allowsUnboundPartition() {
+        return false;
     }
 
     /**
@@ -146,7 +157,5 @@ public class HashPartitionManager extends AbstractPartitionManager{
         return returnCcps;
 
     }
-
-
 
 }

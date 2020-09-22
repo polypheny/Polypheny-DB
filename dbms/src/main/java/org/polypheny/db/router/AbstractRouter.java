@@ -46,6 +46,7 @@ import org.polypheny.db.prepare.Prepare.CatalogReader;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.SetOp;
 import org.polypheny.db.rel.core.TableModify;
@@ -57,9 +58,7 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexInputRef;
-import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.*;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
@@ -69,6 +68,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.Source;
 
 public abstract class AbstractRouter implements Router {
 
@@ -150,6 +150,16 @@ public abstract class AbstractRouter implements Router {
             buildDql( node.getInput( i ), builder, statement, cluster );
         }
 
+        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
+        node.accept(new RelShuttleImpl(){
+            @Override
+            public RelNode visit(LogicalFilter filter) {
+                super.visit(filter);
+                filter.accept(whereClauseVisitor);
+                return filter;
+            }
+        });
+
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
             if ( table.getTable() instanceof LogicalTable ) {
@@ -160,6 +170,9 @@ public abstract class AbstractRouter implements Router {
                     //HENNLO
                     //Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
+
+
+                        System.out.println("VALUE: " + whereClauseVisitor.getPartitionValue() );
 
                         System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() + " is partitioned on column: "
                                 + catalogTable.partitionColumnId + " - " + catalog.getColumn(catalogTable.partitionColumnId).name);
@@ -177,6 +190,7 @@ public abstract class AbstractRouter implements Router {
                 } catch (UnknownTableException | GenericCatalogException | UnknownColumnException e ) {
                     throw new RuntimeException( "Unknown table" );
                 }
+
                 List<CatalogColumnPlacement> placements = selectPlacement( node, catalogTable );
                 return buildJoinedTableScan( builder, table, placements );
             } else {
@@ -233,7 +247,6 @@ public abstract class AbstractRouter implements Router {
                 } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownKeyException e ) {
                     throw new RuntimeException( e );
                 }
-
 
                 if(catalogTable.isPartitioned) {
                     System.out.println("\nHENNLO AbstractRouter: routeDml(): Listing all relevant stores for table: '" + catalogTable.name
@@ -298,10 +311,30 @@ public abstract class AbstractRouter implements Router {
                     //TODO HENNLO This is an rather uncharming workaround
                     if ( catalogTable.isPartitioned ) {
 
+                        boolean worstcaserouting = false;
+
                         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
                         PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
                         partitionManager.validatePartitionDistribution(catalogTable);
 
+
+                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
+                        node.accept(new RelShuttleImpl(){
+                            @Override
+                            public RelNode visit(LogicalFilter filter) {
+                                super.visit(filter);
+                                filter.accept(whereClauseVisitor);
+                                return filter;
+                            }
+                        });
+
+                        String whereClauseValue = null;
+                        if ( whereClauseVisitor.getPartitionValue() != null ){
+                            whereClauseValue = whereClauseVisitor.getPartitionValue().toString();
+                        }
+
+
+                        long identPart = -1;
 
                         String partitionValue ="";
                         //set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
@@ -323,12 +356,31 @@ public abstract class AbstractRouter implements Router {
                                         partitionValue = sourceExpressionList.get(index).toString().replace("'", "");
                                         System.out.println("HENNLO AbstractRouter: routeDML(): UPDATE: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
                                                 + partitionManager.getTargetPartitionId(catalogTable, partitionValue));
+                                        identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
                                         break;
                                     }
                                 } catch (GenericCatalogException | UnknownColumnException e) {
                                     e.printStackTrace();
                                 }
                                 index++;
+                            }
+
+                            if ( whereClauseValue != null && partitionColumnIdentified){
+
+                                if ( identPart == partitionManager.getTargetPartitionId(catalogTable, whereClauseValue)){
+                                    worstcaserouting = false;
+                                }
+                                else{
+                                    worstcaserouting = true;
+                                    System.out.println("HENNLO AbstractRouter() Activate WORSTCASE ROUTING: identPart: " + identPart + " and whereClausePart " + partitionManager.getTargetPartitionId(catalogTable, whereClauseValue) + " are not identical");
+                                }
+                            }else if (whereClauseValue == null){
+                                worstcaserouting = true;
+                                System.out.println("HENNLO AbstractRouter() Activate WORSTCASE ROUTING no WHERE clause specified for partitioncolumn");
+                            }
+                            else if ( whereClauseValue != null && !partitionColumnIdentified){
+                                identPart = (int) partitionManager.getTargetPartitionId(catalogTable, whereClauseValue);
+                                worstcaserouting = false;
                             }
                             //Since update needs to take current partition and target partition into account
                             //partitionColumnIdentified = false;
@@ -341,42 +393,48 @@ public abstract class AbstractRouter implements Router {
                                     System.out.println("HENNLO: AbstractRouter: : routeDML(): INSERT: Found PartitionColumnID: '"
                                             + catalogTable.partitionColumnId + "' at column index: " + i);
                                     partitionColumnIdentified = true;
+                                    worstcaserouting = false;
+                                    identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
                                     break;
                                 }
                             }
-                            //TODO Get the value of partitionColumnId ---  but first find if of partitionColumn inside table
+                            //TODO Get the value of partitionColumnId ---  but first find of partitionColumn inside table
                             partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
                             System.out.println("HENNLO AbstractRouter: routeDML(): INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
-                                    + partitionManager.getTargetPartitionId(catalogTable, partitionValue));
+                                    + identPart);
                         }
                         else if (((LogicalTableModify) node).getOperation() == Operation.DELETE) {
                             System.out.println("HENNLO AbstractRouter: routeDML(): DELETE ");
 
-                            //DELETE will always be worst case routing
-                            partitionColumnIdentified = false;
+
+                            if ( whereClauseValue == null){
+                                worstcaserouting = true;
+                                partitionColumnIdentified = false;
+                            }
+                            else{
+                                worstcaserouting = false;
+                                identPart = (int) partitionManager.getTargetPartitionId(catalogTable, whereClauseValue);
+                            }
+
+
                         }
 
 
-                        //No worst case routing
-                        if ( partitionColumnIdentified ) {
-
-                            //Returns partitionID
-                            long identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
-
-                            System.out.println("HENNLO AbstractRouter(): Gather all relevant placements to execute the statement on");
-                            System.out.println("HENNLO AbstractRouter(): GET all Placements by identified Partition: " +identPart);
+                        if (!worstcaserouting) {
+                                System.out.println("HENNLO AbstractRouter(): Gather all relevant placements to execute the statement on");
+                                System.out.println("HENNLO AbstractRouter(): GET all Placements by identified Partition: " + identPart);
                             /*for (CatalogColumnPlacement partitionPlace: catalog.getColumnPlacementsByPartition(identPart)) {
                                 System.out.println("\t\t Statement will be relevant for placement store=" +
                                         partitionPlace.storeUniqueName + " tableName='"+ partitionPlace.physicalTableName + " column: '"+partitionPlace.getLogicalColumnName() + "' by identified Partiton: " + identPart );
                             }*/ //needs try_catch
-                            if (!catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId).contains(identPart) ) {
-                                System.out.println("HENNLO AbstractRouter(): DataPacement: " + pkPlacement.storeUniqueName +"."
-                                        +pkPlacement.physicalTableName +" SKIPPING since it does NOT contain identified partition: '"+ identPart +"' " +  catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId));
-                                continue;
-                            }else{
-                                System.out.println("HENNLO AbstractRouter(): DataPacement: " + pkPlacement.storeUniqueName +"."
-                                        +pkPlacement.physicalTableName +" contains identified partition: '"+ identPart +"' "+ catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId));
-                            }
+                                if (!catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId).contains(identPart)) {
+                                    System.out.println("HENNLO AbstractRouter(): DataPacement: " + pkPlacement.storeUniqueName + "."
+                                            + pkPlacement.physicalTableName + " SKIPPING since it does NOT contain identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId));
+                                    continue;
+                                } else {
+                                    System.out.println("HENNLO AbstractRouter(): DataPacement: " + pkPlacement.storeUniqueName + "."
+                                            + pkPlacement.physicalTableName + " contains identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId));
+                                }
                         }
                         else{
                             System.out.println("HENNLO AbstractRouter(): PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worstcase: Routing to ALL PARTITIONS");
@@ -450,6 +508,7 @@ public abstract class AbstractRouter implements Router {
             System.out.println("HENNLO buildDml(): " + ccp.storeUniqueName+"."+ ccp.physicalTableName + "." +ccp.getLogicalColumnName());
         }
         System.out.println("<--\n");
+
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -661,6 +720,60 @@ public abstract class AbstractRouter implements Router {
         private final String storeName;
         private final String physicalSchemaName;
         private final String physicalTableName;
+    }
+
+
+    private static class WhereClauseVisitor extends RexShuttle  {
+        private final Statement statement;
+        private Object value = null;
+
+        public WhereClauseVisitor(Statement statement) {
+            super();
+            this.statement = statement;
+        }
+
+        @Override
+        public RexNode visitCall( final RexCall call ) {
+            super.visitCall(call);
+
+            if ( call.operands.size() == 2 ){
+
+                if (call.operands.get(0) instanceof RexInputRef ){
+                    //TODO check call.operands.get(0) != partition column if so worstcase
+                    if ( call.operands.get(1) instanceof RexLiteral ){
+                        value = ((RexLiteral) call.operands.get(1)).getValueForQueryParameterizer();
+                    }
+                    else if ( call.operands.get(1) instanceof RexDynamicParam ){
+                        int index = ((RexDynamicParam) call.operands.get(1)).getIndex();
+                        value = statement.getDataContext().get("?" + index);
+                    }
+                    else{
+                        //WOrstcase
+
+                    }
+                }
+                else if (call.operands.get(1) instanceof RexInputRef ){
+                    //TODO check call.operands.get(0) != partition column if so worstcase
+                    if ( call.operands.get(0) instanceof RexLiteral ){
+                        value = ((RexLiteral) call.operands.get(0)).getValueForQueryParameterizer();
+                    }
+                    else if ( call.operands.get(0) instanceof RexDynamicParam ){
+                        int index = ((RexDynamicParam) call.operands.get(0)).getIndex();
+                        value = statement.getDataContext().get("?" + index);
+                    }
+                    else{
+                        //WOrstcase
+
+                    }
+                }
+            }
+            return call;
+        }
+
+        public Object getPartitionValue( ) {
+            return value;
+        }
+
     }
 
 }

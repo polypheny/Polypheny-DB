@@ -60,6 +60,9 @@ public abstract class AbstractPartitionManager implements PartitionManager{
     @Getter
     protected List<String> columnNames;
 
+    @Getter
+    protected boolean allowsUnboundPartition;
+
     //How many partitions
     //Should move to table object to obtain this
     //information from table
@@ -67,8 +70,6 @@ public abstract class AbstractPartitionManager implements PartitionManager{
     @Getter
     protected int partitions = 1;
 
-    @Getter @Setter
-    public long partitionRecords;
 
     //TODO HENNLO: Maybe extend partitoning with a store to
     // uniquely identify a partition element or a column to route a query more efficientely
@@ -83,4 +84,8 @@ public abstract class AbstractPartitionManager implements PartitionManager{
     public abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
 
     public abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId);
+
+    public abstract boolean validatePartitionSetup(List partitionQualifiers, long numPartitions);
+
+    public abstract boolean allowsUnboundPartition();
 }

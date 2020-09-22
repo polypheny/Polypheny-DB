@@ -31,6 +31,8 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -88,7 +90,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions);
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList(1, 2, 5)));
 
                 System.out.println("HENNLO: SqlAlterTableAddPartition: table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");
