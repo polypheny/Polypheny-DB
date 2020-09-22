@@ -150,7 +150,7 @@ public abstract class AbstractRouter implements Router {
             buildDql( node.getInput( i ), builder, statement, cluster );
         }
 
-        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
+        /*WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
         node.accept(new RelShuttleImpl(){
             @Override
             public RelNode visit(LogicalFilter filter) {
@@ -158,7 +158,7 @@ public abstract class AbstractRouter implements Router {
                 filter.accept(whereClauseVisitor);
                 return filter;
             }
-        });
+        });*/
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -172,7 +172,7 @@ public abstract class AbstractRouter implements Router {
                     if ( catalogTable.isPartitioned ) {
 
 
-                        System.out.println("VALUE: " + whereClauseVisitor.getPartitionValue() );
+                        //System.out.println("VALUE: " + whereClauseVisitor.getPartitionValue() );
 
                         System.out.println("HENNLO AbstractRouter: buildSelect() TableID: "+ t.getTableId() + " is partitioned on column: "
                                 + catalogTable.partitionColumnId + " - " + catalog.getColumn(catalogTable.partitionColumnId).name);
@@ -318,7 +318,8 @@ public abstract class AbstractRouter implements Router {
                         partitionManager.validatePartitionDistribution(catalogTable);
 
 
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
+
+                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
                         node.accept(new RelShuttleImpl(){
                             @Override
                             public RelNode visit(LogicalFilter filter) {
@@ -726,10 +727,12 @@ public abstract class AbstractRouter implements Router {
     private static class WhereClauseVisitor extends RexShuttle  {
         private final Statement statement;
         private Object value = null;
+        private final long partitionColumnIndex;
 
-        public WhereClauseVisitor(Statement statement) {
+        public WhereClauseVisitor(Statement statement, long partitionColumnIndex) {
             super();
             this.statement = statement;
+            this.partitionColumnIndex = partitionColumnIndex;
         }
 
         @Override
@@ -739,31 +742,31 @@ public abstract class AbstractRouter implements Router {
             if ( call.operands.size() == 2 ){
 
                 if (call.operands.get(0) instanceof RexInputRef ){
-                    //TODO check call.operands.get(0) != partition column if so worstcase
-                    if ( call.operands.get(1) instanceof RexLiteral ){
-                        value = ((RexLiteral) call.operands.get(1)).getValueForQueryParameterizer();
-                    }
-                    else if ( call.operands.get(1) instanceof RexDynamicParam ){
-                        int index = ((RexDynamicParam) call.operands.get(1)).getIndex();
-                        value = statement.getDataContext().get("?" + index);
-                    }
-                    else{
-                        //WOrstcase
 
+                    if (((RexInputRef) call.operands.get(0)).getIndex() == partitionColumnIndex) {
+                        if (call.operands.get(1) instanceof RexLiteral) {
+                            value = ((RexLiteral) call.operands.get(1)).getValueForQueryParameterizer();
+                        } else if (call.operands.get(1) instanceof RexDynamicParam) {
+                            int index = ((RexDynamicParam) call.operands.get(1)).getIndex();
+                            value = statement.getDataContext().get("?" + index);
+                        } else {
+                            //Worstcase
+
+                        }
                     }
                 }
                 else if (call.operands.get(1) instanceof RexInputRef ){
-                    //TODO check call.operands.get(0) != partition column if so worstcase
-                    if ( call.operands.get(0) instanceof RexLiteral ){
-                        value = ((RexLiteral) call.operands.get(0)).getValueForQueryParameterizer();
-                    }
-                    else if ( call.operands.get(0) instanceof RexDynamicParam ){
-                        int index = ((RexDynamicParam) call.operands.get(0)).getIndex();
-                        value = statement.getDataContext().get("?" + index);
-                    }
-                    else{
-                        //WOrstcase
 
+                    if (((RexInputRef) call.operands.get(1)).getIndex() == partitionColumnIndex) {
+                        if (call.operands.get(0) instanceof RexLiteral) {
+                            value = ((RexLiteral) call.operands.get(0)).getValueForQueryParameterizer();
+                        } else if (call.operands.get(0) instanceof RexDynamicParam) {
+                            int index = ((RexDynamicParam) call.operands.get(0)).getIndex();
+                            value = statement.getDataContext().get("?" + index);
+                        } else {
+                            //WOrstcase
+
+                        }
                     }
                 }
             }
