@@ -332,6 +332,7 @@ public abstract class AbstractRouter implements Router {
                         String whereClauseValue = null;
                         if ( whereClauseVisitor.getPartitionValue() != null ){
                             whereClauseValue = whereClauseVisitor.getPartitionValue().toString();
+                            System.out.println("whereClauseValue: " + whereClauseValue);
                         }
 
 
@@ -395,12 +396,12 @@ public abstract class AbstractRouter implements Router {
                                             + catalogTable.partitionColumnId + "' at column index: " + i);
                                     partitionColumnIdentified = true;
                                     worstcaserouting = false;
+                                    partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
                                     identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
                                     break;
                                 }
                             }
                             //TODO Get the value of partitionColumnId ---  but first find of partitionColumn inside table
-                            partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
                             System.out.println("HENNLO AbstractRouter: routeDML(): INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
                                     + identPart);
                         }
