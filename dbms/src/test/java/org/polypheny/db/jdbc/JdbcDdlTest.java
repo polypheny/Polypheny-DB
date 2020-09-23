@@ -524,4 +524,23 @@ public class JdbcDdlTest {
     }
 
 
+    @Test
+    public void testExists() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE ddlexiststest(id integer not null, primary key(id))" );
+                statement.executeUpdate( "CREATE TABLE IF NOT EXISTS ddlexiststest(id integer not null, primary key(id))" );
+                statement.executeUpdate( "DROP TABLE ddlexiststest" );
+                statement.executeUpdate( "DROP TABLE IF EXISTS ddlexiststest" );
+
+                statement.executeUpdate( "CREATE SCHEMA ddlexiststest" );
+                statement.executeUpdate( "CREATE SCHEMA IF NOT EXISTS ddlexiststest" );
+                statement.executeUpdate( "DROP SCHEMA ddlexiststest" );
+                statement.executeUpdate( "DROP SCHEMA IF EXISTS ddlexiststest" );
+            }
+        }
+    }
+
+
 }
