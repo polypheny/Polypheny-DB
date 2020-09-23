@@ -150,18 +150,24 @@ public abstract class AbstractRouter implements Router {
             buildDql( node.getInput( i ), builder, statement, cluster );
         }
 
-        /*WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
-        node.accept(new RelShuttleImpl(){
+        //, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId)
+
+
+        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
+        node.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(LogicalFilter filter) {
                 super.visit(filter);
                 filter.accept(whereClauseVisitor);
                 return filter;
             }
-        });*/
+        });
+
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
+
+
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 CatalogTable catalogTable;
@@ -170,6 +176,7 @@ public abstract class AbstractRouter implements Router {
                     //HENNLO
                     //Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
+
 
 
                         //System.out.println("VALUE: " + whereClauseVisitor.getPartitionValue() );
@@ -318,8 +325,8 @@ public abstract class AbstractRouter implements Router {
                         partitionManager.validatePartitionDistribution(catalogTable);
 
 
-
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
+                        //, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId)
+                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
                         node.accept(new RelShuttleImpl(){
                             @Override
                             public RelNode visit(LogicalFilter filter) {
@@ -334,7 +341,6 @@ public abstract class AbstractRouter implements Router {
                             whereClauseValue = whereClauseVisitor.getPartitionValue().toString();
                             System.out.println("whereClauseValue: " + whereClauseValue);
                         }
-
 
                         long identPart = -1;
 
@@ -390,20 +396,26 @@ public abstract class AbstractRouter implements Router {
 
                         } else if (((LogicalTableModify) node).getOperation() == Operation.INSERT) {
                             int i;
-                            for (i = 0; i < catalogTable.columnIds.size(); i++) {
-                                if (catalogTable.columnIds.get(i) == catalogTable.partitionColumnId) {
-                                    System.out.println("HENNLO: AbstractRouter: : routeDML(): INSERT: Found PartitionColumnID: '"
-                                            + catalogTable.partitionColumnId + "' at column index: " + i);
-                                    partitionColumnIdentified = true;
-                                    worstcaserouting = false;
-                                    partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
-                                    identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
-                                    break;
+                            if (((LogicalTableModify) node).getInput() instanceof LogicalValues) {
+                                for (i = 0; i < catalogTable.columnIds.size(); i++) {
+                                    if (catalogTable.columnIds.get(i) == catalogTable.partitionColumnId) {
+                                        System.out.println("HENNLO: AbstractRouter: : routeDML(): INSERT: Found PartitionColumnID: '"
+                                                + catalogTable.partitionColumnId + "' at column index: " + i);
+                                        partitionColumnIdentified = true;
+                                        worstcaserouting = false;
+                                        partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
+                                        identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                                        break;
+                                    }
                                 }
+                            }
+                            else{
+                                worstcaserouting = true;
                             }
                             //TODO Get the value of partitionColumnId ---  but first find of partitionColumn inside table
                             System.out.println("HENNLO AbstractRouter: routeDML(): INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
                                     + identPart);
+
                         }
                         else if (((LogicalTableModify) node).getOperation() == Operation.DELETE) {
                             System.out.println("HENNLO AbstractRouter: routeDML(): DELETE ");
@@ -730,10 +742,11 @@ public abstract class AbstractRouter implements Router {
         private Object value = null;
         private final long partitionColumnIndex;
 
-        public WhereClauseVisitor(Statement statement, long partitionColumnIndex) {
+        //, long partitionColumnIndex
+        public WhereClauseVisitor(Statement statement) {
             super();
             this.statement = statement;
-            this.partitionColumnIndex = partitionColumnIndex;
+            this.partitionColumnIndex = 0;
         }
 
         @Override

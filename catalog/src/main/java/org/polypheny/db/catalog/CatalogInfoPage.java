@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -41,6 +42,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
     private final InformationTable storeInformation;
+    //private final InformationTable partitionInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -53,8 +55,9 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "PartitionType", "Partitions" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
+        //this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "Name", "TableID" ) );
 
         addPersistentInfo( page );
 
@@ -94,6 +97,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         tableInformation.reset();
         columnInformation.reset();
         storeInformation.reset();
+       // partitionInformation.reset();
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
@@ -110,12 +114,13 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString(), t.numPartitions );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
             } );
-        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
+
+        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException  e ) {
             log.error( "Exception while reset catalog information page", e );
         }
     }
