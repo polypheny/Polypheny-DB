@@ -174,19 +174,28 @@ public abstract class AbstractRouter implements Router {
                               return filter;
                           }
                       });
-                      Object value = whereClauseVisitor.getValue().toString();
-                      if ( value != null ){
-                          int scanId = ((LogicalFilter) node).getInput().getId();
-                          filterMap.put(scanId,whereClauseVisitor.getValue().toString());
-                          System.out.println("VALUE from Map: " + filterMap.get(scanId) + " id: " + scanId);
+
+                      if ( whereClauseVisitor.valueIdentified ) {
+                          Object value = whereClauseVisitor.getValue().toString();
+                          int scanId = 0;
+                          if (value != null) {
+                              scanId = ((LogicalFilter) node).getInput().getId();
+                              filterMap.put(scanId, whereClauseVisitor.getValue().toString());
+                              System.out.println("VALUE from Map: " + filterMap.get(scanId) + " id: " + scanId);
+                          }
+                          buildDql( node.getInput( i ), builder, statement, cluster );
+                          filterMap.remove(scanId);
                       }
-
-
+                      else{
+                          buildDql( node.getInput( i ), builder, statement, cluster );
+                      }
                   }
                 }
+            }else{
+                buildDql( node.getInput( i ), builder, statement, cluster );
             }
 
-            buildDql( node.getInput( i ), builder, statement, cluster );
+
         }
 
 
@@ -200,6 +209,7 @@ public abstract class AbstractRouter implements Router {
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 CatalogTable catalogTable;
+                List<CatalogColumnPlacement> placements;
                 try {
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
                     //HENNLO
@@ -217,9 +227,21 @@ public abstract class AbstractRouter implements Router {
                         ) {
                             System.out.println("HENNLO AbstractRouter: " + cp.tableId + " " + (cp.id+1) + "/" + catalogTable.numPartitions);
                         }
+                        String partitionValue = filterMap.get(node.getId());
+                        if ( partitionValue != null) {
+                            PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+                            PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
+                            long identPart = partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                            placements = partitionManager.getRelevantPlacements(catalogTable, identPart);
+                        }
+                        else{
+                            placements = selectPlacement( node, catalogTable );
+                        }
+
                     }
                     else{
                         System.out.println("HENNLO AbstractRouter: " + catalogTable.name + " is NOT partitioned...\n\t\tRouting will be easy");
+                        placements = selectPlacement( node, catalogTable );
                     }
 
                     //
@@ -227,7 +249,7 @@ public abstract class AbstractRouter implements Router {
                     throw new RuntimeException( "Unknown table" );
                 }
 
-                List<CatalogColumnPlacement> placements = selectPlacement( node, catalogTable );
+
                 return buildJoinedTableScan( builder, table, placements );
             } else {
                 throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
@@ -804,6 +826,8 @@ public abstract class AbstractRouter implements Router {
         @Getter
         private Object value = null;
         private final long partitionColumnIndex;
+        @Getter
+        private boolean valueIdentified = false;
 
 
         public WhereClauseVisitor(Statement statement, long partitionColumnIndex) {
@@ -823,9 +847,11 @@ public abstract class AbstractRouter implements Router {
                     if (((RexInputRef) call.operands.get(0)).getIndex() == partitionColumnIndex) {
                         if (call.operands.get(1) instanceof RexLiteral) {
                             value = ((RexLiteral) call.operands.get(1)).getValueForQueryParameterizer();
+                            valueIdentified = true;
                         } else if (call.operands.get(1) instanceof RexDynamicParam) {
                             int index = ((RexDynamicParam) call.operands.get(1)).getIndex(); //long index
                             value = statement.getDataContext().get("?" + index);
+                            valueIdentified = true;
                         } else {
                             //Worstcase
 
@@ -837,9 +863,11 @@ public abstract class AbstractRouter implements Router {
                     if (((RexInputRef) call.operands.get(1)).getIndex() == partitionColumnIndex) {
                         if (call.operands.get(0) instanceof RexLiteral) {
                             value = ((RexLiteral) call.operands.get(0)).getValueForQueryParameterizer();
+                            valueIdentified = true;
                         } else if (call.operands.get(0) instanceof RexDynamicParam) {
                             int index = ((RexDynamicParam) call.operands.get(0)).getIndex(); //long index
                             value = statement.getDataContext().get("?" + index); //.getParamterValues //
+                            valueIdentified = true;
                         } else {
                             //WOrstcase
 
