@@ -65,6 +65,7 @@ import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.Table;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
@@ -337,8 +338,8 @@ public abstract class AbstractRouter implements Router {
                         });
 
                         String whereClauseValue = null;
-                        if ( whereClauseVisitor.getPartitionValue() != null ){
-                            whereClauseValue = whereClauseVisitor.getPartitionValue().toString();
+                        if ( whereClauseVisitor.getValue() != null ){
+                            whereClauseValue = whereClauseVisitor.getValue().toString();
                             System.out.println("whereClauseValue: " + whereClauseValue);
                         }
 
@@ -397,14 +398,48 @@ public abstract class AbstractRouter implements Router {
                         } else if (((LogicalTableModify) node).getOperation() == Operation.INSERT) {
                             int i;
                             if (((LogicalTableModify) node).getInput() instanceof LogicalValues) {
-                                for (i = 0; i < catalogTable.columnIds.size(); i++) {
-                                    if (catalogTable.columnIds.get(i) == catalogTable.partitionColumnId) {
-                                        System.out.println("HENNLO: AbstractRouter: : routeDML(): INSERT: Found PartitionColumnID: '"
-                                                + catalogTable.partitionColumnId + "' at column index: " + i);
-                                        partitionColumnIdentified = true;
-                                        worstcaserouting = false;
-                                        partitionValue = ((LogicalValues) node.getInput(0)).tuples.get(0).get(i).toString().replace("'", "");
-                                        identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+
+                                System.out.println(((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.size());
+                                if ( ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.size() == 1 ) {
+                                    for (i = 0; i < catalogTable.columnIds.size(); i++) {
+                                        if (catalogTable.columnIds.get(i) == catalogTable.partitionColumnId) {
+                                            System.out.println("HENNLO: AbstractRouter: : routeDML(): INSERT: Found PartitionColumnID: '"
+                                                    + catalogTable.partitionColumnId + "' at column index: " + i);
+                                            partitionColumnIdentified = true;
+                                            worstcaserouting = false;
+                                            partitionValue = ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.get(0).get(i).toString().replace("'", "");
+                                            identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                                            break;
+                                        }
+                                    }
+                                }
+                                else {
+                                    worstcaserouting = true;
+                                }
+                            }
+                            else if (((LogicalTableModify) node).getInput() instanceof LogicalProject
+                                    &&  ((LogicalProject)((LogicalTableModify) node).getInput()).getInput() instanceof LogicalValues) {
+
+                                String partitionColumnName;
+                                try {
+                                    partitionColumnName = catalog.getColumn(catalogTable.partitionColumnId).name;
+
+                                } catch (UnknownColumnException | GenericCatalogException e) {
+                                    throw new RuntimeException(e);
+                                }
+
+                                List<String> fieldNames = ((LogicalTableModify) node).getInput().getRowType().getFieldNames();
+
+                                for( i = 0; i < fieldNames.size(); i++ ){
+                                    String columnName = fieldNames.get(i);
+                                    if (partitionColumnName.equals(columnName) ){
+                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get(i).equals(SqlKind.DYNAMIC_PARAM) ){
+                                            worstcaserouting = true;
+                                        }else{
+                                            partitionColumnIdentified = true;
+                                            partitionValue = ((LogicalTableModify) node).getInput().getChildExps().get(i).toString().replace("'", "");
+                                            identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                                        }
                                         break;
                                     }
                                 }
@@ -429,7 +464,6 @@ public abstract class AbstractRouter implements Router {
                                 worstcaserouting = false;
                                 identPart = (int) partitionManager.getTargetPartitionId(catalogTable, whereClauseValue);
                             }
-
 
                         }
 
@@ -739,6 +773,7 @@ public abstract class AbstractRouter implements Router {
 
     private static class WhereClauseVisitor extends RexShuttle  {
         private final Statement statement;
+        @Getter
         private Object value = null;
         private final long partitionColumnIndex;
 
@@ -761,7 +796,7 @@ public abstract class AbstractRouter implements Router {
                         if (call.operands.get(1) instanceof RexLiteral) {
                             value = ((RexLiteral) call.operands.get(1)).getValueForQueryParameterizer();
                         } else if (call.operands.get(1) instanceof RexDynamicParam) {
-                            int index = ((RexDynamicParam) call.operands.get(1)).getIndex();
+                            int index = ((RexDynamicParam) call.operands.get(1)).getIndex(); //long index
                             value = statement.getDataContext().get("?" + index);
                         } else {
                             //Worstcase
@@ -775,8 +810,8 @@ public abstract class AbstractRouter implements Router {
                         if (call.operands.get(0) instanceof RexLiteral) {
                             value = ((RexLiteral) call.operands.get(0)).getValueForQueryParameterizer();
                         } else if (call.operands.get(0) instanceof RexDynamicParam) {
-                            int index = ((RexDynamicParam) call.operands.get(0)).getIndex();
-                            value = statement.getDataContext().get("?" + index);
+                            int index = ((RexDynamicParam) call.operands.get(0)).getIndex(); //long index
+                            value = statement.getDataContext().get("?" + index); //.getParamterValues //
                         } else {
                             //WOrstcase
 
@@ -785,10 +820,6 @@ public abstract class AbstractRouter implements Router {
                 }
             }
             return call;
-        }
-
-        public Object getPartitionValue( ) {
-            return value;
         }
 
     }
