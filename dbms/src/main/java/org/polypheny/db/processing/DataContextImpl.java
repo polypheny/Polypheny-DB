@@ -18,6 +18,8 @@ package org.polypheny.db.processing;
 
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import lombok.Getter;
@@ -25,6 +27,7 @@ import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -44,6 +47,9 @@ public class DataContextImpl implements DataContext {
     private final TimeZone timeZone = TimeZone.getDefault();
     @Getter
     private final Statement statement;
+
+    private final Map<Long, RelDataType> parameterTypes; // ParameterIndex -> Data Type
+    private final List<Map<Long, Object>> parameterValues; // List of ( ParameterIndex -> Value )
 
 
     public DataContextImpl( QueryProvider queryProvider, Map<String, Object> parameters, PolyphenyDbSchema rootSchema, JavaTypeFactory typeFactory, Statement statement ) {
@@ -80,6 +86,9 @@ public class DataContextImpl implements DataContext {
             }
             map.put( entry.getKey(), e );
         }
+
+        parameterTypes = new HashMap<>();
+        parameterValues = new LinkedList<>();
     }
 
 
@@ -100,6 +109,40 @@ public class DataContextImpl implements DataContext {
     public void addAll( Map<String, Object> map ) {
         this.map.putAll( map );
     }
+
+
+    @Override
+    public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        if ( parameterTypes.containsKey( index ) ) {
+            throw new RuntimeException( "There are already values assigned to this index" );
+        }
+        if ( parameterValues.size() == 0 ) {
+            for ( Object d : data ) {
+                parameterValues.add( new HashMap<>() );
+            }
+        }
+        if ( parameterValues.size() != data.size() ) {
+            throw new RuntimeException( "Expecting " + parameterValues.size() + " rows but " + data.size() + " values specified!" );
+        }
+        parameterTypes.put( index, type );
+        int i = 0;
+        for ( Object d : data ) {
+            parameterValues.get( i++ ).put( index, d );
+        }
+    }
+
+
+    @Override
+    public RelDataType getParameterType( long index ) {
+        return parameterTypes.get( index );
+    }
+
+
+    @Override
+    public List<Map<Long, Object>> getParameterValues() {
+        return parameterValues;
+    }
+
 
 /*
     private SqlAdvisor getSqlAdvisor() {

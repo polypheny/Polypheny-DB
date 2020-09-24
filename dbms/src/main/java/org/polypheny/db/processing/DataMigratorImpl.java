@@ -110,7 +110,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), null, true );
+            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
             final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
@@ -128,19 +128,25 @@ public class DataMigratorImpl implements DataMigrator {
 
             while ( sourceIterator.hasNext() ) {
                 List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, 100 ), new ArrayList<>() );
+                Map<Long, List<Object>> values = new HashMap<>();
                 for ( List<Object> list : rows ) {
-                    Map<String, Object> values = new HashMap<>();
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
-                        values.put( "?" + entry.getKey(), list.get( entry.getValue() ) );
+                        if ( !values.containsKey( entry.getKey() ) ) {
+                            values.put( entry.getKey(), new LinkedList<>() );
+                        }
+                        values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
                     }
-                    Iterator iterator = targetStatement.getQueryProcessor()
-                            .prepareQuery( targetRel, sourceRel.validatedRowType, values, true )
-                            .enumerable( targetStatement.getDataContext() )
-                            .iterator();
-                    //noinspection WhileLoopReplaceableByForEach
-                    while ( iterator.hasNext() ) {
-                        iterator.next();
-                    }
+                }
+                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                    targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
+                }
+                Iterator iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetRel, sourceRel.validatedRowType, true )
+                        .enumerable( targetStatement.getDataContext() )
+                        .iterator();
+                //noinspection WhileLoopReplaceableByForEach
+                while ( iterator.hasNext() ) {
+                    iterator.next();
                 }
             }
         } catch ( Throwable t ) {

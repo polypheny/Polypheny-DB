@@ -44,16 +44,16 @@ import org.polypheny.db.sql.SqlKind;
  */
 public class RexDynamicParam extends RexVariable {
 
-    private final int index;
+    private final long index;
 
 
     /**
      * Creates a dynamic parameter.
      *
-     * @param type inferred type of parameter
+     * @param type  inferred type of parameter
      * @param index 0-based index of dynamic parameter in statement
      */
-    public RexDynamicParam( RelDataType type, int index ) {
+    public RexDynamicParam( RelDataType type, long index ) {
         super( "?" + index, type );
         this.index = index;
     }
@@ -65,7 +65,7 @@ public class RexDynamicParam extends RexVariable {
     }
 
 
-    public int getIndex() {
+    public long getIndex() {
         return index;
     }
 

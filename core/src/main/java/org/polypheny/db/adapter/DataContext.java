@@ -22,13 +22,16 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.Data;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.advise.SqlAdvisor;
 import org.polypheny.db.transaction.Statement;
@@ -69,6 +72,30 @@ public interface DataContext {
 
 
     Statement getStatement();
+
+
+    void addParameterValues( long index, RelDataType type, List<Object> data );
+
+    RelDataType getParameterType( long index );
+
+    List<Map<Long, Object>> getParameterValues();
+
+    default Object getParameterValue( long index ) {
+        if ( getParameterValues().size() != 1 ) {
+            throw new RuntimeException( "Illegal number of parameter sets" );
+        }
+        return getParameterValues().get( 0 ).get( index );
+    }
+
+
+    @Data
+    class ParameterValue {
+
+        private final long index;
+        private final RelDataType type;
+        private final Object value;
+    }
+
 
     /**
      * Variable that may be asked for in a call to {@link DataContext#get}.
@@ -180,12 +207,30 @@ public interface DataContext {
 
         @Override
         public void addAll( Map<String, Object> map ) {
-            
+
         }
 
 
         @Override
         public Statement getStatement() {
+            return null;
+        }
+
+
+        @Override
+        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+
+        }
+
+
+        @Override
+        public RelDataType getParameterType( long index ) {
+            return null;
+        }
+
+
+        @Override
+        public List<Map<Long, Object>> getParameterValues() {
             return null;
         }
     }
