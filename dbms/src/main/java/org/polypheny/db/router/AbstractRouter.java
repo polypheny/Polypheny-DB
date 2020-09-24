@@ -410,9 +410,11 @@ public abstract class AbstractRouter implements Router {
     public RelNode buildJoinedTableScan( Statement statement, RelOptCluster cluster, List<CatalogColumnPlacement> placements ) {
         RelBuilder builder = RelBuilder.create( statement, cluster );
 
-        RelNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
-        if ( cachedNode != null ) {
-            return cachedNode;
+        if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
+            RelNode cachedNode = joinedTableScanCache.getIfPresent( placements.hashCode() );
+            if ( cachedNode != null ) {
+                return cachedNode;
+            }
         }
 
         // Sort by store
@@ -520,7 +522,9 @@ public abstract class AbstractRouter implements Router {
             builder.project( rexNodes );
         }
         RelNode node = builder.build();
-        joinedTableScanCache.put( placements.hashCode(), node );
+        if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
+            joinedTableScanCache.put( placements.hashCode(), node );
+        }
         return node;
     }
 

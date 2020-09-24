@@ -36,6 +36,7 @@ import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableCalc;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
@@ -118,17 +119,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         return prepareQuery(
                 logicalRoot,
                 logicalRoot.rel.getCluster().getTypeFactory().builder().build(),
-                null,
                 false );
     }
 
 
     @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, Map<String, Object> values, boolean isRouted ) {
-        // If this is a prepared statement, values is != null
-        if ( values != null ) {
-            statement.getDataContext().addAll( values );
-        }
+    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
 
         final StopWatch stopWatch = new StopWatch();
 
@@ -194,8 +190,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getDuration().start( "Implementation Caching" );
         }
         RelRoot parameterizedRoot = null;
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || values != null) ) {
-            if ( values == null ) {
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
+            if ( statement.getDataContext().getParameterValues().size() == 0 ) {
                 Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
                 parameterizedRoot = parameterized.left;
                 parameterRowType = parameterized.right;
@@ -220,9 +216,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             statement.getDuration().start( "Plan Caching" );
         }
         RelNode optimalNode;
-        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || values != null) ) {
+        if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             if ( parameterizedRoot == null ) {
-                if ( values == null ) {
+                if ( statement.getDataContext().getParameterValues().size() == 0 ) {
                     Pair<RelRoot, RelDataType> parameterized = parameterize( routedRoot, parameterRowType );
                     parameterizedRoot = parameterized.left;
                     parameterRowType = parameterized.right;
@@ -252,7 +248,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             //    optimalRoot = optimalRoot.withKind( sqlNodeOriginal.getKind() );
             //}
 
-            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || values != null) ) {
+            if ( RuntimeConfig.QUERY_PLAN_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.QUERY_PLAN_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
                 QueryPlanCache.INSTANCE.put( parameterizedRoot.rel, optimalNode );
             }
         }
@@ -271,7 +267,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         PreparedResult preparedResult = implement( optimalRoot, parameterRowType );
 
         // Cache implementation
-        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || values != null) ) {
+        if ( RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean() && (!routedRoot.kind.belongsTo( SqlKind.DML ) || RuntimeConfig.IMPLEMENTATION_CACHING_DML.getBoolean() || statement.getDataContext().getParameterValues().size() > 0) ) {
             if ( optimalRoot.rel.isImplementationCacheable() ) {
                 ImplementationCache.INSTANCE.put( parameterizedRoot.rel, preparedResult );
             } else {
@@ -326,7 +322,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         List<RelDataType> types = queryParameterizer.getTypes();
 
         // Add values to data context
-        statement.getDataContext().addAll( queryParameterizer.getValues() );
+        for ( DataContext.ParameterValue value : queryParameterizer.getValues() ) {
+            statement.getDataContext().addParameterValues( value.getIndex(), value.getType(), ImmutableList.of( value.getValue() ) );
+        }
 
         // parameterRowType
         RelDataType newParameterRowType = statement.getTransaction().getTypeFactory().createStructType(

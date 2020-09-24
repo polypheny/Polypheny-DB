@@ -17,7 +17,6 @@
 package org.polypheny.db.processing;
 
 
-import java.util.Map;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptTable.ViewExpander;
@@ -29,7 +28,7 @@ public interface QueryProcessor extends ViewExpander {
 
     PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
 
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, Map<String, Object> values, boolean isRouted );
+    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted );
 
     RelOptPlanner getPlanner();
 
