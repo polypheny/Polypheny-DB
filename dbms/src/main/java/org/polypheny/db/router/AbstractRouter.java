@@ -79,6 +79,8 @@ public abstract class AbstractRouter implements Router {
 
     final Catalog catalog = Catalog.getInstance();
 
+    private Map<Integer,String> filterMap = new HashMap<Integer, String>();
+
     // For reporting purposes
     protected Map<RelOptTable, SelectedStoreInfo> selectedStores;
 
@@ -148,21 +150,47 @@ public abstract class AbstractRouter implements Router {
 
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
+
+            //Check if partition used in general to reduce overhead if not for unpartitioned
+            if ( node instanceof  LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
+
+                RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
+
+                if ( table.getTable() instanceof LogicalTable ) {
+                    LogicalTable t = ((LogicalTable) table.getTable());
+                    CatalogTable catalogTable;
+                  try{
+                    catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+                    } catch (UnknownTableException | GenericCatalogException e ) {
+                        throw new RuntimeException( "Unknown table" );
+                    }
+                  if ( catalogTable.isPartitioned ) {
+                      WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
+                      node.accept(new RelShuttleImpl() {
+                          @Override
+                          public RelNode visit(LogicalFilter filter) {
+                              super.visit(filter);
+                              filter.accept(whereClauseVisitor);
+                              return filter;
+                          }
+                      });
+                      Object value = whereClauseVisitor.getValue().toString();
+                      if ( value != null ){
+                          int scanId = ((LogicalFilter) node).getInput().getId();
+                          filterMap.put(scanId,whereClauseVisitor.getValue().toString());
+                          System.out.println("VALUE from Map: " + filterMap.get(scanId) + " id: " + scanId);
+                      }
+
+
+                  }
+                }
+            }
+
             buildDql( node.getInput( i ), builder, statement, cluster );
         }
 
-        //, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId)
 
 
-        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
-        node.accept(new RelShuttleImpl() {
-            @Override
-            public RelNode visit(LogicalFilter filter) {
-                super.visit(filter);
-                filter.accept(whereClauseVisitor);
-                return filter;
-            }
-        });
 
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
@@ -178,7 +206,7 @@ public abstract class AbstractRouter implements Router {
                     //Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
 
-
+                        System.out.println("VALUE from Map: " + filterMap.get(node.getId()) + " id: " + node.getId());
 
                         //System.out.println("VALUE: " + whereClauseVisitor.getPartitionValue() );
 
@@ -326,8 +354,8 @@ public abstract class AbstractRouter implements Router {
                         partitionManager.validatePartitionDistribution(catalogTable);
 
 
-                        //, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId)
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement);
+
+                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
                         node.accept(new RelShuttleImpl(){
                             @Override
                             public RelNode visit(LogicalFilter filter) {
@@ -777,11 +805,11 @@ public abstract class AbstractRouter implements Router {
         private Object value = null;
         private final long partitionColumnIndex;
 
-        //, long partitionColumnIndex
-        public WhereClauseVisitor(Statement statement) {
+
+        public WhereClauseVisitor(Statement statement, long partitionColumnIndex) {
             super();
             this.statement = statement;
-            this.partitionColumnIndex = 0;
+            this.partitionColumnIndex = partitionColumnIndex;
         }
 
         @Override
