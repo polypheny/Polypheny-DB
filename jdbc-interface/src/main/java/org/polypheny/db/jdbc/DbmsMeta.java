@@ -935,6 +935,10 @@ public class DbmsMeta implements ProtobufMeta {
             }
 
             try {
+                if ( values.size() == 0 ) {
+                    // Nothing to execute
+                    return new ExecuteBatchResult( new long[0] );
+                }
                 statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
                 for ( Entry<Long, List<Object>> valuesList : values.entrySet() ) {
                     statementHandle.getStatement().getDataContext().addParameterValues( valuesList.getKey(), null, valuesList.getValue() );
