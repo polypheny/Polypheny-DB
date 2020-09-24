@@ -416,17 +416,12 @@ public class StatisticsManager<T extends Comparable<T>> {
 
         im.registerInformation( statisticsInformation );
 
-        BackgroundTaskManager.INSTANCE.registerTask(
-                () -> {
-                    statisticsInformation.reset();
-                    statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name(), v.getCount() );
-                    } ) ) );
-                },
-                "Reset the Statistic InformationPage for the dynamicQuerying",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS
-        );
+        page.setRefreshFunction( () -> {
+            statisticsInformation.reset();
+            statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
+                statisticsInformation.addRow( v.getQualifiedColumnName(), v.getType().name(), v.getCount() );
+            } ) ) );
+        } );
 
         InformationGroup alphabeticalGroup = new InformationGroup( page, "Alphabetical Statistics" );
         im.addGroup( alphabeticalGroup );
@@ -441,34 +436,30 @@ public class StatisticsManager<T extends Comparable<T>> {
         im.registerInformation( numericalInformation );
         im.registerInformation( alphabeticalInformation );
 
-        BackgroundTaskManager.INSTANCE.registerTask(
-                () -> {
-                    numericalInformation.reset();
-                    alphabeticalInformation.reset();
-                    statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
-                        if ( v instanceof NumericalStatisticColumn ) {
+        page.setRefreshFunction( () -> {
+            numericalInformation.reset();
+            alphabeticalInformation.reset();
+            statisticSchemaMap.values().forEach( schema -> schema.values().forEach( table -> table.forEach( ( k, v ) -> {
+                if ( v instanceof NumericalStatisticColumn ) {
 
-                            if ( ((NumericalStatisticColumn<T>) v).getMin() != null && ((NumericalStatisticColumn<T>) v).getMax() != null ) {
-                                numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMin().toString(), ((NumericalStatisticColumn<T>) v).getMax().toString() );
-                            } else {
-                                numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
-                            }
+                    if ( ((NumericalStatisticColumn<T>) v).getMin() != null && ((NumericalStatisticColumn<T>) v).getMax() != null ) {
+                        numericalInformation.addRow( v.getQualifiedColumnName(), ((NumericalStatisticColumn<T>) v).getMin().toString(), ((NumericalStatisticColumn<T>) v).getMax().toString() );
+                    } else {
+                        numericalInformation.addRow( v.getQualifiedColumnName(), "❌", "❌" );
+                    }
 
-                        } else {
-                            String values = v.getUniqueValues().toString();
-                            if ( !v.isFull ) {
-                                alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
-                            } else {
-                                alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
-                            }
+                } else {
+                    String values = v.getUniqueValues().toString();
+                    if ( !v.isFull ) {
+                        alphabeticalInformation.addRow( v.getQualifiedColumnName(), values );
+                    } else {
+                        alphabeticalInformation.addRow( v.getQualifiedColumnName(), "is Full" );
+                    }
 
-                        }
+                }
 
-                    } ) ) );
-
-                }, "Reset Min Max for all numericalColumns.",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_FIVE_SECONDS );
+            } ) ) );
+        } );
 
     }
 

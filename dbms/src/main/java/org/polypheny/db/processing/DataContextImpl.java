@@ -144,7 +144,13 @@ public class DataContextImpl implements DataContext {
     }
 
 
-/*
+    @Override
+    public void resetParameterValues() {
+        parameterTypes.clear();
+        parameterValues.clear();
+    }
+
+    /*
     private SqlAdvisor getSqlAdvisor() {
         final String schemaName;
         try {

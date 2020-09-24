@@ -80,6 +80,10 @@ public interface DataContext {
 
     List<Map<Long, Object>> getParameterValues();
 
+    default void resetParameterValues() {
+        throw new UnsupportedOperationException();
+    }
+
     default Object getParameterValue( long index ) {
         if ( getParameterValues().size() != 1 ) {
             throw new RuntimeException( "Illegal number of parameter sets" );

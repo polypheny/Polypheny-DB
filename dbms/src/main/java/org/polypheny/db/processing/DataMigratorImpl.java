@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -126,8 +127,9 @@ public class DataMigratorImpl implements DataMigrator {
                 }
             }
 
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, 100 ), new ArrayList<>() );
+                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
                 Map<Long, List<Object>> values = new HashMap<>();
                 for ( List<Object> list : rows ) {
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
@@ -148,6 +150,7 @@ public class DataMigratorImpl implements DataMigrator {
                 while ( iterator.hasNext() ) {
                     iterator.next();
                 }
+                targetStatement.getDataContext().resetParameterValues();
             }
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
