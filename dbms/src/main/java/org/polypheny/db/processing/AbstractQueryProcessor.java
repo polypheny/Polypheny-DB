@@ -188,8 +188,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    @Override
-    public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
@@ -240,7 +239,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             RelRoot indexUpdateRoot = logicalRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
                 IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
-                indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType, values );
+                indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
             }
 
             // Constraint Enforcement Rewrite
@@ -386,7 +385,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private RelRoot indexUpdate( RelRoot root, Statement statement, RelDataType parameterRowType, Map<String, Object> values ) {
+    private RelRoot indexUpdate( RelRoot root, Statement statement, RelDataType parameterRowType ) {
         if ( root.kind.belongsTo( SqlKind.DML ) ) {
             final RelShuttle shuttle = new RelShuttleImpl() {
 
@@ -499,7 +498,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 //                                originalProject = LogicalProject.create( originalProject, expr, type );
 //                            }
                             RelRoot scanRoot = RelRoot.of( originalProject, SqlKind.SELECT );
-                            final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, values, false, true );
+                            final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, false, true );
                             final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
                             final Iterator<Object> iterator = enumerable.iterator();
                             final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
@@ -600,9 +599,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 }
 
             };
-            if ( values != null ) {
-                values.clear();
-            }
             final RelNode newRoot = shuttle.visit( root.rel );
             return RelRoot.of( newRoot, root.kind );
 
