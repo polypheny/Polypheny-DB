@@ -446,7 +446,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                                 }
                                 index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
-                        } else if ( ltm.isDelete() || ltm.isUpdate() || ltm.isMerge() || ( ltm.isInsert() && !( ltm.getInput() instanceof Values ) ) ) {
+                        } else if ( ltm.isDelete() || ltm.isUpdate() || ltm.isMerge() || (ltm.isInsert() && !(ltm.getInput() instanceof Values)) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
                             final Map<String, Integer> newValueMap = new HashMap<>();
                             RelNode original = ltm.getInput().accept( new RelDeepCopyShuttle() );
@@ -509,7 +509,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                                 for ( int i = 0; i < row.size(); ++i ) {
                                     RelDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
                                     Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) row.get( i ), fieldType );
-                                    record.add(new RexLiteral(
+                                    record.add( new RexLiteral(
                                             converted.left,
                                             fieldType,
                                             converted.right
@@ -538,7 +538,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 //                            );
                             final RelNode replacement = ltm.copy( ltm.getTraitSet(), Collections.singletonList( newProject ) );
                             // Schedule the index deletions
-                            if ( !ltm.isInsert()) {
+                            if ( !ltm.isInsert() ) {
                                 for ( final Index index : indices ) {
                                     if ( ltm.isUpdate() ) {
                                         // Index not affected by this update, skip
@@ -556,7 +556,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                                         for ( final String column : index.getTargetColumns() ) {
                                             targetRowProjection.add( row.get( nameMap.get( column ) ) );
                                         }
-                                        rowsToDelete.add( new Pair<>( rowProjection, targetRowProjection) );
+                                        rowsToDelete.add( new Pair<>( rowProjection, targetRowProjection ) );
                                     }
                                     index.deleteAllPrimary( statement.getTransaction().getXid(), rowsToDelete );
                                 }
@@ -678,7 +678,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 // Enforce uniqueness within the values to insert
                 //noinspection StatementWithEmptyBody
                 if ( input instanceof Values && ((Values) input).getTuples().size() <= 1 ||
-                        (input instanceof Project && input.getInput( 0 ) instanceof Values && ((Values) input.getInput( 0 )).getTuples().size() <= 1 ) ) {
+                        (input instanceof Project && input.getInput( 0 ) instanceof Values && ((Values) input.getInput( 0 )).getTuples().size() <= 1) ) {
                     // no need to check, only one tuple in set
                 } else if ( input instanceof Values ) {
                     // If the input is a Values node, check uniqueness right away, as not all stores can implement this check
@@ -687,7 +687,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     final List<? extends List<RexLiteral>> tuples = values.getTuples();
                     final Set<List<RexLiteral>> uniqueSet = new HashSet<>( tuples.size() );
                     final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
-                    for (final String columnName : constraint.key.getColumnNames()) {
+                    for ( final String columnName : constraint.key.getColumnNames() ) {
                         int i = values.getRowType().getField( columnName, true, false ).getIndex();
                         columnMap.put( columnName, i );
                     }
@@ -728,9 +728,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 final LogicalTableScan scan = LogicalTableScan.create( root.getCluster(), relOptTable );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
                 builder.push( input );
-                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList()) );
+                builder.project( foreignKey.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 builder.push( scan );
-                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList()) );
+                builder.project( foreignKey.getReferencedKeyColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 for ( int i = 0; i < foreignKey.getColumnNames().size(); ++i ) {
                     final String column = foreignKey.getColumnNames().get( i );
                     final String referencedColumn = foreignKey.getReferencedKeyColumnNames().get( i );
@@ -743,7 +743,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 }
 
                 final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
-                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1) ) );
+                final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
                         String.format( "Insert violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
@@ -754,7 +754,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         //  Enforce UNIQUE constraints in UPDATE operations
         //
-        if ( ( root.isUpdate() || root.isMerge() ) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
+        if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
             RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
@@ -774,20 +774,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     continue;
                 }
                 RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
-                Map<String, Integer> nameMap = new HashMap<>(  );
+                Map<String, Integer> nameMap = new HashMap<>();
                 for ( int i = 0; i < root.getUpdateColumnList().size(); ++i ) {
                     nameMap.put( root.getUpdateColumnList().get( i ), i );
                 }
                 // Enforce uniqueness between updated records and already present records
                 builder.clear();
                 builder.push( input );
-                List<RexNode> projects = new ArrayList<>(  );
-                List<String> names = new ArrayList<>(  );
-                for (final String column : primaryKey.getColumnNames() ) {
+                List<RexNode> projects = new ArrayList<>();
+                List<String> names = new ArrayList<>();
+                for ( final String column : primaryKey.getColumnNames() ) {
                     projects.add( builder.field( column ) );
                     names.add( column );
                 }
-                for (final String column : constraint.key.getColumnNames()) {
+                for ( final String column : constraint.key.getColumnNames() ) {
                     if ( root.getUpdateColumnList().contains( column ) ) {
                         projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
                     } else {
@@ -836,8 +836,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 // Enforce uniqueness within the values to insert
                 builder.clear();
                 builder.push( input );
-                projects = new ArrayList<>(  );
-                for (final String column : constraint.key.getColumnNames()) {
+                projects = new ArrayList<>();
+                for ( final String column : constraint.key.getColumnNames() ) {
                     if ( root.getUpdateColumnList().contains( column ) ) {
                         projects.add( root.getSourceExpressionList().get( nameMap.get( column ) ) );
                     } else {
@@ -848,7 +848,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 }
                 builder.project( projects );
                 builder.aggregate(
-                        builder.groupKey( IntStream.range( 0, projects.size() ).mapToObj( builder::field ).collect( Collectors.toList()) ),
+                        builder.groupKey( IntStream.range( 0, projects.size() ).mapToObj( builder::field ).collect( Collectors.toList() ) ),
                         builder.aggregateCall( new SqlCountAggFunction( "count" ) ).as( "count" )
                 );
                 builder.filter( builder.call( SqlStdOperatorTable.GREATER_THAN, builder.field( "count" ), builder.literal( 1 ) ) );
@@ -863,7 +863,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         //  Enforce FOREIGN KEY constraints in UPDATE operations
         //
-        if ( ( root.isUpdate() || root.isMerge() ) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+        if ( (root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : foreignKeys ) {
@@ -902,16 +902,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         targetIndex = input.getRowType().getField( columnName, true, false ).getIndex();
                         newValue = rexBuilder.makeInputRef( input, targetIndex );
                     }
-                    RexNode foreignValue = rexBuilder.makeInputRef( foreignColumn.getRelDataType( rexBuilder.getTypeFactory() ) , targetIndex );
+                    RexNode foreignValue = rexBuilder.makeInputRef( foreignColumn.getRelDataType( rexBuilder.getTypeFactory() ), targetIndex );
                     projects.add( newValue );
                     foreignProjects.add( foreignValue );
                 }
                 builder
-                    .project( projects )
+                        .project( projects )
                         .scan( foreignKey.getReferencedKeyTableName() )
-                    .project( foreignProjects );
+                        .project( foreignProjects );
                 RexNode condition = rexBuilder.makeLiteral( true );
-                for ( int i = 0; i < projects.size(); ++i) {
+                for ( int i = 0; i < projects.size(); ++i ) {
                     condition = builder.and(
                             condition,
                             builder.equals(
@@ -923,8 +923,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 final RelNode join = builder.join( JoinRelType.LEFT, condition ).build();
                 final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NULL, rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
-                        String.format("Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
-                                foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ));
+                        String.format( "Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
+                                foreignKey.name, table.name, foreignKey.getColumnNames(), foreignTable.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
                 lceRoot = lce;
             }
@@ -933,7 +933,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         //  Enforce reverse FOREIGN KEY constraints in UPDATE and DELETE operations
         //
-        if ( ( root.isDelete() || root.isUpdate() || root.isMerge() ) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+        if ( (root.isDelete() || root.isUpdate() || root.isMerge()) && RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
             RelBuilder builder = RelBuilder.create( statement );
             final RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogForeignKey foreignKey : exportedKeys ) {
@@ -980,9 +980,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 }
                 builder
                         .push( pInput )
-                    .project( projects )
+                        .project( projects )
                         .scan( foreignKey.getTableName() )
-                    .project( foreignProjects );
+                        .project( foreignProjects );
                 RexNode condition = rexBuilder.makeLiteral( true );
                 for ( int i = 0; i < projects.size(); ++i ) {
                     condition = builder.and(
@@ -995,9 +995,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 }
                 final RelNode join = builder.join( JoinRelType.INNER, condition ).build();
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( join, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
-                        String.format("%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
+                        String.format( "%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 root.isUpdate() ? "Update" : "Delete",
-                                foreignKey.name, foreignTable.name, foreignKey.getColumnNames(), table.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ));
+                                foreignKey.name, foreignTable.name, foreignKey.getColumnNames(), table.name, foreignKey.getReferencedKeyColumnNames(), constraintRule ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", foreignTable.name, foreignKey.name ) );
                 lceRoot = lce;
             }
@@ -1073,8 +1073,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
                     final List<RelDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
-                    for ( final RexNode expr : project.getChildExps()) {
-                        if ( !( expr instanceof RexInputRef ) ) {
+                    for ( final RexNode expr : project.getChildExps() ) {
+                        if ( !(expr instanceof RexInputRef) ) {
                             IndexManager.getInstance().incrementMiss();
                             return super.visit( project );
                         }
@@ -1106,7 +1106,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     final Values replacement = idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
                     final LogicalProject rProject = new LogicalProject(
                             replacement.getCluster(), replacement.getTraitSet(), replacement,
-                            IntStream.range( 0, compositeType.getFieldCount() ).mapToObj( i -> rexBuilder.makeInputRef( replacement, i ) ).collect( Collectors.toList()),
+                            IntStream.range( 0, compositeType.getFieldCount() ).mapToObj( i -> rexBuilder.makeInputRef( replacement, i ) ).collect( Collectors.toList() ),
                             compositeType );
                     IndexManager.getInstance().incrementHit();
                     return rProject;
@@ -1118,7 +1118,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
             @Override
             public RelNode visit( RelNode node ) {
-                if ( node instanceof LogicalProject) {
+                if ( node instanceof LogicalProject ) {
                     final LogicalProject lp = (LogicalProject) node;
                     lp.getMapping();
                 }
@@ -1515,140 +1515,124 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private static class RelCloneShuttle extends RelShuttleImpl {
-
-        @Override
-        protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
-            stack.push( parent );
-            try {
-                RelNode child2 = child.accept( this );
-                final List<RelNode> newInputs = new ArrayList<>( parent.getInputs() );
-                newInputs.set( i, child2 );
-                //noinspection unchecked
-                return (T) parent.copy( parent.getTraitSet(), newInputs );
-            } finally {
-                stack.pop();
-            }
-        }
-
-    }
-
     private static class RelDeepCopyShuttle extends RelShuttleImpl {
 
-        private RelTraitSet copy(final RelTraitSet other) {
+        private RelTraitSet copy( final RelTraitSet other ) {
             return RelTraitSet.createEmpty().merge( other );
         }
+
 
         @Override
         public RelNode visit( TableScan scan ) {
             final RelNode node = super.visit( scan );
-            return new LogicalTableScan( node.getCluster(), copy(node.getTraitSet()), node.getTable() );
+            return new LogicalTableScan( node.getCluster(), copy( node.getTraitSet() ), node.getTable() );
         }
 
 
         @Override
         public RelNode visit( TableFunctionScan scan ) {
             final RelNode node = super.visit( scan );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalValues values ) {
             final Values node = (Values) super.visit( values );
-            return new LogicalValues( node.getCluster(), copy(node.getTraitSet()), node.getRowType(), node.getTuples() );
+            return new LogicalValues( node.getCluster(), copy( node.getTraitSet() ), node.getRowType(), node.getTuples() );
         }
 
 
         @Override
         public RelNode visit( LogicalFilter filter ) {
             final LogicalFilter node = (LogicalFilter) super.visit( filter );
-            return new LogicalFilter( node.getCluster(), copy(node.getTraitSet()), node.getInput().accept( this ), node.getCondition(), node.getVariablesSet() );
+            return new LogicalFilter( node.getCluster(), copy( node.getTraitSet() ), node.getInput().accept( this ), node.getCondition(), node.getVariablesSet() );
         }
 
 
         @Override
         public RelNode visit( LogicalProject project ) {
             final Project node = (Project) super.visit( project );
-            return new LogicalProject( node.getCluster(), copy(node.getTraitSet()), node.getInput( ), node.getProjects(), node.getRowType() );
+            return new LogicalProject( node.getCluster(), copy( node.getTraitSet() ), node.getInput(), node.getProjects(), node.getRowType() );
         }
 
 
         @Override
         public RelNode visit( LogicalJoin join ) {
             final RelNode node = super.visit( join );
-            return new LogicalJoin( node.getCluster(), copy(node.getTraitSet()), this.visit( join.getLeft() ), this.visit( join.getRight() ), join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone(), ImmutableList.copyOf( join.getSystemFieldList() ) );
+            return new LogicalJoin( node.getCluster(), copy( node.getTraitSet() ), this.visit( join.getLeft() ), this.visit( join.getRight() ), join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone(), ImmutableList.copyOf( join.getSystemFieldList() ) );
         }
 
 
         @Override
         public RelNode visit( LogicalCorrelate correlate ) {
             final RelNode node = super.visit( correlate );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalUnion union ) {
             final RelNode node = super.visit( union );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalIntersect intersect ) {
             final RelNode node = super.visit( intersect );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalMinus minus ) {
             final RelNode node = super.visit( minus );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalAggregate aggregate ) {
             final RelNode node = super.visit( aggregate );
-            return new LogicalAggregate( node.getCluster(), copy(node.getTraitSet()), visit( aggregate.getInput() ), aggregate.indicator, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
+            return new LogicalAggregate( node.getCluster(), copy( node.getTraitSet() ), visit( aggregate.getInput() ), aggregate.indicator, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
         }
 
 
         @Override
         public RelNode visit( LogicalMatch match ) {
             final RelNode node = super.visit( match );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalSort sort ) {
             final RelNode node = super.visit( sort );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalExchange exchange ) {
             final RelNode node = super.visit( exchange );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
 
 
         @Override
         public RelNode visit( LogicalConditionalExecute lce ) {
-            return new LogicalConditionalExecute( lce.getCluster(), copy(lce.getTraitSet()), visit(lce.getLeft()), visit( lce.getRight() ), lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
+            return new LogicalConditionalExecute( lce.getCluster(), copy( lce.getTraitSet() ), visit( lce.getLeft() ), visit( lce.getRight() ), lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
         }
 
 
         @Override
         public RelNode visit( RelNode other ) {
             final RelNode node = super.visit( other );
-            return node.copy( copy(node.getTraitSet()), node.getInputs() );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
     }
+
 
     @Override
     public void resetCaches() {

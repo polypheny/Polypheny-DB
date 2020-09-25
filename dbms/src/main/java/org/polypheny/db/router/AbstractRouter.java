@@ -217,12 +217,12 @@ public abstract class AbstractRouter implements Router {
         RelBuilder builder = RelBuilder.create( statement, node.getCluster() );
         buildSelect( lce.getLeft(), builder, statement, node.getCluster() );
         RelNode action;
-        if (lce.getRight() instanceof LogicalConditionalExecute) {
+        if ( lce.getRight() instanceof LogicalConditionalExecute ) {
             action = handleConditionalExecute( lce.getRight(), statement );
-        } else if (lce.getRight() instanceof TableModify) {
+        } else if ( lce.getRight() instanceof TableModify ) {
             action = routeDml( lce.getRight(), statement );
         } else {
-            throw new IllegalArgumentException(  );
+            throw new IllegalArgumentException();
         }
         return LogicalConditionalExecute.create( builder.build(), action, lce );
     }
