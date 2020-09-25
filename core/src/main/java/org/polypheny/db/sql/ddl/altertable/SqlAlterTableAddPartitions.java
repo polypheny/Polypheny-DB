@@ -90,7 +90,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList(1, 2, 5)));
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList(1, 2, 5)), new ArrayList<>());
 
                 System.out.println("HENNLO: SqlAlterTableAddPartition: table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");

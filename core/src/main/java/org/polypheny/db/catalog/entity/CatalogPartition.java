@@ -34,6 +34,7 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
     // for a schema_table_column_type_argument
     // e.g. mySchema_testTable_sales_RANGE_100
     public final long id;
+    public final String partitionName;
 
     public final long tableId;
     public final long schemaId;
@@ -49,6 +50,7 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
 
 
     public CatalogPartition(final long id,
+                            final String partitionName,
                             final long tableId,
                             final long schemaId,
                             final long databaseId,
@@ -59,6 +61,7 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
                             final boolean isUnbound) {
 
         this.id = id;
+        this.partitionName = partitionName;
         this.tableId = tableId;
         this.schemaId = schemaId;
         this.databaseId = databaseId;

@@ -42,7 +42,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
     private final InformationTable storeInformation;
-    //private final InformationTable partitionInformation;
+    private final InformationTable partitionInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -57,7 +57,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "PartitionType", "Partitions" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
-        //this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "Name", "TableID" ) );
+        this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "Name", "TableID" ) );
 
         addPersistentInfo( page );
 
@@ -97,7 +97,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
         tableInformation.reset();
         columnInformation.reset();
         storeInformation.reset();
-       // partitionInformation.reset();
+        partitionInformation.reset();
+
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
@@ -118,6 +119,9 @@ public class CatalogInfoPage implements PropertyChangeListener {
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
+            } );
+            catalog.getPartitions( null, null, null ).forEach( p -> {
+                partitionInformation.addRow( p.id, p.partitionName, p.tableId );
             } );
 
         } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException  e ) {

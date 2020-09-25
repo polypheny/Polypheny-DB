@@ -2636,7 +2636,7 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public long addPartition(long tableId, long schemaId, int ownerId, PartitionType partitionType, List effectivePartitionQualifier, boolean isUnbound) throws GenericCatalogException {
+    public long addPartition(long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List effectivePartitionQualifier, boolean isUnbound) throws GenericCatalogException {
        //HENNLO
         System.out.println("\t\t\t\t\taddPartition" + " - " + effectivePartitionQualifier);
         try {
@@ -2647,6 +2647,7 @@ public class CatalogImpl extends Catalog {
 
             CatalogPartition partition = new CatalogPartition(
                         id,
+                        partitionName,
                         tableId,
                         schemaId,
                         schema.databaseId,
@@ -2723,7 +2724,7 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List partitionQualifiers) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
+    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List partitionQualifiers, List<String> partitionNames) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
         try {
             CatalogTable old = Objects.requireNonNull(tables.get(tableId));
             System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
@@ -2744,15 +2745,26 @@ public class CatalogImpl extends Catalog {
             System.out.println("---------------> "+ partitionQualifiers);
             for (int i = 0; i < numPartitions; i++) {
 
+                String partitionName;
+
                 //Make last partition unbound partition
                 System.out.println(partitionManager.allowsUnboundPartition());
                 if ( partitionManager.allowsUnboundPartition() && i == numPartitions-1 ){
-                    partId = addPartition(tableId, old.schemaId, old.ownerId, partitionType, new ArrayList<>(), true);
+                    partId = addPartition(tableId, "Unbound", old.schemaId, old.ownerId, partitionType, new ArrayList<>(), true);
                     System.out.println("\t\t\t\t\t"+ partId + " - Created Unbound Partition");
                     break;
                 }
                 else{
-                    partId = addPartition(tableId, old.schemaId, old.ownerId, partitionType, new ArrayList<>( Arrays.asList( partitionQualifiers.get(i))), false);
+
+                    //If no names have been explicitly defined
+                    if ( partitionNames.isEmpty() ){
+                        partitionName = "Part_" + i;
+                    }
+                    else{
+                        partitionName = partitionNames.get(i);
+                    }
+
+                    partId = addPartition(tableId, partitionName, old.schemaId, old.ownerId, partitionType, new ArrayList<>( Arrays.asList( partitionQualifiers.get(i))), false);
                     System.out.println("\t\t\t\t\t"+ partId + " - " + partitionQualifiers.get(i));
                 }
 
@@ -2890,7 +2902,7 @@ public class CatalogImpl extends Catalog {
             System.out.println("HENNLO: CatalogImpl: getPartitions() Selecting partitions for table: " +  tableId + " '" + table.name + "'");
             List<CatalogPartition> partitions = new ArrayList<>(  );
             for (long partId: table.partitionIds) {
-                partitions.add(Catalog.getInstance().getPartition(partId));
+                partitions.add(getPartition(partId));
             }
             return partitions;
             //return Collections.singletonList(partitions.get()
@@ -2899,6 +2911,36 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException | UnknownPartitionException e ) {
             return new ArrayList<>();
         }
+    }
+
+
+    /**
+     * Get all partitions of the specified database which fit to the specified filter patterns.
+     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     *
+     * @param databaseNamePattern Pattern for the database name. null returns all.
+     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns all.
+     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     */
+    @Override
+    public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
+
+        List<CatalogTable> catalogTables = getTables(databaseNamePattern, schemaNamePattern, tableNamePattern);
+
+        List<CatalogPartition> catalogPartitions = null;
+        Stream<CatalogPartition> partitionStream = Stream.of();
+        for (CatalogTable catalogTable : catalogTables) {
+            try {
+                partitionStream = Stream.concat(partitionStream, getPartitions(catalogTable.id).stream());
+
+                System.out.println(catalogPartitions);
+
+            } catch (UnknownTableException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return partitionStream.collect(Collectors.toList());
     }
 
 
