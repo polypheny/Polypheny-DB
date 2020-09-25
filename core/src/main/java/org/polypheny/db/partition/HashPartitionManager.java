@@ -123,7 +123,8 @@ public class HashPartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions) {
+    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames) {
+
         return true;
     }
 

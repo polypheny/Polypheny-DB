@@ -34,7 +34,7 @@ public class RangePartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions) {
+    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames) {
         return false;
     }
 

@@ -85,7 +85,7 @@ public abstract class AbstractPartitionManager implements PartitionManager{
 
     public abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId);
 
-    public abstract boolean validatePartitionSetup(List partitionQualifiers, long numPartitions);
+    public abstract boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames);
 
     public abstract boolean allowsUnboundPartition();
 }

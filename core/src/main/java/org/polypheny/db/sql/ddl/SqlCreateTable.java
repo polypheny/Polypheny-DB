@@ -39,6 +39,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
@@ -104,6 +105,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
     private final int numPartitions;
+    List<SqlIdentifier> partitionNamesList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
@@ -111,7 +113,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     /**
      * Creates a SqlCreateTable.
      */
-    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType , SqlIdentifier partitionColumn, int numPartitions) {
+    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query,
+                    SqlIdentifier store, SqlIdentifier partitionType , SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList) {
+
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
@@ -120,6 +124,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | ROUNDROBIN | LIST); may be null
         this.partitionColumn = partitionColumn; // may be null
         this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
+        this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+
+        System.out.println("SqlCreateTable: numPartitions: " + numPartitions +  " partitionNamesList: " + partitionNamesList);
+
     }
 
 
@@ -161,6 +169,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             partitionColumn.unparse(writer, 0,0);
             writer.endList( frame );
         }
+
     }
 
 
@@ -311,7 +320,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
 
-            //TODO HENNLO Think about adding a new CatalogMethod to partition table while creating table and not sequentially
             if ( partitionType != null) {
                 //Check if specified partitionColumn is even part of the table
                 Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName(partitionType.toString());
@@ -321,7 +329,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList("My", "first", "List")), new ArrayList<>() );
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList("My", "first", "List")), partitionNamesList.stream().map(Object::toString)
+                        .collect(Collectors.toList()) );
 
                 System.out.println("HENNLO: SqlCreateTable: table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");

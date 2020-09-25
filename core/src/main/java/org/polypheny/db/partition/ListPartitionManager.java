@@ -89,14 +89,18 @@ public class ListPartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions) {
+    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames) {
 
         if( partitionQualifiers.size() +1 != numPartitions ){
-            throw  new RuntimeException("Number of partitionQualifiers '" + partitionQualifiers + "' +(Unbound partition) is not equal to number of specified partitions '" + numPartitions +"'");
+            throw  new RuntimeException("Number of partitionQualifiers '" + partitionQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitions +"'");
         }
 
         if( partitionQualifiers.isEmpty() || partitionQualifiers.size() == 0 ){
             throw  new RuntimeException("Partition Qualifiers are empty '" + partitionQualifiers );
+        }
+
+        if( numPartitions != partitionNames.size() ){
+            throw  new RuntimeException("Number of Partitions: " + numPartitions + " doesn't equal number of specified names: " + partitionNames.size() );
         }
 
         return true;

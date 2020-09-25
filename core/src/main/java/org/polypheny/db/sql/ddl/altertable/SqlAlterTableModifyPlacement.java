@@ -23,14 +23,13 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.partition.PartitionManager;
@@ -55,14 +54,16 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
     List<Integer> partitionList;
+    List<SqlIdentifier> partitionNamesList;
 
 
-    public SqlAlterTableModifyPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList ) {
+    public SqlAlterTableModifyPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList,List<SqlIdentifier> partitionNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
         this.storeName = Objects.requireNonNull( storeName );
         this.partitionList = partitionList;
+        this.partitionNamesList = partitionNamesList;
     }
 
 
@@ -92,7 +93,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
 
         //You can't partition placements if the table is not partitioned
-        if (catalogTable.isPartitioned == false && !partitionList.isEmpty()){
+        if (catalogTable.isPartitioned == false && ( !partitionList.isEmpty() || !partitionNamesList.isEmpty())){
             throw new RuntimeException(" Partition Placement is not allowed for unpartitioned table '"+ catalogTable.name +"'");
         }
 
@@ -168,28 +169,44 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             List<Long> tempPartitionList = new ArrayList<Long>();
             //Select partitions to create on this placement
             if (catalogTable.isPartitioned) {
-
-                if (!partitionList.isEmpty()) {
-
-                    System.out.println("HENNLO: SqlAlterTableModifyPlacement(): table is partitioned and concrete partitionList has been specified ");
+                long tableId = catalogTable.id;
+                //If index partitions are specified
+                if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
                     //First convert specified index to correct partitionId
-                    for (int partitionId: partitionList) {
+                    for (int partitionId : partitionList) {
                         //check if specified partition index is even part of table and if so get corresponding uniquePartId
                         try {
                             tempPartitionList.add(catalogTable.partitionIds.get(partitionId));
-                        }catch (IndexOutOfBoundsException e){
-                            throw new RuntimeException("Specified Partition-Index: '" + partitionId +"' is not part of table '"
-                                    + catalogTable.name+"', has only " + catalogTable.numPartitions + " partitions");
+                        } catch (IndexOutOfBoundsException e) {
+                            throw new RuntimeException("Specified Partition-Index: '" + partitionId + "' is not part of table '"
+                                    + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions");
                         }
                     }
                     catalog.updatePartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id, tempPartitionList);
                 }
-                /*else{
-                    if ( !catalog.validatePartitionDistribution(catalogTable.id) ){
-                        transaction.rollback();
-                        throw new RuntimeException("Validation of partition distribution failed");
+                //If name partitions are specified
+                else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty()){
+                    List<CatalogPartition> catalogPartitions = catalog.getPartitions(tableId);
+                    for (String partitionName : partitionNamesList.stream().map(Object::toString)
+                            .collect(Collectors.toList()) ){
+                        boolean isPartOfTable = false;
+                        for ( CatalogPartition catalogPartition : catalogPartitions) {
+                            if ( partitionName.equals(catalogPartition.partitionName.toLowerCase())) {
+                                tempPartitionList.add(catalogPartition.id);
+                                isPartOfTable = true;
+                                break;
+                            }
+                        }
+                        if ( !isPartOfTable ){
+                            throw new RuntimeException("Specified Partition-Name: '" + partitionName + "' is not part of table '"
+                                    + catalogTable.name + "', has only " + catalog.getPartitionNames(tableId) + " partitions");
+
+                        }
                     }
-                }*/
+                    catalog.updatePartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id, tempPartitionList);
+                }
+
+
             }
 
 

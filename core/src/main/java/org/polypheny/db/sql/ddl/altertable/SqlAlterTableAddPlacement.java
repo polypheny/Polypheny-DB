@@ -25,16 +25,16 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
+
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -56,15 +56,17 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
     List<Integer> partitionList;
+    List<SqlIdentifier> partitionNamesList;
 
 
 
-    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList ) {
+    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
         this.storeName = Objects.requireNonNull( storeName );
         this.partitionList = partitionList;
+        this.partitionNamesList = partitionNamesList;
 
         System.out.println("HENNNLO ->" + table + "->"+columnList +"->"+storeName +"->"+partitionList);
     }
@@ -95,8 +97,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         Catalog catalog = Catalog.getInstance();
         //You can't partition placements if the table is not partitioned
-        if (catalogTable.isPartitioned == false && !partitionList.isEmpty()){
-
+        if (catalogTable.isPartitioned == false && (!partitionList.isEmpty() || !partitionNamesList.isEmpty())){
             throw new RuntimeException(" Partition Placement is not allowed for unpartitioned table '"+ catalogTable.name +"'");
         }
 
@@ -136,7 +137,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             //Select partitions to create on this placement
             if (catalogTable.isPartitioned) {
                 boolean isDataPlacementPartitioned = false;
-
+                long tableId =catalogTable.id;
                 //Needed to ensure that column placements on the same store contain all the same partitions
                 //Check if this column placement is the first on the dataplacement
                 //If this returns null this means that this is the first placement and partitition list can therefore be specified
@@ -150,7 +151,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     isDataPlacementPartitioned = false;
                 }
 
-                if (!partitionList.isEmpty()) {
+                if (!partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
 
                     //Abort if a manual partitionList has been specified even though the data placemnt has already been partitioned
                     if ( isDataPlacementPartitioned ){
@@ -170,8 +171,33 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                         }
                     }
                 }
+                else if(!partitionNamesList.isEmpty() && partitionList.isEmpty()){
+
+                    if ( isDataPlacementPartitioned ){
+                        throw new RuntimeException("WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
+                                + storeName + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead");
+                    }
+
+                    List<CatalogPartition> catalogPartitions = catalog.getPartitions(tableId);
+                    for (String partitionName : partitionNamesList.stream().map(Object::toString)
+                            .collect(Collectors.toList()) ){
+                        boolean isPartOfTable = false;
+                        for ( CatalogPartition catalogPartition : catalogPartitions) {
+                            if ( partitionName.equals(catalogPartition.partitionName.toLowerCase())) {
+                                tempPartitionList.add(catalogPartition.id);
+                                isPartOfTable = true;
+                                break;
+                            }
+                        }
+                        if ( !isPartOfTable ){
+                            throw new RuntimeException("Specified Partition-Name: '" + partitionName + "' is not part of table '"
+                                    + catalogTable.name + "', has only " + catalog.getPartitionNames(tableId) + " partitions");
+
+                        }
+                    }
+                }
                 //Simply Place all partitions on placement since nothing has been specified
-                else if (partitionList.isEmpty()) {
+                else if (partitionList.isEmpty() && partitionNamesList.isEmpty()) {
                     System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has NOT been specified ");
 
                     if ( isDataPlacementPartitioned ){
@@ -218,7 +244,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
             // !!!!!!!!!!!!!!!!!!!!!!!!
             // TODO: Now we should also copy the data
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+        } catch (GenericCatalogException | UnknownKeyException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

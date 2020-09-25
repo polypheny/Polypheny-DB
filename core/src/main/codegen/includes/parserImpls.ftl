@@ -94,6 +94,8 @@ SqlAlterTable SqlAlterTable(Span s) :
     List<Integer> partitionList = new ArrayList<Integer>();
     int partitionIndex = 0;
     int numPartitions = 0;
+    List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
+    SqlIdentifier partitionName = null;
 
 }
 {
@@ -267,15 +269,22 @@ SqlAlterTable SqlAlterTable(Span s) :
         store = SimpleIdentifier()
             [
                 <WITH> <PARTITIONS>
-                    <LPAREN>
-                    partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                    (
-                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                    )*
-                    <RPAREN>
+                <LPAREN>
+                (
+                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        (
+                            <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        )*
+                    |
+                        partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        (
+                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        )*
+                )
+                <RPAREN>
             ]
         {
-            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList);
+            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList,partitionNamesList);
         }
     |
         <DROP>
@@ -317,14 +326,22 @@ SqlAlterTable SqlAlterTable(Span s) :
             [
                 <WITH> <PARTITIONS>
                 <LPAREN>
-                    partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                    (
-                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-                    )*
-                <RPAREN>
+                (
+                        partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        (
+                            <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                        )*
+                    |
+
+                        partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        (
+                            <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        )*
+               )
+               <RPAREN>
             ]
             {
-                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList);
+                return new SqlAlterTableModifyPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList);
             }
         )
 
@@ -332,15 +349,23 @@ SqlAlterTable SqlAlterTable(Span s) :
         <MODIFY>
         <PARTITIONS>
         <LPAREN>
-            partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
             (
-                <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
-            )*
+                    partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    (
+                        <COMMA> partitionIndex = UnsignedIntLiteral() { partitionList.add(partitionIndex); }
+                    )*
+                |
+
+                    partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                    (
+                         <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                    )*
+            )
         <RPAREN>
         <ON>
         <STORE> store = SimpleIdentifier()
         {
-            return new SqlAlterTableModifyPartitions(s.end(this), table, store, partitionList);
+            return new SqlAlterTableModifyPartitions(s.end(this), table, store, partitionList, partitionNamesList);
         }
 
     |
@@ -387,11 +412,20 @@ SqlAlterTable SqlAlterTable(Span s) :
         <PARTITION> <BY>
         partitionType = SimpleIdentifier()
         <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
-        (
-            [  <PARTITIONS> numPartitions = UnsignedIntLiteral() ]
-        )
+        [
+                (
+                        <PARTITIONS> numPartitions = UnsignedIntLiteral()
+                    |
+                        <WITH> <LPAREN>
+                                partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                (
+                                    <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                )*
+                        <RPAREN>
+                )
+        ]
         {
-            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions);
+            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions, partitionNamesList);
         }
 
     |

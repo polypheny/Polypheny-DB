@@ -816,6 +816,8 @@ public abstract class Catalog {
 
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
+    public abstract List<String> getPartitionNames(long tableId) throws UnknownTableException;
+
     public abstract List<CatalogPartition> getPartitionsOnPlacement(long storeId, long columnId);
 
     public abstract List<CatalogPartition> getPartitionsOnStore(long storeId);

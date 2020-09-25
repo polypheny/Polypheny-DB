@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
@@ -48,13 +49,15 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
     private final int numPartitions;
+    List<SqlIdentifier> partitionNamesList;
 
-    public SqlAlterTableAddPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier partitionColumn, SqlIdentifier partitionType, int numPartitions) {
+    public SqlAlterTableAddPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier partitionColumn, SqlIdentifier partitionType, int numPartitions,    List<SqlIdentifier> partitionNamesList) {
         super(pos);
         this.table = Objects.requireNonNull(table);
         this.partitionType= Objects.requireNonNull(partitionType);
         this.partitionColumn = Objects.requireNonNull(partitionColumn);
         this.numPartitions = numPartitions; //May be empty
+        this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
     }
 
     @Override
@@ -90,7 +93,8 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList(1, 2, 5)), new ArrayList<>());
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList(1, 2, 5)), partitionNamesList.stream().map(Object::toString)
+                        .collect(Collectors.toList()));
 
                 System.out.println("HENNLO: SqlAlterTableAddPartition: table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");

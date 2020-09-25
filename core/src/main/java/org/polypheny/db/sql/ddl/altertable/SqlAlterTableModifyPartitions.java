@@ -20,6 +20,7 @@ package org.polypheny.db.sql.ddl.altertable;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.*;
 import org.polypheny.db.jdbc.Context;
@@ -33,6 +34,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
@@ -46,12 +48,17 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
     private final SqlIdentifier table;
     private final SqlIdentifier storeName;
     List<Integer> partitionList;
+    List<SqlIdentifier> partitionNamesList;
 
-    public SqlAlterTableModifyPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName, List<Integer> partitionList) {
+    public SqlAlterTableModifyPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.storeName = Objects.requireNonNull( storeName );
         this.partitionList = partitionList;
+        this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+
+        System.out.println(partitionList +" - " + partitionNamesList);
+
     }
 
     @Override
@@ -84,7 +91,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
                 long tableId = catalogTable.id;
 
 
-                if ( partitionList.isEmpty()){
+                if ( partitionList.isEmpty() && partitionNamesList.isEmpty()){
                     throw new RuntimeException("Empty Partition Placement is not allowed for partitioned table '"+ catalogTable.name +"'");
                 }
 
@@ -109,14 +116,38 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
                 }
 
                 List<Long> tempPartitionList = new ArrayList<Long>();
-                //First convert specified index to correct partitionId
-                for (int partitionId: partitionList) {
-                    //check if specified partition index is even part of table and if so get corresponding uniquePartId
-                    try {
-                        tempPartitionList.add(catalogTable.partitionIds.get(partitionId));
-                    }catch (IndexOutOfBoundsException e){
-                        throw new RuntimeException("Specified Partition-Index: '" + partitionId +"' is not part of table '"
-                                + catalogTable.name+"', has only " + catalogTable.numPartitions + " partitions");
+
+                //If index partitions are specified
+                if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
+                    //First convert specified index to correct partitionId
+                    for (int partitionId : partitionList) {
+                        //check if specified partition index is even part of table and if so get corresponding uniquePartId
+                        try {
+                            tempPartitionList.add(catalogTable.partitionIds.get(partitionId));
+                        } catch (IndexOutOfBoundsException e) {
+                            throw new RuntimeException("Specified Partition-Index: '" + partitionId + "' is not part of table '"
+                                    + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions");
+                        }
+                    }
+                }
+                //If name partitions are specified
+                else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty()){
+                    List<CatalogPartition> catalogPartitions = catalog.getPartitions(tableId);
+                    for (String partitionName : partitionNamesList.stream().map(Object::toString)
+                            .collect(Collectors.toList()) ){
+                        boolean isPartOfTable = false;
+                        for ( CatalogPartition catalogPartition : catalogPartitions) {
+                            if ( partitionName.equals(catalogPartition.partitionName.toLowerCase())) {
+                                tempPartitionList.add(catalogPartition.id);
+                                isPartOfTable = true;
+                                break;
+                            }
+                        }
+                        if ( !isPartOfTable ){
+                            throw new RuntimeException("Specified Partition-Name: '" + partitionName + "' is not part of table '"
+                                        + catalogTable.name + "', has only " + catalog.getPartitionNames(tableId) + " partitions");
+
+                        }
                     }
                 }
 

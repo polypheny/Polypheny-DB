@@ -2730,7 +2730,13 @@ public class CatalogImpl extends Catalog {
             System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
             long partId;
             List<Long> tempPartIds = new ArrayList<>();
+
+            if (partitionNames.size() >= 2 && numPartitions  == 0){ numPartitions = partitionNames.size(); }
             if ( numPartitions == 0 && partitionType == PartitionType.HASH){ numPartitions = 2; }
+            if ( numPartitions == 0 && partitionNames.size() < 2){
+                throw new RuntimeException("Partition Table failed for table:" + old.name + " Can't specify partition names with less than 2 names");
+            }
+
             //Calculate how many partitions exist if partitioning is applied.
             //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
             System.out.println("HENNLO: CatalogImpl: Creating " + numPartitions + " partitions");
@@ -2738,7 +2744,11 @@ public class CatalogImpl extends Catalog {
             PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
             PartitionManager partitionManager = partitionManagerFactory.getInstance(partitionType);
 
-            if ( !partitionManager.validatePartitionSetup(partitionQualifiers, numPartitions)){
+
+
+            System.out.println("NAMES::::::::::::::::: "+ partitionNames);
+
+            if ( !partitionManager.validatePartitionSetup(partitionQualifiers, numPartitions, partitionNames)){
                 throw new RuntimeException("Partition Table failed for table:" + old.name);
             }
 
@@ -2752,7 +2762,6 @@ public class CatalogImpl extends Catalog {
                 if ( partitionManager.allowsUnboundPartition() && i == numPartitions-1 ){
                     partId = addPartition(tableId, "Unbound", old.schemaId, old.ownerId, partitionType, new ArrayList<>(), true);
                     System.out.println("\t\t\t\t\t"+ partId + " - Created Unbound Partition");
-                    break;
                 }
                 else{
 
@@ -2899,14 +2908,11 @@ public class CatalogImpl extends Catalog {
 
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            System.out.println("HENNLO: CatalogImpl: getPartitions() Selecting partitions for table: " +  tableId + " '" + table.name + "'");
             List<CatalogPartition> partitions = new ArrayList<>(  );
             for (long partId: table.partitionIds) {
                 partitions.add(getPartition(partId));
             }
             return partitions;
-            //return Collections.singletonList(partitions.get()
-            //return columnNames.prefixSubMap( new Object[]{ table.databaseId, table.schemaId, table.id } ).values().stream().sorted( columnComparator ).collect( Collectors.toList() );
 
         } catch ( NullPointerException | UnknownPartitionException e ) {
             return new ArrayList<>();
@@ -2934,8 +2940,6 @@ public class CatalogImpl extends Catalog {
             try {
                 partitionStream = Stream.concat(partitionStream, getPartitions(catalogTable.id).stream());
 
-                System.out.println(catalogPartitions);
-
             } catch (UnknownTableException e) {
                 throw new RuntimeException(e);
             }
@@ -2943,7 +2947,17 @@ public class CatalogImpl extends Catalog {
         return partitionStream.collect(Collectors.toList());
     }
 
+    @Override
+    public List<String> getPartitionNames(long tableId) throws UnknownTableException {
 
+        List<String> partitionNames = new ArrayList<>();
+
+        for (CatalogPartition catalogPartition : getPartitions(tableId)){
+            partitionNames.add(catalogPartition.partitionName);
+        }
+
+        return partitionNames;
+    }
 
 
     /**
