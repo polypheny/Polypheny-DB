@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import org.apache.calcite.linq4j.QueryProvider;
@@ -147,6 +148,24 @@ public abstract class RexProgramBuilderBase {
         @Override
         public Statement getStatement() {
             return null;
+        }
+
+
+        @Override
+        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public RelDataType getParameterType( long index ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public List<Map<Long, Object>> getParameterValues() {
+            throw new UnsupportedOperationException();
         }
     }
 

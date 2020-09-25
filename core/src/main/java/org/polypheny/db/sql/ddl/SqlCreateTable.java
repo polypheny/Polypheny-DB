@@ -182,18 +182,18 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {
-            if ( ifNotExists ) {
-                // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
-                return;
-            } else {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
-            }
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
         try {
             // Check if there is already a table with this name
             if ( catalog.checkIfExistsTable( schemaId, tableName ) ) {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
+                if ( ifNotExists ) {
+                    // It is ok that there is already a table with this name because "IF NOT EXISTS" was specified
+                    return;
+                } else {
+                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
+                }
             }
 
             if ( this.columnList == null ) {

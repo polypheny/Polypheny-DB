@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -110,7 +111,7 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Execute Query
         try {
-            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), null, true );
+            PolyphenyDbSignature signature = sourceStatement.getQueryProcessor().prepareQuery( sourceRel, sourceRel.rel.getCluster().getTypeFactory().builder().build(), true );
             final Enumerable enumerable = signature.enumerable( sourceStatement.getDataContext() );
             //noinspection unchecked
             Iterator<Object> sourceIterator = enumerable.iterator();
@@ -126,22 +127,30 @@ public class DataMigratorImpl implements DataMigrator {
                 }
             }
 
+            int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
             while ( sourceIterator.hasNext() ) {
-                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, 100 ), new ArrayList<>() );
+                List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, LimitIterator.of( sourceIterator, batchSize ), new ArrayList<>() );
+                Map<Long, List<Object>> values = new HashMap<>();
                 for ( List<Object> list : rows ) {
-                    Map<String, Object> values = new HashMap<>();
                     for ( Map.Entry<Long, Integer> entry : resultColMapping.entrySet() ) {
-                        values.put( "?" + entry.getKey(), list.get( entry.getValue() ) );
-                    }
-                    Iterator iterator = targetStatement.getQueryProcessor()
-                            .prepareQuery( targetRel, sourceRel.validatedRowType, values, true )
-                            .enumerable( targetStatement.getDataContext() )
-                            .iterator();
-                    //noinspection WhileLoopReplaceableByForEach
-                    while ( iterator.hasNext() ) {
-                        iterator.next();
+                        if ( !values.containsKey( entry.getKey() ) ) {
+                            values.put( entry.getKey(), new LinkedList<>() );
+                        }
+                        values.get( entry.getKey() ).add( list.get( entry.getValue() ) );
                     }
                 }
+                for ( Map.Entry<Long, List<Object>> v : values.entrySet() ) {
+                    targetStatement.getDataContext().addParameterValues( v.getKey(), null, v.getValue() );
+                }
+                Iterator iterator = targetStatement.getQueryProcessor()
+                        .prepareQuery( targetRel, sourceRel.validatedRowType, true )
+                        .enumerable( targetStatement.getDataContext() )
+                        .iterator();
+                //noinspection WhileLoopReplaceableByForEach
+                while ( iterator.hasNext() ) {
+                    iterator.next();
+                }
+                targetStatement.getDataContext().resetParameterValues();
             }
         } catch ( Throwable t ) {
             throw new RuntimeException( t );
