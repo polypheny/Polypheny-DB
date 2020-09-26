@@ -65,7 +65,7 @@ public class HashPartitionManager extends AbstractPartitionManager{
                 for (long columnId : table.columnIds){
                     boolean skip = false;
 
-                    int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, table.numPartitions).size();
+                    int numberOfFullPlacements = getPlacementsWithAllPartitions(columnId, table.numPartitions).size();
                     if ( numberOfFullPlacements >= 1 ){
                         System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId);
                         skip = true;
@@ -95,7 +95,7 @@ public class HashPartitionManager extends AbstractPartitionManager{
     public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
 
         //change is only critical if there is only one column left with the charecteristics
-        int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).size();
+        int numberOfFullPlacements = getPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).size();
         if ( numberOfFullPlacements <= 1 ){
             Catalog catalog = Catalog.getInstance();
             //Check if this one column is the column we are about to delete
@@ -116,7 +116,7 @@ public class HashPartitionManager extends AbstractPartitionManager{
         //Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
         for ( long columnId : catalogTable.columnIds ){
             //Take the first column placement
-            relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
+            relevantCcps.add(getPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
         }
 
         return relevantCcps;
@@ -146,7 +146,7 @@ public class HashPartitionManager extends AbstractPartitionManager{
      * @param numPartitions  numPartitions
      * @return If its correctly distributed or not
      */
-    private List<CatalogColumnPlacement> getNumberOfPlacementsWithAllPartitions(long columnId, long numPartitions){
+    private List<CatalogColumnPlacement> getPlacementsWithAllPartitions(long columnId, long numPartitions){
 
         Catalog catalog = Catalog.getInstance();
 

@@ -232,15 +232,15 @@ public abstract class AbstractRouter implements Router {
                         }
                         String partitionValue = filterMap.get(node.getId());
                         System.out.println("HENNLO AbstractRouter: partitionValue: " + partitionValue);
+                        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+                        PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
                         if ( partitionValue != null) {
-                            PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-                            PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
                             long identPart = partitionManager.getTargetPartitionId(catalogTable, partitionValue);
                             System.out.println("HENNLO AbstractRouter: partitionId: " + identPart);
                             placements = partitionManager.getRelevantPlacements(catalogTable, identPart);
                         }
                         else{
-                            placements = selectPlacement( node, catalogTable );
+                            placements = partitionManager.getRelevantPlacements(catalogTable, -1);
                         }
 
                     }
