@@ -19,6 +19,7 @@ package org.polypheny.db.constraints;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
@@ -275,6 +276,80 @@ public class UniqueConstraintTest {
                             ImmutableList.of(
                                     new Object[]{ 1, 1, 1, 5 },
                                     new Object[]{ 2, 2, 2, 5 }
+                            )
+                    );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE constraint_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void batchInsertTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create schema
+                statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
+                if ( createIndexes ) {
+                    // Add indexes
+                    for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
+                        statement.executeUpdate( s );
+                    }
+                }
+
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO constraint_test VALUES (?,?,?,?)" );
+
+                    // This should not work
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.setInt( 2, 1 );
+                    preparedStatement.setInt( 3, 1 );
+                    preparedStatement.setInt( 4, 1 );
+                    preparedStatement.addBatch();
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.setInt( 2, 1 );
+                    preparedStatement.setInt( 3, 1 );
+                    preparedStatement.setInt( 4, 1 );
+                    preparedStatement.addBatch();
+                    try {
+                        preparedStatement.executeBatch();
+                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                    } catch ( Exception ignored ) {
+                    }
+
+                    // This should work
+                    for ( int i = 1; i < 5; i++ ) {
+                        preparedStatement.setInt( 1, i );
+                        preparedStatement.setInt( 2, i );
+                        preparedStatement.setInt( 3, i );
+                        preparedStatement.setInt( 4, i );
+                        preparedStatement.addBatch();
+                    }
+                    preparedStatement.executeBatch();
+
+                    // This should not work
+                    for ( int i = 8; i > 3; i-- ) {
+                        preparedStatement.setInt( 1, i );
+                        preparedStatement.setInt( 2, i );
+                        preparedStatement.setInt( 3, i );
+                        preparedStatement.setInt( 4, i );
+                        preparedStatement.addBatch();
+                    }
+                    try {
+                        preparedStatement.executeBatch();
+                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                    } catch ( Exception ignored ) {
+                    }
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 1, 1, 1 },
+                                    new Object[]{ 2, 2, 2, 2 },
+                                    new Object[]{ 3, 3, 3, 3 },
+                                    new Object[]{ 4, 4, 4, 4 }
                             )
                     );
                 } finally {

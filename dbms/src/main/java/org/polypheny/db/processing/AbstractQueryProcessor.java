@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -120,6 +121,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexFieldAccess;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -656,6 +658,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 // Enforce uniqueness between the already existing values and the new values
                 final RelNode scan = LogicalTableScan.create( root.getCluster(), root.getTable() );
                 RexNode joinCondition = rexBuilder.makeLiteral( true );
+                //
+                // TODO: Here we get issues with batch queries
+                //
                 builder.push( input );
                 builder.project( constraint.key.getColumnNames().stream().map( builder::field ).collect( Collectors.toList() ) );
                 builder.push( scan );
@@ -676,10 +681,36 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = lce;
                 // Enforce uniqueness within the values to insert
-                //noinspection StatementWithEmptyBody
-                if ( input instanceof Values && ((Values) input).getTuples().size() <= 1 ||
-                        (input instanceof Project && input.getInput( 0 ) instanceof Values && ((Values) input.getInput( 0 )).getTuples().size() <= 1) ) {
+                if ( input instanceof LogicalValues && ((LogicalValues) input).getTuples().size() <= 1 ) {
                     // no need to check, only one tuple in set
+                } else if ( input instanceof LogicalProject && input.getInput( 0 ) instanceof LogicalValues && ((LogicalValues) input.getInput( 0 )).getTuples().get( 0 ).size() == 1 ) {
+                    //noinspection StatementWithEmptyBody
+                    if ( statement.getDataContext().getParameterValues().size() > 0 ) {
+                        LogicalProject project = (LogicalProject) input;
+                        List<Map<Long, Object>> parameterValues = statement.getDataContext().getParameterValues();
+                        final Set<List<Object>> uniqueSet = new HashSet<>( parameterValues.get( 0 ).size() );
+                        final Map<String, Integer> columnMap = new HashMap<>( constraint.key.columnIds.size() );
+                        for ( final String columnName : constraint.key.getColumnNames() ) {
+                            int i = project.getRowType().getField( columnName, true, false ).getIndex();
+                            columnMap.put( columnName, i );
+                        }
+                        for ( Integer index : columnMap.values() ) {
+                            for ( Map<Long, Object> entry : parameterValues ) {
+                                List<Object> list = new LinkedList<>();
+                                if ( project.getProjects().get( index ) instanceof RexDynamicParam ) {
+                                    list.add( entry.get( ((RexDynamicParam) project.getProjects().get( index )).getIndex() ) );
+                                } else {
+                                    throw new RuntimeException( "Unexpected node type" );
+                                }
+                                uniqueSet.add( list );
+                            }
+                        }
+                        if ( uniqueSet.size() != parameterValues.size() ) {
+                            throw new ConstraintViolationException( String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                        }
+                    } else {
+                        // no need to check, only one tuple in set
+                    }
                 } else if ( input instanceof Values ) {
                     // If the input is a Values node, check uniqueness right away, as not all stores can implement this check
                     // (And anyway, pushing this down to stores seems rather inefficient)
@@ -1067,9 +1098,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
             @Override
             public RelNode visit( LogicalProject project ) {
-                if ( project.getInput() instanceof TableScan ) {
+                if ( project.getInput() instanceof LogicalTableScan ) {
                     // Figure out the original column names required for index lookup
-                    final TableScan scan = (TableScan) project.getInput();
+                    final LogicalTableScan scan = (LogicalTableScan) project.getInput();
                     final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
                     final List<String> columns = new ArrayList<>( project.getChildExps().size() );
                     final List<RelDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
@@ -1105,12 +1136,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
                     final Values replacement = idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
                     final LogicalProject rProject = new LogicalProject(
-                            replacement.getCluster(), replacement.getTraitSet(), replacement,
-                            IntStream.range( 0, compositeType.getFieldCount() ).mapToObj( i -> rexBuilder.makeInputRef( replacement, i ) ).collect( Collectors.toList() ),
+                            replacement.getCluster(),
+                            replacement.getTraitSet(),
+                            replacement,
+                            IntStream.range( 0, compositeType.getFieldCount() )
+                                    .mapToObj( i -> rexBuilder.makeInputRef( replacement, i ) )
+                                    .collect( Collectors.toList() ),
                             compositeType );
                     IndexManager.getInstance().incrementHit();
                     return rProject;
-
                 }
                 return super.visit( project );
             }
