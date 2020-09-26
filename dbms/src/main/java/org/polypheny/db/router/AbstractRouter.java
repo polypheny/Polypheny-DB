@@ -190,6 +190,9 @@ public abstract class AbstractRouter implements Router {
                           buildDql( node.getInput( i ), builder, statement, cluster );
                       }
                   }
+                  else{
+                      buildDql( node.getInput( i ), builder, statement, cluster );
+                  }
                 }
             }else{
                 buildDql( node.getInput( i ), builder, statement, cluster );
