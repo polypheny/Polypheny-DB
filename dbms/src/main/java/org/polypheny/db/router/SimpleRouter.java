@@ -59,28 +59,11 @@ public class SimpleRouter extends AbstractRouter {
     @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
 
-        //TODO Do something similar with partitionPlacements
-        System.out.println("HENNLO: SimpleRouter selectPlacement: " + table.name);
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
 
 
 
-
-        if ( table.isPartitioned ) {
-            System.out.println("HENNLO: SimpleRouter selectPlacements() Table: '" + table.name + "' is partitioned ("
-                    + table.numPartitions + ") - " + table.partitionIds);
-
-            PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-            PartitionManager partitionManager = partitionManagerFactory.getInstance(table.partitionType);
-            placementList = partitionManager.getRelevantPlacements(table, -1);
-
-            for (CatalogColumnPlacement ccp : placementList) {
-                System.out.println("\t\t\t Placement: '" + ccp.storeUniqueName + "." + ccp.getLogicalColumnName() + "' "
-                        + catalog.getPartitionsOnDataPlacement(ccp.storeId, ccp.tableId));
-            }
-        }
-        else {
             // Find the store with the most column placements
             int storeIdWithMostPlacements = -1;
             int numOfPlacements = 0;
@@ -103,7 +86,7 @@ public class SimpleRouter extends AbstractRouter {
             } catch (GenericCatalogException e) {
                 throw new RuntimeException(e);
             }
-        }
+
         return placementList;
     }
 

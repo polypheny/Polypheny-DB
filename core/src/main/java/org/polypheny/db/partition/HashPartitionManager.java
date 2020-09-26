@@ -123,7 +123,13 @@ public class HashPartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames) {
+    public boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames) {
+        super.validatePartitionSetup(partitionQualifiers,numPartitions, partitionNames);
+
+
+        if ( !partitionQualifiers.isEmpty() ){
+            throw new RuntimeException("PartitionType HASH does not supprt the assignment of values to partitions");
+        }
 
         return true;
     }

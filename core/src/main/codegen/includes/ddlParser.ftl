@@ -267,6 +267,8 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     int numPartitions = 0;
     List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
     SqlIdentifier partitionName = null;
+    List<SqlIdentifier> partitionQualifierList = new ArrayList<SqlIdentifier>();
+    SqlIdentifier partitionQualifier = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
@@ -285,12 +287,26 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
                                 <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
                             )*
                     <RPAREN>
+                |
+                    <LPAREN>
+                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        <VALUES> <LPAREN>
+                                partitionQualifier = SimpleIdentifier() { partitionQualifierList.add(partitionQualifier); }
+                        <RPAREN>
+                        (
+                                <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                        <VALUES> <LPAREN>
+                                                partitionQualifier = SimpleIdentifier() { partitionQualifierList.add(partitionQualifier); }
+                                        <RPAREN>
+                        )*
+                    <RPAREN>
+
             )
 
         ]
     ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList);
+        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList);
     }
 }
 

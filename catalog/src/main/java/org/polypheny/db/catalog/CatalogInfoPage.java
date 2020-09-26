@@ -57,7 +57,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "PartitionType", "Partitions" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
-        this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "Name", "TableID" ) );
+        this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "Name", "TableID", "Qualifiers" ) );
 
         addPersistentInfo( page );
 
@@ -121,7 +121,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
             } );
             catalog.getPartitions( null, null, null ).forEach( p -> {
-                partitionInformation.addRow( p.id, p.partitionName, p.tableId );
+                partitionInformation.addRow( p.id, p.partitionName, p.tableId, p.partitionQualifiers );
             } );
 
         } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException  e ) {

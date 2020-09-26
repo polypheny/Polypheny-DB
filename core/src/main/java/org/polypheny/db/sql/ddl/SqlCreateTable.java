@@ -106,6 +106,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlIdentifier partitionType;
     private final int numPartitions;
     List<SqlIdentifier> partitionNamesList;
+    List<SqlIdentifier> partitionQualifierList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
@@ -114,7 +115,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
      * Creates a SqlCreateTable.
      */
     SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query,
-                    SqlIdentifier store, SqlIdentifier partitionType , SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList) {
+                    SqlIdentifier store, SqlIdentifier partitionType , SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList, List<SqlIdentifier> partitionQualifierList) {
 
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
@@ -125,8 +126,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.partitionColumn = partitionColumn; // may be null
         this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionQualifierList = partitionQualifierList;
 
-        System.out.println("SqlCreateTable: numPartitions: " + numPartitions +  " partitionNamesList: " + partitionNamesList);
+        System.out.println("SqlCreateTable: numPartitions: " + numPartitions +  " partitionNamesList: " + partitionNamesList + " partitionQualifierList: " + partitionQualifierList);
 
     }
 
@@ -329,8 +331,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList("My", "first", "List")), partitionNamesList.stream().map(Object::toString)
-                        .collect(Collectors.toList()) );
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, partitionQualifierList.stream().map(Object::toString)
+                        .collect(Collectors.toList()), partitionNamesList.stream().map(Object::toString).collect(Collectors.toList()) );
 
                 System.out.println("HENNLO: SqlCreateTable: table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");

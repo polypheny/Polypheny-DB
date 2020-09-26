@@ -2636,7 +2636,7 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public long addPartition(long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List effectivePartitionQualifier, boolean isUnbound) throws GenericCatalogException {
+    public long addPartition(long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound) throws GenericCatalogException {
        //HENNLO
         System.out.println("\t\t\t\t\taddPartition" + " - " + effectivePartitionQualifier);
         try {
@@ -2724,18 +2724,15 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
-    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List partitionQualifiers, List<String> partitionNames) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
+    public void partitionTable(long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
         try {
             CatalogTable old = Objects.requireNonNull(tables.get(tableId));
             System.out.println("HENNLO: CatalogImpl: partitioning on columnId: " + partitionColumnId + " with type: " + partitionType);
             long partId;
             List<Long> tempPartIds = new ArrayList<>();
 
+
             if (partitionNames.size() >= 2 && numPartitions  == 0){ numPartitions = partitionNames.size(); }
-            if ( numPartitions == 0 && partitionType == PartitionType.HASH){ numPartitions = 2; }
-            if ( numPartitions == 0 && partitionNames.size() < 2){
-                throw new RuntimeException("Partition Table failed for table:" + old.name + " Can't specify partition names with less than 2 names");
-            }
 
             //Calculate how many partitions exist if partitioning is applied.
             //Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
@@ -2744,6 +2741,10 @@ public class CatalogImpl extends Catalog {
             PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
             PartitionManager partitionManager = partitionManagerFactory.getInstance(partitionType);
 
+            if( partitionManager.allowsUnboundPartition() ){
+                //Because of the implicit unbound partition
+                numPartitions+=1;
+            }
 
 
             System.out.println("NAMES::::::::::::::::: "+ partitionNames);
@@ -2773,13 +2774,19 @@ public class CatalogImpl extends Catalog {
                         partitionName = partitionNames.get(i);
                     }
 
-                    partId = addPartition(tableId, partitionName, old.schemaId, old.ownerId, partitionType, new ArrayList<>( Arrays.asList( partitionQualifiers.get(i))), false);
-                    System.out.println("\t\t\t\t\t"+ partId + " - " + partitionQualifiers.get(i));
+                    //Mainly needed for HASH
+                    if ( partitionQualifiers.isEmpty() ){
+                        partId = addPartition(tableId, partitionName, old.schemaId, old.ownerId, partitionType, new ArrayList<>(), false);
+                    }else {
+                        partId = addPartition(tableId, partitionName, old.schemaId, old.ownerId, partitionType, new ArrayList<>(Arrays.asList(partitionQualifiers.get(i))), false);
+                        System.out.println("\t\t\t\t\t" + partId + " - " + partitionQualifiers.get(i));
+                    }
                 }
 
 
                 tempPartIds.add(partId);
             }
+
 
 
             //partitionIds = ImmutableList.copyOf(tempPartIds);

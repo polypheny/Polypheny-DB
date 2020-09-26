@@ -231,10 +231,12 @@ public abstract class AbstractRouter implements Router {
                             System.out.println("HENNLO AbstractRouter: " + cp.tableId + " " + (cp.id+1) + "/" + catalogTable.numPartitions);
                         }
                         String partitionValue = filterMap.get(node.getId());
+                        System.out.println("HENNLO AbstractRouter: partitionValue: " + partitionValue);
                         if ( partitionValue != null) {
                             PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
                             PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
                             long identPart = partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                            System.out.println("HENNLO AbstractRouter: partitionId: " + identPart);
                             placements = partitionManager.getRelevantPlacements(catalogTable, identPart);
                         }
                         else{

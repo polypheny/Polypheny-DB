@@ -802,13 +802,13 @@ public abstract class Catalog {
 
 
 
-    public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
+    public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     protected abstract void deletePartition( long tableId, long schemaId, long partitionId );
 
     public abstract CatalogPartition getPartition(long partitionId ) throws UnknownPartitionException;
 
-    public abstract void partitionTable(long tableId, PartitionType type, long partitionColumnId, int numPartitions, List partitionQualifiers, List<String> partitionNames) throws UnknownTableException, UnknownPartitionException, GenericCatalogException;
+    public abstract void partitionTable(long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames) throws UnknownTableException, UnknownPartitionException, GenericCatalogException;
 
     public abstract void mergeTable(long tableId ) throws UnknownTableException;
 

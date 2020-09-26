@@ -50,14 +50,16 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final SqlIdentifier partitionType;
     private final int numPartitions;
     List<SqlIdentifier> partitionNamesList;
+    List<SqlIdentifier> partitionQualifierList;
 
-    public SqlAlterTableAddPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier partitionColumn, SqlIdentifier partitionType, int numPartitions,    List<SqlIdentifier> partitionNamesList) {
+    public SqlAlterTableAddPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier partitionColumn, SqlIdentifier partitionType, int numPartitions,    List<SqlIdentifier> partitionNamesList, List<SqlIdentifier> partitionQualifierList) {
         super(pos);
         this.table = Objects.requireNonNull(table);
         this.partitionType= Objects.requireNonNull(partitionType);
         this.partitionColumn = Objects.requireNonNull(partitionColumn);
         this.numPartitions = numPartitions; //May be empty
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionQualifierList = partitionQualifierList;
     }
 
     @Override
@@ -93,7 +95,8 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
 
                 //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, new ArrayList<>(Arrays.asList(1, 2, 5)), partitionNamesList.stream().map(Object::toString)
+                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, partitionQualifierList.stream().map(Object::toString)
+                        .collect(Collectors.toList()), partitionNamesList.stream().map(Object::toString)
                         .collect(Collectors.toList()));
 
                 System.out.println("HENNLO: SqlAlterTableAddPartition: table: '" + catalogTable.name + "' has been partitioned on columnId '"

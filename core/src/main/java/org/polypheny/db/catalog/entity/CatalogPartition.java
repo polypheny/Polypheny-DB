@@ -41,7 +41,7 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
     public final long databaseId;
     public final int ownerId;
     public final String ownerName;
-    public final List partitionQualifiers;
+    public final List<String> partitionQualifiers;
     public final boolean isUnbound;
 
     //Technically a compound between primary key and partition column (+range/list)
@@ -57,7 +57,7 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
                             final int ownerId,
                             @NonNull final String ownerName,
                             final long partitionKey,
-                            final List partitionQualifiers,
+                            final List<String> partitionQualifiers,
                             final boolean isUnbound) {
 
         this.id = id;

@@ -96,6 +96,8 @@ SqlAlterTable SqlAlterTable(Span s) :
     int numPartitions = 0;
     List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
     SqlIdentifier partitionName = null;
+    List<SqlIdentifier> partitionQualifierList = new ArrayList<SqlIdentifier>();
+    SqlIdentifier partitionQualifier = null;
 
 }
 {
@@ -422,10 +424,24 @@ SqlAlterTable SqlAlterTable(Span s) :
                                     <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
                                 )*
                         <RPAREN>
+
+                    |
+                        <LPAREN>
+                            <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                            <VALUES> <LPAREN>
+                                    partitionQualifier = SimpleIdentifier() { partitionQualifierList.add(partitionQualifier); }
+                            <RPAREN>
+                            (
+                                <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                <VALUES> <LPAREN>
+                                    partitionQualifier = SimpleIdentifier() { partitionQualifierList.add(partitionQualifier); }
+                                <RPAREN>
+                            )*
+                        <RPAREN>
                 )
         ]
         {
-            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions, partitionNamesList);
+            return new SqlAlterTableAddPartitions(s.end(this), table, partitionColumn, partitionType, numPartitions, partitionNamesList, partitionQualifierList);
         }
 
     |

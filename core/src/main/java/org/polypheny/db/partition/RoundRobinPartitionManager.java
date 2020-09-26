@@ -57,7 +57,8 @@ public class RoundRobinPartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames) {
+    public boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames) {
+        super.validatePartitionSetup(partitionQualifiers,numPartitions, partitionNames);
         return false;
     }
 

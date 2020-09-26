@@ -85,7 +85,14 @@ public abstract class AbstractPartitionManager implements PartitionManager{
 
     public abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId);
 
-    public abstract boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames);
+    public  boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames){
+
+        if ( numPartitions == 0 && partitionNames.size() < 2){
+            throw new RuntimeException("Partition Table failed for  Can't specify partition names with less than 2 names");
+        }
+
+        return true;
+    }
 
     public abstract boolean allowsUnboundPartition();
 }

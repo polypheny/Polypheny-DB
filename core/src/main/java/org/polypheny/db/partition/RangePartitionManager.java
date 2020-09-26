@@ -24,6 +24,7 @@ public class RangePartitionManager extends AbstractPartitionManager{
     @Override
     public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
         //TODO nOt implemented yet
+
         return false;
 
     }
@@ -34,7 +35,8 @@ public class RangePartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames) {
+    public boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames) {
+        super.validatePartitionSetup(partitionQualifiers,numPartitions, partitionNames);
         return false;
     }
 

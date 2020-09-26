@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
 import org.polypheny.db.routing.Router;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ListPartitionManager extends AbstractPartitionManager{
@@ -42,17 +43,16 @@ public class ListPartitionManager extends AbstractPartitionManager{
             for(long partitionID : catalogTable.partitionIds) {
 
                 CatalogPartition catalogPartition = catalog.getPartition(partitionID);
-                System.out.println("HENNLO  ListPartitionManager getPartitionId() "+ catalogPartition.partitionQualifiers.contains(columnValue)+ " "+ catalogPartition.partitionQualifiers + " " + catalogPartition.partitionQualifiers.get(0).toString());
 
+                if (catalogPartition.isUnbound) {
+                    unboundPartitionId = catalogPartition.id;
+                }
                 for(int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
                     //Could be int
-                    if (catalogPartition.partitionQualifiers.get(i).toString().equals(columnValue)) {
+                    if (catalogPartition.partitionQualifiers.get(i).equals(columnValue)) {
                         System.out.println("HENNLO  ListPartitionManager getPartitionId(): Found column value: " + columnValue + " on partitionID " + partitionID + " with qualifiers: " + catalogPartition.partitionQualifiers);
                         selectedPartitionId = catalogPartition.id;
                         break;
-                    }
-                    else if (catalogPartition.isUnbound) {
-                        selectedPartitionId = catalogPartition.id;
                     }
                 }
 
@@ -72,35 +72,77 @@ public class ListPartitionManager extends AbstractPartitionManager{
     @Override
     public boolean validatePartitionDistribution(CatalogTable table) {
         System.out.println("HENNLO  ListPartitionManager validPartitionDistribution()");
-        return false;
+
+        try {
+
+            //Check for every column if there exists at least one placement which contains all partitions
+            for (long columnId : table.columnIds){
+                boolean skip = false;
+
+                int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, table.numPartitions).size();
+                if ( numberOfFullPlacements >= 1 ){
+                    System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId);
+                    skip = true;
+                    break;
+                }
+
+                if ( skip ){ continue;}
+                else{
+                    System.out.println("ERROR Column: '" + Catalog.getInstance().getColumn(columnId).name +"' has no placement containing all partitions");
+                    return false;
+                }
+            }
+
+
+        } catch ( UnknownColumnException | GenericCatalogException e) {
+            e.printStackTrace();
+        }
+
+
+        return true;
     }
 
     //Needed when columnPlacements are being dropped
     @Override
     public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
-        //TODO not implemented yet
-        return false;
+        //change is only critical if there is only one column left with the charecteristics
+        int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).size();
+        if ( numberOfFullPlacements <= 1 ){
+            Catalog catalog = Catalog.getInstance();
+            //Check if this one column is the column we are about to delete
+            if ( catalog.getPartitionsOnDataPlacement(storeId, catalogTable.id).size() == catalogTable.numPartitions ){
+                return false;
+            }
+        }
+
+        return true;
 
     }
 
     @Override
     public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
-        return null;
+        Catalog catalog = Catalog.getInstance();
+        List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
+        //Find stores with fullplacements (partitions)
+        //Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
+        for ( long columnId : catalogTable.columnIds ){
+            //Take the first column placement
+            relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
+        }
+
+        return relevantCcps;
     }
 
     @Override
-    public boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames) {
-
+    public boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames) {
+        super.validatePartitionSetup(partitionQualifiers,numPartitions, partitionNames);
         if( partitionQualifiers.size() +1 != numPartitions ){
             throw  new RuntimeException("Number of partitionQualifiers '" + partitionQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitions +"'");
         }
 
         if( partitionQualifiers.isEmpty() || partitionQualifiers.size() == 0 ){
-            throw  new RuntimeException("Partition Qualifiers are empty '" + partitionQualifiers );
-        }
 
-        if( numPartitions != partitionNames.size() ){
-            throw  new RuntimeException("Number of Partitions: " + numPartitions + " doesn't equal number of specified names: " + partitionNames.size() );
+            throw  new RuntimeException("Partition Qualifiers are empty '" + partitionQualifiers );
         }
 
         return true;
@@ -109,6 +151,32 @@ public class ListPartitionManager extends AbstractPartitionManager{
     @Override
     public boolean allowsUnboundPartition() {
         return true;
+    }
+
+    /**
+     *  Returns number of placements for this column which contain all partitions
+     *
+     * @param columnId  column to be checked
+     * @param numPartitions  numPartitions
+     * @return If its correctly distributed or not
+     */
+    private List<CatalogColumnPlacement> getNumberOfPlacementsWithAllPartitions(long columnId, long numPartitions){
+
+        Catalog catalog = Catalog.getInstance();
+
+        //Return every placement of this column
+        List<CatalogColumnPlacement> tempCcps = catalog.getColumnPlacements(columnId);
+        List<CatalogColumnPlacement> returnCcps = new ArrayList<>();
+        int placementCounter = 0;
+        for (CatalogColumnPlacement ccp : tempCcps ){
+            //If the DataPlacement has stored all partitions and therefore all partitions for this placement
+            if ( catalog.getPartitionsOnDataPlacement(ccp.storeId, ccp.tableId).size() == numPartitions  ){
+                returnCcps.add(ccp);
+                placementCounter++;
+            }
+        }
+        return returnCcps;
+
     }
 
 }

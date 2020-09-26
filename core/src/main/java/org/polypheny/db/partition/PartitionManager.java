@@ -18,7 +18,7 @@ public interface PartitionManager {
 
     abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId);
 
-    abstract boolean validatePartitionSetup(List partitionQualifiers, long numPartitions, List<String> partitionNames);
+    abstract boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames);
 
     abstract boolean allowsUnboundPartition();
 }
