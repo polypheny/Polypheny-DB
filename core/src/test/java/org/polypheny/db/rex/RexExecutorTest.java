@@ -394,6 +394,24 @@ public class RexExecutorTest {
         public Statement getStatement() {
             return null;
         }
+
+
+        @Override
+        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public RelDataType getParameterType( long index ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public List<Map<Long, Object>> getParameterValues() {
+            throw new UnsupportedOperationException();
+        }
     }
 }
 

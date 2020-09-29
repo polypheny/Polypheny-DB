@@ -73,8 +73,6 @@ public class ListPartitionManager extends AbstractPartitionManager{
     public boolean validatePartitionDistribution(CatalogTable table) {
         System.out.println("HENNLO  ListPartitionManager validPartitionDistribution()");
 
-        try {
-
             //Check for every column if there exists at least one placement which contains all partitions
             for (long columnId : table.columnIds){
                 boolean skip = false;
@@ -92,11 +90,6 @@ public class ListPartitionManager extends AbstractPartitionManager{
                     return false;
                 }
             }
-
-
-        } catch ( UnknownColumnException | GenericCatalogException e) {
-            e.printStackTrace();
-        }
 
 
         return true;

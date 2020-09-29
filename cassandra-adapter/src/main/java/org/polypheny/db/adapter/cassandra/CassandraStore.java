@@ -50,7 +50,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -227,21 +226,13 @@ public class CassandraStore extends Store {
         // List<CatalogColumn> columns = combinedTable.getColumns();
         List<CatalogColumnPlacement> columns = catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id );
         CatalogColumnPlacement primaryColumnPlacement = columns.stream().filter( c -> c.columnId == primaryKeyColumnLambda ).findFirst().get();
-        CatalogColumn catalogColumn;
-        try {
-            catalogColumn = catalog.getColumn( primaryColumnPlacement.columnId );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogColumn catalogColumn = catalog.getColumn( primaryColumnPlacement.columnId );
+
         CreateTable createTable = SchemaBuilder.createTable( this.dbKeyspace, physicalTableName )
                 .withPartitionKey( physicalNameProvider.generatePhysicalColumnName( catalogColumn.id ), CassandraTypesUtils.getDataType( catalogColumn.type, this.arrayContainerUdt ) );
 
         for ( CatalogColumnPlacement placement : columns ) {
-            try {
-                catalogColumn = catalog.getColumn( placement.columnId );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                throw new RuntimeException( e );
-            }
+            catalogColumn = catalog.getColumn( placement.columnId );
             DataType fieldType;
             if ( catalogColumn.collectionsType == PolyType.ARRAY ) {
                 fieldType = this.arrayContainerUdt;

@@ -19,8 +19,6 @@ package org.polypheny.db.partition;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,8 +57,6 @@ public class HashPartitionManager extends AbstractPartitionManager{
     public boolean validatePartitionDistribution(CatalogTable table) {
         System.out.println("HENNLO  HashPartitionManager validPartitionDistribution()");
 
-            try {
-
                 //Check for every column if there exists at least one placement which contains all partitions
                 for (long columnId : table.columnIds){
                     boolean skip = false;
@@ -78,11 +74,6 @@ public class HashPartitionManager extends AbstractPartitionManager{
                         return false;
                     }
                 }
-
-
-            } catch ( UnknownColumnException | GenericCatalogException e) {
-                e.printStackTrace();
-            }
 
 
             return true;

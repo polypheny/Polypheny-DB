@@ -692,8 +692,8 @@ public class RexToLixTranslator {
                 convert(
                         Expressions.call(
                                 root,
-                                BuiltInMethod.DATA_CONTEXT_GET.method,
-                                Expressions.constant( "?" + expr.getIndex() ) ),
+                                BuiltInMethod.DATA_CONTEXT_GET_PARAMETER_VALUE.method,
+                                Expressions.constant( expr.getIndex() ) ),
                         storageType ) );
     }
 

@@ -36,9 +36,10 @@ import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class JdbcPreparedStatementsTest {
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
+
     private final static String SCHEMA_SQL = "CREATE TABLE pstest( "
             + "tbigint BIGINT NULL, "
             + "tboolean BOOLEAN NULL, "
@@ -77,7 +78,6 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void basicTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -109,7 +109,6 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void batchInsertTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -144,7 +143,6 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void dataTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -207,7 +205,6 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void batchDataTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -271,7 +268,6 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void nullTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -468,7 +464,6 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void arrayTest() throws Exception {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
@@ -511,7 +506,6 @@ public class JdbcPreparedStatementsTest {
     }
 
 
-    @SuppressWarnings({ "SqlNoDataSourceInspection" })
     @Test
     public void arrayBatchTest() throws Exception {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {

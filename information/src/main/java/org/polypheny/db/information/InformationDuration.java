@@ -31,8 +31,8 @@ public class InformationDuration extends Information {
      * Duration in NanoSeconds
      */
     long duration = 0L;
-    private HashMap<String, Duration> children = new HashMap<>();
-    private boolean isChild = false;
+    private final HashMap<String, Duration> children = new HashMap<>();
+    private final boolean isChild = false;
 
 
     /**
@@ -97,8 +97,8 @@ public class InformationDuration extends Information {
      */
     static class Duration implements Comparable<Duration> {
 
-        private String type = InformationDuration.class.getSimpleName();//for the UI
-        private String name;
+        private final String type = InformationDuration.class.getSimpleName();//for the UI
+        private final String name;
         /**
          * Duration in NanoSeconds
          */
@@ -108,13 +108,13 @@ public class InformationDuration extends Information {
          */
         private long limit;
         private StopWatch sw;
-        private long sequence;
+        private final long sequence;
 
         private boolean noProgressBar = false;
         static long counter = 0;
 
-        private HashMap<String, Duration> children = new HashMap<>();
-        private boolean isChild = true;
+        private final HashMap<String, Duration> children = new HashMap<>();
+        private final boolean isChild = true;
 
 
         private Duration( final String name ) {
@@ -176,6 +176,7 @@ public class InformationDuration extends Information {
         }
 
 
+        @Override
         public int compareTo( final Duration other ) {
             if ( this.sequence > other.sequence ) {
                 return 1;

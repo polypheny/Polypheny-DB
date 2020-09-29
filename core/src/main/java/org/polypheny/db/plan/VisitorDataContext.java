@@ -110,6 +110,24 @@ public class VisitorDataContext implements DataContext {
     }
 
 
+    @Override
+    public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+        throw new RuntimeException( "Unsupported" );
+    }
+
+
+    @Override
+    public RelDataType getParameterType( long index ) {
+        throw new RuntimeException( "Unsupported" );
+    }
+
+
+    @Override
+    public List<Map<Long, Object>> getParameterValues() {
+        throw new RuntimeException( "Unsupported" );
+    }
+
+
     public static DataContext of( RelNode targetRel, LogicalFilter queryRel ) {
         return of( targetRel.getRowType(), queryRel.getCondition() );
     }

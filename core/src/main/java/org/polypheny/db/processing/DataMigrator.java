@@ -16,22 +16,13 @@
 
 package org.polypheny.db.processing;
 
+import java.util.List;
+import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogStore;
+import org.polypheny.db.transaction.Transaction;
 
-import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelOptTable.ViewExpander;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.type.RelDataType;
+public interface DataMigrator {
 
-
-public interface QueryProcessor extends ViewExpander {
-
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot );
-
-    PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameters, boolean isRouted );
-
-    RelOptPlanner getPlanner();
-
-    void resetCaches();
+    void copyData( Transaction transaction, CatalogStore store, List<CatalogColumn> columns );
 
 }

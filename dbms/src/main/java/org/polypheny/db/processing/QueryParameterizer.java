@@ -17,12 +17,11 @@
 package org.polypheny.db.processing;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
+import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -48,14 +47,14 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     private final AtomicInteger index;
     @Getter
-    private final Map<String, Object> values;
+    private final List<ParameterValue> values;
     @Getter
     private final List<RelDataType> types;
 
 
     public QueryParameterizer( int indexStart, List<RelDataType> parameterRowType ) {
         index = new AtomicInteger( indexStart );
-        values = new HashMap<>();
+        values = new ArrayList<>();
         types = new ArrayList<>( parameterRowType );
     }
 
@@ -108,7 +107,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
     @Override
     public RexNode visitLiteral( RexLiteral literal ) {
         int i = index.getAndIncrement();
-        values.put( "?" + i, literal.getValueForQueryParameterizer() );
+        values.add( new ParameterValue( i, literal.getType(), literal.getValueForQueryParameterizer() ) );
         types.add( literal.getType() );
         return new RexDynamicParam( literal.getType(), i );
     }
@@ -119,7 +118,7 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
         if ( call.op instanceof SqlArrayValueConstructor ) {
             int i = index.getAndIncrement();
             List<Object> list = createListForArrays( call.operands );
-            values.put( "?" + i, list );
+            values.add( new ParameterValue( i, call.type, list ) );
             types.add( call.type );
             return new RexDynamicParam( call.type, i );
         } else {
@@ -183,7 +182,11 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
 
     @Override
     public RexNode visitSubQuery( RexSubQuery subQuery ) {
-        return subQuery; //TODO
+        List<RexNode> newOperands = new LinkedList<>();
+        for ( RexNode operand : subQuery.operands ) {
+            newOperands.add( operand.accept( this ) );
+        }
+        return subQuery.clone( subQuery.type, newOperands, subQuery.rel.accept( this ) );
     }
 
 
@@ -197,4 +200,5 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
     public RexNode visitPatternFieldRef( RexPatternFieldRef fieldRef ) {
         return fieldRef;
     }
+
 }

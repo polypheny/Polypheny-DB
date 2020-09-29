@@ -54,6 +54,7 @@ import org.polypheny.db.interpreter.Interpreter;
 import org.polypheny.db.jdbc.ContextImpl;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.schema.HrSchema;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.schema.ScannableTable;
@@ -122,6 +123,24 @@ public class InterpreterTest {
         @Override
         public Statement getStatement() {
             return null;
+        }
+
+
+        @Override
+        public void addParameterValues( long index, RelDataType type, List<Object> data ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public RelDataType getParameterType( long index ) {
+            throw new UnsupportedOperationException();
+        }
+
+
+        @Override
+        public List<Map<Long, Object>> getParameterValues() {
+            throw new UnsupportedOperationException();
         }
     }
 

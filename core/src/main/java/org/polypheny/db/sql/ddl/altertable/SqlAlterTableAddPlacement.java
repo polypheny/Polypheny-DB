@@ -35,7 +35,9 @@ import org.polypheny.db.catalog.entity.*;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
@@ -106,6 +108,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
             columnIds.add( catalogColumn.id );
         }
+        List<CatalogColumn> addedColumns = new LinkedList<>();
         Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException(
@@ -221,6 +224,8 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                         null,
                         tempPartitionList);
 
+
+                addedColumns.add( Catalog.getInstance().getColumn( cid ) );
             }
             //Check if placement includes primary key columns
             CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
@@ -234,17 +239,17 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                             null,
                             null,
                             tempPartitionList);
+                    addedColumns.add( Catalog.getInstance().getColumn( cid ) );
                 }
             }
 
             // Create table on store
             storeInstance.createTable( context, catalogTable );
 
-
-
-            // !!!!!!!!!!!!!!!!!!!!!!!!
-            // TODO: Now we should also copy the data
-        } catch (GenericCatalogException | UnknownKeyException | UnknownTableException e ) {
+            // Copy data to the newly added placements
+            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+            dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
+        } catch (GenericCatalogException | UnknownKeyException | UnknownStoreException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -406,6 +406,8 @@ public abstract class Catalog {
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId );
 
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnStoreSortedByPhysicalPosition( int storeId, long tableId );
+
 
     /**
      * Get column placements on a store
@@ -481,7 +483,7 @@ public abstract class Catalog {
      * @return A CatalogColumn
      * @throws UnknownColumnException If there is no column with this id
      */
-    public abstract CatalogColumn getColumn( long columnId ) throws UnknownColumnException, GenericCatalogException;
+    public abstract CatalogColumn getColumn( long columnId );
 
     /**
      * Returns the column with the specified name in the specified table of the specified database and schema.
@@ -524,10 +526,10 @@ public abstract class Catalog {
      * Renames a column
      *
      * @param columnId The if of the column to rename
-     * @param name New name of the column
+     * @param name     New name of the column
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameColumn( long columnId, String name ) throws GenericCatalogException, UnknownColumnException;
+    public abstract void renameColumn( long columnId, String name ) throws GenericCatalogException;
 
     /**
      * Change the position of the column.
@@ -535,7 +537,7 @@ public abstract class Catalog {
      * @param columnId The id of the column for which to change the position
      * @param position The new position of the column
      */
-    public abstract void setColumnPosition( long columnId, int position ) throws GenericCatalogException, UnknownColumnException;
+    public abstract void setColumnPosition( long columnId, int position ) throws GenericCatalogException;
 
     /**
      * Change the data type of an column.
@@ -557,10 +559,10 @@ public abstract class Catalog {
      * Set the collation of a column.
      * If the column already has the specified collation set, this method is a NoOp.
      *
-     * @param columnId The id of the column
+     * @param columnId  The id of the column
      * @param collation The collation to set
      */
-    public abstract void setCollation( long columnId, Collation collation ) throws GenericCatalogException, UnknownColumnException;
+    public abstract void setCollation( long columnId, Collation collation );
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -582,13 +584,13 @@ public abstract class Catalog {
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
      *
-     * @param columnId The id of the column
-     * @param type The type of the default value
+     * @param columnId     The id of the column
+     * @param type         The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
 
 
-    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue ) throws GenericCatalogException, UnknownColumnException;
+    public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue );
 
 
     /**
@@ -596,7 +598,7 @@ public abstract class Catalog {
      *
      * @param columnId The id of the column
      */
-    public abstract void deleteDefaultValue( long columnId ) throws GenericCatalogException, UnknownColumnException;
+    public abstract void deleteDefaultValue( long columnId );
 
     /**
      * Returns a specified primary key

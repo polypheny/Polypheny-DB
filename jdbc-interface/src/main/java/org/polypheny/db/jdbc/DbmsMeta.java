@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -916,29 +917,40 @@ public class DbmsMeta implements ProtobufMeta {
             final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
             long[] updateCounts = new long[parameterValues.size()];
-            int i = 0;
+            Map<Long, List<Object>> values = new HashMap<>();
             for ( UpdateBatch updateBatch : parameterValues ) {
                 List<Common.TypedValue> list = updateBatch.getParameterValuesList();
-                Map<String, Object> values = new HashMap<>();
-                int index = 0;
+                long index = 0;
                 for ( Common.TypedValue v : list ) {
+                    long i = index++;
+                    if ( !values.containsKey( i ) ) {
+                        values.put( i, new LinkedList<>() );
+                    }
                     if ( "ARRAY".equals( v.getType().name() ) ) {
-                        values.put( "?" + index++, convertList( (List<Object>) TypedValue.fromProto( v ).toLocal() ) );
+                        values.get( i ).add( convertList( (List<Object>) TypedValue.fromProto( v ).toLocal() ) );
                     } else {
-                        values.put( "?" + index++, TypedValue.fromProto( v ).toJdbc( calendar ) );
+                        values.get( i ).add( TypedValue.fromProto( v ).toJdbc( calendar ) );
                     }
                 }
-
-                try {
-                    statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
-                    prepare( h, statementHandle.getPreparedQuery(), values );
-                    updateCounts[i++] = execute( h, connection, statementHandle, -1 ).size();
-                } catch ( Exception e ) {
-                    log.error( "Exception while preparing query", e );
-                    String message = e.getLocalizedMessage();
-                    throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
-                }
             }
+
+            try {
+                if ( values.size() == 0 ) {
+                    // Nothing to execute
+                    return new ExecuteBatchResult( new long[0] );
+                }
+                statementHandle.setStatement( connection.getCurrentOrCreateNewTransaction().createStatement() );
+                for ( Entry<Long, List<Object>> valuesList : values.entrySet() ) {
+                    statementHandle.getStatement().getDataContext().addParameterValues( valuesList.getKey(), null, valuesList.getValue() );
+                }
+                prepare( h, statementHandle.getPreparedQuery() );
+                updateCounts[0] = execute( h, connection, statementHandle, -1 ).size();
+            } catch ( Exception e ) {
+                log.error( "Exception while preparing query", e );
+                String message = e.getLocalizedMessage();
+                throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
+            }
+
             return new ExecuteBatchResult( updateCounts );
         }
     }
@@ -1218,20 +1230,24 @@ public class DbmsMeta implements ProtobufMeta {
     private ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame, PolyphenyDbConnectionHandle connection ) throws NoSuchStatementException {
         final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
-        Map<String, Object> values = new HashMap<>();
-        int index = 0;
+        Map<Integer, Object> values = new HashMap<>();
+        long index = 0;
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {
+                Object o;
                 if ( "ARRAY".equals( v.type.name() ) ) {
-                    values.put( "?" + index++, convertList( (List<Object>) v.toLocal() ) );
+                    o = convertList( (List<Object>) v.toLocal() );
                 } else {
-                    values.put( "?" + index++, v.toJdbc( calendar ) );
+                    o = v.toJdbc( calendar );
                 }
+                List<Object> list = new LinkedList<>();
+                list.add( o );
+                statementHandle.getStatement().getDataContext().addParameterValues( index++, null, list );
             }
         }
 
         try {
-            prepare( h, statementHandle.getPreparedQuery(), values );
+            prepare( h, statementHandle.getPreparedQuery() );
             return new ExecuteResult( execute( h, connection, statementHandle, maxRowsInFirstFrame ) );
         } catch ( Exception e ) {
             log.error( "Exception while preparing query", e );
@@ -1254,7 +1270,7 @@ public class DbmsMeta implements ProtobufMeta {
     }
 
 
-    private void prepare( StatementHandle h, String sql, Map<String, Object> parameterValues ) throws NoSuchStatementException {
+    private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
         // Parser Config
         SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
         configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
@@ -1279,7 +1295,7 @@ public class DbmsMeta implements ProtobufMeta {
             RelDataType parameterRowType = sqlProcessor.getParameterRowType( validated.left );
 
             // Prepare
-            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, parameterValues );
+            signature = statementHandle.getStatement().getQueryProcessor().prepareQuery( logicalRoot, parameterRowType, false );
         }
 
         h.signature = signature;

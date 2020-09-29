@@ -58,6 +58,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -223,15 +224,25 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      */
     public static PreparedStatementEnricher createEnricher( Integer[] indexes, DataContext context ) {
         return ( preparedStatement, connectionHandler ) -> {
-            for ( int i = 0; i < indexes.length; i++ ) {
-                final int index = indexes[i];
-                setDynamicParam(
-                        preparedStatement,
-                        i + 1,
-                        context.get( "?" + index ),
-                        preparedStatement.getParameterMetaData().getParameterType( i + 1 ),
-                        connectionHandler );
+            boolean batch = false;
+            if ( context.getParameterValues().size() > 1 ) {
+                batch = true;
             }
+            for ( Map<Long, Object> values : context.getParameterValues() ) {
+                for ( int i = 0; i < indexes.length; i++ ) {
+                    final long index = indexes[i];
+                    setDynamicParam(
+                            preparedStatement,
+                            i + 1,
+                            values.get( index ),
+                            preparedStatement.getParameterMetaData().getParameterType( i + 1 ),
+                            connectionHandler );
+                }
+                if ( batch ) {
+                    preparedStatement.addBatch();
+                }
+            }
+            return batch;
         };
     }
 
@@ -386,14 +397,20 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
         try {
             preparedStatement = connectionHandler.prepareStatement( sql );
             setTimeoutIfPossible( preparedStatement );
-            preparedStatementEnricher.enrich( preparedStatement, connectionHandler );
-            if ( preparedStatement.execute() ) {
-                final ResultSet resultSet = preparedStatement.getResultSet();
-                preparedStatement = null;
-                return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
-            } else {
+            if ( preparedStatementEnricher.enrich( preparedStatement, connectionHandler ) ) {
+                // batch
+                preparedStatement.executeBatch();
                 Integer updateCount = preparedStatement.getUpdateCount();
                 return Linq4j.singletonEnumerator( (T) updateCount );
+            } else {
+                if ( preparedStatement.execute() ) {
+                    final ResultSet resultSet = preparedStatement.getResultSet();
+                    preparedStatement = null;
+                    return new ResultSetEnumerator<>( resultSet, rowBuilderFactory );
+                } else {
+                    Integer updateCount = preparedStatement.getUpdateCount();
+                    return Linq4j.singletonEnumerator( (T) updateCount );
+                }
             }
         } catch ( SQLException e ) {
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
@@ -547,7 +564,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
      */
     public interface PreparedStatementEnricher {
 
-        void enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
+        // returns true if this needs to be executed as batch
+        boolean enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
     }
 }
 
