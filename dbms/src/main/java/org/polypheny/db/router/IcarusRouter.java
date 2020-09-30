@@ -273,7 +273,7 @@ public class IcarusRouter extends AbstractRouter {
             if ( placements.size() != table.columnIds.size() ) {
                 throw new RuntimeException( "The data store '" + selectedStoreId + "' does not contain a full table placement!" );
             }
-            return Catalog.getInstance().getColumnPlacementsOnStore( selectedStoreId );
+            return placements;
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedStoreId );
     }
