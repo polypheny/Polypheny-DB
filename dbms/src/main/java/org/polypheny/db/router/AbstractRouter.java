@@ -904,8 +904,8 @@ public abstract class AbstractRouter implements Router {
                             value = ((RexLiteral) call.operands.get(1)).getValueForQueryParameterizer();
                             valueIdentified = true;
                         } else if (call.operands.get(1) instanceof RexDynamicParam) {
-                            long index = ((RexDynamicParam) call.operands.get(1)).getIndex(); //long index
-                            value = statement.getDataContext().get("?" + index);
+                            long index = ((RexDynamicParam) call.operands.get(1)).getIndex();
+                            value = statement.getDataContext().getParameterValue(index);//.get("?" + index);
                             valueIdentified = true;
                         } else {
                             //Worstcase
@@ -920,8 +920,8 @@ public abstract class AbstractRouter implements Router {
                             value = ((RexLiteral) call.operands.get(0)).getValueForQueryParameterizer();
                             valueIdentified = true;
                         } else if (call.operands.get(0) instanceof RexDynamicParam) {
-                            long index = ((RexDynamicParam) call.operands.get(0)).getIndex(); //long index
-                            value = statement.getDataContext().get("?" + index); //.getParamterValues //
+                            long index = ((RexDynamicParam) call.operands.get(0)).getIndex();
+                            value = statement.getDataContext().getParameterValue(index);//get("?" + index); //.getParamterValues //
                             valueIdentified = true;
                         } else {
                             //WOrstcase

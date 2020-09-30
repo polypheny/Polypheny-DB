@@ -19,6 +19,7 @@ package org.polypheny.db.partition;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -72,11 +73,11 @@ public class ListPartitionManager extends AbstractPartitionManager{
     @Override
     public boolean validatePartitionDistribution(CatalogTable table) {
         System.out.println("HENNLO  ListPartitionManager validPartitionDistribution()");
-
+        Catalog catalog = Catalog.getInstance();
             //Check for every column if there exists at least one placement which contains all partitions
             for (long columnId : table.columnIds){
                 boolean skip = false;
-
+                
                 int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, table.numPartitions).size();
                 if ( numberOfFullPlacements >= 1 ){
                     System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId);
@@ -116,13 +117,37 @@ public class ListPartitionManager extends AbstractPartitionManager{
     public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
+
+
+        try {
+            List<CatalogStore> catalogStores = catalog.getStoresByPartition(catalogTable.id, partitionId);
+            System.out.println("Found " + catalogStores.size() + " stores which contain partitionId: " + partitionID);
+
+
+
         //Find stores with fullplacements (partitions)
         //Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
         for ( long columnId : catalogTable.columnIds ){
+
+            List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition(catalogTable.id, partitionId, columnId);
+            if (!ccps.isEmpty()){
+                //get first columnpalcement which contains parttion
+                relevantCcps.add(ccps.get(0));
+            }
+            else{
+                //Worstcase routing
+                //
+            }
+
+
             //Take the first column placement
-            relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
+            //Worstcase
+            //relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
         }
 
+        } catch (UnknownPartitionException e) {
+            e.printStackTrace();
+        }
         return relevantCcps;
     }
 

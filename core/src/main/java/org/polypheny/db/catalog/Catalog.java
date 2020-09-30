@@ -824,15 +824,9 @@ public abstract class Catalog {
 
     public abstract List<CatalogPartition> getPartitionsOnStore(long storeId);
 
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition(long partitionId) throws UnknownPartitionException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition(long tableId,long partitionId, long columnId) throws UnknownPartitionException;
 
-    public abstract List<CatalogStore> getStoresByPartition(long partitionId) throws UnknownPartitionException;
-
-    public abstract void  addPartitionsToColumnPlacement(long columnId, List<Long> partitionIds);
-
-    public abstract void  addPartitionsToColumnPlacement(CatalogColumnPlacement catalogColumnPlacement, List<Long> partitionIds);
-
-    public abstract void  updatePartitionsOnColumnPlacement(CatalogColumnPlacement catalogColumnPlacement, List<Long> partitionIds);
+    public abstract List<CatalogStore> getStoresByPartition(long tableId,long partitionId) throws UnknownPartitionException;
 
     public abstract void  updatePartitionsOnDataPlacement(int storeId, long tableId, List<Long> partitionIds) throws UnknownTableException, UnknownStoreException;
 

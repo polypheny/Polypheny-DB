@@ -1647,7 +1647,7 @@ public class Crud implements InformationObserver {
                         table.numPartitions ));
             }
             return p;
-        } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
         }
