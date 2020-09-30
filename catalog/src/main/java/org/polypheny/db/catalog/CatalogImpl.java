@@ -3022,7 +3022,7 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get placements by partition. Identify the location of partitions, even the store
+     * Get placements by partition. Identify the location of partitions
      *
      * @param partitionId The unique id of the partition
      * @param columnId columnplacement to return
@@ -3031,7 +3031,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByPartition(long tableId, long partitionId, long columnId) throws UnknownPartitionException {
-        List<CatalogColumnPlacement> catalogColumnPlacemnts = null;
+        List<CatalogColumnPlacement> catalogColumnPlacemnts =  new ArrayList<>();
         try {
             CatalogTable table = getTable(tableId);
 
@@ -3045,7 +3045,7 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException(e);
         }
 
-        if ( catalogColumnPlacemnts == null ){
+        if ( catalogColumnPlacemnts.isEmpty() ){
             return new ArrayList<>();
         }
 
@@ -3062,7 +3062,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogStore> getStoresByPartition(long tableId, long partitionId) throws UnknownPartitionException{
-        List<CatalogStore> catalogStores = null;
+        List<CatalogStore> catalogStores = new ArrayList<>();
         try {
             CatalogTable table = getTable(tableId);
 
@@ -3076,7 +3076,7 @@ public class CatalogImpl extends Catalog {
            throw new RuntimeException(e);
         }
 
-        if ( catalogStores == null ){
+        if ( catalogStores.isEmpty() ){
             return new ArrayList<>();
         }
 

@@ -99,7 +99,7 @@ public class HashPartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
+    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable,  List<Long> partitionIds) {
 
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();

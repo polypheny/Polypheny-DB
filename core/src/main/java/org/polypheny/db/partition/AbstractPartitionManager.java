@@ -35,45 +35,10 @@ import java.util.List;
 public abstract class AbstractPartitionManager implements PartitionManager{
 
 
-    //Not sure if ID is enough to use in sort of a hierarchical request (schema.table.partition)
-    //Or if I want to use the partitionkey uniquely identifying a partiton
-    //is the column used to partiton the table
-    @Getter
-    protected String partitionKey;
 
-    @Getter
-    protected long partitionID;
-
-    //Identify on which Schema
-    @Getter
-    protected String schemaName;
-
-    //Which table
-    @Getter
-    protected String tableName;
-
-    @Getter
-    protected long tableId;
-
-    @Getter
-    protected List<Long> columnIds;
-    @Getter
-    protected List<String> columnNames;
 
     @Getter
     protected boolean allowsUnboundPartition;
-
-    //How many partitions
-    //Should move to table object to obtain this
-    //information from table
-    //default partition or non partitioned = means 1 partition
-    @Getter
-    protected int partitions = 1;
-
-
-    //TODO HENNLO: Maybe extend partitoning with a store to
-    // uniquely identify a partition element or a column to route a query more efficientely
-    //essentially needed for replicas
 
 
     //returns the Index of the partition where to place the object
@@ -83,7 +48,7 @@ public abstract class AbstractPartitionManager implements PartitionManager{
 
     public abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
 
-    public abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId);
+    public abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable,  List<Long> partitionIds);
 
     public  boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames){
 

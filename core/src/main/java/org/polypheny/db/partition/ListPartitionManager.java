@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.routing.Router;
 
 import java.util.ArrayList;
@@ -99,54 +100,90 @@ public class ListPartitionManager extends AbstractPartitionManager{
     //Needed when columnPlacements are being dropped
     @Override
     public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
-        //change is only critical if there is only one column left with the charecteristics
-        int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).size();
-        if ( numberOfFullPlacements <= 1 ){
-            Catalog catalog = Catalog.getInstance();
-            //Check if this one column is the column we are about to delete
-            if ( catalog.getPartitionsOnDataPlacement(storeId, catalogTable.id).size() == catalogTable.numPartitions ){
-                return false;
+
+        Catalog catalog = Catalog.getInstance();
+        /* try {
+
+            int thresholdCounter = 0;
+            boolean validDistribution = false;
+            //check for every partition if the column in question has still all partition somewher even when columnId on Store would be removed
+            for (long partitionId : catalogTable.partitionIds) {
+
+                //check if a column is dropped from a store if this column has still other placements with all partitions
+                List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition(catalogTable.id, partitionId, columnId);
+                for ( CatalogColumnPlacement columnPlacement : ccps){
+                    if (columnPlacement.storeId != storeId){
+                        thresholdCounter++;
+                        break;
+                    }
+                }
+                if ( thresholdCounter < 1){
+                    return false;
+                }
             }
-        }
+
+            } catch ( UnknownPartitionException e) {
+            throw  new RuntimeException(e);
+         }*/
+
+
+
+            //change is only critical if there is only one column left with the charecteristics
+            int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).size();
+            if ( numberOfFullPlacements <= 1 ){
+                //Check if this one column is the column we are about to delete
+                if ( catalog.getPartitionsOnDataPlacement(storeId, catalogTable.id).size() == catalogTable.numPartitions ){
+                    return false;
+                }
+            }
+
+
 
         return true;
 
     }
 
+    //Relevant for select
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
+    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, List<Long> partitionIds) {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
+        if (partitionIds != null) {
+            try {
 
-        try {
-            List<CatalogStore> catalogStores = catalog.getStoresByPartition(catalogTable.id, partitionId);
-            System.out.println("Found " + catalogStores.size() + " stores which contain partitionId: " + partitionID);
+                for (long partitionId : partitionIds) {
+
+                    //Find stores with fullplacements (partitions)
+                    //Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
+                    for (long columnId : catalogTable.columnIds) {
+
+                        List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition(catalogTable.id, partitionId, columnId);
+                        if (!ccps.isEmpty()) {
+                            //get first columnpalcement which contains parttion
+                            relevantCcps.add(ccps.get(0));
+                            System.out.println("------------" + ccps.get(0).storeUniqueName + " " + ccps.get(0).getLogicalColumnName() + " with part. " + partitionId);
+                        } else {
+                            //Worstcase routing
+                            //
+                        }
 
 
+                        //Take the first column placement
+                        //Worstcase
+                        //relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
+                    }
+                }
 
-        //Find stores with fullplacements (partitions)
-        //Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
-        for ( long columnId : catalogTable.columnIds ){
-
-            List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition(catalogTable.id, partitionId, columnId);
-            if (!ccps.isEmpty()){
-                //get first columnpalcement which contains parttion
-                relevantCcps.add(ccps.get(0));
+            } catch (UnknownPartitionException e) {
+                e.printStackTrace();
             }
-            else{
-                //Worstcase routing
-                //
-            }
-
-
+        }else{
             //Take the first column placement
             //Worstcase
-            //relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
-        }
-
-        } catch (UnknownPartitionException e) {
-            e.printStackTrace();
+            for (long columnId : catalogTable.columnIds) {
+                relevantCcps.add(getNumberOfPlacementsWithAllPartitions(columnId, catalogTable.numPartitions).get(0));
+            }
         }
         return relevantCcps;
     }

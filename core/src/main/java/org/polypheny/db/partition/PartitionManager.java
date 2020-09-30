@@ -16,7 +16,7 @@ public interface PartitionManager {
 
     abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
 
-    abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId);
+    abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable,  List<Long> partitionIds);
 
     abstract boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames);
 

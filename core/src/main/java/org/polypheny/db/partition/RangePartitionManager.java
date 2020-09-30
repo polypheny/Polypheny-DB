@@ -30,7 +30,7 @@ public class RangePartitionManager extends AbstractPartitionManager{
     }
 
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable, long partitionId) {
+    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable,  List<Long> partitionIds) {
         return null;
     }
 
