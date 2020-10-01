@@ -255,15 +255,20 @@ public abstract class AbstractRouter implements Router {
                         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
                         PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
                         if ( partitionValues != null ) {
-                            List<Long> identPartitions = new ArrayList<>();
-                            for (String partitionValue: partitionValues) {
-                                System.out.println("HENNLO AbstractRouter: partitionValue: " + partitionValues.get(0));
-                                long identPart = partitionManager.getTargetPartitionId(catalogTable, partitionValue);
-                                identPartitions.add(identPart);
-                                System.out.println("HENNLO AbstractRouter: partitionId: " + identPart);
+                            if ( partitionValues.size() == 1){
+                                List<Long> identPartitions = new ArrayList<>();
+                                for (String partitionValue: partitionValues) {
+                                    System.out.println("HENNLO AbstractRouter: partitionValue: " + partitionValues.get(0));
+                                    long identPart = partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                                    identPartitions.add(identPart);
+                                    System.out.println("HENNLO AbstractRouter: partitionId: " + identPart);
+                                }
+                                placements = partitionManager.getRelevantPlacements(catalogTable, identPartitions);
+                                System.out.println(placements);
                             }
-                            placements = partitionManager.getRelevantPlacements(catalogTable, identPartitions);
-                            System.out.println(placements);
+                            else{
+                                placements = partitionManager.getRelevantPlacements(catalogTable, null);
+                            }
                         }
                         else{
                             //ToDO Chnage to worstcase
