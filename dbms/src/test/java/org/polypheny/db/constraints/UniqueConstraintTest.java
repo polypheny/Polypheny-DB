@@ -361,6 +361,76 @@ public class UniqueConstraintTest {
 
 
     @Test
+    public void batchUpdateTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create schema
+                statement.executeUpdate( CREATE_TABLE_CONSTRAINT_STATEMENTS );
+                if ( createIndexes ) {
+                    // Add indexes
+                    for ( String s : ALTER_TABLE_ADD_INDEX_STATEMENTS ) {
+                        statement.executeUpdate( s );
+                    }
+                }
+
+                try {
+                    PreparedStatement preparedStatement = connection.prepareStatement( "UPDATE constraint_test SET a = ? WHERE ctid = ?" );
+
+                    // This should not work
+                    preparedStatement.setInt( 1, 22 );
+                    preparedStatement.setInt( 2, 1 );
+                    preparedStatement.addBatch();
+                    preparedStatement.setInt( 1, 22 );
+                    preparedStatement.setInt( 2, 2 );
+                    preparedStatement.addBatch();
+                    try {
+                        preparedStatement.executeBatch();
+                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                    } catch ( Exception ignored ) {
+                    }
+
+                    // This should work
+                    preparedStatement.setInt( 1, 99 );
+                    preparedStatement.setInt( 2, 1 );
+                    preparedStatement.addBatch();
+                    preparedStatement.setInt( 1, 55 );
+                    preparedStatement.setInt( 2, 3 );
+                    preparedStatement.addBatch();
+
+                    preparedStatement.executeBatch();
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 1, 1, 1 },
+                                    new Object[]{ 2, 2, 2, 2 },
+                                    new Object[]{ 3, 3, 3, 3 },
+                                    new Object[]{ 4, 4, 4, 4 }
+                            )
+                    );
+
+                    // This should not work
+                    preparedStatement.setInt( 1, 86 );
+                    preparedStatement.setInt( 2, 2 );
+                    preparedStatement.addBatch();
+                    preparedStatement.setInt( 1, 99 );
+                    preparedStatement.setInt( 2, 4 );
+                    preparedStatement.addBatch();
+                    try {
+                        preparedStatement.executeBatch();
+                        Assert.fail( "Expected ConstraintViolationException was not thrown" );
+                    } catch ( Exception ignored ) {
+                    }
+                } finally {
+                    statement.executeUpdate( "DROP TABLE constraint_test" );
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void updateNoConflictTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

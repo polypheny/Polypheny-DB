@@ -448,6 +448,45 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                                 }
                                 index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
                             }
+                        } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                            final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            for ( final Index index : indices ) {
+                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
+                                final List<Object> rowValues = new ArrayList<>();
+                                final List<Object> targetRowValues = new ArrayList<>();
+                                for ( final String column : index.getColumns() ) {
+                                    final RexNode fieldValue = lproject.getProjects().get(
+                                            lproject.getRowType().getField( column, false, false ).getIndex()
+                                    );
+                                    if ( fieldValue instanceof RexLiteral ) {
+                                        rowValues.add( ((RexLiteral) fieldValue).getValue2() );
+                                    } else if ( fieldValue instanceof RexDynamicParam ) {
+                                        //
+                                        // TODO: This is dynamic parameter. We need to to the index update in the generated code!
+                                        //
+                                        throw new RuntimeException( "Index updates are not yet supported for prepared statements" );
+                                    } else {
+                                        throw new RuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
+                                    }
+                                }
+                                for ( final String column : index.getTargetColumns() ) {
+                                    final RexNode fieldValue = lproject.getProjects().get(
+                                            lproject.getRowType().getField( column, false, false ).getIndex()
+                                    );
+                                    if ( fieldValue instanceof RexLiteral ) {
+                                        targetRowValues.add( ((RexLiteral) fieldValue).getValue2() );
+                                    } else if ( fieldValue instanceof RexDynamicParam ) {
+                                        //
+                                        // TODO: This is dynamic parameter. We need to to the index update in the generated code!
+                                        //
+                                        throw new RuntimeException( "Index updates are not yet supported for prepared statements" );
+                                    } else {
+                                        throw new RuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
+                                    }
+                                }
+                                tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
+                                index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
+                            }
                         } else if ( ltm.isDelete() || ltm.isUpdate() || ltm.isMerge() || (ltm.isInsert() && !(ltm.getInput() instanceof Values)) ) {
                             final Map<String, Integer> nameMap = new HashMap<>();
                             final Map<String, Integer> newValueMap = new HashMap<>();
@@ -673,7 +712,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     );
                     joinCondition = rexBuilder.makeCall( SqlStdOperatorTable.AND, joinCondition, joinComparison );
                 }
-                final RelNode join = builder.join( JoinRelType.LEFT, joinCondition ).build();
+                //
+                // TODO MV: Changed JOIN Type from LEFT to INNER to fix issues row types in index based query simplification.
+                //  Make sure this is ok!
+                //
+                final RelNode join = builder.join( JoinRelType.INNER, joinCondition ).build();
                 final RelNode check = LogicalFilter.create( join, rexBuilder.makeCall( SqlStdOperatorTable.IS_NOT_NULL, rexBuilder.makeInputRef( join, join.getRowType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO,
                         ConstraintViolationException.class,
@@ -683,7 +726,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 // Enforce uniqueness within the values to insert
                 if ( input instanceof LogicalValues && ((LogicalValues) input).getTuples().size() <= 1 ) {
                     // no need to check, only one tuple in set
-                } else if ( input instanceof LogicalProject && input.getInput( 0 ) instanceof LogicalValues && ((LogicalValues) input.getInput( 0 )).getTuples().get( 0 ).size() == 1 ) {
+                } else if ( input instanceof LogicalProject && input.getInput( 0 ) instanceof LogicalValues && (input.getInput( 0 )).getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
                     //noinspection StatementWithEmptyBody
                     if ( statement.getDataContext().getParameterValues().size() > 0 ) {
                         LogicalProject project = (LogicalProject) input;
