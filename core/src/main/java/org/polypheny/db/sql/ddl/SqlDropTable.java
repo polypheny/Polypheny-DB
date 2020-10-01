@@ -129,7 +129,9 @@ public class SqlDropTable extends SqlDropObject {
                 statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnStore( storeId, table.id ) );
                 // Delete column placement in catalog
                 for ( Long columnId : table.columnIds ) {
-                    catalog.deleteColumnPlacement( storeId, columnId );
+                    if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {
+                        catalog.deleteColumnPlacement( storeId, columnId );
+                    }
                 }
             }
         } catch ( GenericCatalogException e ) {
