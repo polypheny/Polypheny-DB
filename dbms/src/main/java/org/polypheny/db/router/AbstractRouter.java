@@ -684,6 +684,9 @@ public abstract class AbstractRouter implements Router {
             builder = handleValues( (LogicalValues) node, builder );
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, no additional checks required
                 return builder;
+            } else if ( node.getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                // This is a prepared statement. Actual values are in the project. Do nothing
+                return builder;
             } else { // partitioned, add additional project
                 ArrayList<RexNode> rexNodes = new ArrayList<>();
                 for ( CatalogColumnPlacement ccp : placements ) {
@@ -695,16 +698,25 @@ public abstract class AbstractRouter implements Router {
             if ( catalogTable.columnIds.size() == placements.size() ) { // full placement, generic handling is sufficient
                 return handleGeneric( node, builder );
             } else { // partitioned, adjust project
-                ArrayList<RexNode> rexNodes = new ArrayList<>();
-                for ( CatalogColumnPlacement ccp : placements ) {
-                    rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
-                }
-                for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
-                    if ( !(rexNode instanceof RexInputRef) ) {
-                        rexNodes.add( rexNode );
+                if ( ((LogicalProject) node).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                    builder.push( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 0 ) ) ) );
+                    ArrayList<RexNode> rexNodes = new ArrayList<>();
+                    for ( CatalogColumnPlacement ccp : placements ) {
+                        rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
                     }
+                    return builder.project( rexNodes );
+                } else {
+                    ArrayList<RexNode> rexNodes = new ArrayList<>();
+                    for ( CatalogColumnPlacement ccp : placements ) {
+                        rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
+                    }
+                    for ( RexNode rexNode : ((LogicalProject) node).getProjects() ) {
+                        if ( !(rexNode instanceof RexInputRef) ) {
+                            rexNodes.add( rexNode );
+                        }
+                    }
+                    return builder.project( rexNodes );
                 }
-                return builder.project( rexNodes );
             }
         } else if ( node instanceof LogicalFilter ) {
             if ( catalogTable.columnIds.size() != placements.size() ) { // partitioned, check if there is a illegal condition
