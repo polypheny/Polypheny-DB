@@ -1475,7 +1475,7 @@ public class CatalogImpl extends Catalog {
 
                 //needed because otherwise a already partitioned table would be reset to a regular table due to the different constructors.
                 if (oldTable.isPartitioned){
-
+                    System.out.println(oldTable.flaggedForDeletion);
                     if ( !validatePartitionDistribution(storeId, oldTable.id, columnId) ){
                         throw new RuntimeException("Partition Distribution failed");
                     }
@@ -3196,7 +3196,9 @@ public class CatalogImpl extends Catalog {
         CatalogTable catalogTable = null;
         try {
             catalogTable = getTable(tableId);
-
+            if ( catalogTable.flaggedForDeletion ){
+                return true;
+            }
             PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
             PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
 

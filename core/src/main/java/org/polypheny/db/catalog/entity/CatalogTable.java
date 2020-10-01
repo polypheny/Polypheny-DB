@@ -67,6 +67,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     //Bound partition states if the partitioning is done on a fixed number of Partitions
     // Or adjusted automatically as the table grows
     public boolean boundPartition;
+    @Setter
+    public boolean flaggedForDeletion = false;
 
     public CatalogTable(
             final long id,
