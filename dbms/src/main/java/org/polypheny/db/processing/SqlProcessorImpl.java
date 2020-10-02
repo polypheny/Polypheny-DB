@@ -111,7 +111,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
         } catch ( SqlParseException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            throw new RuntimeException( e );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -150,7 +150,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             validated = validator.validate( parsed );
             type = validator.getValidatedNodeType( validated );
         } catch ( RuntimeException e ) {
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            log.error( "Caught exception", e );
+            throw new AvaticaRuntimeException( e.getMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {

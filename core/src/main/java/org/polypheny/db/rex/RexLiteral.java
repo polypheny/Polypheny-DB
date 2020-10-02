@@ -799,7 +799,7 @@ public class RexLiteral extends RexNode {
         if ( value == null ) {
             return null;
         }
-        switch ( typeName ) {
+        switch ( type.getPolyType() ) {
             case TIME:
             case DATE:
             case TIMESTAMP:
@@ -807,6 +807,30 @@ public class RexLiteral extends RexNode {
             case CHAR:
             case VARCHAR:
                 return getValueAs( String.class );
+            case BOOLEAN:
+                return getValueAs( Boolean.class );
+            case TINYINT:
+                return getValueAs( Byte.class );
+            case SMALLINT:
+                return getValueAs( Short.class );
+            case INTEGER:
+                return getValueAs( Integer.class );
+            case BIGINT:
+                return getValueAs( Long.class );
+            case DECIMAL:
+                return getValueAs( BigDecimal.class );
+            case FLOAT:
+            case REAL:
+                return getValueAs( Float.class );
+            case DOUBLE:
+                return getValueAs( Double.class );
+
+            /*case BINARY:
+            case VARBINARY:
+                break;
+            case ARRAY:
+                break;*/
+
             default:
                 return value;
         }

@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -212,7 +211,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
             // Rest plan cache and implementation cache (not sure if required in this case)
             statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             if ( columnId != null ) {
                 try {
                     Catalog.getInstance().deleteColumn( columnId );

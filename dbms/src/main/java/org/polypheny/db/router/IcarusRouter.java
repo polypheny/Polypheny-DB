@@ -119,8 +119,6 @@ public class IcarusRouter extends AbstractRouter {
     private enum QUERY_CLASS_PROVIDER_METHOD {ICARUS_SHUTTLE, QUERY_PARAMETERIZER}
 
 
-    ;
-
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
     private int selectedStoreId = -2; // Is set in analyze
@@ -147,7 +145,7 @@ public class IcarusRouter extends AbstractRouter {
                 throw new RuntimeException( "Unknown value for QUERY_CLASS_PROVIDER config: " + QUERY_CLASS_PROVIDER.getEnum().name() );
             }
 
-            if ( routingTable.contains( queryClassString ) ) {
+            if ( routingTable.contains( queryClassString ) && routingTable.get( queryClassString ).size() > 0 ) {
                 selectedStoreId = routeQuery( routingTable.get( queryClassString ) );
 
                 // In case the query class is known but the table has been dropped and than recreated with the same name,
@@ -275,7 +273,7 @@ public class IcarusRouter extends AbstractRouter {
             if ( placements.size() != table.columnIds.size() ) {
                 throw new RuntimeException( "The data store '" + selectedStoreId + "' does not contain a full table placement!" );
             }
-            return Catalog.getInstance().getColumnPlacementsOnStore( selectedStoreId );
+            return placements;
         }
         throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedStoreId );
     }
@@ -468,6 +466,10 @@ public class IcarusRouter extends AbstractRouter {
         @Override
         public void executionTime( String reference, long nanoTime ) {
             String storeIdStr = reference.split( "-" )[0]; // Reference starts with "STORE_ID-..."
+            if ( storeIdStr.equals( "" ) ) {
+                // No storeIdStr string. This happens if a query contains no table (e.g. select 1 )
+                return;
+            }
             int storeId = Integer.parseInt( storeIdStr );
             String queryClassString = reference.substring( storeIdStr.length() + 1 );
             processingQueue.add( new ExecutionTime( queryClassString, storeId, nanoTime ) );
@@ -606,9 +608,9 @@ public class IcarusRouter extends AbstractRouter {
     @AllArgsConstructor
     private static class ExecutionTime {
 
-        private String queryClassString;
-        private int storeId;
-        private long nanoTime;
+        private final String queryClassString;
+        private final int storeId;
+        private final long nanoTime;
     }
 
 
@@ -655,7 +657,7 @@ public class IcarusRouter extends AbstractRouter {
     // TODO MV: This should be improved to include more information on the used tables and columns
     private static class IcarusShuttle extends RelShuttleImpl {
 
-        private HashSet<String> hashBasis = new HashSet<>();
+        private final HashSet<String> hashBasis = new HashSet<>();
 
 
         @Override
