@@ -1,0 +1,3 @@
+[submodule "cottontail-adapter/cottontaildb-proto"]
+	path = cottontail-adapter/cottontaildb-proto
+	url = git@github.com:vitrivr/cottontaildb-proto.git
