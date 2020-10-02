@@ -119,7 +119,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
                 } else {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
-                            RESOURCE.placementAlreadyExists( storeName.getSimple(), catalogTable.name ) );
+                            RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
                 }
             } else {
                 // Create column placement

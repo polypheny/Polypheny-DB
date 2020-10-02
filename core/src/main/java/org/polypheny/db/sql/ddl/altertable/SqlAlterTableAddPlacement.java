@@ -122,7 +122,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 if ( storeId == storeInstance.getStoreId() ) {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
-                            RESOURCE.placementAlreadyExists( storeName.getSimple(), catalogTable.name ) );
+                            RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
                 }
             }
             // Check whether the store supports schema changes

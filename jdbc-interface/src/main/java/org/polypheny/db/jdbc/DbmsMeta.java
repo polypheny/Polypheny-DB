@@ -1324,9 +1324,9 @@ public class DbmsMeta implements ProtobufMeta {
                     num = ((Number) object).intValue();
                 }
                 // Check if num is equal for all stores
-                if ( rowsChanged != -1 && rowsChanged != num ) {
+                /*if ( rowsChanged != -1 && rowsChanged != num ) {
                     throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
-                }
+                }*/ // Cannot be active for horizontal partitioning
                 rowsChanged = num;
             }
 

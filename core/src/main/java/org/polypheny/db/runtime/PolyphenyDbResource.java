@@ -875,7 +875,7 @@ public interface PolyphenyDbResource {
     ExInst<PolyphenyDbException> unknownStoreName( String store );
 
     @BaseMessage("Table ''{0}'' is already placed on store ''{1}''")
-    ExInst<PolyphenyDbException> placementAlreadyExists( String storeName, String tableName );
+    ExInst<PolyphenyDbException> placementAlreadyExists( String tableName, String storeName );
 
     @BaseMessage("There is no placement of table ''{1}'' on store ''{0}''")
     ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
