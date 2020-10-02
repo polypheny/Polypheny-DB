@@ -16,6 +16,7 @@
 
 package org.polypheny.db.partition;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -25,28 +26,28 @@ import org.polypheny.db.routing.Router;
 
 import java.util.List;
 
+@Slf4j
 public class RoundRobinPartitionManager extends AbstractPartitionManager{
 
     boolean hasUnboundPartition = false;
 
     @Override
     public long getTargetPartitionId(CatalogTable catalogTable, String columnValue) {
-        System.out.println("HENNLO  RoundRobinPartitionManager getPartitionId()");
-        //IDEA: mySchema_testTable_sales_RANGE_100
+        log.debug("RoundRobinPartitionManager getPartitionId()");
+
 
         return -1;
     }
 
     @Override
     public boolean validatePartitionDistribution(CatalogTable table) {
-        System.out.println("HENNLO  RoundRobinPartitionManager validPartitionDistribution()");
+        log.debug("RoundRobinPartitionManager validPartitionDistribution()");
         return false;
     }
 
     //Needed when columnPlacements are being dropped
     @Override
     public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
-    //TODO nOt implemented yet
         return false;
 
     }

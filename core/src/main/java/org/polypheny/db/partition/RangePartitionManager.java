@@ -1,23 +1,25 @@
 package org.polypheny.db.partition;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
 import java.util.List;
 
+@Slf4j
 public class RangePartitionManager extends AbstractPartitionManager{
 
     boolean hasUnboundPartition = true;
 
     @Override
     public long getTargetPartitionId(CatalogTable catalogTable, String columnValue) {
-        System.out.println("HENNLO  RangePartitionManager getPartitionId()");
+        log.debug("RangePartitionManager");
         return 0;
     }
 
     @Override
     public boolean validatePartitionDistribution(CatalogTable table) {
-        System.out.println("HENNLO  RangePartitionManager validPartitionDistribution()");
+        log.debug("RangePartitionManager validPartitionDistribution()");
         return false;
     }
     //Needed when columnPlacements are being dropped

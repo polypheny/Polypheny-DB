@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.*;
@@ -40,6 +41,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 /**
  * Parse tree for {@code ALTER TABLE name MERGE PARTITIONS} statement.
  */
+@Slf4j
 public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     private final SqlIdentifier table;
@@ -71,14 +73,13 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
             if ( catalogTable.partitionType != Catalog.PartitionType.NONE) {
                 long tableId = catalogTable.id;
 
-                System.out.println("HENNLO: SqlAlterTableAddPartition: execute(): Merging partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
+                log.debug("Merging partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
                         " on schema: " + catalogTable.getSchemaName());
 
-
-                //TODO maybe create partitions multithreaded
+                //TODO Create partitoins multithreaded
                 catalog.mergeTable(tableId);
 
-                System.out.println("HENNLO: SqlAlterTableMergePartitions: table: '" + catalogTable.name + "' has been merged");
+                log.debug("Table: '" + catalogTable.name + "' has been merged");
             }
             else{
                 throw new RuntimeException("Table '" + catalogTable.name + "' is not partitioned at all");

@@ -41,6 +41,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
@@ -96,6 +97,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code CREATE TABLE} statement.
  */
+@Slf4j
 public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement {
 
     private final SqlIdentifier name;
@@ -127,8 +129,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
-
-        System.out.println("SqlCreateTable: numPartitions: " + numPartitions +  " partitionNamesList: " + partitionNamesList + " partitionQualifierList: " + partitionQualifierList);
 
     }
 
@@ -326,7 +326,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 //Check if specified partitionColumn is even part of the table
                 Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName(partitionType.toString());
                 long partitionColumnID = catalog.getColumn(tableId,partitionColumn.toString()).id;
-                System.out.println("HENNLO: SqlCreateTable: execute(): Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
+                log.debug("Creating partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
                         " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID);
 
 
@@ -334,7 +334,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, partitionQualifierList.stream().map(Object::toString)
                         .collect(Collectors.toList()), partitionNamesList.stream().map(Object::toString).collect(Collectors.toList()) );
 
-                System.out.println("HENNLO: SqlCreateTable: table: '" + catalogTable.name + "' has been partitioned on columnId '"
+                log.debug("Table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");
                 //
             }

@@ -107,7 +107,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.start();
         SqlNode parsed;
-        System.out.println("HENNLO: SQLProcessorImpl SQL: " + sql);
+        log.debug("SQL: " + sql);
 
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );

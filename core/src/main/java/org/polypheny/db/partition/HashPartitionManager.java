@@ -16,6 +16,7 @@
 
 package org.polypheny.db.partition;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -23,14 +24,14 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class HashPartitionManager extends AbstractPartitionManager{
 
     public boolean allowsUnboundPartition = false;
 
     @Override
     public long getTargetPartitionId(CatalogTable catalogTable, String columnValue) {
-        System.out.println("HENNLO  HashPartitionManager getPartitionId()");
-        //IDEA: mySchema_testTable_sales_RANGE_100
+        log.debug("HashPartitionManager");
 
         long partitionID = 0;
         String partitionKey = "";
@@ -55,7 +56,6 @@ public class HashPartitionManager extends AbstractPartitionManager{
      */
     @Override
     public boolean validatePartitionDistribution(CatalogTable table) {
-        System.out.println("HENNLO  HashPartitionManager validPartitionDistribution()");
 
                 //Check for every column if there exists at least one placement which contains all partitions
                 for (long columnId : table.columnIds){
@@ -63,14 +63,14 @@ public class HashPartitionManager extends AbstractPartitionManager{
 
                     int numberOfFullPlacements = getPlacementsWithAllPartitions(columnId, table.numPartitions).size();
                     if ( numberOfFullPlacements >= 1 ){
-                        System.out.println("HENNLO: validatePartitionDistribution() Found ColumnPlacement which contains all partitions for column: "+ columnId);
+                        log.debug("Found ColumnPlacement which contains all partitions for column: "+ columnId);
                         skip = true;
                         break;
                     }
 
                     if ( skip ){ continue;}
                     else{
-                        System.out.println("ERROR Column: '" + Catalog.getInstance().getColumn(columnId).name +"' has no placement containing all partitions");
+                        log.debug("ERROR Column: '" + Catalog.getInstance().getColumn(columnId).name +"' has no placement containing all partitions");
                         return false;
                     }
                 }

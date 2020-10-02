@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -52,6 +53,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name ADD PLACEMENT [(columnList)] ON STORE storeName} statement.
  */
+@Slf4j
 public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     private final SqlIdentifier table;
@@ -70,7 +72,6 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         this.partitionList = partitionList;
         this.partitionNamesList = partitionNamesList;
 
-        System.out.println("HENNNLO ->" + table + "->"+columnList +"->"+storeName +"->"+partitionList);
     }
 
 
@@ -162,7 +163,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                                 + storeName + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead");
                     }
 
-                    System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has been specified ");
+                    log.debug("Table is partitioned and concrete partitionList has been specified ");
                     //First convert specified index to correct partitionId
                     for (int partitionId: partitionList) {
                         //check if specified partition index is even part of table and if so get corresponding uniquePartId
@@ -201,7 +202,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 }
                 //Simply Place all partitions on placement since nothing has been specified
                 else if (partitionList.isEmpty() && partitionNamesList.isEmpty()) {
-                    System.out.println("HENNLO: SqlALterTableAddPlacement(): table is partitioned and concrete partitionList has NOT been specified ");
+                    log.debug("Table is partitioned and concrete partitionList has NOT been specified ");
 
                     if ( isDataPlacementPartitioned ){
                         //If DataPlacement already contains partitions then create new placement with same set of partitions.

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -59,6 +60,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name MODIFY PLACEMENT (columnList) ON STORE storeName} statement.
  */
+@Slf4j
 public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     private final SqlIdentifier table;

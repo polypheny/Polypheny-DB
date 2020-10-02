@@ -70,9 +70,6 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
         this.partitionKey = partitionKey;
         this.partitionQualifiers = partitionQualifiers;
         this.isUnbound = isUnbound;
-
-        System.out.println("\t\t\t\t\taddPartition" + " - " + partitionQualifiers);
-        System.out.println("HENNLO: CatalogPartition: Partition has been created: " + id);
     }
 
 

@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.*;
@@ -43,6 +44,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 /**
  * Parse tree for {@code ALTER TABLE name PARTITION BY partitiontype (columnname) [PARTITIONS amount]} statement.
  */
+@Slf4j
 public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     private final SqlIdentifier table;
@@ -90,7 +92,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                 Catalog.PartitionType actualPartitionType = actualPartitionType = Catalog.PartitionType.getByName(partitionType.toString());
 
                 long partitionColumnID = catalog.getColumn(tableId,partitionColumn.toString()).id;
-                System.out.println("HENNLO: SqlAlterTableAddPartition: execute(): Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
+                log.debug("Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
                         " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID);
 
 
@@ -99,7 +101,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                         .collect(Collectors.toList()), partitionNamesList.stream().map(Object::toString)
                         .collect(Collectors.toList()));
 
-                System.out.println("HENNLO: SqlAlterTableAddPartition: table: '" + catalogTable.name + "' has been partitioned on columnId '"
+                log.debug("Table: '" + catalogTable.name + "' has been partitioned on columnId '"
                         + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");
                 //
             }

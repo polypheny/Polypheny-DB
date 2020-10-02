@@ -17,6 +17,7 @@
 
 package org.polypheny.db.sql.ddl.altertable;
 
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -57,7 +58,6 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
         this.partitionList = partitionList;
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
 
-        System.out.println(partitionList +" - " + partitionNamesList);
 
     }
 

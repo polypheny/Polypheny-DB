@@ -94,7 +94,6 @@ public class SimpleRouter extends AbstractRouter {
     // Create table on the first store in the list that supports schema changes
     @Override
     public List<Store> createTable( long schemaId, Statement statement ) {
-        System.out.println("HENNLO: SimpleRouter createTable() schemaID: " + schemaId );
         Map<String, Store> availableStores = StoreManager.getInstance().getStores();
         for ( Store store : availableStores.values() ) {
             if ( !store.isSchemaReadOnly() ) {
