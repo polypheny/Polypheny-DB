@@ -119,8 +119,12 @@ public class HashPartitionManager extends AbstractPartitionManager{
 
 
         if ( !partitionQualifiers.isEmpty() ){
-            throw new RuntimeException("PartitionType HASH does not supprt the assignment of values to partitions");
+            throw new RuntimeException("PartitionType HASH does not support the assignment of values to partitions");
         }
+        if ( numPartitions < 2 ){
+            throw new RuntimeException("You can't partition a table with less than 2 partitions. You only specified: '"+ numPartitions+"'");
+        }
+
 
         return true;
     }

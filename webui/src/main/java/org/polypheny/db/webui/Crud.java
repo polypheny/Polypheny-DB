@@ -2704,10 +2704,8 @@ public class Crud implements InformationObserver {
 
         if ( parsed.isA( SqlKind.DDL ) ) {
 
-            System.out.println("HENNLO: CRUD: DDL " + sql);
             signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
-            System.out.println("HENNLO: CRUD: DML " + sql);
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
             // Prepare

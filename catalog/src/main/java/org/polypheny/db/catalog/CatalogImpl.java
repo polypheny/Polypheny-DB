@@ -1473,8 +1473,10 @@ public class CatalogImpl extends Catalog {
                 //needed because otherwise a already partitioned table would be reset to a regular table due to the different constructors.
                 if (oldTable.isPartitioned){
                     log.debug("IS flagged for deletion: " + oldTable.flaggedForDeletion);
-                    if ( !validatePartitionDistribution(storeId, oldTable.id, columnId) ){
-                        throw new RuntimeException("Partition Distribution failed");
+                    if ( oldTable.flaggedForDeletion ) {
+                        if (!validatePartitionDistribution(storeId, oldTable.id, columnId)) {
+                            throw new RuntimeException("Partition Distribution failed");
+                        }
                     }
 
                     log.debug("Table '"+ oldTable.name + "' is partitioned.");
@@ -2728,6 +2730,7 @@ public class CatalogImpl extends Catalog {
 
             if( partitionManager.allowsUnboundPartition() ){
                 //Because of the implicit unbound partition
+                numPartitions = partitionNames.size();
                 numPartitions+=1;
             }
 
