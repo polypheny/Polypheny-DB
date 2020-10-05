@@ -2560,6 +2560,11 @@ public class CatalogImpl extends Catalog {
                 storeNames.remove( store.uniqueName );
 
             }
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( "Could not delete Store" );
+            }
             listeners.firePropertyChange( "store", store, null );
         } catch ( NullPointerException e ) {
             throw new UnknownStoreException( storeId );
