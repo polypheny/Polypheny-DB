@@ -1,4 +1,4 @@
-package org.polypheny.db.adapter.multimedia;
+package org.polypheny.db.adapter.file;
 
 
 import com.google.common.collect.ImmutableList;
@@ -26,12 +26,12 @@ import org.polypheny.db.transaction.PolyXid;
 
 
 @Slf4j
-public class MultimediaStore extends Store {
+public class FileStore extends Store {
 
     @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "MULTIMEDIA";
+    public static final String ADAPTER_NAME = "FILE";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An adapter for multimedia files. All data is saved as files.";
+    public static final String DESCRIPTION = "An adapter that stores all data as files. It is especially suitable for multimedia collections.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "directory", false, true, false, "testTestMM" )
@@ -39,11 +39,11 @@ public class MultimediaStore extends Store {
 
     @Getter
     private File rootDir;
-    private MultimediaSchema currentSchema;
+    private FileSchema currentSchema;
     public final static String COLUMN_FILE_EXTENSION = ".txt";
 
 
-    public MultimediaStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, false, false, true );
         setRootDir( settings );
     }
@@ -64,13 +64,13 @@ public class MultimediaStore extends Store {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new MultimediaSchema( name, this );
+        currentSchema = new FileSchema( name, this );
     }
 
 
     @Override
     public Table createTableSchema( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
-        return currentSchema.createMultimediaTable( catalogTable, columnPlacementsOnStore );
+        return currentSchema.createFileTable( catalogTable, columnPlacementsOnStore );
     }
 
 
@@ -106,7 +106,7 @@ public class MultimediaStore extends Store {
             try {
                 FileUtils.deleteDirectory( f );
             } catch ( IOException e ) {
-                throw new RuntimeException( "Could not drop multimedia table " + colId, e );
+                throw new RuntimeException( "Could not drop table " + colId, e );
             }
         }
     }
@@ -137,7 +137,7 @@ public class MultimediaStore extends Store {
         try {
             FileUtils.deleteDirectory( columnFile );
         } catch ( IOException e ) {
-            throw new RuntimeException( "Could not delete multimedia column file", e );
+            throw new RuntimeException( "Could not delete column file", e );
         }
     }
 

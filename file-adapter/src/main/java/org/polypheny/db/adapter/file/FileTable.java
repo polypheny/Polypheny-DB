@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.multimedia;
+package org.polypheny.db.adapter.file;
 
 
 import java.io.File;
@@ -46,7 +46,7 @@ import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.type.PolyType;
 
 
-public class MultimediaTable extends AbstractQueryableTable implements ScannableTable, ModifiableTable {
+public class FileTable extends AbstractQueryableTable implements ScannableTable, ModifiableTable {
     //extends AbstractQueryableTable
     //implements TranslatableTable, ModifiableTable
 
@@ -56,10 +56,10 @@ public class MultimediaTable extends AbstractQueryableTable implements Scannable
     List<Long> columnIds;
     List<PolyType> columnTypes;
     List<String> columnNames;
-    MultimediaStore store;
+    FileStore store;
 
 
-    public MultimediaTable( final File rootDir, String schemaName, long tableId, List<Long> columnIds, ArrayList<PolyType> columnTypes, List<String> columnNames, MultimediaStore store ) {
+    public FileTable( final File rootDir, String schemaName, long tableId, List<Long> columnIds, ArrayList<PolyType> columnTypes, List<String> columnNames, FileStore store ) {
         super( Object[].class );
         this.rootDir = rootDir;
         this.schemaName = schemaName;
@@ -87,7 +87,7 @@ public class MultimediaTable extends AbstractQueryableTable implements Scannable
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new MultimediaEnumerator<>( store, schemaName, tableId, columnIds, columnTypes, cancelFlag );
+                return new FileEnumerator<>( store, schemaName, tableId, columnIds, columnTypes, cancelFlag );
             }
         };
     }
@@ -103,26 +103,26 @@ public class MultimediaTable extends AbstractQueryableTable implements Scannable
     @Override
     public Collection getModifiableCollection() {
         //see SqlCreateTable.java ..
-        throw new RuntimeException( "getModifiableCollection() is not implemented for Multimedia adapter!" );
+        throw new RuntimeException( "getModifiableCollection() is not implemented for file adapter!" );
     }
 
     @Override
     public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
         //with Linq4j: see SqlCreateTable.java
-        return new MultimediaQueryable<>( dataContext, schema, this, tableName );
+        return new FileQueryable<>( dataContext, schema, this, tableName );
     }
 
-    public class MultimediaQueryable<T> extends AbstractTableQueryable<T> {
+    public class FileQueryable<T> extends AbstractTableQueryable<T> {
 
-        public MultimediaQueryable ( DataContext dataContext, SchemaPlus schema, MultimediaTable table, String tableName ) {
-            super( dataContext, schema, MultimediaTable.this, tableName );
+        public FileQueryable( DataContext dataContext, SchemaPlus schema, FileTable table, String tableName ) {
+            super( dataContext, schema, FileTable.this, tableName );
         }
 
         @Override
         public Enumerator<T> enumerator() {
             //todo check
             //for Linq4j: see SqlCreateTable.java ..
-            return new MultimediaEnumerator<>( store, schemaName, tableId, columnIds, columnTypes, dataContext.getStatement().getTransaction().getCancelFlag() );
+            return new FileEnumerator<>( store, schemaName, tableId, columnIds, columnTypes, dataContext.getStatement().getTransaction().getCancelFlag() );
         }
 
     }

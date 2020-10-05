@@ -31,7 +31,7 @@ dependencies {
     implementation project(":core")
     implementation project(":cassandra-adapter")
     implementation project(":csv-adapter")
-    implementation project(":multimedia-adapter")
+    implementation project(":file-adapter")
     implementation project(":jdbc-adapter")
     implementation project(":catalog")
     implementation project(":webui")

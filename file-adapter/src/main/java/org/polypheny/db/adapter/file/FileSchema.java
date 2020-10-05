@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.multimedia;
+package org.polypheny.db.adapter.file;
 
 
 import java.util.ArrayList;
@@ -26,21 +26,19 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.type.PolyType;
 
 
-public class MultimediaSchema extends AbstractSchema {
+public class FileSchema extends AbstractSchema {
 
     @Getter
     private final String schemaName;
-    private final Map<String, MultimediaTable> tableMap = new HashMap<>();
-    private final MultimediaStore store;
+    private final Map<String, FileTable> tableMap = new HashMap<>();
+    private final FileStore store;
 
-    public MultimediaSchema ( String schemaName, MultimediaStore store ) {
+    public FileSchema( String schemaName, FileStore store ) {
         super();
         this.schemaName = schemaName;
         this.store = store;
@@ -51,7 +49,7 @@ public class MultimediaSchema extends AbstractSchema {
         return new HashMap<>( tableMap );
     }
 
-    public Table createMultimediaTable (  CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
+    public Table createFileTable(  CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
         ArrayList<Long> columnIds = new ArrayList<>();
         ArrayList<PolyType> columnTypes = new ArrayList<>();
         ArrayList<String> columnNames = new ArrayList<>();
@@ -65,7 +63,7 @@ public class MultimediaSchema extends AbstractSchema {
                 columnNames.add( catalogColumn.name );
             }
         }
-        MultimediaTable table = new MultimediaTable( store.getRootDir(), schemaName, catalogTable.id, columnIds, columnTypes, columnNames, store );
+        FileTable table = new FileTable( store.getRootDir(), schemaName, catalogTable.id, columnIds, columnTypes, columnNames, store );
         tableMap.put( catalogTable.name, table );
         return table;
     }

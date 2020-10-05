@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.multimedia;
+package org.polypheny.db.adapter.file;
 
 
 import com.google.gson.Gson;
@@ -32,7 +32,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public class MultimediaEnumerator<E> implements Enumerator<E> {
+public class FileEnumerator<E> implements Enumerator<E> {
 
     private E current;
     private final HashMap<Long, File> columnFolders = new HashMap<>();
@@ -44,10 +44,10 @@ public class MultimediaEnumerator<E> implements Enumerator<E> {
     private final AtomicBoolean cancelFlag;
     private final List<PolyType> columnTypes;
     private final Gson gson;
-    private final MultimediaStore store;
+    private final FileStore store;
     private final Charset encoding = StandardCharsets.UTF_8;
 
-    MultimediaEnumerator ( final MultimediaStore store, final String schemaName, final Long tableId, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag ) {
+    FileEnumerator( final FileStore store, final String schemaName, final Long tableId, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag ) {
         this.cancelFlag = cancelFlag;
         this.columnTypes = columnTypes;
         this.gson = new Gson();
