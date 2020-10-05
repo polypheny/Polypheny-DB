@@ -31,21 +31,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
-
-
 /**
- * Indicates that the FileReader failed.
+ * Polypheny-DB query provider that reads from web tables (HTML).
+ *
+ * A Polypheny-DB schema that maps onto multiple URLs / HTML Tables. Each HTML table appears as a table. Full select SQL operations are available on those tables.
  */
-class FileReaderException extends Exception {
 
-    FileReaderException( String message ) {
-        super( message );
-    }
-
-
-    FileReaderException( String message, Throwable e ) {
-        super( message, e );
-    }
-}
+package org.polypheny.db.adapter.html;
 

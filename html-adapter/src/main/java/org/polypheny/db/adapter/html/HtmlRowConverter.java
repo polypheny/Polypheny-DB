@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import com.joestelmach.natty.DateGroup;
@@ -56,12 +56,12 @@ import org.polypheny.db.util.Pair;
 
 
 /**
- * FileRowConverter.
+ * HtmlRowConverter.
  */
-class FileRowConverter {
+class HtmlRowConverter {
 
     // cache for lazy initialization
-    private final FileReader fileReader;
+    private final HtmlReader htmlReader;
     private final List<Map<String, Object>> fieldConfigs;
     private boolean initialized = false;
 
@@ -80,10 +80,10 @@ class FileRowConverter {
 
 
     /**
-     * Creates a FileRowConverter.
+     * Creates a HtmlRowConverter.
      */
-    FileRowConverter( FileReader fileReader, List<Map<String, Object>> fieldConfigs ) {
-        this.fileReader = fileReader;
+    HtmlRowConverter( HtmlReader htmlReader, List<Map<String, Object>> fieldConfigs ) {
+        this.htmlReader = htmlReader;
         this.fieldConfigs = fieldConfigs;
     }
 
@@ -95,7 +95,7 @@ class FileRowConverter {
             return;
         }
         try {
-            final Elements headerElements = this.fileReader.getHeadings();
+            final Elements headerElements = this.htmlReader.getHeadings();
 
             // create a name to index map for HTML table elements
             final Map<String, Integer> headerMap = new LinkedHashMap<>();
@@ -118,7 +118,7 @@ class FileRowConverter {
                         String thName = (String) fieldConfig.get( "th" );
                         String name = thName;
                         String newName;
-                        FileFieldType type = null;
+                        HtmlFieldType type = null;
                         boolean skip = false;
 
                         if ( !headerMap.containsKey( thName ) ) {
@@ -133,7 +133,7 @@ class FileRowConverter {
 
                         String typeString = (String) fieldConfig.get( "type" );
                         if ( typeString != null ) {
-                            type = FileFieldType.of( typeString );
+                            type = HtmlFieldType.of( typeString );
                         }
 
                         String sSkip = (String) fieldConfig.get( "skip" );
@@ -172,8 +172,8 @@ class FileRowConverter {
     }
 
 
-    // add another field definition to the FileRowConverter during initialization
-    private void addFieldDef( String name, FileFieldType type, Map<String, Object> config, int sourceCol ) {
+    // add another field definition to the HtmlRowConverter during initialization
+    private void addFieldDef( String name, HtmlFieldType type, Map<String, Object> config, int sourceCol ) {
         this.fields.add( new FieldDef( name, type, config, sourceCol ) );
     }
 
@@ -208,7 +208,7 @@ class FileRowConverter {
         for ( FieldDef f : this.fields ) {
             names.add( f.getName() );
 
-            FileFieldType fieldType = f.getType();
+            HtmlFieldType fieldType = f.getType();
             RelDataType type;
 
             if ( fieldType == null ) {
@@ -325,13 +325,13 @@ class FileRowConverter {
     private class FieldDef {
 
         String name;
-        FileFieldType type;
+        HtmlFieldType type;
         Map<String, Object> config;
         CellReader cellReader;
         int cellSeq;
 
 
-        FieldDef( String name, FileFieldType type, Map<String, Object> config, int cellSeq ) {
+        FieldDef( String name, HtmlFieldType type, Map<String, Object> config, int cellSeq ) {
             this.name = name;
             this.type = type;
             this.config = config;
@@ -350,7 +350,7 @@ class FileRowConverter {
         }
 
 
-        FileFieldType getType() {
+        HtmlFieldType getType() {
             return this.type;
         }
 
@@ -363,7 +363,7 @@ class FileRowConverter {
         }
 
 
-        private Object toObject( FileFieldType fieldType, String string ) {
+        private Object toObject( HtmlFieldType fieldType, String string ) {
             if ( (string == null) || (string.length() == 0) ) {
                 return null;
             }

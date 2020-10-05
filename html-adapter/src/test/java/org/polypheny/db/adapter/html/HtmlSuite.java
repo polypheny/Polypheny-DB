@@ -31,11 +31,48 @@
  * limitations under the License.
  */
 
-/**
- * Polypheny-DB query provider that reads from web tables (HTML).
- *
- * A Polypheny-DB schema that maps onto multiple URLs / HTML Tables. Each HTML table appears as a table. Full select SQL operations are available on those tables.
- */
+package org.polypheny.db.adapter.html;
 
-package org.polypheny.db.adapter.file;
+
+import java.io.IOException;
+import java.net.Socket;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+
+
+/**
+ * Unit test suite for Polypheny-DB Html adapter.
+ */
+@RunWith(Suite.class)
+@Suite.SuiteClasses({ HtmlReaderTest.class, SqlTest.class })
+public class HtmlSuite {
+
+    private HtmlSuite() {
+    }
+
+
+    private static final String TEST_HOST = "en.wikipedia.org";
+
+
+    static boolean hazNetwork() {
+        Socket socket = null;
+        boolean reachable = false;
+        try {
+            socket = new Socket( HtmlSuite.TEST_HOST, 80 );
+            reachable = true;
+        } catch ( Exception e ) {
+            // do nothing
+        } finally {
+            if ( socket != null ) {
+                try {
+                    socket.close();
+                } catch ( IOException e ) {
+                    // do nothing
+                }
+            }
+        }
+        return reachable;
+    }
+
+}
 

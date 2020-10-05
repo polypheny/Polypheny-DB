@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import java.util.Iterator;
@@ -40,22 +40,22 @@ import org.jsoup.select.Elements;
 
 
 /**
- * Wraps {@link FileReader} and {@link FileRowConverter}, enumerates tr DOM elements as table rows.
+ * Wraps {@link HtmlReader} and {@link HtmlRowConverter}, enumerates tr DOM elements as table rows.
  */
-class FileEnumerator implements Enumerator<Object> {
+class HtmlEnumerator implements Enumerator<Object> {
 
     private final Iterator<Elements> iterator;
-    private final FileRowConverter converter;
+    private final HtmlRowConverter converter;
     private final int[] fields;
     private Object current;
 
 
-    FileEnumerator( Iterator<Elements> iterator, FileRowConverter converter ) {
+    HtmlEnumerator( Iterator<Elements> iterator, HtmlRowConverter converter ) {
         this( iterator, converter, identityList( converter.width() ) );
     }
 
 
-    FileEnumerator( Iterator<Elements> iterator, FileRowConverter converter, int[] fields ) {
+    HtmlEnumerator( Iterator<Elements> iterator, HtmlRowConverter converter, int[] fields ) {
         this.iterator = iterator;
         this.converter = converter;
         this.fields = fields;

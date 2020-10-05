@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import com.google.common.collect.ImmutableList;
@@ -53,7 +53,7 @@ import org.polypheny.db.util.Util;
 /**
  * Schema mapped onto a set of URLs / HTML tables. Each table in the schema is an HTML table on a URL.
  */
-class FileSchema extends AbstractSchema {
+class HtmlSchema extends AbstractSchema {
 
     private final ImmutableList<Map<String, Object>> tables;
     private final File baseDirectory;
@@ -67,7 +67,7 @@ class FileSchema extends AbstractSchema {
      * @param baseDirectory Base directory to look for relative files, or null
      * @param tables List containing HTML table identifiers
      */
-    FileSchema( SchemaPlus parentSchema, String name, File baseDirectory, List<Map<String, Object>> tables ) {
+    HtmlSchema( SchemaPlus parentSchema, String name, File baseDirectory, List<Map<String, Object>> tables ) {
         this.tables = ImmutableList.copyOf( tables );
         this.baseDirectory = baseDirectory;
     }
@@ -169,7 +169,7 @@ class FileSchema extends AbstractSchema {
 
         if ( tableDef != null ) {
             try {
-                FileTable table = FileTable.create( source, tableDef );
+                HtmlTable table = HtmlTable.create( source, tableDef );
                 builder.put( Util.first( tableName, source.path() ), table );
                 return true;
             } catch ( Exception e ) {
