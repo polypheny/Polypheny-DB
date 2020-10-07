@@ -28,6 +28,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
 
@@ -46,8 +50,9 @@ public class FileEnumerator<E> implements Enumerator<E> {
     private final Gson gson;
     private final FileStore store;
     private final Charset encoding = StandardCharsets.UTF_8;
+    private final Object[] filterValues;
 
-    FileEnumerator( final FileStore store, final String schemaName, final Long tableId, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag ) {
+    FileEnumerator( final FileStore store, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag, Object[] filterValues ) {
         this.cancelFlag = cancelFlag;
         this.columnTypes = columnTypes;
         this.gson = new Gson();
@@ -63,6 +68,11 @@ public class FileEnumerator<E> implements Enumerator<E> {
         }
         this.fileList = columnFolders.get( colWithMostRows ).listFiles();
         numOfCols = columnFolders.size();
+        this.filterValues = filterValues;
+    }
+
+    FileEnumerator( final FileStore store, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag ) {
+        this( store, columnIds, columnTypes, cancelFlag, new Object[0] );
     }
 
     @Override
@@ -74,7 +84,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
     public boolean moveNext() {
         //todo make sure that all requirements of the interface are satisfied
         try {
-            // outer:
+            outer:
             for( ; ; ) {
                 if( cancelFlag.get() ) {
                     return false;
@@ -94,6 +104,15 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     } else {
                         byte[] encoded = Files.readAllBytes( f.toPath() );
                         s = new String( encoded, encoding );
+                    }
+                    if( filterValues.length == numOfCols ) {
+                        Object filter = filterValues[i];
+                        if( filter != null ){
+                            if( s != null && !s.equals( filter.toString() )) {
+                                fileListPosition++;
+                                continue outer;
+                            }
+                        }
                     }
                     strings[i] = s;
                     if( s == null ) {

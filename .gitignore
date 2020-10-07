@@ -222,6 +222,6 @@ nbdist/
 /geode-adapter/vf.gf.server.status.cmd
 /core/custom-schema-model.json
 /testTestCsv/**
-/testTestMM/**
+/testTestFile/**
 !/libs/avatica-1.16.0-POLYPHENYDB-shaded.jar
 !/libs/avatica-server-1.16.0-POLYPHENYDB.jar

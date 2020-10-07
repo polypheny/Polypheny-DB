@@ -38,15 +38,21 @@ import org.polypheny.db.rel.core.TableModify.Operation;
 import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.FilterableTable;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 
 
-public class FileTable extends AbstractQueryableTable implements ScannableTable, ModifiableTable {
+public class FileTable extends AbstractQueryableTable implements ScannableTable, FilterableTable, ModifiableTable {
     //extends AbstractQueryableTable
     //implements TranslatableTable, ModifiableTable
 
@@ -81,15 +87,57 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
 
     @Override
     public Enumerable<Object[]> scan( DataContext root ) {
-        //todo
         root.getStatement().getTransaction().registerInvolvedStore( store );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new FileEnumerator<>( store, schemaName, tableId, columnIds, columnTypes, cancelFlag );
+                return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag );
             }
         };
+    }
+
+
+    @Override
+    public Enumerable<Object[]> scan( DataContext root, List<RexNode> filters ) {
+        root.getStatement().getTransaction().registerInvolvedStore( store );
+        final Object[] filterValues = new Object[columnTypes.size()];
+        filters.removeIf( filter -> addFilter( filter, filterValues, root ) );
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
+        return new AbstractEnumerable<Object[]>() {
+            @Override
+            public Enumerator<Object[]> enumerator() {
+                return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag, filterValues );
+            }
+        };
+    }
+
+
+    private boolean addFilter( RexNode filter, Object[] filterValues, DataContext root ) {
+        //see CsvFilterableTable
+        if ( filter.isA( SqlKind.EQUALS ) ) {
+            final RexCall call = (RexCall) filter;
+            RexNode left = call.getOperands().get( 0 );
+            if ( left.isA( SqlKind.CAST ) ) {
+                left = ((RexCall) left).operands.get( 0 );
+            }
+            final RexNode right = call.getOperands().get( 1 );
+            if ( left instanceof RexInputRef && right instanceof RexLiteral ) {
+                final int index = ((RexInputRef) left).getIndex();
+                if ( filterValues[index] == null ) {
+                    filterValues[index] = ((RexLiteral) right).getValue2().toString();
+                    return true;
+                }
+            } else if ( left instanceof RexInputRef && right instanceof RexDynamicParam ) {
+                final int index = ((RexInputRef) left).getIndex();
+                if ( filterValues[index] == null ) {
+                    filterValues[index] = root.getParameterValue( ((RexDynamicParam) right).getIndex() );
+                    //use getParameterValues for batch inserts..
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 
@@ -122,7 +170,7 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
         public Enumerator<T> enumerator() {
             //todo check
             //for Linq4j: see SqlCreateTable.java ..
-            return new FileEnumerator<>( store, schemaName, tableId, columnIds, columnTypes, dataContext.getStatement().getTransaction().getCancelFlag() );
+            return new FileEnumerator<>( store, columnIds, columnTypes, dataContext.getStatement().getTransaction().getCancelFlag() );
         }
 
     }

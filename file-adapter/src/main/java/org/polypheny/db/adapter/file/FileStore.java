@@ -34,13 +34,12 @@ public class FileStore extends Store {
     public static final String DESCRIPTION = "An adapter that stores all data as files. It is especially suitable for multimedia collections.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "directory", false, true, false, "testTestMM" )
+            new AdapterSettingString( "directory", false, true, false, "testTestFile" )
     );
 
     @Getter
     private File rootDir;
     private FileSchema currentSchema;
-    public final static String COLUMN_FILE_EXTENSION = ".txt";
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -144,26 +143,26 @@ public class FileStore extends Store {
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        log.debug( "MM Store does not support prepare()." );
+        log.debug( "File Store does not support prepare()." );
         return true;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        log.debug( "MM Store does not support commit()." );
+        log.debug( "File Store does not support commit()." );
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
-        log.debug( "MM Store does not support rollback()." );
+        log.debug( "File Store does not support rollback()." );
     }
 
 
     @Override
     public void truncate( Context context, CatalogTable table ) {
-        log.warn( "MM Store does not support truncate." );
+        log.warn( "File Store does not support truncate." );
     }
 
 
@@ -187,7 +186,7 @@ public class FileStore extends Store {
 
     @Override
     public void shutdown() {
-        log.info( "shutting down MM store '{}'", getUniqueName() );
+        log.info( "shutting down file store '{}'", getUniqueName() );
         try {
             //from https://www.baeldung.com/java-delete-directory
             Files.walk( rootDir.toPath() )
@@ -195,7 +194,7 @@ public class FileStore extends Store {
                     .map( Path::toFile )
                     .forEach( File::delete );
         } catch ( IOException e ) {
-            throw new RuntimeException( "Could not delete all files from MM store", e );
+            throw new RuntimeException( "Could not delete all files from file store", e );
         }
     }
 
