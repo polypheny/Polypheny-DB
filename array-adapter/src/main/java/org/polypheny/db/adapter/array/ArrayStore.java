@@ -44,7 +44,7 @@ public class ArrayStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "Array";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "An simple in-memory adapter storing the data as array lists.";
+    public static final String DESCRIPTION = "An simple in-memory adapter storing the data as lists of arrays.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
     );
@@ -105,7 +105,7 @@ public class ArrayStore extends Store {
                 catalog.updateColumnPlacementPhysicalNames(
                         getStoreId(),
                         placement.columnId,
-                        "",
+                        "public",
                         physicalTableName,
                         getPhysicalColumnName( placement.columnId ) );
             } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {

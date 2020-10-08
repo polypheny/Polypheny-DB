@@ -73,7 +73,7 @@ public class ArrayTable extends AbstractTable implements ModifiableTable, Wrappe
 
 
     @Override
-    public Collection getModifiableCollection() {
+    public Collection<Object[]> getModifiableCollection() {
         return store.getRow( physicalTableName );
     }
 
