@@ -37,7 +37,7 @@ import spark.Service;
 @Slf4j
 public class InformationServer implements InformationObserver {
 
-    Gson gson = new Gson();
+    private final Gson gson = new Gson();
 
 
     public InformationServer( final int port ) {

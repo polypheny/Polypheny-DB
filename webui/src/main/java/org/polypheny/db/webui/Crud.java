@@ -72,7 +72,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -124,8 +123,6 @@ import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -183,7 +180,7 @@ public class Crud implements InformationObserver {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final StatisticsManager store = StatisticsManager.getInstance();
+    private final StatisticsManager statisticsManager = StatisticsManager.getInstance();
     private boolean isActiveTracking = false;
     private final Catalog catalog = Catalog.getInstance();
 
@@ -747,7 +744,7 @@ public class Crud implements InformationObserver {
      */
     ConcurrentHashMap<?, ?> getStatistics( final Request req, final Response res ) {
         if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            return store.getStatisticSchemaMap();
+            return statisticsManager.getStatisticSchemaMap();
         } else {
             return new ConcurrentHashMap<>();
         }
@@ -2453,19 +2450,12 @@ public class Crud implements InformationObserver {
 
 
     private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
         try {
-            signature = processQuery( statement, sqlSelect, parserConfig );
+            signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
@@ -2613,9 +2603,9 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql, SqlParserConfig parserConfig ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
         PolyphenyDbSignature signature;
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor( parserConfig );
+        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
@@ -2633,18 +2623,11 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
         Statement statement = transaction.createStatement();
 
         PolyphenyDbSignature<?> signature;
         try {
-            signature = processQuery( statement, sqlUpdate, parserConfig );
+            signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {
             if ( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();

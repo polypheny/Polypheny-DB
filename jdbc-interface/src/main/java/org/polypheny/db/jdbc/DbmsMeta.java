@@ -56,7 +56,6 @@ import org.apache.calcite.avatica.proto.Requests.UpdateBatch;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
 import org.apache.calcite.avatica.remote.ProtobufMeta;
 import org.apache.calcite.avatica.remote.TypedValue;
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -105,8 +104,6 @@ import org.polypheny.db.rel.type.RelDataTypeSystem;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -1001,15 +998,8 @@ public class DbmsMeta implements ProtobufMeta {
             }
             polyphenyDbStatement.setPreparedQuery( sql );
 
-            // Parser Config
-            SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-            configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-            configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-            configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-            SqlParserConfig parserConfig = configConfigBuilder.build();
-
             Transaction transaction = connection.getCurrentOrCreateNewTransaction();
-            SqlProcessor sqlProcessor = transaction.getSqlProcessor( parserConfig );
+            SqlProcessor sqlProcessor = transaction.getSqlProcessor();
 
             SqlNode parsed = sqlProcessor.parse( sql );
             // It is important not to add default values for missing fields in insert statements. If we would do this, the
@@ -1271,15 +1261,8 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private void prepare( StatementHandle h, String sql ) throws NoSuchStatementException {
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
         PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
-        SqlProcessor sqlProcessor = statementHandle.getStatement().getTransaction().getSqlProcessor( parserConfig );
+        SqlProcessor sqlProcessor = statementHandle.getStatement().getTransaction().getSqlProcessor();
 
         SqlNode parsed = sqlProcessor.parse( sql );
 

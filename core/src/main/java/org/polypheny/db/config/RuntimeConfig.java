@@ -66,13 +66,6 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN
     ),
 
-    JDBC_PORT(
-            "runtime/jdbcPort",
-            "The port on which the JDBC server should listen.",
-            20591,
-            ConfigType.INTEGER
-    ),
-
     CONFIG_SERVER_PORT(
             "runtime/configServerPort",
             "The port on which the config server should listen.",
@@ -212,11 +205,6 @@ public enum RuntimeConfig {
             "Cache polypheny-db schema",
             true,
             ConfigType.BOOLEAN ),
-
-    REST_API_SERVER_PORT( "runtime/restapiServerPort",
-            "The port on which the REST API should listen.",
-            8089,
-            ConfigType.INTEGER ),
 
     QUERY_PLAN_CACHING( "runtime/queryPlanCaching",
             "Cache planned and optimized query plans.",

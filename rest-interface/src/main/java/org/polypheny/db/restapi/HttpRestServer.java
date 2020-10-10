@@ -17,8 +17,10 @@
 package org.polypheny.db.restapi;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogUser;
@@ -40,25 +42,32 @@ import spark.Service;
 @Slf4j
 public class HttpRestServer extends QueryInterface {
 
-    private final Gson gson = new Gson();
+    @SuppressWarnings("WeakerAccess")
+    public static final String INTERFACE_NAME = "REST Interface";
+    @SuppressWarnings("WeakerAccess")
+    public static final String INTERFACE_DESCRIPTION = "REST-based query interface.";
+    @SuppressWarnings("WeakerAccess")
+    public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new QueryInterfaceSettingInteger( "port", false, true, false, 8089 )
+    );
 
-    private final int port;
+    private final Gson gson = new Gson();
 
     private final RequestParser requestParser;
 
+    private Service restServer;
 
-    public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, final int port ) {
-        super( transactionManager, authenticator );
-        this.port = port;
+
+    public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        super( transactionManager, authenticator, ifaceId, uniqueName, settings );
         this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
     }
 
 
     @Override
     public void run() {
-
-        Service restServer = Service.ignite();
-        restServer.port( this.port );
+        restServer = Service.ignite();
+        restServer.port( Integer.parseInt( settings.get( "port" ) ) );
 
         Rest rest = new Rest( transactionManager, "pa", "APP" );
         restRoutes( restServer, rest );
@@ -126,4 +135,21 @@ public class HttpRestServer extends QueryInterface {
         throw new RuntimeException( "processResourceRequest should never reach this point in the code!" );
     }
 
+
+    @Override
+    public List<QueryInterfaceSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void shutdown() {
+        restServer.stop();
+    }
+
+
+    @Override
+    protected void reloadSettings( List<String> updatedSettings ) {
+        // There is no modifiable setting for this query interface
+    }
 }

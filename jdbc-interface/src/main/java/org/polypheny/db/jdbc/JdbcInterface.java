@@ -17,6 +17,9 @@
 package org.polypheny.db.jdbc;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
 import org.apache.calcite.avatica.metrics.MetricsSystemConfiguration;
@@ -25,7 +28,6 @@ import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
 import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.transaction.TransactionManager;
@@ -34,13 +36,25 @@ import org.polypheny.db.transaction.TransactionManager;
 @Slf4j
 public class JdbcInterface extends QueryInterface {
 
+    @SuppressWarnings("WeakerAccess")
+    public static final String INTERFACE_NAME = "JDBC Interface";
+    @SuppressWarnings("WeakerAccess")
+    public static final String INTERFACE_DESCRIPTION = "JDBC-SQL query interface with configurable SQL dialect.";
+    @SuppressWarnings("WeakerAccess")
+    public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new QueryInterfaceSettingInteger( "port", false, true, false, 20591 ),
+            new QueryInterfaceSettingList( "serialization", false, true, false, ImmutableList.of( "PROTOBUF", "JSON" ) )
+    );
+
 
     private final MetricsSystemConfiguration metricsSystemConfiguration;
     private final MetricsSystem metricsSystem;
 
+    private HttpServerDispatcher httpServerDispatcher;
 
-    public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator ) {
-        super( transactionManager, authenticator );
+
+    public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        super( transactionManager, authenticator, ifaceId, uniqueName, settings );
         metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
         metricsSystem = NoopMetricsSystem.getInstance();
     }
@@ -50,14 +64,37 @@ public class JdbcInterface extends QueryInterface {
     public void run() {
         try {
             final DbmsMeta meta = new DbmsMeta( transactionManager, authenticator );
+            Serialization serialization = Serialization.valueOf( settings.get( "serialization" ) );
             AvaticaHandler handler = new HandlerFactory().getHandler(
                     new DbmsService( meta, metricsSystem ),
-                    Serialization.PROTOBUF,
+                    serialization,
                     metricsSystemConfiguration );
-            final HttpServerDispatcher httpServerDispatcher = new HttpServerDispatcher( RuntimeConfig.JDBC_PORT.getInteger(), handler );
+            httpServerDispatcher = new HttpServerDispatcher( Integer.parseInt( settings.get( "port" ) ), handler );
             httpServerDispatcher.start();
         } catch ( Exception e ) {
-            log.error( "", e );
+            log.error( "Exception while starting JDBC interface", e );
         }
+    }
+
+
+    @Override
+    public List<QueryInterfaceSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void shutdown() {
+        try {
+            httpServerDispatcher.stop();
+        } catch ( Exception e ) {
+            log.error( "Exception while shutdown of a JDBC query interface!", e );
+        }
+    }
+
+
+    @Override
+    protected void reloadSettings( List<String> updatedSettings ) {
+        // There is no modifiable setting for this query interface
     }
 }
