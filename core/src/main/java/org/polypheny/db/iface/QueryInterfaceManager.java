@@ -41,20 +41,32 @@ import org.reflections.Reflections;
 @Slf4j
 public class QueryInterfaceManager {
 
-    private static final QueryInterfaceManager INSTANCE = new QueryInterfaceManager();
+    private static QueryInterfaceManager INSTANCE;
 
     private final Map<Integer, QueryInterface> interfaceById = new HashMap<>();
     private final Map<String, QueryInterface> interfaceByName = new HashMap<>();
     private final Map<Integer, Thread> interfaceThreadById = new HashMap<>();
 
+    private final TransactionManager transactionManager;
+    private final Authenticator authenticator;
+
 
     public static QueryInterfaceManager getInstance() {
+        if ( INSTANCE == null ) {
+            throw new RuntimeException( "Interface manager has not yet been initialized" );
+        }
         return INSTANCE;
     }
 
 
-    private QueryInterfaceManager() {
-        // intentionally empty
+    public static void initialize( TransactionManager transactionManager, Authenticator authenticator ) {
+        INSTANCE = new QueryInterfaceManager( transactionManager, authenticator );
+    }
+
+
+    private QueryInterfaceManager( TransactionManager transactionManager, Authenticator authenticator ) {
+        this.transactionManager = transactionManager;
+        this.authenticator = authenticator;
     }
 
 
@@ -99,7 +111,7 @@ public class QueryInterfaceManager {
     /**
      * Restores query interfaces from catalog
      */
-    public void restoreInterfaces( Catalog catalog, TransactionManager transactionManager, Authenticator authenticator ) {
+    public void restoreInterfaces( Catalog catalog ) {
         try {
             List<CatalogQueryInterface> interfaces = catalog.getQueryInterfaces();
             for ( CatalogQueryInterface iface : interfaces ) {
@@ -134,9 +146,9 @@ public class QueryInterfaceManager {
         QueryInterface instance;
         try {
             Class<?> clazz = Class.forName( clazzName );
-            Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
+            Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
             int ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
-            instance = (QueryInterface) ctor.newInstance( ifaceId, uniqueName, settings );
+            instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
 
             Thread thread = new Thread( instance );
             thread.start();

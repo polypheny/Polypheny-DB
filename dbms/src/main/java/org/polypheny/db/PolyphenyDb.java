@@ -159,6 +159,9 @@ public class PolyphenyDb {
 
         final Authenticator authenticator = new AuthenticatorImpl();
 
+        // Initialize interface manager
+        QueryInterfaceManager.initialize( transactionManager, authenticator );
+
         // Startup and restore catalog
         Catalog catalog;
         Transaction trx = null;
@@ -169,7 +172,7 @@ public class PolyphenyDb {
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             StoreManager.getInstance().restoreStores( catalog );
-            QueryInterfaceManager.getInstance().restoreInterfaces( catalog, transactionManager, authenticator );
+            QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
             catalog.restoreColumnPlacements( trx );
