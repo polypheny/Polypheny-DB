@@ -106,6 +106,11 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
+import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
+import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -149,6 +154,7 @@ import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
+import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
@@ -1787,6 +1793,54 @@ public class Crud implements InformationObserver {
             return new Result( e );
         }
         return new Result( new Debug().setAffectedRows( 1 ) );
+    }
+
+
+    String getQueryInterfaces ( final Request req, final Response res ) {
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        ImmutableMap<String, QueryInterface> queryInterfaces = qim.getQueryInterfaces();
+        List<QueryInterfaceModel> qIs = new ArrayList<>();
+        for( QueryInterface i: queryInterfaces.values() ) {
+            qIs.add( new QueryInterfaceModel( i.getQueryInterfaceId(), i.getUniqueName(), i.getInterfaceType(), i.getCurrentSettings(), i.getAvailableSettings().toArray( new QueryInterfaceSetting[0] ) ) );
+        }
+        return gson.toJson( qIs.toArray(new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
+    }
+
+
+    String getAvailableQueryInterfaces ( final Request req, final Response res ) {
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        List<QueryInterfaceInformation> interfaces = qim.getAvailableQueryInterfaceTypes();
+        return QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ));
+    }
+
+
+    boolean addQueryInterface ( final Request req, final Response res ) {
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        QueryInterfaceInformationRequest request = gson.fromJson( req.body(), QueryInterfaceInformationRequest.class );
+        try {
+            qim.addQueryInterface( catalog, request.clazzName, request.uniqueName, request.currentSettings );
+            return true;
+        } catch ( RuntimeException e ) {
+            return false;
+        }
+    }
+
+    boolean updateQueryInterfaceSettings ( final Request req, final Response res ) {
+        QueryInterfaceModel request = gson.fromJson( req.body(),  QueryInterfaceModel.class );
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
+        return true;
+    }
+
+    Result removeQueryInterface ( final Request req, final Response res ) {
+        String uniqueName = req.body();
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        try{
+            qim.removeQueryInterface( catalog, uniqueName );
+            return new Result( new Debug().setAffectedRows( 1 ) );
+        } catch ( RuntimeException e ) {
+            return new Result( e );
+        }
     }
 
 

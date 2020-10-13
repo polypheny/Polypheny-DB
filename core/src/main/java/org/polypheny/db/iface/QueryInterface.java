@@ -29,8 +29,8 @@ import org.polypheny.db.transaction.TransactionManager;
 
 public abstract class QueryInterface implements Runnable {
 
-    protected final TransactionManager transactionManager;
-    protected final Authenticator authenticator;
+    protected final transient TransactionManager transactionManager;
+    protected final transient Authenticator authenticator;
 
     @Getter
     private final int queryInterfaceId;
@@ -58,6 +58,9 @@ public abstract class QueryInterface implements Runnable {
 
 
     public abstract void shutdown();
+
+
+    public abstract String getInterfaceType();
 
     /**
      * Informs a query interface that its settings have changed.

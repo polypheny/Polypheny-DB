@@ -97,4 +97,10 @@ public class JdbcInterface extends QueryInterface {
     protected void reloadSettings( List<String> updatedSettings ) {
         // There is no modifiable setting for this query interface
     }
+
+    @Override
+    public String getInterfaceType() {
+        return INTERFACE_NAME;
+    }
+
 }

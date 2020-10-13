@@ -173,6 +173,16 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/addStore", crud::addStore, gson::toJson );
 
+        webuiServer.get( "/getQueryInterfaces", crud::getQueryInterfaces );
+
+        webuiServer.get( "/getAvailableQueryInterfaces", crud::getAvailableQueryInterfaces );
+
+        webuiServer.post( "/addQueryInterface", crud::addQueryInterface, gson::toJson );
+
+        webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings, gson::toJson );
+
+        webuiServer.post( "/removeQueryInterface", crud::removeQueryInterface, gson::toJson );
+
     }
 
 

@@ -19,6 +19,10 @@ package org.polypheny.db.iface;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSerializer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -201,7 +205,29 @@ public class QueryInterfaceManager {
         public final String name;
         public final String description;
         public final Class clazz;
-        public final List<QueryInterfaceSetting> settings;
+        public final List<QueryInterfaceSetting> availableSettings;
+
+        public static String toJson ( QueryInterfaceInformation[] queryInterfaceInformations ) {
+            JsonSerializer<QueryInterfaceInformation> queryInterfaceInformationSerializer = ( src, typeOfSrc, context ) -> {
+                JsonObject jsonStore = new JsonObject();
+                jsonStore.addProperty( "name", src.name );
+                jsonStore.addProperty( "description", src.description );
+                jsonStore.addProperty( "clazz", src.clazz.getCanonicalName() );
+                jsonStore.add( "availableSettings", context.serialize( src.availableSettings ) );
+                return jsonStore;
+            };
+            Gson qiiGson = new GsonBuilder().registerTypeAdapter( QueryInterfaceInformation.class, queryInterfaceInformationSerializer ).create();
+            return qiiGson.toJson( queryInterfaceInformations, QueryInterfaceInformation[].class );
+        }
+    }
+
+    /**
+     * Model needed for the UI
+     */
+    public static class QueryInterfaceInformationRequest {
+        public String clazzName;
+        public String uniqueName;
+        public Map<String, String> currentSettings;
     }
 
 }
