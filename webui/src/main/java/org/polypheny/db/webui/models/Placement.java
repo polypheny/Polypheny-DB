@@ -20,6 +20,7 @@ package org.polypheny.db.webui.models;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 
@@ -32,9 +33,11 @@ public class Placement {
     Throwable exception;
     List<Store> stores = new ArrayList<>();
     boolean isPartitioned;
+    List<String> partitionNames;
 
-    public Placement ( final boolean isPartitioned ) {
+    public Placement ( final boolean isPartitioned, final List<String> partitionNames ) {
         this.isPartitioned = isPartitioned;
+        this.partitionNames = partitionNames;
     }
 
     public Placement ( final Throwable exception ) {
@@ -58,13 +61,15 @@ public class Placement {
         private final List<ColumnPlacement> columnPlacements;
         private final List<Long> partitionKeys;
         private final long numPartitions;
+        private final PartitionType partitionType;
 
 
         public Store(
                 final org.polypheny.db.adapter.Store store,
                 final List<CatalogColumnPlacement> columnPlacements,
                 final List<Long> partitionKeys,
-                final long numPartitions) {
+                final long numPartitions,
+                final PartitionType partitionType) {
             this.uniqueName = store.getUniqueName();
             this.adapterName = store.getAdapterName();
             this.dataReadOnly = store.isDataReadOnly();
@@ -72,6 +77,7 @@ public class Placement {
             this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
             this.partitionKeys = partitionKeys;
             this.numPartitions = numPartitions;
+            this.partitionType = partitionType;
         }
     }
 

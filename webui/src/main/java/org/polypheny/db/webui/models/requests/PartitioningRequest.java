@@ -30,7 +30,7 @@ public class PartitioningRequest {
     public static class ModifyPartitionRequest {
         public String schemaName;
         public String tableName;
-        public long[] partitions;
+        public String[] partitions;
         public String storeUniqueName;
     }
 }

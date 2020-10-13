@@ -1633,7 +1633,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned() );
+            Placement p = new Placement( table.isPartitioned(), catalog.getPartitionNames( table.id ) );
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
             CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
@@ -1643,8 +1643,9 @@ public class Crud implements InformationObserver {
                 p.addStore( new Placement.Store(
                         store,
                         catalog.getColumnPlacementsOnStore( store.getStoreId(), table.id ),
-                        catalog.getPartitionsOnDataPlacement( placement.storeId, placement.tableId ),
-                        table.numPartitions ));
+                        catalog.getPartitionsIndexOnDataPlacement( placement.storeId, placement.tableId ),
+                        table.numPartitions,
+                        table.partitionType));
             }
             return p;
         } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
@@ -1745,8 +1746,8 @@ public class Crud implements InformationObserver {
     Result modifyPartitions ( final Request req, final Response res ) {
         ModifyPartitionRequest request = gson.fromJson( req.body(), ModifyPartitionRequest.class );
         StringJoiner partitions = new StringJoiner(",");
-        for( long partition: request.partitions ) {
-            partitions.add( String.valueOf( partition ) );
+        for( String partition: request.partitions ) {
+            partitions.add( "\""+partition+"\"" );
         }
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" MODIFY PARTITIONS(%s) ON STORE %s", request.schemaName, request.tableName, partitions.toString(), request.storeUniqueName );
         Transaction trx = getTransaction();
