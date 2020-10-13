@@ -31,6 +31,7 @@ import org.apache.calcite.avatica.server.HandlerFactory;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Util;
 
 
 @Slf4j
@@ -49,6 +50,7 @@ public class JdbcInterface extends QueryInterface {
 
     private final MetricsSystemConfiguration metricsSystemConfiguration;
     private final MetricsSystem metricsSystem;
+    private final int port;
 
     private HttpServerDispatcher httpServerDispatcher;
 
@@ -57,6 +59,12 @@ public class JdbcInterface extends QueryInterface {
         super( transactionManager, authenticator, ifaceId, uniqueName, settings );
         metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
         metricsSystem = NoopMetricsSystem.getInstance();
+
+        this.port = Integer.parseInt( settings.get( "port" ) );
+        if ( !Util.checkIfPortIsAvailable( port ) ) {
+            // Port is already in use
+            throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+        }
     }
 
 
@@ -69,7 +77,7 @@ public class JdbcInterface extends QueryInterface {
                     new DbmsService( meta, metricsSystem ),
                     serialization,
                     metricsSystemConfiguration );
-            httpServerDispatcher = new HttpServerDispatcher( Integer.parseInt( settings.get( "port" ) ), handler );
+            httpServerDispatcher = new HttpServerDispatcher( port, handler );
             httpServerDispatcher.start();
         } catch ( Exception e ) {
             log.error( "Exception while starting JDBC interface", e );

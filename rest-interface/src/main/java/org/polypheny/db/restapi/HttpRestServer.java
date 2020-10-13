@@ -34,6 +34,7 @@ import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Util;
 import spark.Request;
 import spark.Response;
 import spark.Service;
@@ -54,6 +55,7 @@ public class HttpRestServer extends QueryInterface {
     private final Gson gson = new Gson();
 
     private final RequestParser requestParser;
+    private final int port;
 
     private Service restServer;
 
@@ -61,13 +63,18 @@ public class HttpRestServer extends QueryInterface {
     public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
         super( transactionManager, authenticator, ifaceId, uniqueName, settings );
         this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
+        this.port = Integer.parseInt( settings.get( "port" ) );
+        if ( !Util.checkIfPortIsAvailable( port ) ) {
+            // Port is already in use
+            throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+        }
     }
 
 
     @Override
     public void run() {
         restServer = Service.ignite();
-        restServer.port( Integer.parseInt( settings.get( "port" ) ) );
+        restServer.port( port );
 
         Rest rest = new Rest( transactionManager, "pa", "APP" );
         restRoutes( restServer, rest );

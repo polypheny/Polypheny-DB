@@ -1821,6 +1821,7 @@ public class Crud implements InformationObserver {
             qim.addQueryInterface( catalog, request.clazzName, request.uniqueName, request.currentSettings );
             return true;
         } catch ( RuntimeException e ) {
+            log.error( "Exception while deploying query interface", e );
             return false;
         }
     }
