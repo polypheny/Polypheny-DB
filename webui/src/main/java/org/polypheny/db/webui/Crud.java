@@ -2723,7 +2723,6 @@ public class Crud implements InformationObserver {
         configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
         SqlParserConfig parserConfig = configConfigBuilder.build();
 
-        System.out.println( "HENNLO: CRUD: executeSqlUpdate(): '" + sqlUpdate + "'" );
         Statement statement = transaction.createStatement();
 
         PolyphenyDbSignature<?> signature;

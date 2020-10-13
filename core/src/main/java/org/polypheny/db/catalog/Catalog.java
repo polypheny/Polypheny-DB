@@ -1169,7 +1169,6 @@ public abstract class Catalog {
     }
 
 
-    //HENNLO
     public enum PartitionType {
         NONE( 0 ),
         RANGE( 1 ),

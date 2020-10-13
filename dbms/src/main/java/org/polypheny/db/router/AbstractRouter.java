@@ -92,7 +92,7 @@ public abstract class AbstractRouter implements Router {
     final Catalog catalog = Catalog.getInstance();
 
 
-    private Map<Integer, List<String>> filterMap = new HashMap<Integer, List<String>>();
+    private Map<Integer, List<String>> filterMap = new HashMap<>();
     private static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
@@ -232,7 +232,7 @@ public abstract class AbstractRouter implements Router {
                 try {
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
 
-                    // Check if table is even partitoned
+                    // Check if table is even partitioned
                     if ( catalogTable.isPartitioned ) {
 
                         log.debug( "VALUE from Map: " + filterMap.get( node.getId() ) + " id: " + node.getId() );
@@ -257,7 +257,7 @@ public abstract class AbstractRouter implements Router {
                                 placements = partitionManager.getRelevantPlacements( catalogTable, null );
                             }
                         } else {
-                            // TODO Chnage to worstcase
+                            // TODO Change to worst-case
                             placements = partitionManager.getRelevantPlacements( catalogTable, null );
                             //placements = selectPlacement( node, catalogTable );
                         }
@@ -388,7 +388,7 @@ public abstract class AbstractRouter implements Router {
 
                     if ( catalogTable.isPartitioned ) {
 
-                        boolean worstcaserouting = false;
+                        boolean worstCaseRouting = false;
 
                         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
                         PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
@@ -410,7 +410,7 @@ public abstract class AbstractRouter implements Router {
                                 whereClauseValue = whereClauseVisitor.getValues().stream().map( Object::toString )
                                         .collect( Collectors.toList() );
                                 log.debug( "Found Where Clause Values: " + whereClauseValue );
-                                worstcaserouting = true;
+                                worstCaseRouting = true;
                             }
                         }
 
@@ -447,20 +447,20 @@ public abstract class AbstractRouter implements Router {
                             if ( whereClauseValue != null && partitionColumnIdentified ) {
 
                                 if ( whereClauseValue.size() == 1 && identPart == partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) ) ) {
-                                    worstcaserouting = false;
+                                    worstCaseRouting = false;
                                 } else {
-                                    worstcaserouting = true;
-                                    log.debug( "Activate WORSTCASE ROUTING " );
+                                    worstCaseRouting = true;
+                                    log.debug( "Activate WORST-CASE ROUTING" );
                                 }
                             } else if ( whereClauseValue == null ) {
-                                worstcaserouting = true;
-                                log.debug( "Activate WORSTCASE ROUTING no WHERE clause specified for partitioncolumn" );
+                                worstCaseRouting = true;
+                                log.debug( "Activate WORST-CASE ROUTING! No WHERE clause specified for partition column" );
                             } else if ( whereClauseValue != null && !partitionColumnIdentified ) {
                                 if ( whereClauseValue.size() == 1 ) {
                                     identPart = (int) partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) );
-                                    worstcaserouting = false;
+                                    worstCaseRouting = false;
                                 } else {
-                                    worstcaserouting = true;
+                                    worstCaseRouting = true;
                                 }
                             }
                             // Since update needs to take current partition and target partition into account
@@ -475,14 +475,14 @@ public abstract class AbstractRouter implements Router {
                                         if ( catalogTable.columnIds.get( i ) == catalogTable.partitionColumnId ) {
                                             log.debug( "INSERT: Found PartitionColumnID: '" + catalogTable.partitionColumnId + "' at column index: " + i );
                                             partitionColumnIdentified = true;
-                                            worstcaserouting = false;
+                                            worstCaseRouting = false;
                                             partitionValue = ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.get( 0 ).get( i ).toString().replace( "'", "" );
                                             identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                             break;
                                         }
                                     }
                                 } else {
-                                    worstcaserouting = true;
+                                    worstCaseRouting = true;
                                 }
                             } else if ( ((LogicalTableModify) node).getInput() instanceof LogicalProject
                                     && ((LogicalProject) ((LogicalTableModify) node).getInput()).getInput() instanceof LogicalValues ) {
@@ -497,7 +497,7 @@ public abstract class AbstractRouter implements Router {
                                     String columnName = fieldNames.get( i );
                                     if ( partitionColumnName.equals( columnName ) ) {
                                         if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).equals( SqlKind.DYNAMIC_PARAM ) ) {
-                                            worstcaserouting = true;
+                                            worstCaseRouting = true;
                                         } else {
                                             partitionColumnIdentified = true;
                                             partitionValue = ((LogicalTableModify) node).getInput().getChildExps().get( i ).toString().replace( "'", "" );
@@ -507,39 +507,39 @@ public abstract class AbstractRouter implements Router {
                                     }
                                 }
                             } else {
-                                worstcaserouting = true;
+                                worstCaseRouting = true;
                             }
                             // TODO Get the value of partitionColumnId ---  but first find of partitionColumn inside table
                             log.debug( "INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: " + identPart );
 
                         } else if ( ((LogicalTableModify) node).getOperation() == Operation.DELETE ) {
                             if ( whereClauseValue == null ) {
-                                worstcaserouting = true;
+                                worstCaseRouting = true;
                             } else {
                                 if ( whereClauseValue.size() >= 2 ) {
-                                    worstcaserouting = true;
+                                    worstCaseRouting = true;
                                     partitionColumnIdentified = false;
                                 } else {
-                                    worstcaserouting = false;
+                                    worstCaseRouting = false;
                                     identPart = (int) partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) );
                                 }
                             }
 
                         }
 
-                        if ( !worstcaserouting ) {
+                        if ( !worstCaseRouting ) {
 
                             log.debug( "Get all Placements by identified Partition: " + identPart );
                             if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ).contains( identPart ) ) {
-                                log.debug( "DataPacement: " + pkPlacement.storeUniqueName + "."
+                                log.debug( "DataPlacement: " + pkPlacement.storeUniqueName + "."
                                         + pkPlacement.physicalTableName + " SKIPPING since it does NOT contain identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ) );
                                 continue;
                             } else {
-                                log.debug( "DataPacement: " + pkPlacement.storeUniqueName + "."
+                                log.debug( "DataPlacement: " + pkPlacement.storeUniqueName + "."
                                         + pkPlacement.physicalTableName + " contains identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ) );
                             }
                         } else {
-                            log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worstcase: Routing to ALL PARTITIONS" );
+                            log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
                         }
 
                     }
@@ -922,7 +922,7 @@ public abstract class AbstractRouter implements Router {
                             valueIdentified = true;
                         } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {
                             long index = ((RexDynamicParam) call.operands.get( 0 )).getIndex();
-                            value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParamterValues //
+                            value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParameterValues //
                             values.add( value );
                             valueIdentified = true;
                         }

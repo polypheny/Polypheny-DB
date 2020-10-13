@@ -152,7 +152,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         if ( existingPlacements.size() < 2 ) {
                             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                         }
-                        // Check if this placement would be the last columnPlacemnt with all partitions
+                        // Check if this placement would be the last columnPlacement with all partitions
                         if ( catalogTable.isPartitioned ) {
                             PartitionManagerFactory managerFactory = new PartitionManagerFactory();
                             PartitionManager partitionManager = managerFactory.getInstance( catalogTable.partitionType );
@@ -170,7 +170,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                 }
             }
 
-            List<Long> tempPartitionList = new ArrayList<Long>();
+            List<Long> tempPartitionList = new ArrayList<>();
             // Select partitions to create on this placement
             if ( catalogTable.isPartitioned ) {
                 long tableId = catalogTable.id;

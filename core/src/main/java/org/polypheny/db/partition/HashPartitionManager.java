@@ -82,7 +82,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     // Needed when columnPlacements are being dropped
-    // HASH Partitioning needs at least one columnplacement which contains all partitions as a fallback
+    // HASH Partitioning needs at least one column placement which contains all partitions as a fallback
     @Override
     public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
 
@@ -105,8 +105,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
-        // Find stores with fullplacements (partitions)
-        // Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
+        // Find stores with full placements (partitions)
+        // Pick for each column the column placemnt which has full partitioning //SELECT WORST-CASE ergo Fallback
         for ( long columnId : catalogTable.columnIds ) {
             // Take the first column placement
             relevantCcps.add( getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).get( 0 ) );

@@ -1415,7 +1415,7 @@ public class CatalogImpl extends Catalog {
                 } else {
                     placementsByStore.put( storeId, ImmutableList.of( columnId ) );
                 }
-                log.debug( "Add ColumnPlacemnt to table '" + old.name + "' " + storeId + " " + columnId );
+                log.debug( "Add ColumnPlacement to table '" + old.name + "' " + storeId + " " + columnId );
                 CatalogTable table;
 
                 // Required because otherwise an already partitioned table would be reset to a regular table due to the different constructors.
@@ -1425,7 +1425,7 @@ public class CatalogImpl extends Catalog {
                             old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ),
                             old.numPartitions, old.partitionType, old.partitionIds, old.partitionColumnId );
 
-                    // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacemnt
+                    // If table is partitioned and no concrete partitions are defined place all partitions on columnPlacement
                     if ( partitionIds == null ) {
                         partitionIds = table.partitionIds;
                     }
@@ -1450,12 +1450,8 @@ public class CatalogImpl extends Catalog {
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
             }
             listeners.firePropertyChange( "columnPlacement", null, placement );
-        } catch ( NullPointerException e ) {
+        } catch ( NullPointerException | UnknownStoreException | UnknownTableException e ) {
             throw new GenericCatalogException( e );
-        } catch ( UnknownStoreException e ) {
-            e.printStackTrace();
-        } catch ( UnknownTableException e ) {
-            e.printStackTrace();
         }
     }
 
@@ -1499,7 +1495,7 @@ public class CatalogImpl extends Catalog {
                             oldTable.ownerId, oldTable.ownerName, oldTable.tableType, oldTable.definition, oldTable.primaryKey, ImmutableMap.copyOf( placementsByStore ),
                             oldTable.numPartitions, oldTable.partitionType, oldTable.partitionIds, oldTable.partitionColumnId );
 
-                    //Check if this is the last placement on store. If so remove datapartitionPlacement
+                    //Check if this is the last placement on store. If so remove dataPartitionPlacement
                     if ( lastPlacementOnStore ) {
                         dataPartitionPlacement.remove( new Object[]{ storeId, oldTable.id } );
                         log.debug( "Column '" + getColumn( columnId ).name + "' was the last placement on store: '" + getStore( storeId ).uniqueName + "." + table.name + "' " );
@@ -2303,7 +2299,7 @@ public class CatalogImpl extends Catalog {
                             throw new GenericCatalogException( "The data type of the referenced columns does not match the data type of the referencing column: " + referencingColumn.type.name() + " != " + referencedColumn.type );
                         }
                     }
-                    // TODO same keys for key and foreignkey
+                    // TODO same keys for key and foreign key
                     if ( getKeyUniqueCount( refKey.id ) > 0 ) {
                         long keyId = getOrAddKey( tableId, columnIds );
                         List<String> keyColumnNames = columnIds.stream().map( id -> Objects.requireNonNull( columns.get( id ) ).name ).collect( Collectors.toList() );
@@ -2737,7 +2733,7 @@ public class CatalogImpl extends Catalog {
             }
 
             // Calculate how many partitions exist if partitioning is applied.
-            // Loop over value to create thos partitions with partitionKey to uniquelyIdentify partition
+            // Loop over value to create those partitions with partitionKey to uniquelyIdentify partition
             log.debug( "Creating " + numPartitions + " partitions" );
 
             PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
@@ -2854,7 +2850,7 @@ public class CatalogImpl extends Catalog {
                 tableNames.put( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
                 tableNames.put( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
-                // TODO Get all dataplacements and remove key
+                // TODO Get all data placements and remove key
                 // Copy Data
 
                 // Get primary key of table and use PK to find all DataPlacements of table
@@ -2969,19 +2965,19 @@ public class CatalogImpl extends Catalog {
      * Get placements by partition. Identify the location of partitions
      *
      * @param partitionId The unique id of the partition
-     * @param columnId columnplacement to return
-     * @param tableId,
+     * @param columnId column placement to return
+     * @param tableId
      * @return List of CatalogColumnPlacements
      */
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) throws UnknownPartitionException {
-        List<CatalogColumnPlacement> catalogColumnPlacemnts = new ArrayList<>();
+        List<CatalogColumnPlacement> catalogColumnPlacements = new ArrayList<>();
         try {
             CatalogTable table = getTable( tableId );
 
             for ( CatalogColumnPlacement ccp : getColumnPlacements( columnId ) ) {
                 if ( dataPartitionPlacement.get( new Object[]{ ccp.storeId, tableId } ).contains( partitionId ) ) {
-                    catalogColumnPlacemnts.add( ccp );
+                    catalogColumnPlacements.add( ccp );
                 }
             }
 
@@ -2989,11 +2985,11 @@ public class CatalogImpl extends Catalog {
             throw new RuntimeException( e );
         }
 
-        if ( catalogColumnPlacemnts.isEmpty() ) {
+        if ( catalogColumnPlacements.isEmpty() ) {
             return new ArrayList<>();
         }
 
-        return catalogColumnPlacemnts;
+        return catalogColumnPlacements;
     }
 
 
@@ -3040,7 +3036,7 @@ public class CatalogImpl extends Catalog {
                 log.debug( "Updating Partitions=" + partitionIds + " to DataPlacement=" + getStore( storeId ).uniqueName + "." + getTable( tableId ).name + "" );
                 List<Long> tempPartition = dataPartitionPlacement.get( new Object[]{ storeId, tableId } );
 
-                // Validate if partition distribution after update is successfull otherwise rollback
+                // Validate if partition distribution after update is successful otherwise rollback
                 // Check if partition change has impact on the complete partition distribution for current Part.Type
                 CatalogTable table = getTable( tableId );
                 for ( CatalogColumnPlacement ccp : getColumnPlacementsOnStore( storeId, tableId ) ) {
@@ -3096,9 +3092,9 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Mostly needed if a placement is droped from a store.
+     * Mostly needed if a placement is dropped from a store.
      *
-     * @param storeId    Placement to be updated with new partitions
+     * @param storeId Placement to be updated with new partitions
      * @param tableId List of partitions which the placement should hold
      */
     @Override

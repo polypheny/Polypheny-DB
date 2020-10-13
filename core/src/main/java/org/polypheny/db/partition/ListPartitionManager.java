@@ -153,13 +153,13 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
                 for ( long partitionId : partitionIds ) {
 
-                    // Find stores with fullplacements (partitions)
-                    // Pick for each column the columnplacemnt which has full partitioning //SELECT WORSTCASE ergo Fallback
+                    // Find stores with full placements (partitions)
+                    // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
                     for ( long columnId : catalogTable.columnIds ) {
 
                         List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition( catalogTable.id, partitionId, columnId );
                         if ( !ccps.isEmpty() ) {
-                            //get first columnpalcement which contains parttion
+                            //get first column placement which contains partition
                             relevantCcps.add( ccps.get( 0 ) );
                             log.debug( ccps.get( 0 ).storeUniqueName + " " + ccps.get( 0 ).getLogicalColumnName() + " with part. " + partitionId );
                         }
@@ -171,7 +171,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
             }
         } else {
             // Take the first column placement
-            // Worstcase
+            // Worst-case
             for ( long columnId : catalogTable.columnIds ) {
                 relevantCcps.add( getNumberOfPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).get( 0 ) );
             }

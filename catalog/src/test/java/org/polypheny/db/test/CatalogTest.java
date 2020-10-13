@@ -279,7 +279,7 @@ public class CatalogTest {
         assertEquals( otherColumn.position, catalog.getColumn( columnId ).position );
         assertEquals( column.position, catalog.getColumn( otherColumnId ).position );
 
-        // test replacing defaultvalue
+        // test replacing default value
         catalog.setDefaultValue( columnId, PolyType.CHAR, "i" );
         assertEquals( "i", catalog.getColumn( columnId ).defaultValue.value );
 
@@ -418,7 +418,7 @@ public class CatalogTest {
             catalog.deleteConstraint( catalog.getConstraints( tableId ).get( 0 ).id );
         }
 
-        // test foreignkey
+        // test foreign key
         long tableId2 = catalog.addTable( "table2", schemaId, userId, TableType.TABLE, null );
         long columnId3 = catalog.addColumn( "column3", tableId2, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column3 = catalog.getColumn( columnId3 );

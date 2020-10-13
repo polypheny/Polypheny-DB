@@ -77,7 +77,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
                 log.debug( "Merging partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
                         " on schema: " + catalogTable.getSchemaName() );
 
-                // TODO Create partitoins multithreaded
+                // TODO Create partitions multithreaded
                 catalog.mergeTable( tableId );
 
                 log.debug( "Table: '" + catalogTable.name + "' has been merged" );

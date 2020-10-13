@@ -136,14 +136,14 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 columnIds = ImmutableList.copyOf( catalogTable.columnIds );
             }
 
-            List<Long> tempPartitionList = new ArrayList<Long>();
+            List<Long> tempPartitionList = new ArrayList<>();
             // Select partitions to create on this placement
             if ( catalogTable.isPartitioned ) {
                 boolean isDataPlacementPartitioned = false;
                 long tableId = catalogTable.id;
                 // Needed to ensure that column placements on the same store contain all the same partitions
-                // Check if this column placement is the first on the dataplacement
-                // If this returns null this means that this is the first placement and partitition list can therefore be specified
+                // Check if this column placement is the first on the data placement
+                // If this returns null this means that this is the first placement and partition list can therefore be specified
                 List<Long> currentPartList = new ArrayList<>();
                 currentPartList = catalog.getPartitionsOnDataPlacement( storeInstance.getStoreId(), catalogTable.id );
 
@@ -155,7 +155,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
                 if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
 
-                    // Abort if a manual partitionList has been specified even though the data placemnt has already been partitioned
+                    // Abort if a manual partitionList has been specified even though the data placement has already been partitioned
                     if ( isDataPlacementPartitioned ) {
                         throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
                                 + storeName + "' already contains manually specified partitions: " + currentPartList + ". Use 'ALTER TABLE ... MODIFY PARTITIONS...' instead" );

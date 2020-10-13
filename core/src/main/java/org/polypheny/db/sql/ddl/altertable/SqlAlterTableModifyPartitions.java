@@ -121,7 +121,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                         RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
             }
 
-            List<Long> tempPartitionList = new ArrayList<Long>();
+            List<Long> tempPartitionList = new ArrayList<>();
 
             // If index partitions are specified
             if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
@@ -157,8 +157,8 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 }
             }
 
-            // Check if inmemory dataPartitonPlacement Map should even be chaneged and therefore start costly partitioning
-            // Avoid unnecassary partitioning when the placement is already partitoined in the same way it has been specified
+            // Check if inmemory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
+            // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
             if ( tempPartitionList.equals( catalog.getPartitionsOnDataPlacement( storeId, tableId ) ) ) {
                 throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
                         + storeName + "' already contains all specified partitions of statement: " + partitionList );

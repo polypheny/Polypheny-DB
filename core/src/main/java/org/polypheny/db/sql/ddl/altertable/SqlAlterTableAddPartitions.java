@@ -39,7 +39,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name PARTITION BY partitiontype (columnname) [PARTITIONS amount]} statement.
+ * Parse tree for {@code ALTER TABLE name PARTITION BY partitionType (columnName) [PARTITIONS amount]} statement.
  */
 @Slf4j
 public class SqlAlterTableAddPartitions extends SqlAlterTable {

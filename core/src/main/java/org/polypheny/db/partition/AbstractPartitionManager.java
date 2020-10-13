@@ -24,7 +24,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 // Possible extensions could be range partitioning and hash partitioning
 // Need to check if round robin would be sufficient as well or basically just needed to distribute workload for LoadBalancing
 // Maybe separate partition in the technical-partition itself.
-// And meta information about the partiton characteristics of a table
+// And meta information about the partition characteristics of a table
 // the latter could maybe be specified in the table as well.
 public abstract class AbstractPartitionManager implements PartitionManager {
 
@@ -34,15 +34,20 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     //returns the Index of the partition where to place the object
+    @Override
     public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
+    @Override
     public abstract boolean validatePartitionDistribution( CatalogTable table );
 
+    @Override
     public abstract boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
 
+    @Override
     public abstract List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
 
+    @Override
     public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
 
         if ( numPartitions == 0 && partitionNames.size() < 2 ) {
@@ -53,5 +58,6 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     }
 
 
+    @Override
     public abstract boolean allowsUnboundPartition();
 }

@@ -53,7 +53,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final Long primaryKey;
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
 
-    //HENNLO
     @Getter
     public boolean isPartitioned = false;
     @Getter
@@ -62,10 +61,10 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public ImmutableList<Long> partitionIds;
     public long partitionColumnId;
 
-    //if specified explicitly boundPartitions will be set to true
+    // If specified explicitly boundPartitions will be set to true
     public long numPartitions;
 
-    //Bound partition states if the partitioning is done on a fixed number of Partitions
+    // Bound partition states if the partitioning is done on a fixed number of Partitions
     // Or adjusted automatically as the table grows
     public boolean boundPartition;
     @Setter
@@ -99,8 +98,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     }
 
 
-    // Note (Hennlo): numPartitons can be empty and calculated based on the partition key
-    //  Only used when explicitly working with partitions to not alter existing call stack and logic
+    // numPartitons can be empty and calculated based on the partition key
+    // Only used when explicitly working with partitions to not alter existing call stack and logic
     public CatalogTable(
             final long id,
             @NonNull final String name,
@@ -129,7 +128,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.primaryKey = primaryKey;
         this.placementsByStore = placementsByStore;
 
-        //HENNLO added
         this.partitionType = partitionType;
         this.partitionIds = partitionIds;
         this.partitionColumnId = partitionColumnId;
