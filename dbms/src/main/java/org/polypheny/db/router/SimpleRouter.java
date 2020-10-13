@@ -28,8 +28,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.partition.PartitionManager;
-import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -62,30 +60,28 @@ public class SimpleRouter extends AbstractRouter {
         Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
 
+        // Find the store with the most column placements
+        int storeIdWithMostPlacements = -1;
+        int numOfPlacements = 0;
+        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet() ) {
+            if ( entry.getValue().size() > numOfPlacements ) {
+                storeIdWithMostPlacements = entry.getKey();
+                numOfPlacements = entry.getValue().size();
+            }
+        }
 
-
-            // Find the store with the most column placements
-            int storeIdWithMostPlacements = -1;
-            int numOfPlacements = 0;
-            for (Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet()) {
-                if (entry.getValue().size() > numOfPlacements) {
-                    storeIdWithMostPlacements = entry.getKey();
-                    numOfPlacements = entry.getValue().size();
+        // Take the store with most placements as base and add missing column placements
+        try {
+            for ( long cid : table.columnIds ) {
+                if ( table.placementsByStore.get( storeIdWithMostPlacements ).contains( cid ) ) {
+                    placementList.add( Catalog.getInstance().getColumnPlacement( storeIdWithMostPlacements, cid ) );
+                } else {
+                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
                 }
             }
-
-            // Take the store with most placements as base and add missing column placements
-            try {
-                for (long cid : table.columnIds) {
-                    if (table.placementsByStore.get(storeIdWithMostPlacements).contains(cid)) {
-                        placementList.add(Catalog.getInstance().getColumnPlacement(storeIdWithMostPlacements, cid));
-                    } else {
-                        placementList.add(Catalog.getInstance().getColumnPlacements(cid).get(0));
-                    }
-                }
-            } catch (GenericCatalogException e) {
-                throw new RuntimeException(e);
-            }
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
+        }
 
         return placementList;
     }

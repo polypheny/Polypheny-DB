@@ -16,52 +16,52 @@
 
 package org.polypheny.db.partition;
 
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.routing.Router;
-
-import java.util.List;
 
 @Slf4j
-public class RoundRobinPartitionManager extends AbstractPartitionManager{
+public class RoundRobinPartitionManager extends AbstractPartitionManager {
 
     boolean hasUnboundPartition = false;
 
-    @Override
-    public long getTargetPartitionId(CatalogTable catalogTable, String columnValue) {
-        log.debug("RoundRobinPartitionManager getPartitionId()");
 
+    @Override
+    public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
+        log.debug( "RoundRobinPartitionManager getPartitionId()" );
 
         return -1;
     }
 
+
     @Override
-    public boolean validatePartitionDistribution(CatalogTable table) {
-        log.debug("RoundRobinPartitionManager validPartitionDistribution()");
+    public boolean validatePartitionDistribution( CatalogTable table ) {
+        log.debug( "RoundRobinPartitionManager validPartitionDistribution()" );
         return false;
     }
 
-    //Needed when columnPlacements are being dropped
+
+    // Needed when columnPlacements are being dropped
     @Override
-    public boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId){
+    public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
         return false;
 
     }
 
+
     @Override
-    public List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable,  List<Long> partitionIds) {
+    public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
         return null;
     }
 
+
     @Override
-    public boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames) {
-        super.validatePartitionSetup(partitionQualifiers,numPartitions, partitionNames);
+    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
+        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames );
         return false;
     }
+
 
     @Override
     public boolean allowsUnboundPartition() {

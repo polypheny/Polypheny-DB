@@ -107,7 +107,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.start();
         SqlNode parsed;
-        log.debug("SQL: " + sql);
+        log.debug( "SQL: " + sql );
 
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );

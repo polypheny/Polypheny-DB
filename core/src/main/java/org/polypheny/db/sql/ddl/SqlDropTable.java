@@ -119,10 +119,9 @@ public class SqlDropTable extends SqlDropObject {
             }
         }
 
-
         // Delete data from the stores and remove the column placement
         try {
-            table.setFlaggedForDeletion(true);
+            table.setFlaggedForDeletion( true );
             for ( int storeId : table.placementsByStore.keySet() ) {
                 // Delete table on store
                 StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
@@ -136,7 +135,7 @@ public class SqlDropTable extends SqlDropObject {
                 }
             }
         } catch ( GenericCatalogException e ) {
-            table.setFlaggedForDeletion(false);
+            table.setFlaggedForDeletion( false );
             throw new PolyphenyDbContextException( "Exception while deleting data from stores.", e );
         }
 
@@ -146,7 +145,7 @@ public class SqlDropTable extends SqlDropObject {
                 catalog.deleteForeignKey( foreignKey.id );
             }
         } catch ( GenericCatalogException e ) {
-            table.setFlaggedForDeletion(false);
+            table.setFlaggedForDeletion( false );
             throw new PolyphenyDbContextException( "Exception while deleting self-referencing foreign key constraints.", e );
         }
 
@@ -157,7 +156,7 @@ public class SqlDropTable extends SqlDropObject {
                 catalog.deleteIndex( index.id );
             }
         } catch ( GenericCatalogException | UnknownIndexException e ) {
-            table.setFlaggedForDeletion(false);
+            table.setFlaggedForDeletion( false );
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
         }
 
@@ -175,7 +174,7 @@ public class SqlDropTable extends SqlDropObject {
                 catalog.deleteConstraint( constraint.id );
             }
         } catch ( GenericCatalogException e ) {
-            table.setFlaggedForDeletion(false);
+            table.setFlaggedForDeletion( false );
             throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
         }
 
@@ -185,7 +184,7 @@ public class SqlDropTable extends SqlDropObject {
                 catalog.deleteColumn( columnId );
             }
         } catch ( GenericCatalogException e ) {
-            table.setFlaggedForDeletion(false);
+            table.setFlaggedForDeletion( false );
             throw new PolyphenyDbContextException( "Exception while dropping columns.", e );
         }
 
@@ -193,7 +192,7 @@ public class SqlDropTable extends SqlDropObject {
         try {
             catalog.deleteTable( table.id );
         } catch ( GenericCatalogException | UnknownTableException e ) {
-            table.setFlaggedForDeletion(false);
+            table.setFlaggedForDeletion( false );
             throw new PolyphenyDbContextException( "Exception while dropping the table.", e );
         }
 

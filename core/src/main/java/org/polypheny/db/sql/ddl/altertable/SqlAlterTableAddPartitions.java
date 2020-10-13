@@ -17,28 +17,25 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.*;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
@@ -54,21 +51,26 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     List<SqlIdentifier> partitionNamesList;
     List<SqlIdentifier> partitionQualifierList;
 
-    public SqlAlterTableAddPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier partitionColumn, SqlIdentifier partitionType, int numPartitions,    List<SqlIdentifier> partitionNamesList, List<SqlIdentifier> partitionQualifierList) {
-        super(pos);
-        this.table = Objects.requireNonNull(table);
-        this.partitionType= Objects.requireNonNull(partitionType);
-        this.partitionColumn = Objects.requireNonNull(partitionColumn);
+
+    public SqlAlterTableAddPartitions( SqlParserPos pos, SqlIdentifier table, SqlIdentifier partitionColumn, SqlIdentifier partitionType, int numPartitions, List<SqlIdentifier> partitionNamesList, List<SqlIdentifier> partitionQualifierList ) {
+        super( pos );
+        this.table = Objects.requireNonNull( table );
+        this.partitionType = Objects.requireNonNull( partitionType );
+        this.partitionColumn = Objects.requireNonNull( partitionColumn );
         this.numPartitions = numPartitions; //May be empty
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
     }
 
-    @Override
-    public List<SqlNode> getOperandList() { return ImmutableNullableList.of( table, partitionType, partitionColumn ); }
 
     @Override
-    public void unparse(SqlWriter writer, int leftPrec, int rightPrec ) {
+    public List<SqlNode> getOperandList() {
+        return ImmutableNullableList.of( table, partitionType, partitionColumn );
+    }
+
+
+    @Override
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -78,37 +80,36 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     }
 
+
     @Override
-    public void execute(Context context, Statement statement) {
+    public void execute( Context context, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         try {
             //Check if table is already partitioned
-            if ( catalogTable.partitionType == Catalog.PartitionType.NONE) {
+            if ( catalogTable.partitionType == Catalog.PartitionType.NONE ) {
                 long tableId = catalogTable.id;
 
-                //Check if specified partitionColumn is even part of the table
-                Catalog.PartitionType actualPartitionType = actualPartitionType = Catalog.PartitionType.getByName(partitionType.toString());
+                // Check if specified partitionColumn is even part of the table
+                Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName( partitionType.toString() );
 
-                long partitionColumnID = catalog.getColumn(tableId,partitionColumn.toString()).id;
-                log.debug("Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
-                        " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID);
+                long partitionColumnID = catalog.getColumn( tableId, partitionColumn.toString() ).id;
+                log.debug( "Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
+                        " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID );
 
+                // TODO maybe create partitions multithreaded
+                catalog.partitionTable( tableId, actualPartitionType, partitionColumnID, numPartitions, partitionQualifierList.stream().map( Object::toString )
+                        .collect( Collectors.toList() ), partitionNamesList.stream().map( Object::toString )
+                        .collect( Collectors.toList() ) );
 
-                //TODO maybe create partitions multithreaded
-                catalog.partitionTable(tableId, actualPartitionType, partitionColumnID, numPartitions, partitionQualifierList.stream().map(Object::toString)
-                        .collect(Collectors.toList()), partitionNamesList.stream().map(Object::toString)
-                        .collect(Collectors.toList()));
-
-                log.debug("Table: '" + catalogTable.name + "' has been partitioned on columnId '"
-                        + catalogTable.columnIds.get(catalogTable.columnIds.indexOf(partitionColumnID)) +  "' ");
+                log.debug( "Table: '" + catalogTable.name + "' has been partitioned on columnId '"
+                        + catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) + "' " );
                 //
+            } else {
+                throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
             }
-            else{
-                throw new RuntimeException("Table '" + catalogTable.name + "' is already partitioned");
-            }
-        } catch (UnknownPartitionTypeException | UnknownColumnException  | UnknownTableException | UnknownPartitionException | GenericCatalogException e) {
+        } catch ( UnknownPartitionTypeException | UnknownColumnException | UnknownTableException | UnknownPartitionException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

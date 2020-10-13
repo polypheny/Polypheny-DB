@@ -130,7 +130,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
                         null,
                         null,
                         null,
-                        null);
+                        null );
                 // Add column on store
                 storeInstance.addColumn( context, catalogTable, catalogColumn );
                 // Copy the data to the newly added column placements

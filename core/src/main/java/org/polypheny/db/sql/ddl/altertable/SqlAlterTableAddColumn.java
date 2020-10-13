@@ -206,7 +206,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                         null, // Will be set later
                         null, // Will be set later
                         null,
-                        null); // Will be set later
+                        null ); // Will be set later
                 StoreManager.getInstance().getStore( store.getStoreId() ).addColumn( context, catalogTable, addedColumn );
             }
 

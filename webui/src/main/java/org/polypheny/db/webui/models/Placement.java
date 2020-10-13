@@ -35,17 +35,20 @@ public class Placement {
     boolean isPartitioned;
     List<String> partitionNames;
 
-    public Placement ( final boolean isPartitioned, final List<String> partitionNames ) {
+
+    public Placement( final boolean isPartitioned, final List<String> partitionNames ) {
         this.isPartitioned = isPartitioned;
         this.partitionNames = partitionNames;
     }
 
-    public Placement ( final Throwable exception ) {
+
+    public Placement( final Throwable exception ) {
         this.exception = exception;
     }
 
-    public Placement addStore ( final Store s ) {
-        if( s.columnPlacements.size() > 0 ){
+
+    public Placement addStore( final Store s ) {
+        if ( s.columnPlacements.size() > 0 ) {
             this.stores.add( s );
         }
         return this;
@@ -69,7 +72,7 @@ public class Placement {
                 final List<CatalogColumnPlacement> columnPlacements,
                 final List<Long> partitionKeys,
                 final long numPartitions,
-                final PartitionType partitionType) {
+                final PartitionType partitionType ) {
             this.uniqueName = store.getUniqueName();
             this.adapterName = store.getAdapterName();
             this.dataReadOnly = store.isDataReadOnly();

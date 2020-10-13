@@ -18,8 +18,6 @@ package org.polypheny.db.schema;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-
 import lombok.Getter;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Queryable;

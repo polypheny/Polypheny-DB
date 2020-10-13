@@ -19,22 +19,22 @@ import org.polypheny.db.catalog.Catalog;
 
 public class PartitionManagerFactory {
 
-    public PartitionManager getInstance(Catalog.PartitionType partitionType){
+    public PartitionManager getInstance( Catalog.PartitionType partitionType ) {
 
-            switch (partitionType){
-                case HASH:
-                    return new HashPartitionManager();
+        switch ( partitionType ) {
+            case HASH:
+                return new HashPartitionManager();
 
-                case LIST:
-                    return new ListPartitionManager();
+            case LIST:
+                return new ListPartitionManager();
 
-                case RANGE:
-                    return new RangePartitionManager();
+            case RANGE:
+                return new RangePartitionManager();
 
-                case ROUNDROBIN:
-                    return new RoundRobinPartitionManager();
+            case ROUNDROBIN:
+                return new RoundRobinPartitionManager();
 
-            }
+        }
 
         return null;
     }

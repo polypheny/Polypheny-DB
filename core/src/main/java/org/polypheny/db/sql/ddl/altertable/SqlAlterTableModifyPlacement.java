@@ -24,27 +24,24 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
-
-import org.polypheny.db.catalog.entity.*;
-import org.polypheny.db.catalog.exceptions.*;
-import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.partition.PartitionManager;
-import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -70,7 +67,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     List<SqlIdentifier> partitionNamesList;
 
 
-    public SqlAlterTableModifyPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList,List<SqlIdentifier> partitionNamesList ) {
+    public SqlAlterTableModifyPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
@@ -106,8 +103,8 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
 
         //You can't partition placements if the table is not partitioned
-        if (catalogTable.isPartitioned == false && ( !partitionList.isEmpty() || !partitionNamesList.isEmpty())){
-            throw new RuntimeException(" Partition Placement is not allowed for unpartitioned table '"+ catalogTable.name +"'");
+        if ( catalogTable.isPartitioned == false && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
+            throw new RuntimeException( " Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 
         List<Long> columnIds = new LinkedList<>();
@@ -155,14 +152,14 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         if ( existingPlacements.size() < 2 ) {
                             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                         }
-                        //Check if this placement would be the last columnPlacemnt with all partitions
-                        if ( catalogTable.isPartitioned ){
+                        // Check if this placement would be the last columnPlacemnt with all partitions
+                        if ( catalogTable.isPartitioned ) {
                             PartitionManagerFactory managerFactory = new PartitionManagerFactory();
-                            PartitionManager partitionManager = managerFactory.getInstance(catalogTable.partitionType);
+                            PartitionManager partitionManager = managerFactory.getInstance( catalogTable.partitionType );
 
-                            if ( !partitionManager.probePartitionDistributionChange(catalogTable, placement.storeId, placement.columnId )) {
-                                throw new RuntimeException("Validation of partition distribution failed. Placement: '"
-                                        + placement.storeUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions");
+                            if ( !partitionManager.probePartitionDistributionChange( catalogTable, placement.storeId, placement.columnId ) ) {
+                                throw new RuntimeException( "Validation of partition distribution failed. Placement: '"
+                                        + placement.storeUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions" );
                             }
                         }
                         // Drop Column on store
@@ -173,60 +170,48 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                 }
             }
 
-
-
-
-
-
-
             List<Long> tempPartitionList = new ArrayList<Long>();
-            //Select partitions to create on this placement
-            if (catalogTable.isPartitioned) {
+            // Select partitions to create on this placement
+            if ( catalogTable.isPartitioned ) {
                 long tableId = catalogTable.id;
-                //If index partitions are specified
+                // If index partitions are specified
                 if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
-                    //First convert specified index to correct partitionId
-                    for (int partitionId : partitionList) {
-                        //check if specified partition index is even part of table and if so get corresponding uniquePartId
+                    // First convert specified index to correct partitionId
+                    for ( int partitionId : partitionList ) {
+                        // Check if specified partition index is even part of table and if so get corresponding uniquePartId
                         try {
-                            tempPartitionList.add(catalogTable.partitionIds.get(partitionId));
-                        } catch (IndexOutOfBoundsException e) {
-                            throw new RuntimeException("Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                                    + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions");
+                            tempPartitionList.add( catalogTable.partitionIds.get( partitionId ) );
+                        } catch ( IndexOutOfBoundsException e ) {
+                            throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
+                                    + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions" );
                         }
                     }
-                    catalog.updatePartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id, tempPartitionList);
+                    catalog.updatePartitionsOnDataPlacement( storeInstance.getStoreId(), catalogTable.id, tempPartitionList );
                 }
-                //If name partitions are specified
-                else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty()){
-                    List<CatalogPartition> catalogPartitions = catalog.getPartitions(tableId);
-                    for (String partitionName : partitionNamesList.stream().map(Object::toString)
-                            .collect(Collectors.toList()) ){
+                // If name partitions are specified
+                else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty() ) {
+                    List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
+                    for ( String partitionName : partitionNamesList.stream().map( Object::toString )
+                            .collect( Collectors.toList() ) ) {
                         boolean isPartOfTable = false;
-                        for ( CatalogPartition catalogPartition : catalogPartitions) {
-                            if ( partitionName.equals(catalogPartition.partitionName.toLowerCase())) {
-                                tempPartitionList.add(catalogPartition.id);
+                        for ( CatalogPartition catalogPartition : catalogPartitions ) {
+                            if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
+                                tempPartitionList.add( catalogPartition.id );
                                 isPartOfTable = true;
                                 break;
                             }
                         }
-                        if ( !isPartOfTable ){
-                            throw new RuntimeException("Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                                    + catalogTable.name + "', has only " + catalog.getPartitionNames(tableId) + " partitions");
+                        if ( !isPartOfTable ) {
+                            throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
+                                    + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
 
                         }
                     }
-                    catalog.updatePartitionsOnDataPlacement(storeInstance.getStoreId(), catalogTable.id, tempPartitionList);
+                    catalog.updatePartitionsOnDataPlacement( storeInstance.getStoreId(), catalogTable.id, tempPartitionList );
                 }
 
 
             }
-
-
-
-
-
-
 
             // Which columns to add
             List<CatalogColumn> addedColumns = new LinkedList<>();
@@ -246,7 +231,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                             null,
                             null,
                             null,
-                            tempPartitionList);
+                            tempPartitionList );
                     // Add column on store
                     storeInstance.addColumn( context, catalogTable, Catalog.getInstance().getColumn( cid ) );
                     // Add to list of columns for which we need to copy data
@@ -259,7 +244,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             if ( addedColumns.size() > 0 ) {
                 dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
             }
-        } catch (GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownStoreException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownStoreException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

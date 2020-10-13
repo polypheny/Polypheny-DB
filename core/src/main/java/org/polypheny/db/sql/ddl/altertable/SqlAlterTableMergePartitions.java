@@ -17,25 +17,20 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.*;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.ImmutableNullableList;
-
-import java.util.List;
-import java.util.Objects;
-
-import static org.polypheny.db.util.Static.RESOURCE;
 
 
 /**
@@ -46,16 +41,21 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
 
     private final SqlIdentifier table;
 
-    public SqlAlterTableMergePartitions(SqlParserPos pos, SqlIdentifier table) {
-        super(pos);
-        this.table = Objects.requireNonNull(table);
+
+    public SqlAlterTableMergePartitions( SqlParserPos pos, SqlIdentifier table ) {
+        super( pos );
+        this.table = Objects.requireNonNull( table );
     }
 
-    @Override
-    public List<SqlNode> getOperandList() { return ImmutableNullableList.of( table ); }
 
     @Override
-    public void unparse(SqlWriter writer, int leftPrec, int rightPrec ) {
+    public List<SqlNode> getOperandList() {
+        return ImmutableNullableList.of( table );
+    }
+
+
+    @Override
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -63,28 +63,28 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         writer.keyword( "PARTITIONS" );
     }
 
+
     @Override
-    public void execute(Context context, Statement statement) {
+    public void execute( Context context, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         try {
-            //Check if table is even partitioned
-            if ( catalogTable.partitionType != Catalog.PartitionType.NONE) {
+            // Check if table is even partitioned
+            if ( catalogTable.partitionType != Catalog.PartitionType.NONE ) {
                 long tableId = catalogTable.id;
 
-                log.debug("Merging partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
-                        " on schema: " + catalogTable.getSchemaName());
+                log.debug( "Merging partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
+                        " on schema: " + catalogTable.getSchemaName() );
 
-                //TODO Create partitoins multithreaded
-                catalog.mergeTable(tableId);
+                // TODO Create partitoins multithreaded
+                catalog.mergeTable( tableId );
 
-                log.debug("Table: '" + catalogTable.name + "' has been merged");
+                log.debug( "Table: '" + catalogTable.name + "' has been merged" );
+            } else {
+                throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned at all" );
             }
-            else{
-                throw new RuntimeException("Table '" + catalogTable.name + "' is not partitioned at all");
-            }
-        } catch (UnknownTableException e) {
+        } catch ( UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

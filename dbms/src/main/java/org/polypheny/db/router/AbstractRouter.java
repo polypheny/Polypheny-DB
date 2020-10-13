@@ -29,15 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-
-import com.sun.jna.platform.win32.WinDef;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
@@ -68,7 +65,12 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.*;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.schema.LogicalTable;
@@ -90,7 +92,7 @@ public abstract class AbstractRouter implements Router {
     final Catalog catalog = Catalog.getInstance();
 
 
-    private Map<Integer,List<String>> filterMap = new HashMap<Integer, List<String>>();
+    private Map<Integer, List<String>> filterMap = new HashMap<Integer, List<String>>();
     private static final Cache<Integer, RelNode> joinedTableScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
@@ -171,64 +173,57 @@ public abstract class AbstractRouter implements Router {
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
 
-            //Check if partition used in general to reduce overhead if not for unpartitioned
-            if ( node instanceof  LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
+            // Check if partition used in general to reduce overhead if not for unpartitioned
+            if ( node instanceof LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
 
                 RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
 
                 if ( table.getTable() instanceof LogicalTable ) {
                     LogicalTable t = ((LogicalTable) table.getTable());
                     CatalogTable catalogTable;
-                  try{
-                    catalogTable = Catalog.getInstance().getTable( t.getTableId() );
-                    } catch (UnknownTableException | GenericCatalogException e ) {
+                    try {
+                        catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+                    } catch ( UnknownTableException | GenericCatalogException e ) {
                         throw new RuntimeException( "Unknown table" );
                     }
-                  if ( catalogTable.isPartitioned ) {
-                      WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
-                      node.accept(new RelShuttleImpl() {
-                          @Override
-                          public RelNode visit(LogicalFilter filter) {
-                              super.visit(filter);
-                              filter.accept(whereClauseVisitor);
-                              return filter;
-                          }
-                      });
+                    if ( catalogTable.isPartitioned ) {
+                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
+                        node.accept( new RelShuttleImpl() {
+                            @Override
+                            public RelNode visit( LogicalFilter filter ) {
+                                super.visit( filter );
+                                filter.accept( whereClauseVisitor );
+                                return filter;
+                            }
+                        } );
 
-                      if ( whereClauseVisitor.valueIdentified ) {
-                          List<Object> values = whereClauseVisitor.getValues().stream().map(Object::toString)
-                                  .collect(Collectors.toList());
-                          int scanId = 0;
-                          if (!values.isEmpty()) {
-                              scanId = ((LogicalFilter) node).getInput().getId();
-                              filterMap.put(scanId, whereClauseVisitor.getValues().stream().map(Object::toString)
-                                      .collect(Collectors.toList()));
-                          }
-                          buildDql( node.getInput( i ), builder, statement, cluster );
-                          filterMap.remove(scanId);
-                      }
-                      else{
-                          buildDql( node.getInput( i ), builder, statement, cluster );
-                      }
-                  }
-                  else{
-                      buildDql( node.getInput( i ), builder, statement, cluster );
-                  }
+                        if ( whereClauseVisitor.valueIdentified ) {
+                            List<Object> values = whereClauseVisitor.getValues().stream().map( Object::toString )
+                                    .collect( Collectors.toList() );
+                            int scanId = 0;
+                            if ( !values.isEmpty() ) {
+                                scanId = ((LogicalFilter) node).getInput().getId();
+                                filterMap.put( scanId, whereClauseVisitor.getValues().stream().map( Object::toString )
+                                        .collect( Collectors.toList() ) );
+                            }
+                            buildDql( node.getInput( i ), builder, statement, cluster );
+                            filterMap.remove( scanId );
+                        } else {
+                            buildDql( node.getInput( i ), builder, statement, cluster );
+                        }
+                    } else {
+                        buildDql( node.getInput( i ), builder, statement, cluster );
+                    }
                 }
-            }else{
+            } else {
                 buildDql( node.getInput( i ), builder, statement, cluster );
             }
 
 
         }
 
-
-
-
-
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
-
 
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
@@ -237,50 +232,45 @@ public abstract class AbstractRouter implements Router {
                 try {
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
 
-                    //Check if table is even partitoned
+                    // Check if table is even partitoned
                     if ( catalogTable.isPartitioned ) {
 
-                       log.debug("VALUE from Map: " + filterMap.get(node.getId()) + " id: " + node.getId());
+                        log.debug( "VALUE from Map: " + filterMap.get( node.getId() ) + " id: " + node.getId() );
 
-
-                        List<String> partitionValues = filterMap.get(node.getId());
+                        List<String> partitionValues = filterMap.get( node.getId() );
 
                         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-                        PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
+                        PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
                         if ( partitionValues != null ) {
-                            log.debug("TableID: "+ t.getTableId() + " is partitioned on column: " + catalogTable.partitionColumnId
-                                    + " - " + catalog.getColumn(catalogTable.partitionColumnId).name);
-                            if ( partitionValues.size() == 1){
+                            log.debug( "TableID: " + t.getTableId() + " is partitioned on column: " + catalogTable.partitionColumnId
+                                    + " - " + catalog.getColumn( catalogTable.partitionColumnId ).name );
+                            if ( partitionValues.size() == 1 ) {
                                 List<Long> identPartitions = new ArrayList<>();
-                                for (String partitionValue: partitionValues) {
-                                    log.debug("Extracted PartitionValue: " + partitionValue);
-                                    long identPart = partitionManager.getTargetPartitionId(catalogTable, partitionValue);
-                                    identPartitions.add(identPart);
-                                    log.debug("Identified PartitionId: " + identPart + " for value: " + partitionValue);
+                                for ( String partitionValue : partitionValues ) {
+                                    log.debug( "Extracted PartitionValue: " + partitionValue );
+                                    long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                    identPartitions.add( identPart );
+                                    log.debug( "Identified PartitionId: " + identPart + " for value: " + partitionValue );
                                 }
-                                placements = partitionManager.getRelevantPlacements(catalogTable, identPartitions);
+                                placements = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
+                            } else {
+                                placements = partitionManager.getRelevantPlacements( catalogTable, null );
                             }
-                            else{
-                                placements = partitionManager.getRelevantPlacements(catalogTable, null);
-                            }
-                        }
-                        else{
-                            //ToDO Chnage to worstcase
-                            placements = partitionManager.getRelevantPlacements(catalogTable, null);
+                        } else {
+                            // TODO Chnage to worstcase
+                            placements = partitionManager.getRelevantPlacements( catalogTable, null );
                             //placements = selectPlacement( node, catalogTable );
                         }
 
-                    }
-                    else{
-                        log.debug(catalogTable.name + " is NOT partitioned - Routing will be easy");
+                    } else {
+                        log.debug( catalogTable.name + " is NOT partitioned - Routing will be easy" );
                         placements = selectPlacement( node, catalogTable );
                     }
 
                     //
-                } catch (UnknownTableException | GenericCatalogException  e ) {
+                } catch ( UnknownTableException | GenericCatalogException e ) {
                     throw new RuntimeException( "Unknown table" );
                 }
-
 
                 return builder.push( buildJoinedTableScan( statement, cluster, placements ) );
 
@@ -339,23 +329,21 @@ public abstract class AbstractRouter implements Router {
                     throw new RuntimeException( e );
                 }
 
-                if(catalogTable.isPartitioned) {
-                    log.debug("\nListing all relevant stores for table: '" + catalogTable.name
-                            + "' and all partitions: " + catalogTable.partitionIds);
-                    for (CatalogColumnPlacement dataPlacement : pkPlacements) {
+                if ( catalogTable.isPartitioned ) {
+                    log.debug( "\nListing all relevant stores for table: '" + catalogTable.name
+                            + "' and all partitions: " + catalogTable.partitionIds );
+                    for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
                         //Check
-                        log.debug("\t\t -> '" + dataPlacement.storeUniqueName + "' " +
-                                catalog.getPartitionsOnDataPlacement(dataPlacement.storeId, dataPlacement.tableId) +
-                                "\t" + catalog.getPartitionsIndexOnDataPlacement(dataPlacement.storeId, dataPlacement.tableId));
+                        log.debug( "\t\t -> '" + dataPlacement.storeUniqueName + "' " +
+                                catalog.getPartitionsOnDataPlacement( dataPlacement.storeId, dataPlacement.tableId ) +
+                                "\t" + catalog.getPartitionsIndexOnDataPlacement( dataPlacement.storeId, dataPlacement.tableId ) );
                     }
                 }
-
 
                 // Execute on all primary key placements
                 List<TableModify> modifies = new ArrayList<>( pkPlacements.size() );
                 for ( CatalogColumnPlacement pkPlacement : pkPlacements ) {
                     CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
-
 
                     List<String> qualifiedTableName = ImmutableList.of(
                             PolySchemaBuilder.buildStoreSchemaName(
@@ -403,170 +391,155 @@ public abstract class AbstractRouter implements Router {
                         boolean worstcaserouting = false;
 
                         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-                        PartitionManager partitionManager = partitionManagerFactory.getInstance(catalogTable.partitionType);
-                        partitionManager.validatePartitionDistribution(catalogTable);
+                        PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
+                        partitionManager.validatePartitionDistribution( catalogTable );
 
-
-
-                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor(statement, catalogTable.columnIds.indexOf(catalogTable.partitionColumnId));
-                        node.accept(new RelShuttleImpl(){
+                        WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
+                        node.accept( new RelShuttleImpl() {
                             @Override
-                            public RelNode visit(LogicalFilter filter) {
-                                super.visit(filter);
-                                filter.accept(whereClauseVisitor);
+                            public RelNode visit( LogicalFilter filter ) {
+                                super.visit( filter );
+                                filter.accept( whereClauseVisitor );
                                 return filter;
                             }
-                        });
+                        } );
 
                         List<String> whereClauseValue = null;
-                        if (! whereClauseVisitor.getValues().isEmpty() ){
-                            if (whereClauseVisitor.getValues().size() == 1) {
-                                whereClauseValue = whereClauseVisitor.getValues().stream().map(Object::toString)
-                                        .collect(Collectors.toList());
-                                log.debug("Found Where Clause Values: " + whereClauseValue);
+                        if ( !whereClauseVisitor.getValues().isEmpty() ) {
+                            if ( whereClauseVisitor.getValues().size() == 1 ) {
+                                whereClauseValue = whereClauseVisitor.getValues().stream().map( Object::toString )
+                                        .collect( Collectors.toList() );
+                                log.debug( "Found Where Clause Values: " + whereClauseValue );
                                 worstcaserouting = true;
                             }
                         }
 
                         long identPart = -1;
 
-                        String partitionValue ="";
+                        String partitionValue = "";
                         //set true if partitionColumn is part of UPDATE Statement, else assume worst case routing
                         boolean partitionColumnIdentified = false;
-                        if (((LogicalTableModify) node).getOperation() == Operation.UPDATE) {
+                        if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
                             // In case of update always use worst case routing for now.
                             //Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
                             int index = 0;
 
-                            for (String cn : updateColumnList) {
+                            for ( String cn : updateColumnList ) {
                                 try {
-                                    if (catalog.getColumn(catalogTable.id, cn).id == catalogTable.partitionColumnId) {
-                                        log.debug(" UPDATE: Found PartitionColumnID Match: '" + catalogTable.partitionColumnId + "' at index: " + index);
+                                    if ( catalog.getColumn( catalogTable.id, cn ).id == catalogTable.partitionColumnId ) {
+                                        log.debug( " UPDATE: Found PartitionColumnID Match: '" + catalogTable.partitionColumnId + "' at index: " + index );
 
                                         //Routing/Locking can now be executed on certain partitions
                                         partitionColumnIdentified = true;
-                                        partitionValue = sourceExpressionList.get(index).toString().replace("'", "");
-                                        log.debug("UPDATE: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
-                                                + partitionManager.getTargetPartitionId(catalogTable, partitionValue));
-                                        identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                                        partitionValue = sourceExpressionList.get( index ).toString().replace( "'", "" );
+                                        log.debug( "UPDATE: partitionColumn-value: '" + partitionValue + "' should be put on partition: "
+                                                + partitionManager.getTargetPartitionId( catalogTable, partitionValue ) );
+                                        identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                         break;
                                     }
-                                } catch (GenericCatalogException | UnknownColumnException e) {
+                                } catch ( GenericCatalogException | UnknownColumnException e ) {
                                     e.printStackTrace();
                                 }
                                 index++;
                             }
 
-                            //If only one where clause op
-                            if ( whereClauseValue != null && partitionColumnIdentified ){
+                            // If only one where clause op
+                            if ( whereClauseValue != null && partitionColumnIdentified ) {
 
-                                if ( whereClauseValue.size() == 1 && identPart == partitionManager.getTargetPartitionId(catalogTable, whereClauseValue.get(0))){
+                                if ( whereClauseValue.size() == 1 && identPart == partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) ) ) {
                                     worstcaserouting = false;
-                                }
-                                else{
+                                } else {
                                     worstcaserouting = true;
-                                    log.debug("Activate WORSTCASE ROUTING ");
+                                    log.debug( "Activate WORSTCASE ROUTING " );
                                 }
-                            }else if (whereClauseValue == null){
+                            } else if ( whereClauseValue == null ) {
                                 worstcaserouting = true;
-                                log.debug("Activate WORSTCASE ROUTING no WHERE clause specified for partitioncolumn");
-                            }
-                            else if ( whereClauseValue != null && !partitionColumnIdentified){
-                                if ( whereClauseValue.size() == 1){
-                                    identPart = (int) partitionManager.getTargetPartitionId(catalogTable, whereClauseValue.get(0));
+                                log.debug( "Activate WORSTCASE ROUTING no WHERE clause specified for partitioncolumn" );
+                            } else if ( whereClauseValue != null && !partitionColumnIdentified ) {
+                                if ( whereClauseValue.size() == 1 ) {
+                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) );
                                     worstcaserouting = false;
-                                }
-                                else{
+                                } else {
                                     worstcaserouting = true;
                                 }
                             }
-                            //Since update needs to take current partition and target partition into account
+                            // Since update needs to take current partition and target partition into account
                             //partitionColumnIdentified = false;
 
-
-                        } else if (((LogicalTableModify) node).getOperation() == Operation.INSERT) {
+                        } else if ( ((LogicalTableModify) node).getOperation() == Operation.INSERT ) {
                             int i;
-                            if (((LogicalTableModify) node).getInput() instanceof LogicalValues) {
+                            if ( ((LogicalTableModify) node).getInput() instanceof LogicalValues ) {
 
                                 if ( ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.size() == 1 ) {
-                                    for (i = 0; i < catalogTable.columnIds.size(); i++) {
-                                        if (catalogTable.columnIds.get(i) == catalogTable.partitionColumnId) {
-                                            log.debug("INSERT: Found PartitionColumnID: '" + catalogTable.partitionColumnId + "' at column index: " + i);
+                                    for ( i = 0; i < catalogTable.columnIds.size(); i++ ) {
+                                        if ( catalogTable.columnIds.get( i ) == catalogTable.partitionColumnId ) {
+                                            log.debug( "INSERT: Found PartitionColumnID: '" + catalogTable.partitionColumnId + "' at column index: " + i );
                                             partitionColumnIdentified = true;
                                             worstcaserouting = false;
-                                            partitionValue = ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.get(0).get(i).toString().replace("'", "");
-                                            identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                                            partitionValue = ((LogicalValues) ((LogicalTableModify) node).getInput()).tuples.get( 0 ).get( i ).toString().replace( "'", "" );
+                                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                             break;
                                         }
                                     }
-                                }
-                                else {
+                                } else {
                                     worstcaserouting = true;
                                 }
-                            }
-                            else if (((LogicalTableModify) node).getInput() instanceof LogicalProject
-                                    &&  ((LogicalProject)((LogicalTableModify) node).getInput()).getInput() instanceof LogicalValues) {
+                            } else if ( ((LogicalTableModify) node).getInput() instanceof LogicalProject
+                                    && ((LogicalProject) ((LogicalTableModify) node).getInput()).getInput() instanceof LogicalValues ) {
 
                                 String partitionColumnName;
 
-                                partitionColumnName = catalog.getColumn(catalogTable.partitionColumnId).name;
-
+                                partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
 
                                 List<String> fieldNames = ((LogicalTableModify) node).getInput().getRowType().getFieldNames();
 
-                                for( i = 0; i < fieldNames.size(); i++ ){
-                                    String columnName = fieldNames.get(i);
-                                    if (partitionColumnName.equals(columnName) ){
-                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get(i).equals(SqlKind.DYNAMIC_PARAM) ){
+                                for ( i = 0; i < fieldNames.size(); i++ ) {
+                                    String columnName = fieldNames.get( i );
+                                    if ( partitionColumnName.equals( columnName ) ) {
+                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).equals( SqlKind.DYNAMIC_PARAM ) ) {
                                             worstcaserouting = true;
-                                        }else{
+                                        } else {
                                             partitionColumnIdentified = true;
-                                            partitionValue = ((LogicalTableModify) node).getInput().getChildExps().get(i).toString().replace("'", "");
-                                            identPart = (int) partitionManager.getTargetPartitionId(catalogTable, partitionValue);
+                                            partitionValue = ((LogicalTableModify) node).getInput().getChildExps().get( i ).toString().replace( "'", "" );
+                                            identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                         }
                                         break;
                                     }
                                 }
-                            }
-                            else{
+                            } else {
                                 worstcaserouting = true;
                             }
-                            //TODO Get the value of partitionColumnId ---  but first find of partitionColumn inside table
-                            log.debug("INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: " + identPart);
+                            // TODO Get the value of partitionColumnId ---  but first find of partitionColumn inside table
+                            log.debug( "INSERT: partitionColumn-value: '" + partitionValue + "' should be put on partition: " + identPart );
 
-                        }
-                        else if (((LogicalTableModify) node).getOperation() == Operation.DELETE) {
-                            if ( whereClauseValue == null ){
+                        } else if ( ((LogicalTableModify) node).getOperation() == Operation.DELETE ) {
+                            if ( whereClauseValue == null ) {
                                 worstcaserouting = true;
-                            }
-                            else{
+                            } else {
                                 if ( whereClauseValue.size() >= 2 ) {
                                     worstcaserouting = true;
                                     partitionColumnIdentified = false;
-                                }
-                                else {
+                                } else {
                                     worstcaserouting = false;
-                                    identPart = (int) partitionManager.getTargetPartitionId(catalogTable, whereClauseValue.get(0));
+                                    identPart = (int) partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) );
                                 }
                             }
 
                         }
 
+                        if ( !worstcaserouting ) {
 
-                        if (!worstcaserouting) {
-
-                            log.debug( "Get all Placements by identified Partition: " + identPart);
-                                if (!catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId).contains(identPart)) {
-                                    log.debug("DataPacement: " + pkPlacement.storeUniqueName + "."
-                                            + pkPlacement.physicalTableName + " SKIPPING since it does NOT contain identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId));
-                                    continue;
-                                } else {
-                                    log.debug("DataPacement: " + pkPlacement.storeUniqueName + "."
-                                            + pkPlacement.physicalTableName + " contains identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement(pkPlacement.storeId, pkPlacement.tableId));
-                                }
-                        }
-                        else{
-                            log.debug("PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worstcase: Routing to ALL PARTITIONS");
+                            log.debug( "Get all Placements by identified Partition: " + identPart );
+                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ).contains( identPart ) ) {
+                                log.debug( "DataPacement: " + pkPlacement.storeUniqueName + "."
+                                        + pkPlacement.physicalTableName + " SKIPPING since it does NOT contain identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ) );
+                                continue;
+                            } else {
+                                log.debug( "DataPacement: " + pkPlacement.storeUniqueName + "."
+                                        + pkPlacement.physicalTableName + " contains identified partition: '" + identPart + "' " + catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ) );
+                            }
+                        } else {
+                            log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worstcase: Routing to ALL PARTITIONS" );
                         }
 
                     }
@@ -633,14 +606,13 @@ public abstract class AbstractRouter implements Router {
             buildDml( node.getInput( i ), builder, catalogTable, placements, statement, cluster );
         }
 
-        if (log.isDebugEnabled() ) {
-            log.debug("List of Store specific ColumnPlacements: ");
-            for (CatalogColumnPlacement ccp : placements) {
-                log.debug(ccp.storeUniqueName + "." + ccp.physicalTableName + "." + ccp.getLogicalColumnName());
+        if ( log.isDebugEnabled() ) {
+            log.debug( "List of Store specific ColumnPlacements: " );
+            for ( CatalogColumnPlacement ccp : placements ) {
+                log.debug( ccp.storeUniqueName + "." + ccp.physicalTableName + "." + ccp.getLogicalColumnName() );
             }
 
         }
-
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
             RelOptTableImpl table = (RelOptTableImpl) node.getTable();
@@ -902,7 +874,8 @@ public abstract class AbstractRouter implements Router {
     }
 
 
-    private static class WhereClauseVisitor extends RexShuttle  {
+    private static class WhereClauseVisitor extends RexShuttle {
+
         private final Statement statement;
 
         private Object value = null;
@@ -913,44 +886,44 @@ public abstract class AbstractRouter implements Router {
         private boolean valueIdentified = false;
 
 
-        public WhereClauseVisitor(Statement statement, long partitionColumnIndex) {
+        public WhereClauseVisitor( Statement statement, long partitionColumnIndex ) {
             super();
             this.statement = statement;
             this.partitionColumnIndex = partitionColumnIndex;
         }
 
+
         @Override
         public RexNode visitCall( final RexCall call ) {
-            super.visitCall(call);
+            super.visitCall( call );
 
-            if ( call.operands.size() == 2 ){
+            if ( call.operands.size() == 2 ) {
 
-                if (call.operands.get(0) instanceof RexInputRef ){
+                if ( call.operands.get( 0 ) instanceof RexInputRef ) {
 
-                    if (((RexInputRef) call.operands.get(0)).getIndex() == partitionColumnIndex) {
-                        if (call.operands.get(1) instanceof RexLiteral) {
-                            value = ((RexLiteral) call.operands.get(1)).getValueForQueryParameterizer();
-                            values.add(value);
+                    if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
+                        if ( call.operands.get( 1 ) instanceof RexLiteral ) {
+                            value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
+                            values.add( value );
                             valueIdentified = true;
-                        } else if (call.operands.get(1) instanceof RexDynamicParam) {
-                            long index = ((RexDynamicParam) call.operands.get(1)).getIndex();
-                            value = statement.getDataContext().getParameterValue(index);//.get("?" + index);
-                            values.add(value);
+                        } else if ( call.operands.get( 1 ) instanceof RexDynamicParam ) {
+                            long index = ((RexDynamicParam) call.operands.get( 1 )).getIndex();
+                            value = statement.getDataContext().getParameterValue( index );//.get("?" + index);
+                            values.add( value );
                             valueIdentified = true;
                         }
                     }
-                }
-                else if (call.operands.get(1) instanceof RexInputRef ){
+                } else if ( call.operands.get( 1 ) instanceof RexInputRef ) {
 
-                    if (((RexInputRef) call.operands.get(1)).getIndex() == partitionColumnIndex) {
-                        if (call.operands.get(0) instanceof RexLiteral) {
-                            value = ((RexLiteral) call.operands.get(0)).getValueForQueryParameterizer();
-                            values.add(value);
+                    if ( ((RexInputRef) call.operands.get( 1 )).getIndex() == partitionColumnIndex ) {
+                        if ( call.operands.get( 0 ) instanceof RexLiteral ) {
+                            value = ((RexLiteral) call.operands.get( 0 )).getValueForQueryParameterizer();
+                            values.add( value );
                             valueIdentified = true;
-                        } else if (call.operands.get(0) instanceof RexDynamicParam) {
-                            long index = ((RexDynamicParam) call.operands.get(0)).getIndex();
-                            value = statement.getDataContext().getParameterValue(index);//get("?" + index); //.getParamterValues //
-                            values.add(value);
+                        } else if ( call.operands.get( 0 ) instanceof RexDynamicParam ) {
+                            long index = ((RexDynamicParam) call.operands.get( 0 )).getIndex();
+                            value = statement.getDataContext().getParameterValue( index );//get("?" + index); //.getParamterValues //
+                            values.add( value );
                             valueIdentified = true;
                         }
                     }

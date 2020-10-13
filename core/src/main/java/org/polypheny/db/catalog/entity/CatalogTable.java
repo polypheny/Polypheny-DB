@@ -20,16 +20,17 @@ package org.polypheny.db.catalog.entity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.Catalog.PartitionType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.Catalog.TableType;
 
 
 /**
@@ -70,6 +71,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     @Setter
     public boolean flaggedForDeletion = false;
 
+
     public CatalogTable(
             final long id,
             @NonNull final String name,
@@ -96,9 +98,9 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
 
     }
 
-    // Hennlo
-    // numPartitons can be empty and calculated based on the partition key
-    // Only used when explicitly working with partitions to not alter existing call stack and logic
+
+    // Note (Hennlo): numPartitons can be empty and calculated based on the partition key
+    //  Only used when explicitly working with partitions to not alter existing call stack and logic
     public CatalogTable(
             final long id,
             @NonNull final String name,
@@ -114,7 +116,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final long numPartitions,
             final PartitionType partitionType,
             final ImmutableList<Long> partitionIds,
-            final long partitionColumnId) {
+            final long partitionColumnId ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;

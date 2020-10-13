@@ -24,9 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -116,16 +114,16 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString() , t.numPartitions );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString(), t.numPartitions );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
             } );
             catalog.getPartitions( null, null, null ).forEach( p -> {
-                partitionInformation.addRow( p.id, p.partitionName, p.tableId, p.partitionQualifiers);
+                partitionInformation.addRow( p.id, p.partitionName, p.tableId, p.partitionQualifiers );
             } );
 
-        } catch ( NullPointerException  | GenericCatalogException | UnknownSchemaException e ) {
+        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
             log.error( "Exception while reset catalog information page", e );
         }
     }

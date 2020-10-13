@@ -103,7 +103,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
                                 null, // Will be set later
                                 null, // Will be set later
                                 null,
-                                null); // Will be set later
+                                null ); // Will be set later
                         StoreManager.getInstance().getStore( ccp.storeId ).addColumn(
                                 context,
                                 Catalog.getInstance().getTable( ccp.tableId ),

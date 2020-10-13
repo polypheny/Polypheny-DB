@@ -1,24 +1,22 @@
 package org.polypheny.db.partition;
 
-import org.polypheny.db.catalog.Catalog;
+import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-
-import java.util.List;
 
 public interface PartitionManager {
 
 
-    //returns the Index of the partition where to place the object
-    abstract long getTargetPartitionId(CatalogTable catalogTable, String columnValue);
+    // Returns the Index of the partition where to place the object
+    long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
-    abstract boolean validatePartitionDistribution(CatalogTable table);
+    boolean validatePartitionDistribution( CatalogTable table );
 
-    abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
+    boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
 
-    abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable,  List<Long> partitionIds);
+    List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
-    abstract boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames);
+    boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames );
 
-    abstract boolean allowsUnboundPartition();
+    boolean allowsUnboundPartition();
 }

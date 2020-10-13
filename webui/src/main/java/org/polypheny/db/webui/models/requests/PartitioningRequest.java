@@ -21,13 +21,16 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 
 
 public class PartitioningRequest {
+
     public String schemaName;
     public String tableName;
     public PartitionType method;
     public int numPartitions;
     public String column;
 
+
     public static class ModifyPartitionRequest {
+
         public String schemaName;
         public String tableName;
         public String[] partitions;

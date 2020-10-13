@@ -16,25 +16,17 @@
 
 package org.polypheny.db.partition;
 
+import java.util.List;
 import lombok.Getter;
-import lombok.Setter;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 
-import java.util.List;
-
-//Possible extensions could be range partitioning and hash partitioning
-//Need to check if round robin would be sufficient as well or basically just needed to
-// distribute workload for LoadBalancing
-//Maybe separate partition in the technical-partition itself.
-//And meta information about the partiton characteristics of a table
-//the latter could maybe be specified in the table as well.
-public abstract class AbstractPartitionManager implements PartitionManager{
-
-
+// Possible extensions could be range partitioning and hash partitioning
+// Need to check if round robin would be sufficient as well or basically just needed to distribute workload for LoadBalancing
+// Maybe separate partition in the technical-partition itself.
+// And meta information about the partiton characteristics of a table
+// the latter could maybe be specified in the table as well.
+public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Getter
@@ -42,22 +34,24 @@ public abstract class AbstractPartitionManager implements PartitionManager{
 
 
     //returns the Index of the partition where to place the object
-    public abstract long getTargetPartitionId(CatalogTable catalogTable, String columnValue);
+    public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
-    public abstract boolean validatePartitionDistribution(CatalogTable table);
+    public abstract boolean validatePartitionDistribution( CatalogTable table );
 
-    public abstract boolean probePartitionDistributionChange(CatalogTable catalogTable, int storeId, long columnId);
+    public abstract boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
 
-    public abstract List<CatalogColumnPlacement> getRelevantPlacements(CatalogTable catalogTable,  List<Long> partitionIds);
+    public abstract List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
-    public  boolean validatePartitionSetup(List<String> partitionQualifiers, long numPartitions, List<String> partitionNames){
 
-        if ( numPartitions == 0 && partitionNames.size() < 2){
-            throw new RuntimeException("Partition Table failed for  Can't specify partition names with less than 2 names");
+    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
+
+        if ( numPartitions == 0 && partitionNames.size() < 2 ) {
+            throw new RuntimeException( "Partition Table failed for  Can't specify partition names with less than 2 names" );
         }
 
         return true;
     }
+
 
     public abstract boolean allowsUnboundPartition();
 }

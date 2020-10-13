@@ -16,13 +16,12 @@
 
 package org.polypheny.db.catalog.entity;
 
+import java.io.Serializable;
+import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
-
-import java.io.Serializable;
-import java.util.List;
 
 @EqualsAndHashCode
 public final class CatalogPartition implements CatalogEntity, Comparable<CatalogTable> {
@@ -44,21 +43,20 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
     public final List<String> partitionQualifiers;
     public final boolean isUnbound;
 
-    //Technically a compound between primary key and partition column (+range/list)
+    // Technically a compound between primary key and partition column (+range/list)
     public final long partitionKey;
 
 
-
-    public CatalogPartition(final long id,
-                            final String partitionName,
-                            final long tableId,
-                            final long schemaId,
-                            final long databaseId,
-                            final int ownerId,
-                            @NonNull final String ownerName,
-                            final long partitionKey,
-                            final List<String> partitionQualifiers,
-                            final boolean isUnbound) {
+    public CatalogPartition( final long id,
+            final String partitionName,
+            final long tableId,
+            final long schemaId,
+            final long databaseId,
+            final int ownerId,
+            @NonNull final String ownerName,
+            final long partitionKey,
+            final List<String> partitionQualifiers,
+            final boolean isUnbound ) {
 
         this.id = id;
         this.partitionName = partitionName;
@@ -78,21 +76,25 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
         return Catalog.getInstance().getTable( tableId ).name;
     }
 
+
     @SneakyThrows
     public String getDatabaseName() {
         return Catalog.getInstance().getDatabase( databaseId ).name;
     }
+
 
     @SneakyThrows
     public String getSchemaName() {
         return Catalog.getInstance().getSchema( schemaId ).name;
     }
 
+
     @Override
-    public int compareTo(CatalogTable catalogTable) {
-        //TODO: To be implemented
+    public int compareTo( CatalogTable catalogTable ) {
+        // TODO: To be implemented
         return 0;
     }
+
 
     @Override
     public Serializable[] getParameterArray() {

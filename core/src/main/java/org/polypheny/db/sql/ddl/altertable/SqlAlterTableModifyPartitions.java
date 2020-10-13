@@ -17,33 +17,34 @@
 
 package org.polypheny.db.sql.ddl.altertable;
 
-import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogPartition;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.*;
-import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.sql.*;
-import org.polypheny.db.sql.ddl.SqlAlterTable;
-import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.util.ImmutableNullableList;
+import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static org.polypheny.db.util.Static.RESOURCE;
+import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogPartition;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.ddl.SqlAlterTable;
+import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
  * Parse tree for {@code ALTER TABLE name MODIFY PARTITIONS (partitionId [, partitonId]* ) } statement.
  */
-public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
+public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
 
     private final SqlIdentifier table;
@@ -51,7 +52,8 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
     List<Integer> partitionList;
     List<SqlIdentifier> partitionNamesList;
 
-    public SqlAlterTableModifyPartitions(SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList) {
+
+    public SqlAlterTableModifyPartitions( SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.storeName = Objects.requireNonNull( storeName );
@@ -61,11 +63,15 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
 
     }
 
-    @Override
-    public List<SqlNode> getOperandList() { return ImmutableNullableList.of( table, storeName ); }
 
     @Override
-    public void unparse(SqlWriter writer, int leftPrec, int rightPrec ) {
+    public List<SqlNode> getOperandList() {
+        return ImmutableNullableList.of( table, storeName );
+    }
+
+
+    @Override
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -77,90 +83,90 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable  {
 
     }
 
+
     @Override
-    public void execute(Context context, Statement statement) {
+    public void execute( Context context, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
         if ( !catalogTable.isPartitioned ) {
-            throw new RuntimeException("Table '" + catalogTable.name + "' is not partitioned");
+            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 
         try {
             //Check if table is already partitioned
 
-                long tableId = catalogTable.id;
+            long tableId = catalogTable.id;
 
+            if ( partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
+                throw new RuntimeException( "Empty Partition Placement is not allowed for partitioned table '" + catalogTable.name + "'" );
+            }
 
-                if ( partitionList.isEmpty() && partitionNamesList.isEmpty()){
-                    throw new RuntimeException("Empty Partition Placement is not allowed for partitioned table '"+ catalogTable.name +"'");
-                }
+            Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
+            if ( storeInstance == null ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.unknownStoreName( storeName.getSimple() ) );
+            }
+            int storeId = storeInstance.getStoreId();
+            // Check whether this placement already exists
+            if ( !catalogTable.placementsByStore.containsKey( storeId ) ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
+            }
+            // Check whether the store supports schema changes
+            if ( storeInstance.isSchemaReadOnly() ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
+            }
 
-                Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
-                if ( storeInstance == null ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.unknownStoreName( storeName.getSimple() ) );
-                }
-                int storeId = storeInstance.getStoreId();
-                // Check whether this placement already exists
-                if ( !catalogTable.placementsByStore.containsKey( storeId ) ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
-                }
-                // Check whether the store supports schema changes
-                if ( storeInstance.isSchemaReadOnly() ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-                }
+            List<Long> tempPartitionList = new ArrayList<Long>();
 
-                List<Long> tempPartitionList = new ArrayList<Long>();
-
-                //If index partitions are specified
-                if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
-                    //First convert specified index to correct partitionId
-                    for (int partitionId : partitionList) {
-                        //check if specified partition index is even part of table and if so get corresponding uniquePartId
-                        try {
-                            tempPartitionList.add(catalogTable.partitionIds.get(partitionId));
-                        } catch (IndexOutOfBoundsException e) {
-                            throw new RuntimeException("Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                                    + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions");
-                        }
+            // If index partitions are specified
+            if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
+                //First convert specified index to correct partitionId
+                for ( int partitionId : partitionList ) {
+                    // Check if specified partition index is even part of table and if so get corresponding uniquePartId
+                    try {
+                        tempPartitionList.add( catalogTable.partitionIds.get( partitionId ) );
+                    } catch ( IndexOutOfBoundsException e ) {
+                        throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
+                                + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions" );
                     }
                 }
-                //If name partitions are specified
-                else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty()){
-                    List<CatalogPartition> catalogPartitions = catalog.getPartitions(tableId);
-                    for (String partitionName : partitionNamesList.stream().map(Object::toString)
-                            .collect(Collectors.toList()) ){
-                        boolean isPartOfTable = false;
-                        for ( CatalogPartition catalogPartition : catalogPartitions) {
-                            if ( partitionName.equals(catalogPartition.partitionName.toLowerCase())) {
-                                tempPartitionList.add(catalogPartition.id);
-                                isPartOfTable = true;
-                                break;
-                            }
-                        }
-                        if ( !isPartOfTable ){
-                            throw new RuntimeException("Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                                        + catalogTable.name + "', has only " + catalog.getPartitionNames(tableId) + " partitions");
-
+            }
+            // If name partitions are specified
+            else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty() ) {
+                List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
+                for ( String partitionName : partitionNamesList.stream().map( Object::toString )
+                        .collect( Collectors.toList() ) ) {
+                    boolean isPartOfTable = false;
+                    for ( CatalogPartition catalogPartition : catalogPartitions ) {
+                        if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
+                            tempPartitionList.add( catalogPartition.id );
+                            isPartOfTable = true;
+                            break;
                         }
                     }
-                }
+                    if ( !isPartOfTable ) {
+                        throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
+                                + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
 
-                //Check if inmemory dataPartitonPlacement Map should even be chaneged and therefore start costly partitioning
-                //Avoid unnecassary partitioning when the placement is already partitoined in the same way it has been specified
-                if ( tempPartitionList.equals(catalog.getPartitionsOnDataPlacement(storeId, tableId)) ){
-                    throw new RuntimeException("WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                                    + storeName + "' already contains all specified partitions of statement: " + partitionList);
+                    }
                 }
-                //Update
-                catalog.updatePartitionsOnDataPlacement(storeId, tableId, tempPartitionList);
+            }
 
-        } catch (UnknownTableException | UnknownStoreException e) {
+            // Check if inmemory dataPartitonPlacement Map should even be chaneged and therefore start costly partitioning
+            // Avoid unnecassary partitioning when the placement is already partitoined in the same way it has been specified
+            if ( tempPartitionList.equals( catalog.getPartitionsOnDataPlacement( storeId, tableId ) ) ) {
+                throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
+                        + storeName + "' already contains all specified partitions of statement: " + partitionList );
+            }
+            //Update
+            catalog.updatePartitionsOnDataPlacement( storeId, tableId, tempPartitionList );
+
+        } catch ( UnknownTableException | UnknownStoreException e ) {
             throw new RuntimeException( e );
         }
     }
