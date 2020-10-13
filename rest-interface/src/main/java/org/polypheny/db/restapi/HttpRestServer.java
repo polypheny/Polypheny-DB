@@ -237,20 +237,21 @@ public class HttpRestServer extends QueryInterface {
             long getCount = getCounter.get();
             long patchCount = patchCounter.get();
             long postCount = postCounter.get();
+            double total = deleteCount + getCount + patchCount + postCount;
 
             counterGraph.updateGraph(
                     new String[]{ "DELETE", "GET", "PATCH", "POST" },
-                    new GraphData<>( "heap-data", new Long[]{ deleteCount, getCount, patchCount, postCount } )
+                    new GraphData<>( "requests", new Long[]{ deleteCount, getCount, patchCount, postCount } )
             );
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
             symbols.setDecimalSeparator( '.' );
             DecimalFormat df = new DecimalFormat( "#.0", symbols );
             counterTable.reset();
-            counterTable.addRow( "DELETE", df.format( deleteCount * 100 ) + " %", deleteCount );
-            counterTable.addRow( "GET", df.format( getCount * 100 ) + " %", getCount );
-            counterTable.addRow( "PATCH", df.format( patchCount * 100 ) + " %", patchCount );
-            counterTable.addRow( "POST", df.format( postCount * 100 ) + " %", postCount );
+            counterTable.addRow( "DELETE", df.format( (deleteCount / total) * 100 ) + " %", deleteCount );
+            counterTable.addRow( "GET", df.format( (getCount / total) * 100 ) + " %", getCount );
+            counterTable.addRow( "PATCH", df.format( (patchCount / total) * 100 ) + " %", patchCount );
+            counterTable.addRow( "POST", df.format( (postCount / total) * 100 ) + " %", postCount );
         }
 
 
