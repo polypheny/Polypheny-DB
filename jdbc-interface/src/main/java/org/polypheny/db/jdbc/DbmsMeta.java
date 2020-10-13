@@ -124,14 +124,16 @@ public class DbmsMeta implements ProtobufMeta {
 
     public static final boolean SEND_FIRST_FRAME_WITH_RESPONSE = false;
 
-    private static final ConcurrentMap<String, PolyphenyDbConnectionHandle> OPEN_CONNECTIONS = new ConcurrentHashMap<>();
-    private static final ConcurrentMap<String, PolyphenyDbStatementHandle> OPEN_STATEMENTS = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PolyphenyDbConnectionHandle> openConnections = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, PolyphenyDbStatementHandle> openStatements = new ConcurrentHashMap<>();
 
     final Calendar calendar = Unsafe.localCalendar();
     private final Catalog catalog = Catalog.getInstance();
 
     private final TransactionManager transactionManager;
     private final Authenticator authenticator;
+
+    private final MonitoringPage monitoringPage;
 
     /**
      * Generates ids for statements. The ids are unique across all connections created by this JdbcMeta.
@@ -142,28 +144,17 @@ public class DbmsMeta implements ProtobufMeta {
     /**
      * Creates a DbmsMeta
      */
-    DbmsMeta( TransactionManager transactionManager, Authenticator authenticator ) {
+    DbmsMeta( TransactionManager transactionManager, Authenticator authenticator, String uniqueName ) {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
 
-        // ------ Information Manager -----------
-        final InformationPage informationPage = new InformationPage( "JDBC Interface" ).fullWidth();
-        final InformationGroup informationGroupConnection = new InformationGroup( informationPage, "Connections" );
+        // Add information page
+        monitoringPage = new MonitoringPage( uniqueName );
+    }
 
-        InformationManager im = InformationManager.getInstance();
-        im.addPage( informationPage );
-        im.addGroup( informationGroupConnection );
 
-        InformationTable connectionNumberTable = new InformationTable(
-                informationGroupConnection,
-                Arrays.asList( "Attribute", "Value" ) );
-        im.registerInformation( connectionNumberTable );
-
-        informationPage.setRefreshFunction( () -> {
-            connectionNumberTable.reset();
-            connectionNumberTable.addRow( "Open Statements", "" + OPEN_STATEMENTS.size() );
-            connectionNumberTable.addRow( "Open Connections", "" + OPEN_STATEMENTS.size() );
-        } );
+    public void shutdown() {
+        monitoringPage.remove();
     }
 
 
@@ -905,7 +896,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatchProtobuf( final StatementHandle h, final List<UpdateBatch> parameterValues ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "executeBatchProtobuf( StatementHandle {}, List<UpdateBatch> {} )", h, parameterValues );
@@ -961,7 +952,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public Iterable<Object> createIterable( final StatementHandle h, final QueryState state, final Signature signature, final List<TypedValue> parameters, final Frame firstFrame ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "createIterable( StatementHandle {}, QueryState {}, Signature {}, List<TypedValue> {}, Frame {} )", h, state, signature, parameters, firstFrame );
@@ -1062,7 +1053,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult prepareAndExecute( final StatementHandle h, final String sql, final long maxRowCount, final int maxRowsInFirstFrame, final PrepareCallback callback ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "prepareAndExecute( StatementHandle {}, String {}, long {}, int {}, PrepareCallback {} )", h, sql, maxRowCount, maxRowsInFirstFrame, callback );
@@ -1085,7 +1076,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult prepareAndExecuteBatch( final StatementHandle h, final List<String> sqlCommands ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "prepareAndExecuteBatch( StatementHandle {}, List<String> {} )", h, sqlCommands );
@@ -1106,7 +1097,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteBatchResult executeBatch( final StatementHandle h, final List<List<TypedValue>> parameterValues ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "executeBatch( StatementHandle {}, List<List<TypedValue>> {} )", h, parameterValues );
@@ -1130,7 +1121,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public Frame fetch( final StatementHandle h, final long offset, final int fetchMaxRowCount ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "fetch( StatementHandle {}, long {}, int {} )", h, offset, fetchMaxRowCount );
@@ -1205,7 +1196,7 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public ExecuteResult execute( final StatementHandle h, final List<TypedValue> parameterValues, final int maxRowsInFirstFrame ) throws NoSuchStatementException {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( h.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( h.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "execute( StatementHandle {}, List<TypedValue> {}, int {} )", h, parameterValues, maxRowsInFirstFrame );
@@ -1355,7 +1346,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             final int id = statementIdGenerator.getAndIncrement();
             statement = new PolyphenyDbStatementHandle( connection, id );
-            OPEN_STATEMENTS.put( ch.id + "::" + id, statement );
+            openStatements.put( ch.id + "::" + id, statement );
 
             StatementHandle h = new StatementHandle( ch.id, statement.getStatementId(), null );
             log.trace( "created statement {}", h );
@@ -1373,13 +1364,13 @@ public class DbmsMeta implements ProtobufMeta {
      */
     @Override
     public void closeStatement( final StatementHandle statementHandle ) {
-        final PolyphenyDbConnectionHandle connection = OPEN_CONNECTIONS.get( statementHandle.connectionId );
+        final PolyphenyDbConnectionHandle connection = openConnections.get( statementHandle.connectionId );
         synchronized ( connection ) {
             if ( log.isTraceEnabled() ) {
                 log.trace( "closeStatement( StatementHandle {} )", statementHandle );
             }
 
-            final PolyphenyDbStatementHandle toClose = OPEN_STATEMENTS.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
+            final PolyphenyDbStatementHandle toClose = openStatements.remove( statementHandle.connectionId + "::" + Integer.toString( statementHandle.id ) );
             if ( toClose != null ) {
                 if ( toClose.getOpenResultSet() != null && toClose.getOpenResultSet() instanceof AutoCloseable ) {
                     try {
@@ -1408,7 +1399,7 @@ public class DbmsMeta implements ProtobufMeta {
             log.trace( "openConnection( ConnectionHandle {}, Map<String, String> {} )", ch, connectionParameters );
         }
 
-        if ( OPEN_CONNECTIONS.containsKey( ch.id ) ) {
+        if ( openConnections.containsKey( ch.id ) ) {
             if ( log.isDebugEnabled() ) {
                 log.debug( "Key {} is already present in the OPEN_CONNECTIONS map.", ch.id );
             }
@@ -1470,7 +1461,7 @@ public class DbmsMeta implements ProtobufMeta {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
 
-        OPEN_CONNECTIONS.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, database, schema, transactionManager ) );
+        openConnections.put( ch.id, new PolyphenyDbConnectionHandle( ch, user, ch.id, database, schema, transactionManager ) );
     }
 
 
@@ -1485,7 +1476,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "closeConnection( ConnectionHandle {} )", ch );
             }
 
-            final PolyphenyDbConnectionHandle connectionToClose = OPEN_CONNECTIONS.remove( ch.id );
+            final PolyphenyDbConnectionHandle connectionToClose = openConnections.remove( ch.id );
             if ( connectionToClose == null ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Connection {} already closed.", ch.id );
@@ -1505,9 +1496,9 @@ public class DbmsMeta implements ProtobufMeta {
                 }
             }
 
-            for ( final String key : OPEN_STATEMENTS.keySet() ) {
+            for ( final String key : openStatements.keySet() ) {
                 if ( key.startsWith( ch.id ) ) {
-                    PolyphenyDbStatementHandle statementHandle = OPEN_STATEMENTS.remove( key );
+                    PolyphenyDbStatementHandle statementHandle = openStatements.remove( key );
                     statementHandle.unset();
                 }
             }
@@ -1518,8 +1509,8 @@ public class DbmsMeta implements ProtobufMeta {
 
 
     private PolyphenyDbConnectionHandle getPolyphenyDbConnectionHandle( String connectionId ) {
-        if ( OPEN_CONNECTIONS.containsKey( connectionId ) ) {
-            return OPEN_CONNECTIONS.get( connectionId );
+        if ( openConnections.containsKey( connectionId ) ) {
+            return openConnections.get( connectionId );
         } else {
             throw new IllegalStateException( "Unknown connection id `" + connectionId + "`!" );
         }
@@ -1528,8 +1519,8 @@ public class DbmsMeta implements ProtobufMeta {
 
     private PolyphenyDbStatementHandle getPolyphenyDbStatementHandle( StatementHandle h ) throws NoSuchStatementException {
         final PolyphenyDbStatementHandle statement;
-        if ( OPEN_STATEMENTS.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
-            statement = OPEN_STATEMENTS.get( h.connectionId + "::" + Integer.toString( h.id ) );
+        if ( openStatements.containsKey( h.connectionId + "::" + Integer.toString( h.id ) ) ) {
+            statement = openStatements.get( h.connectionId + "::" + Integer.toString( h.id ) );
         } else {
             throw new NoSuchStatementException( h );
         }
@@ -1627,7 +1618,7 @@ public class DbmsMeta implements ProtobufMeta {
                 log.trace( "connectionSync( ConnectionHandle {}, ConnectionProperties {} )", ch, connProps );
             }
 
-            final PolyphenyDbConnectionHandle connectionToSync = OPEN_CONNECTIONS.get( ch.id );
+            final PolyphenyDbConnectionHandle connectionToSync = openConnections.get( ch.id );
             if ( connectionToSync == null ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Connection {} is not open.", ch.id );
@@ -1666,6 +1657,51 @@ public class DbmsMeta implements ProtobufMeta {
                             field.getName() ) );
         }
         return parameters;
+    }
+
+
+    private class MonitoringPage {
+
+        private final InformationPage informationPage;
+        private final InformationGroup informationGroupConnection;
+        private final InformationTable connectionNumberTable;
+
+
+        public MonitoringPage( String uniqueName ) {
+            InformationManager im = InformationManager.getInstance();
+
+            informationPage = new InformationPage( uniqueName, "JDBC Interface" ).fullWidth().setLabel( "Interfaces" );
+            informationGroupConnection = new InformationGroup( informationPage, "Connections" );
+
+            im.addPage( informationPage );
+            im.addGroup( informationGroupConnection );
+
+            connectionNumberTable = new InformationTable(
+                    informationGroupConnection,
+                    Arrays.asList( "Attribute", "Value" ) );
+            im.registerInformation( connectionNumberTable );
+
+            informationPage.setRefreshFunction( () -> {
+
+            } );
+
+            informationGroupConnection.setRefreshFunction( this::update );
+        }
+
+
+        public void update() {
+            connectionNumberTable.reset();
+            connectionNumberTable.addRow( "Open Statements", "" + openStatements.size() );
+            connectionNumberTable.addRow( "Open Connections", "" + openStatements.size() );
+        }
+
+
+        public void remove() {
+            InformationManager im = InformationManager.getInstance();
+            im.removeInformation( connectionNumberTable );
+            im.removeGroup( informationGroupConnection );
+            im.removePage( informationPage );
+        }
     }
 
 }

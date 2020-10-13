@@ -19,13 +19,24 @@ package org.polypheny.db.restapi;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.information.InformationGraph;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.restapi.exception.ParserException;
 import org.polypheny.db.restapi.exception.RestException;
 import org.polypheny.db.restapi.exception.UnauthorizedAccessException;
@@ -56,6 +67,15 @@ public class HttpRestServer extends QueryInterface {
 
     private final RequestParser requestParser;
     private final int port;
+    private final String uniqueName;
+
+    // Counter
+    private final AtomicLong deleteCounter = new AtomicLong();
+    private final AtomicLong getCounter = new AtomicLong();
+    private final AtomicLong patchCounter = new AtomicLong();
+    private final AtomicLong postCounter = new AtomicLong();
+
+    private final MonitoringPage monitoringPage;
 
     private Service restServer;
 
@@ -63,11 +83,14 @@ public class HttpRestServer extends QueryInterface {
     public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
         super( transactionManager, authenticator, ifaceId, uniqueName, settings );
         this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
+        this.uniqueName = uniqueName;
         this.port = Integer.parseInt( settings.get( "port" ) );
         if ( !Util.checkIfPortIsAvailable( port ) ) {
             // Port is already in use
             throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
         }
+        // Add information page
+        monitoringPage = new MonitoringPage();
     }
 
 
@@ -79,7 +102,7 @@ public class HttpRestServer extends QueryInterface {
         Rest rest = new Rest( transactionManager, "pa", "APP" );
         restRoutes( restServer, rest );
 
-        log.info( "REST API Server started." );
+        log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
     }
 
 
@@ -105,15 +128,19 @@ public class HttpRestServer extends QueryInterface {
         try {
             switch ( type ) {
                 case DELETE:
+                    deleteCounter.incrementAndGet();
                     ResourceDeleteRequest resourceDeleteRequest = requestParser.parseDeleteResourceRequest( request, resourceName );
                     return rest.processDeleteResource( resourceDeleteRequest, request, response );
                 case GET:
+                    getCounter.incrementAndGet();
                     ResourceGetRequest resourceGetRequest = requestParser.parseGetResourceRequest( request, resourceName );
                     return rest.processGetResource( resourceGetRequest, request, response );
                 case PATCH:
+                    patchCounter.incrementAndGet();
                     ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( request, resourceName, gson );
                     return rest.processPatchResource( resourcePatchRequest, request, response );
                 case POST:
+                    postCounter.incrementAndGet();
                     ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest( request, resourceName, gson );
                     return rest.processPostResource( resourcePostRequest, request, response );
             }
@@ -152,6 +179,8 @@ public class HttpRestServer extends QueryInterface {
     @Override
     public void shutdown() {
         restServer.stop();
+        monitoringPage.remove();
+        log.info( "{} stopped.", INTERFACE_NAME );
     }
 
 
@@ -160,8 +189,76 @@ public class HttpRestServer extends QueryInterface {
         // There is no modifiable setting for this query interface
     }
 
+
     @Override
     public String getInterfaceType() {
         return INTERFACE_NAME;
+    }
+
+
+    private class MonitoringPage {
+
+        private final InformationPage informationPage;
+        private final InformationGroup informationGroupRequests;
+        private final InformationGraph counterGraph;
+        private final InformationTable counterTable;
+
+
+        public MonitoringPage() {
+            InformationManager im = InformationManager.getInstance();
+
+            informationPage = new InformationPage( uniqueName, INTERFACE_NAME ).fullWidth().setLabel( "Interfaces" );
+            informationGroupRequests = new InformationGroup( informationPage, "Requests" );
+
+            im.addPage( informationPage );
+            im.addGroup( informationGroupRequests );
+
+            counterGraph = new InformationGraph(
+                    informationGroupRequests,
+                    GraphType.DOUGHNUT,
+                    new String[]{ "DELETE", "GET", "PATCH", "POST" }
+            );
+            counterGraph.setOrder( 1 );
+            im.registerInformation( counterGraph );
+
+            counterTable = new InformationTable(
+                    informationGroupRequests,
+                    Arrays.asList( "Type", "Percent", "Absolute" )
+            );
+            counterTable.setOrder( 2 );
+            im.registerInformation( counterTable );
+
+            informationGroupRequests.setRefreshFunction( this::update );
+        }
+
+
+        public void update() {
+            long deleteCount = deleteCounter.get();
+            long getCount = getCounter.get();
+            long patchCount = patchCounter.get();
+            long postCount = postCounter.get();
+
+            counterGraph.updateGraph(
+                    new String[]{ "DELETE", "GET", "PATCH", "POST" },
+                    new GraphData<>( "heap-data", new Long[]{ deleteCount, getCount, patchCount, postCount } )
+            );
+
+            DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
+            symbols.setDecimalSeparator( '.' );
+            DecimalFormat df = new DecimalFormat( "#.0", symbols );
+            counterTable.reset();
+            counterTable.addRow( "DELETE", df.format( deleteCount * 100 ) + " %", deleteCount );
+            counterTable.addRow( "GET", df.format( getCount * 100 ) + " %", getCount );
+            counterTable.addRow( "PATCH", df.format( patchCount * 100 ) + " %", patchCount );
+            counterTable.addRow( "POST", df.format( postCount * 100 ) + " %", postCount );
+        }
+
+
+        public void remove() {
+            InformationManager im = InformationManager.getInstance();
+            im.removeInformation( counterGraph, counterTable );
+            im.removeGroup( informationGroupRequests );
+            im.removePage( informationPage );
+        }
     }
 }

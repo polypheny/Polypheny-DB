@@ -52,7 +52,8 @@ public class JdbcInterface extends QueryInterface {
     private final MetricsSystem metricsSystem;
     private final int port;
 
-    private HttpServerDispatcher httpServerDispatcher;
+    private final DbmsMeta meta;
+    private final HttpServerDispatcher httpServerDispatcher;
 
 
     public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
@@ -60,10 +61,22 @@ public class JdbcInterface extends QueryInterface {
         metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
         metricsSystem = NoopMetricsSystem.getInstance();
 
-        this.port = Integer.parseInt( settings.get( "port" ) );
+        port = Integer.parseInt( settings.get( "port" ) );
         if ( !Util.checkIfPortIsAvailable( port ) ) {
             // Port is already in use
             throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+        }
+
+        meta = new DbmsMeta( transactionManager, authenticator, uniqueName );
+        Serialization serialization = Serialization.valueOf( settings.get( "serialization" ) );
+        AvaticaHandler handler = new HandlerFactory().getHandler(
+                new DbmsService( meta, metricsSystem ),
+                serialization,
+                metricsSystemConfiguration );
+        try {
+            httpServerDispatcher = new HttpServerDispatcher( port, handler );
+        } catch ( Exception e ) {
+            throw new RuntimeException( "Exception while starting JDBC interface", e );
         }
     }
 
@@ -71,17 +84,11 @@ public class JdbcInterface extends QueryInterface {
     @Override
     public void run() {
         try {
-            final DbmsMeta meta = new DbmsMeta( transactionManager, authenticator );
-            Serialization serialization = Serialization.valueOf( settings.get( "serialization" ) );
-            AvaticaHandler handler = new HandlerFactory().getHandler(
-                    new DbmsService( meta, metricsSystem ),
-                    serialization,
-                    metricsSystemConfiguration );
-            httpServerDispatcher = new HttpServerDispatcher( port, handler );
             httpServerDispatcher.start();
         } catch ( Exception e ) {
             log.error( "Exception while starting JDBC interface", e );
         }
+        log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
     }
 
 
@@ -95,9 +102,11 @@ public class JdbcInterface extends QueryInterface {
     public void shutdown() {
         try {
             httpServerDispatcher.stop();
+            meta.shutdown();
         } catch ( Exception e ) {
             log.error( "Exception while shutdown of a JDBC query interface!", e );
         }
+        log.info( "{} stopped.", INTERFACE_NAME );
     }
 
 

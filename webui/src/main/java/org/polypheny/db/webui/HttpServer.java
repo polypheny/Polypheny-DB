@@ -76,7 +76,7 @@ public class HttpServer implements Runnable {
 
         crudRoutes( server, new Crud( transactionManager, "pa", "APP" ) );
 
-        log.info( "HTTP Server started." );
+        log.info( "Polypheny-UI started and is listening on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     }
 
 
