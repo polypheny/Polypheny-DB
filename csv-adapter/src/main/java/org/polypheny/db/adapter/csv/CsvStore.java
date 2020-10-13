@@ -59,7 +59,7 @@ public class CsvStore extends Store {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new CsvSchema( csvDir, Flavor.SCANNABLE );
+        currentSchema = new CsvSchema( csvDir, Flavor.TRANSLATABLE );
     }
 
 

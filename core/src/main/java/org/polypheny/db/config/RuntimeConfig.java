@@ -157,7 +157,7 @@ public enum RuntimeConfig {
 
     STATISTICS_ON_STARTUP( "statistics/statisticsOnStartup",
             "Whether to build statistics for all stored data on system startup.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "statisticSettingsGroup" ),
 
@@ -238,7 +238,7 @@ public enum RuntimeConfig {
 
     IMPLEMENTATION_CACHING( "runtime/implementationCaching",
             "Cache implemented query plans.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 

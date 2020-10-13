@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,7 +53,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
     private final Charset encoding = StandardCharsets.UTF_8;
     private final Object[] filterValues;
 
-    FileEnumerator( final FileStore store, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag, Object[] filterValues ) {
+    private FileEnumerator( final FileStore store, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag, Object[] filterValues ) {
         this.cancelFlag = cancelFlag;
         this.columnTypes = columnTypes;
         this.gson = new Gson();
@@ -71,8 +72,14 @@ public class FileEnumerator<E> implements Enumerator<E> {
         this.filterValues = filterValues;
     }
 
-    FileEnumerator( final FileStore store, final List<Long> columnIds, final List<PolyType> columnTypes, final AtomicBoolean cancelFlag ) {
-        this( store, columnIds, columnTypes, cancelFlag, new Object[0] );
+    static FileEnumerator<Object[]> of ( final FileStore store, final List<String> columnNames, final FileTranslatableTable fileTable, final AtomicBoolean cancelFlag ) {
+        ArrayList<Long> columnIds = new ArrayList<>();
+        ArrayList<PolyType> columnTypes = new ArrayList<>();
+        for( String columnName: columnNames ) {
+            columnIds.add( fileTable.columnIds.get( columnName ) );
+            columnTypes.add( fileTable.columnTypes.get( columnName ) );
+        }
+        return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag, new Object[0] );
     }
 
     @Override
@@ -96,6 +103,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                 String[] strings = new String[numOfCols];
                 Object[] curr = new Object[numOfCols];
                 int i = 0;
+                //todo fix wrong order
                 for( File colFolder : this.columnFolders.values() ) {
                     File f = new File(colFolder, currentFile.getName() );
                     String s;
@@ -125,6 +133,9 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 break;
                             case INTEGER:
                                 curr[i] = Integer.parseInt(s);
+                                break;
+                            case BIGINT:
+                                curr[i] = Long.parseLong(s);
                                 break;
                             case DOUBLE:
                                 curr[i] = Double.parseDouble( s );

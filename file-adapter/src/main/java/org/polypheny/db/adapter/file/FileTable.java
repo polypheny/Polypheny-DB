@@ -28,7 +28,6 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.prepare.Prepare.CatalogReader;
@@ -51,8 +50,8 @@ import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.type.PolyType;
 
-
-public class FileTable extends AbstractQueryableTable implements ScannableTable, FilterableTable, ModifiableTable {
+@Deprecated
+public class  FileTable extends AbstractQueryableTable implements ScannableTable, FilterableTable, ModifiableTable {
     //extends AbstractQueryableTable
     //implements TranslatableTable, ModifiableTable
 
@@ -63,9 +62,10 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
     List<PolyType> columnTypes;
     List<String> columnNames;
     FileStore store;
+    FileSchema fileSchema;
 
 
-    public FileTable( final File rootDir, String schemaName, long tableId, List<Long> columnIds, ArrayList<PolyType> columnTypes, List<String> columnNames, FileStore store ) {
+    public FileTable( final File rootDir, String schemaName, long tableId, List<Long> columnIds, ArrayList<PolyType> columnTypes, List<String> columnNames, FileStore store, FileSchema fileSchema ) {
         super( Object[].class );
         this.rootDir = rootDir;
         this.schemaName = schemaName;
@@ -74,6 +74,7 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
         this.columnTypes = columnTypes;
         this.columnNames = columnNames;
         this.store = store;
+        this.fileSchema = fileSchema;
     }
 
     @Override
@@ -92,7 +93,8 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag );
+                //return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag );
+                return null;
             }
         };
     }
@@ -107,7 +109,8 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag, filterValues );
+                //return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag, filterValues );
+                return null;
             }
         };
     }
@@ -143,15 +146,15 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
 
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
-        //todo getconvention -> register planner
-        //cassandraSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+        fileSchema.getConvention().register( cluster.getPlanner() );
+        return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
     @Override
     public Collection getModifiableCollection() {
         //see SqlCreateTable.java ..
         throw new RuntimeException( "getModifiableCollection() is not implemented for file adapter!" );
+        //return null;
     }
 
     @Override
@@ -170,7 +173,8 @@ public class FileTable extends AbstractQueryableTable implements ScannableTable,
         public Enumerator<T> enumerator() {
             //todo check
             //for Linq4j: see SqlCreateTable.java ..
-            return new FileEnumerator<>( store, columnIds, columnTypes, dataContext.getStatement().getTransaction().getCancelFlag() );
+            //return new FileEnumerator<>( store, columnIds, columnTypes, dataContext.getStatement().getTransaction().getCancelFlag() );
+            return null;
         }
 
     }

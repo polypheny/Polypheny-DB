@@ -7,12 +7,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.file.FileRel.FileImplementationContext;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -40,6 +42,7 @@ public class FileStore extends Store {
     @Getter
     private File rootDir;
     private FileSchema currentSchema;
+    private final Map<PolyXid, FileImplementationContext> toExecute = new HashMap<>();
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -63,7 +66,7 @@ public class FileStore extends Store {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new FileSchema( name, this );
+        currentSchema = new FileSchema( rootSchema, name, this );
     }
 
 
@@ -81,6 +84,7 @@ public class FileStore extends Store {
 
     @Override
     public void createTable( Context context, CatalogTable catalogTable ) {
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         try {
             for( CatalogColumnPlacement placement: catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id )) {
                 catalog.updateColumnPlacementPhysicalNames( getStoreId(), placement.columnId, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ), getPhysicalColumnName( placement.columnId ) );
@@ -99,6 +103,7 @@ public class FileStore extends Store {
 
     @Override
     public void dropTable( Context context, CatalogTable catalogTable ) {
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         //todo check if it is on this store?
         for( Long colId: catalogTable.columnIds ) {
             File f = getColumnFolder( colId );
@@ -113,6 +118,7 @@ public class FileStore extends Store {
 
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         File newColumnFolder = getColumnFolder( catalogColumn.id );
         if( !newColumnFolder.mkdir() ) {
             throw new RuntimeException( "Could not create column file" );
@@ -132,6 +138,7 @@ public class FileStore extends Store {
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
+        context.getStatement().getTransaction().registerInvolvedStore( this );
         File columnFile = getColumnFolder( columnPlacement.columnId );
         try {
             FileUtils.deleteDirectory( columnFile );
@@ -162,12 +169,14 @@ public class FileStore extends Store {
 
     @Override
     public void truncate( Context context, CatalogTable table ) {
+        //context.getStatement().getTransaction().registerInvolvedStore( this );
         log.warn( "File Store does not support truncate." );
     }
 
 
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
+        //context.getStatement().getTransaction().registerInvolvedStore( this );
         throw new RuntimeException( "CSV adapter does not support updating column types!" );
     }
 
@@ -205,12 +214,12 @@ public class FileStore extends Store {
         throw new UnsupportedOperationException( "Cannot change directory" );
     }
 
-    protected String getPhysicalTableName( long tableId ) {
+    protected static String getPhysicalTableName( long tableId ) {
         return "tab" + tableId;
     }
 
 
-    protected String getPhysicalColumnName( long columnId ) {
+    protected static String getPhysicalColumnName( long columnId ) {
         return "col" + columnId;
     }
 
