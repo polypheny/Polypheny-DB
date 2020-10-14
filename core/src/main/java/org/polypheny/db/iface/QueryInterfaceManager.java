@@ -148,10 +148,11 @@ public class QueryInterfaceManager {
             throw new RuntimeException( "There is already a query interface with this unique name" );
         }
         QueryInterface instance;
+        int ifaceId = -1;
         try {
             Class<?> clazz = Class.forName( clazzName );
             Constructor<?> ctor = clazz.getConstructor( TransactionManager.class, Authenticator.class, int.class, String.class, Map.class );
-            int ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
+            ifaceId = catalog.addQueryInterface( uniqueName, clazzName, settings );
             instance = (QueryInterface) ctor.newInstance( transactionManager, authenticator, ifaceId, uniqueName, settings );
 
             Thread thread = new Thread( instance );
@@ -166,8 +167,24 @@ public class QueryInterfaceManager {
             interfaceByName.put( instance.getUniqueName(), instance );
             interfaceById.put( instance.getQueryInterfaceId(), instance );
             interfaceThreadById.put( instance.getQueryInterfaceId(), thread );
-        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException | GenericCatalogException e ) {
-            throw new RuntimeException( "Something went wrong while adding a new query interface", e );
+        } catch ( InvocationTargetException e ) {
+            if ( ifaceId != -1 ) {
+                try {
+                    catalog.deleteQueryInterface( ifaceId );
+                } catch ( GenericCatalogException | UnknownQueryInterfaceException e1 ) {
+                    throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
+                }
+            }
+            throw new RuntimeException( "Something went wrong while adding a new query interface: " + e.getCause().getMessage(), e );
+        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | GenericCatalogException e ) {
+            if ( ifaceId != -1 ) {
+                try {
+                    catalog.deleteQueryInterface( ifaceId );
+                } catch ( GenericCatalogException | UnknownQueryInterfaceException e1 ) {
+                    throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
+                }
+            }
+            throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
         }
         return instance;
     }
@@ -194,7 +211,7 @@ public class QueryInterfaceManager {
             // Delete query interface from catalog
             catalog.deleteQueryInterface( catalogQueryInterface.id );
         } catch ( GenericCatalogException | UnknownQueryInterfaceException e ) {
-            throw new RuntimeException( "Something went wrong while removing a query interface", e );
+            throw new RuntimeException( "Something went wrong while removing a query interface: " + e.getMessage(), e );
         }
     }
 

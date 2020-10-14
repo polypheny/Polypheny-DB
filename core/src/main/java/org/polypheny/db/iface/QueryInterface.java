@@ -37,6 +37,11 @@ public abstract class QueryInterface implements Runnable {
     @Getter
     private final String uniqueName;
 
+    @Getter
+    private final boolean supportsDml;
+    @Getter
+    private final boolean supportsDdl;
+
     protected final Map<String, String> settings;
 
 
@@ -45,12 +50,16 @@ public abstract class QueryInterface implements Runnable {
             final Authenticator authenticator,
             final int queryInterfaceId,
             final String uniqueName,
-            final Map<String, String> settings ) {
+            final Map<String, String> settings,
+            final boolean supportsDml,
+            final boolean supportsDdl ) {
         this.transactionManager = transactionManager;
         this.authenticator = authenticator;
         this.queryInterfaceId = queryInterfaceId;
         this.uniqueName = uniqueName;
         this.settings = settings;
+        this.supportsDml = supportsDml;
+        this.supportsDdl = supportsDdl;
     }
 
 

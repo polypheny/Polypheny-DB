@@ -57,7 +57,7 @@ public class JdbcInterface extends QueryInterface {
 
 
     public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
-        super( transactionManager, authenticator, ifaceId, uniqueName, settings );
+        super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
         metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
         metricsSystem = NoopMetricsSystem.getInstance();
 

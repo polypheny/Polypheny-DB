@@ -88,7 +88,7 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
         try {
             QueryInterfaceManager.getInstance().addQueryInterface( Catalog.getInstance(), clazzNameStr, uniqueNameStr, configMap );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not deploy query interface", e );
+            throw new RuntimeException( "Unable to deploy query interface", e );
         }
     }
 

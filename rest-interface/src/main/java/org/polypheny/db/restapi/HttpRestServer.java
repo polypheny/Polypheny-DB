@@ -81,7 +81,7 @@ public class HttpRestServer extends QueryInterface {
 
 
     public HttpRestServer( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
-        super( transactionManager, authenticator, ifaceId, uniqueName, settings );
+        super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, false );
         this.requestParser = new RequestParser( transactionManager, authenticator, "pa", "APP" );
         this.uniqueName = uniqueName;
         this.port = Integer.parseInt( settings.get( "port" ) );

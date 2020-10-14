@@ -2588,7 +2588,11 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 stores.remove( storeId );
                 storeNames.remove( store.uniqueName );
-
+            }
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( "An error occurred while deleting the query interface." );
             }
             listeners.firePropertyChange( "store", store, null );
         } catch ( NullPointerException e ) {
@@ -2677,7 +2681,11 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 queryInterfaces.remove( ifaceId );
                 queryInterfaceNames.remove( queryInterface.name );
-
+            }
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( "An error occurred while deleting the query interface." );
             }
             listeners.firePropertyChange( "queryInterface", queryInterface, null );
         } catch ( NullPointerException e ) {
