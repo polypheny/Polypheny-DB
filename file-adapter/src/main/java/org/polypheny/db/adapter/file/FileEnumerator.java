@@ -24,15 +24,10 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 
 
@@ -40,7 +35,7 @@ import org.polypheny.db.type.PolyType;
 public class FileEnumerator<E> implements Enumerator<E> {
 
     private E current;
-    private final HashMap<Long, File> columnFolders = new HashMap<>();
+    private final List<File> columnFolders = new ArrayList<>();
     private Integer maxRowCount;
     private Long colWithMostRows;
     private final File[] fileList;
@@ -58,24 +53,24 @@ public class FileEnumerator<E> implements Enumerator<E> {
         this.columnTypes = columnTypes;
         this.gson = new Gson();
         this.store = store;
-        for( Long colId : columnIds ) {
+        for ( Long colId : columnIds ) {
             File columnFolder = store.getColumnFolder( colId );
-            columnFolders.put( colId, columnFolder );
+            columnFolders.add( columnFolder );
             int currentColumnSize = columnFolder.listFiles() == null ? 0 : columnFolder.listFiles().length;
-            if( maxRowCount == null || maxRowCount < currentColumnSize ) {
+            if ( maxRowCount == null || maxRowCount < currentColumnSize ) {
                 maxRowCount = currentColumnSize;
                 colWithMostRows = colId;
             }
         }
-        this.fileList = columnFolders.get( colWithMostRows ).listFiles();
+        this.fileList = store.getColumnFolder( colWithMostRows ).listFiles();
         numOfCols = columnFolders.size();
         this.filterValues = filterValues;
     }
 
-    static FileEnumerator<Object[]> of ( final FileStore store, final List<String> columnNames, final FileTranslatableTable fileTable, final AtomicBoolean cancelFlag ) {
+    static FileEnumerator<Object[]> of( final FileStore store, final List<String> columnNames, final FileTranslatableTable fileTable, final AtomicBoolean cancelFlag ) {
         ArrayList<Long> columnIds = new ArrayList<>();
         ArrayList<PolyType> columnTypes = new ArrayList<>();
-        for( String columnName: columnNames ) {
+        for ( String columnName : columnNames ) {
             columnIds.add( fileTable.columnIds.get( columnName ) );
             columnTypes.add( fileTable.columnTypes.get( columnName ) );
         }
@@ -92,11 +87,11 @@ public class FileEnumerator<E> implements Enumerator<E> {
         //todo make sure that all requirements of the interface are satisfied
         try {
             outer:
-            for( ; ; ) {
-                if( cancelFlag.get() ) {
+            for ( ; ; ) {
+                if ( cancelFlag.get() ) {
                     return false;
                 }
-                if( fileListPosition >= fileList.length ) {
+                if ( fileListPosition >= fileList.length ) {
                     return false;
                 }
                 File currentFile = fileList[fileListPosition];
@@ -104,26 +99,26 @@ public class FileEnumerator<E> implements Enumerator<E> {
                 Object[] curr = new Object[numOfCols];
                 int i = 0;
                 //todo fix wrong order
-                for( File colFolder : this.columnFolders.values() ) {
-                    File f = new File(colFolder, currentFile.getName() );
+                for ( File colFolder : columnFolders ) {
+                    File f = new File( colFolder, currentFile.getName() );
                     String s;
-                    if( !f.exists() ) {
+                    if ( !f.exists() ) {
                         s = null;
                     } else {
                         byte[] encoded = Files.readAllBytes( f.toPath() );
                         s = new String( encoded, encoding );
                     }
-                    if( filterValues.length == numOfCols ) {
+                    if ( filterValues.length == numOfCols ) {
                         Object filter = filterValues[i];
-                        if( filter != null ){
-                            if( s != null && !s.equals( filter.toString() )) {
+                        if ( filter != null ) {
+                            if ( s != null && !s.equals( filter.toString() ) ) {
                                 fileListPosition++;
                                 continue outer;
                             }
                         }
                     }
                     strings[i] = s;
-                    if( s == null ) {
+                    if ( s == null ) {
                         curr[i] = null;
                     } else {
                         switch ( columnTypes.get( i ) ) {
@@ -132,10 +127,10 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 curr[i] = gson.fromJson( s, Boolean.class );
                                 break;
                             case INTEGER:
-                                curr[i] = Integer.parseInt(s);
+                                curr[i] = Integer.parseInt( s );
                                 break;
                             case BIGINT:
-                                curr[i] = Long.parseLong(s);
+                                curr[i] = Long.parseLong( s );
                                 break;
                             case DOUBLE:
                                 curr[i] = Double.parseDouble( s );
