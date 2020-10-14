@@ -126,8 +126,10 @@ public class ImplementationCache {
             long hits = hitsCounter.longValue();
             long misses = missesCounter.longValue() - uncacheableCounter.longValue();
             long uncacheable = uncacheableCounter.longValue();
-            double hitPercent = (double) hits / (hits + misses + uncacheable);
-            double missesPercent = (double) misses / (hits + misses + uncacheable);
+            long total = hits + misses + uncacheable;
+
+            double hitPercent = (double) hits / total;
+            double missesPercent = (double) misses / total;
             double uncacheablePercent = 1.0 - hitPercent - missesPercent;
 
             hitInfoGraph.updateGraph(
@@ -137,11 +139,11 @@ public class ImplementationCache {
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
             symbols.setDecimalSeparator( '.' );
-            DecimalFormat df = new DecimalFormat( "#.0", symbols );
+            DecimalFormat df = new DecimalFormat( "0.0", symbols );
             hitInfoTable.reset();
-            hitInfoTable.addRow( "Hits", df.format( hitPercent * 100 ) + " %", hits );
-            hitInfoTable.addRow( "Misses", df.format( missesPercent * 100 ) + " %", misses );
-            hitInfoTable.addRow( "Uncacheable", df.format( uncacheablePercent * 100 ) + " %", uncacheable );
+            hitInfoTable.addRow( "Hits", df.format( total == 0 ? 0 : (hitPercent * 100) ) + " %", hits );
+            hitInfoTable.addRow( "Misses", df.format( total == 0 ? 0 : (missesPercent * 100) ) + " %", misses );
+            hitInfoTable.addRow( "Uncacheable", df.format( total == 0 ? 0 : (uncacheablePercent * 100) ) + " %", uncacheable );
         } );
 
         // Invalidate cache
