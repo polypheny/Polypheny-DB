@@ -1814,23 +1814,27 @@ public class Crud implements InformationObserver {
     }
 
 
-    boolean addQueryInterface ( final Request req, final Response res ) {
+    Result addQueryInterface ( final Request req, final Response res ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         QueryInterfaceInformationRequest request = gson.fromJson( req.body(), QueryInterfaceInformationRequest.class );
         try {
             qim.addQueryInterface( catalog, request.clazzName, request.uniqueName, request.currentSettings );
-            return true;
+            return new Result( new Debug().setAffectedRows( 1 ) );
         } catch ( RuntimeException e ) {
             log.error( "Exception while deploying query interface", e );
-            return false;
+            return new Result( e );
         }
     }
 
-    boolean updateQueryInterfaceSettings ( final Request req, final Response res ) {
+    Result updateQueryInterfaceSettings ( final Request req, final Response res ) {
         QueryInterfaceModel request = gson.fromJson( req.body(),  QueryInterfaceModel.class );
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
-        return true;
+        try {
+            qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
+            return new Result( new Debug().setAffectedRows( 1 ) );
+        } catch ( Exception e ) {
+            return new Result( e );
+        }
     }
 
     Result removeQueryInterface ( final Request req, final Response res ) {
