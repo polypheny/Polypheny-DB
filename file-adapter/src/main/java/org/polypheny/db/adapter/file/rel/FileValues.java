@@ -45,21 +45,28 @@ public class FileValues extends Values implements FileRel {
     }
 
     @Override
-    public void implement( FileImplementationContext context ) {
+    public void implement( FileImplementor implementor ) {
         RelRecordType recordType = (RelRecordType) getRowType();
+        if ( recordType.toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+            implementor.setBatchInsert( true );
+            return;
+        }
         List<String> columns = new ArrayList<>();
-        for( RelDataTypeField type: recordType.getFieldList() ) {
+        for ( RelDataTypeField type : recordType.getFieldList() ) {
             columns.add( type.getKey() );
         }
-        context.setColumnNames( columns );
-        for( ImmutableList<RexLiteral> literalList: tuples ) {
-            Object[] o = new Object[ literalList.size()];
+        implementor.setColumnNames( columns );
+
+        for ( ImmutableList<RexLiteral> literalList : tuples ) {
+            Object[] o = new Object[literalList.size()];
             int i = 0;
-            for( RexLiteral literal: literalList.asList() ) {
+            for ( RexLiteral literal : literalList.asList() ) {
+                //todo check which method to take (getValue2 etc.),
+                //literal.getValueForQueryParameterizer() is good, but bad with arrays
                 o[i] = literal.getValue();
                 i++;
             }
-            context.addInsertValue( o );
+            implementor.addInsertValue( o );
         }
     }
 }

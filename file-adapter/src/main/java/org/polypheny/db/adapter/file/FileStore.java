@@ -14,7 +14,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.file.FileRel.FileImplementationContext;
+import org.polypheny.db.adapter.file.FileRel.FileImplementor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -42,7 +42,7 @@ public class FileStore extends Store {
     @Getter
     private File rootDir;
     private FileSchema currentSchema;
-    private final Map<PolyXid, FileImplementationContext> toExecute = new HashMap<>();
+    private final Map<PolyXid, FileImplementor> toExecute = new HashMap<>();
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -170,14 +170,23 @@ public class FileStore extends Store {
     @Override
     public void truncate( Context context, CatalogTable table ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
-        log.warn( "File Store does not support truncate." );
+        FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name );
+        try {
+            for ( String colName : fileTable.getColumnNames() ) {
+                File columnFolder = getColumnFolder( fileTable.columnIdMap.get( colName ) );
+                FileUtils.cleanDirectory( columnFolder );
+            }
+        } catch ( IOException e ) {
+            log.error( "Could not truncate file table", e );
+        }
+        //todo trx support
     }
 
 
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
         //context.getStatement().getTransaction().registerInvolvedStore( this );
-        throw new RuntimeException( "CSV adapter does not support updating column types!" );
+        throw new RuntimeException( "File adapter does not support updating column types!" );
     }
 
 
@@ -223,7 +232,12 @@ public class FileStore extends Store {
         return "col" + columnId;
     }
 
-    public File getColumnFolder ( final Long columnId ) {
+    public static File getColumnFolder( final String rootPath, final Long columnId ) {
+        File root = new File( rootPath );
+        return new File( root, getPhysicalColumnName( columnId ) );
+    }
+
+    public File getColumnFolder( final Long columnId ) {
         return new File( rootDir, getPhysicalColumnName( columnId ) );
     }
 

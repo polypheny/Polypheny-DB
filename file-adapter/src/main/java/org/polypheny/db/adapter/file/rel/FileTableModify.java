@@ -65,9 +65,23 @@ public class FileTableModify extends TableModify implements FileRel {
     }
 
     @Override
-    public void implement( FileImplementationContext context ) {
-        context.visitChild( 0, getInput() );
+    public void implement( FileImplementor implementor ) {
+        implementor.visitChild( 0, getInput() );
         FileTranslatableTable fileTable = (FileTranslatableTable) ((RelOptTableImpl) getTable()).getTable();
-        context.setFileTable( fileTable );
+        implementor.setFileTable( fileTable );
+        Operation operation = getOperation();
+        switch ( operation ) {
+            case INSERT:
+                implementor.setOperation( FileImplementor.Operation.INSERT );
+                break;
+            case UPDATE:
+                implementor.setOperation( FileImplementor.Operation.UPDATE );
+                break;
+            case DELETE:
+                implementor.setOperation( FileImplementor.Operation.DELETE );
+                break;
+            default:
+                throw new RuntimeException( "The File adapter does not support " + operation + "operations." );
+        }
     }
 }

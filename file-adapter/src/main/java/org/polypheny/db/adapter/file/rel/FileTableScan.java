@@ -25,6 +25,7 @@ import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
 import org.polypheny.db.adapter.enumerable.PhysType;
 import org.polypheny.db.adapter.enumerable.PhysTypeImpl;
 import org.polypheny.db.adapter.file.FileRel;
+import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -75,8 +76,8 @@ public class FileTableScan extends TableScan implements EnumerableRel, FileRel {
     }
 
     @Override
-    public void implement( FileImplementationContext context ) {
-        context.setFileTable( fileTable );
-        System.out.println("implement FileTableScan with FileConvention");
+    public void implement( FileImplementor implementor ) {
+        implementor.setFileTable( fileTable );
+        implementor.setOperation( Operation.SELECT );
     }
 }

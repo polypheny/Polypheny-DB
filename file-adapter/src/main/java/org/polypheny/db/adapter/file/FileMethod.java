@@ -20,16 +20,18 @@ package org.polypheny.db.adapter.file;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Method;
 import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.adapter.file.FileRel.FileImplementationContext;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.type.PolyType;
 
 
 public enum FileMethod {
 
-    //TODO remove
-    EXECUTE_CONTEXT( FileSchema.class, "executeContext", FileImplementationContext.class );
+    EXECUTE_SELECT( FileSchema.class, "executeSelect", DataContext.class, String.class, Long[].class, PolyType[].class ),
+    EXECUTE_MODIFY( FileSchema.class, "executeModify", DataContext.class, String.class, Long[].class, PolyType[].class, Boolean.class, Object[].class );
 
     public final Method method;
     public static final ImmutableMap<Method, FileMethod> MAP;
+
 
     static {
         final ImmutableMap.Builder<Method, FileMethod> builder = ImmutableMap.builder();

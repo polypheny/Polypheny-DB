@@ -50,13 +50,13 @@ public class FileProject extends Project implements FileRel {
     }
 
     @Override
-    public void implement( FileImplementationContext context ) {
-        context.visitChild( 0, getInput() );
+    public void implement( FileImplementor implementor ) {
+        implementor.visitChild( 0, getInput() );
         RelRecordType rowType = (RelRecordType) getRowType();
         List<String> fields = new ArrayList<>();
-        for( RelDataTypeField field: rowType.getFieldList() ) {
+        for ( RelDataTypeField field : rowType.getFieldList() ) {
             fields.add( field.getKey() );
         }
-        context.project( fields );
+        implementor.project( fields );
     }
 }

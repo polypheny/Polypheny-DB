@@ -54,33 +54,36 @@ import org.polypheny.db.type.PolyType;
 public class FileTranslatableTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
     final File rootDir;
-    private final String schemaName;
+    @Getter
+    private final String tableName;
     long tableId;
     @Getter
     List<String> columnNames;
-    final Map<String, Long> columnIds;
-    final Map<String, PolyType> columnTypes;
+    @Getter
+    final Map<String, Long> columnIdMap;
+    @Getter
+    final Map<String, PolyType> columnTypeMap;
     FileStore store;
     @Getter
     FileSchema fileSchema;
     RelProtoDataType protoRowType;
 
-    protected FileTranslatableTable( final File rootDir, String schemaName, long tableId, List<Long> columnIds, ArrayList<PolyType> columnTypes, List<String> columnNames, FileStore store, FileSchema fileSchema, RelProtoDataType protoRowType ) {
+    protected FileTranslatableTable( final FileSchema fileSchema, final String tableName, final long tableId, final List<Long> columnIds, final ArrayList<PolyType> columnTypes, final List<String> columnNames, final RelProtoDataType protoRowType ) {
         super( Object[].class );
-        this.rootDir = rootDir;
-        this.schemaName = schemaName;
+        this.rootDir = fileSchema.getStore().getRootDir();
+        this.tableName = tableName;
         this.tableId = tableId;
-        this.store = store;
+        this.store = fileSchema.getStore();
         this.fileSchema = fileSchema;
         this.protoRowType = protoRowType;
 
         this.columnNames = columnNames;
-        this.columnIds = new HashMap<>();
-        this.columnTypes = new HashMap<>();
+        this.columnIdMap = new HashMap<>();
+        this.columnTypeMap = new HashMap<>();
         int i = 0;
-        for( String columnName: columnNames ) {
-            this.columnIds.put( columnName, columnIds.get( i ) );
-            this.columnTypes.put( columnName, columnTypes.get( i ) );
+        for ( String columnName : columnNames ) {
+            this.columnIdMap.put( columnName, columnIds.get( i ) );
+            this.columnTypeMap.put( columnName, columnTypes.get( i ) );
             i++;
         }
     }

@@ -18,14 +18,10 @@ package org.polypheny.db.adapter.file;
 
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.type.PolyType;
 
 
 public interface FileRel extends RelNode {
@@ -34,35 +30,55 @@ public interface FileRel extends RelNode {
      * When implementing this method, make sure to call context.visitChild as a first step!
      * => the tree will be implemented from bottom-up
      */
-    void implement ( FileImplementationContext context );
+    void implement( FileImplementor implementor );
 
-    class FileImplementationContext {
+    class FileImplementor {
 
-        @Getter @Setter
-        private FileTranslatableTable fileTable;
+        public enum Operation {
+            SELECT,
+            INSERT,
+            UPDATE,
+            DELETE
+        }
+
+
         @Getter
-        List<String> columnNames = new ArrayList<>();
+        private transient FileTranslatableTable fileTable;
         @Getter
-        private final List<Row> insertValues = new ArrayList<>();
+        private final List<String> columnNames = new ArrayList<>();
+        @Getter
+        private final List<Object[]> insertValues = new ArrayList<>();
+        @Getter
+        @Setter
+        private boolean batchInsert;
+        @Getter
+        @Setter
+        private Operation operation;
+
+        public FileImplementor() {
+            //intentionally empty
+        }
+
+        public void setFileTable( final FileTranslatableTable fileTable ) {
+            this.fileTable = fileTable;
+        }
 
         public void setColumnNames( final List<String> columnNames ) {
             this.columnNames.clear();
             this.columnNames.addAll( columnNames );
         }
 
-        public void project ( final List<String> columnNames ) {
+        public void project( final List<String> columnNames ) {
             this.columnNames.clear();
             this.columnNames.addAll( columnNames );
         }
 
         public void addInsertValue ( final Object... row ) {
-            insertValues.add( Row.of( row ) );
+            insertValues.add( row );
         }
 
         public void addInsertValues ( final List<Object[]> rows ) {
-            for( Object[] row: rows ) {
-                insertValues.add( Row.of( row ) );
-            }
+            insertValues.addAll( rows );
         }
 
         /**
