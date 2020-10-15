@@ -542,3 +542,31 @@ SqlAlterStoresDrop SqlAlterStoresDrop(Span s) :
         return new SqlAlterStoresDrop(s.end(this), storeName);
     }
 }
+
+
+SqlAlterInterfacesAdd SqlAlterInterfacesAdd(Span s) :
+{
+    final SqlNode uniqueName;
+    final SqlNode clazzName;
+    final SqlNode config;
+}
+{
+    <INTERFACES> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <USING> clazzName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterInterfacesAdd(s.end(this), uniqueName, clazzName, config);
+    }
+}
+
+
+SqlAlterInterfacesDrop SqlAlterInterfacesDrop(Span s) :
+{
+    final SqlNode uniqueName;
+}
+{
+    <INTERFACES> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterInterfacesDrop(s.end(this), uniqueName);
+    }
+}

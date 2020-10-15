@@ -17,6 +17,9 @@
 package org.polypheny.db.jdbc;
 
 
+import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.metrics.MetricsSystem;
 import org.apache.calcite.avatica.metrics.MetricsSystemConfiguration;
@@ -25,39 +28,96 @@ import org.apache.calcite.avatica.metrics.noop.NoopMetricsSystemConfiguration;
 import org.apache.calcite.avatica.remote.Driver.Serialization;
 import org.apache.calcite.avatica.server.AvaticaHandler;
 import org.apache.calcite.avatica.server.HandlerFactory;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.util.Util;
 
 
 @Slf4j
 public class JdbcInterface extends QueryInterface {
 
+    @SuppressWarnings("WeakerAccess")
+    public static final String INTERFACE_NAME = "JDBC Interface";
+    @SuppressWarnings("WeakerAccess")
+    public static final String INTERFACE_DESCRIPTION = "JDBC-SQL query interface with configurable SQL dialect.";
+    @SuppressWarnings("WeakerAccess")
+    public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new QueryInterfaceSettingInteger( "port", false, true, false, 20591 ),
+            new QueryInterfaceSettingList( "serialization", false, true, false, ImmutableList.of( "PROTOBUF", "JSON" ) )
+    );
+
 
     private final MetricsSystemConfiguration metricsSystemConfiguration;
     private final MetricsSystem metricsSystem;
+    private final int port;
+
+    private final DbmsMeta meta;
+    private final HttpServerDispatcher httpServerDispatcher;
 
 
-    public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator ) {
-        super( transactionManager, authenticator );
+    public JdbcInterface( TransactionManager transactionManager, Authenticator authenticator, int ifaceId, String uniqueName, Map<String, String> settings ) {
+        super( transactionManager, authenticator, ifaceId, uniqueName, settings, true, true );
         metricsSystemConfiguration = NoopMetricsSystemConfiguration.getInstance();
         metricsSystem = NoopMetricsSystem.getInstance();
+
+        port = Integer.parseInt( settings.get( "port" ) );
+        if ( !Util.checkIfPortIsAvailable( port ) ) {
+            // Port is already in use
+            throw new RuntimeException( "Unable to start " + INTERFACE_NAME + " on port " + port + "! The port is already in use." );
+        }
+
+        meta = new DbmsMeta( transactionManager, authenticator, uniqueName );
+        Serialization serialization = Serialization.valueOf( settings.get( "serialization" ) );
+        AvaticaHandler handler = new HandlerFactory().getHandler(
+                new DbmsService( meta, metricsSystem ),
+                serialization,
+                metricsSystemConfiguration );
+        try {
+            httpServerDispatcher = new HttpServerDispatcher( port, handler );
+        } catch ( Exception e ) {
+            throw new RuntimeException( "Exception while starting JDBC interface", e );
+        }
     }
 
 
     @Override
     public void run() {
         try {
-            final DbmsMeta meta = new DbmsMeta( transactionManager, authenticator );
-            AvaticaHandler handler = new HandlerFactory().getHandler(
-                    new DbmsService( meta, metricsSystem ),
-                    Serialization.PROTOBUF,
-                    metricsSystemConfiguration );
-            final HttpServerDispatcher httpServerDispatcher = new HttpServerDispatcher( RuntimeConfig.JDBC_PORT.getInteger(), handler );
             httpServerDispatcher.start();
         } catch ( Exception e ) {
-            log.error( "", e );
+            log.error( "Exception while starting JDBC interface", e );
         }
+        log.info( "{} started and is listening on port {}.", INTERFACE_NAME, port );
     }
+
+
+    @Override
+    public List<QueryInterfaceSetting> getAvailableSettings() {
+        return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public void shutdown() {
+        try {
+            httpServerDispatcher.stop();
+            meta.shutdown();
+        } catch ( Exception e ) {
+            log.error( "Exception while shutdown of a JDBC query interface!", e );
+        }
+        log.info( "{} stopped.", INTERFACE_NAME );
+    }
+
+
+    @Override
+    protected void reloadSettings( List<String> updatedSettings ) {
+        // There is no modifiable setting for this query interface
+    }
+
+    @Override
+    public String getInterfaceType() {
+        return INTERFACE_NAME;
+    }
+
 }

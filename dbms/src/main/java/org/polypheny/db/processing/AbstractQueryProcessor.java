@@ -323,7 +323,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         // Add values to data context
         for ( DataContext.ParameterValue value : queryParameterizer.getValues() ) {
-            statement.getDataContext().addParameterValues( value.getIndex(), value.getType(), ImmutableList.of( value.getValue() ) );
+            statement.getDataContext().addParameterValues( value.getIndex(), value.getType(), Collections.singletonList( value.getValue() ) );
         }
 
         // parameterRowType
