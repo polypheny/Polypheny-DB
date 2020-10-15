@@ -1721,7 +1721,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Update the settings of a stoe
+     * Update the settings of a store
      */
     Store updateStoreSettings( final Request req, final Response res ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
@@ -1801,7 +1801,7 @@ public class Crud implements InformationObserver {
         ImmutableMap<String, QueryInterface> queryInterfaces = qim.getQueryInterfaces();
         List<QueryInterfaceModel> qIs = new ArrayList<>();
         for( QueryInterface i: queryInterfaces.values() ) {
-            qIs.add( new QueryInterfaceModel( i.getQueryInterfaceId(), i.getUniqueName(), i.getInterfaceType(), i.getCurrentSettings(), i.getAvailableSettings().toArray( new QueryInterfaceSetting[0] ) ) );
+            qIs.add( new QueryInterfaceModel( i ) );
         }
         return gson.toJson( qIs.toArray(new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
     }

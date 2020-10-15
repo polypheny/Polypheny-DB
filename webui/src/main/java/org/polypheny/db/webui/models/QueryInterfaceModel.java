@@ -19,6 +19,7 @@ package org.polypheny.db.webui.models;
 
 import java.util.Map;
 import lombok.AllArgsConstructor;
+import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 
 
@@ -29,10 +30,20 @@ import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 @AllArgsConstructor
 public class QueryInterfaceModel {
 
-    public final int queryInterfaceId;
     public final String uniqueName;
+    public boolean supportsDdl;
+    public boolean supportsDml;
     public final String interfaceType;
     public final Map<String, String> currentSettings;
     public final QueryInterfaceSetting[] availableSettings;
+
+    public QueryInterfaceModel ( final QueryInterface i ) {
+        this.uniqueName = i.getUniqueName();
+        this.interfaceType = i.getInterfaceType();
+        this.currentSettings = i.getCurrentSettings();
+        this.availableSettings = i.getAvailableSettings().toArray( new QueryInterfaceSetting[0] );
+        this.supportsDdl = i.isSupportsDdl();
+        this.supportsDml = i.isSupportsDml();
+    }
 
 }
