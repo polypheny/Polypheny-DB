@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -50,6 +51,7 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
@@ -802,15 +804,11 @@ public abstract class Catalog {
 
     /**
      * Get a store by its unique name
-     *
-     * @return List of stores
      */
     public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException, UnknownStoreException;
 
     /**
      * Get a store by its id
-     *
-     * @return List of stores
      */
     public abstract CatalogStore getStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
 
@@ -830,6 +828,41 @@ public abstract class Catalog {
      * @param storeId The id of the store to delete
      */
     public abstract void deleteStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
+
+
+    /**
+     * Get list of all query interfaces
+     *
+     * @return List of query interfaces
+     */
+    public abstract List<CatalogQueryInterface> getQueryInterfaces() throws GenericCatalogException;
+
+    /**
+     * Get a query interface by its unique name
+     */
+    public abstract CatalogQueryInterface getQueryInterface( String uniqueName ) throws GenericCatalogException, UnknownQueryInterfaceException;
+
+    /**
+     * Get a query interface by its id
+     */
+    public abstract CatalogQueryInterface getQueryInterface( int ifaceId ) throws GenericCatalogException, UnknownQueryInterfaceException;
+
+    /**
+     * Add a query interface
+     *
+     * @param uniqueName The unique name of the query interface
+     * @param clazz      The class name of the query interface
+     * @param settings   The configuration of the query interface
+     * @return The id of the newly added query interface
+     */
+    public abstract int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) throws GenericCatalogException;
+
+    /**
+     * Delete a query interface
+     *
+     * @param ifaceId The id of the query interface to delete
+     */
+    public abstract void deleteQueryInterface( int ifaceId ) throws GenericCatalogException, UnknownQueryInterfaceException;
 
 
     /*

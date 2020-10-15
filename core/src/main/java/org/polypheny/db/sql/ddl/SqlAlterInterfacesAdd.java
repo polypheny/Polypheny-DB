@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
@@ -38,43 +38,43 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER STORES ADD storeName USING adapterName WITH config} statement.
+ * Parse tree for {@code ALTER INTERFACES ADD uniqueName USING clazzName WITH config} statement.
  */
 @Slf4j
-public class SqlAlterStoresAdd extends SqlAlter {
+public class SqlAlterInterfacesAdd extends SqlAlter {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER STORES ADD", SqlKind.OTHER_DDL );
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER INTERFACES ADD", SqlKind.OTHER_DDL );
 
-    private final SqlNode storeName;
-    private final SqlNode adapterName;
+    private final SqlNode uniqueName;
+    private final SqlNode clazzName;
     private final SqlNode config;
 
 
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterStoresAdd( SqlParserPos pos, SqlNode storeName, SqlNode adapterName, SqlNode config ) {
+    public SqlAlterInterfacesAdd( SqlParserPos pos, SqlNode uniqueName, SqlNode clazzName, SqlNode config ) {
         super( OPERATOR, pos );
-        this.storeName = Objects.requireNonNull( storeName );
-        this.adapterName = Objects.requireNonNull( adapterName );
+        this.uniqueName = Objects.requireNonNull( uniqueName );
+        this.clazzName = Objects.requireNonNull( clazzName );
         this.config = Objects.requireNonNull( config );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( storeName, adapterName, config );
+        return ImmutableNullableList.of( uniqueName, clazzName, config );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "STORES" );
+        writer.keyword( "INTERFACES" );
         writer.keyword( "ADD" );
-        storeName.unparse( writer, leftPrec, rightPrec );
+        uniqueName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "USING" );
-        adapterName.unparse( writer, leftPrec, rightPrec );
+        clazzName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "WÍTH" );
         config.unparse( writer, leftPrec, rightPrec );
     }
@@ -82,13 +82,13 @@ public class SqlAlterStoresAdd extends SqlAlter {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        String storeNameStr = removeQuotationMarks( storeName.toString() );
-        String adapterNameStr = removeQuotationMarks( adapterName.toString() );
+        String uniqueNameStr = removeQuotationMarks( uniqueName.toString() );
+        String clazzNameStr = removeQuotationMarks( clazzName.toString() );
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
         try {
-            StoreManager.getInstance().addStore( Catalog.getInstance(), adapterNameStr, storeNameStr, configMap );
+            QueryInterfaceManager.getInstance().addQueryInterface( Catalog.getInstance(), clazzNameStr, uniqueNameStr, configMap );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not deploy store", e );
+            throw new RuntimeException( "Unable to deploy query interface", e );
         }
     }
 

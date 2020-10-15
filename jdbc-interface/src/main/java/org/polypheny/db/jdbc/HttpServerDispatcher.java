@@ -91,12 +91,6 @@ public class HttpServerDispatcher {
             throw new Exception( "HTTP Dispatcher was not started on the specified port. It would have listended on " + port );
         }
 
-        if ( log.isInfoEnabled() ) {
-            log.info( "HTTP Dispatcher is listening on port {}.", connector.getLocalPort() );
-        } else {
-            System.out.println( "HTTP Dispatcher is listening on port " + connector.getLocalPort() + "." );
-        }
-
         String host = connector.getHost();
         if ( null == host ) {
             // "null" means binding to all interfaces, we need to pick one so the client gets a real address and not "0.0.0.0" or similar.

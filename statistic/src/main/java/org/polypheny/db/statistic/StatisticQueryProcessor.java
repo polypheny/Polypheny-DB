@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Pattern;
@@ -45,8 +44,6 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -237,19 +234,12 @@ public class StatisticQueryProcessor {
 
 
     private StatisticResult executeSqlSelect( final Statement statement, final String sqlSelect ) throws QueryExecutionException {
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
 
         try {
-            signature = processQuery( statement, sqlSelect, parserConfig );
+            signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
             //noinspection unchecked
 
@@ -305,9 +295,9 @@ public class StatisticQueryProcessor {
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql, SqlParserConfig parserConfig ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
         PolyphenyDbSignature signature;
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor( parserConfig );
+        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
