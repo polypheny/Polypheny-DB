@@ -34,7 +34,12 @@ public class UnknownTableException extends CatalogException {
     }
 
 
-    public UnknownTableException( long tableId ) {
-        super( "There is no table with id '" + tableId + "'." );
+    public static class UnknownTableIdRuntimeException extends CatalogRuntimeException {
+
+        public UnknownTableIdRuntimeException( long tableId ) {
+            super( "There is no table with id '" + tableId + "'." );
+        }
+
     }
+
 }

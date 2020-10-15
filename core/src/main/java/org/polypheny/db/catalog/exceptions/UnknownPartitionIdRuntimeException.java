@@ -17,19 +17,9 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class CatalogTransactionException extends CatalogException {
+public class UnknownPartitionIdRuntimeException extends CatalogRuntimeException {
 
-    private Exception exception;
-
-
-    public CatalogTransactionException( String message ) {
-        super( message );
+    public UnknownPartitionIdRuntimeException( long partitionId ) {
+        super( "There is no partition with id '" + partitionId + "'." );
     }
-
-
-    public CatalogTransactionException( String message, Exception e ) {
-        super( message, e );
-        exception = e;
-    }
-
 }

@@ -51,7 +51,7 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -426,7 +426,6 @@ public abstract class Catalog {
      * @param storeId  The id of the store
      * @param columnId The id of the column
      * @return true if there is a column placement, false if not.
-     * @throws GenericCatalogException A generic catalog exception
      */
     public abstract boolean checkIfExistsColumnPlacement( int storeId, long columnId );
 
@@ -516,7 +515,6 @@ public abstract class Catalog {
      *
      * @param columnId The id of the column
      * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this id
      */
     public abstract CatalogColumn getColumn( long columnId );
 
@@ -871,13 +869,13 @@ public abstract class Catalog {
 
     public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
 
-    protected abstract void deletePartition( long tableId, long schemaId, long partitionId );
+    protected abstract void deletePartition( long tableId, long schemaId, long partitionId ) throws UnknownPartitionIdRuntimeException;
 
-    public abstract CatalogPartition getPartition( long partitionId ) throws UnknownPartitionException;
+    public abstract CatalogPartition getPartition( long partitionId ) throws UnknownPartitionIdRuntimeException;
 
-    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionException, GenericCatalogException;
+    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionIdRuntimeException, GenericCatalogException;
 
-    public abstract void mergeTable( long tableId ) throws UnknownTableException;
+    public abstract void mergeTable( long tableId ) throws UnknownTableException, GenericCatalogException, UnknownKeyException, UnknownPartitionIdRuntimeException;
 
     public abstract List<CatalogPartition> getPartitions( long tableId ) throws UnknownTableException;
 
@@ -889,9 +887,9 @@ public abstract class Catalog {
 
     public abstract List<CatalogPartition> getPartitionsOnStore( long storeId );
 
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) throws UnknownPartitionException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) throws UnknownPartitionIdRuntimeException;
 
-    public abstract List<CatalogStore> getStoresByPartition( long tableId, long partitionId ) throws UnknownPartitionException;
+    public abstract List<CatalogStore> getStoresByPartition( long tableId, long partitionId ) throws UnknownPartitionIdRuntimeException;
 
     public abstract void updatePartitionsOnDataPlacement( int storeId, long tableId, List<Long> partitionIds ) throws UnknownTableException, UnknownStoreException;
 
@@ -961,7 +959,7 @@ public abstract class Catalog {
 
         // Required for building JDBC result set
         @RequiredArgsConstructor
-        public class PrimitiveTableType {
+        public static class PrimitiveTableType {
 
             public final String tableType;
         }

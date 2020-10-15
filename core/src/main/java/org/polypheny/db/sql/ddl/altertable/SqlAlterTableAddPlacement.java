@@ -60,11 +60,17 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     private final SqlIdentifier table;
     private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
-    List<Integer> partitionList;
-    List<SqlIdentifier> partitionNamesList;
+    private final List<Integer> partitionList;
+    private final List<SqlIdentifier> partitionNamesList;
 
 
-    public SqlAlterTableAddPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList ) {
+    public SqlAlterTableAddPlacement(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlNodeList columnList,
+            SqlIdentifier storeName,
+            List<Integer> partitionList,
+            List<SqlIdentifier> partitionNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
@@ -100,7 +106,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         Catalog catalog = Catalog.getInstance();
         //You can't partition placements if the table is not partitioned
-        if ( catalogTable.isPartitioned == false && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
+        if ( !catalogTable.isPartitioned && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
             throw new RuntimeException( " Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 

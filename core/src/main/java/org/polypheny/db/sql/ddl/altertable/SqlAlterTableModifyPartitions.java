@@ -49,18 +49,21 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
     private final SqlIdentifier table;
     private final SqlIdentifier storeName;
-    List<Integer> partitionList;
-    List<SqlIdentifier> partitionNamesList;
+    private final List<Integer> partitionList;
+    private final List<SqlIdentifier> partitionNamesList;
 
 
-    public SqlAlterTableModifyPartitions( SqlParserPos pos, SqlIdentifier table, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList ) {
+    public SqlAlterTableModifyPartitions(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier storeName,
+            List<Integer> partitionList,
+            List<SqlIdentifier> partitionNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.storeName = Objects.requireNonNull( storeName );
         this.partitionList = partitionList;
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
-
-
     }
 
 
@@ -80,7 +83,6 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         writer.keyword( "ON" );
         writer.keyword( "STORE" );
         storeName.unparse( writer, leftPrec, rightPrec );
-
     }
 
 
@@ -93,7 +95,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         }
 
         try {
-            //Check if table is already partitioned
+            // Check if table is already partitioned
 
             long tableId = catalogTable.id;
 

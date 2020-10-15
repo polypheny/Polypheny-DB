@@ -25,7 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
@@ -48,11 +48,18 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
     private final int numPartitions;
-    List<SqlIdentifier> partitionNamesList;
-    List<SqlIdentifier> partitionQualifierList;
+    private final List<SqlIdentifier> partitionNamesList;
+    private final List<SqlIdentifier> partitionQualifierList;
 
 
-    public SqlAlterTableAddPartitions( SqlParserPos pos, SqlIdentifier table, SqlIdentifier partitionColumn, SqlIdentifier partitionType, int numPartitions, List<SqlIdentifier> partitionNamesList, List<SqlIdentifier> partitionQualifierList ) {
+    public SqlAlterTableAddPartitions(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier partitionColumn,
+            SqlIdentifier partitionType,
+            int numPartitions,
+            List<SqlIdentifier> partitionNamesList,
+            List<SqlIdentifier> partitionQualifierList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.partitionType = Objects.requireNonNull( partitionType );
@@ -77,7 +84,6 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
         writer.keyword( "PARTITION" );
         writer.keyword( "BY" );
         partitionType.unparse( writer, leftPrec, rightPrec );
-
     }
 
 
@@ -87,7 +93,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         try {
-            //Check if table is already partitioned
+            // Check if table is already partitioned
             if ( catalogTable.partitionType == Catalog.PartitionType.NONE ) {
                 long tableId = catalogTable.id;
 
@@ -95,21 +101,26 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                 Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName( partitionType.toString() );
 
                 long partitionColumnID = catalog.getColumn( tableId, partitionColumn.toString() ).id;
-                log.debug( "Creating partition for table: " + catalogTable.name + " with id " + catalogTable.id +
-                        " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Creating partition for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
+                }
 
                 // TODO maybe create partitions multithreaded
-                catalog.partitionTable( tableId, actualPartitionType, partitionColumnID, numPartitions, partitionQualifierList.stream().map( Object::toString )
-                        .collect( Collectors.toList() ), partitionNamesList.stream().map( Object::toString )
-                        .collect( Collectors.toList() ) );
+                catalog.partitionTable(
+                        tableId,
+                        actualPartitionType,
+                        partitionColumnID,
+                        numPartitions,
+                        partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
+                        partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
 
-                log.debug( "Table: '" + catalogTable.name + "' has been partitioned on columnId '"
-                        + catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) + "' " );
-                //
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Table: '{}' has been partitioned on columnId '{}'", catalogTable.name, catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) );
+                }
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
             }
-        } catch ( UnknownPartitionTypeException | UnknownColumnException | UnknownTableException | UnknownPartitionException | GenericCatalogException e ) {
+        } catch ( UnknownPartitionTypeException | UnknownColumnException | UnknownTableException | UnknownPartitionIdRuntimeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

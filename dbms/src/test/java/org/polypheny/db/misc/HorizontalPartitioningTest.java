@@ -172,7 +172,6 @@ public class HorizontalPartitioningTest {
     //Check if partitions have enough partitions
     @Test
     public void partitionNumberTest() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -216,7 +215,6 @@ public class HorizontalPartitioningTest {
 
     @Test
     public void hashPartitioningTest() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -294,7 +292,6 @@ public class HorizontalPartitioningTest {
 
     @Test
     public void listPartitioningTest() throws SQLException {
-
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -342,8 +339,6 @@ public class HorizontalPartitioningTest {
                 statement.executeUpdate( "DROP TABLE listpartitioning" );
                 statement.executeUpdate( "DROP TABLE listpartitioning2" );
                 statement.executeUpdate( "DROP TABLE listpartitioning3" );
-
-
             }
         }
     }

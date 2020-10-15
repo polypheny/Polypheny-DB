@@ -149,7 +149,6 @@ public class PolyphenyDb {
         new JavaInformation();
         new HostInformation();
 
-
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {
                 httpServerDispatcher.stop();
@@ -226,7 +225,5 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
-
-
     }
 }

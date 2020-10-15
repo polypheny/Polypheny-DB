@@ -16,8 +16,10 @@
 
 package org.polypheny.db.partition;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
@@ -33,7 +35,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     protected boolean allowsUnboundPartition;
 
 
-    //returns the Index of the partition where to place the object
+    // returns the Index of the partition where to place the object
     @Override
     public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
@@ -49,15 +51,38 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
     @Override
     public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
-
         if ( numPartitions == 0 && partitionNames.size() < 2 ) {
-            throw new RuntimeException( "Partition Table failed for  Can't specify partition names with less than 2 names" );
+            throw new RuntimeException( "Partitioning of table failed! Can't specify partition names with less than 2 names" );
         }
-
         return true;
     }
 
 
     @Override
     public abstract boolean allowsUnboundPartition();
+
+
+    /**
+     * Returns number of placements for this column which contain all partitions
+     *
+     * @param columnId column to be checked
+     * @param numPartitions numPartitions
+     * @return If its correctly distributed or not
+     */
+    protected List<CatalogColumnPlacement> getPlacementsWithAllPartitions( long columnId, long numPartitions ) {
+        Catalog catalog = Catalog.getInstance();
+
+        // Return every placement of this column
+        List<CatalogColumnPlacement> tempCcps = catalog.getColumnPlacements( columnId );
+        List<CatalogColumnPlacement> returnCcps = new ArrayList<>();
+        int placementCounter = 0;
+        for ( CatalogColumnPlacement ccp : tempCcps ) {
+            // If the DataPlacement has stored all partitions and therefore all partitions for this placement
+            if ( catalog.getPartitionsOnDataPlacement( ccp.storeId, ccp.tableId ).size() == numPartitions ) {
+                returnCcps.add( ccp );
+                placementCounter++;
+            }
+        }
+        return returnCcps;
+    }
 }

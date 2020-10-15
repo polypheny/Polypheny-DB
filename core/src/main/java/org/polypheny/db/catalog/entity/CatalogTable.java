@@ -64,7 +64,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     // If specified explicitly boundPartitions will be set to true
     public long numPartitions;
 
-    // Bound partition states if the partitioning is done on a fixed number of Partitions
+    // Bound partition states if the partitioning is done on a fixed number of partitions
     // Or adjusted automatically as the table grows
     public boolean boundPartition;
     @Setter
