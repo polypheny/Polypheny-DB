@@ -246,12 +246,12 @@ public class HttpRestServer extends QueryInterface {
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
             symbols.setDecimalSeparator( '.' );
-            DecimalFormat df = new DecimalFormat( "#.0", symbols );
+            DecimalFormat df = new DecimalFormat( "0.0", symbols );
             counterTable.reset();
-            counterTable.addRow( "DELETE", df.format( (deleteCount / total) * 100 ) + " %", deleteCount );
-            counterTable.addRow( "GET", df.format( (getCount / total) * 100 ) + " %", getCount );
-            counterTable.addRow( "PATCH", df.format( (patchCount / total) * 100 ) + " %", patchCount );
-            counterTable.addRow( "POST", df.format( (postCount / total) * 100 ) + " %", postCount );
+            counterTable.addRow( "DELETE", df.format( total == 0 ? 0 : (deleteCount / total) * 100 ) + " %", deleteCount );
+            counterTable.addRow( "GET", df.format( total == 0 ? 0 : (getCount / total) * 100 ) + " %", getCount );
+            counterTable.addRow( "PATCH", df.format( total == 0 ? 0 : (patchCount / total) * 100 ) + " %", patchCount );
+            counterTable.addRow( "POST", df.format( total == 0 ? 0 : (postCount / total) * 100 ) + " %", postCount );
         }
 
 
