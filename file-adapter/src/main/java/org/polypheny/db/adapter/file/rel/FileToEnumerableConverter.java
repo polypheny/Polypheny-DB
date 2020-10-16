@@ -82,7 +82,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                 for ( Object[] row : fileImplementor.getInsertValues() ) {
                     ArrayList<Expression> valuesExpression = new ArrayList<>();
                     for ( Object value : row ) {
-                        valuesExpression.add( Expressions.constant( value ) );
+                        valuesExpression.add( Expressions.constant( value, String.class ) );
                     }
                     rowExpressions.add( Expressions.newArrayInit( Object[].class, valuesExpression ) );
                 }

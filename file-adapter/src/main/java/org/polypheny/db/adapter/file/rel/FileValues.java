@@ -61,9 +61,7 @@ public class FileValues extends Values implements FileRel {
             Object[] o = new Object[literalList.size()];
             int i = 0;
             for ( RexLiteral literal : literalList.asList() ) {
-                //todo check which method to take (getValue2 etc.),
-                //literal.getValueForQueryParameterizer() is good, but bad with arrays
-                o[i] = literal.getValue();
+                o[i] = literal.getValueAsString();
                 i++;
             }
             implementor.addInsertValue( o );

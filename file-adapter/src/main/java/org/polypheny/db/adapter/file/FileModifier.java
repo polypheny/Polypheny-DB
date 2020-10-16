@@ -53,6 +53,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
                     return false;
                 }
                 Object[] currentRow = (Object[]) insertValues[insertPosition];
+                //todo only hash values of PK columns!
                 int hash = Arrays.hashCode( currentRow );
                 for ( int i = 0; i < currentRow.length; i++ ) {
                     Object value = currentRow[i];
@@ -61,9 +62,10 @@ public class FileModifier<E> extends FileEnumerator<E> {
                     }
                     File columnFolder = new File( rootFile, FileStore.getPhysicalColumnName( columnIds[i] ) );
                     File newFile = new File( columnFolder, String.valueOf( hash ) );
-                    if ( !newFile.createNewFile() ) {
+                    //don't throw for now
+                    /*if ( !newFile.createNewFile() ) {
                         throw new RuntimeException( "Primary key conflict! You are trying to insert a row that already exists." );
-                    }
+                    }*/
                     Files.write( newFile.toPath(), value.toString().getBytes( encoding ) );
                 }
                 insertPosition++;

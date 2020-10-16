@@ -1034,6 +1034,29 @@ public class RexLiteral extends RexNode {
     }
 
 
+    public String getValueAsString() {
+        if ( value == null ) {
+            return null;
+        }
+        switch ( typeName ) {
+            case VARCHAR:
+            case CHAR:
+                return ((NlsString) value).getValue();
+            case BOOLEAN:
+                return Boolean.toString( (Boolean) value );
+            case DATE:
+            case TIME:
+                int i = getValueAs( Integer.class );
+                return String.valueOf( i );
+            case TIMESTAMP:
+                long l = getValueAs( Long.class );
+                return String.valueOf( l );
+            default:
+                return value.toString();
+        }
+    }
+
+
     public static boolean booleanValue( RexNode node ) {
         return (Boolean) ((RexLiteral) node).value;
     }

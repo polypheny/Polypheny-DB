@@ -61,6 +61,7 @@ public interface FileRel extends RelNode {
 
         public void setFileTable( final FileTranslatableTable fileTable ) {
             this.fileTable = fileTable;
+            this.columnNames.addAll( fileTable.getColumnNames() );
         }
 
         public void setColumnNames( final List<String> columnNames ) {

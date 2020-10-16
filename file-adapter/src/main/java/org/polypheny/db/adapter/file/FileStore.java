@@ -95,7 +95,7 @@ public class FileStore extends Store {
         for( Long colId: catalogTable.columnIds ) {
             File newColumnFolder = getColumnFolder( colId );
             if( !newColumnFolder.mkdir() ) {
-                throw new RuntimeException( "Could not create column file" );
+                throw new RuntimeException( "Could not create column folder" );
             }
         }
     }
@@ -121,7 +121,7 @@ public class FileStore extends Store {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         File newColumnFolder = getColumnFolder( catalogColumn.id );
         if( !newColumnFolder.mkdir() ) {
-            throw new RuntimeException( "Could not create column file" );
+            throw new RuntimeException( "Could not create column folder" );
         }
         try {
             catalog.updateColumnPlacementPhysicalNames(
@@ -143,7 +143,7 @@ public class FileStore extends Store {
         try {
             FileUtils.deleteDirectory( columnFile );
         } catch ( IOException e ) {
-            throw new RuntimeException( "Could not delete column file", e );
+            throw new RuntimeException( "Could not delete column folder", e );
         }
     }
 

@@ -114,15 +114,20 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 curr[i] = gson.fromJson( s, Boolean.class );
                                 break;
                             case INTEGER:
+                            case TIME:
+                            case DATE:
                                 curr[i] = Integer.parseInt( s );
                                 break;
                             case BIGINT:
+                            case TIMESTAMP:
                                 curr[i] = Long.parseLong( s );
                                 break;
                             case DOUBLE:
                                 curr[i] = Double.parseDouble( s );
+                                break;
                             case FLOAT:
                                 curr[i] = Float.parseFloat( s );
+                                break;
                             default:
                                 curr[i] = s;
                         }
