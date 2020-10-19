@@ -41,11 +41,11 @@ public class FileValues extends Values implements FileRel {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.8 );
+        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
 
     @Override
-    public void implement( FileImplementor implementor ) {
+    public void implement( final FileImplementor implementor ) {
         RelRecordType recordType = (RelRecordType) getRowType();
         if ( recordType.toString().equals( "RecordType(INTEGER ZERO)" ) ) {
             implementor.setBatchInsert( true );
@@ -58,13 +58,13 @@ public class FileValues extends Values implements FileRel {
         implementor.setColumnNames( columns );
 
         for ( ImmutableList<RexLiteral> literalList : tuples ) {
-            Object[] o = new Object[literalList.size()];
+            Object[] row = new Object[literalList.size()];
             int i = 0;
             for ( RexLiteral literal : literalList.asList() ) {
-                o[i] = literal.getValueAsString();
+                row[i] = literal.getValueAsString();
                 i++;
             }
-            implementor.addInsertValue( o );
+            implementor.addInsertValue( row );
         }
     }
 }

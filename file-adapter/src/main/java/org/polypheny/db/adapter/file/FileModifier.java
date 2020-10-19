@@ -29,8 +29,8 @@ public class FileModifier<E> extends FileEnumerator<E> {
 
     private final Long[] columnIds;
     private final Object[] insertValues;
-    private int insertPosition = 0;
     private final File rootFile;
+    private boolean inserted = false;
 
     public FileModifier( String rootPath, Long[] columnIds, PolyType[] columnTypes, AtomicBoolean cancelFlag, Object[] insertValues ) {
         super( rootPath, columnIds, columnTypes, cancelFlag );
@@ -44,32 +44,42 @@ public class FileModifier<E> extends FileEnumerator<E> {
         return current;
     }
 
+    /**
+     * First call during an insert:
+     * insert all data, set current to the insertCount, return true
+     * Second call:
+     * return false
+     * see {@link org.polypheny.db.webui.Crud#executeSqlUpdate}
+     */
     @Override
     public boolean moveNext() {
         try {
             outer:
             for ( ; ; ) {
-                if ( cancelFlag.get() || insertPosition >= insertValues.length ) {
+                if ( cancelFlag.get() || inserted ) {
                     return false;
                 }
-                Object[] currentRow = (Object[]) insertValues[insertPosition];
-                //todo only hash values of PK columns!
-                int hash = Arrays.hashCode( currentRow );
-                for ( int i = 0; i < currentRow.length; i++ ) {
-                    Object value = currentRow[i];
-                    if ( value == null ) {
-                        continue;
+                int insertPosition;
+                for ( insertPosition = 0; insertPosition < insertValues.length; insertPosition++ ) {
+                    Object[] currentRow = (Object[]) insertValues[insertPosition];
+                    //todo only hash values of PK columns!
+                    int hash = Arrays.hashCode( currentRow );
+                    for ( int i = 0; i < currentRow.length; i++ ) {
+                        Object value = currentRow[i];
+                        if ( value == null ) {
+                            continue;
+                        }
+                        File columnFolder = new File( rootFile, FileStore.getPhysicalColumnName( columnIds[i] ) );
+                        File newFile = new File( columnFolder, String.valueOf( hash ) );
+                        //don't throw for now
+                        /*if ( !newFile.createNewFile() ) {
+                            throw new RuntimeException( "Primary key conflict! You are trying to insert a row that already exists." );
+                        }*/
+                        Files.write( newFile.toPath(), value.toString().getBytes( encoding ) );
                     }
-                    File columnFolder = new File( rootFile, FileStore.getPhysicalColumnName( columnIds[i] ) );
-                    File newFile = new File( columnFolder, String.valueOf( hash ) );
-                    //don't throw for now
-                    /*if ( !newFile.createNewFile() ) {
-                        throw new RuntimeException( "Primary key conflict! You are trying to insert a row that already exists." );
-                    }*/
-                    Files.write( newFile.toPath(), value.toString().getBytes( encoding ) );
                 }
-                insertPosition++;
-                current = (E) Long.valueOf( insertPosition );
+                current = (E) new Long( insertPosition );
+                inserted = true;
                 return true;
             }
         } catch ( IOException e ) {
@@ -79,7 +89,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
 
     @Override
     public void reset() {
-        insertPosition = 0;
+        //insertPosition = 0;
     }
 
     @Override

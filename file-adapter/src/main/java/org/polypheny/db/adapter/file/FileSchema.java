@@ -77,8 +77,11 @@ public class FileSchema extends AbstractSchema {
             catalogColumn = Catalog.getInstance().getColumn( p.columnId );
             if ( p.storeId == store.getStoreId() ) {
                 columnIds.add( p.columnId );
-                //todo arrayType
-                columnTypes.add( catalogColumn.type );
+                if ( catalogColumn.collectionsType != null ) {
+                    columnTypes.add( PolyType.ARRAY );
+                } else {
+                    columnTypes.add( catalogColumn.type );
+                }
                 columnNames.add( catalogColumn.name );
                 //todo catalogColumn.defaultValue
 

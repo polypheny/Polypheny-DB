@@ -128,6 +128,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                             case FLOAT:
                                 curr[i] = Float.parseFloat( s );
                                 break;
+                            //case ARRAY:
                             default:
                                 curr[i] = s;
                         }

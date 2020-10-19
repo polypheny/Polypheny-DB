@@ -17,9 +17,11 @@
 package org.polypheny.db.adapter.file.rel;
 
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileRel;
+import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -30,6 +32,8 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelRecordType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -51,10 +55,37 @@ public class FileProject extends Project implements FileRel {
 
     @Override
     public void implement( FileImplementor implementor ) {
-        implementor.visitChild( 0, getInput() );
+        if ( implementor.getOperation() == Operation.INSERT ) {
+            //don't visit FileValues, the values are in the exps field
+            //for non-array inserts, there is no FileProject
+            Object[] row = new Object[exps.size()];
+            Gson gson = new Gson();
+            int i = 0;
+            for ( RexNode node : exps ) {
+                if ( node instanceof RexLiteral ) {
+                    row[i] = ((RexLiteral) node).getValueAsString();
+                    i++;
+                } else if ( node instanceof RexCall ) {
+                    RexCall call = (RexCall) node;
+                    ArrayList<Object> arrayValues = new ArrayList<>();
+                    for ( RexNode node1 : call.getOperands() ) {
+                        arrayValues.add( ((RexLiteral) node1).getValueForQueryParameterizer() );
+                    }
+                    row[i] = gson.toJson( arrayValues );
+                    i++;
+                }
+            }
+            implementor.addInsertValue( row );
+        } else {
+            implementor.visitChild( 0, getInput() );
+        }
         RelRecordType rowType = (RelRecordType) getRowType();
         List<String> fields = new ArrayList<>();
         for ( RelDataTypeField field : rowType.getFieldList() ) {
+            if ( field.getKey().startsWith( "EXPR$" ) ) {
+                //don't set EXPR-columns in FileImplementor
+                return;
+            }
             fields.add( field.getKey() );
         }
         implementor.project( fields );

@@ -7,14 +7,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.file.FileRel.FileImplementor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -42,7 +40,6 @@ public class FileStore extends Store {
     @Getter
     private File rootDir;
     private FileSchema currentSchema;
-    private final Map<PolyXid, FileImplementor> toExecute = new HashMap<>();
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -53,7 +50,6 @@ public class FileStore extends Store {
 
     private void setRootDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
-        //if ( dir.startsWith( "classpath://" ) )
 
         rootDir = new File( dir );
         if( !rootDir.exists() ) {

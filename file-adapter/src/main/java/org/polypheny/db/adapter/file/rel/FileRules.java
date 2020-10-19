@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.file.rel;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
@@ -31,25 +32,30 @@ import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.core.TableModify;
+import org.polypheny.db.rel.core.Union;
 import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
+@Slf4j
 public class FileRules {
 
-    public static List<RelOptRule> rules ( FileConvention out ) {
+    public static List<RelOptRule> rules( FileConvention out ) {
         return ImmutableList.of(
-                new FileToEnumerableConverterRule( out, RelFactories.LOGICAL_BUILDER),
+                new FileToEnumerableConverterRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileProjectRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileValuesRule( out, RelFactories.LOGICAL_BUILDER ),
-                new FileTableModificationRule( out, RelFactories.LOGICAL_BUILDER )
+                new FileTableModificationRule( out, RelFactories.LOGICAL_BUILDER ),
+                new FileUnionRule( out, RelFactories.LOGICAL_BUILDER )
         );
     }
 
     static class FileTableModificationRule extends ConverterRule {
 
-        protected final Convention convention;
+        protected final FileConvention convention;
 
         public FileTableModificationRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
             super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileTableModificationRule:" + out.getName() );
@@ -62,7 +68,7 @@ public class FileRules {
             if ( tableModify.getTable().unwrap( FileTranslatableTable.class ) != null ) {
                 return true;
             }
-            System.out.println("Did not convert TableModify into FileTranslatableTable");
+            log.warn( "Did not convert TableModify into FileTranslatableTable" );
             return false;
         }
 
@@ -73,7 +79,7 @@ public class FileRules {
             final ModifiableTable modifiableTable = modify.getTable().unwrap( ModifiableTable.class );
             //todo this check might be redundant
             if ( modifiableTable == null ) {
-                System.out.println("Returning null during conversion");
+                log.warn( "Returning null during conversion" );
                 return null;
             }
             final RelTraitSet traitSet = modify.getTraitSet().replace( convention );
@@ -91,7 +97,8 @@ public class FileRules {
         }
     }
 
-    static class FileToEnumerableConverterRule extends ConverterRule{
+
+    static class FileToEnumerableConverterRule extends ConverterRule {
 
         public FileToEnumerableConverterRule( FileConvention convention, RelBuilderFactory relBuilderFactory ) {
             super( RelNode.class, r -> true, convention, EnumerableConvention.INSTANCE, relBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
@@ -104,13 +111,31 @@ public class FileRules {
         }
     }
 
-    static class FileProjectRule extends ConverterRule{
 
-        protected final Convention convention;
+    static class FileProjectRule extends ConverterRule {
+
+        protected final FileConvention convention;
 
         public FileProjectRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Project.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileProjectRule:" + out.getName() );
             this.convention = out;
+        }
+
+        /**
+         * Needed for the {@link FileUnionRule}.
+         * A FileUnion should only be generated during a multi-insert with arrays.
+         * Since matches() seems to be called from bottom-up, the matches() method of the the FileUnionRule is called before the matches() method of the FileTableModificationRule
+         * Therefore, the information if the query is a modify or select, has already to be determined here
+         */
+        @Override
+        public boolean matches( RelOptRuleCall call ) {
+            if ( call.rel( 0 ) instanceof LogicalProject && ((LogicalProject) call.rel( 0 )).getExps().size() > 0 ) {
+                //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
+                if ( !(((LogicalProject) call.rel( 0 )).getExps().get( 0 ) instanceof RexInputRef) ) {
+                    convention.setModification( true );
+                }
+            }
+            return super.matches( call );
         }
 
         @Override
@@ -127,6 +152,7 @@ public class FileRules {
             );
         }
     }
+
 
     static class FileValuesRule extends ConverterRule {
 
@@ -146,6 +172,33 @@ public class FileRules {
                     values.getRowType(),
                     values.getTuples(),
                     values.getTraitSet().replace( convention ) );
+        }
+    }
+
+
+    static class FileUnionRule extends ConverterRule {
+
+        FileConvention convention;
+
+        public FileUnionRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
+            super( Union.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileUnionRule:" + out.getName() );
+            this.convention = out;
+        }
+
+        /**
+         * The FileUnion is needed for insert statements with arrays
+         * see {@link FileProjectRule#matches}
+         */
+        @Override
+        public boolean matches( RelOptRuleCall call ) {
+            return this.convention.isModification();
+        }
+
+
+        public RelNode convert( RelNode rel ) {
+            final Union union = (Union) rel;
+            final RelTraitSet traitSet = union.getTraitSet().replace( convention );
+            return new FileUnion( union.getCluster(), traitSet, RelOptRule.convertList( union.getInputs(), convention ), union.all );
         }
     }
 

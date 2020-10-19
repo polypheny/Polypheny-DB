@@ -65,10 +65,15 @@ public class FileTableModify extends TableModify implements FileRel {
     }
 
     @Override
-    public void implement( FileImplementor implementor ) {
+    public void implement( final FileImplementor implementor ) {
+        setOperation( implementor );//do it first, so children know that we have an insert/update/delete
         implementor.visitChild( 0, getInput() );
         FileTranslatableTable fileTable = (FileTranslatableTable) ((RelOptTableImpl) getTable()).getTable();
         implementor.setFileTable( fileTable );
+    }
+
+
+    private void setOperation( final FileImplementor implementor ) {
         Operation operation = getOperation();
         switch ( operation ) {
             case INSERT:
