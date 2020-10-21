@@ -96,11 +96,12 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
         }
 
         Expression enumerable;
-        if ( fileImplementor.getOperation() == Operation.SELECT ) {
+        if ( fileImplementor.getOperation() == Operation.SELECT || fileImplementor.getOperation() == Operation.DELETE ) {
             enumerable = list.append(
                     "enumerable",
                     Expressions.call(
-                            FileMethod.EXECUTE_SELECT.method,
+                            FileMethod.EXECUTE.method,
+                            Expressions.constant( fileImplementor.getOperation() ),
                             DataContext.ROOT,
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
@@ -113,6 +114,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                     "enumerable",
                     Expressions.call(
                             FileMethod.EXECUTE_MODIFY.method,
+                            Expressions.constant( fileImplementor.getOperation() ),
                             DataContext.ROOT,
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),

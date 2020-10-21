@@ -1010,7 +1010,7 @@ public class Crud implements InformationObserver {
                 result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." );
                 result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( TransactionException | Exception e ) {
             log.error( "Caught exception while deleting a row", e );
             result = new Result( e ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             try {

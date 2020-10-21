@@ -28,6 +28,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.rel.FileFilter;
 import org.polypheny.db.adapter.file.rel.FileFilter.Condition;
 import org.polypheny.db.type.PolyType;
@@ -37,11 +38,14 @@ import org.polypheny.db.type.PolyType;
 public class FileEnumerator<E> implements Enumerator<E> {
 
     E current;
+    final Operation operation;
     final List<File> columnFolders = new ArrayList<>();
     Integer maxRowCount;
     Long colWithMostRows;
     final File[] fileList;
-    int fileListPosition = 0;
+    Integer fileListPosition = 0;
+    Long deleteCount = 0L;
+    boolean deleted = false;
     final int numOfCols;
     final DataContext dataContext;
     final Condition condition;
@@ -62,12 +66,17 @@ public class FileEnumerator<E> implements Enumerator<E> {
      * @param dataContext DataContext
      * @param condition Condition that can be {@code null}. The columnReferences in the filter point to the columns coming from the tableScan, not from the projection
      */
-    public FileEnumerator( final String rootPath,
+    public FileEnumerator( final Operation operation,
+            final String rootPath,
             final Long[] columnIds,
             final PolyType[] columnTypes,
             final Integer[] projectionMapping,
             final DataContext dataContext,
             final FileFilter.Condition condition ) {
+        this.operation = operation;
+        if ( operation == Operation.DELETE ) {
+            current = (E) Long.valueOf( 0L );
+        }
         this.dataContext = dataContext;
         this.condition = condition;
         this.projectionMapping = projectionMapping;
@@ -115,7 +124,17 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     return false;
                 }
                 if ( fileListPosition >= fileList.length ) {
-                    return false;
+                    /* Why this is necessary:
+                     * First call during a delete:
+                     * Delete all data, set current to the deleteCount, return true
+                     * Second call: return false
+                     */
+                    if ( operation == Operation.DELETE && !deleted ) {
+                        deleted = true;
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
                 File currentFile = fileList[fileListPosition];
                 String[] strings = new String[numOfCols];
@@ -168,17 +187,30 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         continue;
                     }
                 }
-                //project only if necessary (if a projection and condition is given)
-                if ( projectionMapping != null && condition != null ) {
-                    curr = project( curr );
-                }
-                if ( curr.length == 1 ) {
-                    current = (E) curr[0];
+                if ( operation == Operation.SELECT ) {
+                    //project only if necessary (if a projection and condition is given)
+                    if ( projectionMapping != null && condition != null ) {
+                        curr = project( curr );
+                    }
+                    if ( curr.length == 1 ) {
+                        current = (E) curr[0];
+                    } else {
+                        current = (E) curr;
+                    }
+                    fileListPosition++;
+                    return true;
+                } else if ( operation == Operation.DELETE ) {
+                    for ( File colFolder : columnFolders ) {
+                        File f = new File( colFolder, currentFile.getName() );
+                        f.delete();//a file might not exist in a column where the value was null
+                    }
+                    deleteCount++;
+                    current = (E) deleteCount;
+                    fileListPosition++;
+                    //continue;
                 } else {
-                    current = (E) curr;
+                    throw new RuntimeException( operation + " operation is not supported in FileEnumerator" );
                 }
-                fileListPosition++;
-                return true;
             }
         } catch ( IOException e ) {
             throw new RuntimeException( e );

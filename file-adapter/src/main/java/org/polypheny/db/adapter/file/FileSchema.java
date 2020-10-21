@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.rel.FileFilter;
 import org.polypheny.db.adapter.file.rel.FileFilter.Condition;
 import org.polypheny.db.catalog.Catalog;
@@ -118,14 +119,15 @@ public class FileSchema extends AbstractSchema {
 
     /**
      * Called from generated code
-     * see {@link FileMethod#EXECUTE_SELECT} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
+     * Executes SELECT and DELETE operations
+     * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> executeSelect( final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final Integer[] projectionMapping, final String conditionJson ) {
+    public static Enumerable<Object[]> execute( final Operation operation, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final Integer[] projectionMapping, final String conditionJson ) {
         FileFilter.Condition condition = Condition.fromJson( conditionJson );
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new FileEnumerator<>( path, columnIds, columnTypes, projectionMapping, dataContext, condition );
+                return new FileEnumerator<>( operation, path, columnIds, columnTypes, projectionMapping, dataContext, condition );
             }
         };
     }
@@ -134,7 +136,7 @@ public class FileSchema extends AbstractSchema {
      * Called from generated code
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> executeModify( final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final String conditionJson ) {
+    public static Enumerable<Object[]> executeModify( final Operation operation, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final String conditionJson ) {
         FileFilter.Condition condition = Condition.fromJson( conditionJson );
         final Object[] insert;
         if ( isBatch ) {
@@ -153,7 +155,7 @@ public class FileSchema extends AbstractSchema {
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new FileModifier<>( path, columnIds, columnTypes, pkIds, dataContext, insert, condition );
+                return new FileModifier<>( operation, path, columnIds, columnTypes, pkIds, dataContext, insert, condition );
             }
         };
     }

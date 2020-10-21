@@ -115,21 +115,18 @@ public class FileFilter extends Filter implements FileRel {
                 }
             }
             //TODO find better names for parameterValue and cmp
+            Comparable cmp = columnValues[columnReference];//don't do the projectionMapping here
+            switch ( operator ) {
+                case IS_NULL:
+                    return cmp == null;
+                case IS_NOT_NULL:
+                    return cmp != null;
+            }
             Object parameterValue;
             if ( this.literal != null ) {
                 parameterValue = this.literal;
             } else {
                 parameterValue = dataContext.getParameterValue( literalIndex );
-            }
-            Comparable cmp = columnValues[columnReference];//don't do the projectionMapping here
-            if ( cmp == null ) {
-                switch ( operator ) {
-                    case IS_NULL:
-                        return true;
-                    case IS_NOT_NULL:
-                    default:// null > 3 returns false
-                        return false;
-                }
             }
             if ( cmp instanceof Number && parameterValue instanceof Number ) {
                 cmp = ((Number) cmp).doubleValue();

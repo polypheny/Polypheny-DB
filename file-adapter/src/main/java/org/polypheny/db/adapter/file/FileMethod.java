@@ -22,13 +22,14 @@ import java.lang.reflect.Method;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
 
 
 public enum FileMethod {
 
-    EXECUTE_SELECT( FileSchema.class, "executeSelect", DataContext.class, String.class, Long[].class, PolyType[].class, Integer[].class, String.class ),
-    EXECUTE_MODIFY( FileSchema.class, "executeModify", DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, String.class );
+    EXECUTE( FileSchema.class, "execute", Operation.class, DataContext.class, String.class, Long[].class, PolyType[].class, Integer[].class, String.class ),
+    EXECUTE_MODIFY( FileSchema.class, "executeModify", Operation.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, String.class );
 
     public final Method method;
     public static final ImmutableMap<Method, FileMethod> MAP;

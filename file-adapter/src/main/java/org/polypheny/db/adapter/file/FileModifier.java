@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.adapter.file.rel.FileFilter;
 import org.polypheny.db.type.PolyType;
 
@@ -35,7 +36,8 @@ public class FileModifier<E> extends FileEnumerator<E> {
     private boolean inserted = false;
     final Integer[] pkMapping;
 
-    public FileModifier( final String rootPath,
+    public FileModifier( final Operation operation,
+            final String rootPath,
             final Long[] columnIds,
             final PolyType[] columnTypes,
             final List<Long> pkIds,
@@ -43,7 +45,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
             final Object[] insertValues,
             final FileFilter.Condition condition ) {
         //todo projectionMapping
-        super( rootPath, columnIds, columnTypes, null, dataContext, condition );
+        super( operation, rootPath, columnIds, columnTypes, null, dataContext, condition );
         this.insertValues = insertValues;
         this.rootFile = new File( rootPath );
         this.columnIds = columnIds;
