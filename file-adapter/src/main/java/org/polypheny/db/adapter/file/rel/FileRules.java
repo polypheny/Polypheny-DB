@@ -29,6 +29,7 @@ import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
+import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.RelFactories;
 import org.polypheny.db.rel.core.TableModify;
@@ -49,7 +50,8 @@ public class FileRules {
                 new FileProjectRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileValuesRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileTableModificationRule( out, RelFactories.LOGICAL_BUILDER ),
-                new FileUnionRule( out, RelFactories.LOGICAL_BUILDER )
+                new FileUnionRule( out, RelFactories.LOGICAL_BUILDER ),
+                new FileFilterRule( out, RelFactories.LOGICAL_BUILDER )
         );
     }
 
@@ -199,6 +201,33 @@ public class FileRules {
             final Union union = (Union) rel;
             final RelTraitSet traitSet = union.getTraitSet().replace( convention );
             return new FileUnion( union.getCluster(), traitSet, RelOptRule.convertList( union.getInputs(), convention ), union.all );
+        }
+    }
+
+
+    static class FileFilterRule extends ConverterRule {
+
+        FileConvention convention;
+
+        public FileFilterRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
+            super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileFilterRule:" + out.getName() );
+            this.convention = out;
+        }
+
+        /**
+         * The FileUnion is needed for insert statements with arrays
+         * see {@link FileProjectRule#matches}
+         */
+        @Override
+        public boolean matches( RelOptRuleCall call ) {
+            return super.matches( call );
+        }
+
+
+        public RelNode convert( RelNode rel ) {
+            final Filter filter = (Filter) rel;
+            final RelTraitSet traitSet = filter.getTraitSet().replace( convention );
+            return new FileFilter( filter.getCluster(), traitSet, filter.getInput(), filter.getCondition() );
         }
     }
 

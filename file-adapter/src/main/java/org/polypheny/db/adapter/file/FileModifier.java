@@ -21,7 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.rel.FileFilter;
 import org.polypheny.db.type.PolyType;
 
 
@@ -32,8 +33,14 @@ public class FileModifier<E> extends FileEnumerator<E> {
     private final File rootFile;
     private boolean inserted = false;
 
-    public FileModifier( String rootPath, Long[] columnIds, PolyType[] columnTypes, AtomicBoolean cancelFlag, Object[] insertValues ) {
-        super( rootPath, columnIds, columnTypes, cancelFlag );
+    public FileModifier( final String rootPath,
+            final Long[] columnIds,
+            final PolyType[] columnTypes,
+            final DataContext dataContext,
+            final Object[] insertValues,
+            final FileFilter.Condition condition ) {
+        //todo projectionMapping
+        super( rootPath, columnIds, columnTypes, null, dataContext, condition );
         this.insertValues = insertValues;
         this.rootFile = new File( rootPath );
         this.columnIds = columnIds;
@@ -56,7 +63,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
         try {
             outer:
             for ( ; ; ) {
-                if ( cancelFlag.get() || inserted ) {
+                if ( dataContext.getStatement().getTransaction().getCancelFlag().get() || inserted ) {
                     return false;
                 }
                 int insertPosition;
@@ -75,6 +82,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
                         /*if ( !newFile.createNewFile() ) {
                             throw new RuntimeException( "Primary key conflict! You are trying to insert a row that already exists." );
                         }*/
+                        //todo check condition
                         Files.write( newFile.toPath(), value.toString().getBytes( encoding ) );
                     }
                 }

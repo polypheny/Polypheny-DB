@@ -90,6 +90,11 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
             }
         }
 
+        String condition = null;
+        if ( fileImplementor.getCondition() != null ) {
+            condition = fileImplementor.getCondition().toJson();
+        }
+
         Expression enumerable;
         if ( fileImplementor.getOperation() == Operation.SELECT ) {
             enumerable = list.append(
@@ -99,7 +104,9 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             DataContext.ROOT,
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
-                            Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) )
+                            Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
+                            Expressions.constant( fileImplementor.getProjectionMapping() ),
+                            Expressions.constant( condition )
                     ) );
         } else { //MODIFY
             enumerable = list.append(
@@ -111,7 +118,8 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
                             Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
                             Expressions.constant( fileImplementor.isBatchInsert() ),
-                            _insertValues
+                            _insertValues,
+                            Expressions.constant( condition )
                     ) );
         }
 

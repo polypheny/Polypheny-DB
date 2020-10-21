@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.adapter.file.rel.FileFilter;
 import org.polypheny.db.rel.RelNode;
 
 
@@ -47,6 +48,8 @@ public interface FileRel extends RelNode {
         @Getter
         private final List<String> columnNames = new ArrayList<>();
         @Getter
+        private final List<String> project = new ArrayList<>();
+        @Getter
         private final List<Object[]> insertValues = new ArrayList<>();
         @Getter
         @Setter
@@ -54,6 +57,9 @@ public interface FileRel extends RelNode {
         @Getter
         @Setter
         private Operation operation;
+        @Getter
+        @Setter
+        FileFilter.Condition condition;
 
         public FileImplementor() {
             //intentionally empty
@@ -70,15 +76,27 @@ public interface FileRel extends RelNode {
         }
 
         public void project( final List<String> columnNames ) {
-            this.columnNames.clear();
-            this.columnNames.addAll( columnNames );
+            this.project.clear();
+            this.project.addAll( columnNames );
         }
 
-        public void addInsertValue ( final Object... row ) {
+        public Integer[] getProjectionMapping() {
+            if ( project.size() == 0 ) {
+                return null;
+            } else {
+                Integer[] projectionMapping = new Integer[project.size()];
+                for ( int i = 0; i < project.size(); i++ ) {
+                    projectionMapping[i] = columnNames.indexOf( project.get( i ) );
+                }
+                return projectionMapping;
+            }
+        }
+
+        public void addInsertValue( final Object... row ) {
             insertValues.add( row );
         }
 
-        public void addInsertValues ( final List<Object[]> rows ) {
+        public void addInsertValues( final List<Object[]> rows ) {
             insertValues.addAll( rows );
         }
 

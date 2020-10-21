@@ -26,8 +26,8 @@ import org.polypheny.db.type.PolyType;
 
 public enum FileMethod {
 
-    EXECUTE_SELECT( FileSchema.class, "executeSelect", DataContext.class, String.class, Long[].class, PolyType[].class ),
-    EXECUTE_MODIFY( FileSchema.class, "executeModify", DataContext.class, String.class, Long[].class, PolyType[].class, Boolean.class, Object[].class );
+    EXECUTE_SELECT( FileSchema.class, "executeSelect", DataContext.class, String.class, Long[].class, PolyType[].class, Integer[].class, String.class ),
+    EXECUTE_MODIFY( FileSchema.class, "executeModify", DataContext.class, String.class, Long[].class, PolyType[].class, Boolean.class, Object[].class, String.class );
 
     public final Method method;
     public static final ImmutableMap<Method, FileMethod> MAP;

@@ -25,9 +25,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.file.rel.FileFilter;
+import org.polypheny.db.adapter.file.rel.FileFilter.Condition;
 import org.polypheny.db.type.PolyType;
 
 
@@ -41,17 +43,51 @@ public class FileEnumerator<E> implements Enumerator<E> {
     final File[] fileList;
     int fileListPosition = 0;
     final int numOfCols;
-    final AtomicBoolean cancelFlag;
+    final DataContext dataContext;
+    final Condition condition;
+    final Integer[] projectionMapping;
     final PolyType[] columnTypes;
     final Gson gson;
     final Charset encoding = StandardCharsets.UTF_8;
-    //private final Object[] filterValues;
 
-    public FileEnumerator( final String rootPath, final Long[] columnIds, final PolyType[] columnTypes, final AtomicBoolean cancelFlag ) {
-        this.cancelFlag = cancelFlag;
-        this.columnTypes = columnTypes;
+    /**
+     * FileEnumerator
+     * When no filter is available, it will only iterate the files in the projected columns
+     * If a filter is available, it will iterate over all columns and project each row
+     *
+     * @param rootPath The rootPath is required to know where the files to iterate are placed
+     * @param columnIds Ids of the columns that come from a tableScan. If there is no filter, the enumerator will only iterate over the columns that are specified by the projection
+     * @param columnTypes DataTypes of the columns that are given by the {@code columnIds} array
+     * @param dataContext DataContext
+     * @param projectionMapping Mapping on how to project a table. E.g. the array [3,2] means that the row [a,b,c,d,e] will be projected to [c,b]
+     * @param condition Condition that can be {@code null}. The columnReferences in the filter point to the columns coming from the tableScan, not from the projection
+     */
+    public FileEnumerator( final String rootPath,
+            final Long[] columnIds,
+            final PolyType[] columnTypes,
+            final Integer[] projectionMapping,
+            final DataContext dataContext,
+            final FileFilter.Condition condition ) {
+        this.dataContext = dataContext;
+        this.condition = condition;
+        this.projectionMapping = projectionMapping;
         this.gson = new Gson();
-        for ( Long colId : columnIds ) {
+        Long[] columnsToIterate = columnIds;
+        // If there is a projection and no filter, it is sufficient to just load the data of the projected columns.
+        // If a filter is given, the whole table has to be loaded.
+        if ( condition == null && projectionMapping != null ) {
+            Long[] projection = new Long[projectionMapping.length];
+            PolyType[] projectedTypes = new PolyType[projectionMapping.length];
+            for ( int i = 0; i < projectionMapping.length; i++ ) {
+                projection[i] = columnIds[projectionMapping[i]];
+                projectedTypes[i] = columnTypes[projectionMapping[i]];
+            }
+            columnsToIterate = projection;
+            this.columnTypes = projectedTypes;
+        } else {
+            this.columnTypes = columnTypes;
+        }
+        for ( Long colId : columnsToIterate ) {
             File columnFolder = FileStore.getColumnFolder( rootPath, colId );
             columnFolders.add( columnFolder );
             int currentColumnSize = columnFolder.listFiles() == null ? 0 : columnFolder.listFiles().length;
@@ -75,7 +111,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
         try {
             outer:
             for ( ; ; ) {
-                if ( cancelFlag.get() ) {
+                if ( dataContext.getStatement().getTransaction().getCancelFlag().get() ) {
                     return false;
                 }
                 if ( fileListPosition >= fileList.length ) {
@@ -83,7 +119,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                 }
                 File currentFile = fileList[fileListPosition];
                 String[] strings = new String[numOfCols];
-                Object[] curr = new Object[numOfCols];
+                Comparable[] curr = new Comparable[numOfCols];
                 int i = 0;
                 //todo fix wrong order
                 for ( File colFolder : columnFolders ) {
@@ -95,15 +131,6 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         byte[] encoded = Files.readAllBytes( f.toPath() );
                         s = new String( encoded, encoding );
                     }
-                    /*if ( filterValues.length == numOfCols ) {
-                        Object filter = filterValues[i];
-                        if ( filter != null ) {
-                            if ( s != null && !s.equals( filter.toString() ) ) {
-                                fileListPosition++;
-                                continue outer;
-                            }
-                        }
-                    }*/
                     strings[i] = s;
                     if ( s == null || s.equals( "" ) ) {
                         curr[i] = null;
@@ -135,7 +162,17 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     }
                     i++;
                 }
-                if ( columnFolders.size() == 1 ) {
+                if ( condition != null ) {
+                    if ( !condition.matches( curr, dataContext ) ) {
+                        fileListPosition++;
+                        continue;
+                    }
+                }
+                //project only if necessary (if a projection and condition is given)
+                if ( projectionMapping != null && condition != null ) {
+                    curr = project( curr );
+                }
+                if ( curr.length == 1 ) {
                     current = (E) curr[0];
                 } else {
                     current = (E) curr;
@@ -146,6 +183,15 @@ public class FileEnumerator<E> implements Enumerator<E> {
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
+    }
+
+    private Comparable[] project( final Comparable[] o ) {
+        assert (projectionMapping != null);
+        Comparable[] out = new Comparable[projectionMapping.length];
+        for ( int i = 0; i < projectionMapping.length; i++ ) {
+            out[i] = o[projectionMapping[i]];
+        }
+        return out;
     }
 
     @Override
