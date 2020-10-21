@@ -58,8 +58,8 @@ public class FileEnumerator<E> implements Enumerator<E> {
      * @param rootPath The rootPath is required to know where the files to iterate are placed
      * @param columnIds Ids of the columns that come from a tableScan. If there is no filter, the enumerator will only iterate over the columns that are specified by the projection
      * @param columnTypes DataTypes of the columns that are given by the {@code columnIds} array
-     * @param dataContext DataContext
      * @param projectionMapping Mapping on how to project a table. E.g. the array [3,2] means that the row [a,b,c,d,e] will be projected to [c,b]
+     * @param dataContext DataContext
      * @param condition Condition that can be {@code null}. The columnReferences in the filter point to the columns coming from the tableScan, not from the projection
      */
     public FileEnumerator( final String rootPath,

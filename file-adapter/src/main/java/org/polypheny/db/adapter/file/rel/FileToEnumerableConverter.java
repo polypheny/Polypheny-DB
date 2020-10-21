@@ -108,7 +108,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.constant( fileImplementor.getProjectionMapping() ),
                             Expressions.constant( condition )
                     ) );
-        } else { //MODIFY
+        } else { //INSERT
             enumerable = list.append(
                     "enumerable",
                     Expressions.call(
@@ -117,6 +117,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
                             Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
+                            Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
                             Expressions.constant( fileImplementor.isBatchInsert() ),
                             _insertValues,
                             Expressions.constant( condition )

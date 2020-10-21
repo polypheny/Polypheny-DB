@@ -23,9 +23,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
-import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
@@ -63,18 +61,31 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     final Map<String, Long> columnIdMap;
     @Getter
     final Map<String, PolyType> columnTypeMap;
+    /**
+     * Ids of the columns that are part of the primary key
+     */
+    @Getter
+    final List<Long> pkIds;
     FileStore store;
     @Getter
     FileSchema fileSchema;
     RelProtoDataType protoRowType;
 
-    protected FileTranslatableTable( final FileSchema fileSchema, final String tableName, final long tableId, final List<Long> columnIds, final ArrayList<PolyType> columnTypes, final List<String> columnNames, final RelProtoDataType protoRowType ) {
+    protected FileTranslatableTable( final FileSchema fileSchema,
+            final String tableName,
+            final long tableId,
+            final List<Long> columnIds,
+            final ArrayList<PolyType> columnTypes,
+            final List<String> columnNames,
+            final List<Long> pkIds,
+            final RelProtoDataType protoRowType ) {
         super( Object[].class );
         this.rootDir = fileSchema.getStore().getRootDir();
         this.tableName = tableName;
         this.tableId = tableId;
         this.store = fileSchema.getStore();
         this.fileSchema = fileSchema;
+        this.pkIds = pkIds;
         this.protoRowType = protoRowType;
 
         this.columnNames = columnNames;
@@ -94,7 +105,8 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
      * Called from generated code, see {@link FileTableScan#implement}
      */
     public Enumerable<Object[]> scan( DataContext root ) {
-        root.getStatement().getTransaction().registerInvolvedStore( store );
+        throw new RuntimeException( "scan file enumerator not yet implemented" );
+        /*root.getStatement().getTransaction().registerInvolvedStore( store );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
         return new AbstractEnumerable<Object[]>() {
             @Override
@@ -102,7 +114,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
                 //return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag );
                 throw new RuntimeException("scan file enumerator not yet implemented");
             }
-        };
+        };*/
     }
 
     @Override
@@ -118,8 +130,8 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
     @Override
     public Collection getModifiableCollection() {
-        //throw new UnsupportedOperationException("getModifiableCollection not implemented");
-        return new ArrayList<>();
+        throw new UnsupportedOperationException( "getModifiableCollection not implemented" );
+        //return new ArrayList<>();
     }
 
     @Override
@@ -130,10 +142,10 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
 
     @Override
     public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-        //throw new UnsupportedOperationException();
-        System.out.println("as Queryable");
+        throw new UnsupportedOperationException();
+        //System.out.println("as Queryable");
         //fileSchema.getConvention().register( dataContext.getStatement().getQueryProcessor().getPlanner() );
-        return new FileQueryable<>( dataContext, schema, this, tableName );
+        //return new FileQueryable<>( dataContext, schema, this, tableName );
     }
 
 

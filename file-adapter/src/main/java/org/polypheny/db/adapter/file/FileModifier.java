@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.rel.FileFilter;
 import org.polypheny.db.type.PolyType;
@@ -32,10 +33,12 @@ public class FileModifier<E> extends FileEnumerator<E> {
     private final Object[] insertValues;
     private final File rootFile;
     private boolean inserted = false;
+    final Integer[] pkMapping;
 
     public FileModifier( final String rootPath,
             final Long[] columnIds,
             final PolyType[] columnTypes,
+            final List<Long> pkIds,
             final DataContext dataContext,
             final Object[] insertValues,
             final FileFilter.Condition condition ) {
@@ -44,6 +47,14 @@ public class FileModifier<E> extends FileEnumerator<E> {
         this.insertValues = insertValues;
         this.rootFile = new File( rootPath );
         this.columnIds = columnIds;
+        Integer[] pkMapping = new Integer[pkIds.size()];
+        int i = 0;
+        List<Long> colIdsAsList = Arrays.asList( columnIds.clone() );
+        for ( Long pkId : pkIds ) {
+            pkMapping[i] = colIdsAsList.indexOf( pkId );
+            i++;
+        }
+        this.pkMapping = pkMapping;
     }
 
     @Override
@@ -69,8 +80,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
                 int insertPosition;
                 for ( insertPosition = 0; insertPosition < insertValues.length; insertPosition++ ) {
                     Object[] currentRow = (Object[]) insertValues[insertPosition];
-                    //todo only hash values of PK columns!
-                    int hash = Arrays.hashCode( currentRow );
+                    int hash = hashRow( currentRow );
                     for ( int i = 0; i < currentRow.length; i++ ) {
                         Object value = currentRow[i];
                         if ( value == null ) {
@@ -103,5 +113,16 @@ public class FileModifier<E> extends FileEnumerator<E> {
     @Override
     public void close() {
 
+    }
+
+    /**
+     * Hash only the elements of a row that are part of the primary key
+     */
+    private int hashRow( final Object[] row ) {
+        Object[] toHash = new Object[pkMapping.length];
+        for ( int i = 0; i < pkMapping.length; i++ ) {
+            toHash[i] = row[pkMapping[i]];
+        }
+        return Arrays.hashCode( toHash );
     }
 }

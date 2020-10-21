@@ -32,7 +32,10 @@ import org.polypheny.db.adapter.file.rel.FileFilter.Condition;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -85,7 +88,6 @@ public class FileSchema extends AbstractSchema {
                     columnTypes.add( catalogColumn.type );
                 }
                 columnNames.add( catalogColumn.name );
-                //todo catalogColumn.defaultValue
 
                 if ( catalogColumn.type.allowsScale() ) {
                     fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length, catalogColumn.scale ).nullable( catalogColumn.nullable );
@@ -97,8 +99,19 @@ public class FileSchema extends AbstractSchema {
             }
         }
         RelProtoDataType protoRowType = RelDataTypeImpl.proto( fieldInfo.build() );
+        List<Long> pkIds;
+        try {
+            if ( catalogTable.primaryKey != null ) {
+                CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+                pkIds = primaryKey.columnIds;
+            } else {
+                pkIds = new ArrayList<>();
+            }
+        } catch ( GenericCatalogException | UnknownKeyException e ) {
+            throw new RuntimeException( "Could not create file table", e );
+        }
         //FileTable table = new FileTable( store.getRootDir(), schemaName, catalogTable.id, columnIds, columnTypes, columnNames, store, this );
-        FileTranslatableTable table = new FileTranslatableTable( this, catalogTable.name, catalogTable.id, columnIds, columnTypes, columnNames, protoRowType );
+        FileTranslatableTable table = new FileTranslatableTable( this, catalogTable.name, catalogTable.id, columnIds, columnTypes, columnNames, pkIds, protoRowType );
         tableMap.put( catalogTable.name, table );
         return table;
     }
@@ -121,7 +134,7 @@ public class FileSchema extends AbstractSchema {
      * Called from generated code
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> executeModify( final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final Boolean isBatch, final Object[] insertValues, final String conditionJson ) {
+    public static Enumerable<Object[]> executeModify( final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final String conditionJson ) {
         FileFilter.Condition condition = Condition.fromJson( conditionJson );
         final Object[] insert;
         if ( isBatch ) {
@@ -140,7 +153,7 @@ public class FileSchema extends AbstractSchema {
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
-                return new FileModifier<>( path, columnIds, columnTypes, dataContext, insert, condition );
+                return new FileModifier<>( path, columnIds, columnTypes, pkIds, dataContext, insert, condition );
             }
         };
     }
