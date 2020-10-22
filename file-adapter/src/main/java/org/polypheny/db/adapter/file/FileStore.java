@@ -49,11 +49,11 @@ public class FileStore extends Store {
 
 
     private void setRootDir( Map<String, String> settings ) {
-        String dir = settings.get( "directory" );
-
-        rootDir = new File( dir );
-        if( !rootDir.exists() ) {
-            if( !rootDir.mkdir() ) {
+        //remove special characters at the beginning of the submitted dir
+        String dir = settings.get( "directory" ).replaceAll( "^(\\W*)", "" );
+        rootDir = new File( System.getProperty( "user.home" ), ".polypheny/file-adapter/" + dir );
+        if ( !rootDir.exists() ) {
+            if ( !rootDir.mkdirs() ) {
                 throw new RuntimeException( "Could not create root directory" );
             }
         }
