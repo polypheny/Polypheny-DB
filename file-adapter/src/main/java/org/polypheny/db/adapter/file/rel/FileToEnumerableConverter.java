@@ -32,6 +32,7 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.adapter.file.Update;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -90,13 +91,19 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
             }
         }
 
+        Expression _updates = Expressions.constant( null );
+        if ( fileImplementor.getUpdates() != null ) {
+            _updates = Update.getUpdatesExpression( fileImplementor.getUpdates() );
+        }
+
         String condition = null;
         if ( fileImplementor.getCondition() != null ) {
             condition = fileImplementor.getCondition().toJson();
         }
 
         Expression enumerable;
-        if ( fileImplementor.getOperation() == Operation.SELECT || fileImplementor.getOperation() == Operation.DELETE ) {
+        // SELECT, UPDATE, DELETE
+        if ( fileImplementor.getOperation() != Operation.INSERT ) {
             enumerable = list.append(
                     "enumerable",
                     Expressions.call(
@@ -106,8 +113,10 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
                             Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
+                            Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
                             Expressions.constant( fileImplementor.getProjectionMapping() ),
-                            Expressions.constant( condition )
+                            Expressions.constant( condition ),
+                            _updates
                     ) );
         } else { //INSERT
             enumerable = list.append(

@@ -4,9 +4,6 @@ package org.polypheny.db.adapter.file;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -201,21 +198,13 @@ public class FileStore extends Store {
     @Override
     public void shutdown() {
         log.info( "shutting down file store '{}'", getUniqueName() );
-        try {
-            //from https://www.baeldung.com/java-delete-directory
-            Files.walk( rootDir.toPath() )
-                    .sorted( Comparator.reverseOrder() )
-                    .map( Path::toFile )
-                    .forEach( File::delete );
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Could not delete all files from file store", e );
-        }
+        //delete only if it is empty (don't delete in case two stores have the same rootDir)
+        rootDir.delete();
     }
 
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
-        // todo move all files to new destination
         throw new UnsupportedOperationException( "Cannot change directory" );
     }
 

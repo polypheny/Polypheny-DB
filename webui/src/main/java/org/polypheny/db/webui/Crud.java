@@ -1051,6 +1051,8 @@ public class Crud implements InformationObserver {
         for ( Entry<String, String> entry : request.filter.entrySet() ) {
             if ( entry.getValue().startsWith( "[" ) ) {
                 where.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
+            } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
+                where.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
                 where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
             }

@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.polypheny.db.adapter.file.rel.FileFilter;
 import org.polypheny.db.rel.RelNode;
 
 
@@ -47,7 +46,6 @@ public interface FileRel extends RelNode {
         private transient FileTranslatableTable fileTable;
         @Getter
         private final List<String> columnNames = new ArrayList<>();
-        @Getter
         private final List<String> project = new ArrayList<>();
         @Getter
         private final List<Object[]> insertValues = new ArrayList<>();
@@ -59,7 +57,10 @@ public interface FileRel extends RelNode {
         private Operation operation;
         @Getter
         @Setter
-        FileFilter.Condition condition;
+        Condition condition;
+        @Getter
+        @Setter
+        List<Update> updates;
 
         public FileImplementor() {
             //intentionally empty
@@ -77,8 +78,22 @@ public interface FileRel extends RelNode {
         }
 
         public void project( final List<String> columnNames ) {
-            this.project.clear();
-            this.project.addAll( columnNames );
+            //a normal project
+            if ( updates == null ) {
+                this.project.clear();
+                this.project.addAll( columnNames );
+            }
+            //in case of an update, assign the columnReferences in the updates
+            else if ( operation == Operation.UPDATE ) {
+                if ( columnNames.size() != updates.size() ) {
+                    throw new RuntimeException( "This should not happen" );
+                }
+                int i = 0;
+                for ( Update update : updates ) {
+                    update.setColumnReference( getFileTable().getColumnNames().indexOf( columnNames.get( i ) ) );
+                    i++;
+                }
+            }
         }
 
         public Integer[] getProjectionMapping() {

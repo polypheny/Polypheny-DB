@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileRel;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.adapter.file.Update;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -78,6 +79,9 @@ public class FileProject extends Project implements FileRel {
             implementor.addInsertValue( row );
         } else {
             implementor.visitChild( 0, getInput() );
+        }
+        if ( implementor.getOperation() == Operation.UPDATE ) {
+            implementor.setUpdates( Update.getUpdates( exps, implementor ) );
         }
         RelRecordType rowType = (RelRecordType) getRowType();
         List<String> fields = new ArrayList<>();

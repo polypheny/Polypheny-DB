@@ -78,6 +78,9 @@ public class FileTableScan extends TableScan implements EnumerableRel, FileRel {
     @Override
     public void implement( FileImplementor implementor ) {
         implementor.setFileTable( fileTable );
-        implementor.setOperation( Operation.SELECT );
+        //only set SELECT operation if we're not in a insert/update/delete
+        if ( implementor.getOperation() == null ) {
+            implementor.setOperation( Operation.SELECT );
+        }
     }
 }

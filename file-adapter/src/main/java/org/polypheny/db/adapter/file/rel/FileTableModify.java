@@ -68,9 +68,12 @@ public class FileTableModify extends TableModify implements FileRel {
     public void implement( final FileImplementor implementor ) {
         setOperation( implementor );//do it first, so children know that we have an insert/update/delete
         implementor.visitChild( 0, getInput() );
-        setOperation( implementor );//do it again, so the enumerator knows that we have an insert/update/delete (if there was an underlying tableScan)
         FileTranslatableTable fileTable = (FileTranslatableTable) ((RelOptTableImpl) getTable()).getTable();
         implementor.setFileTable( fileTable );
+        if ( getOperation() == Operation.UPDATE ) {
+            //set the columns that should be updated in the projection list
+            implementor.project( this.getUpdateColumnList() );
+        }
     }
 
 
