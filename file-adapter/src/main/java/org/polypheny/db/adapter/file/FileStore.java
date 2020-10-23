@@ -30,9 +30,7 @@ public class FileStore extends Store {
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "An adapter that stores all data as files. It is especially suitable for multimedia collections.";
     @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "directory", false, true, false, "testTestFile" )
-    );
+    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of();
 
     @Getter
     private File rootDir;
@@ -41,14 +39,12 @@ public class FileStore extends Store {
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, false, false, true );
-        setRootDir( settings );
+        setRootDir();
     }
 
 
-    private void setRootDir( Map<String, String> settings ) {
-        //remove special characters at the beginning of the submitted dir
-        String dir = settings.get( "directory" ).replaceAll( "^(\\W*)", "" );
-        rootDir = new File( System.getProperty( "user.home" ), ".polypheny/file-adapter/" + dir );
+    private void setRootDir() {
+        rootDir = new File( System.getProperty( "user.home" ), ".polypheny/file-adapter/store" + getStoreId() );
         if ( !rootDir.exists() ) {
             if ( !rootDir.mkdirs() ) {
                 throw new RuntimeException( "Could not create root directory" );
