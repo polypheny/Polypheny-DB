@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
@@ -42,8 +43,6 @@ public class FileEnumerator<E> implements Enumerator<E> {
     E current;
     final Operation operation;
     final List<File> columnFolders = new ArrayList<>();
-    Integer maxRowCount;
-    Long colWithMostRows;
     final File[] fileList;
     Integer fileListPosition = 0;
     Long updateDeleteCount = 0L;
@@ -80,6 +79,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
             final DataContext dataContext,
             final Condition condition,
             final Update[] updates ) {
+
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
             //fix to make sure current is never null
@@ -109,7 +109,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
         this.gson = new Gson();
         Long[] columnsToIterate = columnIds;
         // If there is a projection and no filter, it is sufficient to just load the data of the projected columns.
-        // If a filter is given, the whole table has to be loaded.
+        // If a filter is given, the whole table has to be loaded (because of the column references)
         // If we have an UPDATE operation, the whole table has to be loaded as well, to generate the hashes
         if ( condition == null && projectionMapping != null && operation != Operation.UPDATE ) {
             Long[] projection = new Long[projectionMapping.length];
@@ -127,14 +127,14 @@ public class FileEnumerator<E> implements Enumerator<E> {
         for ( Long colId : columnsToIterate ) {
             File columnFolder = FileStore.getColumnFolder( rootPath, colId );
             columnFolders.add( columnFolder );
-            //skip hidden files, such as .ds_store
-            int currentColumnSize = columnFolder.listFiles( fileFilter ) == null ? 0 : columnFolder.listFiles( fileFilter ).length;
-            if ( maxRowCount == null || maxRowCount < currentColumnSize ) {
-                maxRowCount = currentColumnSize;
-                colWithMostRows = colId;
-            }
         }
-        this.fileList = FileStore.getColumnFolder( rootPath, colWithMostRows ).listFiles( fileFilter );
+        if ( columnsToIterate.length == 1 ) {
+            //if we go over a single column, we can iterate it, even if null values are not present as files
+            this.fileList = FileStore.getColumnFolder( rootPath, columnsToIterate[0] ).listFiles( fileFilter );
+        } else {
+            //iterate over a PK-column, because they are always NOT NULL
+            this.fileList = FileStore.getColumnFolder( rootPath, pkIds.get( 0 ) ).listFiles( fileFilter );
+        }
         numOfCols = columnFolders.size();
     }
 
@@ -224,6 +224,12 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     if ( curr.length == 1 ) {
                         current = (E) curr[0];
                     } else {
+                        //if all values are null: continue
+                        //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
+                        if ( Arrays.stream( curr ).allMatch( Objects::isNull ) ) {
+                            fileListPosition++;
+                            continue;
+                        }
                         current = (E) curr;
                     }
                     fileListPosition++;
