@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.cottontail.rel;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.From;
 import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
@@ -48,7 +47,12 @@ public class CottontailTableScan extends TableScan implements org.polypheny.db.a
 
     @Override
     public void implement( CottontailImplementContext context ) {
-        context.from = From.newBuilder().setEntity( this.cottontailTable.getEntity() ).build();
-        context.queryType = QueryType.SELECT;
+//        context.from = From.newBuilder().setEntity( this.cottontailTable.getEntity() ).build();
+        if ( context.queryType == null ) {
+            context.cottontailTable = this.cottontailTable;
+            context.schemaName = this.cottontailTable.getPhysicalSchemaName();
+            context.tableName = this.cottontailTable.getPhysicalTableName();
+            context.queryType = QueryType.SELECT;
+        }
     }
 }

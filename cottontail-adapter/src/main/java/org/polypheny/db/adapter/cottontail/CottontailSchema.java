@@ -17,13 +17,14 @@
 package org.polypheny.db.adapter.cottontail;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.SchemaVersion;
@@ -77,7 +78,7 @@ public class CottontailSchema extends AbstractSchema {
         this.tableMap = new HashMap<>();
         this.physicalToLogicalTableNameMap = new HashMap<>();
         this.name = name;
-        this.cottontailSchema = CottontailGrpc.Schema.newBuilder().setName( this.name ).build();
+        this.cottontailSchema = CottontailGrpc.Schema.newBuilder().setName( "cottontail" ).build();
     }
 
 
@@ -90,6 +91,11 @@ public class CottontailSchema extends AbstractSchema {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, CottontailSchema.class );
         final CottontailConvention convention = CottontailConvention.of( name, expression );
         return new CottontailSchema( wrapper, convention, cottontailStore, name );
+    }
+
+
+    public void registerStore( DataContext dataContext ) {
+        dataContext.getStatement().getTransaction().registerInvolvedStore( this.cottontailStore );
     }
 
 

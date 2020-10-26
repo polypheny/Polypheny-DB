@@ -30,6 +30,7 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
     implementation project(":cassandra-adapter")
+    implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")
     implementation project(":jdbc-adapter")
     implementation project(":catalog")
@@ -38,6 +39,15 @@ dependencies {
     implementation project(":rest-interface")
     implementation project(":statistic")
     implementation project(":explore-by-example")
+
+//    api group: 'io.grpc', name: 'grpc-all', version: '1.29.0'
+
+    /** Protobuf & gRPC. */
+    compile group: "com.google.protobuf", name: "protobuf-java", version: "3.12.2"
+    compile group: "io.grpc", name: "grpc-netty", version: "1.29.0"
+    runtimeOnly "io.grpc:grpc-netty-shaded:1.29.0"
+    compile group: "io.grpc", name: "grpc-protobuf", version: "1.29.0"
+    compile group: "io.grpc", name: "grpc-stub", version: "1.29.0"
 
     ////// Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
@@ -129,6 +139,10 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 shadowJar {
     classifier = ""
+    mergeServiceFiles {
+        setPath("META-INF/services")
+        include("io.grpc.*")
+    }
 }
 assemble.dependsOn shadowJar
 artifacts {

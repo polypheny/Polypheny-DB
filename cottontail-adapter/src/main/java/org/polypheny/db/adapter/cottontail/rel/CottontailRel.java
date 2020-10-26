@@ -17,14 +17,11 @@
 package org.polypheny.db.adapter.cottontail.rel;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Entity;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.From;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Projection;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Tuple;
-import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.cottontail.CottontailTable;
+import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
 
 
@@ -35,26 +32,31 @@ public interface CottontailRel extends RelNode {
     public class CottontailImplementContext {
 
         // Main block builder for the generated code.
-        BlockBuilder blockBuilder;
+        public BlockBuilder blockBuilder;
 
         // Parameter expression for the values hashmap that contains the data, might be combined with a map from prepared values
-        ParameterExpression valuesHashMapList;
+        public ParameterExpression valuesHashMapList;
 
         // Parameter expression for the prepared values hashmap.
-        ParameterExpression preparedValuesMap;
+        public Expression preparedValuesMapBuilder;
 
-        QueryType queryType;
+        public ParameterExpression projectionMap;
 
-        Entity entity;
-        From from;
-        Projection projection;
 
-        List<Tuple> values;
+        public Expression knnBuilder;
 
-        CottontailTable cottontailTable;
+        public QueryType queryType;
 
-        int limit = -1;
-        int offset = -1;
+        public String schemaName;
+        public String tableName;
+
+        public RelOptTable table;
+        public CottontailTable cottontailTable;
+
+        public Expression filterBuilder;
+
+        public int limit = -1;
+        public int offset = -1;
 
         public enum QueryType {
             SELECT,

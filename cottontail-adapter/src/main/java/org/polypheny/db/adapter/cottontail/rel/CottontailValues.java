@@ -17,22 +17,25 @@
 package org.polypheny.db.adapter.cottontail.rel;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Data;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Tuple;
+import org.apache.calcite.linq4j.tree.DeclarationStatement;
+import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.cottontail.CottontailConvention;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.plan.RelOptCluster;
@@ -41,6 +44,7 @@ import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
 
@@ -52,8 +56,13 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
 
 //    private static final Method MAP_PUT_METHOD = Types.lookupMethod( Map.class, "put",  )
 
-    protected CottontailValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
+    public CottontailValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
+    }
+
+    @Override
+    public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
+        return super.computeSelfCost( planner, mq ).multiplyBy( CottontailConvention.COST_MULTIPLIER );
     }
 
 
@@ -62,10 +71,11 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
 
         BlockBuilder builder = context.blockBuilder;
 
-        final ParameterExpression valuesMapList_ = Expressions.parameter( Modifier.FINAL, LIST_DATA_MAPS_TYPE, builder.newName( "valuesMapList" ) );
-        final NewExpression valuesMapListCreator = Expressions.new_( LIST_DATA_MAPS_TYPE );
-        builder = builder.append( Expressions.assign( valuesMapList_, valuesMapListCreator ) );
 
+//        final ParameterExpression valuesMapList_ = Expressions.parameter( Modifier.FINAL, LIST_DATA_MAPS_TYPE, builder.newName( "valuesMapList" ) );
+        final ParameterExpression valuesMapList_ = Expressions.parameter( ArrayList.class, builder.newName( "valuesMapList" ) );
+        final NewExpression valuesMapListCreator = Expressions.new_( ArrayList.class );
+        builder.add( Expressions.declare( Modifier.FINAL, valuesMapList_, valuesMapListCreator ) );
 
 
         final List<String> physicalColumnNames = new ArrayList<>();
@@ -73,24 +83,40 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
         }
 
-        List<Tuple> tupleList = new ArrayList<>();
-
         for ( List<RexLiteral> tuple : tuples ) {
-            Map<String, Data> singleTuple = new HashMap<>();
-            final ParameterExpression valuesMap_ = Expressions.parameter( Modifier.FINAL, DATA_MAP_TYPE, builder.newName( "valuesMap" ) );
-            final NewExpression valuesMapCreator = Expressions.new_( DATA_MAP_TYPE );
-            builder = builder.append( Expressions.assign( valuesMap_, valuesMapCreator ) );
+            final ParameterExpression valuesMap_ = Expressions.variable( Map.class, builder.newName( "valuesMap" ) );
+            final NewExpression valuesMapCreator = Expressions.new_( HashMap.class );
+            builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
             for ( Pair<String, RexLiteral> pair : Pair.zip( physicalColumnNames, tuple ) ) {
-                builder.append( null
-//                        Expressions.call(  )
+                builder.add(
+                        Expressions.statement(
+                        Expressions.call( valuesMap_,
+                                BuiltInMethod.MAP_PUT.method,
+                                Expressions.constant( pair.left ),
+                                CottontailTypeUtil.rexLiteralToDataExpression( pair.right ) ) )
                 );
-                singleTuple.put( pair.left, CottontailTypeUtil.rexLiteralToData( pair.right ) );
             }
 
-            tupleList.add( Tuple.newBuilder().putAllData( singleTuple ).build() );
+            builder.add( Expressions.statement ( Expressions.call( valuesMapList_, Types.lookupMethod( List.class, "add", Object.class), valuesMap_ ) ) );
         }
 
-        context.values = tupleList;
+        context.blockBuilder = builder;
+        context.valuesHashMapList = valuesMapList_;
+    }
+
+
+    static class Translator {
+        private final RelDataType rowType;
+        private final List<String> fieldNames;
+
+
+        public Translator( RelDataType rowType ) {
+            this.rowType = rowType;
+            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
+            this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
+        }
+
+
     }
 }

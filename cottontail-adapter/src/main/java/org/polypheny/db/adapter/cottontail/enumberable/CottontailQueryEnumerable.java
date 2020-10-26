@@ -17,10 +17,9 @@
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Data;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Tuple;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -28,14 +27,37 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
+import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.ArrayType;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Tuple;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
 public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
+
+
+    public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
+            CottontailQueryEnumerable.class,
+            "query",
+            String.class, String.class, Map.class, Function1.class, Function1.class, Integer.class, Integer.class, DataContext.class, Function1.class, CottontailWrapper.class );
+
 
 
     private Iterator<QueryResponseMessage> queryIterator;
@@ -46,6 +68,113 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         this.queryIterator = queryIterator;
         this.rowParser = rowParser;
     }
+
+
+    public static CottontailQueryEnumerable<Object> query(
+            String from,
+            String schema,
+            Map<String, String> projection,
+            Function1<Map<Long, Object>, Where> whereBuilder,
+            Function1<Map<Long, Object>, Knn> knnBuilder, // TODO js(ct) FIGURE OUT
+            Integer limit, Integer offset,
+            DataContext dataContext,
+            Function1 rowParser,
+            CottontailWrapper wrapper
+    ) {
+        Iterator<QueryResponseMessage> queryResponseIterator;
+
+        if ( dataContext.getParameterValues().size() < 2 ) {
+            Map<Long, Object> parameterValues;
+            if ( dataContext.getParameterValues().size() == 0 ) {
+                parameterValues = new HashMap<>();
+            } else {
+                parameterValues = dataContext.getParameterValues().get( 0 );
+            }
+
+            Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
+
+            /*Query.Builder queryBuilder = Query.newBuilder();
+
+            queryBuilder.setFrom(
+                    From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema(
+                            Schema.newBuilder().setName( schema ) ) ) );
+
+            if ( limit != null ) {
+                queryBuilder.setLimit( limit );
+            }
+
+            if ( offset != null ) {
+                queryBuilder.setSkip( offset );
+            }
+
+            if ( projection != null ) {
+                queryBuilder.setProjection( Projection.newBuilder().putAllAttributes( projection ) );
+            }
+
+            if ( whereBuilder != null ) {
+                queryBuilder.setWhere( whereBuilder.apply( parameterValues ) );
+            }
+
+            if ( knnBuilder != null ) {
+                queryBuilder.setKnn( knnBuilder.apply( parameterValues ) );
+            }*/
+
+            queryResponseIterator = wrapper.query(
+                    QueryMessage.newBuilder().setQuery( query ).build() );
+
+        } else {
+            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
+            for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
+                Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
+                batchedQueryMessageBuilder.addQueries( query );
+            }
+
+            queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
+        }
+
+        return new CottontailQueryEnumerable<Object>( queryResponseIterator , rowParser );
+    }
+
+
+    private static Query buildSingleQuery(
+            String from,
+            String schema,
+            Map<String, String> projection,
+            Function1<Map<Long, Object>, Where> whereBuilder,
+            Function1<Map<Long, Object>, Knn> knnBuilder, // TODO js(ct) FIGURE OUT
+            Integer limit, Integer offset,
+            Map<Long, Object> parameterValues
+    ) {
+        Query.Builder queryBuilder = Query.newBuilder();
+
+        queryBuilder.setFrom(
+                From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema(
+                        Schema.newBuilder().setName( schema ) ) ) );
+
+        if ( limit != null ) {
+            queryBuilder.setLimit( limit );
+        }
+
+        if ( offset != null ) {
+            queryBuilder.setSkip( offset );
+        }
+
+        if ( projection != null ) {
+            queryBuilder.setProjection( Projection.newBuilder().putAllAttributes( projection ) );
+        }
+
+        if ( whereBuilder != null ) {
+            queryBuilder.setWhere( whereBuilder.apply( parameterValues ) );
+        }
+
+        if ( knnBuilder != null ) {
+            queryBuilder.setKnn( knnBuilder.apply( parameterValues ) );
+        }
+
+        return queryBuilder.build();
+    }
+
+
 
 
     @Override
@@ -76,6 +205,35 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public boolean moveNext() {
+
+
+            // If we have a current result iterator and that iterator has a next result, use that result.
+            // We do this first as this is (hopefully) the most common case.
+            if ( this.currentResultIterator != null && this.currentResultIterator.hasNext() ) {
+                Map<String, CottontailGrpc.Data> dataMap = this.currentResultIterator.next().getDataMap();
+                this.current = this.rowParser.apply( dataMap );
+                return true;
+            }
+
+            // Update the current query response page and and result iterator until we find a page that has results.
+            // This is required because sometimes cottontail returns a page with no results but later pages contain
+            // additional results.
+            while ( this.queryIterator.hasNext() ) {
+                this.currentQueryResponsePage = this.queryIterator.next();
+                this.currentResultIterator = this.currentQueryResponsePage.getResultsList().iterator();
+
+                // If the new result page contains results we update the current item and return.
+                if ( this.currentResultIterator.hasNext() ) {
+                    this.current = this.rowParser.apply( this.currentResultIterator.next().getDataMap() );
+                    return true;
+                }
+
+                // Otherwise we continue to search for a result page that contains actual results.
+            }
+
+            return false;
+/*
+
             // If the current result iterator doesn't have a next element but we have more response pages.
             if ( this.currentResultIterator == null || !this.currentResultIterator.hasNext() ) {
                 if ( this.queryIterator.hasNext() ) {
@@ -92,7 +250,18 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 return true;
             }
 
-            return false;
+            if ( this.queryIterator.hasNext() ) {
+                this.currentQueryResponsePage = this.queryIterator.next();
+                this.currentResultIterator = this.currentQueryResponsePage.getResultsList().iterator();
+                if ( this.currentResultIterator.hasNext() ) {
+                    this.current = this.rowParser.apply( this.currentResultIterator.next().getDataMap() );
+                    return true;
+                }
+            }
+
+
+
+            return false;*/
         }
 
 

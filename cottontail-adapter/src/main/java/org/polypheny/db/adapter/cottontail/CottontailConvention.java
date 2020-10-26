@@ -28,6 +28,10 @@ import org.polypheny.db.plan.RelOptRule;
 
 
 public class CottontailConvention extends Convention.Impl {
+
+    public static final double COST_MULTIPLIER = 0.8d;
+
+
     public final Expression expression;
 
     @Getter

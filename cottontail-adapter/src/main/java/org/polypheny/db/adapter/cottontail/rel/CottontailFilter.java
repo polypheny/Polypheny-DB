@@ -17,93 +17,310 @@
 package org.polypheny.db.adapter.cottontail.rel;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
+import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate.Operator;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.cottontail.rel.CottontailFilter.CompoundPredicate.Op;
-import org.polypheny.db.adapter.cottontail.util.MaybeDynamic;
+import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.util.Pair;
 
 
 public class CottontailFilter extends Filter implements CottontailRel {
 
-    protected CottontailFilter( RelOptCluster cluster, RelTraitSet traits, RelNode child, RexNode condition ) {
+    public static final Method CREATE_ATOMIC_PREDICATE_METHOD = Types.lookupMethod(
+            Linq4JFixer.class,
+//            CottontailFilter.Translator.class,
+            "generateAtomicPredicate",
+            String.class, Boolean.class, Object.class, Object.class );
+//            String.class, Boolean.cla/ss, AtomicLiteralBooleanPredicate.Operator.class, Data.class );
+
+    public static final Method CREATE_COMPOUND_PREDICATE_METHOD = Types.lookupMethod(
+            Linq4JFixer.class,
+//            CottontailFilter.Translator.class,
+            "generateCompoundPredicate",
+            Object.class, Object.class, Object.class );
+//            CompoundBooleanPredicate.Operator.class, Object.class, Object.class );
+
+    public static final Method CREATE_WHERE_METHOD = Types.lookupMethod(
+            Linq4JFixer.class,
+//            CottontailFilter.Translator.class,
+            "generateWhere",
+            Object.class );
+
+    public CottontailFilter( RelOptCluster cluster, RelTraitSet traits, RelNode child, RexNode condition ) {
         super( cluster, traits, child, condition );
     }
 
 
     @Override
     public void implement( CottontailImplementContext context ) {
+        context.visitChild( 0, getInput() );
 
+        BooleanPredicate predicate = convertToCnf( this.condition );
+
+        Translator translator = new Translator( context.cottontailTable.getRowType( this.getCluster().getTypeFactory() ) );
+
+        Expression filterBuilder_ = translator.generateWhereBuilder( predicate, context.blockBuilder );
+
+        context.filterBuilder = filterBuilder_;
     }
 
 
     @Override
     public Filter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
-        return null;
+        return new CottontailFilter( getCluster(), traitSet, input, condition );
     }
 
 
-    public static List<List<Object>> convertToCnf( RexNode condition ) {
+    public static BooleanPredicate convertToCnf( RexNode condition ) {
         BooleanPredicate predicateInner = convertRexToBooleanPredicate( condition );
         BooleanPredicate predicate = new CompoundPredicate( Op.ROOT, predicateInner, null );
         while (predicate.simplify());
 
-        return null;
+//        Translator translator = new Translator( this.getRowType() )
+        return predicate;
     }
 
 
-    public static class CnfFilterContainer {
-        public final List<List<String>> columnNames;
-        public final List<List<Boolean>> columnNot;
-        public final List<List<FilterOp>> filterOps;
-        public final List<List<MaybeDynamic<Object>>> filterData;
 
 
-        public CnfFilterContainer( List<List<String>> columnNames,
-                List<List<Boolean>> columnNot,
-                List<List<FilterOp>> filterOps,
-                List<List<MaybeDynamic<Object>>> filterData ) {
-            this.columnNames = columnNames;
-            this.columnNot = columnNot;
-            this.filterOps = filterOps;
-            this.filterData = filterData;
+
+    public static class Translator {
+        private final RelDataType rowType;
+        private final List<String> fieldNames;
+
+
+        public Translator( RelDataType rowType ) {
+            this.rowType = rowType;
+            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
+            this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
         }
 
+        private Expression generateWhereBuilder(
+                BooleanPredicate predicate,
+                BlockBuilder builder
+        ) {
+            ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, builder.newName( "dynamicParameters" ) );
 
-        public static CnfFilterContainer fromBooleanPredicate( BooleanPredicate predicate ) {
-            final List<List<String>> columnNames = new ArrayList<>();
-            final List<List<Boolean>> columnNot = new ArrayList<>();
-            final List<List<FilterOp>> filterOps = new ArrayList<>();
-            final List<List<MaybeDynamic<Object>>> filterData = new ArrayList<>();
-
-            if ( !(predicate instanceof CompoundPredicate) || ((CompoundPredicate) predicate).op != Op.ROOT ) {
-                throw new IllegalArgumentException( "Predicate is not the root." );
+            if ( !( predicate instanceof CompoundPredicate ) || (((CompoundPredicate) predicate).op != Op.ROOT) ) {
+                throw new AssertionError( "Predicate must be ROOT." );
             }
 
-            AtomicLiteralBooleanPredicate.newBuilder().
+            Expression filterExpression = convertBooleanPredicate( ((CompoundPredicate) predicate).left, null, dynamicParameterMap_, false );
+
+
+            return Expressions.lambda(
+                    Expressions.block(
+                            Expressions.return_( null,
+                                    Expressions.call( CREATE_WHERE_METHOD, filterExpression ) ) ),
+                    dynamicParameterMap_ );
+        }
+
+        private Expression convertBooleanPredicate(
+                BooleanPredicate predicate,
+                BlockBuilder builder,
+                ParameterExpression dynamicParameterMap_,
+                boolean negated
+        ) {
+            if ( predicate instanceof AtomicPredicate ) {
+                AtomicPredicate atomicPredicate = (AtomicPredicate) predicate;
+
+
+                return translateMatch2( atomicPredicate.node, dynamicParameterMap_, negated );
+
+//            RexNode leftOp = ((RexCall) atomicPredicate.node).getOperands().get( 0 );
+//            RexNode rightOp = ((RexCall) atomicPredicate.node).getOperands().get( 1 );
+
+//            return Expressions.call( CREATE_ATOMIC_PREDICATE_METHOD,  );
+            } else {
+                CompoundPredicate compoundPredicate = (CompoundPredicate) predicate;
+
+                switch ( compoundPredicate.op ) {
+                    case AND:
+                        return Expressions.call( CREATE_COMPOUND_PREDICATE_METHOD,
+                                Expressions.constant( CompoundBooleanPredicate.Operator.AND ),
+                                convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, negated ),
+                                convertBooleanPredicate( compoundPredicate.right, builder, dynamicParameterMap_, negated ) );
+                    case OR:
+                        return Expressions.call( CREATE_COMPOUND_PREDICATE_METHOD,
+                                Expressions.constant( CompoundBooleanPredicate.Operator.OR ),
+                                convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, negated ),
+                                convertBooleanPredicate( compoundPredicate.right, builder, dynamicParameterMap_, negated ) );
+                    case NOT:
+                        return convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, true );
+                    case ROOT:
+                        break;
+                }
+            }
+
+            throw new AssertionError( "Unable to translate" );
         }
 
 
-        public enum FilterOp {
-            EQUAL,
-            GREATER,
-            LESS,
-            GREATER_EQUAL,
-            LESS_EQUAL,
-            IN,
-            BETWEEN,
-            ISNULL,
-            IS_NOT_NULL,
-            LIKE;
+        private Expression translateMatch2( RexNode node, ParameterExpression dynamicParameterMap_, boolean negated ) {
+            switch ( node.getKind() ) {
+                case EQUALS:
+                    return translateBinary( Operator.EQUAL, Operator.EQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case LESS_THAN:
+                    return translateBinary( Operator.LESS, Operator.GEQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case LESS_THAN_OR_EQUAL:
+                    return translateBinary( Operator.LEQUAL, Operator.GREATER, (RexCall) node, dynamicParameterMap_, negated );
+                case GREATER_THAN:
+                    return translateBinary( Operator.GREATER, Operator.LEQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case GREATER_THAN_OR_EQUAL:
+                    return translateBinary( Operator.GEQUAL, Operator.LESS, (RexCall) node, dynamicParameterMap_, negated );
+                default:
+                    throw new AssertionError( "cannot translate: " + node );
+            }
         }
 
+
+        private Expression translateBinary( AtomicLiteralBooleanPredicate.Operator op,
+                AtomicLiteralBooleanPredicate.Operator rightOp,
+                RexCall call,
+                ParameterExpression dynamicParameterMap_,
+                boolean negated ) {
+            final RexNode left = call.operands.get( 0 );
+            final RexNode right = call.operands.get( 1 );
+            Expression expression = translateBinary2( op, left, right, dynamicParameterMap_, negated );
+            if ( expression != null ) {
+                return expression;
+            }
+
+            expression = translateBinary2( rightOp, right, left, dynamicParameterMap_, negated );
+            if ( expression != null ) {
+                return expression;
+            }
+
+            throw new AssertionError( "cannot translate op " + op + "call " + call );
+        }
+
+
+        private Expression translateBinary2( AtomicLiteralBooleanPredicate.Operator op,
+                RexNode left,
+                RexNode right,
+                ParameterExpression dynamicParameterMap_,
+                boolean negated ) {
+            Expression rightSideData;
+            switch ( right.getKind() ) {
+                case LITERAL:
+                    rightSideData = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) right );
+                    break;
+                case DYNAMIC_PARAM:
+                    rightSideData = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) right, dynamicParameterMap_ );
+                    break;
+                case ARRAY_VALUE_CONSTRUCTOR:
+                    // TODO js(ct): IMPLEMENT!
+                    rightSideData = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) right );
+                    break;
+                default:
+                    return null;
+            }
+
+            switch ( left.getKind() ) {
+                case INPUT_REF:
+                    final RexInputRef left1 = (RexInputRef) left;
+                    String name = fieldNames.get( left1.getIndex() );
+
+                    return Expressions.call(
+                            CREATE_ATOMIC_PREDICATE_METHOD,
+                            Expressions.constant( name ),
+                            Expressions.constant( negated ),
+                            Expressions.constant( op ),
+                            rightSideData
+                    );
+                default:
+                    return null;
+            }
+        }
+
+
+
+        public static CompoundBooleanPredicate generateCompoundPredicate(
+                Object operator_,
+//                CompoundBooleanPredicate.Operator operator,
+                Object left,
+                Object right
+        ) {
+            CompoundBooleanPredicate.Operator operator = (CompoundBooleanPredicate.Operator) operator_;
+            CompoundBooleanPredicate.Builder builder = CompoundBooleanPredicate.newBuilder();
+            builder = builder.setOp( operator );
+
+            if ( left instanceof AtomicLiteralBooleanPredicate ) {
+                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) left );
+            } else {
+                builder = builder.setCleft( (CompoundBooleanPredicate) left );
+            }
+
+            if ( right instanceof AtomicLiteralBooleanPredicate ) {
+                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) right );
+            } else {
+                builder = builder.setCleft( (CompoundBooleanPredicate) right );
+            }
+
+            return builder.build();
+        }
+
+
+        public static AtomicLiteralBooleanPredicate generateAtomicPredicate(
+                String attribute,
+                boolean not,
+                Object operator_,
+                Object data_
+        ) {
+            AtomicLiteralBooleanPredicate.Operator operator = (AtomicLiteralBooleanPredicate.Operator) operator_;
+            Data data = (Data) data_;
+            return AtomicLiteralBooleanPredicate.newBuilder()
+                    .addData( data )
+                    .setNot( not )
+                    .setAttribute( attribute )
+                    .setOp( operator )
+                    .build();
+        }
+
+
+        public static Where generateWhere( Object filterExpression ) {
+            if ( filterExpression instanceof AtomicLiteralBooleanPredicate ) {
+                return Where.newBuilder().setAtomic( (AtomicLiteralBooleanPredicate) filterExpression ).build();
+            }
+
+            if ( filterExpression instanceof CompoundBooleanPredicate ) {
+                return Where.newBuilder().setCompound( (CompoundBooleanPredicate) filterExpression ).build();
+            }
+
+            throw new RuntimeException( "Not a proper filter expression!" );
+        }
     }
+
+
+
+
+
 
 
     private static BooleanPredicate convertRexToBooleanPredicate( RexNode condition ) {
@@ -159,12 +376,13 @@ public class CottontailFilter extends Filter implements CottontailRel {
             case GREATER_THAN_OR_EQUAL:
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
-            case IN:
             case IS_NULL:
             case IS_NOT_NULL:
+                return new AtomicPredicate( condition, false );
             case LIKE:
-                return new AtomicPredicate( condition );
+            case IN:
             default:
+                // FIXME js(ct): Deal with this case
                 return null;
         }
     }
@@ -179,15 +397,19 @@ public class CottontailFilter extends Filter implements CottontailRel {
          * @return returns <code>true</code> if the node changed.
          */
         boolean simplify();
+
+        void finalise();
     }
 
     static class AtomicPredicate implements BooleanPredicate {
 
         final RexNode node;
+        final boolean negated;
 
 
-        AtomicPredicate( RexNode node ) {
+        AtomicPredicate( RexNode node, boolean negated ) {
             this.node = node;
+            this.negated = negated;
         }
 
 
@@ -200,6 +422,12 @@ public class CottontailFilter extends Filter implements CottontailRel {
         @Override
         public boolean simplify() {
             return false;
+        }
+
+
+        @Override
+        public void finalise() {
+
         }
     }
 
@@ -276,6 +504,19 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
 
             return changed;
+        }
+
+
+        @Override
+        public void finalise() {
+            if ( this.left != null ) {
+                this.left.finalise();
+            }
+            if ( this.right != null ) {
+                this.right.finalise();
+            }
+            if ( this.op == Op.NOT ) {
+            }
         }
 
 

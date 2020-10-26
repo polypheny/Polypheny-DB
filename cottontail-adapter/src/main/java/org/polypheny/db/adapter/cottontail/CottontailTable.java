@@ -17,10 +17,10 @@
 package org.polypheny.db.adapter.cottontail;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Entity;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.From;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Query;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.QueryMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
@@ -59,7 +59,9 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     @Getter
     private Entity entity;
 
+    @Getter
     private final String physicalSchemaName;
+    @Getter
     private final String physicalTableName;
     private final List<String> physicalColumnNames;
 
@@ -164,6 +166,11 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
+    }
+
+
+    public CottontailConvention getUnderlyingConvention() {
+        return this.cottontailSchema.getConvention();
     }
 
 

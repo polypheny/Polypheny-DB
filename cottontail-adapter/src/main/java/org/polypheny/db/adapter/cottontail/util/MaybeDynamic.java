@@ -20,24 +20,24 @@ package org.polypheny.db.adapter.cottontail.util;
 public class MaybeDynamic<T> {
 
     private final boolean dynamic;
-    private final int index;
+    private final Long index;
     private final T value;
 
 
-    private MaybeDynamic( boolean dynamic, int index, T value ) {
+    private MaybeDynamic( boolean dynamic, Long index, T value ) {
         this.dynamic = dynamic;
         this.index = index;
         this.value = value;
     }
 
 
-    public static <T> MaybeDynamic<T> dynamic( int index ) {
+    public static <T> MaybeDynamic<T> dynamic( Long index ) {
         return new MaybeDynamic<>( true, index, null );
     }
 
 
     public static <T> MaybeDynamic<T> fixed( T value ) {
-        return new MaybeDynamic<>( false, 0, value );
+        return new MaybeDynamic<>( false, 0L, value );
     }
 
 
@@ -46,7 +46,7 @@ public class MaybeDynamic<T> {
     }
 
 
-    public int getIndex() {
+    public Long getIndex() {
         return index;
     }
 

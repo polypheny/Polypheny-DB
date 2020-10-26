@@ -17,11 +17,6 @@
 package org.polypheny.db.adapter.cottontail;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.ColumnDefinition;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.CreateEntityMessage;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Entity;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Type;
 import com.google.common.collect.ImmutableList;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
@@ -38,7 +33,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.rel.type.RelDataType;
@@ -50,17 +44,24 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnDefinition;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityDefinition;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Type;
 
 
 @Slf4j
 public class CottontailStore extends Store {
 
+    public static final String DESCRIPTION = "Cottontail. Duh.";
+
     public static final String ADAPTER_NAME = "CottontailDB";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database",  false, true, false, "postgres")
+            new AdapterSettingInteger( "port", false, true, false, 1865 ),
+            new AdapterSettingString( "database",  false, true, false, "cottontail")
     );
 
     private String dbHostname;
@@ -71,14 +72,16 @@ public class CottontailStore extends Store {
     private ManagedChannel channel;
     private CottontailWrapper wrapper;
 
-    public CottontailStore( int storeId, String uniqueName, Map<String, String> settings, boolean dataReadOnly, boolean schemaReadOnly, boolean persistent ) {
-        super( storeId, uniqueName, settings, dataReadOnly, schemaReadOnly, persistent );
+    public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {
+        super( storeId, uniqueName, settings, false, false, true );
         this.dbHostname = settings.get( "host" );
         this.dbPort = Integer.parseInt( settings.get( "port" ) );
         this.dbName = settings.get( "database" );
 
         this.channel = NettyChannelBuilder.forAddress( this.dbHostname, this.dbPort ).usePlaintext().maxInboundMetadataSize( CottontailWrapper.maxMessageSize ).build();
         this.wrapper = new CottontailWrapper( this.channel );
+        this.wrapper.checkedCreateSchemaBlocking( CottontailGrpc.Schema.newBuilder().setName( this.dbName ).build() );
+//        this.wrapper.createSchema( CottontailGrpc.Schema.newBuilder().setName( this.dbName ).build() );
     }
 
 
@@ -97,21 +100,17 @@ public class CottontailStore extends Store {
         String physicalSchemaName = null;
         String physicalTableName = null;
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
-            try {
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
-                if ( physicalSchemaName == null ) {
-                    physicalSchemaName = placement.physicalSchemaName;
-                }
-                if ( physicalTableName == null ) {
-                    physicalTableName = placement.physicalTableName;
-                }
-                RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
-                fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
-                logicalColumnNames.add( catalogColumn.name );
-                physicalColumnNames.add( placement.physicalColumnName );
-            } catch ( UnknownColumnException | GenericCatalogException e ) {
-                throw new RuntimeException( e );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
+            if ( physicalSchemaName == null ) {
+                physicalSchemaName = placement.physicalTableName != null ? placement.physicalSchemaName : this.dbName;
             }
+            if ( physicalTableName == null ) {
+                physicalTableName = placement.physicalTableName != null ? placement.physicalTableName : "tab" + combinedTable.id;
+            }
+            RelDataType sqlType = catalogColumn.getRelDataType( typeFactory );
+            fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
+            logicalColumnNames.add( catalogColumn.name );
+            physicalColumnNames.add( placement.physicalColumnName != null ? placement.physicalColumnName : "col" + placement.columnId );
         }
 
         CottontailTable table = new CottontailTable(
@@ -143,16 +142,12 @@ public class CottontailStore extends Store {
 
         for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnStore( this.getStoreId(), combinedTable.id ) ) {
             CatalogColumn catalogColumn;
-            try {
-                catalogColumn = catalog.getColumn( placement.columnId );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
-                throw new RuntimeException( e );
-            }
+            catalogColumn = catalog.getColumn( placement.columnId );
 
             columnBuilder.setName( CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation( catalogColumn.type, catalogColumn.collectionsType, catalogColumn.dimension );
+            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation( catalogColumn.type, catalogColumn.collectionsType, ( catalogColumn.dimension != null) ? catalogColumn.dimension : 0 );
             columnBuilder.setType( columnType );
-            if ( catalogColumn.dimension == 1 && columnType.getNumber() != Type.STRING.getNumber() ) {
+            if ( catalogColumn.dimension != null && catalogColumn.dimension == 1 && columnType.getNumber() != Type.STRING.getNumber() ) {
                 columnBuilder.setLength( catalogColumn.cardinality );
             }
             columns.add( columnBuilder.build() );
@@ -161,12 +156,14 @@ public class CottontailStore extends Store {
         String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id );
         Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
 
-        CreateEntityMessage message = CreateEntityMessage.newBuilder()
+        EntityDefinition message = EntityDefinition.newBuilder()
                 .setEntity( tableEntity )
                 .addAllColumns( columns ).build();
 
 
-        this.wrapper.createEntityBlocking( message );
+        if ( !this.wrapper.createEntityBlocking( message ) ) {
+            throw new RuntimeException( "Unable to create table." );
+        }
 
         for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnStore( this.getStoreId(), combinedTable.id ) ) {
             try {
@@ -253,7 +250,7 @@ public class CottontailStore extends Store {
 
     @Override
     public void shutdown() {
-
+        this.wrapper.close();
     }
 
 

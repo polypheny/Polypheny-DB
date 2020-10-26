@@ -23,4 +23,5 @@ include 'rest-interface'
 
 include 'dbms'
 include 'cottontail-adapter'
+include 'cottontail-proto'
 

@@ -39,6 +39,7 @@ targetCompatibility = 1.8
 dependencies {
     api project(":config")
     api project(":information")
+    api project(":cottontail-proto")
 
     javacc group: "net.java.dev.javacc", name: "javacc", version: javacc_version  // BSD 2-clause
 

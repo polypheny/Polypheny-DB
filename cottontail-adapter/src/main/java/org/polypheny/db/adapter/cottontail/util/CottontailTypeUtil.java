@@ -17,15 +17,24 @@
 package org.polypheny.db.adapter.cottontail.util;
 
 
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.BoolVector;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Data;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.DoubleVector;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.FloatVector;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.IntVector;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.LongVector;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Type;
-import ch.unibas.dmi.dbis.cottontail.grpc.CottontailGrpc.Vector;
+import java.lang.reflect.Modifier;
+import java.util.Map;
+import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.util.BuiltInMethod;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.BoolVector;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.DoubleVector;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.FloatVector;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.IntVector;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.LongVector;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Type;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -34,6 +43,7 @@ import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexCall;
@@ -47,10 +57,23 @@ import org.polypheny.db.type.PolyType;
 
 public class CottontailTypeUtil {
 
+
     public static final Method COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD = Types.lookupMethod(
             CottontailTypeUtil.class,
             "toData",
             Object.class );
+
+    public static final Method COTTONTAIL_SIMPLE_LIST_TO_VECTOR_METHOD = Types.lookupMethod(
+            CottontailTypeUtil.class,
+            "toVectorData",
+            Object.class );
+
+
+    public static final Method COTTONTAIL_KNN_BUILDER_METHOD = Types.lookupMethod(
+            Linq4JFixer.class,
+            "generateKnn",
+            String.class, Integer.class, String.class, Object.class, Object.class );
+
 
     public static CottontailGrpc.Type getPhysicalTypeRepresentation( RelDataType relDataType ) {
 
@@ -64,6 +87,7 @@ public class CottontailTypeUtil {
             return getPhysicalTypeRepresentation( componentType, type, 0 );
         }
     }
+
 
     public static CottontailGrpc.Type getPhysicalTypeRepresentation( PolyType logicalType, PolyType collectionType, int dimension ) {
 
@@ -128,6 +152,7 @@ public class CottontailTypeUtil {
         return rexLiteralToData( rexLiteral, builder );
     }
 
+
     public static CottontailGrpc.Data rexLiteralToData( RexLiteral rexLiteral, CottontailGrpc.Data.Builder builder ) {
         builder.clear();
         switch ( rexLiteral.getTypeName() ) {
@@ -160,13 +185,17 @@ public class CottontailTypeUtil {
     }
 
 
-    public static Expression rexDynamicParamToDataExpression( RexDynamicParam dynamicParam ) {
-        
+    public static Expression rexDynamicParamToDataExpression( RexDynamicParam dynamicParam, ParameterExpression dynamicParameterMap_ ) {
+//        CompoundBooleanPredicate.newBuilder().set
+        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD,
+                Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method,
+                        Expressions.constant( dynamicParam.getIndex() ) ) );
     }
+
 
     public static Expression rexLiteralToDataExpression( RexLiteral rexLiteral ) {
         ConstantExpression constantExpression;
-        switch ( rexLiteral.getTypeName() ) {
+        switch ( rexLiteral.getType().getPolyType() ) {
             case BOOLEAN:
                 constantExpression = Expressions.constant( rexLiteral.getValueAs( Boolean.class ) );
                 break;
@@ -209,6 +238,16 @@ public class CottontailTypeUtil {
     }
 
 
+    public static Expression rexArrayConstructorToExpression( RexCall rexCall ) {
+        ConstantExpression constantExpression;
+        List<Object> objectList = arrayCallToList( rexCall.getOperands() );
+
+        constantExpression = Expressions.constant( objectList );
+
+        return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression );
+    }
+
+
     public static CottontailGrpc.Data toData( Object value ) {
         CottontailGrpc.Data.Builder builder = Data.newBuilder();
         if ( value instanceof Boolean ) {
@@ -229,7 +268,8 @@ public class CottontailTypeUtil {
             Vector.Builder vectorBuilder = Vector.newBuilder();
             // TODO js(ct): add list.size() == 0 handling
             Object firstItem = ((List) value).get( 0 );
-            if ( firstItem instanceof Integer ) {
+            Vector vector = toVectorData( value );
+            /*if ( firstItem instanceof Integer ) {
                 return builder.setVectorData(
                         vectorBuilder.setIntVector(
                                 IntVector.newBuilder().addAllVector( (List<Integer>) value ).build() ) ).build();
@@ -248,7 +288,9 @@ public class CottontailTypeUtil {
             } else if ( firstItem instanceof Boolean ) {
                 return builder.setVectorData(
                         vectorBuilder.setBoolVector(
-                                BoolVector.newBuilder().addAllVector( (List<Boolean>) value ).build() ) ).build();
+                                BoolVector.newBuilder().addAllVector( (List<Boolean>) value ).build() ) ).build();*/
+            if ( vector != null ) {
+                return builder.setVectorData( vector ).build();
             } else {
                 return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( (List<Object>) value ) ).build();
             }
@@ -257,10 +299,37 @@ public class CottontailTypeUtil {
         }
     }
 
+
+    public static Vector toVectorData( Object vectorObject ) {
+        Vector.Builder vectorBuilder = Vector.newBuilder();
+        // TODO js(ct): add list.size() == 0 handling
+        Object firstItem = ((List) vectorObject).get( 0 );
+        if ( firstItem instanceof Integer ) {
+            return vectorBuilder.setIntVector(
+                    IntVector.newBuilder().addAllVector( (List<Integer>) vectorObject ).build() ).build();
+        } else if ( firstItem instanceof Double ) {
+            return vectorBuilder.setDoubleVector(
+                    DoubleVector.newBuilder().addAllVector( (List<Double>) vectorObject ).build() ).build();
+        } else if ( firstItem instanceof Long ) {
+            return vectorBuilder.setLongVector(
+                    LongVector.newBuilder().addAllVector( (List<Long>) vectorObject ).build() ).build();
+        } else if ( firstItem instanceof Float ) {
+            return vectorBuilder.setFloatVector(
+                    FloatVector.newBuilder().addAllVector( (List<Float>) vectorObject ).build() ).build();
+        } else if ( firstItem instanceof Boolean ) {
+            return vectorBuilder.setBoolVector(
+                    BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ).build() ).build();
+        } else {
+            return null;
+        }
+    }
+
+
     public static CottontailGrpc.Data rexArrayCallToData( RexCall rexCall ) {
         CottontailGrpc.Data.Builder builder = Data.newBuilder();
         return rexArrayCallToData( rexCall, builder );
     }
+
 
     public static CottontailGrpc.Data rexArrayCallToData( RexCall rexCall, CottontailGrpc.Data.Builder builder ) {
         builder.clear();
@@ -320,6 +389,7 @@ public class CottontailTypeUtil {
         }
     }
 
+
     public static List<Object> arrayConstructorToList( RexCall rexCall ) {
         return arrayCallToList( rexCall.operands );
     }
@@ -340,7 +410,6 @@ public class CottontailTypeUtil {
     }
 
 
-
     private static List<Object> arrayCallToList( List<RexNode> operands ) {
         List<Object> list = new ArrayList<>( operands.size() );
         for ( RexNode node : operands ) {
@@ -358,7 +427,7 @@ public class CottontailTypeUtil {
 
 
     private static Object rexLiteralToJavaClass( RexLiteral rexLiteral ) {
-        switch ( rexLiteral.getTypeName() ) {
+        switch ( rexLiteral.getType().getPolyType() ) {
             case BOOLEAN:
                 return rexLiteral.getValueAs( Boolean.class );
             case INTEGER:
@@ -386,5 +455,91 @@ public class CottontailTypeUtil {
             default:
                 throw new RuntimeException( "Type " + rexLiteral.getTypeName() + " is not supported by the cottontail adapter." );
         }
+    }
+
+
+    public static From fromFromTableAndSchema( String table, String schema ) {
+        return From.newBuilder().setEntity(
+                Entity.newBuilder().setName( table ).setSchema(
+                        Schema.newBuilder().setName( schema )
+                ) ).build();
+    }
+
+
+    public static Expression knnCallToFunctionExpression( RexCall knnCall, List<String> physicalColumnNames ) {
+
+        BlockBuilder inner = new BlockBuilder();
+        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
+
+        Expression targetColumn = knnCallTargetColumn( knnCall.getOperands().get( 0 ), physicalColumnNames, dynamicParameterMap_ );
+
+        Expression targetVector = knnCallVector( knnCall.getOperands().get( 1 ), dynamicParameterMap_ );
+
+        Expression distance = knnCallDistance( knnCall.getOperands().get( 2 ), dynamicParameterMap_ );
+
+        /*if ( !(knnCall.getOperands().get( 1 ) instanceof RexCall) ) {
+            throw new RuntimeException( "second argument is not a rex call!" );
+        }
+
+        RexCall targetArray = (RexCall) knnCall.getOperands().get( 1 );
+
+        if ( !(knnCall.getOperands().get( 1 ) instanceof RexLiteral) ) {
+            throw new RuntimeException( "third argument is not a literal!" );
+        }
+
+        String norm = (String) ((RexLiteral) knnCall.getOperands().get( 2 )).getValue2();*/
+
+        return Expressions.lambda(
+                Expressions.block(
+                        Expressions.return_( null,
+                                Expressions.call( COTTONTAIL_KNN_BUILDER_METHOD,
+                                        targetColumn,
+                                        Expressions.constant( 2 ),
+                                        distance,
+                                        targetVector,
+                                        Expressions.constant( null )
+                                        ) ) ),
+                dynamicParameterMap_ );
+    }
+
+
+    private static Expression knnCallTargetColumn( RexNode node, List<String> physicalColumnNames, ParameterExpression dynamicParamMap ) {
+        if ( node instanceof RexInputRef ) {
+            RexInputRef inputRef = (RexInputRef) node;
+            return Expressions.constant( physicalColumnNames.get( inputRef.getIndex() ) );
+        } else if ( node instanceof RexDynamicParam ) {
+            RexDynamicParam dynamicParam = (RexDynamicParam) node;
+            return Expressions.call( dynamicParamMap, "get",
+                    Expressions.constant( dynamicParam.getIndex() ) );
+        }
+
+        throw new RuntimeException( "first argument is neither an input ref nor a dynamic parameter" );
+    }
+
+
+    private static Expression knnCallVector( RexNode node, ParameterExpression dynamicParamMap ) {
+        if ( (node instanceof RexCall) && (((RexCall) node).getOperator() instanceof SqlArrayValueConstructor) ) {
+            List<Object> arrayList = arrayCallToList( ((RexCall) node).getOperands() );
+            return Expressions.call( CottontailTypeUtil.class, "toVectorData", Expressions.constant( arrayList ) );
+        } else if ( node instanceof RexDynamicParam ) {
+            RexDynamicParam dynamicParam = (RexDynamicParam) node;
+            return Expressions.call( CottontailTypeUtil.class, "toVectorData", Expressions.call( dynamicParamMap, "get",
+                    Expressions.constant( dynamicParam.getIndex() ) ) );
+        }
+
+        throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
+    }
+
+
+    private static Expression knnCallDistance( RexNode node, ParameterExpression dynamicParamMap ) {
+        if ( node instanceof RexLiteral ) {
+            return Expressions.constant( ((RexLiteral) node).getValue2() );
+        } else if ( node instanceof RexDynamicParam ) {
+            RexDynamicParam dynamicParam = (RexDynamicParam) node;
+            return Expressions.call( dynamicParamMap, "get",
+                    Expressions.constant( dynamicParam.getIndex() ) );
+        }
+
+        throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
     }
 }

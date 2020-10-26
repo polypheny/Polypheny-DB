@@ -11,11 +11,9 @@ buildscript {
 
 version = versionMajor + "." + versionMinor + versionQualifier
 
-
 apply plugin: "java-library"
 apply plugin: "idea"
-apply plugin: "io.freefair.lombok"
-//apply plugin: "com.google.protobuf"
+apply plugin: "com.google.protobuf"
 
 
 compileJava.options.encoding = "UTF-8"
@@ -28,50 +26,26 @@ targetCompatibility = 1.8
 
 
 dependencies {
-    implementation project(":core")
-    implementation project(":cottontail-proto")
-
     /////// gRPC & Protobuf
-//    implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.2'
-//    api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.12.2'
-//    api group: 'io.grpc', name: 'grpc-all', version: '1.29.0'
-
-    // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "testClasses")
-
-    testImplementation group: "junit", name: "junit", version: junit_version
-
+    implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.2'
+    api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.12.2'
+    api group: 'io.grpc', name: 'grpc-all', version: '1.29.0'
 }
-
 
 sourceSets {
     main {
-//        proto {
-//            srcDirs += "$projectDir/cottontaildb-proto/src/main/protobuf"
-//        }
-        java {
-            srcDirs = ["src/main/java"]
-//            srcDirs = ["src/main/java", "$projectDir/build/generated/source/proto/main/java"]
-            outputDir = file(project.buildDir.absolutePath + "/classes")
+        proto {
+            srcDirs += "$projectDir/cottontaildb-proto/src/main/protobuf"
         }
-        resources {
-            srcDirs = ["src/main/resources"]
+        java {
+            srcDirs = ["$projectDir/build/generated/source/proto/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
-    test {
-        java {
-            srcDirs = ["src/test/java"]
-            outputDir = file(project.buildDir.absolutePath + "/test-classes")
-        }
-        resources {
-            srcDirs = ["src/test/resources"]
-        }
-        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
-    }
 }
 
-/*protobuf {
+protobuf {
     generatedFilesBaseDir = "$projectDir/build/generated/source/proto"
     plugins {
         grpc {
@@ -86,7 +60,7 @@ sourceSets {
             outputSubDir = 'java'
         }}
     }
-}*/
+}
 
 
 /**
@@ -129,17 +103,3 @@ artifacts {
     archives javadocJar // jar file containing the source files
 }
 
-
-/**
- * IntelliJ
- */
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
-    }
-}
