@@ -195,13 +195,6 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 if ( NumberUtils.isNumber( s ) ) {
                                     curr[i] = Integer.parseInt( s );
                                 } else {
-                                    //final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
-                                    /*final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
-                                    if( ts == null ) {
-                                        log.warn( "could not parse TIME " + s );
-                                    }
-                                    curr[i] = TimeString.fromCalendarFields( ts.getCalendar() ).toString();
-                                    */
                                     if ( operation == Operation.SELECT && s.length() == 19 ) {
                                         curr[i] = s.substring( 11 );
                                     } else {
@@ -213,13 +206,6 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 if ( NumberUtils.isNumber( s ) ) {
                                     curr[i] = Integer.parseInt( s );
                                 } else {
-                                    //final Calendar cal = DateTimeUtils.parseDateFormat( s, new SimpleDateFormat( DateTimeUtils.DATE_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE );
-                                    /*final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
-                                    if( ts == null ) {
-                                        log.warn( "could not parse DATE " + s );
-                                    }
-                                    curr[i] = DateString.fromCalendarFields( ts.getCalendar() ).toString();
-                                    */
                                     if ( operation == Operation.SELECT && s.length() == 19 ) {
                                         curr[i] = s.substring( 0, 10 );
                                     } else {
@@ -231,12 +217,6 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 if ( NumberUtils.isNumber( s ) ) {
                                     curr[i] = Long.parseLong( s );
                                 } else {
-                                    /*final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
-                                    if( ts == null ) {
-                                        log.warn( "could not parse TIMESTAMP " + s );
-                                    }
-                                    curr[i] = TimestampString.fromCalendarFields( ts.getCalendar() ).toString();
-                                    */
                                     curr[i] = s;
                                 }
                                 break;
@@ -300,33 +280,13 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         } else {
                             updateObj[c] = curr[c];
                         }
-                        //convert date/time/timestamp (that come as int/long) to string
-                        /*if( updateObj[c] == null ) {
-                            continue;
-                        }
-                        switch ( columnTypes[c] ) {
-                            case DATE:
-                                //updateObj[c] = DateTimeUtils.unixDateToString( (Integer) updateObj[c] ) + " " + LocalTime.MIN.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIME_FORMAT_STRING ) );
-                                updateObj[c] = DateTimeUtils.unixDateToString( Integer.parseInt( (String) updateObj[c] ) ) + " " + LocalTime.MIN.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIME_FORMAT_STRING ) );
-                                break;
-                            case TIME:
-                                //updateObj[c] = DateTimeUtils.unixTimestampToString( (Integer) updateObj[c] );
-                                updateObj[c] = DateTimeUtils.unixTimestampToString( Integer.parseInt( (String) updateObj[c] ) );
-                                break;
-                            case TIMESTAMP:
-                                //updateObj[c] = DateTimeUtils.unixTimestampToString( (Long) updateObj[c] );
-                                updateObj[c] = DateTimeUtils.unixTimestampToString( Long.parseLong( (String) updateObj[c] ) );
-                                break;
-                        }*/
                     }
                     int newHash = hashRow( updateObj );
                     String oldFileName = FileStore.SHA.hashString( String.valueOf( hashRow( curr ) ), FileStore.CHARSET ).toString();
 
                     int j = 0;
                     for ( File colFolder : columnFolders ) {
-                        //File source = new File( colFolder, currentFile.getName() );
                         File source = new File( colFolder, oldFileName );
-                        //File target = new File( colFolder, getNewFileName( Operation.DELETE, currentFile.getName() ) );
                         File target = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
                         if ( source.exists() ) {
                             Files.move( source.toPath(), target.toPath() );

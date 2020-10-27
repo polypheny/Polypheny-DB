@@ -2582,7 +2582,6 @@ public class Crud implements InformationObserver {
                             if ( o instanceof Long ) {
                                 temp[counter] = DateTimeStringUtils.longToAdjustedString( (long) o, PolyType.TIMESTAMP );// TimestampString.fromMillisSinceEpoch( (long) o ).toString();
                             } else {
-                                //temp[counter] = TimestampString.fromCalendarFields( (Calendar) o ).toString();
                                 temp[counter] = o.toString();
                             }
                             break;
@@ -2590,7 +2589,6 @@ public class Crud implements InformationObserver {
                             if ( o instanceof Integer ) {
                                 temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.DATE );//DateString.fromDaysSinceEpoch( (int) o ).toString();
                             } else {
-                                //temp[counter] = DateString.fromCalendarFields( (Calendar) o ).toString();
                                 temp[counter] = o.toString();
                             }
                             break;
@@ -2598,7 +2596,6 @@ public class Crud implements InformationObserver {
                             if ( o instanceof Integer ) {
                                 temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.TIME );//TimeString.fromMillisOfDay( (int) o ).toString();
                             } else {
-                                //temp[counter] = TimeString.fromCalendarFields( (Calendar) o ).toString();
                                 temp[counter] = o.toString();
                             }
                             break;

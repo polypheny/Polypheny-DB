@@ -157,14 +157,5 @@ public class DateTimeStringUtils {
         }
     }
 
-
-    /*public static Calendar stringToCalendar ( final String parsedDateTime, final PolyType polyType ) {
-        final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( parsedDateTime, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
-        if( ts == null ) {
-            throw new RuntimeException("Could not parse Date/Time/Timestamp to Calendar: " + parsedDateTime );
-        }
-        return ts.getCalendar();
-    }*/
-
 }
 

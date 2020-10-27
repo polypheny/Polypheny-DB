@@ -165,9 +165,27 @@ public class FileStore extends Store {
 
     @Override
     public void commit( PolyXid xid ) {
+        commitOrRollback( xid, true );
+    }
+
+
+    @Override
+    public void rollback( PolyXid xid ) {
+        commitOrRollback( xid, false );
+    }
+
+
+    public void commitOrRollback( final PolyXid xid, final boolean commit ) {
         String xidHash = SHA.hashString( xid.toString(), CHARSET ).toString();
-        final String deletePrefix = "_del_" + xidHash;
-        final String movePrefix = "_ins_" + xidHash;
+        final String deletePrefix;
+        final String movePrefix;
+        if ( commit ) {
+            deletePrefix = "_del_" + xidHash;
+            movePrefix = "_ins_" + xidHash;
+        } else {
+            deletePrefix = "_ins_" + xidHash;
+            movePrefix = "_del_" + xidHash;
+        }
         if ( rootDir.listFiles() != null ) {
             for ( File columnFolder : rootDir.listFiles( f -> f.isDirectory() ) ) {
                 for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
@@ -177,39 +195,12 @@ public class FileStore extends Store {
                     for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
                         String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
                         File target = new File( columnFolder, hash );
-                        if ( target.exists() ) {
-                            //todo check
-                            //throw new RuntimeException("Found a PK duplicate during commit");
+                        if ( commit ) {
+                            Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
+                        } else {
+                            Files.move( data.toPath(), target.toPath() );
                         }
-                        //todo check REPLACE
-                        Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
-                    }
-                } catch ( IOException e ) {
-                    throw new RuntimeException( "Could not commit because moving of files failed", e );
-                }
-            }
-        }
-    }
 
-
-    @Override
-    public void rollback( PolyXid xid ) {
-        String xidHash = SHA.hashString( xid.toString(), CHARSET ).toString();
-        final String deletePrefix = "_del_" + xidHash;
-        final String movePrefix = "_ins_" + xidHash;
-        if ( rootDir.listFiles() != null ) {
-            for ( File columnFolder : rootDir.listFiles( f -> f.isDirectory() ) ) {
-                for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
-                    data.delete();
-                }
-                try {
-                    for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
-                        String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
-                        File target = new File( columnFolder, hash );
-                        /*if( target.exists() ) {
-                            throw new RuntimeException("Found a PK duplicate during rollback");
-                        }*/
-                        Files.move( data.toPath(), target.toPath() );
                     }
                 } catch ( IOException e ) {
                     throw new RuntimeException( "Could not commit because moving of files failed", e );

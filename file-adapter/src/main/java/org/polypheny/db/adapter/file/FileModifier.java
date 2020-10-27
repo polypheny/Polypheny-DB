@@ -85,43 +85,13 @@ public class FileModifier<E> extends FileEnumerator<E> {
                         if ( !newFile.createNewFile() ) {
                             throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
                         }
-                        //todo check condition
                         String writeString;
-                        /*switch ( columnTypes[i] ) {
-                            case TIME:
-                                if( value instanceof Time ) {
-                                    writeString = value.toString();
-                                } else {
-                                    writeString = DateTimeUtils.unixTimeToString( Integer.parseInt( (String) value ) );//TimeString.fromMillisOfDay( (int) value ).toString();
-                                }
-                                break;
-                            case TIMESTAMP:
-                                //writeString = TimestampString.fromMillisSinceEpoch( (long) value ).toString();
-                                if( value instanceof Timestamp ) {
-                                    writeString = value.toString();
-                                } else {
-                                    writeString = DateTimeUtils.unixTimestampToString( Long.parseLong( (String) value ) );
-                                }
-                                break;
-                            case DATE:
-                                //writeString = DateString.fromDaysSinceEpoch( (int) value ).toString();
-                                if( value instanceof Date ) {
-                                    writeString = value.toString();
-                                } else {
-                                    writeString = DateTimeUtils.unixDateToString( Integer.parseInt( (String) value ) );
-                                }
-                                break;
-                            default:
-                                writeString = value.toString();
-                        }*/
                         switch ( columnTypes[i] ) {
                             case TIME:
                                 if ( value instanceof Time ) {
                                     LocalTime t = ((Time) value).toLocalTime();
-                                    //LocalDateTime dt = LocalDateTime.of( LocalDate.MIN, t );//todo maybe something else than MIN
                                     writeString = t.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
                                 } else {
-                                    //writeString = DateTimeUtils.unixTimestampToString( Integer.parseInt( (String) value ) );
                                     writeString = (String) value;
                                 }
                                 break;
@@ -132,7 +102,6 @@ public class FileModifier<E> extends FileEnumerator<E> {
                                     writeString = dt.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
                                 } else {
                                     writeString = (String) value;
-                                    //writeString = DateTimeUtils.unixDateToString( Integer.parseInt( (String) value ) ) + " " + LocalTime.MIN.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIME_FORMAT_STRING ) );
                                 }
                                 break;
                             case TIMESTAMP:
@@ -140,7 +109,6 @@ public class FileModifier<E> extends FileEnumerator<E> {
                                     LocalDateTime dt = ((Timestamp) value).toLocalDateTime();
                                     writeString = dt.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
                                 } else {
-                                    //writeString = DateTimeUtils.unixTimestampToString( Long.parseLong( (String) value ) );
                                     writeString = (String) value;
                                 }
                                 break;
@@ -149,7 +117,6 @@ public class FileModifier<E> extends FileEnumerator<E> {
 
                         }
                         Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
-                        //Files.write( newFile.toPath(), value.toString().getBytes( FileStore.CHARSET ) );
                     }
                 }
                 current = (E) new Long( insertPosition );
