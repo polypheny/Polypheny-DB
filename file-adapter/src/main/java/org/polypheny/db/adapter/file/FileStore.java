@@ -4,8 +4,12 @@ package org.polypheny.db.adapter.file;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -16,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -44,6 +50,10 @@ public class FileStore extends Store {
     @Getter
     private File rootDir;
     private FileSchema currentSchema;
+    /**
+     * A folder containing the write ahead log
+     */
+    private File WAL;
 
     //Standards
     public static final Charset CHARSET = StandardCharsets.UTF_8;
@@ -58,6 +68,7 @@ public class FileStore extends Store {
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, false, false, true );
         setRootDir();
+        trxRecovery();
     }
 
 
@@ -68,6 +79,13 @@ public class FileStore extends Store {
         if ( !rootDir.exists() ) {
             if ( !rootDir.mkdirs() ) {
                 throw new RuntimeException( "Could not create root directory" );
+            }
+        }
+        //subfolder for the write ahead log
+        this.WAL = new File( rootDir, "WAL" );
+        if ( !WAL.exists() ) {
+            if ( !WAL.mkdirs() ) {
+                throw new RuntimeException( "Could not create WAL folder" );
             }
         }
     }
@@ -165,13 +183,74 @@ public class FileStore extends Store {
 
     @Override
     public void commit( PolyXid xid ) {
+        addWAL( xid, "commit" );
         commitOrRollback( xid, true );
+        removeWAL( xid );
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
+        addWAL( xid, "rollback" );
         commitOrRollback( xid, false );
+        removeWAL( xid );
+    }
+
+
+    void addWAL( final PolyXid key, final String value ) {
+        String fileName = SHA.hashString( key.toString(), CHARSET ).toString();
+        File wal = new File( WAL, fileName );
+        try ( PrintWriter pw = new PrintWriter( new FileWriter( wal ) ) ) {
+            pw.println( Hex.encodeHexString( key.getGlobalTransactionId() ) );
+            pw.println( Hex.encodeHexString( key.getBranchQualifier() ) );
+            pw.println( value );
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Could not add entry to WAL", e );
+        }
+    }
+
+
+    void removeWAL( final PolyXid key ) {
+        String fileName = SHA.hashString( key.toString(), CHARSET ).toString();
+        File wal = new File( WAL, fileName );
+        wal.delete();
+    }
+
+
+    /**
+     * To recover from a crash, the file adapter checks if there is entries in the WAL folder
+     * It will continue to execute the WAL entries
+     */
+    void trxRecovery() {
+        if ( WAL.listFiles() == null ) {
+            return;
+        }
+        try {
+            for ( File f : WAL.listFiles( file -> !file.isHidden() ) ) {
+                String GID;
+                String BID;
+                String action;
+                try ( BufferedReader br = new BufferedReader( new FileReader( f ) ) ) {
+                    GID = br.readLine();
+                    BID = br.readLine();
+                    action = br.readLine();
+                }
+                PolyXid xid = new PolyXid( Hex.decodeHex( GID ), Hex.decodeHex( BID ) );
+                switch ( action ) {
+                    case "commit":
+                        commitOrRollback( xid, true );
+                        break;
+                    case "rollback":
+                        commitOrRollback( xid, false );
+                        break;
+                    default:
+                        throw new RuntimeException( "Unexpected WAL entry: " + action );
+                }
+                f.delete();
+            }
+        } catch ( IOException | DecoderException e ) {
+            log.error( "Could not recover", e );
+        }
     }
 
 

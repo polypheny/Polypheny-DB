@@ -25,6 +25,7 @@ dependencies {
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
     implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
 
+    implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version  // Apache 2.0
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
