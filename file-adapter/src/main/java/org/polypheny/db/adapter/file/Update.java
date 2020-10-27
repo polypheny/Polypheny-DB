@@ -99,7 +99,16 @@ public class Update {
             if ( exps.size() > i + offset ) {
                 RexNode lit = exps.get( i + offset );
                 if ( lit instanceof RexLiteral ) {
-                    updateList.add( new Update( null, ((RexLiteral) lit).getValueForQueryParameterizer() ) );
+                    switch ( ((RexLiteral) lit).getTypeName() ) {
+                        case DATE:
+                        case TIME:
+                        case TIMESTAMP:
+                            //as string in the TIMESTAMP format
+                            updateList.add( new Update( null, ((RexLiteral) lit).getValueAsString() ) );
+                            break;
+                        default:
+                            updateList.add( new Update( null, ((RexLiteral) lit).getValueForQueryParameterizer() ) );
+                    }
                 } else {
                     updateList.add( new Update( null, ((RexDynamicParam) lit).getIndex() ) );
                 }

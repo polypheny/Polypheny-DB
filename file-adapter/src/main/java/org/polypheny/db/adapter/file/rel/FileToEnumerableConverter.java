@@ -109,6 +109,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expressions.call(
                             FileMethod.EXECUTE.method,
                             Expressions.constant( fileImplementor.getOperation() ),
+                            Expressions.constant( fileImplementor.getFileTable().getStore().getStoreId() ),
                             DataContext.ROOT,
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
@@ -124,6 +125,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expressions.call(
                             FileMethod.EXECUTE_MODIFY.method,
                             Expressions.constant( fileImplementor.getOperation() ),
+                            Expressions.constant( fileImplementor.getFileTable().getStore().getStoreId() ),
                             DataContext.ROOT,
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),

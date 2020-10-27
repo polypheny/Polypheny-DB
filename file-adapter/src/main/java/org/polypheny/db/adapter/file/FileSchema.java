@@ -27,6 +27,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -88,9 +89,9 @@ public class FileSchema extends AbstractSchema {
                 }
                 columnNames.add( catalogColumn.name );
 
-                if ( catalogColumn.type.allowsScale() ) {
+                if ( catalogColumn.type.allowsScale() && catalogColumn.length != null && catalogColumn.scale != null ) {
                     fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length, catalogColumn.scale ).nullable( catalogColumn.nullable );
-                } else if ( catalogColumn.type.allowsPrec() ) {
+                } else if ( catalogColumn.type.allowsPrec() && catalogColumn.length != null ) {
                     fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length ).nullable( catalogColumn.nullable );
                 } else {
                     fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type ).nullable( catalogColumn.nullable );
@@ -120,7 +121,8 @@ public class FileSchema extends AbstractSchema {
      * Executes SELECT and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> execute( final Operation operation, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final String conditionJson, final Update[] updates ) {
+    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final String conditionJson, final Update[] updates ) {
+        dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
         Condition condition = Condition.fromJson( conditionJson );
         return new AbstractEnumerable<Object[]>() {
             @Override
@@ -134,15 +136,17 @@ public class FileSchema extends AbstractSchema {
      * Called from generated code
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> executeModify( final Operation operation, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final String conditionJson ) {
+    public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final String conditionJson ) {
+        dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
         Condition condition = Condition.fromJson( conditionJson );
         final Object[] insert;
-        if ( isBatch ) {
+        //if it is a batch insert
+        if ( dataContext.getParameterValues().size() > 0 ) {
             ArrayList<Object[]> rows = new ArrayList<>();
             for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
                 ArrayList<Object> row = new ArrayList<>();
-                for ( Long colId : columnIds ) {
-                    row.add( map.get( colId ) );
+                for ( int i = 0; i < columnIds.length; i++ ) {
+                    row.add( map.get( (long) i ) );
                 }
                 rows.add( row.toArray( new Object[0] ) );
             }

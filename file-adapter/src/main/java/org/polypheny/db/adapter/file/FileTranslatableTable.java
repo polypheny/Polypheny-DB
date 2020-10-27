@@ -66,6 +66,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
      */
     @Getter
     final List<Long> pkIds;
+    @Getter
     FileStore store;
     @Getter
     FileSchema fileSchema;

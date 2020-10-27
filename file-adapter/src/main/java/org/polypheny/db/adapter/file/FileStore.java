@@ -2,8 +2,16 @@ package org.polypheny.db.adapter.file;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -20,13 +28,14 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
 public class FileStore extends Store {
 
     @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "FILE";
+    public static final String ADAPTER_NAME = "File";
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "An adapter that stores all data as files. It is especially suitable for multimedia collections.";
     @SuppressWarnings("WeakerAccess")
@@ -36,6 +45,15 @@ public class FileStore extends Store {
     private File rootDir;
     private FileSchema currentSchema;
 
+    //Standards
+    public static final Charset CHARSET = StandardCharsets.UTF_8;
+    /**
+     * Hash function to use the hash of a primary key to name a file.
+     * If you change this function, make sure to change the offset in the {@link FileStore#commitOrRollback} method!
+     */
+    @SuppressWarnings("UnstableApiUsage") // see https://stackoverflow.com/questions/53060907/is-it-safe-to-use-hashing-class-from-com-google-common-hash
+    public static final HashFunction SHA = Hashing.sha256();
+
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, false, false, true );
@@ -44,7 +62,9 @@ public class FileStore extends Store {
 
 
     private void setRootDir() {
-        rootDir = new File( System.getProperty( "user.home" ), ".polypheny/file-adapter/store" + getStoreId() );
+        File adapterRoot = FileSystemManager.getInstance().registerDataFolder( "file-store" );
+        rootDir = new File( adapterRoot, "store" + getStoreId() );
+
         if ( !rootDir.exists() ) {
             if ( !rootDir.mkdirs() ) {
                 throw new RuntimeException( "Could not create root directory" );
@@ -84,7 +104,7 @@ public class FileStore extends Store {
         for( Long colId: catalogTable.columnIds ) {
             File newColumnFolder = getColumnFolder( colId );
             if( !newColumnFolder.mkdir() ) {
-                throw new RuntimeException( "Could not create column folder" );
+                throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
             }
         }
     }
@@ -139,20 +159,63 @@ public class FileStore extends Store {
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        log.debug( "File Store does not support prepare()." );
         return true;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        log.debug( "File Store does not support commit()." );
+        String xidHash = SHA.hashString( xid.toString(), CHARSET ).toString();
+        final String deletePrefix = "_del_" + xidHash;
+        final String movePrefix = "_ins_" + xidHash;
+        if ( rootDir.listFiles() != null ) {
+            for ( File columnFolder : rootDir.listFiles( f -> f.isDirectory() ) ) {
+                for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
+                    data.delete();
+                }
+                try {
+                    for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
+                        String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
+                        File target = new File( columnFolder, hash );
+                        if ( target.exists() ) {
+                            //todo check
+                            //throw new RuntimeException("Found a PK duplicate during commit");
+                        }
+                        //todo check REPLACE
+                        Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
+                    }
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Could not commit because moving of files failed", e );
+                }
+            }
+        }
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
-        log.debug( "File Store does not support rollback()." );
+        String xidHash = SHA.hashString( xid.toString(), CHARSET ).toString();
+        final String deletePrefix = "_del_" + xidHash;
+        final String movePrefix = "_ins_" + xidHash;
+        if ( rootDir.listFiles() != null ) {
+            for ( File columnFolder : rootDir.listFiles( f -> f.isDirectory() ) ) {
+                for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
+                    data.delete();
+                }
+                try {
+                    for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
+                        String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
+                        File target = new File( columnFolder, hash );
+                        /*if( target.exists() ) {
+                            throw new RuntimeException("Found a PK duplicate during rollback");
+                        }*/
+                        Files.move( data.toPath(), target.toPath() );
+                    }
+                } catch ( IOException e ) {
+                    throw new RuntimeException( "Could not commit because moving of files failed", e );
+                }
+            }
+        }
     }
 
 
@@ -194,8 +257,15 @@ public class FileStore extends Store {
     @Override
     public void shutdown() {
         log.info( "shutting down file store '{}'", getUniqueName() );
-        //delete only if it is empty (don't delete in case two stores have the same rootDir)
-        rootDir.delete();
+        try {
+            //from https://www.baeldung.com/java-delete-directory
+            Files.walk( rootDir.toPath() )
+                    .sorted( Comparator.reverseOrder() )
+                    .map( Path::toFile )
+                    .forEach( File::delete );
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Could not delete all files from file store", e );
+        }
     }
 
 

@@ -21,8 +21,6 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
@@ -53,7 +52,6 @@ public class FileEnumerator<E> implements Enumerator<E> {
     final Integer[] projectionMapping;
     final PolyType[] columnTypes;
     final Gson gson;
-    final Charset encoding = StandardCharsets.UTF_8;
     final Map<Integer, Update> updates = new HashMap<>();
     final Integer[] pkMapping;
 
@@ -123,7 +121,10 @@ public class FileEnumerator<E> implements Enumerator<E> {
         } else {
             this.columnTypes = columnTypes;
         }
-        FileFilter fileFilter = file -> !file.isHidden();
+        //We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
+        @SuppressWarnings("UnstableApiUsage")
+        String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
+        FileFilter fileFilter = file -> !file.isHidden() && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
         for ( Long colId : columnsToIterate ) {
             File columnFolder = FileStore.getColumnFolder( rootPath, colId );
             columnFolders.add( columnFolder );
@@ -169,7 +170,6 @@ public class FileEnumerator<E> implements Enumerator<E> {
                 String[] strings = new String[numOfCols];
                 Comparable[] curr = new Comparable[numOfCols];
                 int i = 0;
-                //todo fix wrong order
                 for ( File colFolder : columnFolders ) {
                     File f = new File( colFolder, currentFile.getName() );
                     String s;
@@ -177,7 +177,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         s = null;
                     } else {
                         byte[] encoded = Files.readAllBytes( f.toPath() );
-                        s = new String( encoded, encoding );
+                        s = new String( encoded, FileStore.CHARSET );
                     }
                     strings[i] = s;
                     if ( s == null || s.equals( "" ) ) {
@@ -189,12 +189,58 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 curr[i] = gson.fromJson( s, Boolean.class );
                                 break;
                             case INTEGER:
-                            case TIME:
-                            case DATE:
                                 curr[i] = Integer.parseInt( s );
                                 break;
-                            case BIGINT:
+                            case TIME:
+                                if ( NumberUtils.isNumber( s ) ) {
+                                    curr[i] = Integer.parseInt( s );
+                                } else {
+                                    //final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
+                                    /*final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
+                                    if( ts == null ) {
+                                        log.warn( "could not parse TIME " + s );
+                                    }
+                                    curr[i] = TimeString.fromCalendarFields( ts.getCalendar() ).toString();
+                                    */
+                                    if ( operation == Operation.SELECT && s.length() == 19 ) {
+                                        curr[i] = s.substring( 11 );
+                                    } else {
+                                        curr[i] = s;
+                                    }
+                                }
+                                break;
+                            case DATE:
+                                if ( NumberUtils.isNumber( s ) ) {
+                                    curr[i] = Integer.parseInt( s );
+                                } else {
+                                    //final Calendar cal = DateTimeUtils.parseDateFormat( s, new SimpleDateFormat( DateTimeUtils.DATE_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE );
+                                    /*final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
+                                    if( ts == null ) {
+                                        log.warn( "could not parse DATE " + s );
+                                    }
+                                    curr[i] = DateString.fromCalendarFields( ts.getCalendar() ).toString();
+                                    */
+                                    if ( operation == Operation.SELECT && s.length() == 19 ) {
+                                        curr[i] = s.substring( 0, 10 );
+                                    } else {
+                                        curr[i] = s;
+                                    }
+                                }
+                                break;
                             case TIMESTAMP:
+                                if ( NumberUtils.isNumber( s ) ) {
+                                    curr[i] = Long.parseLong( s );
+                                } else {
+                                    /*final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( s, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
+                                    if( ts == null ) {
+                                        log.warn( "could not parse TIMESTAMP " + s );
+                                    }
+                                    curr[i] = TimestampString.fromCalendarFields( ts.getCalendar() ).toString();
+                                    */
+                                    curr[i] = s;
+                                }
+                                break;
+                            case BIGINT:
                                 curr[i] = Long.parseLong( s );
                                 break;
                             case DOUBLE:
@@ -236,24 +282,17 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     return true;
                 } else if ( operation == Operation.DELETE ) {
                     for ( File colFolder : columnFolders ) {
-                        File f = new File( colFolder, currentFile.getName() );
-                        f.delete();//a file might not exist in a column where the value was null
+                        File source = new File( colFolder, currentFile.getName() );
+                        File target = new File( colFolder, getNewFileName( Operation.DELETE, currentFile.getName() ) );
+                        if ( source.exists() ) {
+                            Files.move( source.toPath(), target.toPath() );
+                        }
                     }
                     updateDeleteCount++;
                     current = (E) updateDeleteCount;
                     fileListPosition++;
                     //continue;
                 } else if ( operation == Operation.UPDATE ) {
-                    Object[] newHashObj = new Object[pkMapping.length];
-                    for ( int p = 0; p < pkMapping.length; p++ ) {
-                        if ( updates.containsKey( pkMapping[p] ) ) {
-                            newHashObj[p] = updates.get( pkMapping[p] ).getValue( dataContext ).toString();
-                        } else {
-                            newHashObj[p] = curr[pkMapping[p]].toString();
-                        }
-                    }
-                    int newHash = Arrays.hashCode( newHashObj );
-                    int oldHash = hashRow( curr );
                     Object[] updateObj = new Object[columnFolders.size()];
                     for ( int c = 0; c < columnFolders.size(); c++ ) {
                         if ( updates.containsKey( c ) ) {
@@ -261,21 +300,45 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         } else {
                             updateObj[c] = curr[c];
                         }
+                        //convert date/time/timestamp (that come as int/long) to string
+                        /*if( updateObj[c] == null ) {
+                            continue;
+                        }
+                        switch ( columnTypes[c] ) {
+                            case DATE:
+                                //updateObj[c] = DateTimeUtils.unixDateToString( (Integer) updateObj[c] ) + " " + LocalTime.MIN.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIME_FORMAT_STRING ) );
+                                updateObj[c] = DateTimeUtils.unixDateToString( Integer.parseInt( (String) updateObj[c] ) ) + " " + LocalTime.MIN.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIME_FORMAT_STRING ) );
+                                break;
+                            case TIME:
+                                //updateObj[c] = DateTimeUtils.unixTimestampToString( (Integer) updateObj[c] );
+                                updateObj[c] = DateTimeUtils.unixTimestampToString( Integer.parseInt( (String) updateObj[c] ) );
+                                break;
+                            case TIMESTAMP:
+                                //updateObj[c] = DateTimeUtils.unixTimestampToString( (Long) updateObj[c] );
+                                updateObj[c] = DateTimeUtils.unixTimestampToString( Long.parseLong( (String) updateObj[c] ) );
+                                break;
+                        }*/
                     }
+                    int newHash = hashRow( updateObj );
+                    String oldFileName = FileStore.SHA.hashString( String.valueOf( hashRow( curr ) ), FileStore.CHARSET ).toString();
 
                     int j = 0;
                     for ( File colFolder : columnFolders ) {
-                        if ( newHash != oldHash ) {
-                            //delete old file
-                            new File( colFolder, String.valueOf( oldHash ) ).delete();
+                        //File source = new File( colFolder, currentFile.getName() );
+                        File source = new File( colFolder, oldFileName );
+                        //File target = new File( colFolder, getNewFileName( Operation.DELETE, currentFile.getName() ) );
+                        File target = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
+                        if ( source.exists() ) {
+                            Files.move( source.toPath(), target.toPath() );
                         }
+
                         //write new file
                         if ( updateObj[j] != null ) {
-                            File newFile = new File( colFolder, String.valueOf( newHash ) );
-                            Files.write( newFile.toPath(), updateObj[j].toString().getBytes( encoding ) );
-                        } else {
-                            File newFile = new File( colFolder, String.valueOf( newHash ) );
-                            newFile.delete();
+                            File newFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
+                            /*if( newFile.exists() ) {
+                                throw new RuntimeException("This update would lead to a primary key conflict, " + newFile.getAbsolutePath());
+                            }*/
+                            Files.write( newFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
                         }
                         j++;
                     }
@@ -288,7 +351,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     throw new RuntimeException( operation + " operation is not supported in FileEnumerator" );
                 }
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | RuntimeException e ) {
             throw new RuntimeException( e );
         }
     }
@@ -322,4 +385,29 @@ public class FileEnumerator<E> implements Enumerator<E> {
         }
         return Arrays.hashCode( toHash );
     }
+
+
+    @SuppressWarnings("UnstableApiUsage")
+    String getNewFileName( final Operation operation, final String hashCode ) {
+        String operationAbbreviation;//must be of length 3!
+        switch ( operation ) {
+            case INSERT:
+                operationAbbreviation = "ins";
+                break;
+            case DELETE:
+                operationAbbreviation = "del";
+                break;
+            default:
+                throw new RuntimeException( "Did not expect operation " + operation );
+        }
+        return "_"// underline at the beginning of files that are not yet committed
+                + operationAbbreviation
+                + "_"
+                //XID
+                + FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString()
+                + "_"
+                //PK hash
+                + FileStore.SHA.hashString( hashCode, FileStore.CHARSET ).toString();
+    }
+
 }

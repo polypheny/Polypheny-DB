@@ -34,7 +34,11 @@
 package org.polypheny.db.util;
 
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -118,6 +122,49 @@ public class DateTimeStringUtils {
         }
         return false;
     }
+
+    /**
+     * Converts an integer or long to a DATE/TIME/TIMESTAMP String
+     */
+    public static String longToAdjustedString( final Number number, final PolyType polyType ) {
+        switch ( polyType ) {
+            case TIMESTAMP:
+                return TimestampString.fromMillisSinceEpoch( number.longValue() ).toString();
+            case DATE:
+                return DateString.fromDaysSinceEpoch( number.intValue() ).toString();
+            case TIME:
+                return TimeString.fromMillisOfDay( number.intValue() ).toString();
+            default:
+                throw new RuntimeException( "Unexpected polyType " + polyType );
+        }
+    }
+
+
+    /**
+     * Converts an integer or long to a TIMESTAMP String
+     */
+    public static String longToTimestampString( final Number number, final PolyType polyType ) {
+        switch ( polyType ) {
+            case TIMESTAMP:
+                return TimestampString.fromMillisSinceEpoch( number.longValue() ).toString();
+            case DATE:
+                return DateString.fromDaysSinceEpoch( number.intValue() ).toString() + " " + LocalTime.MIN.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIME_FORMAT_STRING ) );
+            case TIME:
+                String zeroDate = "0000-00-00";
+                return zeroDate + " " + TimeString.fromMillisOfDay( number.intValue() ).toString();
+            default:
+                throw new RuntimeException( "Unexpected polyType " + polyType );
+        }
+    }
+
+
+    /*public static Calendar stringToCalendar ( final String parsedDateTime, final PolyType polyType ) {
+        final DateTimeUtils.PrecisionTime ts = DateTimeUtils.parsePrecisionDateTimeLiteral( parsedDateTime, new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING, Locale.ROOT ), DateTimeUtils.UTC_ZONE, -1 );
+        if( ts == null ) {
+            throw new RuntimeException("Could not parse Date/Time/Timestamp to Calendar: " + parsedDateTime );
+        }
+        return ts.getCalendar();
+    }*/
 
 }
 

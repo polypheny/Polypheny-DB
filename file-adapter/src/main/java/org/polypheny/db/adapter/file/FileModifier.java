@@ -20,7 +20,15 @@ package org.polypheny.db.adapter.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
@@ -28,9 +36,7 @@ import org.polypheny.db.type.PolyType;
 
 public class FileModifier<E> extends FileEnumerator<E> {
 
-    private final Long[] columnIds;
     private final Object[] insertValues;
-    private final File rootFile;
     private boolean inserted = false;
 
     public FileModifier( final Operation operation,
@@ -43,8 +49,6 @@ public class FileModifier<E> extends FileEnumerator<E> {
             final Condition condition ) {
         super( operation, rootPath, columnIds, columnTypes, pkIds, null, dataContext, condition, null );
         this.insertValues = insertValues;
-        this.rootFile = new File( rootPath );
-        this.columnIds = columnIds;
     }
 
     @Override
@@ -76,21 +80,83 @@ public class FileModifier<E> extends FileEnumerator<E> {
                         if ( value == null ) {
                             continue;
                         }
-                        File columnFolder = new File( rootFile, FileStore.getPhysicalColumnName( columnIds[i] ) );
-                        File newFile = new File( columnFolder, String.valueOf( hash ) );
-                        //don't throw for now
-                        /*if ( !newFile.createNewFile() ) {
-                            throw new RuntimeException( "Primary key conflict! You are trying to insert a row that already exists." );
-                        }*/
+
+                        File newFile = new File( columnFolders.get( i ), getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
+                        if ( !newFile.createNewFile() ) {
+                            throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
+                        }
                         //todo check condition
-                        Files.write( newFile.toPath(), value.toString().getBytes( encoding ) );
+                        String writeString;
+                        /*switch ( columnTypes[i] ) {
+                            case TIME:
+                                if( value instanceof Time ) {
+                                    writeString = value.toString();
+                                } else {
+                                    writeString = DateTimeUtils.unixTimeToString( Integer.parseInt( (String) value ) );//TimeString.fromMillisOfDay( (int) value ).toString();
+                                }
+                                break;
+                            case TIMESTAMP:
+                                //writeString = TimestampString.fromMillisSinceEpoch( (long) value ).toString();
+                                if( value instanceof Timestamp ) {
+                                    writeString = value.toString();
+                                } else {
+                                    writeString = DateTimeUtils.unixTimestampToString( Long.parseLong( (String) value ) );
+                                }
+                                break;
+                            case DATE:
+                                //writeString = DateString.fromDaysSinceEpoch( (int) value ).toString();
+                                if( value instanceof Date ) {
+                                    writeString = value.toString();
+                                } else {
+                                    writeString = DateTimeUtils.unixDateToString( Integer.parseInt( (String) value ) );
+                                }
+                                break;
+                            default:
+                                writeString = value.toString();
+                        }*/
+                        switch ( columnTypes[i] ) {
+                            case TIME:
+                                if ( value instanceof Time ) {
+                                    LocalTime t = ((Time) value).toLocalTime();
+                                    //LocalDateTime dt = LocalDateTime.of( LocalDate.MIN, t );//todo maybe something else than MIN
+                                    writeString = t.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
+                                } else {
+                                    //writeString = DateTimeUtils.unixTimestampToString( Integer.parseInt( (String) value ) );
+                                    writeString = (String) value;
+                                }
+                                break;
+                            case DATE:
+                                if ( value instanceof Date ) {
+                                    LocalDate d = ((Date) value).toLocalDate();
+                                    LocalDateTime dt = LocalDateTime.of( d, LocalTime.MIN );
+                                    writeString = dt.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
+                                } else {
+                                    writeString = (String) value;
+                                    //writeString = DateTimeUtils.unixDateToString( Integer.parseInt( (String) value ) ) + " " + LocalTime.MIN.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIME_FORMAT_STRING ) );
+                                }
+                                break;
+                            case TIMESTAMP:
+                                if ( value instanceof Timestamp ) {
+                                    LocalDateTime dt = ((Timestamp) value).toLocalDateTime();
+                                    writeString = dt.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
+                                } else {
+                                    //writeString = DateTimeUtils.unixTimestampToString( Long.parseLong( (String) value ) );
+                                    writeString = (String) value;
+                                }
+                                break;
+                            default:
+                                writeString = value.toString();
+
+                        }
+                        Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
+                        //Files.write( newFile.toPath(), value.toString().getBytes( FileStore.CHARSET ) );
                     }
                 }
                 current = (E) new Long( insertPosition );
                 inserted = true;
                 return true;
             }
-        } catch ( IOException e ) {
+        } catch ( IOException | RuntimeException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -63,6 +63,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.SaffronProperties;
@@ -1044,15 +1045,31 @@ public class RexLiteral extends RexNode {
                 return ((NlsString) value).getValue();
             case BOOLEAN:
                 return Boolean.toString( (Boolean) value );
+            //return DATE/TIME/TIMESTAMP in the form "yyyy-MM-dd HH:mm:ss"
             case DATE:
             case TIME:
                 int i = getValueAs( Integer.class );
-                return String.valueOf( i );
+                return DateTimeStringUtils.longToTimestampString( i, typeName );
             case TIMESTAMP:
                 long l = getValueAs( Long.class );
-                return String.valueOf( l );
+                return DateTimeStringUtils.longToTimestampString( l, typeName );
             default:
                 return value.toString();
+        }
+    }
+
+
+    /**
+     * see {@link org.polypheny.db.adapter.file.Condition}
+     */
+    public Comparable getValueForFileCondition() {
+        switch ( typeName ) {
+            case TIME:
+            case DATE:
+            case TIMESTAMP:
+                return getValueAsString();
+            default:
+                return getValueForQueryParameterizer();
         }
     }
 
