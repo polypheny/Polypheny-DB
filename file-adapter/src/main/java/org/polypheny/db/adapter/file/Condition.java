@@ -17,10 +17,17 @@
 package org.polypheny.db.adapter.file;
 
 
-import com.google.gson.Gson;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.calcite.avatica.util.DateTimeUtils;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -53,6 +60,39 @@ public class Condition {
             }
         }
     }
+
+
+    /**
+     * Called by generated code, see {@link Condition#getExpression}
+     */
+    public Condition( final SqlKind operator, final Integer columnReference, final Long literalIndex, final Object literal, final Condition[] operands ) {
+        this.operator = operator;
+        this.columnReference = columnReference;
+        this.literalIndex = literalIndex;
+        this.literal = literal;
+        this.operands.addAll( Arrays.asList( operands.clone() ) );
+    }
+
+
+    /**
+     * For linq4j Expressions
+     */
+    public Expression getExpression () {
+        List<Expression> operandsExpressions = new ArrayList<>();
+        for( Condition operand : operands ) {
+            operandsExpressions.add( operand.getExpression() );
+        }
+
+        return Expressions.new_(
+                Condition.class,
+                Expressions.constant( operator, SqlKind.class ),
+                Expressions.constant( columnReference, Integer.class ),
+                Expressions.constant( literalIndex, Long.class ),
+                Expressions.constant( literal, Object.class ),
+                Expressions.newArrayInit( Condition.class, operandsExpressions )
+        );
+    }
+
 
     private void assignRexNode( final RexNode rexNode ) {
         if ( rexNode instanceof RexInputRef ) {
@@ -114,17 +154,15 @@ public class Condition {
 
         int comparison;
 
-        //Todo at the moment the comparison is performed with a string comparison, and it actually works.
-        // But it would be safer to convert both strings to calendars and compare them
-        /*if ( parameterValue instanceof Calendar ) {
+        if ( parameterValue instanceof Calendar ) {
             Calendar cal;
             switch ( columnValue.toString().length() ) {
                 case 10://Date
-                    cal = DateTimeUtils.parseDateFormat( columnValue.toString(), new SimpleDateFormat( DateTimeUtils.DATE_FORMAT_STRING ), DateTimeUtils.UTC_ZONE );
+                    cal = DateTimeUtils.parseDateFormat( columnValue.toString().substring( 0, 10 ), new SimpleDateFormat( DateTimeUtils.DATE_FORMAT_STRING ), DateTimeUtils.UTC_ZONE );
                     comparison = ((GregorianCalendar) cal).toZonedDateTime().toLocalDate().compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDate() );
                     break;
                 case 8://time
-                    cal = DateTimeUtils.parseDateFormat( columnValue.toString(), new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING ), DateTimeUtils.UTC_ZONE );
+                    cal = DateTimeUtils.parseDateFormat( columnValue.toString().substring( 11 ), new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING ), DateTimeUtils.UTC_ZONE );
                     comparison = ((GregorianCalendar) cal).toZonedDateTime().toLocalTime().compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalTime() );
                     break;
                 case 19://timestamp
@@ -136,8 +174,7 @@ public class Condition {
             }
         } else {
             comparison = columnValue.compareTo( parameterValue );
-        }*/
-        comparison = columnValue.compareTo( parameterValue );
+        }
 
         switch ( operator ) {
             case AND:
@@ -156,6 +193,8 @@ public class Condition {
                 return false;
             case EQUALS:
                 return comparison == 0;
+            case NOT_EQUALS:
+                return comparison != 0;
             case GREATER_THAN:
                 return comparison > 0;
             case GREATER_THAN_OR_EQUAL:
@@ -174,11 +213,4 @@ public class Condition {
         }
     }
 
-    public String toJson() {
-        return new Gson().toJson( this, Condition.class );
-    }
-
-    public static Condition fromJson( final String serializedCondition ) {
-        return new Gson().fromJson( serializedCondition, Condition.class );
-    }
 }

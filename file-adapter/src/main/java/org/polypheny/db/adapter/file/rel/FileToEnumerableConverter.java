@@ -91,14 +91,18 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
             }
         }
 
-        Expression _updates = Expressions.constant( null );
+        Expression _updates;
         if ( fileImplementor.getUpdates() != null ) {
             _updates = Update.getUpdatesExpression( fileImplementor.getUpdates() );
+        } else {
+            _updates = Expressions.constant( null );
         }
 
-        String condition = null;
+        Expression conditionExpression;
         if ( fileImplementor.getCondition() != null ) {
-            condition = fileImplementor.getCondition().toJson();
+            conditionExpression = fileImplementor.getCondition().getExpression();
+        } else {
+            conditionExpression = Expressions.constant( null );
         }
 
         Expression enumerable;
@@ -116,7 +120,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
                             Expressions.constant( fileImplementor.getProjectionMapping() ),
-                            Expressions.constant( condition ),
+                            conditionExpression,
                             _updates
                     ) );
         } else { //INSERT
@@ -133,7 +137,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
                             Expressions.constant( fileImplementor.isBatchInsert() ),
                             _insertValues,
-                            Expressions.constant( condition )
+                            conditionExpression
                     ) );
         }
 

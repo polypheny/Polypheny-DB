@@ -121,9 +121,8 @@ public class FileSchema extends AbstractSchema {
      * Executes SELECT and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final String conditionJson, final Update[] updates ) {
+    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Update[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
-        Condition condition = Condition.fromJson( conditionJson );
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
@@ -136,9 +135,8 @@ public class FileSchema extends AbstractSchema {
      * Called from generated code
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final String conditionJson ) {
+    public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
         dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
-        Condition condition = Condition.fromJson( conditionJson );
         final Object[] insert;
         //if it is a batch insert
         if ( dataContext.getParameterValues().size() > 0 ) {
