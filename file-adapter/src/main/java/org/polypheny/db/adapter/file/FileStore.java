@@ -73,7 +73,7 @@ public class FileStore extends Store {
 
 
     private void setRootDir() {
-        File adapterRoot = FileSystemManager.getInstance().registerDataFolder( "file-store" );
+        File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "file-store" );
         rootDir = new File( adapterRoot, "store" + getStoreId() );
 
         if ( !rootDir.exists() ) {

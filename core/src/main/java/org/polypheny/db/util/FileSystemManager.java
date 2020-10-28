@@ -31,7 +31,7 @@ public class FileSystemManager {
     static FileSystemManager fileSystemManager = null;
     final File root = new File( System.getProperty( "user.home" ), ".polypheny" );
     final List<File> dirs = new ArrayList<>();
-
+    final List<File> deleteOnExit = new ArrayList<>();
 
     public static FileSystemManager getInstance() {
         if ( fileSystemManager == null ) {
@@ -45,16 +45,23 @@ public class FileSystemManager {
         if ( !root.exists() ) {
             root.mkdir();
         }
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
+            for ( File file : deleteOnExit ) {
+                if ( file.exists() ) {
+                    recursiveDeleteFolder( file );
+                }
+            }
+        } ) );
     }
 
 
     /**
-     * Registers a new data folder
+     * Registers a new folder
      *
      * @param path the path of the new folder
      * @return the file object for the directory
      */
-    public File registerDataFolder( String path ) {
+    public File registerNewFolder( String path ) {
         File file = new File( this.root, path );
         if ( !file.exists() ) {
             file.mkdirs();
@@ -70,10 +77,54 @@ public class FileSystemManager {
     }
 
 
+    public boolean checkIfExists( String path ) {
+        File file = new File( this.root, path );
+        return file.exists();
+    }
+
+
+    public boolean moveFolder( String oldPath, String newPath ) {
+        if ( checkIfExists( newPath ) ) {
+            throw new RuntimeException( "Target folder does already exist." );
+        }
+        File file = new File( this.root, oldPath );
+        return file.renameTo( new File( this.root, newPath ) );
+    }
+
+
+    public boolean recursiveDeleteFolder( String path ) {
+        File folder = new File( this.root, path );
+        if ( folder.exists() ) {
+            return recursiveDeleteFolder( folder );
+        }
+        return true;
+    }
+
+
+    public void recursiveDeleteFolderOnExit( String path ) {
+        File folder = new File( this.root, path );
+        if ( !folder.exists() ) {
+            throw new RuntimeException( "There is no directory with this name: " + folder.getPath() );
+        }
+        deleteOnExit.add( folder );
+    }
+
+
+    private boolean recursiveDeleteFolder( File folder ) {
+        File[] allContents = folder.listFiles();
+        if ( allContents != null ) {
+            for ( File file : allContents ) {
+                recursiveDeleteFolder( file );
+            }
+        }
+        return folder.delete();
+    }
+
+
     /**
      * places a new file in a specific path, if no path is specified, it is places in the root path
      *
-     * @param path       path to the folder in which the file should be placed
+     * @param path path to the folder in which the file should be placed
      * @param pathToFile the file and its parent paths
      * @return the file object of the file itself
      */
