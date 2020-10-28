@@ -150,8 +150,7 @@ public class FileSchema extends AbstractSchema {
                     Object o = map.get( (long) i );
                     if ( columnTypes[i] == PolyType.TIMESTAMP ) {
                         if ( o instanceof Timestamp ) {
-                            //todo handle in FileModifier
-                            o = ((Timestamp) o).toInstant().toEpochMilli();//((Timestamp) o).toLocalDateTime().atZone(  DateTimeUtils.UTC_ZONE.toZoneId() ).toInstant().toEpochMilli();
+                            o = ((Timestamp) o).toInstant().toEpochMilli();
                         }
                     } else if ( columnTypes[i] == PolyType.DATE ) {
                         o = ((Date) o).toLocalDate().toEpochDay();

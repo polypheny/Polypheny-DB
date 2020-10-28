@@ -77,38 +77,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
                         if ( !newFile.createNewFile() ) {
                             throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
                         }
-                        String writeString;
-                        /*switch ( columnTypes[i] ) {
-                            case TIME:
-                                if ( value instanceof Time ) {
-                                    LocalTime t = ((Time) value).toLocalTime();
-                                    writeString = t.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
-                                } else {
-                                    writeString = (String) value;
-                                }
-                                break;
-                            case DATE:
-                                if ( value instanceof Date ) {
-                                    LocalDate d = ((Date) value).toLocalDate();
-                                    LocalDateTime dt = LocalDateTime.of( d, LocalTime.MIN );
-                                    writeString = dt.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
-                                } else {
-                                    writeString = (String) value;
-                                }
-                                break;
-                            case TIMESTAMP:
-                                if ( value instanceof Timestamp ) {
-                                    LocalDateTime dt = ((Timestamp) value).toLocalDateTime();
-                                    writeString = dt.format( DateTimeFormatter.ofPattern( DateTimeUtils.TIMESTAMP_FORMAT_STRING ) );
-                                } else {
-                                    writeString = (String) value;
-                                }
-                                break;
-                            default:
-                                writeString = value.toString();
-
-                        }*/
-                        writeString = value.toString();
+                        String writeString = value.toString();
                         Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
                     }
                 }

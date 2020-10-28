@@ -56,7 +56,6 @@ public class Update {
     }
 
 
-    //todo remove polytype param
     public Object getValue( final DataContext context ) {
         //don't switch the two if conditions, because a literal assignment can be "null"
         if ( literalIndex != null ) {

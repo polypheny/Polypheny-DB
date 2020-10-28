@@ -48,7 +48,6 @@ public class FileAdapterTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER STORES DROP hsqldb" );//so tables will be created by default on the mm store
                 statement.executeUpdate( "ALTER STORES ADD \"mm\" USING 'org.polypheny.db.adapter.file.FileStore' WITH '{}'" );
             }
         }
