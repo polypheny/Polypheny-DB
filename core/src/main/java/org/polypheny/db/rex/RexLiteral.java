@@ -803,7 +803,9 @@ public class RexLiteral extends RexNode {
             case TIME:
             case DATE:
             case TIMESTAMP:
-                return getValueAs( Calendar.class );
+                Calendar calendar = getValueAs( Calendar.class );
+                calendar.set( Calendar.MILLISECOND, 0 );  // Cut milliseconds
+                return calendar;
             case CHAR:
             case VARCHAR:
                 return getValueAs( String.class );
