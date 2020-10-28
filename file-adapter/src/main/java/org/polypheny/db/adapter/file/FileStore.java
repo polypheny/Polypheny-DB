@@ -13,9 +13,7 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -24,6 +22,7 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.Store;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -73,13 +72,21 @@ public class FileStore extends Store {
 
 
     private void setRootDir() {
-        File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "file-store" );
+        File adapterRoot;
+        if ( Catalog.memoryCatalog ) {
+            adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/temp-file-store" );
+        } else {
+            adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
+        }
         rootDir = new File( adapterRoot, "store" + getStoreId() );
 
         if ( !rootDir.exists() ) {
             if ( !rootDir.mkdirs() ) {
                 throw new RuntimeException( "Could not create root directory" );
             }
+        }
+        if ( Catalog.memoryCatalog ) {
+            FileSystemManager.getInstance().recursiveDeleteFolderOnExit( "data/temp-file-store" );
         }
         //subfolder for the write ahead log
         this.WAL = new File( rootDir, "WAL" );
@@ -93,7 +100,10 @@ public class FileStore extends Store {
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        currentSchema = new FileSchema( rootSchema, name, this );
+        // it might be worth it to check why createNewSchema is called multiple times with different names
+        if ( currentSchema == null ) {
+            currentSchema = new FileSchema( rootSchema, name, this );
+        }
     }
 
 
@@ -328,11 +338,7 @@ public class FileStore extends Store {
     public void shutdown() {
         log.info( "shutting down file store '{}'", getUniqueName() );
         try {
-            //from https://www.baeldung.com/java-delete-directory
-            Files.walk( rootDir.toPath() )
-                    .sorted( Comparator.reverseOrder() )
-                    .map( Path::toFile )
-                    .forEach( File::delete );
+            FileHelper.deleteDirRecursively( rootDir );
         } catch ( IOException e ) {
             throw new RuntimeException( "Could not delete all files from file store", e );
         }
