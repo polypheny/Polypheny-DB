@@ -17,6 +17,9 @@
 package org.polypheny.db.adapter.file;
 
 
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -144,7 +147,18 @@ public class FileSchema extends AbstractSchema {
             for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
                 ArrayList<Object> row = new ArrayList<>();
                 for ( int i = 0; i < columnIds.length; i++ ) {
-                    row.add( map.get( (long) i ) );
+                    Object o = map.get( (long) i );
+                    if ( columnTypes[i] == PolyType.TIMESTAMP ) {
+                        if ( o instanceof Timestamp ) {
+                            //todo handle in FileModifier
+                            o = ((Timestamp) o).toInstant().toEpochMilli();//((Timestamp) o).toLocalDateTime().atZone(  DateTimeUtils.UTC_ZONE.toZoneId() ).toInstant().toEpochMilli();
+                        }
+                    } else if ( columnTypes[i] == PolyType.DATE ) {
+                        o = ((Date) o).toLocalDate().toEpochDay();
+                    } else if ( columnTypes[i] == PolyType.TIME ) {
+                        o = ((Time) o).getTime();
+                    }
+                    row.add( o );
                 }
                 rows.add( row.toArray( new Object[0] ) );
             }

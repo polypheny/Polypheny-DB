@@ -70,7 +70,7 @@ public class FileProject extends Project implements FileRel {
                     RexCall call = (RexCall) node;
                     ArrayList<Object> arrayValues = new ArrayList<>();
                     for ( RexNode node1 : call.getOperands() ) {
-                        arrayValues.add( ((RexLiteral) node1).getValueForQueryParameterizer() );
+                        arrayValues.add( ((RexLiteral) node1).getValueForFileCondition() );
                     }
                     row[i] = gson.toJson( arrayValues );
                     i++;

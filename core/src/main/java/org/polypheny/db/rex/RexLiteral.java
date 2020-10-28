@@ -63,7 +63,6 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
 import org.polypheny.db.util.SaffronProperties;
@@ -1045,14 +1044,13 @@ public class RexLiteral extends RexNode {
                 return ((NlsString) value).getValue();
             case BOOLEAN:
                 return Boolean.toString( (Boolean) value );
-            //return DATE/TIME/TIMESTAMP in the form "yyyy-MM-dd HH:mm:ss"
             case DATE:
             case TIME:
                 int i = getValueAs( Integer.class );
-                return DateTimeStringUtils.longToTimestampString( i, typeName );
+                return String.valueOf( i );
             case TIMESTAMP:
                 long l = getValueAs( Long.class );
-                return DateTimeStringUtils.longToTimestampString( l, typeName );
+                return String.valueOf( l );
             default:
                 return value.toString();
         }
@@ -1066,8 +1064,9 @@ public class RexLiteral extends RexNode {
         switch ( typeName ) {
             case TIME:
             case DATE:
+                return getValueAs( Integer.class );
             case TIMESTAMP:
-                return getValueAsString();
+                return getValueAs( Long.class );
             default:
                 return getValueForQueryParameterizer();
         }

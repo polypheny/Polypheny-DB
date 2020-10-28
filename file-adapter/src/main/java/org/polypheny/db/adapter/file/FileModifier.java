@@ -20,15 +20,7 @@ package org.polypheny.db.adapter.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
@@ -86,7 +78,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
                             throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
                         }
                         String writeString;
-                        switch ( columnTypes[i] ) {
+                        /*switch ( columnTypes[i] ) {
                             case TIME:
                                 if ( value instanceof Time ) {
                                     LocalTime t = ((Time) value).toLocalTime();
@@ -115,7 +107,8 @@ public class FileModifier<E> extends FileEnumerator<E> {
                             default:
                                 writeString = value.toString();
 
-                        }
+                        }*/
+                        writeString = value.toString();
                         Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
                     }
                 }

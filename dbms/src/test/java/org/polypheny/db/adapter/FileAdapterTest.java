@@ -19,10 +19,17 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
@@ -32,20 +39,39 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 public class FileAdapterTest {
 
     @BeforeClass
-    public static void start() {
+    public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         // noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         //todo check rollbacks
+
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "ALTER STORES DROP hsqldb" );//so tables will be created by default on the mm store
+                statement.executeUpdate( "ALTER STORES ADD \"mm\" USING 'org.polypheny.db.adapter.file.FileStore' WITH '{}'" );
+            }
+        }
     }
+
+
+    @AfterClass
+    public static void end() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "ALTER STORES DROP mm" );
+                connection.commit();
+            }
+        }
+    }
+
 
     @Test
     public void testFileStore() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER STORES DROP hsqldb" );//so tables will be created by default on the mm store
-                statement.executeUpdate( "ALTER STORES ADD \"mm\" USING 'org.polypheny.db.adapter.file.FileStore' WITH '{}'" );
                 statement.executeUpdate( "CREATE TABLE preparedTest (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a)) ON STORE \"mm\"" );
 
                 preparedTest( connection );
@@ -96,11 +122,40 @@ public class FileAdapterTest {
                 rs.close();
 
                 statement.executeUpdate( "DROP TABLE public.preparedTest" );
-                statement.executeUpdate( "ALTER STORES DROP mm" );
                 connection.commit();
             }
         }
     }
+
+
+    @Test
+    public void testDateTime() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE testDateTime (a INTEGER NOT NULL, b DATE, c TIME, d TIMESTAMP , PRIMARY KEY (a)) ON STORE \"mm\"" );
+
+                PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO testDateTime (a,b,c,d) VALUES (?,?,?,?)" );
+                preparedStatement.setInt( 1, 1 );
+                preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
+                preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
+                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
+                preparedStatement.addBatch();
+                preparedStatement.clearParameters();
+                preparedStatement.setInt( 1, 2 );
+                preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
+                preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
+                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
+                preparedStatement.addBatch();
+                preparedStatement.executeBatch();
+                preparedStatement.close();
+
+                statement.executeUpdate( "DROP TABLE public.testDateTime" );
+                connection.commit();
+            }
+        }
+    }
+
 
     private void preparedTest( final Connection connection ) throws SQLException {
         PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO preparedTest (a,b) VALUES (?,?)" );
@@ -109,6 +164,7 @@ public class FileAdapterTest {
         preparedStatement.executeUpdate();
         preparedStatement.close();
     }
+
 
     private void batchTest( final Connection connection ) throws SQLException {
         PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO preparedTest (a,b) VALUES (?,?)" );

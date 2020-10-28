@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
-import org.apache.commons.lang.math.NumberUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
@@ -189,37 +188,11 @@ public class FileEnumerator<E> implements Enumerator<E> {
                                 curr[i] = gson.fromJson( s, Boolean.class );
                                 break;
                             case INTEGER:
+                            case TIME:
+                            case DATE:
                                 curr[i] = Integer.parseInt( s );
                                 break;
-                            case TIME:
-                                if ( NumberUtils.isNumber( s ) ) {
-                                    curr[i] = Integer.parseInt( s );
-                                } else {
-                                    if ( operation == Operation.SELECT && s.length() == 19 ) {
-                                        curr[i] = s.substring( 11 );
-                                    } else {
-                                        curr[i] = s;
-                                    }
-                                }
-                                break;
-                            case DATE:
-                                if ( NumberUtils.isNumber( s ) ) {
-                                    curr[i] = Integer.parseInt( s );
-                                } else {
-                                    if ( operation == Operation.SELECT && s.length() == 19 ) {
-                                        curr[i] = s.substring( 0, 10 );
-                                    } else {
-                                        curr[i] = s;
-                                    }
-                                }
-                                break;
                             case TIMESTAMP:
-                                if ( NumberUtils.isNumber( s ) ) {
-                                    curr[i] = Long.parseLong( s );
-                                } else {
-                                    curr[i] = s;
-                                }
-                                break;
                             case BIGINT:
                                 curr[i] = Long.parseLong( s );
                                 break;
@@ -237,7 +210,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     i++;
                 }
                 if ( condition != null ) {
-                    if ( !condition.matches( curr, dataContext ) ) {
+                    if ( !condition.matches( curr, columnTypes, dataContext ) ) {
                         fileListPosition++;
                         continue;
                     }

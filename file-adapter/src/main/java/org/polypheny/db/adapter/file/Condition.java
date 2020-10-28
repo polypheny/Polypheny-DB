@@ -17,7 +17,10 @@
 package org.polypheny.db.adapter.file;
 
 
-import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -35,6 +38,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.type.PolyType;
 
 
 public class Condition {
@@ -88,7 +92,7 @@ public class Condition {
                 Expressions.constant( operator, SqlKind.class ),
                 Expressions.constant( columnReference, Integer.class ),
                 Expressions.constant( literalIndex, Long.class ),
-                Expressions.constant( literal, Object.class ),
+                Expressions.constant( this.literal ),
                 Expressions.newArrayInit( Condition.class, operandsExpressions )
         );
     }
@@ -104,20 +108,19 @@ public class Condition {
         }
     }
 
-    //todo add column types
-    public boolean matches( final Comparable[] columnValues, final DataContext dataContext ) {
+    public boolean matches( final Comparable[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
             switch ( operator ) {
                 case AND:
                     for ( Condition c : operands ) {
-                        if ( !c.matches( columnValues, dataContext ) ) {
+                        if ( !c.matches( columnValues, columnTypes, dataContext ) ) {
                             return false;
                         }
                     }
                     return true;
                 case OR:
                     for ( Condition c : operands ) {
-                        if ( c.matches( columnValues, dataContext ) ) {
+                        if ( c.matches( columnValues, columnTypes, dataContext ) ) {
                             return true;
                         }
                     }
@@ -127,6 +130,7 @@ public class Condition {
             }
         }
         Comparable columnValue = columnValues[columnReference];//don't do the projectionMapping here
+        PolyType polyType = columnTypes[columnReference];
         switch ( operator ) {
             case IS_NULL:
                 return columnValue == null;
@@ -155,22 +159,23 @@ public class Condition {
         int comparison;
 
         if ( parameterValue instanceof Calendar ) {
-            Calendar cal;
-            switch ( columnValue.toString().length() ) {
-                case 10://Date
-                    cal = DateTimeUtils.parseDateFormat( columnValue.toString().substring( 0, 10 ), new SimpleDateFormat( DateTimeUtils.DATE_FORMAT_STRING ), DateTimeUtils.UTC_ZONE );
-                    comparison = ((GregorianCalendar) cal).toZonedDateTime().toLocalDate().compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDate() );
+            //could be improved with precision..
+            switch ( polyType ) {
+                case DATE:
+                    LocalDate ld = LocalDate.ofEpochDay( (Integer) columnValue );
+                    comparison = ld.compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDate() );
                     break;
-                case 8://time
-                    cal = DateTimeUtils.parseDateFormat( columnValue.toString().substring( 11 ), new SimpleDateFormat( DateTimeUtils.TIME_FORMAT_STRING ), DateTimeUtils.UTC_ZONE );
-                    comparison = ((GregorianCalendar) cal).toZonedDateTime().toLocalTime().compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalTime() );
+                case TIME:
+                    //see https://howtoprogram.xyz/2017/02/11/convert-milliseconds-localdatetime-java/
+                    LocalTime dt = Instant.ofEpochMilli( (Integer) columnValue ).atZone( DateTimeUtils.UTC_ZONE.toZoneId() ).toLocalTime();
+                    comparison = dt.compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalTime() );
                     break;
-                case 19://timestamp
-                    cal = DateTimeUtils.parseDateFormat( columnValue.toString(), new SimpleDateFormat( DateTimeUtils.TIMESTAMP_FORMAT_STRING ), DateTimeUtils.UTC_ZONE );
-                    comparison = ((GregorianCalendar) cal).toZonedDateTime().toLocalDateTime().compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDateTime() );
+                case TIMESTAMP:
+                    LocalDateTime ldt = Instant.ofEpochMilli( (Long) columnValue ).atZone( DateTimeUtils.UTC_ZONE.toZoneId() ).toLocalDateTime();
+                    comparison = ldt.compareTo( ((GregorianCalendar) parameterValue).toZonedDateTime().toLocalDateTime() );
                     break;
                 default:
-                    throw new RuntimeException( "Date/Time/Timestamp String in unexpected Format: " + columnValue.toString() );
+                    comparison = columnValue.compareTo( parameterValue );
             }
         } else {
             comparison = columnValue.compareTo( parameterValue );
@@ -179,14 +184,14 @@ public class Condition {
         switch ( operator ) {
             case AND:
                 for ( Condition c : operands ) {
-                    if ( !c.matches( columnValues, dataContext ) ) {
+                    if ( !c.matches( columnValues, columnTypes, dataContext ) ) {
                         return false;
                     }
                 }
                 return true;
             case OR:
                 for ( Condition c : operands ) {
-                    if ( c.matches( columnValues, dataContext ) ) {
+                    if ( c.matches( columnValues, columnTypes, dataContext ) ) {
                         return true;
                     }
                 }

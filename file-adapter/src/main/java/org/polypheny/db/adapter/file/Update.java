@@ -43,28 +43,22 @@ public class Update {
      * Update constructor
      *
      * @param columnReference May be null. Used by generated code, see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
-     * @param literalIndex LiteralIndex for the dataContext
+     * @param literalOrIndex Either a literal or a literalIndex. The third parameter {@code isLiteralIndex} specifies if it si a literal or a literalIndex
+     * @param isLiteralIndex True if the second parameter is a literalIndex. In this case, it has to be a Long
      */
-    public Update( final Integer columnReference, final Long literalIndex ) {
+    public Update( final Integer columnReference, final Object literalOrIndex, final boolean isLiteralIndex ) {
         this.columnReference = columnReference;
-        this.literalIndex = literalIndex;
+        if ( isLiteralIndex ) {
+            this.literalIndex = (Long) literalOrIndex;
+        } else {
+            this.literal = literalOrIndex;
+        }
     }
 
 
-    /**
-     * Update constructor
-     *
-     * @param columnReference May be null. Used by generated code, see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
-     * @param literal Literal that will be written in an update
-     */
-    public Update( final Integer columnReference, final Object literal ) {
-        this.columnReference = columnReference;
-        this.literal = literal;
-    }
-
-
+    //todo remove polytype param
     public Object getValue( final DataContext context ) {
-        //don't switch these two condition, because a literal assignment can be "null"
+        //don't switch the two if conditions, because a literal assignment can be "null"
         if ( literalIndex != null ) {
             return context.getParameterValue( literalIndex );
         } else {
@@ -75,9 +69,16 @@ public class Update {
 
     Expression getExpression() {
         if ( literal != null ) {
-            return Expressions.new_( Update.class, Expressions.constant( columnReference ), Expressions.constant( literal, Object.class ) );
+            Expression literalExpression;
+            if ( literal instanceof Long ) {
+                // this is a fix, else linq4j will submit an integer that is too long
+                literalExpression = Expressions.constant( literal, Long.class );
+            } else {
+                literalExpression = Expressions.constant( literal );
+            }
+            return Expressions.new_( Update.class, Expressions.constant( columnReference ), literalExpression, Expressions.constant( false ) );
         } else {
-            return Expressions.new_( Update.class, Expressions.constant( columnReference ), Expressions.constant( literalIndex, Long.class ) );
+            return Expressions.new_( Update.class, Expressions.constant( columnReference ), Expressions.constant( literalIndex, Long.class ), Expressions.constant( true ) );
         }
     }
 
@@ -99,18 +100,9 @@ public class Update {
             if ( exps.size() > i + offset ) {
                 RexNode lit = exps.get( i + offset );
                 if ( lit instanceof RexLiteral ) {
-                    switch ( ((RexLiteral) lit).getTypeName() ) {
-                        case DATE:
-                        case TIME:
-                        case TIMESTAMP:
-                            //as string in the TIMESTAMP format
-                            updateList.add( new Update( null, ((RexLiteral) lit).getValueAsString() ) );
-                            break;
-                        default:
-                            updateList.add( new Update( null, ((RexLiteral) lit).getValueForQueryParameterizer() ) );
-                    }
+                    updateList.add( new Update( null, ((RexLiteral) lit).getValueForFileCondition(), false ) );
                 } else {
-                    updateList.add( new Update( null, ((RexDynamicParam) lit).getIndex() ) );
+                    updateList.add( new Update( null, ((RexDynamicParam) lit).getIndex(), true ) );
                 }
             }
         }
