@@ -803,9 +803,7 @@ public class RexLiteral extends RexNode {
             case TIME:
             case DATE:
             case TIMESTAMP:
-                Calendar calendar = getValueAs( Calendar.class );
-                calendar.set( Calendar.MILLISECOND, 0 );  // Cut milliseconds
-                return calendar;
+                return getValueAs( Calendar.class );
             case CHAR:
             case VARCHAR:
                 return getValueAs( String.class );
@@ -1060,7 +1058,7 @@ public class RexLiteral extends RexNode {
 
 
     /**
-     * see {@link org.polypheny.db.adapter.file.Condition}
+     * see {@code org.polypheny.db.adapter.file.Condition}
      */
     public Comparable getValueForFileCondition() {
         switch ( typeName ) {
