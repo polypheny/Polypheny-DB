@@ -135,12 +135,10 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.models.Adapter;
@@ -1013,7 +1011,7 @@ public class Crud implements InformationObserver {
                 result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." );
                 result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( TransactionException | Exception e ) {
             log.error( "Caught exception while deleting a row", e );
             result = new Result( e ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             try {
@@ -1054,6 +1052,8 @@ public class Crud implements InformationObserver {
         for ( Entry<String, String> entry : request.filter.entrySet() ) {
             if ( entry.getValue().startsWith( "[" ) ) {
                 where.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
+            } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
+                where.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
                 where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
             }
@@ -2628,13 +2628,25 @@ public class Crud implements InformationObserver {
                 } else {
                     switch ( header.get( counter ).dataType ) {
                         case "TIMESTAMP":
-                            temp[counter] = TimestampString.fromMillisSinceEpoch( (long) o ).toString();
+                            if ( o instanceof Long ) {
+                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (long) o, PolyType.TIMESTAMP );// TimestampString.fromMillisSinceEpoch( (long) o ).toString();
+                            } else {
+                                temp[counter] = o.toString();
+                            }
                             break;
                         case "DATE":
-                            temp[counter] = DateString.fromDaysSinceEpoch( (int) o ).toString();
+                            if ( o instanceof Integer ) {
+                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.DATE );//DateString.fromDaysSinceEpoch( (int) o ).toString();
+                            } else {
+                                temp[counter] = o.toString();
+                            }
                             break;
                         case "TIME":
-                            temp[counter] = TimeString.fromMillisOfDay( (int) o ).toString();
+                            if ( o instanceof Integer ) {
+                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.TIME );//TimeString.fromMillisOfDay( (int) o ).toString();
+                            } else {
+                                temp[counter] = o.toString();
+                            }
                             break;
                         default:
                             temp[counter] = o.toString();

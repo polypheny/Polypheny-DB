@@ -88,6 +88,7 @@ public class RelJson {
                     "org.polypheny.db.rel.core.",
                     "org.polypheny.db.rel.logical.",
                     "org.polypheny.db.adapter.cassandra.",
+                    "org.polypheny.db.adapter.file.rel.",
                     "org.polypheny.db.adapter.enumerable.",
                     "org.polypheny.db.adapter.jdbc.",
                     "org.polypheny.db.adapter.jdbc.JdbcRules$",

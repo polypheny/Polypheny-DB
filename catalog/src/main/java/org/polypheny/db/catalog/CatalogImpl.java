@@ -176,7 +176,7 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
-                File folder = FileSystemManager.getInstance().registerDataFolder( "catalog" );
+                File folder = FileSystemManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
                     log.info( "Reseting catalog on startup." );
@@ -2593,6 +2593,11 @@ public class CatalogImpl extends Catalog {
                 commit();
             } catch ( NoTablePrimaryKeyException e ) {
                 throw new RuntimeException( "An error occurred while deleting the query interface." );
+            }
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( "Could not delete Store" );
             }
             listeners.firePropertyChange( "store", store, null );
         } catch ( NullPointerException e ) {

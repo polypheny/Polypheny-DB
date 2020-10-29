@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import static org.hamcrest.CoreMatchers.is;
@@ -59,7 +59,7 @@ import org.polypheny.db.util.Util;
 
 
 /**
- * System test of the Polypheny-DB file adapter, which can also read and parse HTML tables over HTTP.
+ * System test of the Polypheny-DB html adapter, which can also read and parse HTML tables over HTTP.
  */
 public class SqlTest {
     // helper functions
@@ -137,7 +137,7 @@ public class SqlTest {
         Statement statement = null;
         try {
             Properties info = new Properties();
-            info.put( "model", FileReaderTest.file( "build/test-classes/" + model + ".json" ) );
+            info.put( "model", HtmlReaderTest.file( "build/test-classes/" + model + ".json" ) );
             connection = DriverManager.getConnection( "jdbc:polyphenydbembedded:", info );
             statement = connection.createStatement();
             final ResultSet resultSet = statement.executeQuery( sql );
@@ -191,7 +191,7 @@ public class SqlTest {
      */
     @Test
     @Ignore
-    public void testFileSelect() throws SQLException {
+    public void testHtmlSelect() throws SQLException {
         final String sql = "select H1 from T1 where H0 = 'R1C0'";
         sql( "testModel", sql ).returns( "H1=R1C1" ).ok();
     }
@@ -203,7 +203,7 @@ public class SqlTest {
     @Test
     @Ignore
     public void testNoThSelect() throws SQLException {
-        Assume.assumeTrue( FileSuite.hazNetwork() );
+        Assume.assumeTrue( HtmlSuite.hazNetwork() );
         final String sql = "select \"col1\" from T1_NO_TH where \"col0\" like 'R0%'";
         sql( "testModel", sql ).returns( "col1=R0C1" ).ok();
     }
@@ -223,10 +223,10 @@ public class SqlTest {
     /**
      * Reads from a URL and checks the result.
      */
-    @Ignore("[POLYPHENYDB-1789] Wikipedia format change breaks file adapter test")
+    @Ignore("[POLYPHENYDB-1789] Wikipedia format change breaks html adapter test")
     @Test
     public void testUrlSelect() throws SQLException {
-        Assume.assumeTrue( FileSuite.hazNetwork() );
+        Assume.assumeTrue( HtmlSuite.hazNetwork() );
         final String sql = "select \"State\", \"Statehood\" from \"States_as_of\"\n" + "where \"State\" = 'California'";
         sql( "wiki", sql ).returns( "State=California; Statehood=1850-09-09" ).ok();
     }

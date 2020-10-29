@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -59,9 +59,9 @@ import org.polypheny.db.util.TestUtil;
 
 
 /**
- * Unit tests for FileReader.
+ * Unit tests for HtmlReader.
  */
-public class FileReaderTest {
+public class HtmlReaderTest {
 
     private static final Source CITIES_SOURCE = Sources.url( "http://en.wikipedia.org/wiki/List_of_United_States_cities_by_population" );
 
@@ -81,16 +81,16 @@ public class FileReaderTest {
 
 
     private static String resourcePath( String path ) throws Exception {
-        return Sources.of( FileReaderTest.class.getResource( "/" + path ) ).file().getAbsolutePath();
+        return Sources.of( HtmlReaderTest.class.getResource( "/" + path ) ).file().getAbsolutePath();
     }
 
 
     /**
-     * Tests {@link FileReader} URL instantiation - no path.
+     * Tests {@link HtmlReader} URL instantiation - no path.
      */
     @Test
-    public void testFileReaderUrlNoPath() throws FileReaderException {
-        Assume.assumeTrue( FileSuite.hazNetwork() );
+    public void testHtmlReaderUrlNoPath() throws HtmlReaderException {
+        Assume.assumeTrue( HtmlSuite.hazNetwork() );
 
         // Under OpenJDK, test fails with the following, so skip test:
         //   javax.net.ssl.SSLHandshakeException:
@@ -102,31 +102,31 @@ public class FileReaderTest {
         Assume.assumeTrue( "Java 10+ should have root certificates (JEP 319). Runtime is " + r + ", Jave major version is " + TestUtil.getJavaMajorVersion(),
                 !r.equals( "OpenJDK Runtime Environment" ) || TestUtil.getJavaMajorVersion() > 10 );
 
-        FileReader t = new FileReader( STATES_SOURCE );
+        HtmlReader t = new HtmlReader( STATES_SOURCE );
         t.refresh();
     }
 
 
     /**
-     * Tests {@link FileReader} URL instantiation - with path.
+     * Tests {@link HtmlReader} URL instantiation - with path.
      */
-    @Ignore("Wikipedia format change breaks file adapter test")
+    @Ignore("Wikipedia format change breaks html adapter test")
     @Test
-    public void testFileReaderUrlWithPath() throws FileReaderException {
-        Assume.assumeTrue( FileSuite.hazNetwork() );
-        FileReader t = new FileReader( CITIES_SOURCE, "#mw-content-text > table.wikitable.sortable", 0 );
+    public void testHtmlReaderUrlWithPath() throws HtmlReaderException {
+        Assume.assumeTrue( HtmlSuite.hazNetwork() );
+        HtmlReader t = new HtmlReader( CITIES_SOURCE, "#mw-content-text > table.wikitable.sortable", 0 );
         t.refresh();
     }
 
 
     /**
-     * Tests {@link FileReader} URL fetch.
+     * Tests {@link HtmlReader} URL fetch.
      */
-    @Ignore("Wikipedia format change breaks file adapter test")
+    @Ignore("Wikipedia format change breaks html adapter test")
     @Test
-    public void testFileReaderUrlFetch() throws FileReaderException {
-        Assume.assumeTrue( FileSuite.hazNetwork() );
-        FileReader t = new FileReader( STATES_SOURCE, "#mw-content-text > table.wikitable.sortable", 0 );
+    public void testHtmlReaderUrlFetch() throws HtmlReaderException {
+        Assume.assumeTrue( HtmlSuite.hazNetwork() );
+        HtmlReader t = new HtmlReader( STATES_SOURCE, "#mw-content-text > table.wikitable.sortable", 0 );
         int i = 0;
         for ( Elements row : t ) {
             i++;
@@ -136,10 +136,10 @@ public class FileReaderTest {
 
 
     /**
-     * Tests failed {@link FileReader} instantiation - malformed URL.
+     * Tests failed {@link HtmlReader} instantiation - malformed URL.
      */
     @Test
-    public void testFileReaderMalUrl() throws FileReaderException {
+    public void testHtmlReaderMalUrl() throws HtmlReaderException {
         try {
             final Source badSource = Sources.url( "bad" + CITIES_SOURCE.url() );
             fail( "expected exception, got " + badSource );
@@ -151,46 +151,46 @@ public class FileReaderTest {
 
 
     /**
-     * Tests failed {@link FileReader} instantiation - bad URL.
+     * Tests failed {@link HtmlReader} instantiation - bad URL.
      */
-    @Test(expected = FileReaderException.class)
-    public void testFileReaderBadUrl() throws FileReaderException {
+    @Test(expected = HtmlReaderException.class)
+    public void testHtmlReaderBadUrl() throws HtmlReaderException {
         final String uri = "http://ex.wikipedia.org/wiki/List_of_United_States_cities_by_population";
-        FileReader t = new FileReader( Sources.url( uri ), "table:eq(4)" );
+        HtmlReader t = new HtmlReader( Sources.url( uri ), "table:eq(4)" );
         t.refresh();
     }
 
 
     /**
-     * Tests failed {@link FileReader} instantiation - bad selector.
+     * Tests failed {@link HtmlReader} instantiation - bad selector.
      */
-    @Test(expected = FileReaderException.class)
-    public void testFileReaderBadSelector() throws FileReaderException {
+    @Test(expected = HtmlReaderException.class)
+    public void testHtmlReaderBadSelector() throws HtmlReaderException {
         final Source source = Sources.file( null, file( "build/test-classes/tableOK.html" ) );
-        FileReader t = new FileReader( source, "table:eq(1)" );
+        HtmlReader t = new HtmlReader( source, "table:eq(1)" );
         t.refresh();
     }
 
 
     /**
-     * Test {@link FileReader} with static file - headings.
+     * Test {@link HtmlReader} with static file - headings.
      */
     @Test
-    public void testFileReaderHeadings() throws FileReaderException {
+    public void testHtmlReaderHeadings() throws HtmlReaderException {
         final Source source = Sources.file( null, file( "build/test-classes/tableOK.html" ) );
-        FileReader t = new FileReader( source );
+        HtmlReader t = new HtmlReader( source );
         Elements headings = t.getHeadings();
         assertTrue( headings.get( 1 ).text().equals( "H1" ) );
     }
 
 
     /**
-     * Test {@link FileReader} with static file - data.
+     * Test {@link HtmlReader} with static file - data.
      */
     @Test
-    public void testFileReaderData() throws FileReaderException {
+    public void testHtmlReaderData() throws HtmlReaderException {
         final Source source = Sources.file( null, file( "build/test-classes/tableOK.html" ) );
-        FileReader t = new FileReader( source );
+        HtmlReader t = new HtmlReader( source );
         Iterator<Elements> i = t.iterator();
         Elements row = i.next();
         assertTrue( row.get( 2 ).text().equals( "R0C2" ) );
@@ -200,24 +200,24 @@ public class FileReaderTest {
 
 
     /**
-     * Tests {@link FileReader} with bad static file - headings.
+     * Tests {@link HtmlReader} with bad static file - headings.
      */
     @Test
-    public void testFileReaderHeadingsBadFile() throws FileReaderException {
+    public void testHtmlReaderHeadingsBadFile() throws HtmlReaderException {
         final Source source = Sources.file( null, file( "build/test-classes/tableNoTheadTbody.html" ) );
-        FileReader t = new FileReader( source );
+        HtmlReader t = new HtmlReader( source );
         Elements headings = t.getHeadings();
         assertTrue( headings.get( 1 ).text().equals( "H1" ) );
     }
 
 
     /**
-     * Tests {@link FileReader} with bad static file - data.
+     * Tests {@link HtmlReader} with bad static file - data.
      */
     @Test
-    public void testFileReaderDataBadFile() throws FileReaderException {
+    public void testHtmlReaderDataBadFile() throws HtmlReaderException {
         final Source source = Sources.file( null, file( "build/test-classes/tableNoTheadTbody.html" ) );
-        FileReader t = new FileReader( source );
+        HtmlReader t = new HtmlReader( source );
         Iterator<Elements> i = t.iterator();
         Elements row = i.next();
         assertTrue( row.get( 2 ).text().equals( "R0C2" ) );
@@ -227,12 +227,12 @@ public class FileReaderTest {
 
 
     /**
-     * Tests {@link FileReader} with no headings static file - data.
+     * Tests {@link HtmlReader} with no headings static file - data.
      */
     @Test
-    public void testFileReaderDataNoTh() throws FileReaderException {
+    public void testHtmlReaderDataNoTh() throws HtmlReaderException {
         final Source source = Sources.file( null, file( "build/test-classes/tableNoTH.html" ) );
-        FileReader t = new FileReader( source );
+        HtmlReader t = new HtmlReader( source );
         Iterator<Elements> i = t.iterator();
         Elements row = i.next();
         assertTrue( row.get( 2 ).text().equals( "R0C2" ) );
@@ -240,12 +240,12 @@ public class FileReaderTest {
 
 
     /**
-     * Tests {@link FileReader} iterator with static file,
+     * Tests {@link HtmlReader} iterator with static file,
      */
     @Test
-    public void testFileReaderIterator() throws FileReaderException {
+    public void testHtmlReaderIterator() throws HtmlReaderException {
         final Source source = Sources.file( null, file( "build/test-classes/tableOK.html" ) );
-        FileReader t = new FileReader( source );
+        HtmlReader t = new HtmlReader( source );
         Elements row = null;
         for ( Elements aT : t ) {
             row = aT;
