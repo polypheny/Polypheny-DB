@@ -111,8 +111,8 @@ public class PolyphenyDb {
 
         // Backup data folder (running in test mode)
         if ( testMode && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
-            if ( FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
-                throw new RuntimeException( "Unable to delete the backup folder." );
+            if ( ! FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
+                throw new RuntimeException( "Unable to create the backup folder." );
             }
         }
 

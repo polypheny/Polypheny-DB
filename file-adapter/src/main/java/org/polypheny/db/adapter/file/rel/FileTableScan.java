@@ -38,7 +38,7 @@ import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 
 
-public class FileTableScan extends TableScan implements EnumerableRel, FileRel {
+public class FileTableScan extends TableScan implements FileRel {
 
     private final FileTranslatableTable fileTable;
 
@@ -66,13 +66,6 @@ public class FileTableScan extends TableScan implements EnumerableRel, FileRel {
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
-    }
-
-    @Override
-    public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
-        System.out.println("Implement Enumerable FileTableScan");
-        PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( FileTranslatableTable.class ), "scan", implementor.getRootExpression() )));
     }
 
     @Override

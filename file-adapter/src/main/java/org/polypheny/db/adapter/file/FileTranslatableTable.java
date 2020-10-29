@@ -100,24 +100,6 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         }
     }
 
-    /**
-     * Returns an enumerable over a table
-     * Could be used to extend the ScannableTable interface, but then the code generation will not find this method
-     * Called from generated code, see {@link FileTableScan#implement}
-     */
-    public Enumerable<Object[]> scan( DataContext root ) {
-        throw new RuntimeException( "scan file enumerator not yet implemented" );
-        /*root.getStatement().getTransaction().registerInvolvedStore( store );
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( root );
-        return new AbstractEnumerable<Object[]>() {
-            @Override
-            public Enumerator<Object[]> enumerator() {
-                //return new FileEnumerator<>( store, columnIds, columnTypes, cancelFlag );
-                throw new RuntimeException("scan file enumerator not yet implemented");
-            }
-        };*/
-    }
-
     @Override
     public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
