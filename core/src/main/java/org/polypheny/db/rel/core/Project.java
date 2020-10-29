@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -75,7 +74,6 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public abstract class Project extends SingleRel {
 
-    @Getter
     protected final ImmutableList<RexNode> exps;
 
 

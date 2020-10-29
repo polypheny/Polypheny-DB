@@ -1034,7 +1034,7 @@ public class RexLiteral extends RexNode {
     }
 
 
-    public String getValueAsString() {
+    public String getValueForFileAdapter() {
         if ( value == null ) {
             return null;
         }

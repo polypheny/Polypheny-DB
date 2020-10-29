@@ -64,7 +64,7 @@ public class FileProject extends Project implements FileRel {
             int i = 0;
             for ( RexNode node : exps ) {
                 if ( node instanceof RexLiteral ) {
-                    row[i] = ((RexLiteral) node).getValueAsString();
+                    row[i] = ((RexLiteral) node).getValueForFileAdapter();
                     i++;
                 } else if ( node instanceof RexCall ) {
                     RexCall call = (RexCall) node;

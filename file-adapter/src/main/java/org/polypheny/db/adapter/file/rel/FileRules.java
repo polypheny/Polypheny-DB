@@ -22,7 +22,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
-import org.polypheny.db.adapter.file.FileTranslatableTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -66,13 +65,8 @@ public class FileRules {
 
         @Override
         public boolean matches( RelOptRuleCall call ) {
-            final TableModify tableModify = call.rel( 0 );
-            if ( tableModify.getTable().unwrap( FileTranslatableTable.class ) != null ) {
-                convention.setModification( true );
-                return true;
-            }
-            log.warn( "Did not convert TableModify into FileTranslatableTable" );
-            return false;
+            convention.setModification( true );
+            return true;
         }
 
 
@@ -132,9 +126,9 @@ public class FileRules {
          */
         @Override
         public boolean matches( RelOptRuleCall call ) {
-            if ( call.rel( 0 ) instanceof LogicalProject && ((LogicalProject) call.rel( 0 )).getExps().size() > 0 ) {
+            if ( call.rel( 0 ) instanceof LogicalProject && ((LogicalProject) call.rel( 0 )).getProjects().size() > 0 ) {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
-                if ( !(((LogicalProject) call.rel( 0 )).getExps().get( 0 ) instanceof RexInputRef) ) {
+                if ( !(((LogicalProject) call.rel( 0 )).getProjects().get( 0 ) instanceof RexInputRef) ) {
                     convention.setModification( true );
                 }
             }

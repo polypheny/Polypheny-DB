@@ -1,8 +1,8 @@
 
 /**
- * Polypheny-DB query provider that reads from CSV (comma-separated value) files.
+ * File Adapter
  *
- * A Polypheny-DB schema maps onto a directory, and each CSV file in that directory appears as a table.  Full SQL operations are available on those tables.
+ * The File Adapter stores all data as files. It is especially suitable for multimedia collections.
  */
 
 package org.polypheny.db.adapter.file;

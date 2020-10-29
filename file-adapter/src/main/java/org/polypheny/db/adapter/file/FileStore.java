@@ -309,9 +309,8 @@ public class FileStore extends Store {
                 FileUtils.cleanDirectory( columnFolder );
             }
         } catch ( IOException e ) {
-            log.error( "Could not truncate file table", e );
+            throw new RuntimeException( "Could not truncate file table", e );
         }
-        //todo trx support
     }
 
 

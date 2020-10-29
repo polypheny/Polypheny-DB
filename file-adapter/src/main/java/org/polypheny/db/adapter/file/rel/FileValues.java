@@ -61,7 +61,7 @@ public class FileValues extends Values implements FileRel {
             Object[] row = new Object[literalList.size()];
             int i = 0;
             for ( RexLiteral literal : literalList.asList() ) {
-                row[i] = literal.getValueAsString();
+                row[i] = literal.getValueForFileAdapter();
                 i++;
             }
             implementor.addInsertValue( row );
