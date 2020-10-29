@@ -42,16 +42,10 @@ public class ConfigServer implements ConfigListener {
     public ConfigServer( final int port ) {
         Service http = ignite().port( port );
 
-        //needs to be called before route mapping!
+        // Needs to be called before route mapping!
         webSockets( http );
         enableCORS( http );
         configRoutes( http );
-    }
-
-
-    public static void main( String[] args ) {
-        log.debug( "Starting config server..." );
-        new ConfigServer( 8081 );
     }
 
 

@@ -6314,6 +6314,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < INSTANTIABLE: "INSTANTIABLE" >
 |   < INT: "INT" >
 |   < INTEGER: "INTEGER" >
+|   < INTERFACES: "INTERFACES" >
 |   < INTERSECT: "INTERSECT" >
 |   < INTERSECTION: "INTERSECTION" >
 |   < INTERVAL: "INTERVAL" >

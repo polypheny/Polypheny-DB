@@ -24,20 +24,20 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @EqualsAndHashCode
-public class CatalogStore implements CatalogEntity {
+public class CatalogQueryInterface implements CatalogEntity {
 
-    private static final long serialVersionUID = -5837600302561930044L;
+    private static final long serialVersionUID = 4913728890561284443L;
 
     public final int id;
-    public final String uniqueName;
-    public final String adapterClazz;
+    public final String name;
+    public final String clazz;
     public final Map<String, String> settings;
 
 
-    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz, @NonNull final Map<String, String> settings ) {
+    public CatalogQueryInterface( final int id, @NonNull final String uniqueName, @NonNull final String clazz, @NonNull final Map<String, String> settings ) {
         this.id = id;
-        this.uniqueName = uniqueName;
-        this.adapterClazz = adapterClazz;
+        this.name = uniqueName;
+        this.clazz = clazz;
         this.settings = settings;
     }
 
@@ -45,12 +45,12 @@ public class CatalogStore implements CatalogEntity {
     // Used for creating ResultSets
     @Override
     public Serializable[] getParameterArray() {
-        return new Serializable[]{ uniqueName };
+        return new Serializable[]{ name };
     }
 
 
     @RequiredArgsConstructor
-    public static class PrimitiveCatalogStore {
+    public static class PrimitiveCatalogQueryInterface {
 
         public final String name;
     }

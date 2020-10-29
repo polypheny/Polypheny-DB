@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
@@ -36,53 +36,53 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER STORES DROP storeName} statement.
+ * Parse tree for {@code ALTER INTERFACES DROP queryInterfaceUniqueName} statement.
  */
 @Slf4j
-public class SqlAlterStoresDrop extends SqlAlter {
+public class SqlAlterInterfacesDrop extends SqlAlter {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER STORES DROP", SqlKind.OTHER_DDL );
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER INTERFACES DROP", SqlKind.OTHER_DDL );
 
-    private final SqlNode storeName;
+    private final SqlNode uniqueName;
 
 
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterStoresDrop( SqlParserPos pos, SqlNode storeName ) {
+    public SqlAlterInterfacesDrop( SqlParserPos pos, SqlNode uniqueName ) {
         super( OPERATOR, pos );
-        this.storeName = Objects.requireNonNull( storeName );
+        this.uniqueName = Objects.requireNonNull( uniqueName );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( storeName );
+        return ImmutableNullableList.of( uniqueName );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "STORES" );
+        writer.keyword( "INTERFACES" );
         writer.keyword( "DROP" );
-        storeName.unparse( writer, leftPrec, rightPrec );
+        uniqueName.unparse( writer, leftPrec, rightPrec );
     }
 
 
     @Override
     public void execute( Context context, Statement statement ) {
-        String storeNameStr = storeName.toString();
-        if ( storeNameStr.startsWith( "'" ) ) {
-            storeNameStr = storeNameStr.substring( 1 );
+        String uniqueNameStr = uniqueName.toString();
+        if ( uniqueNameStr.startsWith( "'" ) ) {
+            uniqueNameStr = uniqueNameStr.substring( 1 );
         }
-        if ( storeNameStr.endsWith( "'" ) ) {
-            storeNameStr = StringUtils.chop( storeNameStr );
+        if ( uniqueNameStr.endsWith( "'" ) ) {
+            uniqueNameStr = StringUtils.chop( uniqueNameStr );
         }
         try {
-            StoreManager.getInstance().removeStore( Catalog.getInstance(), storeNameStr );
+            QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueNameStr );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not remove store " + storeNameStr, e );
+            throw new RuntimeException( "Could not remove query interface " + uniqueNameStr, e );
         }
     }
 
