@@ -1211,7 +1211,6 @@ public class DbmsMeta implements ProtobufMeta {
     private ExecuteResult execute( StatementHandle h, List<TypedValue> parameterValues, int maxRowsInFirstFrame, PolyphenyDbConnectionHandle connection ) throws NoSuchStatementException {
         final PolyphenyDbStatementHandle statementHandle = getPolyphenyDbStatementHandle( h );
 
-        Map<Integer, Object> values = new HashMap<>();
         long index = 0;
         for ( TypedValue v : parameterValues ) {
             if ( v != null ) {

@@ -31,21 +31,48 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
+
+
+import java.io.IOException;
+import java.net.Socket;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 
 /**
- * Indicates that the FileReader failed.
+ * Unit test suite for Polypheny-DB Html adapter.
  */
-class FileReaderException extends Exception {
+@RunWith(Suite.class)
+@Suite.SuiteClasses({ HtmlReaderTest.class, SqlTest.class })
+public class HtmlSuite {
 
-    FileReaderException( String message ) {
-        super( message );
+    private HtmlSuite() {
     }
 
 
-    FileReaderException( String message, Throwable e ) {
-        super( message, e );
+    private static final String TEST_HOST = "en.wikipedia.org";
+
+
+    static boolean hazNetwork() {
+        Socket socket = null;
+        boolean reachable = false;
+        try {
+            socket = new Socket( HtmlSuite.TEST_HOST, 80 );
+            reachable = true;
+        } catch ( Exception e ) {
+            // do nothing
+        } finally {
+            if ( socket != null ) {
+                try {
+                    socket.close();
+                } catch ( IOException e ) {
+                    // do nothing
+                }
+            }
+        }
+        return reachable;
     }
+
 }
 

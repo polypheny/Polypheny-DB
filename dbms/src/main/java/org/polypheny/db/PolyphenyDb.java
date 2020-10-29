@@ -45,6 +45,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
@@ -58,13 +59,13 @@ public class PolyphenyDb {
 
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
-    @Option(name = { "-resetCatalog" }, description = "catalog reset flag")
+    @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
 
-    @Option(name = { "-memoryCatalog" }, description = "in-memory catalog flag")
+    @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
 
-    @Option(name = { "-testMode" }, description = "test configuration for catalog")
+    @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
     public boolean testMode = false;
 
     // required for unit tests to determine when the system is ready to process queries
@@ -92,6 +93,28 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
+        // Move data folder
+        if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
+            FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
+            if ( !FileSystemManager.getInstance().moveFolder( "data.backup", "data" ) ) {
+                throw new RuntimeException( "Unable to restore data folder." );
+            }
+            log.info( "Restoring the data folder." );
+        }
+
+        // Reset data folder
+        if ( resetCatalog ) {
+            if ( !FileSystemManager.getInstance().recursiveDeleteFolder( "data" ) ) {
+                log.error( "Unable to delete the data folder." );
+            }
+        }
+
+        // Backup data folder (running in test mode)
+        if ( testMode && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
+            if ( ! FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
+                throw new RuntimeException( "Unable to create the backup folder." );
+            }
+        }
 
         class ShutdownHelper implements Runnable {
 
