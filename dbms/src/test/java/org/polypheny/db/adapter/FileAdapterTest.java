@@ -73,16 +73,21 @@ public class FileAdapterTest {
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE preparedTest (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a)) ON STORE \"mm\"" );
 
-                preparedTest( connection );
-                batchTest( connection );
-
                 //check inserts
                 statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
                 //insert only into one column
                 statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
 
+                //check that null rows are not returned
+                ResultSet rs = statement.executeQuery( "SELECT b FROM preparedTest ORDER BY b" );
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 2 }, new Object[]{ 4 } ) );
+                rs.close();
+
+                preparedTest( connection );
+                batchTest( connection );
+
                 //test conditions
-                ResultSet rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );
+                rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );
                 TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 3, 4 } ) );
                 rs.close();
                 //test prepared select

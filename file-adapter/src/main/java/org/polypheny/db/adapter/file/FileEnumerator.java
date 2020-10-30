@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
@@ -189,12 +188,12 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         //the flag will be increased to -1 in the select/update/delete operation below
                         fileListPosition = -2;
                         //if the first attempt did not match, check if there is an _ins_xid_hash file
-                        if ( isEmptyRow( curr ) ) {
+                        if ( curr == null ) {
                             lookupFile = new File( getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
                             curr = fileToRow( lookupFile );
                         }
                         //if a PK lookup did not match at all
-                        if ( isEmptyRow( curr ) ) {
+                        if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
                                 current = (E) Long.valueOf( 0 );
                                 return true;
@@ -205,7 +204,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     } else {
                         curr = fileToRow( currentFile );
                         //todo
-                        if ( isEmptyRow( curr ) ) {
+                        if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
                                 current = (E) Long.valueOf( updateDeleteCount );
                                 return true;
@@ -231,7 +230,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     } else {
                         //if all values are null: continue
                         //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
-                        if ( isEmptyRow( curr ) ) {
+                        if ( curr == null ) {
                             fileListPosition++;
                             continue;
                         }
@@ -307,6 +306,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
         String[] strings = new String[numOfCols];
         Comparable[] curr = new Comparable[numOfCols];
         int i = 0;
+        boolean allNull = true;
         for ( File colFolder : columnFolders ) {
             File f = new File( colFolder, currentFile.getName() );
             /*if( !f.exists() ) {
@@ -323,6 +323,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
             if ( s == null || s.equals( "" ) ) {
                 curr[i] = null;
             } else {
+                allNull = false;
                 switch ( columnTypes[i] ) {
                     //todo add support for more types
                     case BOOLEAN:
@@ -350,12 +351,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
             }
             i++;
         }
-        return curr;
-    }
-
-
-    private boolean isEmptyRow( final Object[] row ) {
-        return Arrays.stream( row ).allMatch( Objects::isNull );
+        return allNull ? null : curr;
     }
 
 
