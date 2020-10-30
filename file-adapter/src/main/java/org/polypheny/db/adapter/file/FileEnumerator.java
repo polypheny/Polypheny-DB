@@ -25,9 +25,11 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.polypheny.db.adapter.DataContext;
@@ -165,56 +167,60 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         return false;
                     }
                 }
-                File currentFile = fileList[fileListPosition];
-                String[] strings = new String[numOfCols];
-                Comparable[] curr = new Comparable[numOfCols];
-                int i = 0;
-                for ( File colFolder : columnFolders ) {
-                    File f = new File( colFolder, currentFile.getName() );
-                    String s;
-                    if ( !f.exists() ) {
-                        s = null;
+                //if there was a PK lookup
+                else if ( fileListPosition < 0 ) {
+                    if ( (operation == Operation.DELETE || operation == Operation.UPDATE) && !updatedOrDeleted ) {
+                        updatedOrDeleted = true;
+                        return true;
                     } else {
-                        byte[] encoded = Files.readAllBytes( f.toPath() );
-                        s = new String( encoded, FileStore.CHARSET );
+                        return false;
                     }
-                    strings[i] = s;
-                    if ( s == null || s.equals( "" ) ) {
-                        curr[i] = null;
+                }
+                File currentFile = fileList[fileListPosition];
+                Comparable[] curr;
+
+                if ( condition != null ) {
+                    Object[] pkLookup = condition.getPKLookup( new HashSet<>( Arrays.asList( pkMapping ) ), columnTypes, numOfCols, dataContext );
+                    if ( pkLookup != null ) {
+                        int hash = hashRow( pkLookup );
+                        File lookupFile = new File( FileStore.SHA.hashString( String.valueOf( hash ), FileStore.CHARSET ).toString() );
+                        curr = fileToRow( lookupFile );
+                        //set -2, as a flag, so the enumerator knows that it doesn't have to continue
+                        //the flag will be increased to -1 in the select/update/delete operation below
+                        fileListPosition = -2;
+                        //if the first attempt did not match, check if there is an _ins_xid_hash file
+                        if ( isEmptyRow( curr ) ) {
+                            lookupFile = new File( getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
+                            curr = fileToRow( lookupFile );
+                        }
+                        //if a PK lookup did not match at all
+                        if ( isEmptyRow( curr ) ) {
+                            if ( operation != Operation.SELECT ) {
+                                current = (E) Long.valueOf( 0 );
+                                return true;
+                            }
+                            return false;
+                        }
+                        current = (E) Long.valueOf( 1 );
                     } else {
-                        switch ( columnTypes[i] ) {
-                            //todo add support for more types
-                            case BOOLEAN:
-                                curr[i] = gson.fromJson( s, Boolean.class );
-                                break;
-                            case INTEGER:
-                            case TIME:
-                            case DATE:
-                                curr[i] = Integer.parseInt( s );
-                                break;
-                            case TIMESTAMP:
-                            case BIGINT:
-                                curr[i] = Long.parseLong( s );
-                                break;
-                            case DOUBLE:
-                                curr[i] = Double.parseDouble( s );
-                                break;
-                            case FLOAT:
-                                curr[i] = Float.parseFloat( s );
-                                break;
-                            //case ARRAY:
-                            default:
-                                curr[i] = s;
+                        curr = fileToRow( currentFile );
+                        //todo
+                        if ( isEmptyRow( curr ) ) {
+                            if ( operation != Operation.SELECT ) {
+                                current = (E) Long.valueOf( updateDeleteCount );
+                                return true;
+                            }
+                            return false;
+                        }
+                        if ( !condition.matches( curr, columnTypes, dataContext ) ) {
+                            fileListPosition++;
+                            continue;
                         }
                     }
-                    i++;
+                } else {
+                    curr = fileToRow( currentFile );
                 }
-                if ( condition != null ) {
-                    if ( !condition.matches( curr, columnTypes, dataContext ) ) {
-                        fileListPosition++;
-                        continue;
-                    }
-                }
+
                 if ( operation == Operation.SELECT ) {
                     //project only if necessary (if a projection and condition is given)
                     if ( projectionMapping != null && condition != null ) {
@@ -225,7 +231,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     } else {
                         //if all values are null: continue
                         //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
-                        if ( Arrays.stream( curr ).allMatch( Objects::isNull ) ) {
+                        if ( isEmptyRow( curr ) ) {
                             fileListPosition++;
                             continue;
                         }
@@ -288,6 +294,70 @@ public class FileEnumerator<E> implements Enumerator<E> {
             throw new RuntimeException( e );
         }
     }
+
+
+    /**
+     * Convert files to a row
+     *
+     * @param currentFile The filename of the {@code currentFile} is used to find the files in the respective column folders
+     * @return Null if the file does not exists (in case of a PK lookup) or the row as an array of objects.
+     */
+    @Nullable
+    private Comparable[] fileToRow( final File currentFile ) throws IOException {
+        String[] strings = new String[numOfCols];
+        Comparable[] curr = new Comparable[numOfCols];
+        int i = 0;
+        for ( File colFolder : columnFolders ) {
+            File f = new File( colFolder, currentFile.getName() );
+            /*if( !f.exists() ) {
+                return null;
+            }*/
+            String s;
+            if ( !f.exists() ) {
+                s = null;
+            } else {
+                byte[] encoded = Files.readAllBytes( f.toPath() );
+                s = new String( encoded, FileStore.CHARSET );
+            }
+            strings[i] = s;
+            if ( s == null || s.equals( "" ) ) {
+                curr[i] = null;
+            } else {
+                switch ( columnTypes[i] ) {
+                    //todo add support for more types
+                    case BOOLEAN:
+                        curr[i] = gson.fromJson( s, Boolean.class );
+                        break;
+                    case INTEGER:
+                    case TIME:
+                    case DATE:
+                        curr[i] = Integer.parseInt( s );
+                        break;
+                    case TIMESTAMP:
+                    case BIGINT:
+                        curr[i] = Long.parseLong( s );
+                        break;
+                    case DOUBLE:
+                        curr[i] = Double.parseDouble( s );
+                        break;
+                    case FLOAT:
+                        curr[i] = Float.parseFloat( s );
+                        break;
+                    //case ARRAY:
+                    default:
+                        curr[i] = s;
+                }
+            }
+            i++;
+        }
+        return curr;
+    }
+
+
+    private boolean isEmptyRow( final Object[] row ) {
+        return Arrays.stream( row ).allMatch( Objects::isNull );
+    }
+
 
     private Comparable[] project( final Comparable[] o ) {
         assert (projectionMapping != null);

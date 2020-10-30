@@ -26,8 +26,10 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.Nullable;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -108,6 +110,70 @@ public class Condition {
         }
     }
 
+
+    /**
+     * Determines if a condition is a primary key condition, i.e. an AND-condition over all primary key columns
+     *
+     * @param pkColumnReferences One-based references of the PK columns, e.g. [1,3] for [a,b,c] if a and c are the primary key columns
+     * @param colSize Number of columns in the current query, needed to generate the object that will be hashed
+     * @return {@code Null} if it is not a PK lookup, or an Object array with the lookups to hash, if it is a PK lookup
+     */
+    @Nullable
+    public Object[] getPKLookup( final Set<Integer> pkColumnReferences, final PolyType[] columnTypes, final int colSize, final DataContext dataContext ) {
+        Object[] lookups = new Object[colSize];
+        if ( operator == SqlKind.EQUALS && pkColumnReferences.size() == 1 ) {
+            if ( pkColumnReferences.contains( columnReference ) ) {
+                lookups[columnReference] = getParamValue( dataContext, columnTypes[columnReference] );
+                return lookups;
+            } else {
+                return null;
+            }
+        } else if ( operator == SqlKind.AND ) {
+            for ( Condition operand : operands ) {
+                if ( operand.operator == SqlKind.EQUALS ) {
+                    if ( !pkColumnReferences.contains( operand.columnReference ) ) {
+                        return null;
+                    } else {
+                        pkColumnReferences.remove( operand.columnReference );
+                    }
+                } else {
+                    return null;
+                }
+            }
+            if ( pkColumnReferences.size() == 0 ) {
+                return lookups;
+            } else {
+                return null;
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * Get the value of the condition parameter, either from the literal or literalIndex
+     */
+    Object getParamValue( final DataContext dataContext, final PolyType polyType ) {
+        Object out;
+        if ( this.literalIndex != null ) {
+            out = dataContext.getParameterValue( literalIndex );
+        } else {
+            out = this.literal;
+        }
+        if ( out instanceof Calendar ) {
+            switch ( polyType ) {
+                case TIME:
+                case TIMESTAMP:
+                    return ((Calendar) out).getTimeInMillis();
+                case DATE:
+                    Calendar cal = ((Calendar) out);
+                    return LocalDateTime.ofInstant( cal.toInstant(), cal.getTimeZone().toZoneId() ).toLocalDate().toEpochDay();
+            }
+        }
+        return out;
+    }
+
+
     public boolean matches( final Comparable[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
             switch ( operator ) {
@@ -141,12 +207,7 @@ public class Condition {
             //if there is no null check and the column value is null, any check on the column value would return false
             return false;
         }
-        Object parameterValue;
-        if ( this.literalIndex != null ) {
-            parameterValue = dataContext.getParameterValue( literalIndex );
-        } else {
-            parameterValue = this.literal;
-        }
+        Object parameterValue = getParamValue( dataContext, polyType );
         if ( parameterValue == null ) {
             //WHERE x = null is always false, see https://stackoverflow.com/questions/9581745/sql-is-null-and-null
             return false;
@@ -176,6 +237,16 @@ public class Condition {
                     break;
                 default:
                     comparison = columnValue.compareTo( parameterValue );
+            }
+        } else if ( FileHelper.isSqlDateOrTimeOrTS( parameterValue ) ) {
+            switch ( polyType ) {
+                case TIME:
+                case DATE:
+                    comparison = Long.valueOf( (Integer) columnValue ).compareTo( FileHelper.sqlToLong( parameterValue ) );
+                    break;
+                case TIMESTAMP:
+                default:
+                    comparison = columnValue.compareTo( FileHelper.sqlToLong( parameterValue ) );
             }
         } else {
             comparison = columnValue.compareTo( parameterValue );

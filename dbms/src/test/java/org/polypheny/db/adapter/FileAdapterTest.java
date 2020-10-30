@@ -136,17 +136,28 @@ public class FileAdapterTest {
 
                 PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO testDateTime (a,b,c,d) VALUES (?,?,?,?)" );
                 preparedStatement.setInt( 1, 1 );
-                preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
-                preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
-                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
+                preparedStatement.setDate( 2, Date.valueOf( LocalDate.of( 2017, 5, 5 ) ) );
+                preparedStatement.setTime( 3, Time.valueOf( LocalTime.of( 17, 30 ) ) );
+                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.of( 2017, 5, 5, 17, 30 ) ) );
                 preparedStatement.addBatch();
                 preparedStatement.clearParameters();
                 preparedStatement.setInt( 1, 2 );
-                preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
-                preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
-                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
+                preparedStatement.setDate( 2, Date.valueOf( LocalDate.of( 2018, 5, 5 ) ) );
+                preparedStatement.setTime( 3, Time.valueOf( LocalTime.of( 18, 30 ) ) );
+                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.of( 2018, 5, 5, 18, 30 ) ) );
                 preparedStatement.addBatch();
                 preparedStatement.executeBatch();
+                preparedStatement.close();
+
+                ResultSet rs = statement.executeQuery( "SELECT a FROM testDateTime WHERE b < DATE '2018-05-05'" );
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1 } ) );
+                rs.close();
+
+                preparedStatement = connection.prepareStatement( "SELECT a FROM testDateTime WHERE b = ?" );
+                preparedStatement.setDate( 1, Date.valueOf( LocalDate.of( 2018, 5, 5 ) ) );
+                rs = preparedStatement.executeQuery();
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 2 } ) );
+                rs.close();
                 preparedStatement.close();
 
                 statement.executeUpdate( "DROP TABLE public.testDateTime" );

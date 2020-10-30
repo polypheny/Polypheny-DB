@@ -21,6 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Comparator;
 
 
@@ -32,6 +35,38 @@ public class FileHelper {
                 .sorted( Comparator.reverseOrder() )
                 .map( Path::toFile )
                 .forEach( File::delete );
+    }
+
+
+    /*
+     * DATE / TIME / TIMESTAMP HELPER FUNCTIONS
+     * */
+
+    static boolean isSqlDateOrTimeOrTS( final Object o ) {
+        return (o instanceof Date) || (o instanceof Time) || (o instanceof Timestamp);
+    }
+
+    static Long sqlToLong( final Object o ) {
+        if ( o instanceof Time ) {
+            return sqlToLong( (Time) o );
+        } else if ( o instanceof Date ) {
+            return sqlToLong( (Date) o );
+        } else if ( o instanceof Timestamp ) {
+            return sqlToLong( (Timestamp) o );
+        }
+        throw new IllegalArgumentException( "Unexpected input, must be SQL Time, Date or Timestamp" );
+    }
+
+    static Long sqlToLong( final Time time ) {
+        return time.getTime();
+    }
+
+    static Long sqlToLong( final Date date ) {
+        return date.toLocalDate().toEpochDay();
+    }
+
+    static Long sqlToLong( final Timestamp timestamp ) {
+        return timestamp.toInstant().toEpochMilli();
     }
 
 }

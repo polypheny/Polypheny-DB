@@ -220,10 +220,6 @@ public class FileRules {
 
 
         public RelNode convert( RelNode rel ) {
-            if ( !convention.isModification() ) {
-                //don't use FileFilter for selects (if it's not a modification)
-                return null;
-            }
             final Filter filter = (Filter) rel;
             final RelTraitSet traitSet = filter.getTraitSet().replace( convention );
             return new FileFilter( filter.getCluster(), traitSet, filter.getInput(), filter.getCondition() );
