@@ -33,6 +33,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -50,9 +51,10 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
@@ -424,7 +426,6 @@ public abstract class Catalog {
      * @param storeId  The id of the store
      * @param columnId The id of the column
      * @return true if there is a column placement, false if not.
-     * @throws GenericCatalogException A generic catalog exception
      */
     public abstract boolean checkIfExistsColumnPlacement( int storeId, long columnId );
 
@@ -514,7 +515,6 @@ public abstract class Catalog {
      *
      * @param columnId The id of the column
      * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this id
      */
     public abstract CatalogColumn getColumn( long columnId );
 
@@ -806,15 +806,11 @@ public abstract class Catalog {
 
     /**
      * Get a store by its unique name
-     *
-     * @return List of stores
      */
     public abstract CatalogStore getStore( String uniqueName ) throws GenericCatalogException, UnknownStoreException;
 
     /**
      * Get a store by its id
-     *
-     * @return List of stores
      */
     public abstract CatalogStore getStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
 
@@ -834,6 +830,40 @@ public abstract class Catalog {
      * @param storeId The id of the store to delete
      */
     public abstract void deleteStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
+
+    /*
+     * Get list of all query interfaces
+     *
+     * @return List of query interfaces
+     */
+    public abstract List<CatalogQueryInterface> getQueryInterfaces() throws GenericCatalogException;
+
+    /**
+     * Get a query interface by its unique name
+     */
+    public abstract CatalogQueryInterface getQueryInterface( String uniqueName ) throws GenericCatalogException, UnknownQueryInterfaceException;
+
+    /**
+     * Get a query interface by its id
+     */
+    public abstract CatalogQueryInterface getQueryInterface( int ifaceId ) throws GenericCatalogException, UnknownQueryInterfaceException;
+
+    /**
+     * Add a query interface
+     *
+     * @param uniqueName The unique name of the query interface
+     * @param clazz      The class name of the query interface
+     * @param settings   The configuration of the query interface
+     * @return The id of the newly added query interface
+     */
+    public abstract int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) throws GenericCatalogException;
+
+    /**
+     * Delete a query interface
+     *
+     * @param ifaceId The id of the query interface to delete
+     */
+    public abstract void deleteQueryInterface( int ifaceId ) throws GenericCatalogException, UnknownQueryInterfaceException;
 
 
     /**
@@ -862,7 +892,7 @@ public abstract class Catalog {
      *
      * @return partition
      */
-    public abstract CatalogPartition getPartition( long partitionId ) throws UnknownPartitionException;
+    public abstract CatalogPartition getPartition( long partitionId ) throws UnknownPartitionIdRuntimeException;
 
 
 
@@ -876,7 +906,7 @@ public abstract class Catalog {
      * @param partitionQualifiers qualifiers which are directly associated with a partition
      * @param partitionNames (optional)
      */
-    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionException, GenericCatalogException;
+    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionIdRuntimeException, GenericCatalogException;
 
 
     /**
@@ -885,7 +915,8 @@ public abstract class Catalog {
      *
      * @param tableId Table to be merged
      */
-    public abstract void mergeTable( long tableId ) throws UnknownTableException;
+    public abstract void mergeTable( long tableId ) throws UnknownKeyException, UnknownTableException, UnknownPartitionIdRuntimeException;
+
 
     /**
      * Get a List of all partitions belonging to a specific table
@@ -916,16 +947,17 @@ public abstract class Catalog {
     public abstract List<String> getPartitionNames( long tableId ) throws UnknownTableException;
 
 
+
     /**
      * Get placements by partition. Identify the location of partitions.
      * Essentially returns all ColumnPlacements which hold the specified partitionID
      *
      * @param partitionId The unique id of the partition
      * @param columnId column placement to return
-     * @param tableId
+     * @param tableId The unique Id of the table
      * @return List of CatalogColumnPlacements
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) throws UnknownPartitionException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) throws UnknownPartitionIdRuntimeException;
 
 
     /**
@@ -935,15 +967,16 @@ public abstract class Catalog {
      * @param partitionId The unique id of the partition
      * @return List of CatalogStores
      */
-    public abstract List<CatalogStore> getStoresByPartition( long tableId, long partitionId ) throws UnknownPartitionException;
+    public abstract List<CatalogStore> getStoresByPartition( long tableId, long partitionId ) throws UnknownPartitionIdRuntimeException;
+
 
 
     /**
      * Updates the Catalog reference which partitions reside on which DataPlacement (Store/Table)
      *
      * @param storeId The unique id of the partition
-     * @param tableId
-     * @param partitionIds
+     * @param tableId The unique Id of the table
+     * @param partitionIds List of partitionsIds to be updated
      */
     public abstract void updatePartitionsOnDataPlacement( int storeId, long tableId, List<Long> partitionIds ) throws UnknownTableException, UnknownStoreException;
 
@@ -1041,7 +1074,7 @@ public abstract class Catalog {
 
         // Required for building JDBC result set
         @RequiredArgsConstructor
-        public class PrimitiveTableType {
+        public static class PrimitiveTableType {
 
             public final String tableType;
         }

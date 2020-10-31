@@ -42,7 +42,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -287,7 +286,7 @@ public class RequestParser {
                     int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
                     RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );
                     columns.add( requestColumn );
-                } catch ( UnknownColumnIdRuntimeException e ) {
+                } catch ( UnknownColumnException.UnknownColumnIdRuntimeException e ) {
                     // These exceptions should never be thrown! If this gets thrown please report to Marco Vogt and Jan Schönholz.
                     log.error( "Catalog failed to fetch columns by id, with the id provided by the catalog. This is bad! Report immediately.", e );
                     throw new ParserException( ParserErrorCode.PROJECTION_INTERNAL, "" + columnId );
@@ -349,7 +348,7 @@ public class RequestParser {
                 int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
                 RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
                 columns.add( requestColumn );
-            } catch ( UnknownColumnIdRuntimeException e ) {
+            } catch ( UnknownColumnException.UnknownColumnIdRuntimeException e ) {
                 // These exceptions should never be thrown! If this gets thrown please report to Marco Vogt and Jan Schönholz.
                 log.error( "Catalog failed to fetch columns by id, with the id provided by the catalog. This is bad! Report immediately.", e );
                 throw new ParserException( ParserErrorCode.PROJECTION_INTERNAL, "" + columnId );

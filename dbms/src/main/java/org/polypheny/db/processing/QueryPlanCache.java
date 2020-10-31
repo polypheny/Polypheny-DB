@@ -117,7 +117,8 @@ public class QueryPlanCache {
         hitRatioGroup.setRefreshFunction( () -> {
             long hits = hitsCounter.longValue();
             long misses = missesCounter.longValue();
-            double hitPercent = (double) hits / (hits + misses);
+            long total = hits + misses;
+            double hitPercent = (double) hits / total;
             double missesPercent = 1.0 - hitPercent;
 
             hitInfoGraph.updateGraph(
@@ -127,10 +128,10 @@ public class QueryPlanCache {
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
             symbols.setDecimalSeparator( '.' );
-            DecimalFormat df = new DecimalFormat( "#.0", symbols );
+            DecimalFormat df = new DecimalFormat( "0.0", symbols );
             hitInfoTable.reset();
-            hitInfoTable.addRow( "Hits", df.format( hitPercent * 100 ) + " %", hits );
-            hitInfoTable.addRow( "Misses", df.format( missesPercent * 100 ) + " %", misses );
+            hitInfoTable.addRow( "Hits", df.format( total == 0 ? 0 : (hitPercent * 100) ) + " %", hits );
+            hitInfoTable.addRow( "Misses", df.format( total == 0 ? 0 : (missesPercent * 100) ) + " %", misses );
         } );
 
         // Invalidate cache

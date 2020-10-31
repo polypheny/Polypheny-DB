@@ -28,10 +28,8 @@ public class RangePartitionManager extends AbstractPartitionManager {
     // Needed when columnPlacements are being dropped
     @Override
     public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
-        // TODO not implemented yet
-
+        // TODO @HENNLO not implemented yet
         return false;
-
     }
 
 

@@ -27,7 +27,6 @@ import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 
 
 public interface Transaction {
@@ -52,7 +51,7 @@ public interface Transaction {
 
     PolyphenyDbCatalogReader getCatalogReader();
 
-    SqlProcessor getSqlProcessor( SqlParserConfig parserConfig );
+    SqlProcessor getSqlProcessor();
 
     boolean isAnalyze();
 

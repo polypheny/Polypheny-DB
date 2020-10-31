@@ -58,7 +58,6 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
             final long partitionKey,
             final List<String> partitionQualifiers,
             final boolean isUnbound ) {
-
         this.id = id;
         this.partitionName = partitionName;
         this.tableId = tableId;
@@ -92,13 +91,14 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
 
     @Override
     public int compareTo( CatalogTable catalogTable ) {
-        // TODO: To be implemented
+        // TODO @HENNLO: To be implemented
         return 0;
     }
 
 
     @Override
     public Serializable[] getParameterArray() {
+        // TODO @HENNLO: To be implemented
         return new Serializable[0];
     }
 }

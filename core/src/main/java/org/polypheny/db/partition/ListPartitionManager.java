@@ -23,7 +23,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 
 @Slf4j
 public class ListPartitionManager extends AbstractPartitionManager {
@@ -49,7 +49,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
                     //Could be int
                     if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
-                        log.debug( "Found column value: " + columnValue + " on partitionID " + partitionID + " with qualifiers: " + catalogPartition.partitionQualifiers );
+                        log.debug( "Found column value: {} on partitionID {} with qualifiers: {}", columnValue, partitionID, catalogPartition.partitionQualifiers );
                         selectedPartitionId = catalogPartition.id;
                         break;
                     }
@@ -61,7 +61,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 selectedPartitionId = unboundPartitionId;
             }
 
-        } catch ( UnknownPartitionException e ) {
+        } catch ( UnknownPartitionIdRuntimeException e ) {
             e.printStackTrace();
         }
 
@@ -77,9 +77,9 @@ public class ListPartitionManager extends AbstractPartitionManager {
         for ( long columnId : table.columnIds ) {
             boolean skip = false;
 
-            int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions( columnId, table.numPartitions ).size();
+            int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, table.numPartitions ).size();
             if ( numberOfFullPlacements >= 1 ) {
-                log.debug( "Found ColumnPlacement which contains all partitions for column: " + columnId );
+                log.debug( "Found ColumnPlacement which contains all partitions for column: {}", columnId );
                 skip = true;
                 break;
             }
@@ -87,7 +87,9 @@ public class ListPartitionManager extends AbstractPartitionManager {
             if ( skip ) {
                 continue;
             } else {
-                log.debug( Catalog.getInstance().getColumn( columnId ).name + "' has no placement containing all partitions" );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "{}' has no placement containing all partitions", Catalog.getInstance().getColumn( columnId ).name );
+                }
                 return false;
             }
         }
@@ -129,7 +131,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
         // TODO can be removed if upper codeblock is enabled
         // change is only critical if there is only one column left with the charecteristics
-        int numberOfFullPlacements = getNumberOfPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).size();
+        int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).size();
         if ( numberOfFullPlacements <= 1 ) {
             //Check if this one column is the column we are about to delete
             if ( catalog.getPartitionsOnDataPlacement( storeId, catalogTable.id ).size() == catalogTable.numPartitions ) {
@@ -161,19 +163,21 @@ public class ListPartitionManager extends AbstractPartitionManager {
                         if ( !ccps.isEmpty() ) {
                             //get first column placement which contains partition
                             relevantCcps.add( ccps.get( 0 ) );
-                            log.debug( ccps.get( 0 ).storeUniqueName + " " + ccps.get( 0 ).getLogicalColumnName() + " with part. " + partitionId );
+                            if ( log.isDebugEnabled() ) {
+                                log.debug( "{} {} with part. {}", ccps.get( 0 ).storeUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
+                            }
                         }
                     }
                 }
 
-            } catch ( UnknownPartitionException e ) {
+            } catch ( UnknownPartitionIdRuntimeException e ) {
                 e.printStackTrace();
             }
         } else {
             // Take the first column placement
             // Worst-case
             for ( long columnId : catalogTable.columnIds ) {
-                relevantCcps.add( getNumberOfPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).get( 0 ) );
+                relevantCcps.add( getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).get( 0 ) );
             }
         }
         return relevantCcps;
@@ -204,33 +208,6 @@ public class ListPartitionManager extends AbstractPartitionManager {
     @Override
     public boolean allowsUnboundPartition() {
         return true;
-    }
-
-
-    /**
-     * Returns number of placements for this column which contain all partitions
-     *
-     * @param columnId column to be checked
-     * @param numPartitions numPartitions
-     * @return If its correctly distributed or not
-     */
-    private List<CatalogColumnPlacement> getNumberOfPlacementsWithAllPartitions( long columnId, long numPartitions ) {
-
-        Catalog catalog = Catalog.getInstance();
-
-        // Return every placement of this column
-        List<CatalogColumnPlacement> tempCcps = catalog.getColumnPlacements( columnId );
-        List<CatalogColumnPlacement> returnCcps = new ArrayList<>();
-        int placementCounter = 0;
-        for ( CatalogColumnPlacement ccp : tempCcps ) {
-            // If the DataPlacement has stored all partitions and therefore all partitions for this placement
-            if ( catalog.getPartitionsOnDataPlacement( ccp.storeId, ccp.tableId ).size() == numPartitions ) {
-                returnCcps.add( ccp );
-                placementCounter++;
-            }
-        }
-        return returnCcps;
-
     }
 
 }

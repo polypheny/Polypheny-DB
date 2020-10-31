@@ -34,11 +34,10 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
+import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.jdbc.JdbcInterface;
 import org.polypheny.db.processing.AuthenticatorImpl;
-import org.polypheny.db.restapi.HttpRestServer;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.PUID;
@@ -46,6 +45,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.webui.ConfigServer;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.InformationServer;
@@ -59,13 +59,13 @@ public class PolyphenyDb {
 
     private final TransactionManager transactionManager = new TransactionManagerImpl();
 
-    @Option(name = { "-resetCatalog" }, description = "catalog reset flag")
+    @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
     public boolean resetCatalog = false;
 
-    @Option(name = { "-memoryCatalog" }, description = "in-memory catalog flag")
+    @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public boolean memoryCatalog = false;
 
-    @Option(name = { "-testMode" }, description = "test configuration for catalog")
+    @Option(name = { "-testMode" }, description = "Special catalog configuration for running tests")
     public boolean testMode = false;
 
     // required for unit tests to determine when the system is ready to process queries
@@ -93,29 +93,27 @@ public class PolyphenyDb {
 
 
     public void runPolyphenyDb() throws GenericCatalogException {
-
-        Catalog catalog;
-        Transaction trx = null;
-        try {
-            Catalog.resetCatalog = resetCatalog;
-            Catalog.memoryCatalog = memoryCatalog;
-            Catalog.testMode = testMode;
-            catalog = Catalog.setAndGetInstance( new CatalogImpl() );
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
-            StoreManager.getInstance().restoreStores( catalog );
-            trx.commit();
-            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
-            catalog.restoreColumnPlacements( trx );
-            trx.commit();
-        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
-            if ( trx != null ) {
-                try {
-                    trx.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Error while rolling back the transaction", e );
-                }
+        // Move data folder
+        if ( FileSystemManager.getInstance().checkIfExists( "data.backup" ) ) {
+            FileSystemManager.getInstance().recursiveDeleteFolder( "data" );
+            if ( !FileSystemManager.getInstance().moveFolder( "data.backup", "data" ) ) {
+                throw new RuntimeException( "Unable to restore data folder." );
             }
-            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
+            log.info( "Restoring the data folder." );
+        }
+
+        // Reset data folder
+        if ( resetCatalog ) {
+            if ( !FileSystemManager.getInstance().recursiveDeleteFolder( "data" ) ) {
+                log.error( "Unable to delete the data folder." );
+            }
+        }
+
+        // Backup data folder (running in test mode)
+        if ( testMode && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
+            if ( ! FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
+                throw new RuntimeException( "Unable to create the backup folder." );
+            }
         }
 
         class ShutdownHelper implements Runnable {
@@ -174,7 +172,6 @@ public class PolyphenyDb {
         new JavaInformation();
         new HostInformation();
 
-
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {
                 httpServerDispatcher.stop();
@@ -184,32 +181,52 @@ public class PolyphenyDb {
         } );*/
 
         final Authenticator authenticator = new AuthenticatorImpl();
-        final JdbcInterface jdbcInterface = new JdbcInterface( transactionManager, authenticator );
-        final HttpServer httpServer = new HttpServer( transactionManager, authenticator, RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-        final HttpRestServer restApiServer = new HttpRestServer( transactionManager, authenticator, RuntimeConfig.REST_API_SERVER_PORT.getInteger() );
-        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
-        final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
 
-        Thread jdbcInterfaceThread = new Thread( jdbcInterface );
-        jdbcInterfaceThread.start();
+        // Initialize interface manager
+        QueryInterfaceManager.initialize( transactionManager, authenticator );
 
-        Thread webUiInterfaceThread = new Thread( httpServer );
-        webUiInterfaceThread.start();
-
-        Thread restApiInterfaceThread = new Thread( restApiServer, "REST_API_SERVER" );
-        restApiInterfaceThread.start();
-
+        // Startup and restore catalog
+        Catalog catalog;
+        Transaction trx = null;
         try {
-            jdbcInterfaceThread.join();
-            webUiInterfaceThread.join();
-            restApiInterfaceThread.join();
+            Catalog.resetCatalog = resetCatalog;
+            Catalog.memoryCatalog = memoryCatalog;
+            Catalog.testMode = testMode;
+            catalog = Catalog.setAndGetInstance( new CatalogImpl() );
+            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            StoreManager.getInstance().restoreStores( catalog );
+            QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
+            trx.commit();
+            trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
+            catalog.restoreColumnPlacements( trx );
+            trx.commit();
+        } catch ( UnknownDatabaseException | UnknownUserException | UnknownSchemaException | TransactionException e ) {
+            if ( trx != null ) {
+                try {
+                    trx.rollback();
+                } catch ( TransactionException ex ) {
+                    log.error( "Error while rolling back the transaction", e );
+                }
+            }
+            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
+        }
+
+        // Start Polypheny UI
+        final HttpServer httpServer = new HttpServer( transactionManager, authenticator );
+        Thread polyphenyUiThread = new Thread( httpServer );
+        polyphenyUiThread.start();
+        try {
+            polyphenyUiThread.join();
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted on join()", e );
         }
 
+        // Create internal query interfaces
+        final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
         statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
 
+        final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor( exploreQueryProcessor );
 
@@ -231,7 +248,5 @@ public class PolyphenyDb {
         } catch ( InterruptedException e ) {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
-
-
     }
 }

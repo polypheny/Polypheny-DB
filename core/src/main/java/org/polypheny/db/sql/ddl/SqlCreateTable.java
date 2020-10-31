@@ -64,7 +64,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
@@ -118,8 +118,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlIdentifier partitionColumn;
     private final SqlIdentifier partitionType;
     private final int numPartitions;
-    List<SqlIdentifier> partitionNamesList;
-    List<SqlIdentifier> partitionQualifierList;
+    private final List<SqlIdentifier> partitionNamesList;
+    private final List<SqlIdentifier> partitionQualifierList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
@@ -127,9 +127,19 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     /**
      * Creates a SqlCreateTable.
      */
-    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query,
-            SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList, List<SqlIdentifier> partitionQualifierList ) {
-
+    SqlCreateTable(
+            SqlParserPos pos,
+            boolean replace,
+            boolean ifNotExists,
+            SqlIdentifier name,
+            SqlNodeList columnList,
+            SqlNode query,
+            SqlIdentifier store,
+            SqlIdentifier partitionType,
+            SqlIdentifier partitionColumn,
+            int numPartitions,
+            List<SqlIdentifier> partitionNamesList,
+            List<SqlIdentifier> partitionQualifierList ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
@@ -140,7 +150,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
-
     }
 
 
@@ -182,7 +191,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             partitionColumn.unparse( writer, 0, 0 );
             writer.endList( frame );
         }
-
     }
 
 
@@ -335,20 +343,24 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 // Check if specified partitionColumn is even part of the table
                 Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName( partitionType.toString() );
                 long partitionColumnID = catalog.getColumn( tableId, partitionColumn.toString() ).id;
-                log.debug( "Creating partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
-                        " on schema: " + catalogTable.getSchemaName() + " on column: " + partitionColumnID );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Creating partitions for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
+                }
 
                 // TODO maybe create partitions multithreaded
-                catalog.partitionTable( tableId, actualPartitionType, partitionColumnID, numPartitions, partitionQualifierList.stream().map( Object::toString )
-                        .collect( Collectors.toList() ), partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
+                catalog.partitionTable(
+                        tableId,
+                        actualPartitionType,
+                        partitionColumnID,
+                        numPartitions,
+                        partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
+                        partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
 
-                log.debug( "Table: '" + catalogTable.name + "' has been partitioned on columnId '"
-                        + catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) + "' " );
-                //
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Table: '{}' has been partitioned on columnId '{}' ", catalogTable.name, catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) );
+                }
             }
-
-
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionException | UnknownPartitionTypeException e ) {
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionIdRuntimeException | UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }
 

@@ -56,8 +56,6 @@ public class SimpleRouter extends AbstractRouter {
     // Execute the table scan on the first placement of a table
     @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
-
-        Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
 
         // Find the store with the most column placements

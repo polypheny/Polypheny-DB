@@ -63,11 +63,17 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     private final SqlIdentifier table;
     private final SqlNodeList columnList;
     private final SqlIdentifier storeName;
-    List<Integer> partitionList;
-    List<SqlIdentifier> partitionNamesList;
+    private final List<Integer> partitionList;
+    private final List<SqlIdentifier> partitionNamesList;
 
 
-    public SqlAlterTableModifyPlacement( SqlParserPos pos, SqlIdentifier table, SqlNodeList columnList, SqlIdentifier storeName, List<Integer> partitionList, List<SqlIdentifier> partitionNamesList ) {
+    public SqlAlterTableModifyPlacement(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlNodeList columnList,
+            SqlIdentifier storeName,
+            List<Integer> partitionList,
+            List<SqlIdentifier> partitionNamesList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );

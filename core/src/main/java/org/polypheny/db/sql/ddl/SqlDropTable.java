@@ -101,7 +101,8 @@ public class SqlDropTable extends SqlDropObject {
                         // If this is a self-reference, drop it later.
                         selfRefsToDelete.add( foreignKey );
                     } else {
-                        throw new PolyphenyDbException( "Cannot drop table '" + table.getSchemaName() + "." + table.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
+                        throw new PolyphenyDbException( "Cannot drop table '" + table.getSchemaName() + "." + table.name + "' because it is being referenced by '"
+                                + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
                     }
                 }
 

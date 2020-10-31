@@ -64,7 +64,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
             int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, table.numPartitions ).size();
             if ( numberOfFullPlacements >= 1 ) {
-                log.debug( "Found ColumnPlacement which contains all partitions for column: " + columnId );
+                log.debug( "Found ColumnPlacement which contains all partitions for column: {}", columnId );
                 skip = true;
                 break;
             }
@@ -72,7 +72,9 @@ public class HashPartitionManager extends AbstractPartitionManager {
             if ( skip ) {
                 continue;
             } else {
-                log.debug( "ERROR Column: '" + Catalog.getInstance().getColumn( columnId ).name + "' has no placement containing all partitions" );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "ERROR Column: '{}' has no placement containing all partitions", Catalog.getInstance().getColumn( columnId ).name );
+                }
                 return false;
             }
         }
@@ -134,33 +136,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
     @Override
     public boolean allowsUnboundPartition() {
         return false;
-    }
-
-
-    /**
-     * Returns number of placements for this column which contain all partitions
-     *
-     * @param columnId column to be checked
-     * @param numPartitions numPartitions
-     * @return If its correctly distributed or not
-     */
-    private List<CatalogColumnPlacement> getPlacementsWithAllPartitions( long columnId, long numPartitions ) {
-
-        Catalog catalog = Catalog.getInstance();
-
-        // Return every placement of this column
-        List<CatalogColumnPlacement> tempCcps = catalog.getColumnPlacements( columnId );
-        List<CatalogColumnPlacement> returnCcps = new ArrayList<>();
-        int placementCounter = 0;
-        for ( CatalogColumnPlacement ccp : tempCcps ) {
-            // If the DataPlacement has stored all partitions and therefore all partitions for this placement
-            if ( catalog.getPartitionsOnDataPlacement( ccp.storeId, ccp.tableId ).size() == numPartitions ) {
-                returnCcps.add( ccp );
-                placementCounter++;
-            }
-        }
-        return returnCcps;
-
     }
 
 }

@@ -22,6 +22,8 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -84,7 +86,7 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned at all" );
             }
-        } catch ( UnknownTableException e ) {
+        } catch ( UnknownTableException  | UnknownKeyException e ) {
             throw new RuntimeException( e );
         }
     }
