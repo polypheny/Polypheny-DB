@@ -2720,6 +2720,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    //TODO: Data Migrate when table already exists and has data. Distribute the data
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionException, GenericCatalogException {
         try {
@@ -2820,6 +2821,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    //TODO: Data Migrate
     @Override
     public void mergeTable( long tableId ) throws UnknownTableException {
         log.debug( "Merging table: " + getTable( tableId ).name + " has been started" );
@@ -2935,30 +2937,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    /**
-     * Get all partitions residing on this placement
-     *
-     * @param storeId The unique id of the store
-     * @param columnId    The unique id of the column
-     * @return List of CatalogPartitions
-     */
-    @Override
-    public List<CatalogPartition> getPartitionsOnPlacement( long storeId, long columnId ) {
-        return null;
-    }
-
-
-    /**
-     * Get all partitions residing on this store
-     * Use this to identify the location of your partitions
-     *
-     * @param storeId The unique id of the store
-     * @return List of CatalogPartitions
-     */
-    @Override
-    public List<CatalogPartition> getPartitionsOnStore( long storeId ) {
-        return null;
-    }
 
 
     /**

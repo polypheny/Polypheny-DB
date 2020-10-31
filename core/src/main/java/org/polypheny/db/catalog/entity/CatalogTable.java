@@ -53,6 +53,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final Long primaryKey;
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
 
+    //getter bauen der einfach auf NONE prüft und dann false und true prüft.
     @Getter
     public boolean isPartitioned = false;
     @Getter
@@ -61,12 +62,9 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public ImmutableList<Long> partitionIds;
     public long partitionColumnId;
 
-    // If specified explicitly boundPartitions will be set to true
+    //getter bauen der einfach  partitionIds.length zurück gibt für numPartiitons
     public long numPartitions;
 
-    // Bound partition states if the partitioning is done on a fixed number of Partitions
-    // Or adjusted automatically as the table grows
-    public boolean boundPartition;
     @Setter
     public boolean flaggedForDeletion = false;
 

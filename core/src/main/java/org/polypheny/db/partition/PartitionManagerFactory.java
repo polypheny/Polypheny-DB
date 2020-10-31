@@ -31,9 +31,6 @@ public class PartitionManagerFactory {
             case RANGE:
                 return new RangePartitionManager();
 
-            case ROUNDROBIN:
-                return new RoundRobinPartitionManager();
-
         }
 
         return null;

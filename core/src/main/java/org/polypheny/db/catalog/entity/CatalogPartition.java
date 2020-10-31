@@ -47,7 +47,8 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
     public final long partitionKey;
 
 
-    public CatalogPartition( final long id,
+    public CatalogPartition(
+            final long id,
             final String partitionName,
             final long tableId,
             final long schemaId,

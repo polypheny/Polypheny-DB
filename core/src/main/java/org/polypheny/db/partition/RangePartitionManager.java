@@ -44,7 +44,8 @@ public class RangePartitionManager extends AbstractPartitionManager {
     @Override
     public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
         super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames );
-        return false;
+        throw new RuntimeException("RANGE Partitioning is not implemented yet");
+        //return false;
     }
 
 

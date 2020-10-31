@@ -836,38 +836,151 @@ public abstract class Catalog {
     public abstract void deleteStore( int storeId ) throws GenericCatalogException, UnknownStoreException;
 
 
+    /**
+     * Adds a partiiton to the catalog
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param ownerId the partitionId to be deleted
+     * @param partitionType partition Type of the added partiiton
+     */
     public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
 
+
+    /**
+     * Should only be called from mergePartitions()
+     * deletes a single partition and all references
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionId the partitionId to be deleted
+     */
     protected abstract void deletePartition( long tableId, long schemaId, long partitionId );
 
+    /**
+     * Get a partition object by its unique id
+     *
+     * @return partition
+     */
     public abstract CatalogPartition getPartition( long partitionId ) throws UnknownPartitionException;
 
+
+
+    /**
+     * Effectively partitions a table with the specified partitionType
+     *
+     * @param tableId Table to be partitioned
+     * @param type partiiton function to apply on the table
+     * @param partitionColumnId column used to apply the partition function on
+     * @param numPartitions explicit number of partitions
+     * @param partitionQualifiers qualifiers which are directly associated with a partition
+     * @param partitionNames (optional)
+     */
     public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionException, GenericCatalogException;
 
+
+    /**
+     * Merges a  partitioned table
+     * Resets all objects and structures which were introduced by partitionTable
+     *
+     * @param tableId Table to be merged
+     */
     public abstract void mergeTable( long tableId ) throws UnknownTableException;
 
+    /**
+     * Get a List of all partitions belonging to a specific table
+     *
+     * @param tableId Table to be queried
+     * @return list of all partitions on this table
+     */
     public abstract List<CatalogPartition> getPartitions( long tableId ) throws UnknownTableException;
 
+
+    /**
+     * Get all partitions of the specified database which fit to the specified filter patterns.
+     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     *
+     * @param databaseNamePattern Pattern for the database name. null returns all.
+     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns all.
+     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     */
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
 
+    /**
+     * Get a List of all partition name belonging to a specific table
+     *
+     * @param tableId Table to be queried
+     * @return list of all partitionnames on this table
+     */
     public abstract List<String> getPartitionNames( long tableId ) throws UnknownTableException;
 
-    public abstract List<CatalogPartition> getPartitionsOnPlacement( long storeId, long columnId );
 
-    public abstract List<CatalogPartition> getPartitionsOnStore( long storeId );
-
+    /**
+     * Get placements by partition. Identify the location of partitions.
+     * Essentially returns all ColumnPlacements which hold the specified partitionID
+     *
+     * @param partitionId The unique id of the partition
+     * @param columnId column placement to return
+     * @param tableId
+     * @return List of CatalogColumnPlacements
+     */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) throws UnknownPartitionException;
 
+
+    /**
+     * Get stores by partition. Identify the location of partitions/replicas
+     * Essentially returns all Stores which hold the specified partitionID
+     *
+     * @param partitionId The unique id of the partition
+     * @return List of CatalogStores
+     */
     public abstract List<CatalogStore> getStoresByPartition( long tableId, long partitionId ) throws UnknownPartitionException;
 
+
+    /**
+     * Updates the Catalog reference which partitions reside on which DataPlacement (Store/Table)
+     *
+     * @param storeId The unique id of the partition
+     * @param tableId
+     * @param partitionIds
+     */
     public abstract void updatePartitionsOnDataPlacement( int storeId, long tableId, List<Long> partitionIds ) throws UnknownTableException, UnknownStoreException;
 
+    /**
+     * Get all partitions residing on a DataPlacement (Store/Table)
+     *
+     * @param storeId The unique id of the partition
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
     public abstract List<Long> getPartitionsOnDataPlacement( int storeId, long tableId );
 
+    /**
+     * Returns list with the index of the partitions on this store from  0..numPartitions
+     *
+     * @param storeId The unique id of the partition
+     * @param tableId The unique id of the table
+     * @return List of partitionId Indices
+     */
     public abstract List<Long> getPartitionsIndexOnDataPlacement( int storeId, long tableId );
 
+    /**
+     * Mostly needed if a placement is dropped from a store.
+     *
+     * @param storeId Placement to be updated with new partitions
+     * @param tableId List of partitions which the placement should hold
+     */
     public abstract void deletePartitionsOnDataPlacement( int storeId, long tableId );
 
+
+    /**
+     *  Checks depending on the current partition distribution and partitionType
+     *  If this would be sufficient. Basically a passthrough method to simplify the code
+     *
+     * @param tableId  table to be checked
+     * @return If its correctly distributed or not
+     */
     public abstract boolean validatePartitionDistribution( int storeId, long tableId, long columnId );
 
     /*
