@@ -145,18 +145,34 @@ public class Linq4JFixer {
     }
 
 
-    public static Knn generateKnn(
+    /*public static Knn generateKnn(
             String column,
-            Integer k,
             String distance,
+            Object target,
+            Object fourthArgument
+    ) {
+
+    }*/
+
+
+    public static Knn generateKnn(
+            Object column,
+            Object k,
+            Object distance,
             Object target,
             Object weights ) {
         Knn.Builder knnBuilder = Knn.newBuilder();
 
-        knnBuilder.setAttribute( column );
+        knnBuilder.setAttribute( (String) column );
 
         if ( k != null ) {
-            knnBuilder.setK( k );
+            knnBuilder.setK( (Integer) k );
+        } else {
+            // Cottontail requires a k to be set for these queries.
+            // Setting Integer.MAX_VALUE will cause an out of memory with cottontail
+            // 2050000000 still works, 2100000000 doesn't work
+            // I will just decide that 1000000 is a reasonable default value!
+            knnBuilder.setK( 1000000 );
         }
 
         if ( target != null ) {
@@ -169,7 +185,7 @@ public class Linq4JFixer {
 //            knnBuilder.setWeights( 0, (Vector) weights );
         }
 
-        knnBuilder.setDistance( getDistance( distance ) );
+        knnBuilder.setDistance( getDistance( (String) distance ) );
 
         return knnBuilder.build();
     }

@@ -19,6 +19,9 @@ package org.polypheny.db.adapter.cottontail;
 
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import org.vitrivr.cottontail.grpc.CottonDDLGrpc;
 import org.vitrivr.cottontail.grpc.CottonDDLGrpc.CottonDDLBlockingStub;
 import org.vitrivr.cottontail.grpc.CottonDDLGrpc.CottonDDLFutureStub;
@@ -28,6 +31,7 @@ import org.vitrivr.cottontail.grpc.CottonDQLGrpc;
 import org.vitrivr.cottontail.grpc.CottonDQLGrpc.CottonDQLBlockingStub;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Empty;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityDefinition;
@@ -45,6 +49,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
 
 
 @Slf4j
@@ -166,6 +171,82 @@ public class CottontailWrapper implements AutoCloseable {
 //    public ListenableFuture<InsertStatus> insert( InsertMessage message) {
 //        return this.managementStub.insert(message);
 //    }
+
+
+    public Long delete(DeleteMessage message) {
+
+        final AtomicLong count = new AtomicLong( 0 );
+        final AtomicBoolean errored = new AtomicBoolean( false );
+        final AtomicBoolean completed = new AtomicBoolean( false );
+
+        final StreamObserver<CottontailGrpc.QueryResponseMessage> observer = new StreamObserver<QueryResponseMessage>() {
+            @Override
+            public void onNext( QueryResponseMessage value ) {
+                if ( value.getResultsList().size() != 0 ) {
+                    long deleted = count.addAndGet( value.getResultsList().get( 0 ).getDataMap().get( "deleted" ).getLongData() );
+                }
+//                count += value.getResultsList().size();
+            }
+
+
+            @Override
+            public void onError( Throwable t ) {
+                errored.set( true );
+            }
+
+
+            @Override
+            public void onCompleted() {
+                completed.set( true );
+            }
+        };
+
+        this.managementStub.delete( message, observer );
+
+        while ( !completed.get() && !errored.get() ) {
+            Thread.yield();
+        }
+
+        return errored.get() ? -1 : count.get();
+    }
+
+
+    public Long update( UpdateMessage message) {
+
+        final AtomicLong count = new AtomicLong( 0 );
+        final AtomicBoolean errored = new AtomicBoolean( false );
+        final AtomicBoolean completed = new AtomicBoolean( false );
+
+        final StreamObserver<CottontailGrpc.QueryResponseMessage> observer = new StreamObserver<QueryResponseMessage>() {
+            @Override
+            public void onNext( QueryResponseMessage value ) {
+                if ( value.getResultsList().size() != 0 ) {
+                    long updated = count.addAndGet( value.getResultsList().get( 0 ).getDataMap().get( "updated" ).getLongData() );
+                }
+//                count += value.getResultsList().size();
+            }
+
+
+            @Override
+            public void onError( Throwable t ) {
+                errored.set( true );
+            }
+
+
+            @Override
+            public void onCompleted() {
+                completed.set( true );
+            }
+        };
+
+        this.managementStub.update( message, observer );
+
+        while ( !completed.get() && !errored.get() ) {
+            Thread.yield();
+        }
+
+        return errored.get() ? -1 : count.get();
+    }
 
 
     public boolean insert(List<InsertMessage> messages) {

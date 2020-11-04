@@ -21,7 +21,11 @@ import java.lang.reflect.Modifier;
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.polypheny.db.catalog.entity.CatalogDefaultValue;
 import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.BuiltInMethod;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BoolVector;
@@ -72,7 +76,8 @@ public class CottontailTypeUtil {
     public static final Method COTTONTAIL_KNN_BUILDER_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
             "generateKnn",
-            String.class, Integer.class, String.class, Object.class, Object.class );
+            Object.class, Object.class, Object.class, Object.class, Object.class );
+//            String.class, Integer.class, String.class, Object.class, Object.class );
 
 
     public static CottontailGrpc.Type getPhysicalTypeRepresentation( RelDataType relDataType ) {
@@ -477,6 +482,28 @@ public class CottontailTypeUtil {
 
         Expression distance = knnCallDistance( knnCall.getOperands().get( 2 ), dynamicParameterMap_ );
 
+        Expression weightsVector;
+        Expression optimisationFactor;
+
+        if ( knnCall.getOperands().size() == 4 ) {
+            if ( knnCall.getOperands().get( 3 ).getType().getPolyType() == PolyType.INTEGER ) {
+                // Optimisation factor
+                weightsVector = Expressions.constant( null );
+                optimisationFactor = knnCallOptimisationFactor( knnCall.getOperands().get( 3 ), dynamicParameterMap_ );
+            } else {
+                // Weights
+                weightsVector = knnCallVector( knnCall.getOperands().get( 3 ), dynamicParameterMap_ );
+                optimisationFactor = Expressions.constant( null );
+//                optimisationFactor = Expressions.constant( Integer.MAX_VALUE );
+
+            }
+        } else if ( knnCall.getOperands().size() == 5 ) {
+            weightsVector = knnCallVector( knnCall.getOperands().get( 3 ), dynamicParameterMap_ );
+            optimisationFactor = knnCallOptimisationFactor( knnCall.getOperands().get( 4 ), dynamicParameterMap_ );
+        } else {
+            weightsVector = Expressions.constant( null );
+            optimisationFactor = Expressions.constant( null );
+        }
         /*if ( !(knnCall.getOperands().get( 1 ) instanceof RexCall) ) {
             throw new RuntimeException( "second argument is not a rex call!" );
         }
@@ -494,10 +521,10 @@ public class CottontailTypeUtil {
                         Expressions.return_( null,
                                 Expressions.call( COTTONTAIL_KNN_BUILDER_METHOD,
                                         targetColumn,
-                                        Expressions.constant( 2 ),
+                                        optimisationFactor,
                                         distance,
                                         targetVector,
-                                        Expressions.constant( null )
+                                        weightsVector
                                         ) ) ),
                 dynamicParameterMap_ );
     }
@@ -509,7 +536,7 @@ public class CottontailTypeUtil {
             return Expressions.constant( physicalColumnNames.get( inputRef.getIndex() ) );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( dynamicParamMap, "get",
+            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
                     Expressions.constant( dynamicParam.getIndex() ) );
         }
 
@@ -523,7 +550,7 @@ public class CottontailTypeUtil {
             return Expressions.call( CottontailTypeUtil.class, "toVectorData", Expressions.constant( arrayList ) );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( CottontailTypeUtil.class, "toVectorData", Expressions.call( dynamicParamMap, "get",
+            return Expressions.call( CottontailTypeUtil.class, "toVectorData", Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
                     Expressions.constant( dynamicParam.getIndex() ) ) );
         }
 
@@ -536,10 +563,61 @@ public class CottontailTypeUtil {
             return Expressions.constant( ((RexLiteral) node).getValue2() );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( dynamicParamMap, "get",
+            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
                     Expressions.constant( dynamicParam.getIndex() ) );
         }
 
         throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
+    }
+
+
+    private static Expression knnCallOptimisationFactor( RexNode node, ParameterExpression dynamicParamMap ) {
+        if ( node instanceof RexLiteral ) {
+            return Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
+        } else if ( node instanceof RexDynamicParam ) {
+            RexDynamicParam dynamicParam = (RexDynamicParam) node;
+            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
+                    Expressions.constant( dynamicParam.getIndex() ) );
+        }
+
+        throw new RuntimeException( "argument is neither an int nor a dynamic parameter" );
+
+    }
+
+
+    public static Object defaultValueParser( CatalogDefaultValue catalogDefaultValue ) {
+        if ( catalogDefaultValue.type == PolyType.ARRAY ) {
+            throw new RuntimeException( "Default values are not supported for array types" );
+        }
+
+        Object literal;
+        switch ( catalogDefaultValue.type ) {
+            case BOOLEAN:
+                literal = Boolean.parseBoolean( catalogDefaultValue.value );
+                break;
+            case INTEGER:
+                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Integer.class );
+                break;
+            case DECIMAL:
+                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( BigDecimal.class );
+                break;
+            case BIGINT:
+                literal = SqlLiteral.createExactNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Long.class );
+                break;
+            case REAL:
+            case FLOAT:
+                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Float.class );
+                break;
+            case DOUBLE:
+                literal = SqlLiteral.createApproxNumeric( catalogDefaultValue.value, SqlParserPos.ZERO ).getValueAs( Double.class );
+                break;
+            case VARCHAR:
+                literal = catalogDefaultValue.value;
+                break;
+            default:
+                throw new PolyphenyDbException( "Not yet supported default value type: " + catalogDefaultValue.type );
+        }
+
+        return literal;
     }
 }

@@ -35,8 +35,10 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.cottontail.enumberable.CottontailDeleteEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailInsertEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
+import org.polypheny.db.adapter.cottontail.enumberable.CottontailUpdateEnumerable;
 import org.polypheny.db.adapter.cottontail.rel.CottontailRel.CottontailImplementContext;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
@@ -205,10 +207,27 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 }
                 break;
             case UPDATE:
-                enumerable = null;
+                enumerable = list.append( "enumerable",
+                        Expressions.call( CottontailUpdateEnumerable.CREATE_UPDATE_METHOD,
+                                Expressions.constant( cottontailContext.tableName ),
+                                Expressions.constant( cottontailContext.schemaName ),
+                                expressionOrNullExpression( cottontailContext.filterBuilder ),
+                                cottontailContext.preparedValuesMapBuilder,
+                                DataContext.ROOT,
+                                Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
+                                )
+                        );
                 break;
             case DELETE:
-                enumerable = null;
+                enumerable = list.append( "enumerable",
+                        Expressions.call( CottontailDeleteEnumerable.CREATE_DELETE_METHOD,
+                                Expressions.constant( cottontailContext.tableName ),
+                                Expressions.constant( cottontailContext.schemaName ),
+                                expressionOrNullExpression( cottontailContext.filterBuilder ),
+                                DataContext.ROOT,
+                                Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
+                        )
+                        );
                 break;
             default:
                 enumerable = null;

@@ -51,7 +51,9 @@ public class CottontailProjectRule extends CottontailConverterRule {
 
 
         boolean onlyInputRefs = true;
+        boolean containsInputRefs = false;
         boolean valueProject = true;
+        boolean containsValueProjects = false;
         boolean foundKnnFunction = false;
 
         List<RexNode> projects = project.getProjects();
@@ -61,8 +63,10 @@ public class CottontailProjectRule extends CottontailConverterRule {
 
             if ( e instanceof RexInputRef ) {
                 valueProject = false;
+                containsInputRefs = true;
             } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
                 onlyInputRefs = false;
+                containsValueProjects = true;
             } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlKnnFunction) ) {
                 RexCall rexCall = (RexCall) e;
                 SqlKnnFunction knnFunction = (SqlKnnFunction) ((RexCall) e).getOperator();
@@ -90,7 +94,9 @@ public class CottontailProjectRule extends CottontailConverterRule {
             }*/
         }
 
-        return onlyInputRefs || valueProject;
+        return ( ( containsInputRefs || containsValueProjects ) && !foundKnnFunction )
+                || ( ( containsInputRefs || foundKnnFunction ) && !containsValueProjects);
+//        return onlyInputRefs || valueProject;
     }
 
 
