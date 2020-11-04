@@ -36,6 +36,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlKnnFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.PolyType;
 
 
 public class CottontailProjectRule extends CottontailConverterRule {
@@ -72,6 +73,18 @@ public class CottontailProjectRule extends CottontailConverterRule {
                 SqlKnnFunction knnFunction = (SqlKnnFunction) ((RexCall) e).getOperator();
                 if ( !foundKnnFunction ) {
                     RelDataType fieldType = fieldList.get( i ).getType();
+
+                    if ( rexCall.getOperands().size() <= 3 ) {
+                        // No optimisation parameter, thus we cannot push this function down!
+                        return false;
+                    } else if ( rexCall.getOperands().size() == 4 ) {
+                        if ( rexCall.getOperands().get( 3 ).getType().getPolyType() != PolyType.INTEGER ) {
+                            // 4th argument is not an integer, thus it's not the optimisation parameter.
+                            // This means we cannot push down this knn call.
+                            return false;
+                        }
+                    }
+
 
                     if ( (CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() ))) {
                         foundKnnFunction = true;
