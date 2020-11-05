@@ -570,24 +570,12 @@ public class Crud implements InformationObserver {
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
                         PolyType polyType = catalogColumn.type;
-                        if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
-                            value = "'" + StringEscapeUtils.escapeSql( value ) + "'";
-                        } else if ( polyType == PolyType.DATE ) {
-                            value = "DATE '" + value + "'";
-                        } else if ( polyType == PolyType.TIME ) {
-                            value = "TIME '" + value + "'";
-                        } else if ( polyType == PolyType.TIMESTAMP ) {
-                            value = "TIMESTAMP '" + value + "'";
-                        } else if ( polyType == PolyType.ARRAY ) {
-                            value = String.format( "ARRAY %s", value );
-                        }
-                        values.add( value );
+                        values.add( uiValueToSql( value, polyType ) );
                     } else {
                         values.add( "?" );
-                        statement.getDataContext().addParameterValues( i, null, ImmutableList.of( part.getInputStream() ) );
+                        statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
                     }
                 }
-                i++;
             }
         } catch ( IOException | ServletException e ) {
             return new Result( e );
@@ -1039,15 +1027,7 @@ public class Crud implements InformationObserver {
                 String condition;
                 if ( filter.containsKey( colName ) ) {
                     String val = filter.get( colName );
-                    if ( val == null ) {
-                        condition = "IS NULL";
-                    } else if ( dataTypes.get( colName ) == PolyType.ARRAY ) {
-                        condition = "ARRAY " + val;
-                    } else if ( dataTypes.get( colName ).getFamily() != PolyTypeFamily.CHARACTER ) {
-                        condition = val;
-                    } else {
-                        condition = String.format( "'%s'", val );
-                    }
+                    condition = uiValueToSql( val, dataTypes.get( colName ) );
                     condition = String.format( "\"%s\" = %s", colName, condition );
                     joiner.add( condition );
                 }
