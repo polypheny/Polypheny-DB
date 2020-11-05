@@ -61,10 +61,16 @@ public class Value {
     }
 
 
-    public Object getValue( final DataContext context ) {
+    /**
+     * Get the value. It was either saved from a literal or is taken from the dataContext
+     *
+     * @param context Data context
+     * @param i Index to retrieve the value from the ith parameterValues (needed for batch inserts)
+     */
+    public Object getValue( final DataContext context, final int i ) {
         //don't switch the two if conditions, because a literal assignment can be "null"
         if ( literalIndex != null ) {
-            return context.getParameterValue( literalIndex );
+            return context.getParameterValues().get( i ).get( literalIndex );
         } else {
             return literal;
         }

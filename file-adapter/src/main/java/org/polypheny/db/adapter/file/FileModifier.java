@@ -85,6 +85,9 @@ public class FileModifier<E> extends FileEnumerator<E> {
                         } else if ( value instanceof InputStream ) {
                             //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
                             IOUtils.copy( (InputStream) value, new FileOutputStream( newFile ) );
+                        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
+                            Long l = FileHelper.sqlToLong( value );
+                            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
                         } else {
                             String writeString = value.toString();
                             Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );

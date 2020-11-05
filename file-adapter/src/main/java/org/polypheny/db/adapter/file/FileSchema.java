@@ -141,13 +141,28 @@ public class FileSchema extends AbstractSchema {
         final Object[] insert;
 
         ArrayList<Object[]> rows = new ArrayList<>();
-        for ( Object insertRow : insertValues ) {
-            ArrayList<Object> row = new ArrayList<>();
-            Value[] values = (Value[]) insertRow;
-            for ( Value value : values ) {
-                row.add( value.getValue( dataContext ) );
+        ArrayList<Object> row = new ArrayList<>();
+        int i = 0;
+        if ( dataContext.getParameterValues().size() > 0 ) {
+            for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
+                row.clear();
+                //insertValues[] has length 1 if the dataContext is set
+                for ( Value values : ((Value[]) insertValues[0]) ) {
+                    row.add( values.getValue( dataContext, i ) );
+                }
+                rows.add( row.toArray( new Object[0] ) );
+                i++;
             }
-            rows.add( row.toArray( new Object[0] ) );
+        } else {
+            for ( Object insertRow : insertValues ) {
+                row.clear();
+                Value[] values = (Value[]) insertRow;
+                for ( Value value : values ) {
+                    row.add( value.getValue( dataContext, i ) );
+                }
+                rows.add( row.toArray( new Object[0] ) );
+                i++;
+            }
         }
         insert = rows.toArray( new Object[0] );
 

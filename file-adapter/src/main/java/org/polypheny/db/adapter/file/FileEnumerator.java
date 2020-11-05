@@ -261,7 +261,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     Set<Integer> updatedColumns = new HashSet<>();
                     for ( int c = 0; c < columnFolders.size(); c++ ) {
                         if ( updates.containsKey( c ) ) {
-                            updateObj[c] = updates.get( c ).getValue( dataContext );
+                            updateObj[c] = updates.get( c ).getValue( dataContext, 0 );
                             updatedColumns.add( c );
                         } else {
                             //needed for the hash

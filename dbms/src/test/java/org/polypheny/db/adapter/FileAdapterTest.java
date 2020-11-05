@@ -218,6 +218,7 @@ public class FileAdapterTest {
                 rs.close();
 
                 statement.executeUpdate( "DROP TABLE public.bin" );
+                connection.commit();
             }
         }
     }
