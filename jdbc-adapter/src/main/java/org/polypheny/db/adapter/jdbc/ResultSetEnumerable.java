@@ -35,6 +35,7 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import com.google.gson.Gson;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Array;
@@ -305,6 +306,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setClob( i, (Clob) value );
         } else if ( value instanceof byte[] ) {
             preparedStatement.setBytes( i, (byte[]) value );
+        } else if ( value instanceof InputStream ) {
+            preparedStatement.setBinaryStream( i, (InputStream) value );
         } else if ( value instanceof Date ) {
             preparedStatement.setDate( i, (Date) value );
         } else if ( value instanceof Float ) {

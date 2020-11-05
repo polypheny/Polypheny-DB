@@ -21,6 +21,7 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,12 +29,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 @Slf4j
@@ -176,7 +181,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     }
                 }
                 File currentFile = fileList[fileListPosition];
-                Comparable[] curr;
+                Object[] curr;
 
                 if ( condition != null ) {
                     Object[] pkLookup = condition.getPKLookup( new HashSet<>( Arrays.asList( pkMapping ) ), columnTypes, numOfCols, dataContext );
@@ -200,6 +205,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                             }
                             return false;
                         }
+                        currentFile = lookupFile;
                         current = (E) Long.valueOf( 1 );
                     } else {
                         curr = fileToRow( currentFile );
@@ -252,10 +258,13 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     //continue;
                 } else if ( operation == Operation.UPDATE ) {
                     Object[] updateObj = new Object[columnFolders.size()];
+                    Set<Integer> updatedColumns = new HashSet<>();
                     for ( int c = 0; c < columnFolders.size(); c++ ) {
                         if ( updates.containsKey( c ) ) {
                             updateObj[c] = updates.get( c ).getValue( dataContext );
+                            updatedColumns.add( c );
                         } else {
+                            //needed for the hash
                             updateObj[c] = curr[c];
                         }
                     }
@@ -265,18 +274,30 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     int j = 0;
                     for ( File colFolder : columnFolders ) {
                         File source = new File( colFolder, oldFileName );
-                        File target = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
-                        if ( source.exists() ) {
-                            Files.move( source.toPath(), target.toPath() );
-                        }
 
                         //write new file
                         if ( updateObj[j] != null ) {
-                            File newFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
+                            File insertFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
                             /*if( newFile.exists() ) {
                                 throw new RuntimeException("This update would lead to a primary key conflict, " + newFile.getAbsolutePath());
                             }*/
-                            Files.write( newFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
+
+                            //if column has not been updated: just copy the old file to the new one with the PK in the new fileName
+                            if ( !updatedColumns.contains( j ) && source.exists() ) {
+                                Files.copy( source.toPath(), insertFile.toPath() );
+                            } else {
+                                //Write updated value. Overrides file if it exists (if you have a double update on the same item)
+                                if ( updateObj[j] instanceof InputStream ) {
+                                    FileUtils.copyInputStreamToFile( ((InputStream) updateObj[j]), insertFile );
+                                } else {
+                                    Files.write( insertFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
+                                }
+                            }
+                        }
+
+                        File deleteFile = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
+                        if ( source.exists() ) {
+                            Files.move( source.toPath(), deleteFile.toPath() );
                         }
                         j++;
                     }
@@ -302,51 +323,29 @@ public class FileEnumerator<E> implements Enumerator<E> {
      * @return Null if the file does not exists (in case of a PK lookup) or the row as an array of objects.
      */
     @Nullable
-    private Comparable[] fileToRow( final File currentFile ) throws IOException {
-        String[] strings = new String[numOfCols];
-        Comparable[] curr = new Comparable[numOfCols];
+    private Object[] fileToRow( final File currentFile ) throws IOException {
+        Object[] curr = new Object[numOfCols];
         int i = 0;
         boolean allNull = true;
         for ( File colFolder : columnFolders ) {
             File f = new File( colFolder, currentFile.getName() );
-            /*if( !f.exists() ) {
-                return null;
-            }*/
             String s;
+            byte[] encoded;
             if ( !f.exists() ) {
                 s = null;
+                encoded = null;
             } else {
-                byte[] encoded = Files.readAllBytes( f.toPath() );
+                encoded = Files.readAllBytes( f.toPath() );
                 s = new String( encoded, FileStore.CHARSET );
             }
-            strings[i] = s;
             if ( s == null || s.equals( "" ) ) {
                 curr[i] = null;
             } else {
                 allNull = false;
-                switch ( columnTypes[i] ) {
-                    //todo add support for more types
-                    case BOOLEAN:
-                        curr[i] = gson.fromJson( s, Boolean.class );
-                        break;
-                    case INTEGER:
-                    case TIME:
-                    case DATE:
-                        curr[i] = Integer.parseInt( s );
-                        break;
-                    case TIMESTAMP:
-                    case BIGINT:
-                        curr[i] = Long.parseLong( s );
-                        break;
-                    case DOUBLE:
-                        curr[i] = Double.parseDouble( s );
-                        break;
-                    case FLOAT:
-                        curr[i] = Float.parseFloat( s );
-                        break;
-                    //case ARRAY:
-                    default:
-                        curr[i] = s;
+                if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                    curr[i] = encoded;//todo find best type to return
+                } else {
+                    curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
                 }
             }
             i++;
@@ -355,9 +354,9 @@ public class FileEnumerator<E> implements Enumerator<E> {
     }
 
 
-    private Comparable[] project( final Comparable[] o ) {
+    private Object[] project( final Object[] o ) {
         assert (projectionMapping != null);
-        Comparable[] out = new Comparable[projectionMapping.length];
+        Object[] out = new Comparable[projectionMapping.length];
         for ( int i = 0; i < projectionMapping.length; i++ ) {
             out[i] = o[projectionMapping[i]];
         }

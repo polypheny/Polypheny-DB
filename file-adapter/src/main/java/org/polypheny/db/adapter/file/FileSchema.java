@@ -121,7 +121,7 @@ public class FileSchema extends AbstractSchema {
 
     /**
      * Called from generated code
-     * Executes SELECT and DELETE operations
+     * Executes SELECT, UPDATE and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
     public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Update[] updates ) {
@@ -136,6 +136,7 @@ public class FileSchema extends AbstractSchema {
 
     /**
      * Called from generated code
+     * Executes INSERT operations
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
     public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
@@ -144,10 +145,22 @@ public class FileSchema extends AbstractSchema {
         //if it is a batch insert
         if ( dataContext.getParameterValues().size() > 0 ) {
             ArrayList<Object[]> rows = new ArrayList<>();
+            int r = 0;
             for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
                 ArrayList<Object> row = new ArrayList<>();
                 for ( int i = 0; i < columnIds.length; i++ ) {
                     Object o = map.get( (long) i );
+                    if ( o == null ) {
+                        //can contain data for mixed queries with "?" and literal values.
+                        if ( insertValues != null ) {
+                            //we have an array of arrays
+                            Object[] o1 = (Object[]) insertValues[r];
+                            row.add( o1[i] );
+                        } else {
+                            row.add( null );
+                        }
+                        continue;
+                    }
                     if ( columnTypes[i] == PolyType.TIMESTAMP ) {
                         if ( o instanceof Timestamp ) {
                             o = ((Timestamp) o).toInstant().toEpochMilli();
@@ -160,6 +173,7 @@ public class FileSchema extends AbstractSchema {
                     row.add( o );
                 }
                 rows.add( row.toArray( new Object[0] ) );
+                r++;
             }
             insert = rows.toArray( new Object[0] );
         } else {

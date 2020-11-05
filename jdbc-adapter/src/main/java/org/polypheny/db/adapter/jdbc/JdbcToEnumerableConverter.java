@@ -342,6 +342,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 }
                 break;
                 */
+            case FILE:
+                source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+                break;
             default:
                 source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
         }

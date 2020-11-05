@@ -4578,6 +4578,8 @@ PolyType PolyType(Span s) :
 |
     <FLOAT> { return PolyType.FLOAT; }
 |
+   <FILE> { return PolyType.FILE; }
+|
     <ANY> { return PolyType.ANY; }
 }
 

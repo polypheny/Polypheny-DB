@@ -38,6 +38,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.gson.Gson;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
@@ -648,6 +649,12 @@ public abstract class PolyTypeUtil {
             RelDataType fromComponentType = fromPolyType.getNestedComponentType();
             RelDataType toComponentType = toPolyType.getNestedComponentType();
             return canAssignFrom( toComponentType, fromComponentType );
+        }
+
+        if ( toType.getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+            if ( fromType.getPolyType() == PolyType.BINARY ) {
+                return true;
+            }
         }
 
         if ( areCharacterSetsMismatched( toType, fromType ) ) {
@@ -1371,5 +1378,43 @@ public abstract class PolyTypeUtil {
         }
 
         return conversionType;
+    }
+
+
+    /**
+     * Converts a string to an object, depending on the PolyType
+     *
+     * @param s String that should be converted
+     * @param polyType PolyType to know how to convert the string
+     * @return The converted object
+     */
+    public static Object stringToObject( final String s, final PolyType polyType ) {
+        if ( s == null || s.equals( "" ) ) {
+            return null;
+        }
+        Gson gson = new Gson();
+        switch ( polyType ) {
+            case BOOLEAN:
+                return gson.fromJson( s, Boolean.class );
+            case TINYINT:
+            case SMALLINT:
+            case INTEGER:
+            case TIME:
+            case DATE:
+                return Integer.parseInt( s );
+            case TIMESTAMP:
+            case BIGINT:
+                return Long.parseLong( s );
+            case DOUBLE:
+                return Double.parseDouble( s );
+            case REAL:
+            case FLOAT:
+                return Float.parseFloat( s );
+            case DECIMAL:
+                return new BigDecimal( s );
+            //case ARRAY:
+            default:
+                return s;
+        }
     }
 }

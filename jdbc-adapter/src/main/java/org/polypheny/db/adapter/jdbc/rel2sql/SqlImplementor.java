@@ -545,6 +545,8 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createTime( literal.getValueAs( TimeString.class ), literal.getType().getPrecision(), POS );
                         case TIMESTAMP:
                             return SqlLiteral.createTimestamp( literal.getValueAs( TimestampString.class ), literal.getType().getPrecision(), POS );
+                        case BINARY:
+                            return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
                         case ANY:
                         case NULL:
                             switch ( literal.getTypeName() ) {

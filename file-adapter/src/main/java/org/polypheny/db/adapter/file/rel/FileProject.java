@@ -65,7 +65,6 @@ public class FileProject extends Project implements FileRel {
             for ( RexNode node : exps ) {
                 if ( node instanceof RexLiteral ) {
                     row[i] = ((RexLiteral) node).getValueForFileAdapter();
-                    i++;
                 } else if ( node instanceof RexCall ) {
                     RexCall call = (RexCall) node;
                     ArrayList<Object> arrayValues = new ArrayList<>();
@@ -73,8 +72,8 @@ public class FileProject extends Project implements FileRel {
                         arrayValues.add( ((RexLiteral) node1).getValueForFileCondition() );
                     }
                     row[i] = gson.toJson( arrayValues );
-                    i++;
                 }
+                i++;
             }
             implementor.addInsertValue( row );
         } else {

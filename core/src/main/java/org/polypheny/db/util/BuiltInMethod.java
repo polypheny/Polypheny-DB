@@ -404,7 +404,8 @@ public enum BuiltInMethod {
     AGG_LAMBDA_FACTORY_ACC_INITIALIZER( AggregateLambdaFactory.class, "accumulatorInitializer" ),
     AGG_LAMBDA_FACTORY_ACC_ADDER( AggregateLambdaFactory.class, "accumulatorAdder" ),
     AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR( AggregateLambdaFactory.class, "resultSelector", Function2.class ),
-    AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class );
+    AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR( AggregateLambdaFactory.class, "singleGroupResultSelector", Function1.class ),
+    RESULTSET_GETBYTES( ResultSet.class, "getBytes", int.class );
 
     public final Method method;
     public final Constructor constructor;

@@ -81,7 +81,8 @@ public enum PolyTypeFamily implements RelDataTypeFamily {
     ANY,
     CURSOR,
     COLUMN_LIST,
-    GEO;
+    GEO,
+    MULTIMEDIA;
 
     private static final Map<Integer, PolyTypeFamily> JDBC_TYPE_TO_FAMILY =
             ImmutableMap.<Integer, PolyTypeFamily>builder()

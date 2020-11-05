@@ -112,10 +112,6 @@ public interface FileRel extends RelNode {
             insertValues.add( row );
         }
 
-        public void addInsertValues( final List<Object[]> rows ) {
-            insertValues.addAll( rows );
-        }
-
         /**
          * Has to be called in every implement method of all FileRel instances
          */

@@ -336,7 +336,14 @@ public enum PolyType {
             PrecScale.NO_NO,
             true,
             ExtraPolyTypes.GEOMETRY,
-            PolyTypeFamily.GEO );
+            PolyTypeFamily.GEO ),
+
+    FILE(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
+    );
 
 
     public static final int MAX_DATETIME_PRECISION = 3;
@@ -1141,7 +1148,7 @@ public enum PolyType {
 
 
     public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR );
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE );
     }
 
 

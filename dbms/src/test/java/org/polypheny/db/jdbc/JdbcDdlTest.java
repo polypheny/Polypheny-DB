@@ -53,6 +53,7 @@ public class JdbcDdlTest {
             + "ttimestamp TIMESTAMP NOT NULL, "
             + "ttinyint TINYINT NOT NULL, "
             + "tvarchar VARCHAR(20) NOT NULL, "
+            + "tfile FILE NOT NULL, "
             + "PRIMARY KEY (tinteger) )";
 
     private final static String DDLTEST_DATA_SQL = "INSERT INTO ddltest VALUES ("
@@ -67,7 +68,8 @@ public class JdbcDdlTest {
             + "time '11:59:32',"
             + "timestamp '2021-01-01 10:11:15',"
             + "22,"
-            + "'hallo'"
+            + "'hallo',"
+            + "x'6869'"
             + ")";
 
     private final static Object[] DDLTEST_DATA = new Object[]{
@@ -82,7 +84,8 @@ public class JdbcDdlTest {
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
             (byte) 22,
-            "hallo" };
+            "hallo",
+            "hi".getBytes() };
 
 
     @BeforeClass
@@ -96,7 +99,7 @@ public class JdbcDdlTest {
     @Test
     public void testTypes() throws SQLException {
         // Check if there are new types missing in this test
-        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 12 );
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 13 );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -145,6 +148,9 @@ public class JdbcDdlTest {
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT tvarchar FROM ddltest" ),
                         ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT tfile FROM ddltest" ),
+                        ImmutableList.of( new Object[]{ DDLTEST_DATA[12] } ) );
 
                 // Drop ddltest table
                 statement.executeUpdate( "DROP TABLE ddltest" );
@@ -156,7 +162,7 @@ public class JdbcDdlTest {
     @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test
-        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 12 );
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 13 );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -176,15 +182,16 @@ public class JdbcDdlTest {
                         + "ttimestamp TIMESTAMP NULL, "
                         + "ttinyint TINYINT NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
+                        + "tfile FILE NULL, "
                         + "PRIMARY KEY (tprimary) )" );
                 statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (1)" );
-                statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (2, null, null, null, null, null, null, null, null, null, null, null, null)" );
+                statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (2, null, null, null, null, null, null, null, null, null, null, null, null, null)" );
                 // Checks
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM ddltest ORDER BY tprimary" ),
                         ImmutableList.of(
-                                new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null },
-                                new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null } ) );
+                                new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null, null },
+                                new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null, null } ) );
 
                 // Drop ddltest table
                 statement.executeUpdate( "DROP TABLE ddltest" );
@@ -202,7 +209,7 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 boolean failed = false;
                 try {
-                    statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null, null )" );
+                    statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null, null, null )" );
                 } catch ( AvaticaSqlException e ) {
                     failed = true;
                 }
@@ -237,6 +244,7 @@ public class JdbcDdlTest {
                 statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttimestamp TO rttimestamp" );
                 statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttinyint TO rttinyint" );
                 statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tvarchar TO rtvarchar" );
+                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tfile TO rtfile" );
 
                 // Checks
                 TestHelper.checkResultSet(
@@ -275,6 +283,9 @@ public class JdbcDdlTest {
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT rtvarchar FROM ddltest" ),
                         ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT rtfile FROM ddltest" ),
+                        ImmutableList.of( new Object[]{ DDLTEST_DATA[12] } ) );
 
                 // Drop ddltest table
                 statement.executeUpdate( "DROP TABLE ddltest" );
@@ -334,6 +345,7 @@ public class JdbcDdlTest {
                                 DDLTEST_DATA[8],
                                 DDLTEST_DATA[9],
                                 DDLTEST_DATA[10],
+                                DDLTEST_DATA[12],
                         } ) );
 
                 // Drop ddltest table
@@ -375,7 +387,8 @@ public class JdbcDdlTest {
                                 DDLTEST_DATA[9],
                                 DDLTEST_DATA[10],
                                 DDLTEST_DATA[11],
-                                false
+                                false,
+                                DDLTEST_DATA[12]//.toString().getBytes( StandardCharsets.UTF_8 )
                         } ) );
 
                 TestHelper.checkResultSet(
@@ -423,7 +436,8 @@ public class JdbcDdlTest {
                                 null,
                                 DDLTEST_DATA[9],
                                 DDLTEST_DATA[10],
-                                DDLTEST_DATA[11]
+                                DDLTEST_DATA[11],
+                                DDLTEST_DATA[12],
                         } ) );
 
                 // Drop ddltest table
@@ -515,6 +529,7 @@ public class JdbcDdlTest {
                                 DDLTEST_DATA[9],
                                 DDLTEST_DATA[11],
                                 DDLTEST_DATA[10],
+                                DDLTEST_DATA[12],
                         } ) );
 
                 // Drop ddltest table

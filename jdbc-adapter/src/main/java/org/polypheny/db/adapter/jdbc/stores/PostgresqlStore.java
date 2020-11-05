@@ -35,6 +35,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -150,6 +151,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     protected String getTypeString( PolyType type ) {
+        if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+            return "BYTEA";
+        }
         switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";

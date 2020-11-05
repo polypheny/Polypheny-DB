@@ -41,6 +41,7 @@ import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.AbstractList;
 import java.util.Calendar;
@@ -1051,6 +1052,8 @@ public class RexLiteral extends RexNode {
             case TIMESTAMP:
                 long l = getValueAs( Long.class );
                 return String.valueOf( l );
+            case BINARY:
+                return new String( getValueAs( byte[].class ), StandardCharsets.UTF_8 );
             default:
                 return value.toString();
         }

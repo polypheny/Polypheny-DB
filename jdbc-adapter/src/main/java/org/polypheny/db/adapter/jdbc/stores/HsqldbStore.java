@@ -23,6 +23,7 @@ import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -122,6 +123,9 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     protected String getTypeString( PolyType type ) {
+        if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+            return "BLOB";
+        }
         switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";

@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.file;
 
 
+import java.io.File;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -174,7 +175,7 @@ public class Condition {
     }
 
 
-    public boolean matches( final Comparable[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
+    public boolean matches( final Object[] columnValues, final PolyType[] columnTypes, final DataContext dataContext ) {
         if ( columnReference == null ) { // || literalIndex == null ) {
             switch ( operator ) {
                 case AND:
@@ -195,7 +196,11 @@ public class Condition {
                     throw new RuntimeException( operator + " not supported in condition without columnReference" );
             }
         }
-        Comparable columnValue = columnValues[columnReference];//don't do the projectionMapping here
+        // don't allow comparison of files and return false if Objects are not comparable
+        if ( columnValues[columnReference] != null && (!(columnValues[columnReference] instanceof Comparable) || (columnValues[columnReference] instanceof File)) ) {
+            return false;
+        }
+        Comparable columnValue = (Comparable) columnValues[columnReference];//don't do the projectionMapping here
         PolyType polyType = columnTypes[columnReference];
         switch ( operator ) {
             case IS_NULL:

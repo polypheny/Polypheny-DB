@@ -18,9 +18,12 @@ package org.polypheny.db.adapter.file;
 
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
@@ -77,8 +80,16 @@ public class FileModifier<E> extends FileEnumerator<E> {
                         if ( !newFile.createNewFile() ) {
                             throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
                         }
-                        String writeString = value.toString();
-                        Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
+                        if ( value instanceof byte[] ) {
+                            Files.write( newFile.toPath(), (byte[]) value );
+                        } else if ( value instanceof InputStream ) {
+                            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
+                            IOUtils.copy( (InputStream) value, new FileOutputStream( newFile ) );
+                        } else {
+                            String writeString = value.toString();
+                            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
+                        }
+
                     }
                 }
                 current = (E) new Long( insertPosition );

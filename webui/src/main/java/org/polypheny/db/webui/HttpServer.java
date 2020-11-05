@@ -89,11 +89,11 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
-        webuiServer.post( "/insertRow", crud::insertRow, gson::toJson );
+        webuiServer.post( "/insertRow", "multipart/form-data", crud::insertRow, gson::toJson );
 
         webuiServer.post( "/deleteRow", crud::deleteRow, gson::toJson );
 
-        webuiServer.post( "/updateRow", crud::updateRow, gson::toJson );
+        webuiServer.post( "/updateRow", "multipart/form-data", crud::updateRow, gson::toJson );
 
         webuiServer.post( "/anyQuery", crud::anyQuery, gson::toJson );
 
