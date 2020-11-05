@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileRel;
+import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -58,10 +59,10 @@ public class FileValues extends Values implements FileRel {
         implementor.setColumnNames( columns );
 
         for ( ImmutableList<RexLiteral> literalList : tuples ) {
-            Object[] row = new Object[literalList.size()];
+            Value[] row = new Value[literalList.size()];
             int i = 0;
             for ( RexLiteral literal : literalList.asList() ) {
-                row[i] = literal.getValueForFileAdapter();
+                row[i] = new Value( i, literal.getValueForFileAdapter(), false );
                 i++;
             }
             implementor.addInsertValue( row );

@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file.rel;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Blocks;
@@ -32,7 +33,7 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
-import org.polypheny.db.adapter.file.Update;
+import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -78,22 +79,16 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
         Expression _insertValues = Expressions.constant( null );
         if ( fileImplementor.getOperation() != Operation.SELECT ) {
-            if ( !fileImplementor.isBatchInsert() ) {
-                ArrayList<Expression> rowExpressions = new ArrayList<>();
-                for ( Object[] row : fileImplementor.getInsertValues() ) {
-                    ArrayList<Expression> valuesExpression = new ArrayList<>();
-                    for ( Object value : row ) {
-                        valuesExpression.add( Expressions.constant( value, String.class ) );
-                    }
-                    rowExpressions.add( Expressions.newArrayInit( Object[].class, valuesExpression ) );
-                }
-                _insertValues = Expressions.newArrayInit( Object[].class, rowExpressions );
+            ArrayList<Expression> rowExpressions = new ArrayList<>();
+            for ( Value[] row : fileImplementor.getInsertValues() ) {
+                rowExpressions.add( Value.getValuesExpression( Arrays.asList( row ) ) );
             }
+            _insertValues = Expressions.newArrayInit( Object[].class, rowExpressions );
         }
 
         Expression _updates;
         if ( fileImplementor.getUpdates() != null ) {
-            _updates = Update.getUpdatesExpression( fileImplementor.getUpdates() );
+            _updates = Value.getValuesExpression( fileImplementor.getUpdates() );
         } else {
             _updates = Expressions.constant( null );
         }

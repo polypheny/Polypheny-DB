@@ -17,9 +17,6 @@
 package org.polypheny.db.adapter.file;
 
 
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -124,7 +121,7 @@ public class FileSchema extends AbstractSchema {
      * Executes SELECT, UPDATE and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Update[] updates ) {
+    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
         return new AbstractEnumerable<Object[]>() {
             @Override
@@ -142,43 +139,18 @@ public class FileSchema extends AbstractSchema {
     public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
         dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
         final Object[] insert;
-        //if it is a batch insert
-        if ( dataContext.getParameterValues().size() > 0 ) {
-            ArrayList<Object[]> rows = new ArrayList<>();
-            int r = 0;
-            for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
-                ArrayList<Object> row = new ArrayList<>();
-                for ( int i = 0; i < columnIds.length; i++ ) {
-                    Object o = map.get( (long) i );
-                    if ( o == null ) {
-                        //can contain data for mixed queries with "?" and literal values.
-                        if ( insertValues != null ) {
-                            //we have an array of arrays
-                            Object[] o1 = (Object[]) insertValues[r];
-                            row.add( o1[i] );
-                        } else {
-                            row.add( null );
-                        }
-                        continue;
-                    }
-                    if ( columnTypes[i] == PolyType.TIMESTAMP ) {
-                        if ( o instanceof Timestamp ) {
-                            o = ((Timestamp) o).toInstant().toEpochMilli();
-                        }
-                    } else if ( columnTypes[i] == PolyType.DATE ) {
-                        o = ((Date) o).toLocalDate().toEpochDay();
-                    } else if ( columnTypes[i] == PolyType.TIME ) {
-                        o = ((Time) o).getTime();
-                    }
-                    row.add( o );
-                }
-                rows.add( row.toArray( new Object[0] ) );
-                r++;
+
+        ArrayList<Object[]> rows = new ArrayList<>();
+        for ( Object insertRow : insertValues ) {
+            ArrayList<Object> row = new ArrayList<>();
+            Value[] values = (Value[]) insertRow;
+            for ( Value value : values ) {
+                row.add( value.getValue( dataContext ) );
             }
-            insert = rows.toArray( new Object[0] );
-        } else {
-            insert = insertValues;
+            rows.add( row.toArray( new Object[0] ) );
         }
+        insert = rows.toArray( new Object[0] );
+
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {

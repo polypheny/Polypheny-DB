@@ -57,7 +57,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
     final Integer[] projectionMapping;
     final PolyType[] columnTypes;
     final Gson gson;
-    final Map<Integer, Update> updates = new HashMap<>();
+    final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
 
     /**
@@ -81,7 +81,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
             final Integer[] projectionMapping,
             final DataContext dataContext,
             final Condition condition,
-            final Update[] updates ) {
+            final Value[] updates ) {
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
@@ -94,7 +94,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
 
         if ( updates != null ) {
             //in case of an UPDATE, the projectionMapping represent the indexes of the columns that will be updated
-            for ( Update update : updates ) {
+            for ( Value update : updates ) {
                 this.updates.put( update.getColumnReference(), update );
             }
         }

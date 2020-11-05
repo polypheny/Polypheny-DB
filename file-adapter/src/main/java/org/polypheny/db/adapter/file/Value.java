@@ -30,7 +30,12 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 
-public class Update {
+/**
+ * A value of an INSERT or UPDATE statement
+ * The value can be fetched via the {@code getValue} method.
+ * It comes from either a RexLiteral or from the dataContext parameterValues
+ */
+public class Value {
 
     @Getter
     @Setter
@@ -40,13 +45,13 @@ public class Update {
 
 
     /**
-     * Update constructor
+     * Value constructor
      *
      * @param columnReference May be null. Used by generated code, see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
-     * @param literalOrIndex Either a literal or a literalIndex. The third parameter {@code isLiteralIndex} specifies if it si a literal or a literalIndex
+     * @param literalOrIndex Either a literal or a literalIndex. The third parameter {@code isLiteralIndex} specifies if it is a literal or a literalIndex
      * @param isLiteralIndex True if the second parameter is a literalIndex. In this case, it has to be a Long
      */
-    public Update( final Integer columnReference, final Object literalOrIndex, final boolean isLiteralIndex ) {
+    public Value( final Integer columnReference, final Object literalOrIndex, final boolean isLiteralIndex ) {
         this.columnReference = columnReference;
         if ( isLiteralIndex ) {
             this.literalIndex = (Long) literalOrIndex;
@@ -75,36 +80,35 @@ public class Update {
             } else {
                 literalExpression = Expressions.constant( literal );
             }
-            return Expressions.new_( Update.class, Expressions.constant( columnReference ), literalExpression, Expressions.constant( false ) );
+            return Expressions.new_( Value.class, Expressions.constant( columnReference ), literalExpression, Expressions.constant( false ) );
         } else {
-            return Expressions.new_( Update.class, Expressions.constant( columnReference ), Expressions.constant( literalIndex, Long.class ), Expressions.constant( true ) );
+            return Expressions.new_( Value.class, Expressions.constant( columnReference ), Expressions.constant( literalIndex, Long.class ), Expressions.constant( true ) );
         }
     }
 
 
-    public static Expression getUpdatesExpression( final List<Update> updates ) {
-        List<Expression> updateConstructors = new ArrayList<>();
-        for ( Update update : updates ) {
-            updateConstructors.add( update.getExpression() );
+    public static Expression getValuesExpression( final List<Value> values ) {
+        List<Expression> valueConstructors = new ArrayList<>();
+        for ( Value value : values ) {
+            valueConstructors.add( value.getExpression() );
         }
-        return Expressions.newArrayInit( Update[].class, updateConstructors );
+        return Expressions.newArrayInit( Value[].class, valueConstructors );
     }
 
 
-    public static List<Update> getUpdates( final List<RexNode> exps, FileImplementor implementor ) {
-        List<Update> updateList = new ArrayList<>();
-        //int offset = exps.size() / 2;
+    public static List<Value> getUpdates( final List<RexNode> exps, FileImplementor implementor ) {
+        List<Value> valueList = new ArrayList<>();
         int offset = implementor.getColumnNames().size();
         for ( int i = 0; i < offset; i++ ) {
             if ( exps.size() > i + offset ) {
                 RexNode lit = exps.get( i + offset );
                 if ( lit instanceof RexLiteral ) {
-                    updateList.add( new Update( null, ((RexLiteral) lit).getValueForFileCondition(), false ) );
+                    valueList.add( new Value( null, ((RexLiteral) lit).getValueForFileCondition(), false ) );
                 } else {
-                    updateList.add( new Update( null, ((RexDynamicParam) lit).getIndex(), true ) );
+                    valueList.add( new Value( null, ((RexDynamicParam) lit).getIndex(), true ) );
                 }
             }
         }
-        return updateList;
+        return valueList;
     }
 }

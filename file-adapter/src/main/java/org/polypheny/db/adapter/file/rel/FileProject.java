@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileRel;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
-import org.polypheny.db.adapter.file.Update;
+import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -34,6 +34,7 @@ import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelRecordType;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
@@ -59,19 +60,21 @@ public class FileProject extends Project implements FileRel {
         if ( implementor.getOperation() == Operation.INSERT ) {
             //don't visit FileValues, the values are in the exps field
             //for non-array inserts, there is no FileProject
-            Object[] row = new Object[exps.size()];
+            Value[] row = new Value[exps.size()];
             Gson gson = new Gson();
             int i = 0;
             for ( RexNode node : exps ) {
                 if ( node instanceof RexLiteral ) {
-                    row[i] = ((RexLiteral) node).getValueForFileAdapter();
+                    row[i] = new Value( i, ((RexLiteral) node).getValueForFileAdapter(), false );
                 } else if ( node instanceof RexCall ) {
                     RexCall call = (RexCall) node;
                     ArrayList<Object> arrayValues = new ArrayList<>();
                     for ( RexNode node1 : call.getOperands() ) {
                         arrayValues.add( ((RexLiteral) node1).getValueForFileCondition() );
                     }
-                    row[i] = gson.toJson( arrayValues );
+                    row[i] = new Value( i, gson.toJson( arrayValues ), false );
+                } else if ( node instanceof RexDynamicParam ) {
+                    row[i] = new Value( i, ((RexDynamicParam) node).getIndex(), true );
                 }
                 i++;
             }
@@ -80,7 +83,7 @@ public class FileProject extends Project implements FileRel {
             implementor.visitChild( 0, getInput() );
         }
         if ( implementor.getOperation() == Operation.UPDATE ) {
-            implementor.setUpdates( Update.getUpdates( exps, implementor ) );
+            implementor.setUpdates( Value.getUpdates( exps, implementor ) );
         }
         RelRecordType rowType = (RelRecordType) getRowType();
         List<String> fields = new ArrayList<>();

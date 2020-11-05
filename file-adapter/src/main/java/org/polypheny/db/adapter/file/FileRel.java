@@ -48,7 +48,7 @@ public interface FileRel extends RelNode {
         private final List<String> columnNames = new ArrayList<>();
         private final List<String> project = new ArrayList<>();
         @Getter
-        private final List<Object[]> insertValues = new ArrayList<>();
+        private final List<Value[]> insertValues = new ArrayList<>();
         @Getter
         @Setter
         private boolean batchInsert;
@@ -60,7 +60,7 @@ public interface FileRel extends RelNode {
         Condition condition;
         @Getter
         @Setter
-        List<Update> updates;
+        List<Value> updates;
 
         public FileImplementor() {
             //intentionally empty
@@ -89,7 +89,7 @@ public interface FileRel extends RelNode {
                     throw new RuntimeException( "This should not happen" );
                 }
                 int i = 0;
-                for ( Update update : updates ) {
+                for ( Value update : updates ) {
                     update.setColumnReference( getFileTable().getColumnNames().indexOf( columnNames.get( i ) ) );
                     i++;
                 }
@@ -108,7 +108,7 @@ public interface FileRel extends RelNode {
             }
         }
 
-        public void addInsertValue( final Object... row ) {
+        public void addInsertValue( final Value... row ) {
             insertValues.add( row );
         }
 
