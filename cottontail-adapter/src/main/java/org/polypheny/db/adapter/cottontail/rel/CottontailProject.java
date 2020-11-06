@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -53,10 +54,23 @@ import org.polypheny.db.util.Pair;
 public class CottontailProject extends Project implements CottontailRel {
 
     private final boolean arrayValueProject;
+    @Getter
+    private String knnColumnName = null;
+    @Getter
+    private int knnColumnIndex = -1;
 
     public CottontailProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, boolean arrayValueProject ) {
         super( cluster, traitSet, input, projects, rowType );
         this.arrayValueProject = arrayValueProject;
+
+        List<Pair<RexNode, String>> namedProjects = getNamedProjects();
+        for ( int i = 0; i < namedProjects.size(); i++ ) {
+            Pair<RexNode, String> pair = namedProjects.get( i );
+            if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlKnnFunction) ) {
+                knnColumnName = pair.right;
+                knnColumnIndex = i;
+            }
+        }
     }
 
     @Override

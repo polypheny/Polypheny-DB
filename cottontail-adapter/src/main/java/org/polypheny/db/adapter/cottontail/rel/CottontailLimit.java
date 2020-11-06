@@ -30,12 +30,12 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 
-public class CottontailSortAndLimit extends SingleRel implements CottontailRel {
+public class CottontailLimit extends SingleRel implements CottontailRel {
 
     public final RexNode offset;
     public final RexNode fetch;
 
-    public CottontailSortAndLimit( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexNode offset, RexNode fetch ) {
+    public CottontailLimit( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input );
         this.offset = offset;
         this.fetch = fetch;
@@ -51,7 +51,7 @@ public class CottontailSortAndLimit extends SingleRel implements CottontailRel {
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new CottontailSortAndLimit( getCluster(), traitSet, sole( inputs ), offset, fetch );
+        return new CottontailLimit( getCluster(), traitSet, sole( inputs ), offset, fetch );
     }
 
 
@@ -59,10 +59,10 @@ public class CottontailSortAndLimit extends SingleRel implements CottontailRel {
     public void implement( CottontailImplementContext context ) {
         context.visitChild( 0, getInput() );
         if ( offset != null ) {
-            context.offset = RexLiteral.intValue( offset );
+//            context.offset = RexLiteral.intValue( offset );
         }
         if ( fetch != null ) {
-            context.limit = RexLiteral.intValue( fetch );
+//            context.limit = RexLiteral.intValue( fetch );
         }
     }
 

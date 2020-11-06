@@ -56,7 +56,8 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
     public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
             CottontailQueryEnumerable.class,
             "query",
-            String.class, String.class, Map.class, Function1.class, Function1.class, Integer.class, Integer.class, DataContext.class, Function1.class, CottontailWrapper.class );
+            String.class, String.class, Map.class, Function1.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailWrapper.class );
+//            String.class, String.class, Map.class, Function1.class, Function1.class, Integer.class, Integer.class, DataContext.class, Function1.class, CottontailWrapper.class );
 
 
 
@@ -76,7 +77,8 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             Map<String, String> projection,
             Function1<Map<Long, Object>, Where> whereBuilder,
             Function1<Map<Long, Object>, Knn> knnBuilder, // TODO js(ct) FIGURE OUT
-            Integer limit, Integer offset,
+            Function1<Map<Long, Object>, Integer> limitBuilder,
+            Function1<Map<Long, Object>, Integer> offsetBuilder,
             DataContext dataContext,
             Function1 rowParser,
             CottontailWrapper wrapper
@@ -89,6 +91,16 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 parameterValues = new HashMap<>();
             } else {
                 parameterValues = dataContext.getParameterValues().get( 0 );
+            }
+
+            Integer limit = null;
+            if ( limitBuilder != null ) {
+                limit = limitBuilder.apply( parameterValues );
+            }
+
+            Integer offset = null;
+            if ( offsetBuilder != null ) {
+                offset = offsetBuilder.apply( parameterValues );
             }
 
             Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
@@ -125,6 +137,17 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         } else {
             BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
+
+                Integer limit = null;
+                if ( limitBuilder != null ) {
+                    limit = limitBuilder.apply( parameterValues );
+                }
+
+                Integer offset = null;
+                if ( offsetBuilder != null ) {
+                    offset = offsetBuilder.apply( parameterValues );
+                }
+
                 Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
                 batchedQueryMessageBuilder.addQueries( query );
             }

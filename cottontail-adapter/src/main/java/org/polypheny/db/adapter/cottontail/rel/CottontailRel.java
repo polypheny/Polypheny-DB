@@ -31,6 +31,8 @@ public interface CottontailRel extends RelNode {
 
     public class CottontailImplementContext {
 
+
+
         // Main block builder for the generated code.
         public BlockBuilder blockBuilder;
 
@@ -56,7 +58,9 @@ public interface CottontailRel extends RelNode {
         public Expression filterBuilder;
 
         public int limit = -1;
+        public Expression limitBuilder;
         public int offset = -1;
+        public Expression offsetBuilder;
 
         public enum QueryType {
             SELECT,

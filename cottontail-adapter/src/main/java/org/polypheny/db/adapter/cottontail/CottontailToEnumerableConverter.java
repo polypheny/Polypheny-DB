@@ -119,6 +119,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         cottontailContext.blockBuilder = list;
         cottontailContext.visitChild( 0, getInput() );
 
+
         final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
@@ -176,8 +177,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
 //                        cottontailContext.filterBuilder,
                                 expressionOrNullExpression( cottontailContext.knnBuilder ), // KNN
-                                Expressions.constant( cottontailContext.limit ),
-                                Expressions.constant( cottontailContext.offset ),
+                                expressionOrNullExpression( cottontailContext.limitBuilder ), // limit
+//                                Expressions.constant( cottontailContext.limit ), // limit
+                                expressionOrNullExpression( cottontailContext.offsetBuilder ), // offset
+//                                Expressions.constant( cottontailContext.offset ), // offset
                                 DataContext.ROOT,
                                 rowBuilder_, // ROW PARSER
                                 Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
