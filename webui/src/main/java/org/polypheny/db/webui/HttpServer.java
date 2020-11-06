@@ -20,10 +20,12 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
@@ -61,6 +63,10 @@ public class HttpServer implements Runnable {
         server.staticFiles.location( "webapp/" );
 
         enableCORS( server );
+
+        URL url = this.getClass().getClassLoader().getResource( "webapp/" );
+        File mmFolder = new File( url.getPath(), "mm-files" );
+        mmFolder.mkdirs();
 
         // get modified index.html
         server.get( "/", ( req, res ) -> {
@@ -182,6 +188,8 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings, gson::toJson );
 
         webuiServer.post( "/removeQueryInterface", crud::removeQueryInterface, gson::toJson );
+
+        webuiServer.get( "/getFile/:file", crud::multimediaFileRequest );
 
     }
 

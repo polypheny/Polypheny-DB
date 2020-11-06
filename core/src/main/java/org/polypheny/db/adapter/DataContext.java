@@ -102,6 +102,15 @@ public interface DataContext {
 
 
     /**
+     * Determine how the file adapter should return a file
+     * Needed to distinguish between a request from a jdbc interface and a request from the UI
+     */
+    enum Flavor {
+        FILE, OTHER;
+    }
+
+
+    /**
      * Variable that may be asked for in a call to {@link DataContext#get}.
      */
     enum Variable {
@@ -157,7 +166,13 @@ public interface DataContext {
         /**
          * Time zone in which the current statement is executing. Required; defaults to the time zone of the JVM if the connection does not specify a time zone.
          */
-        TIME_ZONE( "timeZone", TimeZone.class );
+        TIME_ZONE( "timeZone", TimeZone.class ),
+
+        /**
+         * Determine how the file adapter should return a file
+         * Needed to distinguish between a request from a jdbc interface and a request from the UI
+         */
+        FLAVOR( "flavor", Flavor.class );
 
         public final String camelName;
         public final Class clazz;

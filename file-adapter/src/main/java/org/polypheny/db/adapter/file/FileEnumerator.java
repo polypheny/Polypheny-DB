@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DataContext.Flavor;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -343,7 +344,12 @@ public class FileEnumerator<E> implements Enumerator<E> {
             } else {
                 allNull = false;
                 if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    curr[i] = encoded;//todo find best type to return
+                    Flavor flavor = (Flavor) dataContext.get( "flavor" );
+                    if ( flavor == Flavor.FILE ) {
+                        curr[i] = f;
+                    } else {
+                        curr[i] = encoded;
+                    }
                 } else {
                     curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
                 }

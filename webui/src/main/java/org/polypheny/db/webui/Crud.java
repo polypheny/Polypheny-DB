@@ -79,6 +79,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.polypheny.db.adapter.DataContext.Flavor;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
 import org.polypheny.db.adapter.StoreManager;
@@ -177,6 +178,7 @@ import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import spark.Request;
 import spark.Response;
+import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -573,7 +575,7 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, polyType ) );
                     } else {
                         values.add( "?" );
-                        statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
+                        statement.getDataContext( Flavor.FILE ).addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
                     }
                 }
             }
@@ -1112,7 +1114,7 @@ public class Crud implements InformationObserver {
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
+                    statement.getDataContext( Flavor.FILE ).addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
                 }
             }
         } catch ( IOException | ServletException e ) {
@@ -2058,7 +2060,7 @@ public class Crud implements InformationObserver {
 
         List<List<Object>> rows;
         try {
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
+            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext( Flavor.FILE ) );
             Iterator<Object> iterator = iterable.iterator();
             StopWatch stopWatch = new StopWatch();
             stopWatch.start();
@@ -2558,6 +2560,36 @@ public class Crud implements InformationObserver {
         }
     }
 
+
+    /**
+     * Download a file, if available
+     */
+    String multimediaFileRequest( final Request req, final Response res ) {
+        String request = req.params( ":file" );
+        URL url = this.getClass().getClassLoader().getResource( "webapp/" );
+        if ( url == null ) {
+            log.error( "Could not get base folder for mm-files" );
+            res.status( 500 );
+            return "";
+        }
+        File root = new File( url.getPath(), "mm-files" );
+
+        File f = new File( root, request );
+        if ( f.exists() ) {
+            try {
+                res.type( "application/octet-stream" );
+                IOUtils.copy( new FileInputStream( f ), res.raw().getOutputStream() );
+            } catch ( IOException e ) {
+                log.error( "Error while fetching multimedia data", e );
+                res.status( 500 );
+            }
+        } else {
+            //return http file not found error (404)
+            res.status( 404 );
+        }
+        return "";
+    }
+
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
@@ -2578,7 +2610,7 @@ public class Crud implements InformationObserver {
         boolean hasMoreRows = false;
         try {
             signature = processQuery( statement, sqlSelect );
-            final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+            final Enumerable enumerable = signature.enumerable( statement.getDataContext( Flavor.FILE ) );
             //noinspection unchecked
             iterator = enumerable.iterator();
             StopWatch stopWatch = new StopWatch();
@@ -2712,13 +2744,35 @@ public class Crud implements InformationObserver {
                             }
                             break;
                         case "FILE":
-                            //todo find best way to return files
+                            URL url = this.getClass().getClassLoader().getResource( "webapp/" );
+                            if ( url == null ) {
+                                throw new RuntimeException( "Could not get mm folder" );
+                            }
+                            File mmFolder = new File( url.getPath(), "mm-files" );
+                            TemporalFileManager tfm = TemporalFileManager.getInstance( mmFolder );
+
                             if ( o instanceof File ) {
-                                temp[counter] = ((File) o).getPath();
+                                File f = ((File) o);
+                                try {
+                                    File newLink = new File( mmFolder, f.getName() );
+                                    newLink.delete();//delete to override
+                                    Path added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
+                                    tfm.addPath( added );
+                                    temp[counter] = ((File) o).getName();
+                                } catch ( IOException e ) {
+                                    throw new RuntimeException( "Could not create link to mm file", e );
+                                }
                                 break;
                             } else if ( o instanceof byte[] ) {
-                                //todo handle large files
-                                temp[counter] = new String( (byte[]) o, StandardCharsets.UTF_8 );
+                                File f = new File( mmFolder, UUID.randomUUID().toString() );
+                                try ( FileOutputStream fos = new FileOutputStream( f.getPath() ) ) {
+                                    //todo handle large files
+                                    fos.write( (byte[]) o );
+                                    tfm.addFile( f );
+                                } catch ( IOException e ) {
+                                    throw new RuntimeException( "Could not place file in mm folder", e );
+                                }
+                                temp[counter] = f.getName();
                                 break;
                             }
                             //fall through
@@ -2794,7 +2848,7 @@ public class Crud implements InformationObserver {
         } else if ( signature.statementType == StatementType.IS_DML ) {
             int rowsChanged = -1;
             try {
-                Iterator<?> iterator = signature.enumerable( statement.getDataContext() ).iterator();
+                Iterator<?> iterator = signature.enumerable( statement.getDataContext( Flavor.FILE ) ).iterator();
                 Object object;
                 while ( iterator.hasNext() ) {
                     object = iterator.next();
