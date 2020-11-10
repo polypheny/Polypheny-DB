@@ -96,7 +96,7 @@ public class TemporalFileManager {
 
 
     private void deleteOlderFiles() {
-        while ( System.currentTimeMillis() - files.get( 0 ).left > 300_000 ) {
+        while ( files.size() > 0 && System.currentTimeMillis() - files.get( 0 ).left > 300_000 ) {
             File f = new File( files.get( 0 ).right );
             f.delete();
             files.remove( 0 );

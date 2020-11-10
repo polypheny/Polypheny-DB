@@ -343,6 +343,27 @@ public enum PolyType {
             true,
             Types.BINARY,
             PolyTypeFamily.MULTIMEDIA
+    ),
+
+    IMAGE(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
+    ),
+
+    VIDEO(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
+    ),
+
+    SOUND(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
     );
 
 
@@ -1148,7 +1169,7 @@ public enum PolyType {
 
 
     public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE );
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, SOUND );
     }
 
 

@@ -17,12 +17,10 @@
 package org.polypheny.db.transaction;
 
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.Flavor;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.routing.Router;
-
 
 public interface Statement {
 
@@ -31,8 +29,6 @@ public interface Statement {
     QueryProcessor getQueryProcessor();
 
     DataContext getDataContext();
-
-    DataContext getDataContext( Flavor flavor );
 
     Context getPrepareContext();
 

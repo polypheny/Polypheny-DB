@@ -189,8 +189,6 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/removeQueryInterface", crud::removeQueryInterface, gson::toJson );
 
-        webuiServer.get( "/getFile/:file", crud::multimediaFileRequest );
-
     }
 
 

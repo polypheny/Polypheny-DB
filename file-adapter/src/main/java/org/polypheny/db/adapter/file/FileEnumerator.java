@@ -35,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.Flavor;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -225,6 +224,10 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     }
                 } else {
                     curr = fileToRow( currentFile );
+                    if ( curr == null ) {
+                        fileListPosition++;
+                        continue;
+                    }
                 }
 
                 if ( operation == Operation.SELECT ) {
@@ -330,22 +333,21 @@ public class FileEnumerator<E> implements Enumerator<E> {
         boolean allNull = true;
         for ( File colFolder : columnFolders ) {
             File f = new File( colFolder, currentFile.getName() );
-            String s;
-            byte[] encoded;
-            if ( !f.exists() ) {
-                s = null;
-                encoded = null;
-            } else {
-                encoded = Files.readAllBytes( f.toPath() );
-                s = new String( encoded, FileStore.CHARSET );
+            String s = null;
+            byte[] encoded = null;
+            if ( f.exists() ) {
+                if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                    encoded = Files.readAllBytes( f.toPath() );
+                } else {
+                    s = new String( Files.readAllBytes( f.toPath() ), FileStore.CHARSET );
+                }
             }
-            if ( s == null || s.equals( "" ) ) {
+            if ( (s == null && encoded == null) || (s != null && s.equals( "" )) ) {
                 curr[i] = null;
             } else {
                 allNull = false;
                 if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    Flavor flavor = (Flavor) dataContext.get( "flavor" );
-                    if ( flavor == Flavor.FILE ) {
+                    if ( dataContext.getStatement().getTransaction().getOrigin().equals( "Polypheny-UI" ) ) {
                         curr[i] = f;
                     } else {
                         curr[i] = encoded;

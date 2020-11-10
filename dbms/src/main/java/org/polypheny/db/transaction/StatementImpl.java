@@ -16,16 +16,13 @@
 
 package org.polypheny.db.transaction;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.DataContext.Flavor;
 import org.polypheny.db.adapter.DataContext.SlimDataContext;
-import org.polypheny.db.adapter.DataContext.Variable;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.information.InformationGroup;
@@ -51,8 +48,7 @@ public class StatementImpl implements Statement {
 
     private QueryProcessor queryProcessor;
 
-    //Save one dataContext per interface
-    private Map<Flavor, DataContext> dataContexts = new HashMap<>();
+    private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
 
     private InformationDuration duration;
@@ -76,13 +72,7 @@ public class StatementImpl implements Statement {
 
     @Override
     public DataContext getDataContext() {
-        return getDataContext( Flavor.OTHER );
-    }
-
-
-    @Override
-    public DataContext getDataContext( final Flavor flavor ) {
-        if ( !dataContexts.containsKey( flavor ) ) {
+        if ( dataContext == null ) {
             Map<String, Object> map = new LinkedHashMap<>();
             // Avoid overflow
             int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
@@ -90,17 +80,15 @@ public class StatementImpl implements Statement {
                 map.put( DataContext.Variable.TIMEOUT.camelName, queryTimeout * 1000L );
             }
 
-            map.put( Variable.FLAVOR.camelName, flavor );
-
             final AtomicBoolean cancelFlag;
             cancelFlag = transaction.getCancelFlag();
             map.put( DataContext.Variable.CANCEL_FLAG.camelName, cancelFlag );
             if ( RuntimeConfig.SPARK_ENGINE.getBoolean() ) {
                 return new SlimDataContext();
             }
-            dataContexts.put( flavor, new DataContextImpl( new QueryProviderImpl(), map, transaction.getSchema(), transaction.getTypeFactory(), this ) );
+            dataContext = new DataContextImpl( new QueryProviderImpl(), map, transaction.getSchema(), transaction.getTypeFactory(), this );
         }
-        return dataContexts.get( flavor );
+        return dataContext;
     }
 
 

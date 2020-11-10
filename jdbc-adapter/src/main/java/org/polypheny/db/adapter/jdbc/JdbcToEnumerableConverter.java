@@ -79,6 +79,7 @@ import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.util.SqlString;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -342,11 +343,12 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 }
                 break;
                 */
-            case FILE:
-                source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                break;
             default:
-                source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
+                if ( polyType.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                    source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+                } else {
+                    source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
+                }
         }
         builder.add( Expressions.statement( Expressions.assign( target, source ) ) );
 
