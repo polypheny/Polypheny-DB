@@ -38,7 +38,8 @@ public class CottontailRules {
                 new CottontailTableModificationRule( out, relBuilderFactory ),
                 new CottontailProjectRule( out, relBuilderFactory ),
                 new CottontailSortRule( out, relBuilderFactory ),
-                new CottontailFilterRule( out, relBuilderFactory )
+                new CottontailFilterRule( out, relBuilderFactory ),
+                new CottontailSortAndProjectRule( out, relBuilderFactory )
         );
     }
 }

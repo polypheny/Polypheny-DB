@@ -116,7 +116,7 @@ public class CottontailSortRule extends CottontailConverterRule {
      * @param relSubset the subset.
      * @return the {@link Project} or <code>null</code> if not found.
      */
-    private static Project getUnderlyingProject( RelSubset relSubset, Convention targetConvention ) {
+    public static Project getUnderlyingProject( RelSubset relSubset, Convention targetConvention ) {
         return getUnderlyingProject( relSubset.getRelList(), targetConvention );
     }
 

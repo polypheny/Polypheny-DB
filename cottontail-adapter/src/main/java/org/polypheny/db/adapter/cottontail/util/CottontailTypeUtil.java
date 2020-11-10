@@ -471,7 +471,7 @@ public class CottontailTypeUtil {
     }
 
 
-    public static Expression knnCallToFunctionExpression( RexCall knnCall, List<String> physicalColumnNames ) {
+    public static Expression knnCallToFunctionExpression( RexCall knnCall, List<String> physicalColumnNames, RexNode limitNode ) {
 
         BlockBuilder inner = new BlockBuilder();
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
@@ -486,35 +486,12 @@ public class CottontailTypeUtil {
         Expression optimisationFactor;
 
         if ( knnCall.getOperands().size() == 4 ) {
-            if ( knnCall.getOperands().get( 3 ).getType().getPolyType() == PolyType.INTEGER ) {
-                // Optimisation factor
-                weightsVector = Expressions.constant( null );
-                optimisationFactor = knnCallOptimisationFactor( knnCall.getOperands().get( 3 ), dynamicParameterMap_ );
-            } else {
-                // Weights
-                weightsVector = knnCallVector( knnCall.getOperands().get( 3 ), dynamicParameterMap_ );
-                optimisationFactor = Expressions.constant( null );
-//                optimisationFactor = Expressions.constant( Integer.MAX_VALUE );
-
-            }
-        } else if ( knnCall.getOperands().size() == 5 ) {
             weightsVector = knnCallVector( knnCall.getOperands().get( 3 ), dynamicParameterMap_ );
-            optimisationFactor = knnCallOptimisationFactor( knnCall.getOperands().get( 4 ), dynamicParameterMap_ );
         } else {
             weightsVector = Expressions.constant( null );
-            optimisationFactor = Expressions.constant( null );
-        }
-        /*if ( !(knnCall.getOperands().get( 1 ) instanceof RexCall) ) {
-            throw new RuntimeException( "second argument is not a rex call!" );
         }
 
-        RexCall targetArray = (RexCall) knnCall.getOperands().get( 1 );
-
-        if ( !(knnCall.getOperands().get( 1 ) instanceof RexLiteral) ) {
-            throw new RuntimeException( "third argument is not a literal!" );
-        }
-
-        String norm = (String) ((RexLiteral) knnCall.getOperands().get( 2 )).getValue2();*/
+        optimisationFactor = knnCallOptimisationFactor( limitNode, dynamicParameterMap_ );
 
         return Expressions.lambda(
                 Expressions.block(

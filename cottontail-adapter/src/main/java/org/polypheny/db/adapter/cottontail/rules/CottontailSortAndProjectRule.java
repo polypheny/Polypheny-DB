@@ -20,13 +20,18 @@ package org.polypheny.db.adapter.cottontail.rules;
 import java.util.List;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
-import org.polypheny.db.adapter.cottontail.rel.CottontailProject;
+import org.polypheny.db.adapter.cottontail.rel.CottontailSortAndProject;
+import org.polypheny.db.adapter.cottontail.rel.SortAndProject;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.volcano.RelSubset;
+import org.polypheny.db.rel.RelFieldCollation;
+import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Project;
+import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
@@ -40,61 +45,52 @@ import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
 
 
-public class CottontailProjectRule extends CottontailConverterRule {
+public class CottontailSortAndProjectRule extends RelOptRule {
 
-    CottontailProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Project.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailProjectRule:" + out.getName() );
+    protected final Convention out;
+
+    CottontailSortAndProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory  ) {
+        super( operand( Sort.class, operand( Project.class, any() ) ), relBuilderFactory, "CottontailSortAndProjectRule" + out.getName() );
+        this.out = out;
     }
-
 
     @Override
     public boolean matches( RelOptRuleCall call ) {
-        Project project = call.rel( 0 );
+        final Sort sort = call.rel( 0 );
 
+        if ( !( call.rel( 1 ) instanceof Project ) ) {
+            return false;
+        }
+
+        Project project = call.rel( 1 );
+
+        // Projection checks
         Project innerProject = CottontailSortRule.getUnderlyingProject( (RelSubset) project.getInput(), this.out );
 
         if ( innerProject != null ) {
             return false;
         }
 
-        boolean onlyInputRefs = true;
         boolean containsInputRefs = false;
-        boolean valueProject = true;
         boolean containsValueProjects = false;
         boolean foundKnnFunction = false;
+        int knnColumn = -1;
 
         List<RexNode> projects = project.getProjects();
-        List<RelDataTypeField> fieldList = project.getRowType().getFieldList();
         for ( int i = 0, projectsSize = projects.size(); i < projectsSize; i++ ) {
             RexNode e = projects.get( i );
 
             if ( e instanceof RexInputRef ) {
-                valueProject = false;
                 containsInputRefs = true;
             } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
-                onlyInputRefs = false;
                 containsValueProjects = true;
             } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlKnnFunction) ) {
                 RexCall rexCall = (RexCall) e;
-                SqlKnnFunction knnFunction = (SqlKnnFunction) ((RexCall) e).getOperator();
                 if ( !foundKnnFunction ) {
-                    RelDataType fieldType = fieldList.get( i ).getType();
-
-                    if ( rexCall.getOperands().size() <= 3 ) {
-                        // No optimisation parameter, thus we cannot push this function down!
-                        return false;
-                    } else if ( rexCall.getOperands().size() == 4 ) {
-                        if ( rexCall.getOperands().get( 3 ).getType().getPolyType() != PolyType.INTEGER ) {
-                            // 4th argument is not an integer, thus it's not the optimisation parameter.
-                            // This means we cannot push down this knn call.
-                            return false;
-                        }
-                    }
-
 
                     if ( (CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() ))) {
                         foundKnnFunction = true;
-                        valueProject = false;
+                        knnColumn = i;
                     } else {
                         return false;
                     }
@@ -103,30 +99,38 @@ public class CottontailProjectRule extends CottontailConverterRule {
                 }
             } else {
                 return false;
-//                onlyInputRefs = false;
-//                valueProject = false;
             }
-            /*if ( !(e instanceof RexInputRef) && !(e instanceof RexLiteral) ) {
-                if ( !((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
-                    return false;
-                }
-            }*/
         }
 
-        if ( foundKnnFunction ) {
+        if (!(containsInputRefs && foundKnnFunction && !containsValueProjects)) {
             return false;
         }
 
-        return ( ( containsInputRefs || containsValueProjects ) && !foundKnnFunction )
-                || ( ( containsInputRefs || foundKnnFunction ) && !containsValueProjects);
-//        return onlyInputRefs || valueProject;
+
+        // Sort checks
+        if ( sort.getCollation().getFieldCollations().size() != 1 ) {
+            return false;
+        }
+
+        RelFieldCollation collation = sort.getCollation().getFieldCollations().get( 0 );
+
+        if ( collation.getFieldIndex() != knnColumn ) {
+            return false;
+        }
+
+        return collation.getDirection() == Direction.ASCENDING;
     }
 
 
     @Override
-    public RelNode convert( RelNode rel ) {
-        final Project project = (Project) rel;
-        final RelTraitSet traitSet = project.getTraitSet().replace( out );
+    public void onMatch( RelOptRuleCall call ) {
+        final Sort sort = call.rel( 0 );
+        Project project = call.rel( 1 );
+
+        final RelTraitSet traitSet = sort.getTraitSet().replace( out );
+        final RelNode input;
+        final RelTraitSet inputTraitSet = project.getInput().getTraitSet().replace( out );
+        input = convert( project.getInput(), inputTraitSet );
 
         boolean arrayValueProject = true;
         for ( RexNode e : project.getProjects() ) {
@@ -135,12 +139,18 @@ public class CottontailProjectRule extends CottontailConverterRule {
             }
         }
 
-        return new CottontailProject(
-                project.getCluster(),
+        SortAndProject sortAndProject = new CottontailSortAndProject(
+                sort.getCluster(),
                 traitSet,
-                convert( project.getInput(), project.getInput().getTraitSet().replace( out ) ),
+                input,
+                sort.getCollation(),
+                sort.offset,
+                sort.fetch,
                 project.getProjects(),
                 project.getRowType(),
+                null,
                 arrayValueProject );
+
+        call.transformTo( sortAndProject );
     }
 }
