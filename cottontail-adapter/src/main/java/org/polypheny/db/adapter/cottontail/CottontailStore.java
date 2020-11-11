@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.cottontail;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.gson.annotations.Expose;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
 import java.io.File;
@@ -83,15 +84,18 @@ public class CottontailStore extends Store {
 
     // Running embedded
     private final boolean isEmbedded;
-    private final CottontailGrpcServer embeddedServer;
+    @Expose(serialize = false, deserialize = false)
+    private transient final CottontailGrpcServer embeddedServer;
 
     private String dbHostname;
     private int dbPort;
     private String dbName;
 
     private CottontailSchema currentSchema;
-    private ManagedChannel channel;
-    private CottontailWrapper wrapper;
+    @Expose(serialize = false, deserialize = false)
+    private transient ManagedChannel channel;
+    @Expose(serialize = false, deserialize = false)
+    private transient CottontailWrapper wrapper;
 
     public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {
         super( storeId, uniqueName, settings, false, false, true );
@@ -143,7 +147,7 @@ public class CottontailStore extends Store {
             }
 //            this.embeddedServer = null;
             this.embeddedServer = CottontailKt.embedded( configFile.getAbsolutePath() );
-            this.embeddedServer.start();
+//            this.embeddedServer.start();
             this.dbHostname = "localhost";
             this.dbPort = 1865;
         } else {
