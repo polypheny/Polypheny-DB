@@ -20,6 +20,9 @@ package org.polypheny.db.adapter.cottontail;
 import com.google.common.collect.ImmutableList;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -47,6 +50,8 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.util.FileSystemManager;
+import org.vitrivr.cottontail.CottontailKt;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnDefinition;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
@@ -59,6 +64,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Tuple;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Type;
+import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 
 
 @Slf4j
@@ -69,10 +75,15 @@ public class CottontailStore extends Store {
     public static final String ADAPTER_NAME = "CottontailDB";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
+            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Standalone", "Embedded" ) ),
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 1865 ),
             new AdapterSettingString( "database",  false, true, false, "cottontail")
     );
+
+    // Running embedded
+    private final boolean isEmbedded;
+    private final CottontailGrpcServer embeddedServer;
 
     private String dbHostname;
     private int dbPort;
@@ -87,6 +98,57 @@ public class CottontailStore extends Store {
         this.dbHostname = settings.get( "host" );
         this.dbPort = Integer.parseInt( settings.get( "port" ) );
         this.dbName = settings.get( "database" );
+        this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
+
+        if ( this.isEmbedded ) {
+            File adapterRoot; //  = FileSystemManager.getInstance().registerDataFolder( "cottontail-db" );
+
+            if ( Catalog.memoryCatalog ) {
+                adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/temp-cottontaildb-store" );
+            } else {
+                adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/cottontaildb-store" );
+            }
+            File embeddedDir = new File( adapterRoot, "store" + getStoreId() );
+
+            if ( !embeddedDir.exists() ) {
+                if ( !embeddedDir.mkdirs() ) {
+                    throw new RuntimeException( "Could not create root directory" );
+                }
+            }
+            if ( Catalog.memoryCatalog ) {
+                FileSystemManager.getInstance().recursiveDeleteFolderOnExit( "data/temp-cottontaildb-store" );
+            }
+//            File embeddedDir = new File( baseDir, this.dbName );
+//            if ( !embeddedDir.exists() ) {
+//                embeddedDir.mkdir();
+//            }
+
+            File configFile = new File( embeddedDir, "config.json" );
+            if ( !configFile.exists() ) {
+                try {
+                    configFile.createNewFile();
+                    File dataFolder = new File( embeddedDir, "data" );
+                    FileWriter fileWriter = new FileWriter( configFile );
+                    fileWriter.write( "{" );
+                    fileWriter.write( "\"root\": \"" + dataFolder.getAbsolutePath() + "\"," );
+                    fileWriter.write( "\"memoryConfig\": {" );
+                    fileWriter.write( "\"forceUnmapMappedFiles\": true," );
+                    fileWriter.write( "\"dataPageShift\": 22," );
+                    fileWriter.write( "\"cataloguePageShift\": 20" );
+                    fileWriter.write( "} }" );
+                    fileWriter.close();
+                } catch ( IOException e ) {
+                    e.printStackTrace();
+                }
+            }
+//            this.embeddedServer = null;
+            this.embeddedServer = CottontailKt.embedded( configFile.getAbsolutePath() );
+            this.embeddedServer.start();
+            this.dbHostname = "localhost";
+            this.dbPort = 1865;
+        } else {
+            this.embeddedServer = null;
+        }
 
         this.channel = NettyChannelBuilder.forAddress( this.dbHostname, this.dbPort ).usePlaintext().maxInboundMetadataSize( CottontailWrapper.maxMessageSize ).build();
         this.wrapper = new CottontailWrapper( this.channel );
@@ -444,6 +506,9 @@ public class CottontailStore extends Store {
     @Override
     public void shutdown() {
         this.wrapper.close();
+        if (this.isEmbedded) {
+            this.embeddedServer.stop();
+        }
     }
 
 
