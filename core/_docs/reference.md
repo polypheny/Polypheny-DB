@@ -110,6 +110,8 @@ alterStatement:
      | ALTER CONFIG key SET value
      | ALTER STORES ADD storeName USING adapterClass WITH config 
      | ALTER STORES DROP storeName
+     | ALTER INTERFACES ADD uniqueName USING clazzName WITH config 
+     | ALTER INTERFACES DROP uniqueName
 
 explain:
       EXPLAIN PLAN
@@ -562,6 +564,7 @@ INSTANCE,
 INSTANTIABLE,
 **INT**,
 **INTEGER**,
+INTERFACES,
 **INTERSECT**,
 **INTERSECTION**,
 **INTERVAL**,

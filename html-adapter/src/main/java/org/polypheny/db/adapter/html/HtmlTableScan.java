@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import java.util.List;
@@ -61,13 +61,13 @@ import org.polypheny.db.rel.type.RelDataTypeField;
  *
  * Trivially modified from CsvTableScan.
  */
-class FileTableScan extends TableScan implements EnumerableRel {
+class HtmlTableScan extends TableScan implements EnumerableRel {
 
-    private final FileTable webTable;
+    private final HtmlTable webTable;
     private final int[] fields;
 
 
-    protected FileTableScan( RelOptCluster cluster, RelOptTable table, FileTable webTable, int[] fields ) {
+    protected HtmlTableScan( RelOptCluster cluster, RelOptTable table, HtmlTable webTable, int[] fields ) {
         super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ), table );
         this.webTable = webTable;
         this.fields = fields;
@@ -79,7 +79,7 @@ class FileTableScan extends TableScan implements EnumerableRel {
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         assert inputs.isEmpty();
-        return new FileTableScan( getCluster(), table, webTable, fields );
+        return new HtmlTableScan( getCluster(), table, webTable, fields );
     }
 
 
@@ -104,6 +104,6 @@ class FileTableScan extends TableScan implements EnumerableRel {
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
 
-        return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( FileTable.class ), "project", Expressions.constant( fields ) ) ) );
+        return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( HtmlTable.class ), "project", Expressions.constant( fields ) ) ) );
     }
 }

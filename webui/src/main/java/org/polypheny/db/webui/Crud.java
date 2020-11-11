@@ -72,7 +72,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
@@ -107,6 +106,11 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
+import org.polypheny.db.iface.QueryInterface;
+import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
+import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
+import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -124,8 +128,6 @@ import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.parser.SqlParser;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -133,12 +135,10 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
-import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.DateTimeStringUtils;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.models.Adapter;
@@ -152,6 +152,7 @@ import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
 import org.polypheny.db.webui.models.Placement;
+import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.Result;
 import org.polypheny.db.webui.models.ResultType;
 import org.polypheny.db.webui.models.Schema;
@@ -183,7 +184,7 @@ public class Crud implements InformationObserver {
     private final TransactionManager transactionManager;
     private final String databaseName;
     private final String userName;
-    private final StatisticsManager store = StatisticsManager.getInstance();
+    private final StatisticsManager statisticsManager = StatisticsManager.getInstance();
     private boolean isActiveTracking = false;
     private final Catalog catalog = Catalog.getInstance();
 
@@ -747,7 +748,7 @@ public class Crud implements InformationObserver {
      */
     ConcurrentHashMap<?, ?> getStatistics( final Request req, final Response res ) {
         if ( RuntimeConfig.DYNAMIC_QUERYING.getBoolean() ) {
-            return store.getStatisticSchemaMap();
+            return statisticsManager.getStatisticSchemaMap();
         } else {
             return new ConcurrentHashMap<>();
         }
@@ -1010,7 +1011,7 @@ public class Crud implements InformationObserver {
                 result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." );
                 result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             }
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( TransactionException | Exception e ) {
             log.error( "Caught exception while deleting a row", e );
             result = new Result( e ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
             try {
@@ -1051,6 +1052,8 @@ public class Crud implements InformationObserver {
         for ( Entry<String, String> entry : request.filter.entrySet() ) {
             if ( entry.getValue().startsWith( "[" ) ) {
                 where.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
+            } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
+                where.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
             } else {
                 where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
             }
@@ -1718,7 +1721,7 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Update the settings of a stoe
+     * Update the settings of a store
      */
     Store updateStoreSettings( final Request req, final Response res ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
@@ -1790,6 +1793,59 @@ public class Crud implements InformationObserver {
             return new Result( e );
         }
         return new Result( new Debug().setAffectedRows( 1 ) );
+    }
+
+
+    String getQueryInterfaces ( final Request req, final Response res ) {
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        ImmutableMap<String, QueryInterface> queryInterfaces = qim.getQueryInterfaces();
+        List<QueryInterfaceModel> qIs = new ArrayList<>();
+        for( QueryInterface i: queryInterfaces.values() ) {
+            qIs.add( new QueryInterfaceModel( i ) );
+        }
+        return gson.toJson( qIs.toArray(new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
+    }
+
+
+    String getAvailableQueryInterfaces ( final Request req, final Response res ) {
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        List<QueryInterfaceInformation> interfaces = qim.getAvailableQueryInterfaceTypes();
+        return QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ));
+    }
+
+
+    Result addQueryInterface ( final Request req, final Response res ) {
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        QueryInterfaceInformationRequest request = gson.fromJson( req.body(), QueryInterfaceInformationRequest.class );
+        try {
+            qim.addQueryInterface( catalog, request.clazzName, request.uniqueName, request.currentSettings );
+            return new Result( new Debug().setAffectedRows( 1 ) );
+        } catch ( RuntimeException e ) {
+            log.error( "Exception while deploying query interface", e );
+            return new Result( e );
+        }
+    }
+
+    Result updateQueryInterfaceSettings ( final Request req, final Response res ) {
+        QueryInterfaceModel request = gson.fromJson( req.body(),  QueryInterfaceModel.class );
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        try {
+            qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
+            return new Result( new Debug().setAffectedRows( 1 ) );
+        } catch ( Exception e ) {
+            return new Result( e );
+        }
+    }
+
+    Result removeQueryInterface ( final Request req, final Response res ) {
+        String uniqueName = req.body();
+        QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
+        try{
+            qim.removeQueryInterface( catalog, uniqueName );
+            return new Result( new Debug().setAffectedRows( 1 ) );
+        } catch ( RuntimeException e ) {
+            return new Result( e );
+        }
     }
 
 
@@ -2453,19 +2509,12 @@ public class Crud implements InformationObserver {
 
 
     private Result executeSqlSelect( final Statement statement, final UIRequest request, final String sqlSelect, final boolean noLimit ) throws QueryExecutionException {
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
         PolyphenyDbSignature signature;
         List<List<Object>> rows;
         Iterator<Object> iterator = null;
         boolean hasMoreRows = false;
         try {
-            signature = processQuery( statement, sqlSelect, parserConfig );
+            signature = processQuery( statement, sqlSelect );
             final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
             //noinspection unchecked
             iterator = enumerable.iterator();
@@ -2579,13 +2628,25 @@ public class Crud implements InformationObserver {
                 } else {
                     switch ( header.get( counter ).dataType ) {
                         case "TIMESTAMP":
-                            temp[counter] = TimestampString.fromMillisSinceEpoch( (long) o ).toString();
+                            if ( o instanceof Long ) {
+                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (long) o, PolyType.TIMESTAMP );// TimestampString.fromMillisSinceEpoch( (long) o ).toString();
+                            } else {
+                                temp[counter] = o.toString();
+                            }
                             break;
                         case "DATE":
-                            temp[counter] = DateString.fromDaysSinceEpoch( (int) o ).toString();
+                            if ( o instanceof Integer ) {
+                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.DATE );//DateString.fromDaysSinceEpoch( (int) o ).toString();
+                            } else {
+                                temp[counter] = o.toString();
+                            }
                             break;
                         case "TIME":
-                            temp[counter] = TimeString.fromMillisOfDay( (int) o ).toString();
+                            if ( o instanceof Integer ) {
+                                temp[counter] = DateTimeStringUtils.longToAdjustedString( (int) o, PolyType.TIME );//TimeString.fromMillisOfDay( (int) o ).toString();
+                            } else {
+                                temp[counter] = o.toString();
+                            }
                             break;
                         default:
                             temp[counter] = o.toString();
@@ -2613,9 +2674,9 @@ public class Crud implements InformationObserver {
     }
 
 
-    private PolyphenyDbSignature processQuery( Statement statement, String sql, SqlParserConfig parserConfig ) {
+    private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
         PolyphenyDbSignature signature;
-        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor( parserConfig );
+        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
@@ -2633,18 +2694,11 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        // Parser Config
-        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
-        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
-        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
-        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
-        SqlParserConfig parserConfig = configConfigBuilder.build();
-
         Statement statement = transaction.createStatement();
 
         PolyphenyDbSignature<?> signature;
         try {
-            signature = processQuery( statement, sqlUpdate, parserConfig );
+            signature = processQuery( statement, sqlUpdate );
         } catch ( Throwable t ) {
             if ( transaction.isAnalyze() ) {
                 InformationManager analyzer = transaction.getQueryAnalyzer();

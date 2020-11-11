@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import java.util.List;
@@ -61,38 +61,38 @@ import org.polypheny.db.util.Source;
 /**
  * Table implementation wrapping a URL / HTML table.
  */
-class FileTable extends AbstractQueryableTable implements TranslatableTable {
+class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
     private final RelProtoDataType protoRowType;
-    private FileReader reader;
-    private FileRowConverter converter;
+    private HtmlReader reader;
+    private HtmlRowConverter converter;
 
 
     /**
-     * Creates a FileTable.
+     * Creates a HtmlTable.
      */
-    private FileTable( Source source, String selector, Integer index, RelProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs ) throws Exception {
+    private HtmlTable( Source source, String selector, Integer index, RelProtoDataType protoRowType, List<Map<String, Object>> fieldConfigs ) throws Exception {
         super( Object[].class );
 
         this.protoRowType = protoRowType;
-        this.reader = new FileReader( source, selector, index );
-        this.converter = new FileRowConverter( this.reader, fieldConfigs );
+        this.reader = new HtmlReader( source, selector, index );
+        this.converter = new HtmlRowConverter( this.reader, fieldConfigs );
     }
 
 
     /**
-     * Creates a FileTable.
+     * Creates a HtmlTable.
      */
-    static FileTable create( Source source, Map<String, Object> tableDef ) throws Exception {
+    static HtmlTable create( Source source, Map<String, Object> tableDef ) throws Exception {
         @SuppressWarnings("unchecked") List<Map<String, Object>> fieldConfigs = (List<Map<String, Object>>) tableDef.get( "fields" );
         String selector = (String) tableDef.get( "selector" );
         Integer index = (Integer) tableDef.get( "index" );
-        return new FileTable( source, selector, index, null, fieldConfigs );
+        return new HtmlTable( source, selector, index, null, fieldConfigs );
     }
 
 
     public String toString() {
-        return "FileTable";
+        return "HtmlTable";
     }
 
 
@@ -117,7 +117,7 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
             @Override
             public Enumerator<T> enumerator() {
                 try {
-                    FileEnumerator enumerator = new FileEnumerator( reader.iterator(), converter );
+                    HtmlEnumerator enumerator = new HtmlEnumerator( reader.iterator(), converter );
                     //noinspection unchecked
                     return (Enumerator<T>) enumerator;
                 } catch ( Exception e ) {
@@ -136,7 +136,7 @@ class FileTable extends AbstractQueryableTable implements TranslatableTable {
             @Override
             public Enumerator<Object> enumerator() {
                 try {
-                    return new FileEnumerator( reader.iterator(), converter, fields );
+                    return new HtmlEnumerator( reader.iterator(), converter, fields );
                 } catch ( Exception e ) {
                     throw new RuntimeException( e );
                 }

@@ -28,7 +28,6 @@ import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
-import org.polypheny.db.iface.QueryInterface;
 import org.polypheny.db.transaction.TransactionManager;
 import spark.Service;
 
@@ -37,34 +36,34 @@ import spark.Service;
  * HTTP server for serving the Polypheny-DB UI
  */
 @Slf4j
-public class HttpServer extends QueryInterface {
+public class HttpServer implements Runnable {
 
-    private Gson gson = new Gson();
+    private final TransactionManager transactionManager;
+    private final Authenticator authenticator;
 
-    private Gson gsonExpose = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+    private final Gson gson = new Gson();
+    private final Gson gsonExpose = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 
-    private final int port;
 
-
-    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator, final int port ) {
-        super( transactionManager, authenticator );
-        this.port = port;
+    public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator ) {
+        this.transactionManager = transactionManager;
+        this.authenticator = authenticator;
     }
 
 
     @Override
     public void run() {
-        Service webuiServer = Service.ignite();
-        webuiServer.port( port );
+        final Service server = Service.ignite();
+        server.port( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
 
-        webSockets( webuiServer );
+        webSockets( server );
 
-        webuiServer.staticFiles.location( "webapp/" );
+        server.staticFiles.location( "webapp/" );
 
-        enableCORS( webuiServer );
+        enableCORS( server );
 
         // get modified index.html
-        webuiServer.get( "/", ( req, res ) -> {
+        server.get( "/", ( req, res ) -> {
             res.type( "text/html" );
             try ( InputStream stream = this.getClass().getClassLoader().getResource( "index/index.html" ).openStream() ) {
                 return streamToString( stream );
@@ -75,9 +74,9 @@ public class HttpServer extends QueryInterface {
             }
         } );
 
-        crudRoutes( webuiServer, new Crud( transactionManager, "pa", "APP" ) );
+        crudRoutes( server, new Crud( transactionManager, "pa", "APP" ) );
 
-        log.info( "HTTP Server started." );
+        log.info( "Polypheny-UI started and is listening on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     }
 
 
@@ -173,6 +172,16 @@ public class HttpServer extends QueryInterface {
         webuiServer.get( "/getAdapters", crud::getAdapters );
 
         webuiServer.post( "/addStore", crud::addStore, gson::toJson );
+
+        webuiServer.get( "/getQueryInterfaces", crud::getQueryInterfaces );
+
+        webuiServer.get( "/getAvailableQueryInterfaces", crud::getAvailableQueryInterfaces );
+
+        webuiServer.post( "/addQueryInterface", crud::addQueryInterface, gson::toJson );
+
+        webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings, gson::toJson );
+
+        webuiServer.post( "/removeQueryInterface", crud::removeQueryInterface, gson::toJson );
 
     }
 

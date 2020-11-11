@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import com.google.common.collect.ImmutableMap;
@@ -48,7 +48,7 @@ import org.polypheny.db.rel.type.RelDataType;
  *
  * Trivially modified from CsvFieldType.
  */
-enum FileFieldType {
+enum HtmlFieldType {
     STRING( null, String.class ),
     BOOLEAN( Primitive.BOOLEAN ),
     BYTE( Primitive.BYTE ),
@@ -65,12 +65,12 @@ enum FileFieldType {
     private final Primitive primitive;
     private final Class clazz;
 
-    private static final Map<String, FileFieldType> MAP;
+    private static final Map<String, HtmlFieldType> MAP;
 
 
     static {
-        ImmutableMap.Builder<String, FileFieldType> builder = ImmutableMap.builder();
-        for ( FileFieldType value : values() ) {
+        ImmutableMap.Builder<String, HtmlFieldType> builder = ImmutableMap.builder();
+        for ( HtmlFieldType value : values() ) {
             builder.put( value.clazz.getSimpleName(), value );
 
             if ( value.primitive != null ) {
@@ -81,12 +81,12 @@ enum FileFieldType {
     }
 
 
-    FileFieldType( Primitive primitive ) {
+    HtmlFieldType( Primitive primitive ) {
         this( primitive, primitive.boxClass );
     }
 
 
-    FileFieldType( Primitive primitive, Class clazz ) {
+    HtmlFieldType( Primitive primitive, Class clazz ) {
         this.primitive = primitive;
         this.clazz = clazz;
     }
@@ -97,7 +97,7 @@ enum FileFieldType {
     }
 
 
-    public static FileFieldType of( String typeString ) {
+    public static HtmlFieldType of( String typeString ) {
         return MAP.get( typeString );
     }
 }

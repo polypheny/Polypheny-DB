@@ -144,6 +144,37 @@ public class JdbcPreparedStatementsTest {
 
 
     @Test
+    public void batchInsertDefaultValuesTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE pstest(tinteger integer not null, tvarchar varchar(29) default 'hans', primary key(tinteger) )" );
+
+                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO pstest(tinteger) VALUES (?)" );
+
+                preparedInsert.setInt( 1, 1 );
+                preparedInsert.addBatch();
+
+                preparedInsert.setInt( 1, 2 );
+                preparedInsert.addBatch();
+
+                preparedInsert.executeBatch();
+                connection.commit();
+
+                PreparedStatement preparedSelect = connection.prepareStatement( "SELECT tinteger,tvarchar FROM pstest" );
+                TestHelper.checkResultSet(
+                        preparedSelect.executeQuery(),
+                        ImmutableList.of(
+                                new Object[]{ 1, "hans" },
+                                new Object[]{ 2, "hans" } ) );
+
+                statement.executeUpdate( "DROP TABLE pstest" );
+            }
+        }
+    }
+
+
+    @Test
     public void dataTypesTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

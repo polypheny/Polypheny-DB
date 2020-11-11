@@ -31,7 +31,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.html;
 
 
 import java.io.IOException;
@@ -49,7 +49,7 @@ import org.polypheny.db.util.Source;
 /**
  * Scrapes HTML tables from URLs using Jsoup.
  */
-public class FileReader implements Iterable<Elements> {
+public class HtmlReader implements Iterable<Elements> {
 
     private final Source source;
     private final String selector;
@@ -59,9 +59,9 @@ public class FileReader implements Iterable<Elements> {
     private Elements headings;
 
 
-    public FileReader( Source source, String selector, Integer index ) throws FileReaderException {
+    public HtmlReader( Source source, String selector, Integer index ) throws HtmlReaderException {
         if ( source == null ) {
-            throw new FileReaderException( "URL must not be null" );
+            throw new HtmlReaderException( "URL must not be null" );
         }
         this.source = source;
         this.selector = selector;
@@ -69,17 +69,17 @@ public class FileReader implements Iterable<Elements> {
     }
 
 
-    public FileReader( Source source, String selector ) throws FileReaderException {
+    public HtmlReader( Source source, String selector ) throws HtmlReaderException {
         this( source, selector, null );
     }
 
 
-    public FileReader( Source source ) throws FileReaderException {
+    public HtmlReader( Source source ) throws HtmlReaderException {
         this( source, null, null );
     }
 
 
-    private void getTable() throws FileReaderException {
+    private void getTable() throws HtmlReaderException {
         final Document doc;
         try {
             String proto = source.protocol();
@@ -89,7 +89,7 @@ public class FileReader implements Iterable<Elements> {
                 doc = Jsoup.parse( source.url(), (int) TimeUnit.SECONDS.toMillis( 20 ) );
             }
         } catch ( IOException e ) {
-            throw new FileReaderException( "Cannot read " + source.path(), e );
+            throw new HtmlReaderException( "Cannot read " + source.path(), e );
         }
 
         this.tableElement = (this.selector != null && !this.selector.equals( "" ))
@@ -98,7 +98,7 @@ public class FileReader implements Iterable<Elements> {
     }
 
 
-    private Element getSelectedTable( Document doc, String selector ) throws FileReaderException {
+    private Element getSelectedTable( Document doc, String selector ) throws HtmlReaderException {
         // get selected elements
         Elements list = doc.select( selector );
 
@@ -107,7 +107,7 @@ public class FileReader implements Iterable<Elements> {
 
         if ( this.index == null ) {
             if ( list.size() != 1 ) {
-                throw new FileReaderException( "" + list.size() + " HTML element(s) selected" );
+                throw new HtmlReaderException( "" + list.size() + " HTML element(s) selected" );
             }
             el = list.first();
         } else {
@@ -118,12 +118,12 @@ public class FileReader implements Iterable<Elements> {
         if ( el.tag().getName().equals( "table" ) ) {
             return el;
         } else {
-            throw new FileReaderException( "selected (" + selector + ") element is a " + el.tag().getName() + ", not a table" );
+            throw new HtmlReaderException( "selected (" + selector + ") element is a " + el.tag().getName() + ", not a table" );
         }
     }
 
 
-    private Element getBestTable( Document doc ) throws FileReaderException {
+    private Element getBestTable( Document doc ) throws HtmlReaderException {
         Element bestTable = null;
         int bestScore = -1;
 
@@ -139,20 +139,20 @@ public class FileReader implements Iterable<Elements> {
         }
 
         if ( bestTable == null ) {
-            throw new FileReaderException( "no tables found" );
+            throw new HtmlReaderException( "no tables found" );
         }
 
         return bestTable;
     }
 
 
-    void refresh() throws FileReaderException {
+    void refresh() throws HtmlReaderException {
         this.headings = null;
         getTable();
     }
 
 
-    Elements getHeadings() throws FileReaderException {
+    Elements getHeadings() throws HtmlReaderException {
         if ( this.headings == null ) {
             this.iterator();
         }
@@ -167,7 +167,7 @@ public class FileReader implements Iterable<Elements> {
 
 
     @Override
-    public FileReaderIterator iterator() {
+    public HtmlReaderIterator iterator() {
         if ( this.tableElement == null ) {
             try {
                 getTable();
@@ -178,7 +178,7 @@ public class FileReader implements Iterable<Elements> {
             }
         }
 
-        FileReaderIterator iterator = new FileReaderIterator( this.tableElement.select( "tr" ) );
+        HtmlReaderIterator iterator = new HtmlReaderIterator( this.tableElement.select( "tr" ) );
 
         // if we haven't cached the headings, get them
         // TODO: this needs to be reworked to properly cache the headings
@@ -189,7 +189,7 @@ public class FileReader implements Iterable<Elements> {
             // if not, generate some default column names
             if ( headings.size() == 0 ) {
                 // rewind and peek at the first row of data
-                iterator = new FileReaderIterator( this.tableElement.select( "tr" ) );
+                iterator = new HtmlReaderIterator( this.tableElement.select( "tr" ) );
                 Elements firstRow = iterator.next( "td" );
                 int i = 0;
                 headings = new Elements();
@@ -200,7 +200,7 @@ public class FileReader implements Iterable<Elements> {
                     headings.add( th );
                 }
                 // rewind, so queries see the first row
-                iterator = new FileReaderIterator( this.tableElement.select( "tr" ) );
+                iterator = new HtmlReaderIterator( this.tableElement.select( "tr" ) );
             }
             this.headings = headings;
         }
@@ -216,12 +216,12 @@ public class FileReader implements Iterable<Elements> {
     /**
      * Iterates over HTML tables, returning an Elements per row.
      */
-    private static class FileReaderIterator implements Iterator<Elements> {
+    private static class HtmlReaderIterator implements Iterator<Elements> {
 
         final Iterator<Element> rowIterator;
 
 
-        FileReaderIterator( Elements rows ) {
+        HtmlReaderIterator( Elements rows ) {
             this.rowIterator = rows.iterator();
         }
 
