@@ -195,6 +195,12 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
+    UI_UPLOAD_SIZE_MB( "ui/uploadSizeMB",
+            "Maximum size of a file upload for multimedia data in the UI, in MB",
+            10_000,
+            ConfigType.INTEGER,
+            "uiSettingsDataViewGroup" ),
+
     HUB_IMPORT_BATCH_SIZE( "hub/hubImportBatchSize",
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
             100,
