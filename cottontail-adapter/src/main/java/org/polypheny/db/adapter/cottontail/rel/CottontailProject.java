@@ -92,14 +92,13 @@ public class CottontailProject extends Project implements CottontailRel {
     @Override
     public void implement( CottontailImplementContext context ) {
         BlockBuilder builder = context.blockBuilder;
-        context.visitChild( 0, getInput() );
 
-        final List<String> physicalColumnNames = new ArrayList<>();
-        for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
-            physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
-        }
 
         if ( this.arrayValueProject ) {
+            final List<String> physicalColumnNames = new ArrayList<>();
+            for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
+                physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+            }
 //            BlockBuilder inner = new BlockBuilder();
 
             /*ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
@@ -140,6 +139,13 @@ public class CottontailProject extends Project implements CottontailRel {
             context.preparedValuesMapBuilder = makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
             context.projectionMap = makeProjectionBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
         } else {
+            context.visitChild( 0, getInput() );
+
+            final List<String> physicalColumnNames = new ArrayList<>();
+            for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
+                physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+            }
+
 //            context.visitChild( 0, getInput() );
             /*final List<String> physicalColumnNames = new ArrayList<>();
             for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {

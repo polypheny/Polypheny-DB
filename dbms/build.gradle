@@ -138,6 +138,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 shadowJar {
+    zip64 true
     classifier = ""
     mergeServiceFiles {
         setPath("META-INF/services")

@@ -131,7 +131,7 @@ public class CottontailSortRule extends CottontailConverterRule {
             RelNode relNode = innerLevel.pop();
             alreadyChecked.add( relNode );
             if ( relNode instanceof Project ) {
-//                if ( relNode.getConvention().equals( targetConvention ) ) {
+//                if ( ((Project) relNode).getInput().getConvention().equals( targetConvention ) ) {
                     return (Project) relNode;
 //                }
             } else {

@@ -64,6 +64,10 @@ public class CottontailSortAndProjectRule extends RelOptRule {
 
         Project project = call.rel( 1 );
 
+        if ( !project.getInput().getConvention().equals( this.out ) ) {
+            return false;
+        }
+
         // Projection checks
         Project innerProject = CottontailSortRule.getUnderlyingProject( (RelSubset) project.getInput(), this.out );
 

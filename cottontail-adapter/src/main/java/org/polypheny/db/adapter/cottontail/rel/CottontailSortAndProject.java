@@ -35,7 +35,9 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlKnnFunction;
 import org.polypheny.db.util.BuiltInMethod;
@@ -66,13 +68,23 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
 
     @Override
     public void implement( CottontailImplementContext context ) {
-        System.out.println("foobar");
         BlockBuilder builder = context.blockBuilder;
         context.visitChild( 0, getInput() );
 
         final List<String> physicalColumnNames = new ArrayList<>();
         for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+        }
+
+        if ( this.offset != null || this.fetch != null ) {
+
+            if ( this.fetch != null ) {
+                context.limitBuilder = numberBuilderBuilder( this.fetch );
+            }
+
+            if ( this.offset != null ) {
+                context.offsetBuilder = numberBuilderBuilder( this.offset );
+            }
         }
 
         if ( this.arrayProject ) {
@@ -204,5 +216,23 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
         }
 
         return new Pair<>( projectionMap_, knnBuilder );
+    }
+
+    private static Expression numberBuilderBuilder( RexNode node ) {
+        BlockBuilder inner = new BlockBuilder();
+        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
+
+        Expression expr;
+        if ( node instanceof RexLiteral ) {
+            expr = Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
+        } else if ( node instanceof RexDynamicParam ) {
+            expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
+        } else {
+            throw new RuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
+        }
+
+        inner.add( Expressions.return_( null, expr ) );
+
+        return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
 }

@@ -31,6 +31,8 @@ dependencies {
     implementation project(":core")
     implementation project(":cottontail-proto")
 
+    implementation group: 'org.vitrivr', name: 'cottontaildb', version: '0.9.1'
+
     /////// gRPC & Protobuf
 //    implementation group: 'javax.annotation', name: 'javax.annotation-api', version: '1.2'
 //    api group: 'com.google.protobuf', name: 'protobuf-java', version: '3.12.2'
