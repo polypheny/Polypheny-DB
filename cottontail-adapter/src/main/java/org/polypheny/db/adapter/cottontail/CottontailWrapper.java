@@ -129,7 +129,7 @@ public class CottontailWrapper implements AutoCloseable {
     public synchronized void truncateEntityBlocking( Entity entity ) {
         final CottonDDLBlockingStub stub = CottonDDLGrpc.newBlockingStub(this.channel);
         try {
-            stub.truncateEntity( entity );
+            stub.truncate( entity );
         } catch (StatusRuntimeException e) {
             if (e.getStatus().getCode() == Status.NOT_FOUND.getCode()) {
                 log.debug("entity {} was not truncated because it does not exist", entity.getName());

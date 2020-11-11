@@ -29,7 +29,7 @@ targetCompatibility = 1.8
 
 dependencies {
     implementation project(":core")
-    implementation project(":cottontail-proto")
+//    implementation project(":cottontail-proto")
 
     implementation group: 'org.vitrivr', name: 'cottontaildb', version: '0.9.1'
 
