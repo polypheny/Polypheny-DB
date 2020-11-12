@@ -183,6 +183,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
         }
 
+        // Validate parameterValues
+        ParameterValueValidator pmValidator = new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() );
+        pmValidator.visit( routedRoot.rel );
+
         //
         // Implementation Caching
         if ( statement.getTransaction().isAnalyze() ) {

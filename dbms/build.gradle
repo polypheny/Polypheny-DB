@@ -52,6 +52,8 @@ dependencies {
 
     implementation group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version  // Apache 2.0
 
+    implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
