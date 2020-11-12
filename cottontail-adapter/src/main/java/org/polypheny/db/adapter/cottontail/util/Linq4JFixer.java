@@ -52,6 +52,16 @@ public class Linq4JFixer {
     }
 
 
+    public static Object getTinyIntData( Object data ) {
+        return Integer.valueOf(((CottontailGrpc.Data) data).getIntData()).byteValue();
+    }
+
+
+    public static Object getSmallIntData( Object data ) {
+        return Integer.valueOf(((CottontailGrpc.Data) data).getIntData()).shortValue();
+    }
+
+
     public static Object getFloatData( Object data ) {
         return ((CottontailGrpc.Data) data).getFloatData();
     }

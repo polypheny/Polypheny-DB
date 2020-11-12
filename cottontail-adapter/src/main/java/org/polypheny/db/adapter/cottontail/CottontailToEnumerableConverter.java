@@ -331,7 +331,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                             BuiltInMethod.JDBC_PARSE_ARRAY_FROM_TEXT.method,
                             Expressions.constant( fieldType.getComponentType().getPolyType() ),
                             Expressions.constant( arrayType.getDimension() ),
-                            Expressions.call( getDataFromMap_, "getStringData" ) );
+                            Expressions.call( cottontailGetMethod( PolyType.VARCHAR ), getDataFromMap_ ) );
                 }
             }
             break;

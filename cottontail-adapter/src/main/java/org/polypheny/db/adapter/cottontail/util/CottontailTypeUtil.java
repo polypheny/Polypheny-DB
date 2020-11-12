@@ -17,17 +17,33 @@
 package org.polypheny.db.adapter.cottontail.util;
 
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.sql.Timestamp;
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
-import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.ConstantExpression;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.catalog.entity.CatalogDefaultValue;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlLiteral;
+import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.parser.SqlParserPos;
+import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
@@ -44,24 +60,6 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.LongVector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Type;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import org.apache.calcite.avatica.util.ByteString;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexDynamicParam;
-import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.type.ArrayType;
-import org.polypheny.db.type.PolyType;
 
 
 public class CottontailTypeUtil {
@@ -141,6 +139,9 @@ public class CottontailTypeUtil {
                 case CHAR:
                     return Type.STRING;
                 // Types that require special treatment.
+                case TINYINT:
+                case SMALLINT:
+                    return Type.INTEGER;
                 case DATE:
                 case TIME:
                     return Type.INTEGER;
@@ -184,6 +185,10 @@ public class CottontailTypeUtil {
                 return builder.setLongData( rexLiteral.getValueAs( Long.class ) ).build();
             case DATE:
             case TIME:
+                return builder.setIntData( rexLiteral.getValueAs( Integer.class ) ).build();
+            case TINYINT:
+                return builder.setIntData( rexLiteral.getValueAs( Integer.class ) ).build();
+            case SMALLINT:
                 return builder.setIntData( rexLiteral.getValueAs( Integer.class ) ).build();
             case DECIMAL:
                 return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( rexLiteral.getValueAs( BigDecimal.class ) ) ).build();
@@ -233,6 +238,12 @@ public class CottontailTypeUtil {
             case TIME:
                 constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
                 break;
+            case TINYINT:
+                constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
+                break;
+            case SMALLINT:
+                constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
+                break;
             case DECIMAL:
                 constantExpression = Expressions.constant( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( rexLiteral.getValueAs( BigDecimal.class ) ) );
                 break;
@@ -266,6 +277,10 @@ public class CottontailTypeUtil {
             return builder.setIntData( (Integer) value ).build();
         } else if ( value instanceof Long ) {
             return builder.setLongData( (Long) value ).build();
+        } else if ( value instanceof Byte ) {
+            return builder.setIntData( ((Byte) value).intValue() ).build();
+        } else if ( value instanceof Short ) {
+            return builder.setIntData( ((Short) value).intValue() ).build();
         } else if ( value instanceof Double ) {
             return builder.setDoubleData( (Double) value ).build();
         } else if ( value instanceof Float ) {
