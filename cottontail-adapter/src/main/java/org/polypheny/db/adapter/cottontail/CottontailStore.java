@@ -154,7 +154,7 @@ public class CottontailStore extends Store {
             this.embeddedServer = null;
         }
 
-        this.channel = NettyChannelBuilder.forAddress( this.dbHostname, this.dbPort ).usePlaintext().maxInboundMetadataSize( CottontailWrapper.maxMessageSize ).build();
+        this.channel = NettyChannelBuilder.forAddress( this.dbHostname, this.dbPort ).usePlaintext().maxInboundMetadataSize( CottontailWrapper.maxMessageSize ).maxInboundMessageSize( CottontailWrapper.maxMessageSize ).build();
         this.wrapper = new CottontailWrapper( this.channel );
         this.wrapper.checkedCreateSchemaBlocking( CottontailGrpc.Schema.newBuilder().setName( this.dbName ).build() );
 //        this.wrapper.createSchema( CottontailGrpc.Schema.newBuilder().setName( this.dbName ).build() );

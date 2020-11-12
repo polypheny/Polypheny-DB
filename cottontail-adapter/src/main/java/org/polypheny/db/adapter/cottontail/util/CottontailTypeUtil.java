@@ -18,6 +18,8 @@ package org.polypheny.db.adapter.cottontail.util;
 
 
 import java.lang.reflect.Modifier;
+import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
@@ -141,9 +143,9 @@ public class CottontailTypeUtil {
                 // Types that require special treatment.
                 case DATE:
                 case TIME:
-//                    return Type.INTEGER;
+                    return Type.INTEGER;
                 case TIMESTAMP:
-//                    return Type.LONG;
+                    return Type.LONG;
                 case DECIMAL:
                 case VARBINARY:
                 case BINARY:
@@ -276,20 +278,25 @@ public class CottontailTypeUtil {
             return builder.setIntData( ((TimeString) value).getMillisOfDay() ).build();
         } else if ( value instanceof java.sql.Time ) {
             java.sql.Time time = (java.sql.Time) value;
-//            TimeString timeString = new TimeString( time.getHours() )
-            return builder.setStringData( ((java.sql.Time) value).toString() ).build();
+            TimeString timeString = new TimeString( time.toString() );
+            return builder.setIntData( timeString.getMillisOfDay() ).build();
         } else if ( value instanceof DateString ) {
-            return builder.setStringData( value.toString() ).build();
+            return builder.setIntData( ((DateString) value).getDaysSinceEpoch() ).build();
         } else if ( value instanceof java.sql.Date ) {
-            return builder.setStringData( value.toString() ).build();
+            DateString dateString = new DateString( value.toString() );
+            return builder.setIntData( dateString.getDaysSinceEpoch() ).build();
         } else if ( value instanceof TimestampString ) {
-            return builder.setStringData( value.toString() ).build();
+            return builder.setLongData( ((TimestampString) value).getMillisSinceEpoch() ).build();
         } else if ( value instanceof java.sql.Timestamp ) {
             String timeStampString = value.toString();
             if ( timeStampString.endsWith( ".0" ) ) {
-                timeStampString.substring( 0, timeStampString.length() - 2 );
+                timeStampString = timeStampString.substring( 0, timeStampString.length() - 2 );
             }
-            return builder.setStringData( value.toString() ).build();
+            TimestampString tsString = new TimestampString( timeStampString );
+            return builder.setLongData( tsString.getMillisSinceEpoch() ).build();
+        } else if ( value instanceof Calendar ) {
+            TimestampString timestampString = TimestampString.fromCalendarFields( (Calendar) value );
+            return builder.setLongData( timestampString.getMillisSinceEpoch() ).build();
         } else if ( value instanceof List ) {
             Vector.Builder vectorBuilder = Vector.newBuilder();
             // TODO js(ct): add list.size() == 0 handling

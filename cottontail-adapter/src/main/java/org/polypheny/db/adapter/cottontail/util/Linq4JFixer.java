@@ -78,17 +78,25 @@ public class Linq4JFixer {
 
 
     public static Object getTimeData( Object data ) {
-        return new TimeString( ((CottontailGrpc.Data) data).getStringData() );
+        return ((CottontailGrpc.Data) data).getIntData();
+//        return new TimeString( ((CottontailGrpc.Data) data).getStringData() ).getMillisOfDay();
     }
 
 
     public static Object getDateData( Object data ) {
-        return new DateString( ((CottontailGrpc.Data) data).getStringData() );
+        return ((CottontailGrpc.Data) data).getIntData();
+//        return new DateString( ((CottontailGrpc.Data) data).getStringData() ).getDaysSinceEpoch();
     }
 
 
     public static Object getTimestampData( Object data ) {
-        return new TimestampString( ((CottontailGrpc.Data) data).getStringData() );
+        return ((CottontailGrpc.Data) data).getLongData();
+        /*try {
+            return new TimestampString( ((CottontailGrpc.Data) data).getStringData() ).getMillisSinceEpoch();
+        } catch ( Exception e ) {
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }*/
     }
 
 

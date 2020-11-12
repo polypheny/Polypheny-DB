@@ -62,7 +62,7 @@ public class CottontailWrapper implements AutoCloseable {
     private final CottonDMLStub managementStub;
     private final CottonDMLStub insertStub;
 
-    public static final int maxMessageSize = 1_000_000;
+    public static final int maxMessageSize = 15_000_000;
     private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; //TODO expose to config
     private static final long MAX_CALL_TIMEOUT = 5000; //TODO expose to config
 
