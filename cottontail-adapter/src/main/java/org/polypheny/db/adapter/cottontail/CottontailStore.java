@@ -424,20 +424,20 @@ public class CottontailStore extends Store {
 
     @Override
     public boolean prepare( PolyXid xid ) {
-        log.info( "Cottontail does not support prepare." );
+        log.debug( "Cottontail does not support prepare." );
         return false;
     }
 
 
     @Override
     public void commit( PolyXid xid ) {
-        log.info( "Cottontail does not support commit." );
+        log.debug( "Cottontail does not support commit." );
     }
 
 
     @Override
     public void rollback( PolyXid xid ) {
-        log.info( "Cottontail does not support rollback." );
+        log.debug( "Cottontail does not support rollback." );
     }
 
 
