@@ -27,6 +27,9 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BoolVector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
@@ -137,10 +140,10 @@ public class CottontailTypeUtil {
                     return Type.STRING;
                 // Types that require special treatment.
                 case DATE:
-                    return Type.LONG;
                 case TIME:
+//                    return Type.INTEGER;
                 case TIMESTAMP:
-                    return Type.INTEGER;
+//                    return Type.LONG;
                 case DECIMAL:
                 case VARBINARY:
                 case BINARY:
@@ -269,6 +272,24 @@ public class CottontailTypeUtil {
             return builder.setStringData( (String) value ).build();
         } else if ( value instanceof BigDecimal ) {
             return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( (BigDecimal) value ) ).build();
+        } else if ( value instanceof TimeString ) {
+            return builder.setIntData( ((TimeString) value).getMillisOfDay() ).build();
+        } else if ( value instanceof java.sql.Time ) {
+            java.sql.Time time = (java.sql.Time) value;
+//            TimeString timeString = new TimeString( time.getHours() )
+            return builder.setStringData( ((java.sql.Time) value).toString() ).build();
+        } else if ( value instanceof DateString ) {
+            return builder.setStringData( value.toString() ).build();
+        } else if ( value instanceof java.sql.Date ) {
+            return builder.setStringData( value.toString() ).build();
+        } else if ( value instanceof TimestampString ) {
+            return builder.setStringData( value.toString() ).build();
+        } else if ( value instanceof java.sql.Timestamp ) {
+            String timeStampString = value.toString();
+            if ( timeStampString.endsWith( ".0" ) ) {
+                timeStampString.substring( 0, timeStampString.length() - 2 );
+            }
+            return builder.setStringData( value.toString() ).build();
         } else if ( value instanceof List ) {
             Vector.Builder vectorBuilder = Vector.newBuilder();
             // TODO js(ct): add list.size() == 0 handling

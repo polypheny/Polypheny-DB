@@ -17,8 +17,13 @@
 package org.polypheny.db.adapter.cottontail.util;
 
 
+import java.math.BigDecimal;
 import java.util.List;
+import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
+import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
@@ -59,6 +64,31 @@ public class Linq4JFixer {
 
     public static Object getStringData( Object data ) {
         return ((CottontailGrpc.Data) data).getStringData();
+    }
+
+
+    public static Object getDecimalData( Object data ) {
+        return new BigDecimal( ((CottontailGrpc.Data) data).getStringData() );
+    }
+
+
+    public static Object getBinaryData( Object data ) {
+        return ByteString.parseBase64( ((CottontailGrpc.Data) data).getStringData() );
+    }
+
+
+    public static Object getTimeData( Object data ) {
+        return new TimeString( ((CottontailGrpc.Data) data).getStringData() );
+    }
+
+
+    public static Object getDateData( Object data ) {
+        return new DateString( ((CottontailGrpc.Data) data).getStringData() );
+    }
+
+
+    public static Object getTimestampData( Object data ) {
+        return new TimestampString( ((CottontailGrpc.Data) data).getStringData() );
     }
 
 

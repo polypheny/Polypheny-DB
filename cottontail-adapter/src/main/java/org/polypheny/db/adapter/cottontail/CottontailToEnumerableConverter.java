@@ -301,25 +301,22 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case DOUBLE:
             case CHAR:
             case VARCHAR:
-            case NULL:
-                /* These are all simple types to fetch from the result. */
-//                source = Expressions.call( getDataFromMap_, cottontailGetMethod( fieldType.getPolyType() ) );
-                source = Expressions.call( cottontailGetMethod( fieldType.getPolyType() ), getDataFromMap_ );
-//                source = Expressions.call( getDataFromMap_, cottontailGetMethod( fieldType.getPolyType() ), Expressions.constant( i + 1 ) );
-                break;
             case DECIMAL:
                 // Polypheny uses BigDecimal internally to represent DECIMAL values.
                 // BigDecimal#toString gives an exact and unique representation of the value.
                 // Reversal is: new BigDecimal(<string>)
-                source = Expressions.call(
-                        Types.lookupMethod( CottontailToEnumerableConverter.class, "bigDecimalFromString", String.class ),
-                        Expressions.call( getDataFromMap_, "getStringData" ) );
-                break;
+                // Decimal decoding is handled properly in Linq4JFixer
             case BINARY:
             case VARBINARY:
-                source = Expressions.call(
-                        Types.lookupMethod( ByteString.class, "parseBase64", String.class ),
-                        Expressions.call( getDataFromMap_, "getStringData" ) );
+                // Binary and VarBinary are turned into base64 string
+                // Linq4JFixer takes care of decoding
+            case DATE:
+            case TIME:
+            case TIMESTAMP:
+            case NULL:
+                /* These are all simple types to fetch from the result. */
+//                source = Expressions.call( getDataFromMap_, cottontailGetMethod( fieldType.getPolyType() ) );
+                source = Expressions.call( cottontailGetMethod( fieldType.getPolyType() ), getDataFromMap_ );
                 break;
             case ARRAY: {
                 ArrayType arrayType = (ArrayType) fieldType;
@@ -372,11 +369,19 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case NULL:
                 return Types.lookupMethod( Linq4JFixer.class, "getNullData", Object.class );
 //                return "getNullData";
-            case TINYINT:
-            case SMALLINT:
             case DECIMAL:
+                return Types.lookupMethod( Linq4JFixer.class, "getDecimalData", Object.class );
             case BINARY:
             case VARBINARY:
+                return Types.lookupMethod( Linq4JFixer.class, "getBinaryData", Object.class );
+            case TIME:
+                return Types.lookupMethod( Linq4JFixer.class, "getTimeData", Object.class );
+            case DATE:
+                return Types.lookupMethod( Linq4JFixer.class, "getDateData", Object.class );
+            case TIMESTAMP:
+                return Types.lookupMethod( Linq4JFixer.class, "getTimestampData", Object.class );
+            case TINYINT:
+            case SMALLINT:
             case ANY:
             default:
                 throw new AssertionError( "No primitive access method for type: " + polyType );
