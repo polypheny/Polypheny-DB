@@ -27,6 +27,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -72,6 +74,7 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Part;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
@@ -2568,6 +2571,40 @@ public class Crud implements InformationObserver {
     }
 
 
+    String getFile( final Request req, final Response res ) {
+        String fileName = req.params( "file" );
+        File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + fileName );
+        if ( !f.exists() ) {
+            res.status( 404 );
+            return "";
+        }
+        ContentInfoUtil util = new ContentInfoUtil();
+        ContentInfo info = null;
+        try {
+            info = util.findMatch( f );
+        } catch ( IOException ignored ) {
+        }
+        if ( info != null && info.getMimeType() != null ) {
+            res.header( "Content-Type", info.getMimeType() );
+        } else {
+            res.header( "Content-Type", "application/octet-stream" );
+        }
+        if ( info != null && info.getFileExtensions() != null ) {
+            res.header( "Content-Disposition", "attachment; filename=" + "file." + info.getFileExtensions()[0] );
+        } else {
+            res.header( "Content-Disposition", "attachment; filename=" + "file" );
+        }
+        try ( FileInputStream fis = new FileInputStream( f ) ) {
+            ServletOutputStream os = res.raw().getOutputStream();
+            IOUtils.copyLarge( fis, os );
+            os.flush();
+            os.close();
+        } catch ( IOException ignored ) {
+            res.status( 500 );
+        }
+        return "";
+    }
+
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
@@ -2725,12 +2762,9 @@ public class Crud implements InformationObserver {
                         case "IMAGE":
                         case "SOUND":
                         case "VIDEO":
-                            URL url = this.getClass().getClassLoader().getResource( "webapp/" );
-                            String columnName = header.get( counter ).name;
-                            if ( url == null ) {
-                                throw new RuntimeException( "Could not get mm folder" );
-                            }
-                            File mmFolder = new File( url.getPath(), "mm-files" );
+                            String columnName = String.valueOf( header.get( counter ).name.hashCode() );
+                            File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
+                            mmFolder.mkdirs();
                             TemporalFileManager tfm = TemporalFileManager.getInstance( mmFolder );
 
                             if ( o instanceof File ) {
