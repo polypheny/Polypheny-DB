@@ -496,7 +496,7 @@ public class Crud implements InformationObserver {
                 }
             }
             if ( col.primary ) {
-                primaryKeys.add( col.name );
+                primaryKeys.add( "\"" + col.name + "\"" );
                 primaryCounter++;
             }
             colJoiner.add( colBuilder.toString() );
