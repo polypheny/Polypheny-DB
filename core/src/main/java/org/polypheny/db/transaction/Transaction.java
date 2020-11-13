@@ -65,7 +65,16 @@ public interface Transaction {
 
     String getOrigin();
 
+    MultimediaFlavor getFlavor();
+
     long getNumberOfStatements();
 
     DataMigrator getDataMigrator();
+
+    /**
+     * Flavor, how multimedia results should be returned from a store.
+     */
+    enum MultimediaFlavor {
+        DEFAULT, FILE
+    }
 }

@@ -36,6 +36,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -347,7 +348,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
             } else {
                 allNull = false;
                 if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    if ( dataContext.getStatement().getTransaction().getOrigin().equals( "Polypheny-UI" ) ) {
+                    if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.FILE ) {
                         curr[i] = f;
                     } else {
                         curr[i] = encoded;

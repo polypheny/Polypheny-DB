@@ -74,6 +74,9 @@ public class TransactionImpl implements Transaction, Comparable {
     private final String origin;
 
     @Getter
+    private final MultimediaFlavor flavor;
+
+    @Getter
     private final boolean analyze;
 
     private final AtomicLong statementCounter = new AtomicLong();
@@ -93,7 +96,8 @@ public class TransactionImpl implements Transaction, Comparable {
             CatalogSchema defaultSchema,
             CatalogDatabase database,
             boolean analyze,
-            String origin ) {
+            String origin,
+            MultimediaFlavor flavor ) {
         this.id = TRANSACTION_COUNTER.getAndIncrement();
         this.xid = xid;
         this.transactionManager = transactionManager;
@@ -102,6 +106,7 @@ public class TransactionImpl implements Transaction, Comparable {
         this.database = database;
         this.analyze = analyze;
         this.origin = origin;
+        this.flavor = flavor;
     }
 
 

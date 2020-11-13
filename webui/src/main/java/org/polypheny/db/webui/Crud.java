@@ -138,6 +138,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
@@ -2993,7 +2994,7 @@ public class Crud implements InformationObserver {
 
     private Transaction getTransaction( boolean analyze ) {
         try {
-            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI" );
+            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
