@@ -39,7 +39,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PushbackInputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -581,8 +580,7 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, polyType ) );
                     } else {
                         values.add( "?" );
-                        // PushbackInputStream for the validation. 10 * 1024 is the ContentInfo default read size (ContentInfoUtil.DEFAULT_READ_SIZE)
-                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( new PushbackInputStream( part.getInputStream(), 10 * 1024 ) ) );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( part.getInputStream() ) );
                     }
                 }
             }

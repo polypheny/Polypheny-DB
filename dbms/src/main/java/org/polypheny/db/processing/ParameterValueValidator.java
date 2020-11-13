@@ -20,7 +20,6 @@ package org.polypheny.db.processing;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 import com.j256.simplemagic.ContentType;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -119,32 +118,14 @@ public class ParameterValueValidator extends RelShuttleImpl {
                         ContentInfo info;
                         if ( o instanceof byte[] ) {
                             info = util.findMatch( (byte[]) o );
-                        } else if ( o instanceof PushbackInputStream ) {
+                        } else if ( o instanceof InputStream ) {
+                            PushbackInputStream pbis = new PushbackInputStream( (InputStream) o, ContentInfoUtil.DEFAULT_READ_SIZE );
+                            byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
                             try {
-                                PushbackInputStream pbIs = (PushbackInputStream) o;
-                                byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
-                                pbIs.read( buffer );
+                                pbis.read( buffer );
                                 info = util.findMatch( buffer );
-                                pbIs.unread( buffer );
-                            } catch ( IOException e ) {
-                                throw new InvalidParameterValueException( "Exception while trying to determine File content type", e );
-                            }
-                        }
-                        //todo find better way to handle InputStream
-                        //util.findMatch(is) leads to problems, because it moves the inputStream forward
-                        else if ( o instanceof InputStream ) {
-                            InputStream is = ((InputStream) o);
-                            //see https://stackoverflow.com/questions/1264709/convert-inputstream-to-byte-array-in-java
-                            try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() ) {
-                                final int bufLen = 4096;
-                                byte[] buf = new byte[bufLen];
-                                int readLen;
-                                while ( (readLen = is.read( buf, 0, bufLen )) != -1 ) {
-                                    baos.write( buf, 0, readLen );
-                                }
-                                byte[] bytes = baos.toByteArray();
-                                info = util.findMatch( bytes );
-                                map.put( index, bytes );
+                                pbis.unread( buffer );
+                                map.put( index, pbis );
                             } catch ( IOException e ) {
                                 throw new InvalidParameterValueException( "Exception while trying to determine File content type", e );
                             }
