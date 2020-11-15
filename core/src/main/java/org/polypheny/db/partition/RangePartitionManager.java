@@ -2,8 +2,12 @@ package org.polypheny.db.partition;
 
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+
 
 @Slf4j
 public class RangePartitionManager extends AbstractPartitionManager {
@@ -40,8 +44,33 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
-        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames );
+    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
+        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
+
+
+
+        log.debug( "TYPE {} ", partitionColumn.type );
+
+        if (partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ){
+            log.debug( "You cannot specify RANGE partitioning for a  non-numeric type. Detected Type: {} ", partitionColumn.type );
+        }
+
+
+        if ( partitionQualifiers.isEmpty() ) {
+            throw new RuntimeException( "RANGE Partitioning doesn't support  empty Partition Qualifiers: '" + partitionQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
+        }
+
+        if ( partitionQualifiers.size() + 1 != numPartitions ) {
+            throw new RuntimeException( "Number of partitionQualifiers '" + partitionQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitions + "'" );
+        }
+
+        if ( partitionQualifiers.isEmpty() || partitionQualifiers.size() == 0 ) {
+
+            throw new RuntimeException( "Partition Qualifiers are empty '" + partitionQualifiers );
+        }
+
+        //return true;
+
         throw new RuntimeException("RANGE Partitioning is not implemented yet");
         //return false;
     }

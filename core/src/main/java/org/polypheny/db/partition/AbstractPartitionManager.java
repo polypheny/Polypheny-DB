@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
@@ -50,7 +51,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
+    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
         if ( numPartitions == 0 && partitionNames.size() < 2 ) {
             throw new RuntimeException( "Partitioning of table failed! Can't specify partition names with less than 2 names" );
         }

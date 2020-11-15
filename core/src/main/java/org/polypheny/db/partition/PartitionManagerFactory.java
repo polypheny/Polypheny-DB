@@ -28,7 +28,7 @@ public class PartitionManagerFactory {
             case LIST:
                 return new ListPartitionManager();
 
-            case RANGE:
+            case RANGES:
                 return new RangePartitionManager();
 
         }

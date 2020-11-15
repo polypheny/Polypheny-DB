@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
@@ -119,8 +120,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
-        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames );
+    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
+        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
 
         if ( !partitionQualifiers.isEmpty() ) {
             throw new RuntimeException( "PartitionType HASH does not support the assignment of values to partitions" );

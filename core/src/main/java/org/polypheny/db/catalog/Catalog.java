@@ -1317,7 +1317,7 @@ public abstract class Catalog {
 
     public enum PartitionType {
         NONE( 0 ),
-        RANGE( 1 ),
+        RANGES( 1 ),
         LIST( 2 ),
         HASH( 3 ),
         ROUNDROBIN( 4 );

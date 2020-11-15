@@ -1,6 +1,7 @@
 package org.polypheny.db.partition;
 
 import java.util.List;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
@@ -16,7 +17,7 @@ public interface PartitionManager {
 
     List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds );
 
-    boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames );
+    boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn );
 
     boolean allowsUnboundPartition();
 }

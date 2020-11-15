@@ -2852,7 +2852,9 @@ public class CatalogImpl extends Catalog {
                 numPartitions += 1;
             }
 
-            if ( !partitionManager.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames ) ) {
+            CatalogColumn partitionColumn = getColumn( partitionColumnId );
+
+            if ( !partitionManager.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn ) ) {
                 throw new RuntimeException( "Partition Table failed for table: " + old.name );
             }
 

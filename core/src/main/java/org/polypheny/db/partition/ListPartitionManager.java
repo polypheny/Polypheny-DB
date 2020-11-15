@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -185,8 +186,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames ) {
-        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames );
+    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
+        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames,  partitionColumn );
 
         if ( partitionQualifiers.isEmpty() ) {
             throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
