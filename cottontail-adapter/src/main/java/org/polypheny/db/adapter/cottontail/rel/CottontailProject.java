@@ -44,7 +44,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.fun.SqlKnnFunction;
+import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -65,7 +65,7 @@ public class CottontailProject extends Project implements CottontailRel {
         List<Pair<RexNode, String>> namedProjects = getNamedProjects();
         for ( int i = 0; i < namedProjects.size(); i++ ) {
             Pair<RexNode, String> pair = namedProjects.get( i );
-            if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlKnnFunction) ) {
+            if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
                 knnColumnName = pair.right;
                 knnColumnIndex = i;
             }

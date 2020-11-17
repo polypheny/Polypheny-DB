@@ -120,9 +120,9 @@ public enum SqlKind {
     OTHER_FUNCTION,
 
     /**
-     * k-nearest-neighbour functions.
+     * distance functions.
      */
-    KNN,
+    DISTANCE,
 
     /**
      * POSITION Function

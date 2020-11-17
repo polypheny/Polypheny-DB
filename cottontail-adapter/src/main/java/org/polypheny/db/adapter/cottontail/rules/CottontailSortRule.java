@@ -23,13 +23,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.adapter.cottontail.rel.CottontailProject;
 import org.polypheny.db.adapter.cottontail.rel.CottontailSort;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRuleCall;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.plan.volcano.RelSubset;
-import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelFieldCollation;
 import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.rel.RelNode;
@@ -37,7 +35,7 @@ import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlKnnFunction;
+import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.util.Pair;
 
@@ -64,7 +62,7 @@ public class CottontailSortRule extends CottontailConverterRule {
         List<Pair<RexNode, String>> namedProjects = project.getNamedProjects();
         for ( int i = 0; i < namedProjects.size(); i++ ) {
             Pair<RexNode, String> pair = namedProjects.get( i );
-            if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlKnnFunction) ) {
+            if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
                 knnColumnIndex = i;
             }
         }

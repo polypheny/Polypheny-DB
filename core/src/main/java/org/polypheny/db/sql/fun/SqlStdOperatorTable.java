@@ -1269,9 +1269,9 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     //-------------------------------------------------------------
 
     /**
-     * k-nearest-neighbour function: <code>KNN(column, ARRAY[], METRIC, WEIGHTS, optimisationNumber)</code>.
+     * distance function: <code>DISTANCE(column, ARRAY[], METRIC, WEIGHTS)</code>.
      */
-    public static final SqlFunction KNN = new SqlKnnFunction();
+    public static final SqlFunction DISTANCE = new SqlDistanceFunction();
 
     /**
      * The character substring function: <code>SUBSTRING(string FROM start [FOR length])</code>.

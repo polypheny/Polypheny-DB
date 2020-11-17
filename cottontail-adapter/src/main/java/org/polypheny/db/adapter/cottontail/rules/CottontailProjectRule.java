@@ -35,7 +35,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.fun.SqlKnnFunction;
+import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
 
@@ -74,9 +74,9 @@ public class CottontailProjectRule extends CottontailConverterRule {
             } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
                 onlyInputRefs = false;
                 containsValueProjects = true;
-            } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlKnnFunction) ) {
+            } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction) ) {
                 RexCall rexCall = (RexCall) e;
-                SqlKnnFunction knnFunction = (SqlKnnFunction) ((RexCall) e).getOperator();
+                SqlDistanceFunction knnFunction = (SqlDistanceFunction) ((RexCall) e).getOperator();
                 if ( !foundKnnFunction ) {
                     RelDataType fieldType = fieldList.get( i ).getType();
 

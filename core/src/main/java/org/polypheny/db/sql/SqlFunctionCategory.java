@@ -35,7 +35,7 @@ package org.polypheny.db.sql;
 
 
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.FUNCTION;
-import static org.polypheny.db.sql.SqlFunctionCategory.Property.KNN_FUNCTION;
+import static org.polypheny.db.sql.SqlFunctionCategory.Property.DISTANCE_FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.SPECIFIC;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.TABLE_FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.USER_DEFINED;
@@ -60,7 +60,7 @@ public enum SqlFunctionCategory {
     USER_DEFINED_TABLE_FUNCTION( "TABLE_UDF", "User-defined table function", USER_DEFINED, TABLE_FUNCTION ),
     USER_DEFINED_TABLE_SPECIFIC_FUNCTION( "TABLE_UDF_SPECIFIC", "User-defined table function with SPECIFIC name", USER_DEFINED, TABLE_FUNCTION, SPECIFIC ),
     MATCH_RECOGNIZE( "MATCH_RECOGNIZE", "MATCH_RECOGNIZE function", TABLE_FUNCTION ),
-    KNN( "KNN", "k-nearest-neighbour function", KNN_FUNCTION );
+    DISTANCE( "DISTANCE", "distance function", DISTANCE_FUNCTION );
 
     private final EnumSet<Property> properties;
 
@@ -77,7 +77,7 @@ public enum SqlFunctionCategory {
     }
 
     public boolean isKnn() {
-        return properties.contains( KNN_FUNCTION );
+        return properties.contains( DISTANCE_FUNCTION );
     }
 
 
@@ -107,7 +107,7 @@ public enum SqlFunctionCategory {
      * Property of a SqlFunctionCategory.
      */
     enum Property {
-        USER_DEFINED, TABLE_FUNCTION, SPECIFIC, FUNCTION, KNN_FUNCTION
+        USER_DEFINED, TABLE_FUNCTION, SPECIFIC, FUNCTION, DISTANCE_FUNCTION
     }
 }
 

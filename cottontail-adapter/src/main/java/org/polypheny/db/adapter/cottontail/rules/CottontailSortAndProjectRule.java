@@ -32,17 +32,14 @@ import org.polypheny.db.rel.RelFieldCollation.Direction;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
-import org.polypheny.db.sql.fun.SqlKnnFunction;
+import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.tools.RelBuilderFactory;
-import org.polypheny.db.type.PolyType;
 
 
 public class CottontailSortAndProjectRule extends RelOptRule {
@@ -88,7 +85,7 @@ public class CottontailSortAndProjectRule extends RelOptRule {
                 containsInputRefs = true;
             } else if ( (e instanceof RexLiteral) || (e instanceof RexDynamicParam) || ((e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlArrayValueConstructor)) ) {
                 containsValueProjects = true;
-            } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlKnnFunction) ) {
+            } else if ( (e instanceof RexCall) && (((RexCall) e).getOperator() instanceof SqlDistanceFunction) ) {
                 RexCall rexCall = (RexCall) e;
                 if ( !foundKnnFunction ) {
 
@@ -119,6 +116,10 @@ public class CottontailSortAndProjectRule extends RelOptRule {
         RelFieldCollation collation = sort.getCollation().getFieldCollations().get( 0 );
 
         if ( collation.getFieldIndex() != knnColumn ) {
+            return false;
+        }
+
+        if ( sort.fetch == null ) {
             return false;
         }
 

@@ -213,7 +213,7 @@ public class RexImpTable {
         defineMethod( SqlStdOperatorTable.SIN, "sin", NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.TAN, "tan", NullPolicy.STRICT );
         defineMethod( SqlStdOperatorTable.TRUNCATE, "struncate", NullPolicy.STRICT );
-        defineMethod( SqlStdOperatorTable.KNN, "knn", NullPolicy.ANY );
+        defineMethod( SqlStdOperatorTable.DISTANCE, "distance", NullPolicy.ANY );
 
         map.put( SqlStdOperatorTable.PI, ( translator, call, nullAs ) -> Expressions.constant( Math.PI ) );
 

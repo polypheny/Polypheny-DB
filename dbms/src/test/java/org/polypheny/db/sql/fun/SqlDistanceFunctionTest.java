@@ -31,6 +31,7 @@ import org.apache.calcite.avatica.util.ArrayFactoryImpl;
 import org.apache.calcite.avatica.util.Unsafe;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
@@ -38,7 +39,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 @Slf4j
-public class SqlKnnFunctionTest {
+public class SqlDistanceFunctionTest {
 
 
     @BeforeClass
@@ -66,9 +67,9 @@ public class SqlKnnFunctionTest {
                 statement.executeUpdate( "INSERT INTO knndoubletest VALUES (3, ARRAY[0.0,3.0])" );
 
                 statement.executeUpdate( "CREATE TABLE knnbigtest( id INTEGER NOT NULL, myarray BIGINT ARRAY(1,2), PRIMARY KEY (id) )" );
-                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (1, ARRAY[1.0,1.0])" );
-                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (2, ARRAY[2.0,2.0])" );
-                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (3, ARRAY[0.0,3.0])" );
+                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (1, ARRAY[1,1])" );
+                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (2, ARRAY[2,2])" );
+                statement.executeUpdate( "INSERT INTO knnbigtest VALUES (3, ARRAY[0,3])" );
 
                 connection.commit();
             }
@@ -104,17 +105,17 @@ public class SqlKnnFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2SQUARED') as distance FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knninttest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2SQUARED') as distance FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knndoubletest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2SQUARED') as distance FROM knnbigtest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2SQUARED') as dist FROM knnbigtest" ),
                         expectedResult
                 );
             }
@@ -135,17 +136,17 @@ public class SqlKnnFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2') as distance FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knninttest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2') as distance FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knndoubletest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L2') as distance FROM knnbigtest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L2') as dist FROM knnbigtest" ),
                         expectedResult
                 );
             }
@@ -166,17 +167,17 @@ public class SqlKnnFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L1') as distance FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knninttest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L1') as distance FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knndoubletest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'L1') as distance FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'L1') as dist FROM knndoubletest" ),
                         expectedResult
                 );
             }
@@ -197,17 +198,17 @@ public class SqlKnnFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knninttest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knninttest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knndoubletest" ),
                         expectedResult
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, knn(myarray, ARRAY[1,1], 'CHISQUARED') as distance FROM knndoubletest" ),
+                        statement.executeQuery( "SELECT id, distance(myarray, ARRAY[1,1], 'CHISQUARED') as dist FROM knndoubletest" ),
                         expectedResult
                 );
             }
@@ -226,7 +227,7 @@ public class SqlKnnFunctionTest {
                 );
 
                 TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT COUNT(id) FROM knninttest WHERE knn(myarray, ARRAY[1,1], 'L2') < 2.0" ),
+                        statement.executeQuery( "SELECT COUNT(id) FROM knninttest WHERE distance(myarray, ARRAY[1,1], 'L2') < 2.0" ),
                         expectedResult
                 );
             }
@@ -239,7 +240,7 @@ public class SqlKnnFunctionTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, knn(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as distance FROM knninttest" );
+                PreparedStatement preparedStatement = connection.prepareStatement( "SELECT id, distance(myarray, cast(? as INTEGER ARRAY), cast( ? as VARCHAR)) as dist FROM knninttest" );
 
                 final ArrayFactoryImpl arrayFactory = new ArrayFactoryImpl( Unsafe.localCalendar().getTimeZone() );
                 preparedStatement.setArray( 1, arrayFactory.createArray(

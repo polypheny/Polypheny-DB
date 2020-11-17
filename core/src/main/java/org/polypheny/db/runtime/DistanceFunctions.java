@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.util.Pair;
 
 
-public class KnnFunctions {
+public class DistanceFunctions {
 
 
     protected static double l1Metric( List<Number> value, List<Number> target ) {

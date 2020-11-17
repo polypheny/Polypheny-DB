@@ -39,7 +39,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.sql.fun.SqlKnnFunction;
+import org.polypheny.db.sql.fun.SqlDistanceFunction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
@@ -204,7 +204,7 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
                                 BuiltInMethod.MAP_PUT.method,
                                 Expressions.constant( physicalName ),
                                 Expressions.constant( name.toLowerCase() ) ) ) );
-            } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlKnnFunction) ) {
+            } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
                 // KNN Function pushdown
                 knnBuilder = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, limitNode );
 //                context.knnBuilder = knnBuilder;
