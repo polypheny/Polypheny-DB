@@ -88,4 +88,23 @@ public class DbColumn {
         this.defaultValue = defaultValue;
     }
 
+    public DbColumn(
+            final String name,
+            final String dataType,
+            final String collectionsType,
+            final boolean nullable,
+            final Integer precision,
+            final Integer scale,
+            final Integer dimension,
+            final Integer cardinality,
+            final boolean primary,
+            final String defaultValue,
+            final SortState sort,
+            final String filter
+    ) {
+        this( name, dataType, collectionsType, nullable, precision, scale, dimension, cardinality, primary, defaultValue );
+        this.sort = sort;
+        this.filter = filter;
+    }
+
 }

@@ -284,8 +284,9 @@ public class Crud implements InformationObserver {
         }
 
         // determine if it is a view or a table
+        CatalogTable catalogTable;
         try {
-            CatalogTable catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+            catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
             if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
             } else if ( catalogTable.tableType == TableType.VIEW ) {
@@ -295,8 +296,41 @@ public class Crud implements InformationObserver {
             }
         } catch ( GenericCatalogException | UnknownTableException e ) {
             log.error( "Caught exception", e );
-            result.setError( "Could not retrieve type of Result (table/view)." );
+            return result.setError( "Could not retrieve type of Result (table/view)." );
         }
+
+        //get headers with default values
+        ArrayList<DbColumn> cols = new ArrayList<>();
+        try {
+            ArrayList<String> primaryColumns;
+            if ( catalogTable.primaryKey != null ) {
+                CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+            } else {
+                primaryColumns = new ArrayList<>();
+            }
+            for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
+                String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
+                String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
+                cols.add(
+                        new DbColumn(
+                                catalogColumn.name,
+                                catalogColumn.type.getName(),
+                                collectionsType,
+                                catalogColumn.nullable,
+                                catalogColumn.length,
+                                catalogColumn.scale,
+                                catalogColumn.dimension,
+                                catalogColumn.cardinality,
+                                primaryColumns.contains( catalogColumn.name ),
+                                defaultValue,
+                                request.sortState == null ? new SortState() : request.sortState.get( catalogColumn.name ),
+                                request.filter == null ? null : request.filter.get( catalogColumn.name ) ) );
+            }
+        } catch ( GenericCatalogException | UnknownKeyException e ) {
+            e.printStackTrace();
+        }
+        result.setHeader( cols.toArray( new DbColumn[0] ) );
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
         int tableSize = 0;
@@ -568,13 +602,16 @@ public class Crud implements InformationObserver {
         try {
             int i = 0;
             for ( CatalogColumn catalogColumn : catalogColumns ) {
-                //add every column
-                columns.add( "\"" + catalogColumn.name + "\"" );
                 //part is null if it does not exist
                 Part part = req.raw().getPart( catalogColumn.name );
                 if ( part == null ) {
-                    values.add( "NULL" );
+                    //don't add if default value is set
+                    if ( catalogColumn.defaultValue == null ) {
+                        values.add( "NULL" );
+                        columns.add( "\"" + catalogColumn.name + "\"" );
+                    }
                 } else {
+                    columns.add( "\"" + catalogColumn.name + "\"" );
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
                         PolyType polyType = catalogColumn.type;
@@ -1184,7 +1221,6 @@ public class Crud implements InformationObserver {
                 String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
                 String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
                 cols.add(
-                        //TODO NH extend DbColumn with dimension, cardinality
                         new DbColumn(
                                 catalogColumn.name,
                                 catalogColumn.type.getName(),
@@ -1352,6 +1388,7 @@ public class Crud implements InformationObserver {
             query = query + " NOT NULL";
         }
         if ( request.newColumn.defaultValue != null ) {
+            query = query + " DEFAULT ";
             if ( request.newColumn.collectionsType != null ) {
                 //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
                 if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
@@ -1369,13 +1406,13 @@ public class Crud implements InformationObserver {
                     case "DECIMAL":
                         request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
                         BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                        query = query + " DEFAULT " + b.toString();
+                        query = query + b.toString();
                         break;
                     case "VARCHAR":
-                        query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
+                        query = query + String.format( "'%s'", request.newColumn.defaultValue );
                         break;
                     default:
-                        query = query + " DEFAULT " + request.newColumn.defaultValue;
+                        query = query + request.newColumn.defaultValue;
                 }
             }
         }

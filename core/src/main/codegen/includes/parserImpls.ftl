@@ -117,26 +117,29 @@ SqlAlterTable SqlAlterTable(Span s) :
         name = SimpleIdentifier()
         type = DataType()
         (
-            <NULL> { nullable = true; }
-        |
-            <NOT> <NULL> { nullable = false; }
-        |
-            { nullable = true; }
-        )
-        (
-            <DEFAULT_>
-            defaultValue = Literal()
-        |
-            { defaultValue = null; }
-        )
-        (
-            <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
-        |
-            <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
-        |
-            { afterColumn = null; beforeColumn = null; }
-        )
-        {
+                <NULL> { nullable = true; }
+                    |
+                    <NOT>
+                        <NULL> { nullable = false; }
+                            |
+                            { nullable = true; }
+                            )
+                            (
+                            <DEFAULT_>
+                                defaultValue = Literal()
+                                |
+                                defaultValue = ArrayConstructor()
+                                |
+                                { defaultValue = null; }
+                                )
+                                (
+                                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+                                    |
+                                    <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+                                        |
+                                        { afterColumn = null; beforeColumn = null; }
+                                        )
+                                        {
             return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
         }
     |

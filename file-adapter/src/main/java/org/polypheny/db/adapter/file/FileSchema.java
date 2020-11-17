@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,6 +78,7 @@ public class FileSchema extends AbstractSchema {
         ArrayList<Long> columnIds = new ArrayList<>();
         ArrayList<PolyType> columnTypes = new ArrayList<>();
         ArrayList<String> columnNames = new ArrayList<>();
+        columnPlacementsOnStore.sort( Comparator.comparingLong( p -> p.columnId ) );
         for ( CatalogColumnPlacement p : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn;
             catalogColumn = Catalog.getInstance().getColumn( p.columnId );

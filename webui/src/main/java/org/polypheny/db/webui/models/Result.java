@@ -35,6 +35,7 @@ public class Result {
      * The header contains information about the columns of a result
      */
     @Getter
+    @Setter
     private DbColumn[] header;
     /**
      * The rows containing the fetched data
