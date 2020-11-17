@@ -40,6 +40,7 @@ import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlKnnFunction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -72,8 +73,10 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
         context.visitChild( 0, getInput() );
 
         final List<String> physicalColumnNames = new ArrayList<>();
+        final List<PolyType> columnTypes = new ArrayList<>();
         for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+            columnTypes.add( field.getType().getPolyType() );
         }
 
         if ( this.offset != null || this.fetch != null ) {
@@ -125,7 +128,7 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
             inner.add( Expressions.return_( null, valuesMap_ ) );
 
             context.preparedValuesMapBuilder = Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );*/
-            context.preparedValuesMapBuilder = CottontailProject.makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
+            context.preparedValuesMapBuilder = CottontailProject.makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, columnTypes );
             Pair<ParameterExpression, Expression> projectsAndKnn = makeProjectionAndKnnBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, this.fetch );
             context.projectionMap = projectsAndKnn.left;
             if ( projectsAndKnn.right != null ) {

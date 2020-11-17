@@ -127,48 +127,48 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
         List<String> physicalFieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
 
-        // Row Parser
-        final int fieldCount = getRowType().getFieldCount();
-        BlockBuilder builder = new BlockBuilder();
-
-        final ParameterExpression resultMap_ = Expressions.parameter( TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Data.class ),
-                builder.newName( "resultDataMap" ) );
-
-        if ( fieldCount == 1 ) {
-            final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
-            builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
-            this.generateGet( rowType, physicalFieldNames, builder, resultMap_, 0, value_ );
-            builder.add( Expressions.return_( null, value_ ) );
-        } else {
-            final Expression values_ = builder.append(
-                    "values",
-                    Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
-
-            for ( int i = 0; i < fieldCount; i++ ) {
-                this.generateGet(
-                        rowType,
-                        physicalFieldNames, // PHYSICAL ROW NAMES
-                        builder,
-                        resultMap_, // Parameter expr result
-                        i,
-                        Expressions.arrayIndex( values_, Expressions.constant( i ) )
-                );
-            }
-
-            builder.add( Expressions.return_( null, values_ ) );
-        }
-
-        final Expression rowBuilder_ =
-                list.append(
-                        "rowBuilder",
-                        Expressions.lambda(
-                                Expressions.block( builder.toBlock() ),
-                                resultMap_ ) );
-
         final Expression enumerable;
 
         switch ( cottontailContext.queryType ) {
             case SELECT:
+                // Row Parser
+                final int fieldCount = getRowType().getFieldCount();
+                BlockBuilder builder = new BlockBuilder();
+
+                final ParameterExpression resultMap_ = Expressions.parameter( TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Data.class ),
+                        builder.newName( "resultDataMap" ) );
+
+                if ( fieldCount == 1 ) {
+                    final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
+                    builder.add( Expressions.declare( Modifier.FINAL, value_, null ) );
+                    this.generateGet( rowType, physicalFieldNames, builder, resultMap_, 0, value_ );
+                    builder.add( Expressions.return_( null, value_ ) );
+                } else {
+                    final Expression values_ = builder.append(
+                            "values",
+                            Expressions.newArrayBounds( Object.class, 1, Expressions.constant( fieldCount ) ) );
+
+                    for ( int i = 0; i < fieldCount; i++ ) {
+                        this.generateGet(
+                                rowType,
+                                physicalFieldNames, // PHYSICAL ROW NAMES
+                                builder,
+                                resultMap_, // Parameter expr result
+                                i,
+                                Expressions.arrayIndex( values_, Expressions.constant( i ) )
+                        );
+                    }
+
+                    builder.add( Expressions.return_( null, values_ ) );
+                }
+
+                final Expression rowBuilder_ =
+                        list.append(
+                                "rowBuilder",
+                                Expressions.lambda(
+                                        Expressions.block( builder.toBlock() ),
+                                        resultMap_ ) );
+
                 enumerable = list.append( "enumerable",
                         Expressions.call( CottontailQueryEnumerable.CREATE_QUERY_METHOD,
                                 Expressions.constant( cottontailContext.tableName ),
@@ -259,7 +259,15 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
         // Fetch Data from DataMap
         // This should generate: `result_.get(<physical field name>)`
-        final Expression getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( CottontailGrpc.Data.class, result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
+        final Expression getDataFromMap_;
+        try {
+            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
+//            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( CottontailGrpc.Data.class, result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
+//            final Expression getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( CottontailGrpc.Data.class, result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
+        } catch ( Exception e ) {
+            e.printStackTrace();
+            throw new RuntimeException( e );
+        }
 
         final Expression source;
 
@@ -310,6 +318,9 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case VARBINARY:
                 // Binary and VarBinary are turned into base64 string
                 // Linq4JFixer takes care of decoding
+            case TINYINT:
+            case SMALLINT:
+                // Handled by linq4jfixer
             case DATE:
             case TIME:
             case TIMESTAMP:
@@ -381,7 +392,9 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case TIMESTAMP:
                 return Types.lookupMethod( Linq4JFixer.class, "getTimestampData", Object.class );
             case TINYINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntData", Object.class );
             case SMALLINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class );
             case ANY:
             default:
                 throw new AssertionError( "No primitive access method for type: " + polyType );

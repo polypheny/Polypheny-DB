@@ -45,6 +45,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.fun.SqlKnnFunction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -96,8 +97,14 @@ public class CottontailProject extends Project implements CottontailRel {
 
         if ( this.arrayValueProject ) {
             final List<String> physicalColumnNames = new ArrayList<>();
+            final List<PolyType> columnTypes = new ArrayList<>();
             for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
                 physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+                if ( field.getType().getComponentType() != null ) {
+                    columnTypes.add( field.getType().getComponentType().getPolyType() );
+                } else {
+                    columnTypes.add( field.getType().getPolyType() );
+                }
             }
 //            BlockBuilder inner = new BlockBuilder();
 
@@ -136,7 +143,7 @@ public class CottontailProject extends Project implements CottontailRel {
             inner.add( Expressions.return_( null, valuesMap_ ) );
 
             context.preparedValuesMapBuilder = Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );*/
-            context.preparedValuesMapBuilder = makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
+            context.preparedValuesMapBuilder = makeProjectValueBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames, columnTypes );
             context.projectionMap = makeProjectionBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
         } else {
             context.visitChild( 0, getInput() );
@@ -211,7 +218,7 @@ public class CottontailProject extends Project implements CottontailRel {
     }
 
 
-    public static Expression makeProjectValueBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
+    public static Expression makeProjectValueBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, List<PolyType> columnTypes ) {
         BlockBuilder inner = new BlockBuilder();
 
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
@@ -226,11 +233,11 @@ public class CottontailProject extends Project implements CottontailRel {
 
             Expression source_;
             if ( pair.left instanceof RexLiteral ) {
-                source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) pair.left );
+                source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) pair.left, columnTypes.get( i ) );
             } else if ( pair.left instanceof RexDynamicParam ) {
                 source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) pair.left, dynamicParameterMap_ );
             } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof SqlArrayValueConstructor) ) {
-                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left );
+                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left, columnTypes.get( i ) );
             } else {
                 // Skip this item!
                 continue;

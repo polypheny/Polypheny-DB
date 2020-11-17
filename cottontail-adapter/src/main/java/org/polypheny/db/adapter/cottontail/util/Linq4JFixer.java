@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.cottontail.util;
 
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
@@ -38,68 +39,107 @@ public class Linq4JFixer {
 
 
     public static Object getBooleanData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getBooleanData();
     }
 
 
     public static Object getIntData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getIntData();
     }
 
 
     public static Object getLongData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getLongData();
     }
 
 
     public static Object getTinyIntData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return Integer.valueOf(((CottontailGrpc.Data) data).getIntData()).byteValue();
     }
 
 
     public static Object getSmallIntData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return Integer.valueOf(((CottontailGrpc.Data) data).getIntData()).shortValue();
     }
 
 
     public static Object getFloatData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getFloatData();
     }
 
 
     public static Object getDoubleData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getDoubleData();
     }
 
 
-    public static Object getStringData( Object data ) {
+    public static String getStringData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getStringData();
     }
 
 
     public static Object getDecimalData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return new BigDecimal( ((CottontailGrpc.Data) data).getStringData() );
     }
 
 
     public static Object getBinaryData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ByteString.parseBase64( ((CottontailGrpc.Data) data).getStringData() );
     }
 
 
     public static Object getTimeData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getIntData();
 //        return new TimeString( ((CottontailGrpc.Data) data).getStringData() ).getMillisOfDay();
     }
 
 
     public static Object getDateData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getIntData();
 //        return new DateString( ((CottontailGrpc.Data) data).getStringData() ).getDaysSinceEpoch();
     }
 
 
     public static Object getTimestampData( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getLongData();
         /*try {
             return new TimestampString( ((CottontailGrpc.Data) data).getStringData() ).getMillisSinceEpoch();
@@ -116,23 +156,38 @@ public class Linq4JFixer {
 
 
     public static Object getBoolVector( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getVectorData().getBoolVector().getVectorList();
     }
 
 
     public static Object getIntVector( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getVectorData().getIntVector().getVectorList();
     }
 
     public static Object getFloatVector( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getVectorData().getFloatVector().getVectorList();
     }
 
     public static Object getDoubleVector( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getVectorData().getDoubleVector().getVectorList();
     }
 
     public static Object getLongVector( Object data ) {
+        if ( ((CottontailGrpc.Data) data).hasNullData() ) {
+            return null;
+        }
         return ((CottontailGrpc.Data) data).getVectorData().getLongVector().getVectorList();
     }
 
@@ -254,6 +309,19 @@ public class Linq4JFixer {
             default:
                 throw new IllegalArgumentException( "Unknown norm: " + norm );
         }
+    }
+
+
+    public static List fixBigDecimalArray( List stringEncodedArray ) {
+        List<Object> fixedList = new ArrayList<>( stringEncodedArray.size() );
+        for ( Object o : stringEncodedArray ) {
+            if ( o instanceof String ) {
+                fixedList.add( new BigDecimal( (String) o ) );
+            } else {
+                fixedList.add( fixBigDecimalArray( (List) o ) );
+            }
+        }
+        return fixedList;
     }
 
 }

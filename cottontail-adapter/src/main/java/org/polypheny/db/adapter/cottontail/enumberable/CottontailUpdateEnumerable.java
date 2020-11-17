@@ -95,7 +95,9 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
 
         CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
 
-        builder.setWhere( whereBuilder.apply( parameterValues ) );
+        if ( whereBuilder != null ) {
+            builder.setWhere( whereBuilder.apply( parameterValues ) );
+        }
 
         builder.setTuple( Tuple.newBuilder().putAllData( tupleBuilder.apply( parameterValues ) ).build() );
 

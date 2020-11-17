@@ -23,6 +23,7 @@ import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.type.PolyType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
@@ -78,9 +79,9 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
         builder.add( Expressions.declare( Modifier.FINAL, valuesMapList_, valuesMapListCreator ) );
 
 
-        final List<String> physicalColumnNames = new ArrayList<>();
+        final List<Pair<String, PolyType>> physicalColumnNames = new ArrayList<>();
         for ( RelDataTypeField field : this.rowType.getFieldList() ) {
-            physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
+            physicalColumnNames.add( new Pair<>( context.cottontailTable.getPhysicalColumnName( field.getName() ), field.getType().getPolyType() ) );
         }
 
         for ( List<RexLiteral> tuple : tuples ) {
@@ -88,13 +89,13 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
             final NewExpression valuesMapCreator = Expressions.new_( HashMap.class );
             builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
-            for ( Pair<String, RexLiteral> pair : Pair.zip( physicalColumnNames, tuple ) ) {
+            for ( Pair<Pair<String, PolyType>, RexLiteral> pair : Pair.zip( physicalColumnNames, tuple ) ) {
                 builder.add(
                         Expressions.statement(
                         Expressions.call( valuesMap_,
                                 BuiltInMethod.MAP_PUT.method,
-                                Expressions.constant( pair.left ),
-                                CottontailTypeUtil.rexLiteralToDataExpression( pair.right ) ) )
+                                Expressions.constant( pair.left.left ),
+                                CottontailTypeUtil.rexLiteralToDataExpression( pair.right, pair.left.right ) ) )
                 );
             }
 

@@ -46,6 +46,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 
@@ -154,9 +155,11 @@ public class CottontailTableModify extends TableModify implements CottontailRel 
 
         final List<String> physicalColumnNames = new ArrayList<>();
         final List<String> logicalColumnNames = new ArrayList<>();
+        final List<PolyType> columnTypes = new ArrayList<>();
         for ( RelDataTypeField field : context.cottontailTable.getRowType( getCluster().getTypeFactory() ).getFieldList() ) {
             physicalColumnNames.add( context.cottontailTable.getPhysicalColumnName( field.getName() ) );
             logicalColumnNames.add( field.getName() );
+            columnTypes.add( field.getType().getPolyType() );
         }
 
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
@@ -172,13 +175,14 @@ public class CottontailTableModify extends TableModify implements CottontailRel 
             final String logicalName = getUpdateColumnList().get( i );
             final String originalName = physicalColumnNames.get( logicalColumnNames.indexOf( logicalName ) );
 
+
             Expression source_;
             if ( rexNode instanceof RexLiteral ) {
-                source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) rexNode );
+                source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) rexNode, columnTypes.get( i ) );
             } else if ( rexNode instanceof RexDynamicParam ) {
                 source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) rexNode, dynamicParameterMap_ );
             } else if ( (rexNode instanceof RexCall) && (((RexCall) rexNode).getOperator() instanceof SqlArrayValueConstructor) ) {
-                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) rexNode );
+                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) rexNode, columnTypes.get( i ) );
             } else {
                 throw new RuntimeException( "unable to convert expression." );
             }

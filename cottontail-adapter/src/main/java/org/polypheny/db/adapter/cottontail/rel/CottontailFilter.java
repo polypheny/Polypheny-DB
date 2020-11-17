@@ -18,6 +18,8 @@ package org.polypheny.db.adapter.cottontail.rel;
 
 
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.type.PolyType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate.Operator;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
@@ -113,12 +115,14 @@ public class CottontailFilter extends Filter implements CottontailRel {
     public static class Translator {
         private final RelDataType rowType;
         private final List<String> fieldNames;
+        private final List<PolyType> columnTypes;
 
 
         public Translator( RelDataType rowType ) {
             this.rowType = rowType;
             List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
             this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
+            this.columnTypes = rowType.getFieldList().stream().map( RelDataTypeField::getType ).map( RelDataType::getPolyType ).collect( Collectors.toList());
         }
 
         private Expression generateWhereBuilder(
@@ -227,16 +231,23 @@ public class CottontailFilter extends Filter implements CottontailRel {
                 ParameterExpression dynamicParameterMap_,
                 boolean negated ) {
             Expression rightSideData;
+
+            if ( left.getKind() != SqlKind.INPUT_REF ) {
+                return null;
+            }
+
+            final RexInputRef left1 = (RexInputRef) left;
+
             switch ( right.getKind() ) {
                 case LITERAL:
-                    rightSideData = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) right );
+                    rightSideData = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) right, columnTypes.get( left1.getIndex() ) );
                     break;
                 case DYNAMIC_PARAM:
                     rightSideData = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) right, dynamicParameterMap_ );
                     break;
                 case ARRAY_VALUE_CONSTRUCTOR:
                     // TODO js(ct): IMPLEMENT!
-                    rightSideData = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) right );
+                    rightSideData = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) right, columnTypes.get( left1.getIndex() ) );
                     break;
                 default:
                     return null;
@@ -244,7 +255,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
             switch ( left.getKind() ) {
                 case INPUT_REF:
-                    final RexInputRef left1 = (RexInputRef) left;
+//                    final RexInputRef left1 = (RexInputRef) left;
                     String name = fieldNames.get( left1.getIndex() );
 
                     return Expressions.call(

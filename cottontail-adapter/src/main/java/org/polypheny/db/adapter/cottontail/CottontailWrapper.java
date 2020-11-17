@@ -273,15 +273,19 @@ public class CottontailWrapper implements AutoCloseable {
             }
         };
 
-        /* Start data transfer. */
-        final StreamObserver<InsertMessage> sink = this.managementStub.insert(observer);
-        for (InsertMessage message : messages) {
-            sink.onNext(message);
-        }
-        sink.onCompleted(); /* Send commit message. */
+        try {
+            /* Start data transfer. */
+            final StreamObserver<InsertMessage> sink = this.managementStub.insert( observer );
+            for ( InsertMessage message : messages ) {
+                sink.onNext( message );
+            }
+            sink.onCompleted(); /* Send commit message. */
 
-        while (!status[0]) {
-            Thread.yield();
+            while ( !status[0] ) {
+                Thread.yield();
+            }
+        } catch ( Exception e ) {
+            e.printStackTrace();
         }
         return !status[1];
     }

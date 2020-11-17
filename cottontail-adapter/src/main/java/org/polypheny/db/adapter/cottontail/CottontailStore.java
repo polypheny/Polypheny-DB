@@ -50,6 +50,7 @@ import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.FileSystemManager;
 import org.vitrivr.cottontail.CottontailKt;
@@ -272,6 +273,7 @@ public class CottontailStore extends Store {
             if ( catalogColumn.dimension != null && catalogColumn.dimension == 1 && columnType.getNumber() != Type.STRING.getNumber() ) {
                 columnBuilder.setLength( catalogColumn.cardinality );
             }
+            columnBuilder.setNullable( catalogColumn.nullable );
             columns.add( columnBuilder.build() );
         }
 
@@ -294,8 +296,12 @@ public class CottontailStore extends Store {
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnStore( this.getStoreId(), catalogTable.id );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
 
-        final String currentPhysicalTableName = placements.get( 0 ).physicalTableName;
-
+        final String currentPhysicalTableName;
+        if ( placements.get( 0 ).columnId == catalogColumn.id ) {
+            currentPhysicalTableName = placements.get( 1 ).physicalTableName;
+        } else {
+            currentPhysicalTableName = placements.get( 0 ).physicalTableName;
+        }
         final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
         final String newPhysicalColumnName = CottontailNameUtil.createPhysicalColumnName( catalogColumn.id );
 
@@ -320,7 +326,13 @@ public class CottontailStore extends Store {
         List<InsertMessage> inserts = new ArrayList<>();
         From from = From.newBuilder().setEntity( newTableEntity ).build();
 
-        Object defaultValue = CottontailTypeUtil.defaultValueParser( catalogColumn.defaultValue );
+        Object defaultValue;
+        if ( catalogColumn.defaultValue != null ) {
+            PolyType actualType = (catalogColumn.collectionsType != null) ? catalogColumn.collectionsType : catalogColumn.type;
+            defaultValue = CottontailTypeUtil.defaultValueParser( catalogColumn.defaultValue, actualType );
+        } else {
+            defaultValue = null;
+        }
         CottontailGrpc.Data defaultData = CottontailTypeUtil.toData( defaultValue );
 
         queryResponse.forEachRemaining( queryResponseMessage -> {

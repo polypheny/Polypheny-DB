@@ -50,9 +50,11 @@ import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
 
 
-public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
+public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
+//public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
     private RelProtoDataType protoRowType;
     private CottontailSchema cottontailSchema;
 
@@ -90,7 +92,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
         this.physicalTableName = physicalTableName;
         this.physicalColumnNames = physicalColumnNames;
 
-        this.entity = Entity.newBuilder().setName( this.physicalTableName ).build();
+        this.entity = Entity.newBuilder().setName( this.physicalTableName ).setSchema( Schema.newBuilder().setName( physicalSchemaName ).build() ).build();
     }
 
 
@@ -141,7 +143,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     }
 
 
-    @Override
+    /*@Override
     public Enumerable<Object[]> scan( DataContext root ) {
         Query query = Query.newBuilder()
                 .setFrom( From.newBuilder().setEntity( this.entity ).build() )
@@ -154,7 +156,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
                 new CottontailQueryEnumerable.RowTypeParser(
                         this.getRowType( root.getTypeFactory() ),
                         this.physicalColumnNames ) );
-    }
+    }*/
 
 
     @Override
