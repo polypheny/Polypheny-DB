@@ -525,6 +525,48 @@ public class JdbcDdlTest {
 
 
     @Test
+    public void testTruncate() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                // Create ddltest table and insert data
+                statement.executeUpdate( DDLTEST_SQL );
+                statement.executeUpdate( DDLTEST_DATA_SQL );
+
+                // Check
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ddltest.* FROM ddltest" ),
+                        ImmutableList.of( new Object[]{
+                                DDLTEST_DATA[0],
+                                DDLTEST_DATA[1],
+                                DDLTEST_DATA[2],
+                                DDLTEST_DATA[3],
+                                DDLTEST_DATA[4],
+                                DDLTEST_DATA[5],
+                                DDLTEST_DATA[6],
+                                DDLTEST_DATA[7],
+                                DDLTEST_DATA[8],
+                                DDLTEST_DATA[9],
+                                DDLTEST_DATA[10],
+                                DDLTEST_DATA[11],
+                        } ) );
+
+                // Truncate
+                statement.executeUpdate( "TRUNCATE TABLE ddltest" );
+
+                // Check
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT ddltest.* FROM ddltest" ),
+                        ImmutableList.of() );
+
+                // Drop ddltest table
+                statement.executeUpdate( "DROP TABLE ddltest" );
+            }
+        }
+    }
+
+
+    @Test
     public void testExists() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
