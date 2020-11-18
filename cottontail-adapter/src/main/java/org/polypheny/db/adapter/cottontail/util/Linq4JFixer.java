@@ -32,6 +32,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn.Distance;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.KnnHint.NoIndexKnnHint;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Vector;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
@@ -291,7 +292,7 @@ public class Linq4JFixer {
 
         knnBuilder.setDistance( getDistance( (String) distance ) );
 
-        knnBuilder.setHint( KnnHint.newBuilder().setNoIndex( true ) );
+        knnBuilder.setHint( KnnHint.newBuilder().setNoIndexHint( NoIndexKnnHint.newBuilder() ) );
 
         return knnBuilder.build();
     }

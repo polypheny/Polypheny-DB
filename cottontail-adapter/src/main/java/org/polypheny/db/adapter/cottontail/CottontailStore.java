@@ -136,10 +136,10 @@ public class CottontailStore extends Store {
                     FileWriter fileWriter = new FileWriter( configFile );
                     fileWriter.write( "{" );
                     fileWriter.write( "\"root\": \"" + dataFolder.getAbsolutePath() + "\"," );
-                    fileWriter.write( "\"memoryConfig\": {" );
-                    fileWriter.write( "\"forceUnmapMappedFiles\": true," );
-                    fileWriter.write( "\"dataPageShift\": 22," );
-                    fileWriter.write( "\"cataloguePageShift\": 20" );
+                    fileWriter.write( "\"mapdb\": {" );
+                    fileWriter.write( "\"enableMmap\": true," );
+                    fileWriter.write( "\"forceUnmap\": true," );
+                    fileWriter.write( "\"pageShift\": 22" );
                     fileWriter.write( "} }" );
                     fileWriter.close();
                 } catch ( IOException e ) {
