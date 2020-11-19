@@ -325,7 +325,7 @@ public class Crud implements InformationObserver {
                                 primaryColumns.contains( catalogColumn.name ),
                                 defaultValue,
                                 request.sortState == null ? new SortState() : request.sortState.get( catalogColumn.name ),
-                                request.filter == null ? null : request.filter.get( catalogColumn.name ) ) );
+                                request.filter == null || request.filter.get( catalogColumn.name ) == null ? "" : request.filter.get( catalogColumn.name ) ) );
             }
         } catch ( GenericCatalogException | UnknownKeyException e ) {
             e.printStackTrace();
@@ -614,8 +614,7 @@ public class Crud implements InformationObserver {
                     columns.add( "\"" + catalogColumn.name + "\"" );
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-                        PolyType polyType = catalogColumn.type;
-                        values.add( uiValueToSql( value, polyType ) );
+                        values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
                         statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( part.getInputStream() ) );
@@ -1034,21 +1033,22 @@ public class Crud implements InformationObserver {
     /**
      * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
      */
-    private String uiValueToSql( final String value, final PolyType polyType ) {
+    private String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
         if ( value == null ) {
             return "NULL";
         }
-        switch ( polyType ) {
+        if ( collectionsType == PolyType.ARRAY ) {
+            return "ARRAY " + value;
+        }
+        switch ( type ) {
             case TIME:
                 return String.format( "TIME '%s'", value );
             case DATE:
                 return String.format( "DATE '%s'", value );
             case TIMESTAMP:
                 return String.format( "TIMESTAMP '%s'", value );
-            case ARRAY:
-                return "ARRAY " + value;
         }
-        if ( polyType.getFamily() == PolyTypeFamily.CHARACTER ) {
+        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
             return String.format( "'%s'", value );
         }
         return value;
@@ -1065,7 +1065,7 @@ public class Crud implements InformationObserver {
      */
     private String computeWherePK( final String tableName, final String columnName, final Map<String, String> filter ) {
         StringJoiner joiner = new StringJoiner( " AND ", "", "" );
-        Map<String, PolyType> dataTypes = getColumnTypes( tableName, columnName );
+        Map<String, CatalogColumn> catalogColumns = getCatalogColumns( tableName, columnName );
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( databaseName, tableName, columnName );
@@ -1075,7 +1075,8 @@ public class Crud implements InformationObserver {
                 String condition;
                 if ( filter.containsKey( colName ) ) {
                     String val = filter.get( colName );
-                    condition = uiValueToSql( val, dataTypes.get( colName ) );
+                    CatalogColumn col = catalogColumns.get( colName );
+                    condition = uiValueToSql( val, col.type, col.collectionsType );
                     condition = String.format( "\"%s\" = %s", colName, condition );
                     joiner.add( condition );
                 }
@@ -1156,7 +1157,7 @@ public class Crud implements InformationObserver {
                     if ( parsed == null ) {
                         setStatements.add( String.format( "\"%s\" = NULL", catalogColumn.name ) );
                     } else {
-                        setStatements.add( String.format( "\"%s\" = %s", catalogColumn.name, uiValueToSql( parsed, catalogColumn.type ) ) );
+                        setStatements.add( String.format( "\"%s\" = %s", catalogColumn.name, uiValueToSql( parsed, catalogColumn.type, catalogColumn.collectionsType ) ) );
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
@@ -1389,7 +1390,7 @@ public class Crud implements InformationObserver {
         }
         if ( request.newColumn.defaultValue != null ) {
             query = query + " DEFAULT ";
-            if ( request.newColumn.collectionsType != null ) {
+            if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.equals( "" ) ) {
                 //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
                 if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
                     query = query + request.newColumn.collectionsType;
@@ -2987,7 +2988,7 @@ public class Crud implements InformationObserver {
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
             //special treatment for arrays
             if ( entry.getValue().startsWith( "[" ) ) {
-                joiner.add( entry.getKey() + " = ARRAY" + entry.getValue() );
+                joiner.add( "\"" + entry.getKey() + "\"" + " = ARRAY" + entry.getValue() );
                 counter++;
             }
             //default
@@ -3042,20 +3043,16 @@ public class Crud implements InformationObserver {
      * Get the data types of each column of a table
      *
      * @param schemaName name of the schema
-     * @param tableName  name of the table
+     * @param tableName name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
-    private Map<String, PolyType> getColumnTypes( String schemaName, String tableName ) {
-        Map<String, PolyType> dataTypes = new HashMap<>();
+    private Map<String, CatalogColumn> getCatalogColumns( String schemaName, String tableName ) {
+        Map<String, CatalogColumn> dataTypes = new HashMap<>();
         try {
             CatalogTable table = catalog.getTable( this.databaseName, schemaName, tableName );
             List<CatalogColumn> catalogColumns = catalog.getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
-                if ( catalogColumn.collectionsType != null ) {
-                    dataTypes.put( catalogColumn.name, catalogColumn.collectionsType );
-                } else {
-                    dataTypes.put( catalogColumn.name, catalogColumn.type );
-                }
+                dataTypes.put( catalogColumn.name, catalogColumn );
             }
         } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception", e );
