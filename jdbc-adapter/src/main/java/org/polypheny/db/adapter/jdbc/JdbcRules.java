@@ -79,6 +79,7 @@ import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.metadata.RelMdUtil;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -94,6 +95,7 @@ import org.polypheny.db.sql.SqlFunction;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlItemOperator;
 import org.polypheny.db.tools.RelBuilderFactory;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -518,7 +520,7 @@ public class JdbcRules {
                     (Predicate<Filter>) filter -> (
                             !userDefinedFunctionInFilter( filter )
                                     && !knnFunctionInFilter( filter )
-                                    && (out.dialect.supportsNestedArrays() || !itemOperatorInFilter( filter ))),
+                                    && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
                     Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }
 
@@ -551,6 +553,27 @@ public class JdbcRules {
                 }
             }
             return false;
+        }
+
+
+        private static boolean isStringComparableArrayType( Filter filter ) {
+            for ( RelDataTypeField dataTypeField : filter.getRowType().getFieldList() ) {
+                if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY ) {
+                    switch ( dataTypeField.getType().getComponentType().getPolyType() ) {
+                        case BOOLEAN:
+                        case TINYINT:
+                        case SMALLINT:
+                        case INTEGER:
+                        case BIGINT:
+                        case CHAR:
+                        case VARCHAR:
+                            break;
+                        default:
+                            return false;
+                    }
+                }
+            }
+            return true;
         }
 
 
