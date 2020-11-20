@@ -72,7 +72,7 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 @Slf4j
 public class CottontailStore extends Store {
 
-    public static final String DESCRIPTION = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimised for classical boolean as well as vector-space retrieval.";
+    public static final String DESCRIPTION = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.";
 
     public static final String ADAPTER_NAME = "Cottontail-DB";
 

@@ -17,9 +17,12 @@
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 
+import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -54,12 +57,14 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     private List<InsertMessage> inserts;
     private DataContext dataContext;
     private CottontailWrapper wrapper;
+    private boolean fromPrepared;
 
 
-    public CottontailInsertEnumerable( List<InsertMessage> inserts, DataContext dataContext, CottontailWrapper wrapper ) {
+    public CottontailInsertEnumerable( List<InsertMessage> inserts, DataContext dataContext, CottontailWrapper wrapper, boolean fromPrepared ) {
         this.inserts = inserts;
         this.dataContext = dataContext;
         this.wrapper = wrapper;
+        this.fromPrepared = fromPrepared;
     }
 
 
@@ -83,7 +88,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
             ).build() );
         }
 
-        return new CottontailInsertEnumerable<>( insertMessages, null, wrapper );
+        return new CottontailInsertEnumerable<>( insertMessages, null, wrapper, false );
     }
 
 
@@ -111,7 +116,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
             }
         }
 
-        return new CottontailInsertEnumerable<>( insertMessages, dataContext, wrapper );
+        return new CottontailInsertEnumerable<>( insertMessages, dataContext, wrapper, true );
     }
 
 
@@ -119,7 +124,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
     @Override
     public Enumerator<T> enumerator() {
-        return new CottontailInsertResultEnumerator<>( inserts, wrapper );
+        return new CottontailInsertResultEnumerator<>( inserts, wrapper, fromPrepared );
     }
 
 
@@ -127,32 +132,54 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
         private List<InsertMessage> inserts;
         private CottontailWrapper wrapper;
+        private Iterator<InsertMessage> insertMessageIterator;
 
         private boolean wasSuccessful;
         private boolean executed;
+        private long checkCount;
+        private boolean fromPrepared;
 
 
-        public CottontailInsertResultEnumerator( List<InsertMessage> inserts, CottontailWrapper wrapper ) {
+        public CottontailInsertResultEnumerator( List<InsertMessage> inserts, CottontailWrapper wrapper, boolean fromPrepared ) {
             this.inserts = inserts;
             this.wrapper = wrapper;
+            this.insertMessageIterator = inserts.iterator();
+            this.checkCount = 0;
+            this.fromPrepared = fromPrepared;
         }
 
 
+        @SuppressWarnings("unchecked")
         @Override
         public T current() {
-            return (T) Integer.valueOf( this.inserts.size() );
+            if ( this.wasSuccessful ) {
+                return this.fromPrepared ? (T) Integer.valueOf( 1 ) : (T) Integer.valueOf( this.inserts.size() );
+            } else {
+                return (T) Integer.valueOf( -1 );
+            }
         }
 
 
         @Override
         public boolean moveNext() {
 
-            if ( !executed ) {
+            if ( !this.executed ) {
+//            if ( this.insertMessageIterator.hasNext() ) {
                 this.wasSuccessful = this.wrapper.insert( this.inserts );
+//                this.wasSuccessful = this.wrapper.insert( ImmutableList.of( this.insertMessageIterator.next() ) );
                 executed = true;
+                this.checkCount += 1;
                 return this.wasSuccessful;
             } else {
-                return false;
+                if ( !this.fromPrepared ) {
+                    return false;
+                }
+                if ( this.checkCount < this.inserts.size() ) {
+                    this.checkCount += 1;
+                    return true;
+                } else {
+                    return false;
+                }
             }
         }
 

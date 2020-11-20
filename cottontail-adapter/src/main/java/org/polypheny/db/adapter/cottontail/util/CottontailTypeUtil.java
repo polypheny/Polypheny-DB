@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
@@ -333,6 +334,10 @@ public class CottontailTypeUtil {
         } else if ( firstItem instanceof Boolean ) {
             return vectorBuilder.setBoolVector(
                     BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ).build() ).build();
+        } else if ( firstItem instanceof BigDecimal ) {
+            List<Double> doubleList = ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList());
+            return vectorBuilder.setDoubleVector(
+                    DoubleVector.newBuilder().addAllVector( doubleList ).build() ).build();
         } else {
             return null;
         }
@@ -435,7 +440,7 @@ public class CottontailTypeUtil {
 
         Expression targetColumn = knnCallTargetColumn( knnCall.getOperands().get( 0 ), physicalColumnNames, dynamicParameterMap_ );
 
-        Expression targetVector = knnCallVector( knnCall.getOperands().get( 1 ), dynamicParameterMap_ );
+        Expression targetVector = knnCallVector( knnCall.getOperands().get( 1 ), dynamicParameterMap_, knnCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() );
 
         Expression distance = knnCallDistance( knnCall.getOperands().get( 2 ), dynamicParameterMap_ );
 
@@ -443,7 +448,7 @@ public class CottontailTypeUtil {
         Expression optimisationFactor;
 
         if ( knnCall.getOperands().size() == 4 ) {
-            weightsVector = knnCallVector( knnCall.getOperands().get( 3 ), dynamicParameterMap_ );
+            weightsVector = knnCallVector( knnCall.getOperands().get( 3 ), dynamicParameterMap_, knnCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() );
         } else {
             weightsVector = Expressions.constant( null );
         }
@@ -478,10 +483,10 @@ public class CottontailTypeUtil {
     }
 
 
-    private static Expression knnCallVector( RexNode node, ParameterExpression dynamicParamMap ) {
+    private static Expression knnCallVector( RexNode node, ParameterExpression dynamicParamMap, PolyType actualType ) {
         if ( (node instanceof RexCall) && (((RexCall) node).getOperator() instanceof SqlArrayValueConstructor) ) {
 //            List<Object> arrayList = arrayCallToList( ((RexCall) node).getOperands(), node.getType().getComponentType().getPolyType() );
-            Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), node.getType().getComponentType().getPolyType() );
+            Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
             return Expressions.call( CottontailTypeUtil.class, "toVectorData", arrayList );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
