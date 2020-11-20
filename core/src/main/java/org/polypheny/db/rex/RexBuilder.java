@@ -454,6 +454,11 @@ public class RexBuilder {
      * @return Call to CAST operator
      */
     public RexNode makeCast( RelDataType type, RexNode exp, boolean matchNullability ) {
+        // MV: This might be a bad idea. It would be better to implement cast support for array columns
+        if ( exp.getType().getPolyType() == PolyType.ARRAY ) {
+            return exp;
+        }
+
         final PolyType sqlType = type.getPolyType();
         if ( exp instanceof RexLiteral ) {
             RexLiteral literal = (RexLiteral) exp;
@@ -981,7 +986,14 @@ public class RexBuilder {
             return node;
         }
 
-        if ( !node.getType().equals( targetType ) ) {
+        // Special handling for arrays
+        if ( node instanceof RexCall && ((RexCall) node).op.kind == SqlKind.ARRAY_VALUE_CONSTRUCTOR ) {
+            List<RexNode> newRexNodes = new ArrayList<>( ((RexCall) node).operands.size() );
+            for ( RexNode n : ((RexCall) node).operands ) {
+                newRexNodes.add( makeCast( targetType.getComponentType(), n ) );
+            }
+            return new RexCall( ((RexCall) node).type, ((RexCall) node).op, newRexNodes );
+        } else if ( !node.getType().equals( targetType ) ) {
             return makeCast( targetType, node );
         }
         return node;

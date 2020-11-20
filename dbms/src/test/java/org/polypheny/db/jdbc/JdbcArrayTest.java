@@ -39,7 +39,7 @@ public class JdbcArrayTest {
             + "id INTEGER NOT NULL, "
             + "bigintarray BIGINT ARRAY(1,2), "
             + "booleanarray BOOLEAN ARRAY(1,2), "
-            + "decimalarray DECIMAL ARRAY(1,2), "
+            + "decimalarray DECIMAL(3,1) ARRAY(1,2), "
             + "doublearray DOUBLE ARRAY(1,2), "
             + "intarray INTEGER ARRAY(1,2), "
             + "realarray REAL ARRAY(1,2), "
@@ -218,6 +218,26 @@ public class JdbcArrayTest {
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id FROM arraytest WHERE intarray = array[1,2]" ),
+                        ImmutableList.of( new Object[]{ 1 } ) );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[9999999,8888888]" ),
+                        ImmutableList.of( new Object[]{ 1 } ) );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id FROM arraytest WHERE booleanarray = array[true,false]" ),
+                        ImmutableList.of( new Object[]{ 1 } ) );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id FROM arraytest WHERE decimalarray = array[22.2,11.1]" ),
+                        ImmutableList.of( new Object[]{ 1 } ) );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id FROM arraytest WHERE doublearray = array[cast(2.0 as double),cast(2.5 as double)]" ),
+                        ImmutableList.of( new Object[]{ 1 } ) );
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT id FROM arraytest WHERE smallintarray = array[56,44]" ),
                         ImmutableList.of( new Object[]{ 1 } ) );
 
                 TestHelper.checkResultSet(
