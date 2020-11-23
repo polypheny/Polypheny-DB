@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -2631,13 +2632,63 @@ public class Crud implements InformationObserver {
         } else {
             res.header( "Content-Disposition", "attachment; filename=" + "file" );
         }
-        try ( FileInputStream fis = new FileInputStream( f ) ) {
-            ServletOutputStream os = res.raw().getOutputStream();
-            IOUtils.copyLarge( fis, os );
-            os.flush();
-            os.close();
-        } catch ( IOException ignored ) {
-            res.status( 500 );
+        String range = req.headers( "Range" );
+        if ( range != null ) {
+            long rangeStart;
+            long rangeEnd;
+            long fileLength = f.length();
+            Pattern pattern = Pattern.compile( "bytes=(\\d*)-(\\d*)" );
+            Matcher m = pattern.matcher( range );
+            if ( m.find() && m.groupCount() == 2 ) {
+                rangeStart = Long.parseLong( m.group( 1 ) );
+                String group2 = m.group( 2 );
+                //chrome and firefox send "bytes=0-"
+                //safari sends "bytes=0-1" to get the file length and then bytes=0-fileLength
+                if ( group2 != null && !group2.equals( "" ) ) {
+                    rangeEnd = Long.parseLong( group2 );
+                } else {
+                    rangeEnd = fileLength - 1;
+                }
+                if ( rangeEnd >= fileLength ) {
+                    res.status( 416 );//range not satisfiable
+                    return "";
+                }
+            } else {
+                res.status( 416 );//range not satisfiable
+                return "";
+            }
+            try {
+                //see https://github.com/dessalines/torrenttunes-client/blob/master/src/main/java/com/torrenttunes/client/webservice/Platform.java
+                res.header( "Accept-Ranges", "bytes" );
+                res.status( 206 );//partial content
+                int len = new Long( rangeEnd - rangeStart ).intValue() + 1;
+                res.header( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
+                res.header( "Content-Length", String.valueOf( len ) );
+
+                RandomAccessFile raf = new RandomAccessFile( f, "r" );
+                raf.seek( rangeStart );
+                ServletOutputStream os = res.raw().getOutputStream();
+                byte[] buf = new byte[256];
+                while ( len > 0 ) {
+                    int read = raf.read( buf, 0, Math.min( buf.length, len ) );
+                    os.write( buf, 0, read );
+                    len -= read;
+                }
+                os.flush();
+                os.close();
+                raf.close();
+            } catch ( IOException ignored ) {
+                res.status( 500 );
+            }
+        } else {
+            try ( FileInputStream fis = new FileInputStream( f ) ) {
+                ServletOutputStream os = res.raw().getOutputStream();
+                IOUtils.copyLarge( fis, os );
+                os.flush();
+                os.close();
+            } catch ( IOException ignored ) {
+                res.status( 500 );
+            }
         }
         return "";
     }
