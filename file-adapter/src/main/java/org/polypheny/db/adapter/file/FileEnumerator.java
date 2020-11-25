@@ -338,24 +338,31 @@ public class FileEnumerator<E> implements Enumerator<E> {
             byte[] encoded = null;
             if ( f.exists() ) {
                 if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    encoded = Files.readAllBytes( f.toPath() );
-                } else {
-                    s = new String( Files.readAllBytes( f.toPath() ), FileStore.CHARSET );
-                }
-            }
-            if ( (s == null && encoded == null) || (s != null && s.equals( "" )) ) {
-                curr[i] = null;
-            } else {
-                allNull = false;
-                if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.FILE ) {
-                        curr[i] = f;
-                    } else {
-                        curr[i] = encoded;
+                    if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
+                        encoded = Files.readAllBytes( f.toPath() );
                     }
                 } else {
-                    curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
+                    s = new String( Files.readAllBytes( f.toPath() ), FileStore.CHARSET );
+                    if ( s.equals( "" ) ) {
+                        curr[i] = null;
+                        i++;
+                        continue;
+                    }
                 }
+            } else {
+                curr[i] = null;
+                i++;
+                continue;
+            }
+            allNull = false;
+            if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.FILE ) {
+                    curr[i] = f;
+                } else {
+                    curr[i] = encoded;
+                }
+            } else {
+                curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
             }
             i++;
         }

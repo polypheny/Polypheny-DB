@@ -124,7 +124,7 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     protected String getTypeString( PolyType type ) {
         if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-            return "BLOB";
+            return "BLOB(" + RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger() + "M)";
         }
         switch ( type ) {
             case BOOLEAN:

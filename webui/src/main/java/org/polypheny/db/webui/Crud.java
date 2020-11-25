@@ -571,9 +571,9 @@ public class Crud implements InformationObserver {
     private void initMultipart( final Request req ) {
         //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
         String location = System.getProperty( "java.io.tmpdir" + File.separator + "Polypheny-DB" );
-        int maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
-        long maxFileSize = 1_000_000 * maxSizeMB;
-        long maxRequestSize = 1_000_000 * maxSizeMB;
+        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
+        long maxFileSize = 1_000_000L * maxSizeMB;
+        long maxRequestSize = 1_000_000L * maxSizeMB;
         int fileSizeThreshold = 1024;
         MultipartConfigElement multipartConfigElement = new MultipartConfigElement( location, maxFileSize, maxRequestSize, fileSizeThreshold );
         req.raw().setAttribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
@@ -2647,7 +2647,7 @@ public class Crud implements InformationObserver {
                 if ( group2 != null && !group2.equals( "" ) ) {
                     rangeEnd = Long.parseLong( group2 );
                 } else {
-                    rangeEnd = fileLength - 1;
+                    rangeEnd = Math.min( rangeStart + 10_000_000L, fileLength - 1 );
                 }
                 if ( rangeEnd >= fileLength ) {
                     res.status( 416 );//range not satisfiable

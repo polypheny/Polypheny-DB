@@ -196,7 +196,8 @@ public enum RuntimeConfig {
             "uiSettingsDataViewGroup" ),
 
     UI_UPLOAD_SIZE_MB( "ui/uploadSizeMB",
-            "Maximum size of a file upload for multimedia data in the UI, in MB",
+            "Maximum size of a file upload for multimedia data in the UI, in MB. "
+                    + "When creating a HSQLDB multimedia column, this size is applied as the max-size of the underlying HSQLDB BLOB column.",
             10_000,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
