@@ -77,6 +77,9 @@ import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.util.SqlString;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -345,12 +348,24 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                 */
             default:
                 if ( polyType.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    source = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+                    // if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ){ ..getBytes } else { ..getBinaryStream }
+                    Expression getStatement = Expressions.call( DataContext.ROOT, Types.lookupMethod( DataContext.class, "getStatement" ) );
+                    Expression getTransaction = Expressions.call( getStatement, Types.lookupMethod( Statement.class, "getTransaction" ) );
+                    Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
+                    Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
+                    Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
+                    builder.add( Expressions.ifThenElse( Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
+                            Expressions.statement( Expressions.assign( target, getBytes ) ),
+                            Expressions.statement( Expressions.assign( target, getBinaryStream ) ) ) );
+                    source = null;
                 } else {
                     source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
                 }
         }
-        builder.add( Expressions.statement( Expressions.assign( target, source ) ) );
+        //source is null if an expression was already added to the builder.
+        if ( source != null ) {
+            builder.add( Expressions.statement( Expressions.assign( target, source ) ) );
+        }
 
         // [POLYPHENYDB-596] If primitive type columns contain null value, returns null object
         if ( primitive != null ) {
