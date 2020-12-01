@@ -96,8 +96,9 @@ SqlAlterTable SqlAlterTable(Span s) :
     int numPartitions = 0;
     List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
     SqlIdentifier partitionName = null;
-    List<SqlIdentifier> partitionQualifierList = new ArrayList<SqlIdentifier>();
-    SqlIdentifier partitionQualifier = null;
+    List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
+    List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
+    SqlNode partitionValues = null;
 
 }
 {
@@ -431,18 +432,21 @@ SqlAlterTable SqlAlterTable(Span s) :
                         <RPAREN>
 
                     |
-                        <LPAREN>
-                            <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
-                            <VALUES> <LPAREN>
-                                    partitionQualifier = SimpleIdentifier() { partitionQualifierList.add(partitionQualifier); }
-                            <RPAREN>
-                            (
-                                <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                            <LPAREN>
+                                <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
                                 <VALUES> <LPAREN>
-                                    partitionQualifier = SimpleIdentifier() { partitionQualifierList.add(partitionQualifier); }
-                                <RPAREN>
-                            )*
-                        <RPAREN>
+                                        partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                        (
+                                            <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                        )*
+                                <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                (
+                                    <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                            <VALUES> <LPAREN>
+                                                    partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                            <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                                )*
+                            <RPAREN>
                 )
         ]
         {

@@ -50,7 +50,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final SqlIdentifier partitionType;
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
-    private final List<SqlIdentifier> partitionQualifierList;
+    private final List< List<SqlNode>> partitionQualifierList;
 
 
     public SqlAlterTableAddPartitions(
@@ -60,7 +60,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             SqlIdentifier partitionType,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
-            List<SqlIdentifier> partitionQualifierList ) {
+            List< List<SqlNode>> partitionQualifierList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.partitionType = Objects.requireNonNull( partitionType );
@@ -108,9 +108,9 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
                 List<String> partitionValue = new ArrayList<>();
                 List <List<String>> partitionQualifierStringList = new ArrayList<>();
-                /* for ( List<SqlNode> partitionValueList: partitionQualifierList) {
+                 for ( List<SqlNode> partitionValueList: partitionQualifierList) {
                     partitionQualifierStringList.add(partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ));
-                }*/
+                }
 
                 // TODO maybe create partitions multithreaded
                 catalog.partitionTable(
