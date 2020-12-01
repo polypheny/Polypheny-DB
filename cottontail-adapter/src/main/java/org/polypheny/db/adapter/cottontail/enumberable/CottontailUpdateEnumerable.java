@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
@@ -36,6 +37,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
+@Slf4j
 public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
 
     public static final Method CREATE_UPDATE_METHOD = Types.lookupMethod(
@@ -99,7 +101,12 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             builder.setWhere( whereBuilder.apply( parameterValues ) );
         }
 
-        builder.setTuple( Tuple.newBuilder().putAllData( tupleBuilder.apply( parameterValues ) ).build() );
+        try {
+            builder.setTuple( Tuple.newBuilder().putAllData( tupleBuilder.apply( parameterValues ) ).build() );
+        } catch ( RuntimeException e ) {
+            log.error( "Something went wrong here!", e );
+            throw new RuntimeException( e );
+        }
 
         builder.setFrom( from_ );
 

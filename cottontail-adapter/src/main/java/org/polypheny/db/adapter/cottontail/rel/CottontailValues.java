@@ -90,13 +90,16 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
             builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
             for ( Pair<Pair<String, PolyType>, RexLiteral> pair : Pair.zip( physicalColumnNames, tuple ) ) {
-                builder.add(
-                        Expressions.statement(
-                        Expressions.call( valuesMap_,
-                                BuiltInMethod.MAP_PUT.method,
-                                Expressions.constant( pair.left.left ),
-                                CottontailTypeUtil.rexLiteralToDataExpression( pair.right, pair.left.right ) ) )
-                );
+                if ( true ) {
+//                if ( !pair.getValue().isNull() ) {
+                    builder.add(
+                            Expressions.statement(
+                                    Expressions.call( valuesMap_,
+                                            BuiltInMethod.MAP_PUT.method,
+                                            Expressions.constant( pair.left.left ),
+                                            CottontailTypeUtil.rexLiteralToDataExpression( pair.right, pair.left.right ) ) )
+                    );
+                }
             }
 
             builder.add( Expressions.statement ( Expressions.call( valuesMapList_, Types.lookupMethod( List.class, "add", Object.class), valuesMap_ ) ) );

@@ -326,14 +326,16 @@ public class CottontailStore extends Store {
         List<InsertMessage> inserts = new ArrayList<>();
         From from = From.newBuilder().setEntity( newTableEntity ).build();
 
+        PolyType actualDefaultType;
         Object defaultValue;
         if ( catalogColumn.defaultValue != null ) {
-            PolyType actualType = (catalogColumn.collectionsType != null) ? catalogColumn.collectionsType : catalogColumn.type;
-            defaultValue = CottontailTypeUtil.defaultValueParser( catalogColumn.defaultValue, actualType );
+            actualDefaultType = (catalogColumn.collectionsType != null) ? catalogColumn.collectionsType : catalogColumn.type;
+            defaultValue = CottontailTypeUtil.defaultValueParser( catalogColumn.defaultValue, actualDefaultType );
         } else {
             defaultValue = null;
+            actualDefaultType = null;
         }
-        CottontailGrpc.Data defaultData = CottontailTypeUtil.toData( defaultValue );
+        CottontailGrpc.Data defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType );
 
         queryResponse.forEachRemaining( queryResponseMessage -> {
             for ( Tuple tuple : queryResponseMessage.getResultsList() ) {
@@ -465,6 +467,7 @@ public class CottontailStore extends Store {
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
         // TODO js(ct): Add updateColumnType to cottontail
+        log.error( "UPDATE COLUMN TYPE IS NOT SUPPORTED YET!" );
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnStore( this.getStoreId(), catalogColumn.tableId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
         final CatalogColumn newColumn = this.catalog.getColumn( catalogColumn.id );

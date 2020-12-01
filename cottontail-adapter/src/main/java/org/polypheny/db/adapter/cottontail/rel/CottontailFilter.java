@@ -243,7 +243,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
                     rightSideData = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) right, columnTypes.get( left1.getIndex() ) );
                     break;
                 case DYNAMIC_PARAM:
-                    rightSideData = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) right, dynamicParameterMap_ );
+                    rightSideData = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) right, dynamicParameterMap_, columnTypes.get( left1.getIndex() ) );
                     break;
                 case ARRAY_VALUE_CONSTRUCTOR:
                     // TODO js(ct): IMPLEMENT!
