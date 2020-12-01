@@ -47,12 +47,10 @@ public class RangePartitionManager extends AbstractPartitionManager {
     public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
         super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
 
-
-
-        log.debug( "TYPE {} ", partitionColumn.type );
+        System.out.println( "TYPE "+ partitionColumn.type );
 
         if (partitionColumn.type.getFamily() != PolyTypeFamily.NUMERIC ){
-            log.debug( "You cannot specify RANGE partitioning for a  non-numeric type. Detected Type: {} ", partitionColumn.type );
+            throw new RuntimeException( "You cannot specify RANGE partitioning for a non-numeric type. Detected Type: "+  partitionColumn.type );
         }
 
 

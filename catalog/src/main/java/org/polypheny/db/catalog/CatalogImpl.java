@@ -2828,16 +2828,19 @@ public class CatalogImpl extends Catalog {
 
     //TODO: Data Migrate when table already exists and has data. Distribute the data
     @Override
-    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException {
+    public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException {
         try {
             CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
             log.debug( "Start partitioning on columnId '{}' with partition type {}", partitionColumnId, partitionType );
+
+
             long partId;
             List<Long> tempPartIds = new ArrayList<>();
-
+            System.out.println("partition Table: " + partitionQualifiers);
             if ( partitionNames.size() >= 2 && numPartitions == 0 ) {
                 numPartitions = partitionNames.size();
             }
+
 
             // Calculate how many partitions exist if partitioning is applied.
             // Loop over value to create those partitions with partitionKey to uniquelyIdentify partition
@@ -2854,9 +2857,9 @@ public class CatalogImpl extends Catalog {
 
             CatalogColumn partitionColumn = getColumn( partitionColumnId );
 
-            if ( !partitionManager.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn ) ) {
+           /* if ( !partitionManager.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn ) ) {
                 throw new RuntimeException( "Partition Table failed for table: " + old.name );
-            }
+            }*/
 
             for ( int i = 0; i < numPartitions; i++ ) {
                 String partitionName;
@@ -2876,7 +2879,8 @@ public class CatalogImpl extends Catalog {
                     if ( partitionQualifiers.isEmpty() ) {
                         partId = addPartition( tableId, partitionName, old.schemaId, old.ownerId, partitionType, new ArrayList<>(), false );
                     } else {
-                        partId = addPartition( tableId, partitionName, old.schemaId, old.ownerId, partitionType, new ArrayList<>( Collections.singletonList( partitionQualifiers.get( i ) ) ), false );
+                        //partId = addPartition( tableId, partitionName, old.schemaId, old.ownerId, partitionType, new ArrayList<>( Collections.singletonList( partitionQualifiers.get( i ) ) ), false );
+                        partId = addPartition( tableId, partitionName, old.schemaId, old.ownerId, partitionType, partitionQualifiers.get( i ), false );
                     }
                 }
                 tempPartIds.add( partId );

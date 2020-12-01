@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -105,13 +106,20 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                     log.debug( "Creating partition for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
                 }
 
+                List<String> partitionValue = new ArrayList<>();
+                List <List<String>> partitionQualifierStringList = new ArrayList<>();
+                /* for ( List<SqlNode> partitionValueList: partitionQualifierList) {
+                    partitionQualifierStringList.add(partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ));
+                }*/
+
                 // TODO maybe create partitions multithreaded
                 catalog.partitionTable(
                         tableId,
                         actualPartitionType,
                         partitionColumnID,
                         numPartitions,
-                        partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
+                        //partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
+                        partitionQualifierStringList,
                         partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
 
                 if ( log.isDebugEnabled() ) {

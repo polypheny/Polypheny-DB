@@ -906,7 +906,7 @@ public abstract class Catalog {
      * @param partitionQualifiers qualifiers which are directly associated with a partition
      * @param partitionNames (optional)
      */
-    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<String> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionIdRuntimeException, GenericCatalogException;
+    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionIdRuntimeException, GenericCatalogException;
 
 
     /**
@@ -1317,7 +1317,7 @@ public abstract class Catalog {
 
     public enum PartitionType {
         NONE( 0 ),
-        RANGES( 1 ),
+        RANGE( 1 ),
         LIST( 2 ),
         HASH( 3 ),
         ROUNDROBIN( 4 );

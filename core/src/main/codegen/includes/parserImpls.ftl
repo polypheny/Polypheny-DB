@@ -412,7 +412,12 @@ SqlAlterTable SqlAlterTable(Span s) :
 
     |
         <PARTITION> <BY>
-        partitionType = SimpleIdentifier()
+                    (
+                            partitionType = SimpleIdentifier()
+                        |
+                            <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
+                    )
+
         <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
         [
                 (

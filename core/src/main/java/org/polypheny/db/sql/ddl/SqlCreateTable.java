@@ -119,7 +119,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final SqlIdentifier partitionType;
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
-    private final List<SqlIdentifier> partitionQualifierList;
+
+    private final List< List<SqlNode>> partitionQualifierList;
+
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
@@ -139,17 +141,23 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             SqlIdentifier partitionColumn,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
-            List<SqlIdentifier> partitionQualifierList ) {
+            List< List<SqlNode>> partitionQualifierList) {
+
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
         this.query = query; // for "CREATE TABLE ... AS query"; may be null
         this.store = store; // ON STORE [store name]; may be null
-        this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | ROUNDROBIN | LIST); may be null
+        this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
         this.partitionColumn = partitionColumn; // may be null
         this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
+
+
+        System.out.println("TYPE " +  partitionType + " VALUE " + partitionQualifierList );
+
+
     }
 
 
@@ -347,13 +355,20 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     log.debug( "Creating partitions for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
                 }
 
+                List<String> partitionValue = new ArrayList<>();
+                List <List<String>> partitionQualifierStringList = new ArrayList<>();
+                for ( List<SqlNode> partitionValueList: partitionQualifierList) {
+                    partitionQualifierStringList.add(partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ));
+                }
+
                 // TODO maybe create partitions multithreaded
                 catalog.partitionTable(
                         tableId,
                         actualPartitionType,
                         partitionColumnID,
                         numPartitions,
-                        partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
+                        //partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
+                        partitionQualifierStringList,
                         partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
 
                 if ( log.isDebugEnabled() ) {
