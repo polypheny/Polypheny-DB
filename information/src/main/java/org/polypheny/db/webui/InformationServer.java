@@ -22,6 +22,7 @@ import static spark.Service.ignite;
 import com.google.gson.Gson;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationManager;
@@ -119,7 +120,7 @@ public class InformationServer implements InformationObserver {
      * Observe Changes in Information Objects of the Information Manager
      */
     @Override
-    public void observeInfos( final Information info ) {
+    public void observeInfos( final Information info, final String informationManagerId, final Session session ) {
         try {
             InformationWebSocket.broadcast( info.asJson() );
         } catch ( IOException e ) {
@@ -132,7 +133,7 @@ public class InformationServer implements InformationObserver {
      * Observe Changes in the PageList of the Information Manager
      */
     @Override
-    public void observePageList( final String debugId, final InformationPage[] pages ) {
+    public void observePageList( final InformationPage[] pages, final String debugId, final Session session ) {
         // TODO: can be implemented if needed
     }
 

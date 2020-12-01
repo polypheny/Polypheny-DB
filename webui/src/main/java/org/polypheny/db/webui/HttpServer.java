@@ -57,8 +57,10 @@ public class HttpServer implements Runnable {
     public void run() {
         final Service server = Service.ignite();
         server.port( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        Crud crud = new Crud( transactionManager, "pa", "APP" );
 
-        webSockets( server );
+        WebSocket webSocketHandler = new WebSocket( crud );
+        webSockets( server, webSocketHandler );
 
         server.staticFiles.location( "webapp/" );
 
@@ -80,7 +82,7 @@ public class HttpServer implements Runnable {
             }
         } );
 
-        crudRoutes( server, new Crud( transactionManager, "pa", "APP" ) );
+        crudRoutes( server, crud );
 
         log.info( "Polypheny-UI started and is listening on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     }
@@ -90,9 +92,6 @@ public class HttpServer implements Runnable {
      * Defines the routes for this Server
      */
     private void crudRoutes( Service webuiServer, Crud crud ) {
-
-        webuiServer.post( "/getTable", crud::getTable, gson::toJson );
-
         webuiServer.post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
         webuiServer.post( "/insertRow", "multipart/form-data", crud::insertRow, gson::toJson );
@@ -100,8 +99,6 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/deleteRow", crud::deleteRow, gson::toJson );
 
         webuiServer.post( "/updateRow", "multipart/form-data", crud::updateRow, gson::toJson );
-
-        webuiServer.post( "/anyQuery", crud::anyQuery, gson::toJson );
 
         webuiServer.post("/classifyData", crud::classifyData, gson::toJson);
 
@@ -154,10 +151,6 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/addDropPlacement", crud::addDropPlacement, gson::toJson );
 
         webuiServer.post( "/getAnalyzerPage", crud::getAnalyzerPage );
-
-        webuiServer.post( "/closeAnalyzer", crud::closeAnalyzer );
-
-        webuiServer.post( "/executeRelAlg", crud::executeRelAlg, gson::toJson );
 
         webuiServer.post( "/schemaRequest", crud::schemaRequest, gson::toJson );
 
@@ -222,8 +215,8 @@ public class HttpServer implements Runnable {
     /**
      * Define websocket paths
      */
-    private void webSockets( Service webuiServer ) {
-        webuiServer.webSocket( "/queryAnalyzer", WebSocket.class );
+    private void webSockets( Service webuiServer, WebSocket webSocketHandler ) {
+        webuiServer.webSocket( "/webSocket", webSocketHandler );
     }
 
 

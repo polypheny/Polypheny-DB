@@ -116,6 +116,13 @@ public class Result {
     @Setter
     private boolean isConvertedToSql;
 
+    /**
+     * Transaction id, for the websocket. It will not be serialized to gson.
+     */
+    @Getter
+    @Setter
+    private transient String xid;
+
 
     /**
      * Build a Result object containing the data from the ResultSet, including the headers of the columns

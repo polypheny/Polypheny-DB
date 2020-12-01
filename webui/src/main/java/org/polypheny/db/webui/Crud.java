@@ -85,6 +85,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
 import org.polypheny.db.adapter.StoreManager;
@@ -169,7 +170,6 @@ import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
-import org.polypheny.db.webui.models.UIRelNode;
 import org.polypheny.db.webui.models.Uml;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
@@ -180,6 +180,7 @@ import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import spark.Request;
@@ -242,8 +243,7 @@ public class Crud implements InformationObserver {
     /**
      * Returns the content of a table with a maximum of PAGESIZE elements.
      */
-    Result getTable( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+    Result getTable( final UIRequest request ) {
         Transaction transaction = getTransaction();
         Result result;
 
@@ -269,6 +269,7 @@ public class Crud implements InformationObserver {
 
         try {
             result = executeSqlSelect( transaction.createStatement(), request, query.toString() );
+            result.setXid( transaction.getXid().toString() );
         } catch ( QueryExecutionException e ) {
             if ( request.filter != null ) {
                 result = new Result( "Error while filtering table " + request.tableId );
@@ -648,9 +649,11 @@ public class Crud implements InformationObserver {
     /**
      * Run any query coming from the SQL console
      */
-    ArrayList<Result> anyQuery( final Request req, final Response res ) {
-        QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
+    ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
         Transaction transaction = getTransaction( request.analyze );
+        if ( request.analyze ) {
+            transaction.getQueryAnalyzer().setSession( session );
+        }
 
         ArrayList<Result> results = new ArrayList<>();
         boolean autoCommit = true;
@@ -732,7 +735,7 @@ public class Crud implements InformationObserver {
                 }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
@@ -742,7 +745,7 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     try {
                         transaction.rollback();
@@ -755,7 +758,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) );
+                    result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
@@ -764,7 +767,7 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     try {
                         transaction.rollback();
@@ -2077,10 +2080,10 @@ public class Crud implements InformationObserver {
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
-    Result executeRelAlg( final Request req, final Response res ) {
-        UIRelNode topNode = gson.fromJson( req.body(), UIRelNode.class );
+    Result executeRelAlg( final RelAlgRequest request, Session session ) {
 
         Transaction transaction = getTransaction( true );
+        transaction.getQueryAnalyzer().setSession( session );
         Statement statement = transaction.createStatement();
 
         InformationManager im = transaction.getQueryAnalyzer().observe( this );
@@ -2088,7 +2091,7 @@ public class Crud implements InformationObserver {
 
         RelNode result;
         try {
-            result = QueryPlanBuilder.buildFromTree( topNode, statement );
+            result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
             return new Result( e );
@@ -2131,7 +2134,7 @@ public class Crud implements InformationObserver {
                     null );
         }
 
-        ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ) );
+        ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
 
         try {
             transaction.commit();
@@ -2140,7 +2143,7 @@ public class Crud implements InformationObserver {
             throw new RuntimeException( e );
         }
 
-        return new Result( header, data.toArray( new String[0][] ) );
+        return new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
     }
 
 
@@ -2225,12 +2228,8 @@ public class Crud implements InformationObserver {
      * Send updates to the UI if Information objects in the query analyzer change.
      */
     @Override
-    public void observeInfos( final Information info ) {
-        try {
-            WebSocket.broadcast( info.asJson() );
-        } catch ( IOException e ) {
-            log.error( "Caught exception during WebSocket broadcast", e );
-        }
+    public void observeInfos( final Information info, final String analyzerId, final Session session ) {
+        WebSocket.sendMessage( session, info.asJson() );
     }
 
 
@@ -2238,18 +2237,12 @@ public class Crud implements InformationObserver {
      * Send an updated pageList of the query analyzer to the UI.
      */
     @Override
-    public void observePageList( final String analyzerId, final InformationPage[] pages ) {
+    public void observePageList( final InformationPage[] pages, final String analyzerId, final Session session ) {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
-        int counter = 0;
         for ( InformationPage page : pages ) {
             nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
-            counter++;
         }
-        try {
-            WebSocket.sendPageList( this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
-        } catch ( IOException e ) {
-            log.error( "Caught exception during WebSocket broadcast", e );
-        }
+        WebSocket.sendMessage( session, this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }
 
 
@@ -2259,16 +2252,6 @@ public class Crud implements InformationObserver {
     public String getAnalyzerPage( final Request req, final Response res ) {
         String[] params = this.gson.fromJson( req.body(), String[].class );
         return InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson();
-    }
-
-
-    /**
-     * Close a query analyzer if not needed anymore.
-     */
-    public String closeAnalyzer( final Request req, final Response res ) {
-        String id = req.body();
-        InformationManager.close( id );
-        return "";
     }
 
 
@@ -2797,7 +2780,7 @@ public class Crud implements InformationObserver {
                 header.add( dbCol );
             }
 
-            ArrayList<String[]> data = computeResultData( rows, header );
+            ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) ).setHasMoreRows( hasMoreRows );
         } finally {
@@ -2812,10 +2795,11 @@ public class Crud implements InformationObserver {
 
     /**
      * Convert data from a query result to Strings readable in the UI
+     *
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    ArrayList<String[]> computeResultData ( final List<List<Object>> rows, final List<DbColumn> header ) {
+    ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
             String[] temp = new String[row.size()];
@@ -2853,15 +2837,13 @@ public class Crud implements InformationObserver {
                             String columnName = String.valueOf( header.get( counter ).name.hashCode() );
                             File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
                             mmFolder.mkdirs();
-                            TemporalFileManager tfm = TemporalFileManager.getInstance( mmFolder );
-
                             if ( o instanceof File ) {
                                 File f = ((File) o);
                                 try {
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() );
                                     newLink.delete();//delete to override
                                     Path added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
-                                    tfm.addPath( added );
+                                    TemporalFileManager.addPath( transaction.getXid().toString(), added );
                                     temp[counter] = newLink.getName();
                                 } catch ( IOException e ) {
                                     throw new RuntimeException( "Could not create link to mm file", e );
@@ -2881,7 +2863,7 @@ public class Crud implements InformationObserver {
                                 File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() );
                                 try {
                                     IOUtils.copyLarge( is, new FileOutputStream( f.getPath() ) );
-                                    tfm.addFile( f );
+                                    TemporalFileManager.addFile( transaction.getXid().toString(), f );
                                 } catch ( IOException e ) {
                                     throw new RuntimeException( "Could not place file in mm folder", e );
                                 }
@@ -2895,7 +2877,7 @@ public class Crud implements InformationObserver {
                                     throw new RuntimeException( "Could not place file in mm folder", e );
                                 }
                                 temp[counter] = f.getName();
-                                tfm.addPath( f.toPath() );
+                                TemporalFileManager.addFile( transaction.getXid().toString(), f );
                                 break;
                             }
                             //fall through

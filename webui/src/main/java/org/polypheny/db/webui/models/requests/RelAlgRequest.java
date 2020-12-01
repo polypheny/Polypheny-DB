@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.information;
+package org.polypheny.db.webui.models.requests;
 
 
-import org.eclipse.jetty.websocket.api.Session;
+import org.polypheny.db.webui.models.UIRelNode;
 
 
-public interface InformationObserver {
+public class RelAlgRequest extends UIRequest {
 
-    void observeInfos( final Information info, final String informationManagerId, final Session session );
-
-    void observePageList( final InformationPage[] pages, final String informationManagerId, final Session session );
+    public UIRelNode topNode;
 }

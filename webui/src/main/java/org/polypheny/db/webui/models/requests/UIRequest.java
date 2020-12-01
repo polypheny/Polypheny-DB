@@ -27,6 +27,11 @@ import org.polypheny.db.webui.models.SortState;
 public class UIRequest {
 
     /**
+     * Type of a request, e.g. QueryRequest or RelAlgRequest
+     */
+    public String requestType;
+
+    /**
      * The name of the table the data should be fetched from
      */
     public String tableId;

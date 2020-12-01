@@ -62,7 +62,6 @@ public class InformationTable extends InformationHtml {
     public InformationTable( String id, String groupId, List<String> labels ) {
         super( id, groupId, "" );
         this.labels = labels;
-        notifyManager();
     }
 
 

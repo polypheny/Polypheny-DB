@@ -20,87 +20,70 @@ package org.polypheny.db.webui;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.stream.Collectors;
-import org.polypheny.db.util.Pair;
+import java.util.HashSet;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
- * Manager that deletes temporary files at a scheduled fixed rate
+ * Static manager that remembers files that were created during a transaction and can delete them on request.
+ * It will delete all files on shutdown as well.
  */
-public class TemporalFileManager {
+@Slf4j
+public final class TemporalFileManager {
 
-    private static final Map<String, TemporalFileManager> managers = new HashMap<>();
-    private final File root;
-    /**
-     * List of absolute paths of files and when they were created
-     */
-    private final List<Pair<Long, String>> files = new LinkedList<>();
-
-
-    public static TemporalFileManager getInstance( File rootFile ) {
-        if ( !managers.containsKey( rootFile.getAbsolutePath() ) ) {
-            managers.put( rootFile.getAbsolutePath(), new TemporalFileManager( rootFile ) );
-        }
-        return managers.get( rootFile.getAbsolutePath() );
+    private TemporalFileManager() {
+        //intentionally empty
     }
 
-
-    private TemporalFileManager( final File root ) {
-        this.root = root;
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate( new TimerTask() {
-            @Override
-            public void run() {
-                deleteOlderFiles();
-            }
-        }, 60_000, 60_000 );
-        initOnShutdown();
-    }
+    static HashMap<String, Set<File>> temporaryFiles = new HashMap<>();
 
 
-    private void initOnShutdown() {
+    static {
         Runtime.getRuntime().addShutdownHook( new Thread( () -> {
-            for ( String absPath : files.stream().map( f -> f.right ).collect( Collectors.toList() ) ) {
-                new File( absPath ).delete();
+            for ( Set<File> files : temporaryFiles.values() ) {
+                for ( File file : files ) {
+                    file.delete();
+                }
             }
         } ) );
     }
 
 
     /**
-     * Add a file to the manager, so it will be deleted after a timeout
+     * Add a file to the manager
      * The file will only be added to the manager if it exists
+     *
+     * @param xid Transaction id
+     * @param file File that was created during a transaction
      */
-    public boolean addFile( final File file ) {
-        File f = new File( root, file.getName() );
-        if ( f.exists() ) {
-            files.add( new Pair<>( System.currentTimeMillis(), f.getAbsolutePath() ) );
+    public static boolean addFile( final String xid, final File file ) {
+        if ( file.exists() ) {
+            if ( !temporaryFiles.containsKey( xid ) ) {
+                temporaryFiles.put( xid, new HashSet<>() );
+            }
+            temporaryFiles.get( xid ).add( file );
         }
-        return f.exists();
+        return file.exists();
     }
 
 
     /**
-     * Add a file to the manager, so it will be deleted after a timeout
-     * The file will only be added to the manager if it exists
+     * See {@link #addFile}
      */
-    public boolean addPath( final Path path ) {
+    public static boolean addPath( final String xid, final Path path ) {
         File f = new File( path.toString() );
-        return addFile( f );
+        return addFile( xid, f );
     }
 
 
-    private void deleteOlderFiles() {
-        while ( files.size() > 0 && System.currentTimeMillis() - files.get( 0 ).left > 300_000 ) {
-            File f = new File( files.get( 0 ).right );
-            f.delete();
-            files.remove( 0 );
+    public static void deleteFilesOfTransaction( final String xid ) {
+        if ( !temporaryFiles.containsKey( xid ) ) {
+            return;
         }
+        for ( File file : temporaryFiles.get( xid ) ) {
+            file.delete();
+        }
+        temporaryFiles.remove( xid );
     }
-
 }
