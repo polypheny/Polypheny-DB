@@ -238,8 +238,8 @@ public class HorizontalPartitioningTest {
                             + "tvarchar VARCHAR(20) NULL, "
                             + "PRIMARY KEY (tprimary) )"
                             + "PARTITION BY HASH (tvarchar) "
-                            + "( PARTITION parta VALUES(abc), "
-                            + "PARTITION partb VALUES(def))" );
+                            + "( PARTITION parta VALUES('abc'), "
+                            + "PARTITION partb VALUES('def'))" );
                 } catch ( AvaticaSqlException e ) {
                     failed = true;
                 }
@@ -274,8 +274,8 @@ public class HorizontalPartitioningTest {
                             + "tvarchar VARCHAR(20) NULL, "
                             + "PRIMARY KEY (tprimary) )"
                             + "PARTITION BY HASH (tvarchar) "
-                            + "( PARTITION parta VALUES(abc), "
-                            + "PARTITION partb VALUES(def))" );
+                            + "( PARTITION parta VALUES('abc'), "
+                            + "PARTITION partb VALUES('def'))" );
                 } catch ( AvaticaSqlException e ) {
                     failed = true;
                 }
@@ -304,8 +304,8 @@ public class HorizontalPartitioningTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )"
                         + "PARTITION BY LIST (tvarchar) "
-                        + "( PARTITION parta VALUES(abc), "
-                        + "PARTITION partb VALUES(def))" );
+                        + "( PARTITION parta VALUES('abc'), "
+                        + "PARTITION partb VALUES('def', 'qrs'))" );
 
                 //LIST Partitioning check if unbound partiiton is correctly added when only specifying oen explicit partition
 
@@ -315,7 +315,7 @@ public class HorizontalPartitioningTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )"
                         + "PARTITION BY LIST (tvarchar) "
-                        + "( PARTITION parta VALUES(abc) )" );
+                        + "( PARTITION parta VALUES('abc','def') )" );
 
                 //LIST partitoining can be created with only empty lists
                 boolean failed = false;
