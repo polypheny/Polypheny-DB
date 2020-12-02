@@ -444,6 +444,9 @@ SqlAlterTable SqlAlterTable(Span s) :
                                     <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
                                             <VALUES> <LPAREN>
                                                     partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                    (
+                                                        <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                    )*
                                             <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
                                 )*
                             <RPAREN>

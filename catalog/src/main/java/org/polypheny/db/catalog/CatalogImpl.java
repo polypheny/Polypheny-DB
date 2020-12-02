@@ -2857,9 +2857,9 @@ public class CatalogImpl extends Catalog {
 
             CatalogColumn partitionColumn = getColumn( partitionColumnId );
 
-           /* if ( !partitionManager.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn ) ) {
+            if ( !partitionManager.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn ) ) {
                 throw new RuntimeException( "Partition Table failed for table: " + old.name );
-            }*/
+            }
 
             for ( int i = 0; i < numPartitions; i++ ) {
                 String partitionName;

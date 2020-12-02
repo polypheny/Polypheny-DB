@@ -120,7 +120,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean validatePartitionSetup( List<String> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
+    public boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
         super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
 
         if ( !partitionQualifiers.isEmpty() ) {

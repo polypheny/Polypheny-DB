@@ -358,6 +358,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 List<String> partitionValue = new ArrayList<>();
                 List <List<String>> partitionQualifierStringList = new ArrayList<>();
                 for ( List<SqlNode> partitionValueList: partitionQualifierList) {
+
                     partitionQualifierStringList.add(partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ));
                 }
 
