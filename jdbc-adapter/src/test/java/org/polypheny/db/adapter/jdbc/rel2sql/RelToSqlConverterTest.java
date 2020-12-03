@@ -1565,7 +1565,7 @@ public class RelToSqlConverterTest {
     private void checkLiteral2( String expression, String expected ) {
         sql( "VALUES " + expression )
                 .withHsqldb()
-                .ok( "SELECT *\n" + "FROM (VALUES  (" + expected + ")) AS t (EXPR$0)" );
+                .ok( "SELECT *\n" + "FROM (VALUES  (" + expected + ")) AS \"t\" (\"EXPR$0\")" );
     }
 
 
@@ -1614,7 +1614,7 @@ public class RelToSqlConverterTest {
     @Test
     public void testFloor() {
         String query = "SELECT floor(\"hire_date\" TO MINUTE) FROM \"employee\"";
-        String expected = "SELECT TRUNC(hire_date, 'MI')\nFROM foodmart.employee";
+        String expected = "SELECT TRUNC(\"hire_date\", 'MI')\nFROM \"foodmart\".\"employee\"";
         sql( query )
                 .withHsqldb()
                 .ok( expected );
@@ -1811,9 +1811,9 @@ public class RelToSqlConverterTest {
         final String query = "SELECT floor(\"hire_date\" TO MINUTE)\n"
                 + "FROM \"employee\"\n"
                 + "GROUP BY floor(\"hire_date\" TO MINUTE)";
-        final String expected = "SELECT TRUNC(hire_date, 'MI')\n"
-                + "FROM foodmart.employee\n"
-                + "GROUP BY TRUNC(hire_date, 'MI')";
+        final String expected = "SELECT TRUNC(\"hire_date\", 'MI')\n"
+                + "FROM \"foodmart\".\"employee\"\n"
+                + "GROUP BY TRUNC(\"hire_date\", 'MI')";
         final String expectedOracle = "SELECT TRUNC(\"hire_date\", 'MINUTE')\n"
                 + "FROM \"foodmart\".\"employee\"\n"
                 + "GROUP BY TRUNC(\"hire_date\", 'MINUTE')";
@@ -3062,9 +3062,9 @@ public class RelToSqlConverterTest {
     public void testValues() {
         final String sql = "select \"a\"\n"
                 + "from (values (1, 'x'), (2, 'yy')) as t(\"a\", \"b\")";
-        final String expectedHsqldb = "SELECT a\n"
+        final String expectedHsqldb = "SELECT \"a\"\n"
                 + "FROM (VALUES  (1, 'x '),\n"
-                + " (2, 'yy')) AS t (a, b)";
+                + " (2, 'yy')) AS \"t\" (\"a\", \"b\")";
         final String expectedPostgresql = "SELECT \"a\"\n"
                 + "FROM (VALUES  (1, 'x '),\n"
                 + " (2, 'yy')) AS \"t\" (\"a\", \"b\")";
