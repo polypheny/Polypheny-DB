@@ -55,7 +55,10 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 @Slf4j
 public class HsqldbSqlDialect extends SqlDialect {
 
-    public static final SqlDialect DEFAULT = new HsqldbSqlDialect( EMPTY_CONTEXT.withDatabaseProduct( DatabaseProduct.HSQLDB ) );
+    public static final SqlDialect DEFAULT = new HsqldbSqlDialect(
+            EMPTY_CONTEXT
+                    .withDatabaseProduct( DatabaseProduct.HSQLDB )
+                    .withIdentifierQuoteString( "\"" ) );
 
 
     /**
