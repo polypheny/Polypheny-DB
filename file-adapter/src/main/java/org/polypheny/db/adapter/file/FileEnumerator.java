@@ -372,7 +372,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
 
     private Object[] project( final Object[] o ) {
         assert (projectionMapping != null);
-        Object[] out = new Comparable[projectionMapping.length];
+        Object[] out = new Object[projectionMapping.length];
         for ( int i = 0; i < projectionMapping.length; i++ ) {
             out[i] = o[projectionMapping[i]];
         }

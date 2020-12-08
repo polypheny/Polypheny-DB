@@ -108,8 +108,8 @@ public class WebSocket {
                 ArrayList<Result> results;
                 try {
                     results = crud.anyQuery( queryRequest, session );
-                } catch ( Exception e ) {
-                    sendMessage( session, new Result[]{ new Result( e ) } );
+                } catch ( Throwable t ) {
+                    sendMessage( session, new Result[]{ new Result( t ) } );
                     return;
                 }
                 for ( Result result : results ) {
