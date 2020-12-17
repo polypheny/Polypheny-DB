@@ -2840,7 +2840,13 @@ public class Crud implements InformationObserver {
                             if ( o instanceof File ) {
                                 File f = ((File) o);
                                 try {
-                                    File newLink = new File( mmFolder, columnName + "_" + f.getName() );
+                                    ContentInfoUtil util = new ContentInfoUtil();
+                                    ContentInfo info = util.findMatch( f );
+                                    String extension = "";
+                                    if ( info != null && info.getFileExtensions() != null ) {
+                                        extension = "." + info.getFileExtensions()[0];
+                                    }
+                                    File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
                                     TemporalFileManager.addPath( transaction.getXid().toString(), added );
