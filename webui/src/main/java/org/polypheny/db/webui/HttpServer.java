@@ -100,13 +100,15 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/updateRow", "multipart/form-data", crud::updateRow, gson::toJson );
 
-        webuiServer.post("/classifyData", crud::classifyData, gson::toJson);
+        webuiServer.post( "/batchUpdate", "multipart/form-data", crud::batchUpdate, gson::toJson );
 
-        webuiServer.post("/getExploreTables", crud::getExploreTables, gson::toJson);
+        webuiServer.post( "/classifyData", crud::classifyData, gson::toJson );
 
-        webuiServer.post("/createInitialExploreQuery", crud::createInitialExploreQuery, gson::toJson);
+        webuiServer.post( "/getExploreTables", crud::getExploreTables, gson::toJson );
 
-        webuiServer.post("/exploration", crud::exploration, gson::toJson);
+        webuiServer.post( "/createInitialExploreQuery", crud::createInitialExploreQuery, gson::toJson );
+
+        webuiServer.post( "/exploration", crud::exploration, gson::toJson );
 
         webuiServer.post( "/allStatistics", crud::getStatistics, gsonExpose::toJson );
 

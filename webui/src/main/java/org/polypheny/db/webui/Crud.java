@@ -171,6 +171,8 @@ import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
 import org.polypheny.db.webui.models.Uml;
+import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
+import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
@@ -1037,7 +1039,7 @@ public class Crud implements InformationObserver {
     /**
      * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
      */
-    private String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
+    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
         if ( value == null ) {
             return "NULL";
         }
@@ -1200,6 +1202,40 @@ public class Crud implements InformationObserver {
             }
         }
         return result;
+    }
+
+
+    Result batchUpdate( final Request req, final Response res ) {
+        initMultipart( req );
+        BatchUpdateRequest request;
+        try {
+            String jsonRequest = new BufferedReader( new InputStreamReader( req.raw().getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            request = gson.fromJson( jsonRequest, BatchUpdateRequest.class );
+        } catch ( IOException | ServletException e ) {
+            log.error( "Could not parse batch update request", e );
+            return new Result( e );
+        }
+        Transaction transaction = getTransaction();
+        Statement statement;
+        int totalRows = 0;
+        try {
+            for ( Update update : request.updates ) {
+                statement = transaction.createStatement();
+                String query = update.getQuery( request.tableId, statement, req.raw() );
+                totalRows += executeSqlUpdate( statement, transaction, query );
+            }
+            transaction.commit();
+            return new Result( new Debug().setAffectedRows( totalRows ) );
+        } catch ( ServletException | IOException | QueryExecutionException | TransactionException e ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Could not rollback", e );
+                return new Result( e );
+            }
+            log.error( "The batch update failed", e );
+            return new Result( e );
+        }
     }
 
 
