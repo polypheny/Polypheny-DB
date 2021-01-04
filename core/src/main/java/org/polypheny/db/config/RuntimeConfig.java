@@ -202,6 +202,15 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
+    UI_USE_HARDLINKS( "ui/useHardlinks",
+            "Whether or not to use hardlinks for temporal files in the UI. If false, softlinks are used. This config has only an effect when one or multiple file stores are deployed. "
+                    + "With hardlinks, the data you see is is the correct data that was selected during the transaction. "
+                    + "But with multiple file stores on different file systems, hardlinks won't work. "
+                    + "In this case you can use softlinks, but you might see data that is more recent.",
+            true,
+            ConfigType.BOOLEAN,
+            "uiSettingsDataViewGroup" ),
+
     HUB_IMPORT_BATCH_SIZE( "hub/hubImportBatchSize",
             "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
             100,
