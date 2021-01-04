@@ -11,7 +11,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
-import org.polypheny.db.runtime.Resources.Element;
 import org.polypheny.db.type.PolyTypeFamily;
 
 
@@ -147,7 +146,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
         }
 
         if ( partitionQualifierList.isEmpty() ) {
-            throw new RuntimeException( "Partition Qualifiers are empty '" + partitionQualifierList );
+            throw new RuntimeException( "Partition Qualifiers are empty '" + partitionQualifierList + "'" );
         }
 
         // Check if range is overlapping

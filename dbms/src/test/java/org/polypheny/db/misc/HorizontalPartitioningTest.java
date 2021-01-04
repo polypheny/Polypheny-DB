@@ -16,6 +16,7 @@
 
 package org.polypheny.db.misc;
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -27,6 +28,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
+@SuppressWarnings({ "SqlNoDataSourceInspection", "SqlDialectInspection" })
 public class HorizontalPartitioningTest {
 
     @BeforeClass
@@ -119,6 +121,7 @@ public class HorizontalPartitioningTest {
                 } catch ( AvaticaSqlException e ) {
                     failed = true;
                 }
+                Assert.assertTrue( failed );
 
                 //Create another table with initial partitoning
                 statement.executeUpdate( "CREATE TABLE horizontalparttestextension( "
@@ -332,13 +335,69 @@ public class HorizontalPartitioningTest {
                 }
                 Assert.assertTrue( failed );
 
-                //check partition distribution violation
+                // TODO: check partition distribution violation
 
-                //Chek unbound partitions
+                // TODO: Chek unbound partitions
 
                 statement.executeUpdate( "DROP TABLE listpartitioning" );
                 statement.executeUpdate( "DROP TABLE listpartitioning2" );
                 statement.executeUpdate( "DROP TABLE listpartitioning3" );
+            }
+        }
+    }
+
+
+    @Test
+    public void rangePartitioningTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+
+                statement.executeUpdate( "CREATE TABLE rangepartitioning1( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )"
+                        + "PARTITION BY RANGE (tinteger) "
+                        + "( PARTITION parta VALUES(1,5), "
+                        + "PARTITION partb VALUES(6,10))" );
+
+                statement.executeUpdate( "INSERT INTO rangepartitioning1 VALUES (1, 3, 'hans')" );
+                statement.executeUpdate( "INSERT INTO rangepartitioning1 VALUES (2, 7, 'bob')" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM rangepartitioning1" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 3, "hans" },
+                                new Object[]{ 2, 7, "bob" } ) );
+
+                statement.executeUpdate( "UPDATE rangepartitioning1 SET tinteger = 4 WHERE tinteger = 7" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM rangepartitioning1" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 3, "hans" },
+                                new Object[]{ 2, 4, "bob" } ) );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM rangepartitioning1 WHERE tinteger = 4" ),
+                        ImmutableList.of(
+                                new Object[]{ 2, 4, "bob" } ) );
+
+                // RANGE partitioning can't be created without specifying ranges
+                boolean failed = false;
+                try {
+                    statement.executeUpdate( "CREATE TABLE rangepartitioning2( "
+                            + "tprimary INTEGER NOT NULL, "
+                            + "tinteger INTEGER NULL, "
+                            + "tvarchar VARCHAR(20) NULL, "
+                            + "PRIMARY KEY (tprimary) )"
+                            + "PARTITION BY RANGE (tinteger) "
+                            + "PARTITIONS 3" );
+                } catch ( AvaticaSqlException e ) {
+                    failed = true;
+                }
+                Assert.assertTrue( failed );
+
+                statement.executeUpdate( "DROP TABLE rangepartitioning1" );
+                statement.executeUpdate( "DROP TABLE rangepartitioning2" );
             }
         }
     }
