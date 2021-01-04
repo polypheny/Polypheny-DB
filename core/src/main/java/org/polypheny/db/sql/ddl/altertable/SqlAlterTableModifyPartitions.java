@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -44,6 +45,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name MODIFY PARTITIONS (partitionId [, partitonId]* ) } statement.
  */
+@Slf4j
 public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
 
@@ -162,8 +164,8 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             // Check if inmemory dataPartitionPlacement Map should even be changed and therefore start costly partitioning
             // Avoid unnecessary partitioning when the placement is already partitioned in the same way it has been specified
             if ( tempPartitionList.equals( catalog.getPartitionsOnDataPlacement( storeId, tableId ) ) ) {
-                throw new RuntimeException( "WARNING: The Data Placement for table: '" + catalogTable.name + "' on store: '"
-                        + storeName + "' already contains all specified partitions of statement: " + partitionList );
+                log.info( "The Data Placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}", catalogTable.name, storeName, partitionList );
+                return;
             }
             //Update
             catalog.updatePartitionsOnDataPlacement( storeId, tableId, tempPartitionList );

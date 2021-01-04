@@ -20,7 +20,6 @@ import org.polypheny.db.catalog.Catalog;
 public class PartitionManagerFactory {
 
     public PartitionManager getInstance( Catalog.PartitionType partitionType ) {
-
         switch ( partitionType ) {
             case HASH:
                 return new HashPartitionManager();
@@ -30,10 +29,9 @@ public class PartitionManagerFactory {
 
             case RANGE:
                 return new RangePartitionManager();
-
         }
 
-        return null;
+        throw new RuntimeException( "Unknown partition type: " + partitionType );
     }
 
 }

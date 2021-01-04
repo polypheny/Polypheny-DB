@@ -19,12 +19,11 @@ package org.polypheny.db.catalog.entity;
 import java.io.Serializable;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 
 @EqualsAndHashCode
-public final class CatalogPartition implements CatalogEntity, Comparable<CatalogTable> {
+public final class CatalogPartition implements CatalogEntity {
 
 
     private static final long serialVersionUID = 2312903632511266177L;
@@ -38,8 +37,6 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
     public final long tableId;
     public final long schemaId;
     public final long databaseId;
-    public final int ownerId;
-    public final String ownerName;
     public final List<String> partitionQualifiers;
     public final boolean isUnbound;
 
@@ -53,8 +50,6 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
             final long tableId,
             final long schemaId,
             final long databaseId,
-            final int ownerId,
-            @NonNull final String ownerName,
             final long partitionKey,
             final List<String> partitionQualifiers,
             final boolean isUnbound ) {
@@ -63,8 +58,6 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
         this.tableId = tableId;
         this.schemaId = schemaId;
         this.databaseId = databaseId;
-        this.ownerId = ownerId;
-        this.ownerName = ownerName;
         this.partitionKey = partitionKey;
         this.partitionQualifiers = partitionQualifiers;
         this.isUnbound = isUnbound;
@@ -90,15 +83,7 @@ public final class CatalogPartition implements CatalogEntity, Comparable<Catalog
 
 
     @Override
-    public int compareTo( CatalogTable catalogTable ) {
-        // TODO @HENNLO: To be implemented
-        return 0;
-    }
-
-
-    @Override
     public Serializable[] getParameterArray() {
-        // TODO @HENNLO: To be implemented
-        return new Serializable[0];
+        throw new RuntimeException( "Not implemented" );
     }
 }

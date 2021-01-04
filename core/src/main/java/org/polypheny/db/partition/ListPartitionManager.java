@@ -50,7 +50,12 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
                     //Could be int
                     if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
-                        log.debug( "Found column value: {} on partitionID {} with qualifiers: {}", columnValue, partitionID, catalogPartition.partitionQualifiers );
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "Found column value: {} on partitionID {} with qualifiers: {}",
+                                    columnValue,
+                                    partitionID,
+                                    catalogPartition.partitionQualifiers );
+                        }
                         selectedPartitionId = catalogPartition.id;
                         break;
                     }
@@ -63,39 +68,11 @@ public class ListPartitionManager extends AbstractPartitionManager {
             }
 
         } catch ( UnknownPartitionIdRuntimeException e ) {
-            e.printStackTrace();
+            // TODO Hennlo: Why catching this runtime exception?
+            log.error( "Caught exception", e );
         }
 
         return selectedPartitionId;
-    }
-
-
-    @Override
-    public boolean validatePartitionDistribution( CatalogTable table ) {
-
-        Catalog catalog = Catalog.getInstance();
-        // Check for every column if there exists at least one placement which contains all partitions
-        for ( long columnId : table.columnIds ) {
-            boolean skip = false;
-
-            int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, table.numPartitions ).size();
-            if ( numberOfFullPlacements >= 1 ) {
-                log.debug( "Found ColumnPlacement which contains all partitions for column: {}", columnId );
-                skip = true;
-                break;
-            }
-
-            if ( skip ) {
-                continue;
-            } else {
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "{}' has no placement containing all partitions", Catalog.getInstance().getColumn( columnId ).name );
-                }
-                return false;
-            }
-        }
-
-        return true;
     }
 
 
@@ -172,7 +149,8 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 }
 
             } catch ( UnknownPartitionIdRuntimeException e ) {
-                e.printStackTrace();
+                // TODO Hennlo: Why catching this runtime exception?
+                log.error( "Caught exception", e );
             }
         } else {
             // Take the first column placement
@@ -187,19 +165,16 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
     @Override
     public boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
-        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames,  partitionColumn );
+        super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
 
         if ( partitionQualifiers.isEmpty() ) {
-            throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionQualifiers + "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
+            throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionQualifiers +
+                    "'. USE (PARTITION name1 VALUES(value1)[(,PARTITION name1 VALUES(value1))*])" );
         }
 
         if ( partitionQualifiers.size() + 1 != numPartitions ) {
-            throw new RuntimeException( "Number of partitionQualifiers '" + partitionQualifiers + "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitions + "'" );
-        }
-
-        if ( partitionQualifiers.isEmpty() || partitionQualifiers.size() == 0 ) {
-
-            throw new RuntimeException( "Partition Qualifiers are empty '" + partitionQualifiers );
+            throw new RuntimeException( "Number of partitionQualifiers '" + partitionQualifiers +
+                    "' + (mandatory 'Unbound' partition) is not equal to number of specified partitions '" + numPartitions + "'" );
         }
 
         return true;

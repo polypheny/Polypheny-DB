@@ -32,12 +32,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
     @Override
     public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
-        log.debug( "HashPartitionManager" );
-
-        long partitionID = 0;
-        String partitionKey = "";
-
-        partitionID = columnValue.hashCode() * -1;
+        long partitionID = columnValue.hashCode() * -1;
 
         // Don't want any neg. value for now
         if ( partitionID <= 0 ) {
@@ -46,41 +41,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         // Finally decide on which partition to put it
         return catalogTable.partitionIds.get( (int) (partitionID % catalogTable.numPartitions) );
-    }
-
-
-    /**
-     * Validates the table if the partitions are sufficiently distributed.
-     * There has to be at least on columnPlacement which contains all partitions
-     *
-     * @param table Table to be checked
-     * @return If its correctly distributed or not
-     */
-    @Override
-    public boolean validatePartitionDistribution( CatalogTable table ) {
-
-        // Check for every column if there exists at least one placement which contains all partitions
-        for ( long columnId : table.columnIds ) {
-            boolean skip = false;
-
-            int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, table.numPartitions ).size();
-            if ( numberOfFullPlacements >= 1 ) {
-                log.debug( "Found ColumnPlacement which contains all partitions for column: {}", columnId );
-                skip = true;
-                break;
-            }
-
-            if ( skip ) {
-                continue;
-            } else {
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "ERROR Column: '{}' has no placement containing all partitions", Catalog.getInstance().getColumn( columnId ).name );
-                }
-                return false;
-            }
-        }
-
-        return true;
     }
 
 
@@ -106,7 +66,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
     @Override
     public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
 
-        Catalog catalog = Catalog.getInstance();
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
         // Find stores with full placements (partitions)
         // Pick for each column the column placemnt which has full partitioning //SELECT WORST-CASE ergo Fallback

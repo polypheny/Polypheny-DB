@@ -53,7 +53,6 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final Long primaryKey;
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
 
-    //getter bauen der einfach auf NONE prüft und dann false und true prüft.
     @Getter
     public boolean isPartitioned = false;
     @Getter
@@ -62,9 +61,9 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public ImmutableList<Long> partitionIds;
     public long partitionColumnId;
 
-    //getter bauen der einfach  partitionIds.length zurück gibt für numPartiitons
     public long numPartitions;
 
+    // TODO @Hennlo: Please add documentation for this flag
     @Setter
     public boolean flaggedForDeletion = false;
 

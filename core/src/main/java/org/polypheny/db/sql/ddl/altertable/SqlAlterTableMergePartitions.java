@@ -76,17 +76,20 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
             if ( catalogTable.partitionType != Catalog.PartitionType.NONE ) {
                 long tableId = catalogTable.id;
 
-                log.debug( "Merging partitions for table: " + catalogTable.name + " with id " + catalogTable.id +
-                        " on schema: " + catalogTable.getSchemaName() );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName() );
+                }
 
                 // TODO Create partitions multithreaded
                 catalog.mergeTable( tableId );
 
-                log.debug( "Table: '" + catalogTable.name + "' has been merged" );
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Table: '{}' has been merged", catalogTable.name );
+                }
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned at all" );
             }
-        } catch ( UnknownTableException  | UnknownKeyException e ) {
+        } catch ( UnknownKeyException e ) {
             throw new RuntimeException( e );
         }
     }

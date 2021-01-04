@@ -153,11 +153,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
         this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
-
-
-        System.out.println("TYPE " +  partitionType + " VALUE " + partitionQualifierList );
-
-
     }
 
 

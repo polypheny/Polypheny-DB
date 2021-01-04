@@ -915,7 +915,7 @@ public abstract class Catalog {
      *
      * @param tableId Table to be merged
      */
-    public abstract void mergeTable( long tableId ) throws UnknownKeyException, UnknownTableException, UnknownPartitionIdRuntimeException;
+    public abstract void mergeTable( long tableId ) throws UnknownKeyException, UnknownPartitionIdRuntimeException;
 
 
     /**
@@ -924,7 +924,7 @@ public abstract class Catalog {
      * @param tableId Table to be queried
      * @return list of all partitions on this table
      */
-    public abstract List<CatalogPartition> getPartitions( long tableId ) throws UnknownTableException;
+    public abstract List<CatalogPartition> getPartitions( long tableId );
 
 
     /**

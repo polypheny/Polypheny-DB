@@ -19,6 +19,7 @@ package org.polypheny.db.partition;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -29,6 +30,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 // Maybe separate partition in the technical-partition itself.
 // And meta information about the partition characteristics of a table
 // the latter could maybe be specified in the table as well.
+@Slf4j
 public abstract class AbstractPartitionManager implements PartitionManager {
 
 
@@ -40,8 +42,33 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     @Override
     public abstract long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
+
+    /**
+     * Validates the table if the partitions are sufficiently distributed.
+     * There has to be at least on columnPlacement which contains all partitions
+     *
+     * @param table Table to be checked
+     * @return If its correctly distributed or not
+     */
     @Override
-    public abstract boolean validatePartitionDistribution( CatalogTable table );
+    public boolean validatePartitionDistribution( CatalogTable table ) {
+        // Check for every column if there exists at least one placement which contains all partitions
+        for ( long columnId : table.columnIds ) {
+            int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, table.numPartitions ).size();
+            if ( numberOfFullPlacements >= 1 ) {
+                log.debug( "Found ColumnPlacement which contains all partitions for column: {}", columnId );
+                break;
+            }
+
+            if ( log.isDebugEnabled() ) {
+                log.debug( "ERROR Column: '{}' has no placement containing all partitions", Catalog.getInstance().getColumn( columnId ).name );
+            }
+            return false;
+        }
+
+        return true;
+    }
+
 
     @Override
     public abstract boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId );
@@ -51,8 +78,13 @@ public abstract class AbstractPartitionManager implements PartitionManager {
 
 
     @Override
-    public boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
+    public boolean validatePartitionSetup(
+            List<List<String>> partitionQualifiers,
+            long numPartitions,
+            List<String> partitionNames,
+            CatalogColumn partitionColumn ) {
         if ( numPartitions == 0 && partitionNames.size() < 2 ) {
+            // TODO @Hennlo: This is a strange message...
             throw new RuntimeException( "Partitioning of table failed! Can't specify partition names with less than 2 names" );
         }
         return true;
@@ -86,4 +118,5 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         }
         return returnCcps;
     }
+
 }

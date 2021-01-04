@@ -317,7 +317,7 @@ public class HorizontalPartitioningTest {
                         + "PARTITION BY LIST (tvarchar) "
                         + "( PARTITION parta VALUES('abc','def') )" );
 
-                //LIST partitoining can be created with only empty lists
+                //LIST partitoining can't be created with only empty lists
                 boolean failed = false;
                 try {
                     statement.executeUpdate( "CREATE TABLE listpartitioning2( "

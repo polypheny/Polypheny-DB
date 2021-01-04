@@ -8,7 +8,9 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 public interface PartitionManager {
 
 
-    // Returns the Index of the partition where to place the object
+    /**
+     * Returns the Index of the partition where to place the object
+     */
     long getTargetPartitionId( CatalogTable catalogTable, String columnValue );
 
     boolean validatePartitionDistribution( CatalogTable table );
@@ -20,4 +22,5 @@ public interface PartitionManager {
     boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn );
 
     boolean allowsUnboundPartition();
+
 }

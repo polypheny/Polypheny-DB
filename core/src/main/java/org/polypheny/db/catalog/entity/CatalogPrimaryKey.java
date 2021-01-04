@@ -25,9 +25,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 
-/**
- *
- */
 @EqualsAndHashCode(callSuper = true)
 public final class CatalogPrimaryKey extends CatalogKey {
 
