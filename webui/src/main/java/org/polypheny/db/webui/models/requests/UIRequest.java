@@ -57,4 +57,9 @@ public class UIRequest {
      */
     public Map<String, SortState> sortState;
 
+    /**
+     * Request to fetch a result without a limit. Default false.
+     */
+    public boolean noLimit;
+
 }

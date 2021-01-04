@@ -39,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PushbackInputStream;
 import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -263,14 +264,16 @@ public class Crud implements InformationObserver {
         query.append( "SELECT * FROM " )
                 .append( tableId )
                 .append( where )
-                .append( orderBy )
-                .append( " LIMIT " )
-                .append( getPageSize() )
-                .append( " OFFSET " )
-                .append( (Math.max( 0, request.currentPage - 1 )) * getPageSize() );
+                .append( orderBy );
+        if ( !request.noLimit ) {
+            query.append( " LIMIT " )
+                    .append( getPageSize() )
+                    .append( " OFFSET " )
+                    .append( (Math.max( 0, request.currentPage - 1 )) * getPageSize() );
+        }
 
         try {
-            result = executeSqlSelect( transaction.createStatement(), request, query.toString() );
+            result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit );
             result.setXid( transaction.getXid().toString() );
         } catch ( QueryExecutionException e ) {
             if ( request.filter != null ) {
@@ -687,7 +690,7 @@ public class Crud implements InformationObserver {
         //remove whitespace at the end
         allQueries = allQueries.replaceAll( "(\\s*)$", "" );
         String[] queries = allQueries.split( ";", 0 );
-        boolean noLimit = false;
+        boolean noLimit;
         for ( String query : queries ) {
             Result result;
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
@@ -716,7 +719,7 @@ public class Crud implements InformationObserver {
             } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
                 // Add limit if not specified
                 Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-                if ( !p2.matcher( query ).find() ) {
+                if ( !p2.matcher( query ).find() && !request.noLimit ) {
                     noLimit = false;
                 }
                 //If the user specifies a limit
@@ -2873,10 +2876,10 @@ public class Crud implements InformationObserver {
                             String columnName = String.valueOf( header.get( counter ).name.hashCode() );
                             File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
                             mmFolder.mkdirs();
+                            ContentInfoUtil util = new ContentInfoUtil();
                             if ( o instanceof File ) {
                                 File f = ((File) o);
                                 try {
-                                    ContentInfoUtil util = new ContentInfoUtil();
                                     ContentInfo info = util.findMatch( f );
                                     String extension = "";
                                     if ( info != null && info.getFileExtensions() != null ) {
@@ -2902,9 +2905,19 @@ public class Crud implements InformationObserver {
                                 } else {
                                     is = (InputStream) o;
                                 }
-                                File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() );
+                                File f;
                                 try {
-                                    IOUtils.copyLarge( is, new FileOutputStream( f.getPath() ) );
+                                    PushbackInputStream pbis = new PushbackInputStream( is, ContentInfoUtil.DEFAULT_READ_SIZE );
+                                    byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
+                                    pbis.read( buffer );
+                                    ContentInfo info = util.findMatch( buffer );
+                                    pbis.unread( buffer );
+                                    String extension = "";
+                                    if ( info != null && info.getFileExtensions() != null ) {
+                                        extension = "." + info.getFileExtensions()[0];
+                                    }
+                                    f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
+                                    IOUtils.copyLarge( pbis, new FileOutputStream( f.getPath() ) );
                                     TemporalFileManager.addFile( transaction.getXid().toString(), f );
                                 } catch ( IOException e ) {
                                     throw new RuntimeException( "Could not place file in mm folder", e );
@@ -2912,7 +2925,12 @@ public class Crud implements InformationObserver {
                                 temp[counter] = f.getName();
                                 break;
                             } else if ( o instanceof byte[] ) {
-                                File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() );
+                                ContentInfo info = util.findMatch( (byte[]) o );
+                                String extension = "";
+                                if ( info != null && info.getFileExtensions() != null ) {
+                                    extension = "." + info.getFileExtensions()[0];
+                                }
+                                File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
                                 try ( FileOutputStream fos = new FileOutputStream( f ) ) {
                                     fos.write( (byte[]) o );
                                 } catch ( IOException e ) {
