@@ -865,9 +865,8 @@ public abstract class Catalog {
      */
     public abstract void deleteQueryInterface( int ifaceId ) throws GenericCatalogException, UnknownQueryInterfaceException;
 
-
     /**
-     * Adds a partiiton to the catalog
+     * Adds a partition to the catalog
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
@@ -875,7 +874,6 @@ public abstract class Catalog {
      * @param partitionType partition Type of the added partiiton
      */
     public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
-
 
     /**
      * Should only be called from mergePartitions()
@@ -894,20 +892,17 @@ public abstract class Catalog {
      */
     public abstract CatalogPartition getPartition( long partitionId ) throws UnknownPartitionIdRuntimeException;
 
-
-
     /**
      * Effectively partitions a table with the specified partitionType
      *
      * @param tableId Table to be partitioned
-     * @param type partiiton function to apply on the table
+     * @param type partition function to apply on the table
      * @param partitionColumnId column used to apply the partition function on
      * @param numPartitions explicit number of partitions
      * @param partitionQualifiers qualifiers which are directly associated with a partition
      * @param partitionNames (optional)
      */
     public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionIdRuntimeException, GenericCatalogException;
-
 
     /**
      * Merges a  partitioned table
@@ -917,7 +912,6 @@ public abstract class Catalog {
      */
     public abstract void mergeTable( long tableId ) throws UnknownKeyException, UnknownPartitionIdRuntimeException;
 
-
     /**
      * Get a List of all partitions belonging to a specific table
      *
@@ -925,7 +919,6 @@ public abstract class Catalog {
      * @return list of all partitions on this table
      */
     public abstract List<CatalogPartition> getPartitions( long tableId );
-
 
     /**
      * Get all partitions of the specified database which fit to the specified filter patterns.
@@ -946,8 +939,6 @@ public abstract class Catalog {
      */
     public abstract List<String> getPartitionNames( long tableId ) throws UnknownTableException;
 
-
-
     /**
      * Get placements by partition. Identify the location of partitions.
      * Essentially returns all ColumnPlacements which hold the specified partitionID
@@ -959,7 +950,6 @@ public abstract class Catalog {
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) throws UnknownPartitionIdRuntimeException;
 
-
     /**
      * Get stores by partition. Identify the location of partitions/replicas
      * Essentially returns all Stores which hold the specified partitionID
@@ -968,8 +958,6 @@ public abstract class Catalog {
      * @return List of CatalogStores
      */
     public abstract List<CatalogStore> getStoresByPartition( long tableId, long partitionId ) throws UnknownPartitionIdRuntimeException;
-
-
 
     /**
      * Updates the Catalog reference which partitions reside on which DataPlacement (Store/Table)
@@ -1005,7 +993,6 @@ public abstract class Catalog {
      * @param tableId List of partitions which the placement should hold
      */
     public abstract void deletePartitionsOnDataPlacement( int storeId, long tableId );
-
 
     /**
      *  Checks depending on the current partition distribution and partitionType
@@ -1319,9 +1306,7 @@ public abstract class Catalog {
         NONE( 0 ),
         RANGE( 1 ),
         LIST( 2 ),
-        HASH( 3 ),
-        ROUNDROBIN( 4 );
-        // STREAM, ...
+        HASH( 3 );
 
         private final int id;
 
@@ -1362,7 +1347,6 @@ public abstract class Catalog {
     public static class Pattern {
 
         public final String pattern;
-
         public final boolean containsWildcards;
 
 
@@ -1381,6 +1365,7 @@ public abstract class Catalog {
         public String toString() {
             return "Pattern[" + pattern + "]";
         }
+
     }
 
 

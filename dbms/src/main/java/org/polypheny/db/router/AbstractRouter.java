@@ -172,7 +172,6 @@ public abstract class AbstractRouter implements Router {
 
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-
             // Check if partition used in general to reduce overhead if not for unpartitioned
             if ( node instanceof LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
 
@@ -218,8 +217,6 @@ public abstract class AbstractRouter implements Router {
             } else {
                 buildDql( node.getInput( i ), builder, statement, cluster );
             }
-
-
         }
 
         if ( node instanceof LogicalTableScan && node.getTable() != null ) {
@@ -271,7 +268,6 @@ public abstract class AbstractRouter implements Router {
                         placements = selectPlacement( node, catalogTable );
                     }
 
-                    //
                 } catch ( UnknownTableException | GenericCatalogException e ) {
                     throw new RuntimeException( "Unknown table" );
                 }
@@ -336,7 +332,6 @@ public abstract class AbstractRouter implements Router {
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionIds );
                     for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
-                        //Check
                         log.debug( "\t\t -> '{}' {}\t{}",
                                 dataPlacement.storeUniqueName,
                                 catalog.getPartitionsOnDataPlacement( dataPlacement.storeId, dataPlacement.tableId ),
@@ -425,7 +420,7 @@ public abstract class AbstractRouter implements Router {
                         boolean partitionColumnIdentified = false;
                         if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
                             // In case of update always use worst case routing for now.
-                            //Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
+                            // Since you have to identify the current partition to delete the entry and then create a new entry on the correct partitions
                             int index = 0;
 
                             for ( String cn : updateColumnList ) {
@@ -516,7 +511,7 @@ public abstract class AbstractRouter implements Router {
                             } else {
                                 worstCaseRouting = true;
                             }
-                            // TODO Get the value of partitionColumnId ---  but first find of partitionColumn inside table
+                            // TODO @Hennlo Get the value of partitionColumnId ---  but first find of partitionColumn inside table
                             log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {}", partitionValue, identPart );
 
                         } else if ( ((LogicalTableModify) node).getOperation() == Operation.DELETE ) {
@@ -535,7 +530,6 @@ public abstract class AbstractRouter implements Router {
                         }
 
                         if ( !worstCaseRouting ) {
-
                             log.debug( "Get all Placements by identified Partition: {}", identPart );
                             if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ).contains( identPart ) ) {
                                 if ( log.isDebugEnabled() ) {
@@ -558,7 +552,6 @@ public abstract class AbstractRouter implements Router {
                         } else {
                             log.debug( "PartitionColumnID was not an explicit part of statement, partition routing will therefore assume worst-case: Routing to ALL PARTITIONS" );
                         }
-
                     }
 
                     // Build DML

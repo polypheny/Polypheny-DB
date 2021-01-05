@@ -167,7 +167,7 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 log.info( "The Data Placement for table: '{}' on store: '{}' already contains all specified partitions of statement: {}", catalogTable.name, storeName, partitionList );
                 return;
             }
-            //Update
+            // Update
             catalog.updatePartitionsOnDataPlacement( storeId, tableId, tempPartitionList );
 
         } catch ( UnknownTableException | UnknownStoreException e ) {

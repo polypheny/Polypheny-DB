@@ -24,10 +24,11 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
+
 @Slf4j
 public class HashPartitionManager extends AbstractPartitionManager {
 
-    public boolean allowsUnboundPartition = false;
+    public static final boolean ALLOWS_UNBOUND_PARTITION = false;
 
 
     @Override
@@ -95,7 +96,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
     @Override
     public boolean allowsUnboundPartition() {
-        return false;
+        return ALLOWS_UNBOUND_PARTITION;
     }
 
 }

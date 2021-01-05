@@ -18,24 +18,15 @@ package org.polypheny.db.partition;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 
-// Possible extensions could be range partitioning and hash partitioning
-// Need to check if round robin would be sufficient as well or basically just needed to distribute workload for LoadBalancing
-// Maybe separate partition in the technical-partition itself.
-// And meta information about the partition characteristics of a table
-// the latter could maybe be specified in the table as well.
+
 @Slf4j
 public abstract class AbstractPartitionManager implements PartitionManager {
-
-
-    @Getter
-    protected boolean allowsUnboundPartition;
 
 
     // returns the Index of the partition where to place the object
@@ -89,10 +80,6 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         }
         return true;
     }
-
-
-    @Override
-    public abstract boolean allowsUnboundPartition();
 
 
     /**

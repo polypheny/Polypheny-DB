@@ -17,7 +17,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @Slf4j
 public class RangePartitionManager extends AbstractPartitionManager {
 
-    boolean hasUnboundPartition = true;
+    public static final boolean ALLOWS_UNBOUND_PARTITION = true;
 
 
     @Override
@@ -200,7 +200,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
     @Override
     public boolean allowsUnboundPartition() {
-        return true;
+        return ALLOWS_UNBOUND_PARTITION;
     }
 
 

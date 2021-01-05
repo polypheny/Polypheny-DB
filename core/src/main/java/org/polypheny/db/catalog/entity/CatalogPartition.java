@@ -28,7 +28,7 @@ public final class CatalogPartition implements CatalogEntity {
 
     private static final long serialVersionUID = 2312903632511266177L;
 
-    //possibly a hash code to uniquely identify a partition
+    // Possibly a hash code to uniquely identify a partition
     // for a schema_table_column_type_argument
     // e.g. mySchema_testTable_sales_RANGE_100
     public final long id;

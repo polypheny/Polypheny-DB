@@ -210,13 +210,10 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         if ( !isPartOfTable ) {
                             throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
                                     + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
-
                         }
                     }
                     catalog.updatePartitionsOnDataPlacement( storeInstance.getStoreId(), catalogTable.id, tempPartitionList );
                 }
-
-
             }
 
             // Which columns to add

@@ -26,10 +26,11 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 
+
 @Slf4j
 public class ListPartitionManager extends AbstractPartitionManager {
 
-    boolean allowsUnboundPartition = true;
+    public static final boolean ALLOWS_UNBOUND_PARTITION = true;
 
 
     @Override
@@ -183,7 +184,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
     @Override
     public boolean allowsUnboundPartition() {
-        return true;
+        return ALLOWS_UNBOUND_PARTITION;
     }
 
 }
