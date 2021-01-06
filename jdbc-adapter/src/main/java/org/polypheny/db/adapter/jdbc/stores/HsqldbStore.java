@@ -23,6 +23,7 @@ import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
@@ -36,7 +37,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
             new AdapterSettingList( "tableType", false, true, false, ImmutableList.of( "Memory", "Cached" ) ),
-            new AdapterSettingString( "path", false, true, false, "." + File.separator ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
             new AdapterSettingList( "trxControlMode", false, true, false, Arrays.asList( "locks", "mvlocks", "mvcc" ) ),
             new AdapterSettingList( "trxIsolationLevel", false, true, false, Arrays.asList( "read_committed", "serializable" ) )
@@ -44,11 +44,11 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings, HsqldbSqlDialect.DEFAULT ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
+        super( storeId, uniqueName, settings, createConnectionFactory( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
 
-    public static ConnectionFactory createConnectionFactory( final String uniqueName, final Map<String, String> settings, SqlDialect dialect ) {
+    public static ConnectionFactory createConnectionFactory( final int storeId, final String uniqueName, final Map<String, String> settings, SqlDialect dialect ) {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
             throw new RuntimeException( "2PC Mode is not implemented" );
@@ -64,8 +64,8 @@ public class HsqldbStore extends AbstractJdbcStore {
             if ( settings.get( "type" ).equals( "Memory" ) ) {
                 dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + trxSettings );
             } else {
-                String path = settings.get( "path" );
-                dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName + trxSettings );
+                File path = FileSystemManager.getInstance().registerNewFolder( "data/hsqldb/" + storeId );
+                dataSource.setUrl( "jdbc:hsqldb:file:" + path + trxSettings );
             }
             dataSource.setUsername( "sa" );
             dataSource.setPassword( "" );

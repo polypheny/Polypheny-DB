@@ -586,7 +586,6 @@ public class CatalogImpl extends Catalog {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
             hsqldbSettings.put( "tableType", "Memory" );
-            hsqldbSettings.put( "path", "./" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
