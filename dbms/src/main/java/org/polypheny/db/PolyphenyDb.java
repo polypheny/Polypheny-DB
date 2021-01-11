@@ -161,6 +161,7 @@ public class PolyphenyDb {
                     executor.join( millis );
                 }
             }
+
         }
 
         final ShutdownHelper sh = new ShutdownHelper();
@@ -169,8 +170,16 @@ public class PolyphenyDb {
         final ConfigServer configServer = new ConfigServer( RuntimeConfig.CONFIG_SERVER_PORT.getInteger() );
         final InformationServer informationServer = new InformationServer( RuntimeConfig.INFORMATION_SERVER_PORT.getInteger() );
 
-        new JavaInformation();
-        new HostInformation();
+        try {
+            new JavaInformation();
+        } catch ( Exception e ) {
+            log.error( "Unable to retrieve java runtime information." );
+        }
+        try {
+            new HostInformation();
+        } catch ( Exception e ) {
+            log.error( "Unable to retrieve host information." );
+        }
 
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {
