@@ -27,6 +27,7 @@ import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -87,6 +88,10 @@ public abstract class Store {
 
     public abstract void dropColumn( Context context, CatalogColumnPlacement columnPlacement );
 
+    public abstract void addIndex( Context context, CatalogIndex catalogIndex );
+
+    public abstract void dropIndex( Context context, CatalogIndex catalogIndex );
+
     public abstract boolean prepare( PolyXid xid );
 
     public abstract void commit( PolyXid xid );
@@ -100,6 +105,12 @@ public abstract class Store {
     public abstract String getAdapterName();
 
     public abstract List<AdapterSetting> getAvailableSettings();
+
+    public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
+
+    public abstract AvailableIndexMethod getDefaultIndexMethod();
+
+    public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable );
 
     public abstract void shutdown();
 
@@ -209,6 +220,34 @@ public abstract class Store {
             super( name, canBeNull, required, modifiable );
             this.options = options;
         }
+
+    }
+
+
+    @AllArgsConstructor
+    public static class AvailableIndexMethod {
+
+        public final String name;
+        public final String displayName;
+
+    }
+
+
+    @AllArgsConstructor
+    public static class FunctionalIndexInfo {
+
+        public final List<Long> columnIds;
+        public final String methodDisplayName;
+
+
+        public List<String> getColumnNames() {
+            List<String> columnNames = new ArrayList<>( columnIds.size() );
+            for ( long columnId : columnIds ) {
+                columnNames.add( Catalog.getInstance().getColumn( columnId ).name );
+            }
+            return columnNames;
+        }
+
     }
 
 }

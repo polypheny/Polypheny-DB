@@ -31,7 +31,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.DataMigrator;
@@ -148,7 +147,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             // Copy data to the newly added placements
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
             dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownStoreException e ) {
+        } catch ( GenericCatalogException | UnknownStoreException e ) {
             throw new RuntimeException( e );
         }
     }

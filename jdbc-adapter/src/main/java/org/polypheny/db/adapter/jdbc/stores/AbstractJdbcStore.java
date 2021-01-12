@@ -435,6 +435,11 @@ public abstract class AbstractJdbcStore extends Store {
     }
 
 
+    protected String getPhysicalIndexName( long tableId, long indexId ) {
+        return "idx" + tableId + "_" + indexId;
+    }
+
+
     protected abstract String getDefaultPhysicalSchemaName();
 
 

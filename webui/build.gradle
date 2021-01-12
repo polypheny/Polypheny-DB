@@ -79,7 +79,7 @@ sourceSets {
 
 
 // unzip ui files
-task unzipUiFIles(type: Copy) {
+task unzipUiFiles(type: Copy) {
    from zipTree(configurations.uiFiles.singleFile)
    into "$buildDir/webapp"
    doLast {
@@ -89,7 +89,7 @@ task unzipUiFIles(type: Copy) {
     }
 }
 
-classes.dependsOn(unzipUiFIles)
+classes.dependsOn(unzipUiFiles)
 
 
 

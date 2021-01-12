@@ -67,9 +67,11 @@ import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -125,19 +127,19 @@ public class CatalogImpl extends Catalog {
     private static Long openTable;
 
 
-    private static final AtomicInteger storeIdBuilder = new AtomicInteger();
-    private static final AtomicInteger queryInterfaceIdBuilder = new AtomicInteger();
-    private static final AtomicInteger userIdBuilder = new AtomicInteger();
+    private static final AtomicInteger storeIdBuilder = new AtomicInteger( 1 );
+    private static final AtomicInteger queryInterfaceIdBuilder = new AtomicInteger( 1 );
+    private static final AtomicInteger userIdBuilder = new AtomicInteger( 1 );
 
-    private static final AtomicLong databaseIdBuilder = new AtomicLong();
-    private static final AtomicLong schemaIdBuilder = new AtomicLong();
-    private static final AtomicLong tableIdBuilder = new AtomicLong();
-    private static final AtomicLong columnIdBuilder = new AtomicLong();
+    private static final AtomicLong databaseIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong schemaIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
 
-    private static final AtomicLong keyIdBuilder = new AtomicLong();
-    private static final AtomicLong constraintIdBuilder = new AtomicLong();
-    private static final AtomicLong indexIdBuilder = new AtomicLong();
-    private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
+    private static final AtomicLong keyIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong constraintIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong indexIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong foreignKeyIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong physicalPositionBuilder = new AtomicLong();
 
@@ -568,7 +570,7 @@ public class CatalogImpl extends Catalog {
         // init database
         long databaseId;
         if ( !databaseNames.containsKey( "APP" ) ) {
-            databaseId = addDatabase( "APP", systemId, "system", 0L, "public" );
+            databaseId = addDatabase( "APP", systemId, "system", 1L, "public" );
         } else {
             databaseId = getDatabase( "APP" ).id;
         }
@@ -578,7 +580,7 @@ public class CatalogImpl extends Catalog {
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-            schemaId = addSchema( "public", databaseId, 0, SchemaType.RELATIONAL );
+            schemaId = addSchema( "public", databaseId, 1, SchemaType.RELATIONAL );
         } else {
             schemaId = getSchema( "APP", "public" ).id;
         }
@@ -986,7 +988,7 @@ public class CatalogImpl extends Catalog {
      * @param name New name of the schema
      */
     @Override
-    public void renameSchema( long schemaId, String name ) throws GenericCatalogException {
+    public void renameSchema( long schemaId, String name ) {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.schemaType );
@@ -998,7 +1000,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "schema", old, schema );
         } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+            throw new UnknownSchemaIdRuntimeException( schemaId );
         }
     }
 
@@ -1010,7 +1012,7 @@ public class CatalogImpl extends Catalog {
      * @param ownerId Id of the new owner
      */
     @Override
-    public void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException {
+    public void setSchemaOwner( long schemaId, long ownerId ) {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.schemaType );
@@ -1021,7 +1023,7 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "schema", old, schema );
 
         } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+            throw new UnknownSchemaIdRuntimeException( schemaId );
         }
     }
 
@@ -1881,13 +1883,28 @@ public class CatalogImpl extends Catalog {
                 // TODO: Check that the column does not contain any null values
                 getColumnPlacements( columnId );
             }
-            CatalogColumn column = new CatalogColumn( old.id, old.name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, nullable, old.collation, old.defaultValue );
+            CatalogColumn column = new CatalogColumn(
+                    old.id,
+                    old.name,
+                    old.tableId,
+                    old.schemaId,
+                    old.databaseId,
+                    old.position,
+                    old.type,
+                    old.collectionsType,
+                    old.length,
+                    old.scale,
+                    old.dimension,
+                    old.cardinality,
+                    nullable,
+                    old.collation,
+                    old.defaultValue );
             synchronized ( this ) {
                 columns.replace( columnId, column );
                 columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
             }
             listeners.firePropertyChange( "column", old, column );
-        } catch ( NullPointerException | UnknownKeyException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -2062,11 +2079,11 @@ public class CatalogImpl extends Catalog {
      * @return The primary key
      */
     @Override
-    public CatalogPrimaryKey getPrimaryKey( long key ) throws UnknownKeyException {
+    public CatalogPrimaryKey getPrimaryKey( long key ) {
         try {
             return Objects.requireNonNull( primaryKeys.get( key ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownKeyException( key );
+            throw new UnknownKeyIdRuntimeException( key );
         }
     }
 
@@ -2345,27 +2362,87 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns the index with the specified id
+     *
+     * @param indexId The id of the index
+     * @return The Index
+     */
+    @Override
+    public CatalogIndex getIndex( long indexId ) {
+        try {
+            return Objects.requireNonNull( indices.get( indexId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownIndexIdRuntimeException( indexId );
+        }
+    }
+
+
+    /**
      * Adds an index over the specified columns
      *
      * @param tableId The id of the table
      * @param columnIds A list of column ids
-     * @param unique Weather the index should be unique
-     * @param type The type of index
+     * @param unique Weather the index is unique
+     * @param method Name of the index method (e.g. btree_unique)
+     * @param methodDisplayName Display name of the index method (e.g. BTREE)
+     * @param location Id of the data store where the index is located (0 for Polypheny-DB itself)
+     * @param type The type of index (manual, automatic)
      * @param indexName The name of the index
      * @return The id of the created index
      */
     @Override
-    public long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException {
+    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException {
         long keyId = getOrAddKey( tableId, columnIds );
         if ( unique ) {
             // TODO: Check if the current values are unique
         }
         long id = indexIdBuilder.getAndIncrement();
         synchronized ( this ) {
-            indices.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
+            indices.put( id, new CatalogIndex(
+                    id,
+                    indexName,
+                    unique,
+                    method,
+                    methodDisplayName,
+                    type,
+                    location,
+                    keyId,
+                    Objects.requireNonNull( keys.get( keyId ) ),
+                    null ) );
         }
         listeners.firePropertyChange( "index", null, keyId );
         return id;
+    }
+
+
+    /**
+     * Set physical index name.
+     *
+     * @param indexId The id of the index
+     * @param physicalName The physical name to be set
+     */
+    @Override
+    public void setIndexPhysicalName( long indexId, String physicalName ) {
+        try {
+            CatalogIndex oldEntry = Objects.requireNonNull( indices.get( indexId ) );
+            CatalogIndex newEntry = new CatalogIndex(
+                    oldEntry.id,
+                    oldEntry.name,
+                    oldEntry.unique,
+                    oldEntry.method,
+                    oldEntry.methodDisplayName,
+                    oldEntry.type,
+                    oldEntry.location,
+                    oldEntry.keyId,
+                    oldEntry.key,
+                    physicalName );
+            synchronized ( this ) {
+                indices.replace( indexId, newEntry );
+            }
+            listeners.firePropertyChange( "index", oldEntry, newEntry );
+        } catch ( NullPointerException e ) {
+            throw new UnknownIndexIdRuntimeException( indexId );
+        }
     }
 
 

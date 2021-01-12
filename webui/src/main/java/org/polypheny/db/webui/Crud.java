@@ -78,6 +78,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
+import org.polypheny.db.adapter.Store.FunctionalIndexInfo;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.StoreManager.AdapterInformation;
 import org.polypheny.db.catalog.Catalog;
@@ -97,8 +98,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
@@ -107,7 +108,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.iface.QueryInterface;
-import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
@@ -1124,7 +1124,7 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while getting a column", e );
             result = new Result( e );
         }
@@ -1414,12 +1414,12 @@ public class Crud implements InformationObserver {
                 resultList.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
             }
 
-            DbColumn[] header = { new DbColumn( "Constraint name" ), new DbColumn( "Constraint type" ), new DbColumn( "Columns" ) };
+            DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
             ArrayList<String[]> data = new ArrayList<>();
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -1545,20 +1545,43 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
             List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, false );
 
-            DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "columns" ), new DbColumn( "type" ) };
+            DbColumn[] header = {
+                    new DbColumn( "Name" ),
+                    new DbColumn( "Columns" ),
+                    new DbColumn( "Location" ),
+                    new DbColumn( "Method" ),
+                    new DbColumn( "Type" ) };
 
             ArrayList<String[]> data = new ArrayList<>();
+
+            // Get explicit indexes
             for ( CatalogIndex catalogIndex : catalogIndexes ) {
-                String[] arr = new String[3];
+                String[] arr = new String[5];
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
-                arr[2] = catalogIndex.type.name();
+                arr[2] = catalog.getStore( catalogIndex.location ).uniqueName;
+                arr[3] = catalogIndex.methodDisplayName;
+                arr[4] = catalogIndex.type.name();
                 data.add( arr );
+            }
+
+            // Get functional indexes
+            for ( Integer storeId : catalogTable.placementsByStore.keySet() ) {
+                Store store = StoreManager.getInstance().getStore( storeId );
+                for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
+                    String[] arr = new String[5];
+                    arr[0] = "";
+                    arr[1] = String.join( ", ", fif.getColumnNames() );
+                    arr[2] = store.getUniqueName();
+                    arr[3] = fif.methodDisplayName;
+                    arr[4] = "FUNCTIONAL";
+                    data.add( arr );
+                }
             }
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | UnknownStoreException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -1921,7 +1944,7 @@ public class Crud implements InformationObserver {
                     tables.add( table );
                 }
             }
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException e ) {
             log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
         }
 

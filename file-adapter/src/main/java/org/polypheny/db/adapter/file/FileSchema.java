@@ -37,8 +37,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -103,15 +101,11 @@ public class FileSchema extends AbstractSchema {
         }
         RelProtoDataType protoRowType = RelDataTypeImpl.proto( fieldInfo.build() );
         List<Long> pkIds;
-        try {
-            if ( catalogTable.primaryKey != null ) {
-                CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-                pkIds = primaryKey.columnIds;
-            } else {
-                pkIds = new ArrayList<>();
-            }
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
-            throw new RuntimeException( "Could not create file table", e );
+        if ( catalogTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+            pkIds = primaryKey.columnIds;
+        } else {
+            pkIds = new ArrayList<>();
         }
         //FileTable table = new FileTable( store.getRootDir(), schemaName, catalogTable.id, columnIds, columnTypes, columnNames, store, this );
         FileTranslatableTable table = new FileTranslatableTable( this, catalogTable.name, catalogTable.id, columnIds, columnTypes, columnNames, pkIds, protoRowType );

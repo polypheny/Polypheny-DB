@@ -49,7 +49,6 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -231,18 +230,16 @@ public abstract class Catalog {
      *
      * @param schemaId The if of the schema to rename
      * @param name New name of the schema
-     * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void renameSchema( long schemaId, String name ) throws GenericCatalogException, UnknownSchemaException;
+    public abstract void renameSchema( long schemaId, String name );
 
     /**
      * Change owner of a schema
      *
      * @param schemaId The if of the schema
      * @param ownerId Id of the new owner
-     * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException, UnknownSchemaException;
+    public abstract void setSchemaOwner( long schemaId, long ownerId );
 
     /**
      * Delete a schema from the catalog
@@ -422,7 +419,6 @@ public abstract class Catalog {
      * @param storeId  The id of the store
      * @param columnId The id of the column
      * @return true if there is a column placement, false if not.
-     * @throws GenericCatalogException A generic catalog exception
      */
     public abstract boolean checkIfExistsColumnPlacement( int storeId, long columnId );
 
@@ -512,7 +508,6 @@ public abstract class Catalog {
      *
      * @param columnId The id of the column
      * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this id
      */
     public abstract CatalogColumn getColumn( long columnId );
 
@@ -637,7 +632,7 @@ public abstract class Catalog {
      * @param key The id of the primary key
      * @return The primary key
      */
-    public abstract CatalogPrimaryKey getPrimaryKey( long key ) throws GenericCatalogException, UnknownKeyException;
+    public abstract CatalogPrimaryKey getPrimaryKey( long key );
 
 
     public abstract boolean isPrimaryKey( long key );
@@ -746,16 +741,35 @@ public abstract class Catalog {
     public abstract CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException;
 
     /**
+     * Returns the index with the specified id
+     *
+     * @param indexId The id of the index
+     * @return The Index
+     */
+    public abstract CatalogIndex getIndex( long indexId );
+
+    /**
      * Adds an index over the specified columns
      *
      * @param tableId The id of the table
      * @param columnIds A list of column ids
-     * @param unique Weather the index should be unique
-     * @param type The type of index
+     * @param unique Weather the index is unique
+     * @param method Name of the index method (e.g. btree_unique)
+     * @param methodDisplayName Display name of the index method (e.g. BTREE)
+     * @param location Id of the data store where the index is located (0 for Polypheny-DB itself)
+     * @param type The type of index (manual, automatic)
      * @param indexName The name of the index
      * @return The id of the created index
      */
-    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException;
+    public abstract long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException;
+
+    /**
+     * Set physical index name.
+     *
+     * @param indexId The id of the index
+     * @param physicalName The physical name to be set
+     */
+    public abstract void setIndexPhysicalName( long indexId, String physicalName );
 
     /**
      * Delete the specified index
@@ -923,9 +937,10 @@ public abstract class Catalog {
 
         // Required for building JDBC result set
         @RequiredArgsConstructor
-        public class PrimitiveTableType {
+        public static class PrimitiveTableType {
 
             public final String tableType;
+
         }
     }
 
@@ -1007,8 +1022,8 @@ public abstract class Catalog {
 
 
     public enum IndexType {
-        BTREE( 1 ),
-        HASH( 2 );
+        MANUAL( 1 ),
+        AUTOMATIC( 2 );
 
         private final int id;
 
@@ -1023,8 +1038,8 @@ public abstract class Catalog {
         }
 
 
-        public static IndexType getById( int id ) throws UnknownIndexTypeException {
-            for ( IndexType e : values() ) {
+        public static Catalog.IndexType getById( int id ) throws UnknownIndexTypeException {
+            for ( Catalog.IndexType e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
@@ -1033,11 +1048,11 @@ public abstract class Catalog {
         }
 
 
-        public static IndexType parse( @NonNull String str ) throws UnknownIndexTypeException {
-            if ( str.equalsIgnoreCase( "btree" ) ) {
-                return IndexType.BTREE;
-            } else if ( str.equalsIgnoreCase( "hash" ) ) {
-                return IndexType.HASH;
+        public static Catalog.IndexType parse( @NonNull String str ) throws UnknownIndexTypeException {
+            if ( str.equalsIgnoreCase( "MANUAL" ) ) {
+                return Catalog.IndexType.MANUAL;
+            } else if ( str.equalsIgnoreCase( "AUTOMATIC" ) ) {
+                return Catalog.IndexType.AUTOMATIC;
             }
             throw new UnknownIndexTypeException( str );
         }

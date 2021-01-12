@@ -437,7 +437,7 @@ public class CatalogTest {
 
         // test index
         assertEquals( 0, catalog.getIndexes( tableId, false ).size() );
-        catalog.addIndex( tableId, Collections.singletonList( columnId1 ), false, IndexType.BTREE, "index" );
+        catalog.addIndex( tableId, Collections.singletonList( columnId1 ), false, "btree", "BTREE", 1, IndexType.MANUAL, "index" );
         assertEquals( 1, catalog.getIndexes( tableId, false ).size() );
         assertEquals( 0, catalog.getIndexes( tableId, true ).size() );
         catalog.deleteIndex( catalog.getIndexes( tableId, false ).get( 0 ).id );

@@ -18,7 +18,6 @@ package org.polypheny.db.information;
 
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -69,7 +68,7 @@ public class InformationServerTest {
 
         String family = os.getFamily();
         String manufacturer = os.getManufacturer();
-        String version = os.getVersion().toString();
+        String version = os.getVersionInfo().getVersion();
         Information i1 = new InformationHtml( "os", systemGroup.getId(), "<ul>"
                 + "<li>family: " + family + "</li>"
                 + "<li>manufacturer: " + manufacturer + "</li>"
@@ -90,7 +89,7 @@ public class InformationServerTest {
 
         //CPU GROUP
 
-        InformationGroup cpuGroup = new InformationGroup( systemPage, "cpu" ).setOrder( 2 );
+        /*InformationGroup cpuGroup = new InformationGroup( systemPage, "cpu" ).setOrder( 2 );
         im.addGroup( cpuGroup );
 
         int cpuLoad = (int) Math.round( hal.getProcessor().getSystemCpuLoad() * 100 );
@@ -104,14 +103,14 @@ public class InformationServerTest {
                 int cpuLoad = (int) Math.round( hal.getProcessor().getSystemCpuLoad() * 100 );
                 i2.updateProgress( cpuLoad );
             }
-        }, 5000, 5000 );
+        }, 5000, 5000 );*/
 
         //PROCESSES GROUP
 
         InformationGroup processesGroup = new InformationGroup( systemPage.getId(), "processes" );
         im.addGroup( processesGroup );
 
-        List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
+        List<OSProcess> procs = os.getProcesses( 5, ProcessSort.CPU );
 
         ArrayList<String> procNames = new ArrayList<>();
         ArrayList<Double> procPerc = new ArrayList<>();
@@ -135,7 +134,7 @@ public class InformationServerTest {
         t2.scheduleAtFixedRate( new TimerTask() {
             @Override
             public void run() {
-                List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
+                List<OSProcess> procs = os.getProcesses( 5, ProcessSort.CPU );
 
                 ArrayList<String> procNames = new ArrayList<>();
                 ArrayList<Double> procPerc = new ArrayList<>();

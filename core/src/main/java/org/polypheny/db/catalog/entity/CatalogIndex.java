@@ -34,9 +34,12 @@ public final class CatalogIndex implements Serializable {
 
     public final long id;
     public final String name;
+    public final String physicalName;
     public final boolean unique;
     public final IndexType type;
     public final Integer location;
+    public final String method;
+    public final String methodDisplayName;
 
     public final CatalogKey key;
     public final long keyId;
@@ -46,17 +49,23 @@ public final class CatalogIndex implements Serializable {
             final long id,
             @NonNull final String name,
             final boolean unique,
+            final String method,
+            final String methodDisplayName,
             final IndexType type,
             final Integer location,
             final long keyId,
-            final CatalogKey key ) {
+            final CatalogKey key,
+            final String physicalName ) {
         this.id = id;
         this.name = name;
         this.unique = unique;
+        this.method = method;
+        this.methodDisplayName = methodDisplayName;
         this.type = type;
         this.location = location;
         this.keyId = keyId;
         this.key = key;
+        this.physicalName = physicalName;
     }
 
 
