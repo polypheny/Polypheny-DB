@@ -37,6 +37,7 @@ import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
@@ -433,6 +434,18 @@ public class CottontailStore extends Store {
 
 
     @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "Cottontail-DB adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "Cottontail-DB adapter does not support dropping indexes" );
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         log.debug( "Cottontail does not support prepare." );
         return false;
@@ -516,6 +529,24 @@ public class CottontailStore extends Store {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return ImmutableList.of();
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        throw new RuntimeException( "Cottontail-DB adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        return ImmutableList.of();
     }
 
 
