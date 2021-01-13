@@ -2439,4 +2439,5 @@ public class RelBuilderTest {
                         + "  LogicalTableScan(table=[[public, employee]])\n";
         assertThat( root, Matchers.hasTree( expected ) );
     }
+
 }

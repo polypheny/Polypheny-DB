@@ -182,5 +182,6 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         }
 
     }
+
 }
 

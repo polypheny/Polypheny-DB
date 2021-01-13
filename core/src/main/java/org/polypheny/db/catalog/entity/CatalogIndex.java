@@ -129,6 +129,7 @@ public final class CatalogIndex implements Serializable {
             public final String filterCondition;
             public final int location;
             public final int indexType;
+
         }
 
     }

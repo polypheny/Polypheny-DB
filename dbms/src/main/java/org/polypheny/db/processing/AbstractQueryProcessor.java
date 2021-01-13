@@ -700,4 +700,5 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         QueryPlanCache.INSTANCE.reset();
         statement.getRouter().resetCaches();
     }
+
 }

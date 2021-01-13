@@ -587,6 +587,7 @@ public abstract class AbstractRouter implements Router {
         private final String storeName;
         private final String physicalSchemaName;
         private final String physicalTableName;
+
     }
 
 }

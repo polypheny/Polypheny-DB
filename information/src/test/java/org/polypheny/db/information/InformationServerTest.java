@@ -272,7 +272,7 @@ public class InformationServerTest {
         t4.scheduleAtFixedRate( new TimerTask() {
             @Override
             public void run() {
-                if( alternate[0] ) {
+                if ( alternate[0] ) {
                     iKV.removePair( "k2" );
                 } else {
                     iKV.putPair( "k2", "value2" );

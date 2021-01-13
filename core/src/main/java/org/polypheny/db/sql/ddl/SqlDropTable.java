@@ -203,5 +203,6 @@ public class SqlDropTable extends SqlDropObject {
         // Rest plan cache and implementation cache
         statement.getQueryProcessor().resetCaches();
     }
+
 }
 

@@ -59,6 +59,7 @@ public class FileSchema extends AbstractSchema {
     @Getter
     private final FileConvention convention;
 
+
     public FileSchema( SchemaPlus parentSchema, String schemaName, FileStore store ) {
         super();
         this.schemaName = schemaName;
@@ -67,10 +68,12 @@ public class FileSchema extends AbstractSchema {
         this.convention = new FileConvention( schemaName, expression, this );
     }
 
+
     @Override
     protected Map<String, Table> getTableMap() {
         return new HashMap<>( tableMap );
     }
+
 
     public Table createFileTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
@@ -113,6 +116,7 @@ public class FileSchema extends AbstractSchema {
         return table;
     }
 
+
     /**
      * Called from generated code
      * Executes SELECT and DELETE operations
@@ -127,6 +131,7 @@ public class FileSchema extends AbstractSchema {
             }
         };
     }
+
 
     /**
      * Called from generated code

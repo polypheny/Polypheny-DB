@@ -125,15 +125,15 @@ public class FileStore extends Store {
     public void createTable( Context context, CatalogTable catalogTable ) {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         try {
-            for( CatalogColumnPlacement placement: catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id )) {
+            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
                 catalog.updateColumnPlacementPhysicalNames( getStoreId(), placement.columnId, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ), getPhysicalColumnName( placement.columnId ) );
             }
         } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( "Could not create table", e );
         }
-        for( Long colId: catalogTable.columnIds ) {
+        for ( Long colId : catalogTable.columnIds ) {
             File newColumnFolder = getColumnFolder( colId );
-            if( !newColumnFolder.mkdir() ) {
+            if ( !newColumnFolder.mkdir() ) {
                 throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
             }
         }
@@ -144,7 +144,7 @@ public class FileStore extends Store {
     public void dropTable( Context context, CatalogTable catalogTable ) {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         //todo check if it is on this store?
-        for( Long colId: catalogTable.columnIds ) {
+        for ( Long colId : catalogTable.columnIds ) {
             File f = getColumnFolder( colId );
             try {
                 FileUtils.deleteDirectory( f );
@@ -159,7 +159,7 @@ public class FileStore extends Store {
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         File newColumnFolder = getColumnFolder( catalogColumn.id );
-        if( !newColumnFolder.mkdir() ) {
+        if ( !newColumnFolder.mkdir() ) {
             throw new RuntimeException( "Could not create column folder" );
         }
         try {
@@ -167,8 +167,8 @@ public class FileStore extends Store {
                     getStoreId(),
                     catalogColumn.id,
                     currentSchema.getSchemaName(),
-                    getPhysicalTableName(  catalogTable.id),
-                    getPhysicalColumnName( catalogColumn.id ));
+                    getPhysicalTableName( catalogTable.id ),
+                    getPhysicalColumnName( catalogColumn.id ) );
         } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
@@ -383,6 +383,7 @@ public class FileStore extends Store {
         throw new UnsupportedOperationException( "Cannot change directory" );
     }
 
+
     protected static String getPhysicalTableName( long tableId ) {
         return "tab" + tableId;
     }
@@ -392,10 +393,12 @@ public class FileStore extends Store {
         return "col" + columnId;
     }
 
+
     public static File getColumnFolder( final String rootPath, final Long columnId ) {
         File root = new File( rootPath );
         return new File( root, getPhysicalColumnName( columnId ) );
     }
+
 
     public File getColumnFolder( final Long columnId ) {
         return new File( rootDir, getPhysicalColumnName( columnId ) );

@@ -111,7 +111,7 @@ public class PolyphenyDb {
 
         // Backup data folder (running in test mode)
         if ( testMode && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
-            if ( ! FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
+            if ( !FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }
         }
@@ -258,4 +258,5 @@ public class PolyphenyDb {
             log.warn( "Interrupted while waiting for the Shutdown-Hook to finish. The JVM might terminate now without having terminate() on all components invoked.", e );
         }
     }
+
 }

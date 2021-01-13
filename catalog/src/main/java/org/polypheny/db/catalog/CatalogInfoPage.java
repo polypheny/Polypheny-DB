@@ -125,4 +125,5 @@ public class CatalogInfoPage implements PropertyChangeListener {
             log.error( "Exception while reset catalog information page", e );
         }
     }
+
 }

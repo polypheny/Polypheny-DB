@@ -301,4 +301,5 @@ public class JdbcArrayTest {
             }
         }
     }
+
 }

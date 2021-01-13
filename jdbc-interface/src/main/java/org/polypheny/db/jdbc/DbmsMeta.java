@@ -1700,6 +1700,7 @@ public class DbmsMeta implements ProtobufMeta {
             im.removeGroup( informationGroupConnection );
             im.removePage( informationPage );
         }
+
     }
 
 }

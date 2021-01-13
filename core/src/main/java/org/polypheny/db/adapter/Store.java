@@ -172,6 +172,7 @@ public abstract class Store {
         public final boolean canBeNull;
         public final boolean required;
         public final boolean modifiable;
+
     }
 
 
@@ -184,6 +185,7 @@ public abstract class Store {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
+
     }
 
 
@@ -196,6 +198,7 @@ public abstract class Store {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
+
     }
 
 
@@ -208,6 +211,7 @@ public abstract class Store {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
+
     }
 
 

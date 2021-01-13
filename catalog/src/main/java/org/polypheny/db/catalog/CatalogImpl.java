@@ -1914,7 +1914,7 @@ public class CatalogImpl extends Catalog {
      * Set the collation of a column.
      * If the column already has the specified collation set, this method is a NoOp.
      *
-     * @param columnId  The id of the column
+     * @param columnId The id of the column
      * @param collation The collation to set
      */
     @Override
@@ -1999,8 +1999,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
      *
-     * @param columnId     The id of the column
-     * @param type         The type of the default value
+     * @param columnId The id of the column
+     * @param type The type of the default value
      * @param defaultValue The default value
      */
     @Override
@@ -2657,8 +2657,8 @@ public class CatalogImpl extends Catalog {
      * Add a store
      *
      * @param uniqueName The unique name of the store
-     * @param adapter    The class name of the adapter
-     * @param settings   The configuration of the store
+     * @param adapter The class name of the adapter
+     * @param settings The configuration of the store
      * @return The id of the newly added store
      */
     @Override
@@ -2756,8 +2756,8 @@ public class CatalogImpl extends Catalog {
      * Add a query interface
      *
      * @param uniqueName The unique name of the query interface
-     * @param clazz      The class name of the query interface
-     * @param settings   The configuration of the query interface
+     * @param clazz The class name of the query interface
+     * @param settings The configuration of the query interface
      * @return The id of the newly added query interface
      */
     @Override
@@ -2949,5 +2949,7 @@ public class CatalogImpl extends Catalog {
                 assert (stores.containsKey( placement.storeId ));
             } );
         }
+
     }
+
 }
