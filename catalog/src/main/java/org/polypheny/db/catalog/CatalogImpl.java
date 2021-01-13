@@ -1648,7 +1648,6 @@ public class CatalogImpl extends Catalog {
      *
      * @param columnId The id of the column
      * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this id
      */
     @Override
     public CatalogColumn getColumn( long columnId ) {

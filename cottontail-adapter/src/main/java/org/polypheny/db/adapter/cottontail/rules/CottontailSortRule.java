@@ -81,13 +81,7 @@ public class CottontailSortRule extends CottontailConverterRule {
             return false;
         }
 
-        if ( collation.getDirection() != Direction.ASCENDING ) {
-            return false;
-        }
-
-        return true;
-
-//        return super.matches( call );
+        return collation.getDirection() == Direction.ASCENDING;
     }
 
 

@@ -1,13 +1,5 @@
-group "org.polypheny"
 
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.13'
-    }
-}
+group "org.polypheny"
 
 version = versionMajor + "." + versionMinor + versionQualifier
 
@@ -15,7 +7,6 @@ version = versionMajor + "." + versionMinor + versionQualifier
 apply plugin: "java-library"
 apply plugin: "idea"
 apply plugin: "io.freefair.lombok"
-//apply plugin: "com.google.protobuf"
 
 
 compileJava.options.encoding = "UTF-8"
@@ -55,12 +46,8 @@ dependencies {
 
 sourceSets {
     main {
-//        proto {
-//            srcDirs += "$projectDir/cottontaildb-proto/src/main/protobuf"
-//        }
         java {
             srcDirs = ["src/main/java"]
-//            srcDirs = ["src/main/java", "$projectDir/build/generated/source/proto/main/java"]
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
@@ -79,23 +66,6 @@ sourceSets {
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
-
-/*protobuf {
-    generatedFilesBaseDir = "$projectDir/build/generated/source/proto"
-    plugins {
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.29.0'
-        }
-    }
-    protoc {
-        artifact = 'com.google.protobuf:protoc:3.12.3'
-    }
-    generateProtoTasks {
-        all()*.plugins { grpc {
-            outputSubDir = 'java'
-        }}
-    }
-}*/
 
 
 /**

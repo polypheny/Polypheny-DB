@@ -166,16 +166,6 @@ public class SqlFunctions {
         }
     }
 
-//    @SuppressWarnings("rawtypes")
-//    public static double knn( List value, List target, String metric, List weights, @SuppressWarnings("unused") int optimisationFactor ) {
-//        return knn( value, target, metric, weights );
-//    }
-
-//    @SuppressWarnings("rawtypes")
-//    public static double knn( List value, List target, String metric, @SuppressWarnings("unused") int optimisationFactor ) {
-//        return knn( value, target, metric );
-//    }
-
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static double distance( List value, List target, String metric ) {
@@ -3146,10 +3136,7 @@ public class SqlFunctions {
         if ( obj instanceof Collection ) {
             return false;
         }
-        if ( obj instanceof Map ) {
-            return false;
-        }
-        return true;
+        return !(obj instanceof Map);
     }
 
 

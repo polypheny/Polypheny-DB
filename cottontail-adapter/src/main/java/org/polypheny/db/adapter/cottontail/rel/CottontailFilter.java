@@ -104,7 +104,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
         BooleanPredicate predicateInner = convertRexToBooleanPredicate( condition );
         BooleanPredicate predicate = new CompoundPredicate( Op.ROOT, predicateInner, null );
         while ( predicate.simplify() ) {
-            ;
         }
 
 //        Translator translator = new Translator( this.getRowType() )
@@ -395,7 +394,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
     }
 
 
-    static interface BooleanPredicate {
+    interface BooleanPredicate {
 
         boolean isLeaf();
 

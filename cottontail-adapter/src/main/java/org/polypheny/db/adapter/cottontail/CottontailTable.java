@@ -192,7 +192,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
                     .setFrom( From.newBuilder().setEntity( cottontailTable.entity ).build() )
                     .build();
             QueryMessage queryMessage = QueryMessage.newBuilder().setQuery( query ).build();
-            final Enumerable enumerable = new CottontailQueryEnumerable<Object[]>(
+            final Enumerable enumerable = new CottontailQueryEnumerable<>(
                     cottontailTable.cottontailSchema.getWrapper().query( queryMessage ),
                     new CottontailQueryEnumerable.RowTypeParser(
                             cottontailTable.getRowType( typeFactory ),

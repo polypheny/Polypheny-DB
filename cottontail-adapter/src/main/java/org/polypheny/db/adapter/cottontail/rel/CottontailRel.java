@@ -29,7 +29,7 @@ public interface CottontailRel extends RelNode {
 
     void implement( CottontailImplementContext context );
 
-    public class CottontailImplementContext {
+    class CottontailImplementContext {
 
 
         // Main block builder for the generated code.

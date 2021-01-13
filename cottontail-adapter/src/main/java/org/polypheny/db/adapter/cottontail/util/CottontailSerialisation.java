@@ -19,14 +19,9 @@ package org.polypheny.db.adapter.cottontail.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.TimeString;
@@ -37,67 +32,29 @@ public class CottontailSerialisation {
 
     public static final Gson GSON;
 
-    public static final JsonSerializer<DateString> DATE_STRING_JSON_SERIALIZER = new JsonSerializer<DateString>() {
-        @Override
-        public JsonElement serialize( DateString src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.getDaysSinceEpoch() );
-        }
-    };
+    public static final JsonSerializer<DateString> DATE_STRING_JSON_SERIALIZER =
+            ( src, typeOfSrc, context ) -> new JsonPrimitive( src.getDaysSinceEpoch() );
 
-    public static final JsonDeserializer<DateString> DATE_STRING_JSON_DESERIALIZER = new JsonDeserializer<DateString>() {
-        @Override
-        public DateString deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return DateString.fromDaysSinceEpoch( json.getAsInt() );
-        }
-    };
+    public static final JsonDeserializer<DateString> DATE_STRING_JSON_DESERIALIZER =
+            ( json, typeOfT, context ) -> DateString.fromDaysSinceEpoch( json.getAsInt() );
 
+    public static final JsonSerializer<TimeString> TIME_STRING_JSON_SERIALIZER =
+            ( src, typeOfSrc, context ) -> new JsonPrimitive( src.getMillisOfDay() );
 
-    public static final JsonSerializer<TimeString> TIME_STRING_JSON_SERIALIZER = new JsonSerializer<TimeString>() {
-        @Override
-        public JsonElement serialize( TimeString src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.getMillisOfDay() );
-        }
-    };
+    public static final JsonDeserializer<TimeString> TIME_STRING_JSON_DESERIALIZER =
+            ( json, typeOfT, context ) -> TimeString.fromMillisOfDay( json.getAsInt() );
 
+    public static final JsonSerializer<TimestampString> TIMESTAMP_STRING_JSON_SERIALIZER =
+            ( src, typeOfSrc, context ) -> new JsonPrimitive( src.getMillisSinceEpoch() );
 
-    public static final JsonDeserializer<TimeString> TIME_STRING_JSON_DESERIALIZER = new JsonDeserializer<TimeString>() {
-        @Override
-        public TimeString deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return TimeString.fromMillisOfDay( json.getAsInt() );
-        }
-    };
+    public static final JsonDeserializer<TimestampString> TIMESTAMP_STRING_JSON_DESERIALIZER =
+            ( json, typeOfT, context ) -> TimestampString.fromMillisSinceEpoch( json.getAsLong() );
 
+    public static final JsonSerializer<BigDecimal> BIG_DECIMAL_JSON_SERIALIZER =
+            ( src, typeOfSrc, context ) -> new JsonPrimitive( src.toString() );
 
-    public static final JsonSerializer<TimestampString> TIMESTAMP_STRING_JSON_SERIALIZER = new JsonSerializer<TimestampString>() {
-        @Override
-        public JsonElement serialize( TimestampString src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.getMillisSinceEpoch() );
-        }
-    };
-
-
-    public static final JsonDeserializer<TimestampString> TIMESTAMP_STRING_JSON_DESERIALIZER = new JsonDeserializer<TimestampString>() {
-        @Override
-        public TimestampString deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return TimestampString.fromMillisSinceEpoch( json.getAsLong() );
-        }
-    };
-
-
-    public static final JsonSerializer<BigDecimal> BIG_DECIMAL_JSON_SERIALIZER = new JsonSerializer<BigDecimal>() {
-        @Override
-        public JsonElement serialize( BigDecimal src, Type typeOfSrc, JsonSerializationContext context ) {
-            return new JsonPrimitive( src.toString() );
-        }
-    };
-
-
-    public static final JsonDeserializer<BigDecimal> BIG_DECIMAL_JSON_DESERIALIZER = new JsonDeserializer<BigDecimal>() {
-        @Override
-        public BigDecimal deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
-            return new BigDecimal( json.getAsString() );
-        }
-    };
+    public static final JsonDeserializer<BigDecimal> BIG_DECIMAL_JSON_DESERIALIZER =
+            ( json, typeOfT, context ) -> new BigDecimal( json.getAsString() );
 
 
     static {

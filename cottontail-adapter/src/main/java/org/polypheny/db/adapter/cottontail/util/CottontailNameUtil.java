@@ -52,16 +52,16 @@ public class CottontailNameUtil {
 
     public static String incrementNameRevision( String name ) {
         Matcher m = idRevPattern.matcher( name );
-        Long id;
-        Long rev;
+        long id;
+        long rev;
         String type;
         if ( m.find() ) {
             type = m.group( 1 );
-            id = Long.valueOf( m.group( 2 ) );
+            id = Long.parseLong( m.group( 2 ) );
             if ( m.group( 3 ) == null ) {
                 rev = 0L;
             } else {
-                rev = Long.valueOf( m.group( 3 ) );
+                rev = Long.parseLong( m.group( 3 ) );
             }
         } else {
             throw new IllegalArgumentException( "Not a physical name!" );

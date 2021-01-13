@@ -21,7 +21,6 @@ include 'information'
 include 'statistic'
 include 'explore-by-example'
 include 'rest-interface'
-
-include 'dbms'
 include 'cottontail-adapter'
 
+include 'dbms'

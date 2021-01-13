@@ -62,8 +62,8 @@ public class CottontailWrapper implements AutoCloseable {
     private final CottonDMLStub insertStub;
 
     public static final int maxMessageSize = 150_000_000;
-    private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; //TODO expose to config
-    private static final long MAX_CALL_TIMEOUT = 5000; //TODO expose to config
+    private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; // TODO expose to config
+    private static final long MAX_CALL_TIMEOUT = 5000; // TODO expose to config
 
 
     public CottontailWrapper( ManagedChannel channel ) {
@@ -94,7 +94,7 @@ public class CottontailWrapper implements AutoCloseable {
             if ( e.getStatus().getCode() == Status.ALREADY_EXISTS.getCode() ) {
                 log.warn( "Entity {} was not created because it already exists", createMessage.getEntity().getName() );
             } else {
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
             return false;
         }
@@ -110,7 +110,7 @@ public class CottontailWrapper implements AutoCloseable {
                 log.warn( "Index on {}.{} was not created because it already exists", createMessage.getIndex().getEntity().getName(), createMessage.getColumnsList().toString() );
                 return;
             }
-            e.printStackTrace();
+            log.error( "Caught exception", e );
         }
     }
 
@@ -123,7 +123,7 @@ public class CottontailWrapper implements AutoCloseable {
             if ( e.getStatus().getCode() == Status.NOT_FOUND.getCode() ) {
                 log.debug( "entity {} was not dropped because it does not exist", entity.getName() );
             } else {
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
         }
     }
@@ -137,7 +137,7 @@ public class CottontailWrapper implements AutoCloseable {
             if ( e.getStatus().getCode() == Status.NOT_FOUND.getCode() ) {
                 log.debug( "entity {} was not truncated because it does not exist", entity.getName() );
             } else {
-                e.printStackTrace();
+                log.error( "Caught exception", e );
             }
         }
     }
@@ -291,7 +291,7 @@ public class CottontailWrapper implements AutoCloseable {
                 Thread.yield();
             }
         } catch ( Exception e ) {
-            e.printStackTrace();
+            log.error( "Caught exception", e );
         }
         return !status[1];
     }
@@ -393,9 +393,6 @@ public class CottontailWrapper implements AutoCloseable {
     }
 
 
-    /**
-     *
-     */
     @Override
     public void close() {
         this.channel.shutdown();
