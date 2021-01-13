@@ -37,7 +37,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
@@ -223,7 +222,7 @@ public abstract class AbstractRouter implements Router {
                     List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                     CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
                     pkPlacements = catalog.getColumnPlacements( pkColumn.id );
-                } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
+                } catch ( GenericCatalogException | UnknownTableException e ) {
                     throw new RuntimeException( e );
                 }
 
@@ -469,7 +468,7 @@ public abstract class AbstractRouter implements Router {
                 for ( long pkColumnId : pkColumnIds ) {
                     pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
                 }
-            } catch ( GenericCatalogException | UnknownTableException | UnknownKeyException e ) {
+            } catch ( GenericCatalogException | UnknownTableException e ) {
                 throw new RuntimeException( e );
             }
 
@@ -588,6 +587,7 @@ public abstract class AbstractRouter implements Router {
         private final String storeName;
         private final String physicalSchemaName;
         private final String physicalTableName;
+
     }
 
 }

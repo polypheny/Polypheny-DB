@@ -28,11 +28,11 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.DataMigrator;
@@ -115,6 +115,14 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             // Which columns to remove
             for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) ) {
                 if ( !columnIds.contains( placement.columnId ) ) {
+                    // Check whether there are any indexes located on the store requiring this column
+                    for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
+                        if ( index.location == storeInstance.getStoreId() && index.key.columnIds.contains( placement.columnId ) ) {
+                            throw SqlUtil.newContextException(
+                                    storeName.getParserPosition(),
+                                    RESOURCE.indexPreventsRemovalOfPlacement( index.name, Catalog.getInstance().getColumn( placement.columnId ).name ) );
+                        }
+                    }
                     // Check whether the column is a primary key column
                     CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
                     if ( primaryKey.columnIds.contains( placement.columnId ) ) {
@@ -169,10 +177,11 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             if ( addedColumns.size() > 0 ) {
                 dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
             }
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownColumnPlacementException | UnknownStoreException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException | UnknownStoreException e ) {
             throw new RuntimeException( e );
         }
 
     }
+
 }
 

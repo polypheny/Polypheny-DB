@@ -104,47 +104,52 @@ public class JdbcArrayTest {
                 statement.executeUpdate( ARRAYTEST_SQL );
                 statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0] } ) );
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT bigintarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[1] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT bigintarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[1] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT booleanarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[2] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT booleanarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[2] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT decimalarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[3] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT decimalarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[3] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT doublearray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[4] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT doublearray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[4] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT intarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[5] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT intarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[5] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT realarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[6] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT realarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[6] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT smallintarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[7] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT smallintarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[7] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tinyintarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[8] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tinyintarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[8] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT varchararray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[9] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT varchararray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[9] } ) );
 
-                statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
             }
         }
     }
@@ -158,32 +163,38 @@ public class JdbcArrayTest {
                 statement.executeUpdate( ARRAYTEST_SQL );
                 statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id, intarray[1] FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0], ((Object[]) ARRAYTEST_DATA[5])[0] } ) );
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id, intarray[1] FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0], ((Object[]) ARRAYTEST_DATA[5])[0] } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT b[2] FROM (SELECT ARRAY[1, 2] as a, ARRAY[2, 4] as b)" ),
-                        ImmutableList.of( new Object[]{ 4 } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT b[2] FROM (SELECT ARRAY[1, 2] as a, ARRAY[2, 4] as b)" ),
+                            ImmutableList.of( new Object[]{ 4 } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT varchararray[1] FROM arraytest WHERE varchararray[1] = '" + ((Object[]) ARRAYTEST_DATA[9])[0] + "'" ),
-                        ImmutableList.of( new Object[]{ ((Object[]) ARRAYTEST_DATA[9])[0] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT varchararray[1] FROM arraytest WHERE varchararray[1] = '" + ((Object[]) ARRAYTEST_DATA[9])[0] + "'" ),
+                            ImmutableList.of( new Object[]{ ((Object[]) ARRAYTEST_DATA[9])[0] } ) );
 
-                // TODO
+                    // TODO
                 /*
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT intarray FROM arraytest WHERE intarray[1] = " + ((Object[]) ARRAYTEST_DATA[1])[0] ),
                         ImmutableList.of( new Object[] { ARRAYTEST_DATA[1] } ) );*/
 
-                // TODO
+                    // TODO
                 /*
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT varchararray FROM arraytest ORDER BY varchararray[1]" ),
                         ImmutableList.of( new Object[] {
                                 new Object[] { ((Object[]) ARRAYTEST_DATA[3])[1], ((Object[]) ARRAYTEST_DATA[3])[0] } } ) );*/
 
-                statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
+
             }
         }
     }
@@ -197,12 +208,16 @@ public class JdbcArrayTest {
                 statement.executeUpdate( ARRAYTEST_SQL );
                 statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
-                statement.executeUpdate( "UPDATE arraytest SET intarray = null" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT intarray FROM arraytest" ),
-                        ImmutableList.of( new Object[]{ null } ) );
-
-                statement.executeUpdate( "DROP TABLE arraytest" );
+                try {
+                    statement.executeUpdate( "UPDATE arraytest SET intarray = null" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT intarray FROM arraytest" ),
+                            ImmutableList.of( new Object[]{ null } ) );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
             }
         }
     }
@@ -216,9 +231,10 @@ public class JdbcArrayTest {
                 statement.executeUpdate( ARRAYTEST_SQL );
                 statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM arraytest WHERE intarray = array[1,2]" ),
-                        ImmutableList.of( new Object[]{ 1 } ) );
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE intarray = array[1,2]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[9999999,8888888]" ),
@@ -244,7 +260,12 @@ public class JdbcArrayTest {
                         statement.executeQuery( "SELECT intarray FROM arraytest WHERE varchararray = array[ 'foo', 'bar' ]" ),
                         ImmutableList.of( new Object[]{ new Object[]{ 1, 2 } } ) );
 
-                statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
+
             }
         }
     }
@@ -259,39 +280,44 @@ public class JdbcArrayTest {
                 statement.executeUpdate( "CREATE TABLE multidimarray(id integer not null, arr INTEGER ARRAY(3, 2), primary key(id))" );
                 statement.executeUpdate( "INSERT INTO multidimarray VALUES ( 1, array[ [[111,112],[121,122]], [[211,212],[221,222]] ])" );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT arr FROM multidimarray" ),
-                        ImmutableList.of( new Object[]{
-                                new Object[]{
-                                        new Object[]{
-                                                new Object[]{ 111, 112 },
-                                                new Object[]{ 121, 122 }
-                                        },
-                                        new Object[]{
-                                                new Object[]{ 211, 212 },
-                                                new Object[]{ 221, 222 }
-                                        }
-                                }
-                        } ) );
+                try {
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT arr FROM multidimarray" ),
+                            ImmutableList.of( new Object[]{
+                                    new Object[]{
+                                            new Object[]{
+                                                    new Object[]{ 111, 112 },
+                                                    new Object[]{ 121, 122 }
+                                            },
+                                            new Object[]{
+                                                    new Object[]{ 211, 212 },
+                                                    new Object[]{ 221, 222 }
+                                            }
+                                    }
+                            } ) );
 
-                statement.executeUpdate( "UPDATE multidimarray SET arr = array[ [[999,999],[999,999]], [[999,999],[999,999]] ] WHERE id = 1" );
+                    statement.executeUpdate( "UPDATE multidimarray SET arr = array[ [[999,999],[999,999]], [[999,999],[999,999]] ] WHERE id = 1" );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT arr FROM multidimarray" ),
-                        ImmutableList.of( new Object[]{
-                                new Object[]{
-                                        new Object[]{
-                                                new Object[]{ 999, 999 },
-                                                new Object[]{ 999, 999 }
-                                        },
-                                        new Object[]{
-                                                new Object[]{ 999, 999 },
-                                                new Object[]{ 999, 999 }
-                                        }
-                                }
-                        } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT arr FROM multidimarray" ),
+                            ImmutableList.of( new Object[]{
+                                    new Object[]{
+                                            new Object[]{
+                                                    new Object[]{ 999, 999 },
+                                                    new Object[]{ 999, 999 }
+                                            },
+                                            new Object[]{
+                                                    new Object[]{ 999, 999 },
+                                                    new Object[]{ 999, 999 }
+                                            }
+                                    }
+                            } ) );
 
-                statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE arraytest" );
+                    connection.commit();
+                }
             }
         }
     }

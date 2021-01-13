@@ -185,10 +185,10 @@ public interface PolyphenyDbResource {
     @BaseMessage("Cannot assign to target field ''{0}'' of type {1} from source field ''{2}'' of type {3}")
     ExInst<SqlValidatorException> typeNotAssignable( String a0, String a1, String a2, String a3 );
 
-    @BaseMessage( "Array in column ''{0}'' with cardinality {1,number} exceeds max-cardinality of {2,number}" )
+    @BaseMessage("Array in column ''{0}'' with cardinality {1,number} exceeds max-cardinality of {2,number}")
     ExInst<SqlValidatorException> exceededCardinality( String a0, long a1, long a2 );
 
-    @BaseMessage( "Array in column ''{0}'' with dimension {1,number} exceeds max-dimension of {2,number}" )
+    @BaseMessage("Array in column ''{0}'' with dimension {1,number} exceeds max-dimension of {2,number}")
     ExInst<SqlValidatorException> exceededDimension( String a0, long a1, long a2 );
 
     @BaseMessage("Database ''{0}'' not found")
@@ -875,7 +875,7 @@ public interface PolyphenyDbResource {
     ExInst<PolyphenyDbException> unknownStoreName( String store );
 
     @BaseMessage("Table ''{0}'' is already placed on store ''{1}''")
-    ExInst<PolyphenyDbException> placementAlreadyExists( String storeName, String tableName );
+    ExInst<PolyphenyDbException> placementAlreadyExists( String tableName, String storeName );
 
     @BaseMessage("There is no placement of table ''{1}'' on store ''{0}''")
     ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
@@ -888,5 +888,18 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("The data store ''{0}'' does not support schema changes!")
     ExInst<PolyphenyDbException> storeIsSchemaReadOnly( String storeName );
+
+    @BaseMessage("The specified data store does not support the index method ''{0}''!")
+    ExInst<PolyphenyDbException> unknownIndexMethod( String indexMethod );
+
+    @BaseMessage("There is no placement of column ''{0}'' on the data store ''{1}''!")
+    ExInst<PolyphenyDbException> missingColumnPlacement( String columnName, String storeName );
+
+    @BaseMessage("Unable to remove placement of column ''{0}'' because it is part of the index ''{1}''!")
+    ExInst<PolyphenyDbException> indexPreventsRemovalOfPlacement( String indexName, String columnName );
+
+    @BaseMessage("There is already an index with the name ''{0}''!")
+    ExInst<PolyphenyDbException> indexExists( String indexName );
+
 }
 

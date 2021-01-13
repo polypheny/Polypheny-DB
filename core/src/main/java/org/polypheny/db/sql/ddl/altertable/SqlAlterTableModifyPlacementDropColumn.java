@@ -26,10 +26,10 @@ import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -110,6 +110,14 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
                         storeName.getParserPosition(),
                         RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
+            // Check whether there are any indexes located on the store requiring this column
+            for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
+                if ( index.location == storeInstance.getStoreId() && index.key.columnIds.contains( catalogColumn.id ) ) {
+                    throw SqlUtil.newContextException(
+                            storeName.getParserPosition(),
+                            RESOURCE.indexPreventsRemovalOfPlacement( index.name, catalogColumn.name ) );
+                }
+            }
             // Check if there are is another placement for this column
             List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( catalogColumn.id );
             if ( existingPlacements.size() < 2 ) {
@@ -126,7 +134,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
             storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) );
             // Drop column placement
             Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), catalogColumn.id );
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,22 +51,26 @@ public class JdbcDmlTest {
                         + "tinteger INTEGER NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )" );
-                statement.executeUpdate( "INSERT INTO multiinserttest VALUES (1,1,'foo'), (2,5,'bar'), (3,7,'foobar')" );
-                statement.executeUpdate( "INSERT INTO multiinserttest(tprimary,tinteger,tvarchar) VALUES (4,6,'hans'), (5,3,'georg'), (6,2,'jack')" );
 
-                // Checks
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM multiinserttest" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, 1, "foo" },
-                                new Object[]{ 2, 5, "bar" },
-                                new Object[]{ 3, 7, "foobar" },
-                                new Object[]{ 4, 6, "hans" },
-                                new Object[]{ 5, 3, "georg" },
-                                new Object[]{ 6, 2, "jack" } ) );
+                try {
+                    statement.executeUpdate( "INSERT INTO multiinserttest VALUES (1,1,'foo'), (2,5,'bar'), (3,7,'foobar')" );
+                    statement.executeUpdate( "INSERT INTO multiinserttest(tprimary,tinteger,tvarchar) VALUES (4,6,'hans'), (5,3,'georg'), (6,2,'jack')" );
 
-                // Drop table
-                statement.executeUpdate( "DROP TABLE multiinserttest" );
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM multiinserttest" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 1, "foo" },
+                                    new Object[]{ 2, 5, "bar" },
+                                    new Object[]{ 3, 7, "foobar" },
+                                    new Object[]{ 4, 6, "hans" },
+                                    new Object[]{ 5, 3, "georg" },
+                                    new Object[]{ 6, 2, "jack" } ) );
+                    connection.commit();
+                } finally {
+                    // Drop table
+                    statement.executeUpdate( "DROP TABLE multiinserttest" );
+                }
             }
         }
     }

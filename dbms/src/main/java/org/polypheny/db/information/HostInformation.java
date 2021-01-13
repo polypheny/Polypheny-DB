@@ -23,7 +23,9 @@ import java.util.List;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import oshi.SystemInfo;
+import oshi.hardware.HWDiskStore;
 import oshi.hardware.HardwareAbstractionLayer;
+import oshi.hardware.NetworkIF;
 import oshi.software.os.OSProcess;
 import oshi.software.os.OperatingSystem;
 import oshi.software.os.OperatingSystem.ProcessSort;
@@ -53,7 +55,7 @@ public class HostInformation {
         InformationTable osInformation = new InformationTable( osGroup, Arrays.asList( "Attribute", "Value" ) );
         osInformation.addRow( "Family", os.getFamily() );
         osInformation.addRow( "Manufacturer", os.getManufacturer() );
-        osInformation.addRow( "Version", os.getVersion().toString() );
+        osInformation.addRow( "Version", os.getVersionInfo().toString() );
         im.registerInformation( osInformation );
 
         //
@@ -62,15 +64,16 @@ public class HostInformation {
         im.addGroup( hardwareGroup );
 
         InformationTable hardwareInformation = new InformationTable( hardwareGroup, Arrays.asList( "Attribute", "Value" ) );
-        hardwareInformation.addRow( "CPU Count", "" + hal.getProcessor().getPhysicalPackageCount() );
+        hardwareInformation.addRow( "CPU / Core Count", hal.getProcessor().getPhysicalPackageCount() + " / " + hal.getProcessor().getPhysicalProcessorCount() );
         if ( hal.getProcessor().getPhysicalPackageCount() > 1 ) {
             for ( int i = 0; i < hal.getProcessor().getPhysicalPackageCount(); i++ ) {
-                hardwareInformation.addRow( "CPU " + i, hal.getProcessor().getName() );
+                hardwareInformation.addRow( "CPU " + i, hal.getProcessor().getProcessorIdentifier().getName() );
             }
         } else {
-            hardwareInformation.addRow( "CPU", hal.getProcessor().getName() );
+            hardwareInformation.addRow( "CPU", hal.getProcessor().getProcessorIdentifier().getName() );
         }
-        hardwareInformation.addRow( "Mainboard", hal.getComputerSystem().getBaseboard().toString() );
+        hardwareInformation.addRow( "Memory", humanReadableByteCount( hal.getMemory().getTotal(), false ) );
+        hardwareInformation.addRow( "Mainboard", hal.getComputerSystem().getBaseboard().getModel() );
         hardwareInformation.addRow( "Firmware Version", hal.getComputerSystem().getFirmware().getVersion() );
         hardwareInformation.addRow( "Manufacturer", hal.getComputerSystem().getManufacturer() );
         hardwareInformation.addRow( "Model", hal.getComputerSystem().getModel() );
@@ -79,23 +82,23 @@ public class HostInformation {
 
         //
         // Disks
-        InformationGroup storageGroup = new InformationGroup( page, "Storage" );
+        InformationGroup storageGroup = new InformationGroup( page, "Storage" ).setOrder( 4 );
         im.addGroup( storageGroup );
 
         InformationTable storageInformation = new InformationTable( storageGroup, Arrays.asList( "Name", "Model", "Size" ) );
-        for ( int i = 0; i < hal.getDiskStores().length; i++ ) {
-            storageInformation.addRow( hal.getDiskStores()[i].getName(), hal.getDiskStores()[i].getModel(), humanReadableByteCount( hal.getDiskStores()[i].getSize(), false ) );
+        for ( HWDiskStore diskStore : hal.getDiskStores() ) {
+            storageInformation.addRow( diskStore.getName(), diskStore.getModel(), humanReadableByteCount( diskStore.getSize(), false ) );
         }
         im.registerInformation( storageInformation );
 
         //
         // Network
-        InformationGroup networkGroup = new InformationGroup( page, "Network Interfaces" );
+        InformationGroup networkGroup = new InformationGroup( page, "Network Interfaces" ).setOrder( 5 );
         im.addGroup( networkGroup );
 
         InformationTable networkInformation = new InformationTable( networkGroup, Arrays.asList( "Name", "IPv4" ) );
-        for ( int i = 0; i < hal.getNetworkIFs().length; i++ ) {
-            networkInformation.addRow( hal.getNetworkIFs()[i].getDisplayName(), String.join( ".", hal.getNetworkIFs()[i].getIPv4addr() ) );
+        for ( NetworkIF networkIF : hal.getNetworkIFs() ) {
+            networkInformation.addRow( networkIF.getDisplayName(), String.join( ".", networkIF.getIPv4addr() ) );
         }
         im.registerInformation( networkInformation );
 
@@ -124,14 +127,14 @@ public class HostInformation {
 
         //
         // Processes
-        InformationGroup processesGroup = new InformationGroup( page.getId(), "Processes" );
+        InformationGroup processesGroup = new InformationGroup( page.getId(), "Processes" ).setOrder( 3 );
         im.addGroup( processesGroup );
 
         InformationGraph graph = new InformationGraph( processesGroup, GraphType.POLARAREA, new String[]{} );
         im.registerInformation( graph );
 
         processesGroup.setRefreshFunction( () -> {
-            List<OSProcess> procs = Arrays.asList( os.getProcesses( 5, ProcessSort.CPU ) );
+            List<OSProcess> procs = os.getProcesses( 5, ProcessSort.CPU );
 
             ArrayList<String> procNames = new ArrayList<>();
             ArrayList<Double> procPerc = new ArrayList<>();

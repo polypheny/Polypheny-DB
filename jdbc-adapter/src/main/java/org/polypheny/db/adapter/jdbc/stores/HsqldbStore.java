@@ -12,9 +12,12 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
@@ -90,6 +93,48 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogIndex.key.tableId );
+        StringBuilder builder = new StringBuilder();
+        builder.append( "CREATE " );
+        if ( catalogIndex.unique ) {
+            builder.append( "UNIQUE INDEX " );
+        } else {
+            builder.append( "INDEX " );
+        }
+        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+        builder.append( " ON " )
+                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalTableName ) );
+
+        builder.append( "(" );
+        boolean first = true;
+        for ( long columnId : catalogIndex.key.columnIds ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+        }
+        builder.append( ")" );
+        executeUpdate( builder, context );
+
+        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "DROP INDEX " );
+        builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
@@ -98,6 +143,26 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return ImmutableList.of(
+                new AvailableIndexMethod( "default", "Default" )
+        );
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        return getAvailableIndexMethods().get( 0 );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        return ImmutableList.of();
     }
 
 

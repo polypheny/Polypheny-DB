@@ -1,4 +1,3 @@
-
 group "org.polypheny"
 
 version = versionMajor + "." + versionMinor + versionQualifier
@@ -25,8 +24,8 @@ configurations.all {
 
 
 configurations {
-   uiFiles { transitive = false } 
-} 
+    uiFiles { transitive = false }
+}
 
 
 dependencies {
@@ -52,7 +51,6 @@ dependencies {
 }
 
 
-
 sourceSets {
     main {
         java {
@@ -60,7 +58,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources","$buildDir/webapp"]
+            srcDirs = ["src/main/resources", "$buildDir/webapp"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -77,27 +75,25 @@ sourceSets {
 }
 
 
-
 // unzip ui files
-task unzipUiFIles(type: Copy) {
-   from zipTree(configurations.uiFiles.singleFile)
-   into "$buildDir/webapp"
-   doLast {
-       file("$buildDir/webapp/index").mkdirs()
-       ant.move file: "$buildDir/webapp/webapp/index.html",
+task unzipUiFiles(type: Copy) {
+    from zipTree(configurations.uiFiles.singleFile)
+    into "$buildDir/webapp"
+    doLast {
+        file("$buildDir/webapp/index").mkdirs()
+        ant.move file: "$buildDir/webapp/webapp/index.html",
                 toDir: "$buildDir/webapp/index/"
     }
 }
 
-classes.dependsOn(unzipUiFIles)
-
+classes.dependsOn(unzipUiFiles)
 
 
 /**
  * JavaDoc
  */
 javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
+    if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings
@@ -105,7 +101,6 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
-
 
 
 /**
@@ -132,7 +127,6 @@ artifacts {
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
 }
-
 
 
 /**

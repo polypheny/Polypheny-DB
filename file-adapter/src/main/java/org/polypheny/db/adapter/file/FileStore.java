@@ -14,6 +14,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
@@ -25,6 +26,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
@@ -54,7 +56,7 @@ public class FileStore extends Store {
      */
     private File WAL;
 
-    //Standards
+    // Standards
     public static final Charset CHARSET = StandardCharsets.UTF_8;
     /**
      * Hash function to use the hash of a primary key to name a file.
@@ -123,15 +125,15 @@ public class FileStore extends Store {
     public void createTable( Context context, CatalogTable catalogTable ) {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         try {
-            for( CatalogColumnPlacement placement: catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id )) {
+            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
                 catalog.updateColumnPlacementPhysicalNames( getStoreId(), placement.columnId, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ), getPhysicalColumnName( placement.columnId ) );
             }
         } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( "Could not create table", e );
         }
-        for( Long colId: catalogTable.columnIds ) {
+        for ( Long colId : catalogTable.columnIds ) {
             File newColumnFolder = getColumnFolder( colId );
-            if( !newColumnFolder.mkdir() ) {
+            if ( !newColumnFolder.mkdir() ) {
                 throw new RuntimeException( "Could not create column folder " + newColumnFolder.getAbsolutePath() );
             }
         }
@@ -142,7 +144,7 @@ public class FileStore extends Store {
     public void dropTable( Context context, CatalogTable catalogTable ) {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         //todo check if it is on this store?
-        for( Long colId: catalogTable.columnIds ) {
+        for ( Long colId : catalogTable.columnIds ) {
             File f = getColumnFolder( colId );
             try {
                 FileUtils.deleteDirectory( f );
@@ -157,7 +159,7 @@ public class FileStore extends Store {
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         File newColumnFolder = getColumnFolder( catalogColumn.id );
-        if( !newColumnFolder.mkdir() ) {
+        if ( !newColumnFolder.mkdir() ) {
             throw new RuntimeException( "Could not create column folder" );
         }
         try {
@@ -165,8 +167,8 @@ public class FileStore extends Store {
                     getStoreId(),
                     catalogColumn.id,
                     currentSchema.getSchemaName(),
-                    getPhysicalTableName(  catalogTable.id),
-                    getPhysicalColumnName( catalogColumn.id ));
+                    getPhysicalTableName( catalogTable.id ),
+                    getPhysicalColumnName( catalogColumn.id ) );
         } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
@@ -182,6 +184,18 @@ public class FileStore extends Store {
         } catch ( IOException e ) {
             throw new RuntimeException( "Could not delete column folder", e );
         }
+    }
+
+
+    @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "File adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "File adapter does not support dropping indexes" );
     }
 
 
@@ -334,6 +348,26 @@ public class FileStore extends Store {
 
 
     @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return new ArrayList<>();
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        throw new RuntimeException( "File adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        // TODO: Check if this is correct and ind better approach
+        List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
+        return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
+    }
+
+
+    @Override
     public void shutdown() {
         log.info( "shutting down file store '{}'", getUniqueName() );
         try {
@@ -349,6 +383,7 @@ public class FileStore extends Store {
         throw new UnsupportedOperationException( "Cannot change directory" );
     }
 
+
     protected static String getPhysicalTableName( long tableId ) {
         return "tab" + tableId;
     }
@@ -358,10 +393,12 @@ public class FileStore extends Store {
         return "col" + columnId;
     }
 
+
     public static File getColumnFolder( final String rootPath, final Long columnId ) {
         File root = new File( rootPath );
         return new File( root, getPhysicalColumnName( columnId ) );
     }
+
 
     public File getColumnFolder( final Long columnId ) {
         return new File( rootDir, getPhysicalColumnName( columnId ) );
