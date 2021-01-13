@@ -1629,7 +1629,7 @@ public class Crud implements InformationObserver {
         for ( String col : index.getColumns() ) {
             colJoiner.add( "\"" + col + "\"" );
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING %s", tableId, index.getName(), colJoiner.toString(), index.getMethod() );
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" ON STORE \"%s\"", tableId, index.getName(), colJoiner.toString(), index.getMethod(), index.getStoreUniqueName() );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -1696,7 +1696,7 @@ public class Crud implements InformationObserver {
                 index.getTable(),
                 index.getMethod().toUpperCase(),
                 columnListStr,
-                index.getName() );
+                index.getStoreUniqueName() );
         Transaction transaction = getTransaction();
         int affectedRows;
         try {
@@ -1734,6 +1734,7 @@ public class Crud implements InformationObserver {
             jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
+            jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
