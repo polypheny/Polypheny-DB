@@ -147,6 +147,11 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                 }
             }
 
+            // Check if there is already a index with this name for this table
+            if ( Catalog.getInstance().checkIfExistsIndex( catalogTable.id, indexName.getSimple() ) ) {
+                throw SqlUtil.newContextException( indexName.getParserPosition(), RESOURCE.indexExists( indexName.getSimple() ) );
+            }
+
             String method;
             String methodDisplayName;
             if ( indexMethod != null ) {

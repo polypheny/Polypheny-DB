@@ -875,7 +875,7 @@ public interface PolyphenyDbResource {
     ExInst<PolyphenyDbException> unknownStoreName( String store );
 
     @BaseMessage("Table ''{0}'' is already placed on store ''{1}''")
-    ExInst<PolyphenyDbException> placementAlreadyExists( String storeName, String tableName );
+    ExInst<PolyphenyDbException> placementAlreadyExists( String tableName, String storeName );
 
     @BaseMessage("There is no placement of table ''{1}'' on store ''{0}''")
     ExInst<PolyphenyDbException> placementDoesNotExist( String storeName, String tableName );
@@ -897,6 +897,9 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("Unable to remove placement of column ''{0}'' because it is part of the index ''{1}''!")
     ExInst<PolyphenyDbException> indexPreventsRemovalOfPlacement( String indexName, String columnName );
+
+    @BaseMessage("There is already an index with the name ''{0}''!")
+    ExInst<PolyphenyDbException> indexExists( String indexName );
 
 }
 

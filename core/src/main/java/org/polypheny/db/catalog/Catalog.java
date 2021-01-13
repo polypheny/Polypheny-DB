@@ -676,7 +676,7 @@ public abstract class Catalog {
     public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
 
 
-    public abstract List<CatalogIndex> getIndices( CatalogKey key );
+    public abstract List<CatalogIndex> getIndexes( CatalogKey key );
 
     public abstract List<CatalogIndex> getForeignKeys( CatalogKey key );
 
@@ -741,12 +741,29 @@ public abstract class Catalog {
     public abstract CatalogIndex getIndex( long tableId, String indexName ) throws GenericCatalogException, UnknownIndexException;
 
     /**
+     * Checks if there is an index with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param indexName The name to check for
+     * @return true if there is an index with this name, false if not.
+     * @throws GenericCatalogException A generic catalog exception
+     */
+    public abstract boolean checkIfExistsIndex( long tableId, String indexName ) throws GenericCatalogException;
+
+    /**
      * Returns the index with the specified id
      *
      * @param indexId The id of the index
      * @return The Index
      */
     public abstract CatalogIndex getIndex( long indexId );
+
+    /**
+     * Returns list of all indexes
+     *
+     * @return List of indexes
+     */
+    public abstract List<CatalogIndex> getIndexes();
 
     /**
      * Adds an index over the specified columns
@@ -776,7 +793,7 @@ public abstract class Catalog {
      *
      * @param indexId The id of the index to drop
      */
-    public abstract void deleteIndex( long indexId ) throws GenericCatalogException, UnknownIndexException;
+    public abstract void deleteIndex( long indexId ) throws GenericCatalogException;
 
     /**
      * Deletes the specified primary key (including the entry in the key table). If there is an index on this key, make sure to delete it first.

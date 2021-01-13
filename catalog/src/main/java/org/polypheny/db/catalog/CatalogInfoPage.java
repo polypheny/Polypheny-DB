@@ -40,6 +40,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable schemaInformation;
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
+    private final InformationTable indexInformation;
     private final InformationTable storeInformation;
 
 
@@ -55,6 +56,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
+        this.indexInformation = addCatalogInformationTable( page, "Indexes", Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
 
         addPersistentInfo( page );
 
@@ -94,6 +96,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         tableInformation.reset();
         columnInformation.reset();
         storeInformation.reset();
+        indexInformation.reset();
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
@@ -114,6 +117,9 @@ public class CatalogInfoPage implements PropertyChangeListener {
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
+            } );
+            catalog.getIndexes().forEach( i -> {
+                indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
             } );
         } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
             log.error( "Exception while reset catalog information page", e );

@@ -1228,7 +1228,7 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             prepare( h, statementHandle.getPreparedQuery() );
             return new ExecuteResult( execute( h, connection, statementHandle, maxRowsInFirstFrame ) );
-        } catch ( Exception e ) {
+        } catch ( Throwable e ) {
             log.error( "Exception while preparing query", e );
             String message = e.getLocalizedMessage();
             throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
