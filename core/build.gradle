@@ -14,9 +14,9 @@ configurations {
 buildscript {
     dependencies {
         // JavaCC (https://github.com/johnmartel/javaccPlugin)
-        classpath group: "ca.coglinc2.javacc", name: "ca.coglinc2.javacc.gradle.plugin", version: "3.0.0"
+        classpath group: "ca.coglinc2.javacc", name: "ca.coglinc2.javacc.gradle.plugin", version: javacc_plugin_version
         // Fmpp
-        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: "0.9.16"
+        classpath group: "net.sourceforge.fmpp", name: "fmpp", version: fmpp_plugin_version
     }
     ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
@@ -175,7 +175,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        attributes "Version": "$version"
+        //attributes "Version": "$version"
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -187,8 +187,8 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 task testJar (type: Jar) {
-    from sourceSets.test.output
     classifier = "test"
+    from sourceSets.test.output
 }
 artifacts {
     //archives jar // regular jar containing only the compiled source
