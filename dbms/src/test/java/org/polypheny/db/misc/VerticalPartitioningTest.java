@@ -49,36 +49,39 @@ public class VerticalPartitioningTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )" );
 
-                // Deploy additional store
-                statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
-                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
+                try {
+                    // Deploy additional store
+                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
-                // Add placement
-                statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
+                    // Add placement
+                    statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
 
-                // Change placement on intial store
-                statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
+                    // Change placement on intial store
+                    statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
-                // Insert data
-                statement.executeUpdate( "INSERT INTO partitioningtest VALUES (1,5,'foo')" );
-                statement.executeUpdate( "INSERT INTO partitioningtest VALUES (2,22,'bar'),(3,69,'xyz')" );
+                    // Insert data
+                    statement.executeUpdate( "INSERT INTO partitioningtest VALUES (1,5,'foo')" );
+                    statement.executeUpdate( "INSERT INTO partitioningtest VALUES (2,22,'bar'),(3,69,'xyz')" );
 
-                // Update data
-                statement.executeUpdate( "UPDATE partitioningtest SET tinteger = 33 WHERE tprimary = 1" );
-                statement.executeUpdate( "UPDATE partitioningtest SET tprimary = 4 WHERE tprimary = 2" );
+                    // Update data
+                    statement.executeUpdate( "UPDATE partitioningtest SET tinteger = 33 WHERE tprimary = 1" );
+                    statement.executeUpdate( "UPDATE partitioningtest SET tprimary = 4 WHERE tprimary = 2" );
 
-                // Delete data
-                statement.executeUpdate( "DELETE FROM partitioningtest WHERE tprimary = 3" );
+                    // Delete data
+                    statement.executeUpdate( "DELETE FROM partitioningtest WHERE tprimary = 3" );
 
-                // Checks
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, 33, "foo" },
-                                new Object[]{ 4, 22, "bar" } ) );
-                // Drop table and store
-                statement.executeUpdate( "DROP TABLE partitioningtest" );
-                statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 33, "foo" },
+                                    new Object[]{ 4, 22, "bar" } ) );
+                } finally {
+                    // Drop table and store
+                    statement.executeUpdate( "DROP TABLE partitioningtest" );
+                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                }
             }
         }
     }
@@ -95,43 +98,46 @@ public class VerticalPartitioningTest {
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )" );
 
-                // Deploy additional store
-                statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
-                        + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
+                try {
+                    // Deploy additional store
+                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                            + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
-                // Add placement
-                statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
+                    // Add placement
+                    statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
 
-                // Change placement on intial store
-                statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
+                    // Change placement on intial store
+                    statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
-                // Insert Data
-                PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO partitioningtest VALUES (?, ?, ?)" );
-                preparedInsert.setInt( 1, 1 );
-                preparedInsert.setInt( 2, 33 );
-                preparedInsert.setString( 3, "foo" );
-                preparedInsert.addBatch();
-                preparedInsert.setInt( 1, 2 );
-                preparedInsert.setInt( 2, 22 );
-                preparedInsert.setString( 3, "bar" );
-                preparedInsert.addBatch();
-                preparedInsert.setInt( 1, 3 );
-                preparedInsert.setInt( 2, 69 );
-                preparedInsert.setString( 3, "foobar" );
-                preparedInsert.addBatch();
-                preparedInsert.executeBatch();
+                    // Insert Data
+                    PreparedStatement preparedInsert = connection.prepareStatement( "INSERT INTO partitioningtest VALUES (?, ?, ?)" );
+                    preparedInsert.setInt( 1, 1 );
+                    preparedInsert.setInt( 2, 33 );
+                    preparedInsert.setString( 3, "foo" );
+                    preparedInsert.addBatch();
+                    preparedInsert.setInt( 1, 2 );
+                    preparedInsert.setInt( 2, 22 );
+                    preparedInsert.setString( 3, "bar" );
+                    preparedInsert.addBatch();
+                    preparedInsert.setInt( 1, 3 );
+                    preparedInsert.setInt( 2, 69 );
+                    preparedInsert.setString( 3, "foobar" );
+                    preparedInsert.addBatch();
+                    preparedInsert.executeBatch();
 
-                // Checks
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, 33, "foo" },
-                                new Object[]{ 2, 22, "bar" },
-                                new Object[]{ 3, 69, "foobar" } ) );
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM partitioningtest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, 33, "foo" },
+                                    new Object[]{ 2, 22, "bar" },
+                                    new Object[]{ 3, 69, "foobar" } ) );
 
-                // Drop table and store
-                statement.executeUpdate( "DROP TABLE partitioningtest" );
-                statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                } finally {
+                    // Drop table and store
+                    statement.executeUpdate( "DROP TABLE partitioningtest" );
+                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                }
             }
         }
     }

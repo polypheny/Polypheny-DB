@@ -88,7 +88,7 @@ public class RelBuilderTest {
 
 
     @BeforeClass
-    public static void start() {
+    public static void start() throws SQLException {
         // Ensures that Polypheny-DB is running
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
@@ -98,7 +98,7 @@ public class RelBuilderTest {
 
 
     @AfterClass
-    public static void tearDown() {
+    public static void tearDown() throws SQLException {
         try {
             dropTestSchema();
             transaction.commit();
@@ -108,7 +108,7 @@ public class RelBuilderTest {
     }
 
 
-    private static void addTestSchema() {
+    private static void addTestSchema() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -116,13 +116,11 @@ public class RelBuilderTest {
                 statement.executeUpdate( "CREATE TABLE employee( empid BIGINT NOT NULL, ename VARCHAR(20), job VARCHAR(10), mgr INTEGER, hiredate DATE, salary DECIMAL(7,2), commission DECIMAL(7,2), deptno INTEGER NOT NULL, PRIMARY KEY (empid)) " );
                 connection.commit();
             }
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getTables()", e );
         }
     }
 
 
-    private static void dropTestSchema() {
+    private static void dropTestSchema() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
@@ -130,8 +128,6 @@ public class RelBuilderTest {
                 statement.executeUpdate( "DROP TABLE employee" );
                 connection.commit();
             }
-        } catch ( SQLException e ) {
-            log.error( "Exception while testing getTables()", e );
         }
     }
 

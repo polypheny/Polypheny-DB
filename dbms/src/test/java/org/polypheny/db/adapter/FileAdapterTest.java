@@ -71,57 +71,61 @@ public class FileAdapterTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE preparedTest (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a)) ON STORE \"mm\"" );
+                try {
+                    statement.executeUpdate( "CREATE TABLE preparedTest (a INTEGER NOT NULL, b INTEGER, PRIMARY KEY (a)) ON STORE \"mm\"" );
 
-                preparedTest( connection );
-                batchTest( connection );
+                    preparedTest( connection );
+                    batchTest( connection );
 
-                //check inserts
-                statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
-                //insert only into one column
-                statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
+                    // check inserts
+                    statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
+                    // insert only into one column
+                    statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
 
-                //test conditions
-                ResultSet rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );
-                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 3, 4 } ) );
-                rs.close();
-                //test prepared select
-                PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM preparedTest  WHERE a = ?" );
-                preparedStatement.setInt( 1, 1 );
-                preparedStatement.executeQuery();
-                preparedStatement.close();
+                    // test conditions
+                    ResultSet rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 3, 4 } ) );
+                    rs.close();
+                    // test prepared select
+                    PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM preparedTest  WHERE a = ?" );
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.executeQuery();
+                    preparedStatement.close();
 
-                rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b = 4" );
-                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 3, 4 } ) );
-                rs.close();
+                    rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b = 4" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 3, 4 } ) );
+                    rs.close();
 
-                //update
-                statement.executeUpdate( "UPDATE preparedTest SET b = 5 WHERE b = 4" );//b=6 where b = 5
-                //prepared update
-                preparedStatement = connection.prepareStatement( "UPDATE preparedTest SET b = 6 WHERE b = ?" );
-                preparedStatement.setInt( 1, 5 );
-                preparedStatement.executeUpdate();
-                preparedStatement.close();
-                //check updated value
-                rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b = 6" );
-                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 3, 6 } ) );
-                rs.close();
+                    // update
+                    statement.executeUpdate( "UPDATE preparedTest SET b = 5 WHERE b = 4" );//b=6 where b = 5
+                    // prepared update
+                    preparedStatement = connection.prepareStatement( "UPDATE preparedTest SET b = 6 WHERE b = ?" );
+                    preparedStatement.setInt( 1, 5 );
+                    preparedStatement.executeUpdate();
+                    preparedStatement.close();
+                    // check updated value
+                    rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b = 6" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 3, 6 } ) );
+                    rs.close();
 
-                //is null
-                rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b IS NULL ORDER BY a" );
-                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 5, null }, new Object[]{ 6, null } ) );
-                rs.close();
-                //x = null should always return false
-                rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b = NULL" );
-                TestHelper.checkResultSet( rs, ImmutableList.of() );
-                rs.close();
-                //check greater equals and check that prepared and batch inserts work
-                rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a >= 10 ORDER BY a" );
-                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 10, 20 }, new Object[]{ 11, 21 }, new Object[]{ 12, 22 } ) );
-                rs.close();
+                    // is null
+                    rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b IS NULL ORDER BY a" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 5, null }, new Object[]{ 6, null } ) );
+                    rs.close();
+                    // x = null should always return false
+                    rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b = NULL" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of() );
+                    rs.close();
+                    // check greater equals and check that prepared and batch inserts work
+                    rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a >= 10 ORDER BY a" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 10, 20 }, new Object[]{ 11, 21 }, new Object[]{ 12, 22 } ) );
+                    rs.close();
 
-                statement.executeUpdate( "DROP TABLE public.preparedTest" );
-                connection.commit();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE public.preparedTest" );
+                    connection.commit();
+                }
             }
         }
     }
@@ -132,25 +136,29 @@ public class FileAdapterTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "CREATE TABLE testDateTime (a INTEGER NOT NULL, b DATE, c TIME, d TIMESTAMP , PRIMARY KEY (a)) ON STORE \"mm\"" );
+                try {
+                    statement.executeUpdate( "CREATE TABLE testDateTime (a INTEGER NOT NULL, b DATE, c TIME, d TIMESTAMP , PRIMARY KEY (a)) ON STORE \"mm\"" );
 
-                PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO testDateTime (a,b,c,d) VALUES (?,?,?,?)" );
-                preparedStatement.setInt( 1, 1 );
-                preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
-                preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
-                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
-                preparedStatement.addBatch();
-                preparedStatement.clearParameters();
-                preparedStatement.setInt( 1, 2 );
-                preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
-                preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
-                preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
-                preparedStatement.addBatch();
-                preparedStatement.executeBatch();
-                preparedStatement.close();
+                    PreparedStatement preparedStatement = connection.prepareStatement( "INSERT INTO testDateTime (a,b,c,d) VALUES (?,?,?,?)" );
+                    preparedStatement.setInt( 1, 1 );
+                    preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
+                    preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
+                    preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
+                    preparedStatement.addBatch();
+                    preparedStatement.clearParameters();
+                    preparedStatement.setInt( 1, 2 );
+                    preparedStatement.setDate( 2, Date.valueOf( LocalDate.now() ) );
+                    preparedStatement.setTime( 3, Time.valueOf( LocalTime.now() ) );
+                    preparedStatement.setTimestamp( 4, Timestamp.valueOf( LocalDateTime.now() ) );
+                    preparedStatement.addBatch();
+                    preparedStatement.executeBatch();
+                    preparedStatement.close();
 
-                statement.executeUpdate( "DROP TABLE public.testDateTime" );
-                connection.commit();
+                    connection.commit();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE public.testDateTime" );
+                    connection.commit();
+                }
             }
         }
     }
