@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ public class CottontailProject extends Project implements CottontailRel {
     @Getter
     private int knnColumnIndex = -1;
 
+
     public CottontailProject( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, List<? extends RexNode> projects, RelDataType rowType, boolean arrayValueProject ) {
         super( cluster, traitSet, input, projects, rowType );
         this.arrayValueProject = arrayValueProject;
@@ -71,6 +72,7 @@ public class CottontailProject extends Project implements CottontailRel {
             }
         }
     }
+
 
     @Override
     public boolean isImplementationCacheable() {
@@ -93,7 +95,6 @@ public class CottontailProject extends Project implements CottontailRel {
     @Override
     public void implement( CottontailImplementContext context ) {
         BlockBuilder builder = context.blockBuilder;
-
 
         if ( this.arrayValueProject ) {
             final List<String> physicalColumnNames = new ArrayList<>();
@@ -255,4 +256,5 @@ public class CottontailProject extends Project implements CottontailRel {
 
         return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
+
 }

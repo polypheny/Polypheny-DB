@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,6 @@ public class CottontailSortRule extends CottontailConverterRule {
             return false;
         }
 
-
         return true;
 
 //        return super.matches( call );
@@ -130,7 +129,7 @@ public class CottontailSortRule extends CottontailConverterRule {
             alreadyChecked.add( relNode );
             if ( relNode instanceof Project ) {
 //                if ( ((Project) relNode).getInput().getConvention().equals( targetConvention ) ) {
-                    return (Project) relNode;
+                return (Project) relNode;
 //                }
             } else {
                 for ( RelNode innerNode : relNode.getInputs() ) {
@@ -147,4 +146,5 @@ public class CottontailSortRule extends CottontailConverterRule {
 
         return null;
     }
+
 }

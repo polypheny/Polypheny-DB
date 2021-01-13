@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,8 +91,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
                         }
                     }
 
-
-                    if ( (CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() ))) {
+                    if ( (CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() )) ) {
                         foundKnnFunction = true;
                         valueProject = false;
                     } else {
@@ -117,8 +116,8 @@ public class CottontailProjectRule extends CottontailConverterRule {
             return false;
         }
 
-        return ( ( containsInputRefs || containsValueProjects ) && !foundKnnFunction )
-                || ( ( containsInputRefs || foundKnnFunction ) && !containsValueProjects);
+        return ((containsInputRefs || containsValueProjects) && !foundKnnFunction)
+                || ((containsInputRefs || foundKnnFunction) && !containsValueProjects);
 //        return onlyInputRefs || valueProject;
     }
 
@@ -143,4 +142,5 @@ public class CottontailProjectRule extends CottontailConverterRule {
                 project.getRowType(),
                 arrayValueProject );
     }
+
 }

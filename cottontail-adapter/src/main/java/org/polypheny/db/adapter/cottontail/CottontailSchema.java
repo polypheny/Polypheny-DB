@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.cottontail;
 
 
-import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +30,7 @@ import org.polypheny.db.schema.SchemaVersion;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
+import org.vitrivr.cottontail.grpc.CottontailGrpc;
 
 
 public class CottontailSchema extends AbstractSchema {
@@ -49,6 +49,7 @@ public class CottontailSchema extends AbstractSchema {
 
     @Getter
     private final CottontailWrapper wrapper;
+
 
     private CottontailSchema(
             @NonNull CottontailWrapper wrapper,
@@ -71,7 +72,7 @@ public class CottontailSchema extends AbstractSchema {
             CottontailWrapper wrapper,
             CottontailConvention convention,
             CottontailStore cottontailStore,
-            String name) {
+            String name ) {
         this.wrapper = wrapper;
         this.convention = convention;
         this.cottontailStore = cottontailStore;
@@ -127,4 +128,5 @@ public class CottontailSchema extends AbstractSchema {
     protected Map<String, Table> getTableMap() {
         return ImmutableMap.copyOf( this.tableMap );
     }
+
 }

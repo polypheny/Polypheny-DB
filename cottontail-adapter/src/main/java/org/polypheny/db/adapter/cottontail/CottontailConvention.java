@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,14 +38,17 @@ public class CottontailConvention extends Convention.Impl {
     @Setter
     private CottontailSchema cottontailSchema;
 
+
     public CottontailConvention( String name, Expression expression ) {
         super( "COTTONTAIL." + name, CottontailRel.class );
         this.expression = expression;
     }
 
+
     public static CottontailConvention of( String name, Expression expression ) {
         return new CottontailConvention( name, expression );
     }
+
 
     @Override
     public void register( RelOptPlanner planner ) {
@@ -53,4 +56,5 @@ public class CottontailConvention extends Convention.Impl {
             planner.addRule( rule );
         }
     }
+
 }

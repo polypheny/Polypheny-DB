@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,6 +153,7 @@ public class JdbcRules {
             super( clazz, predicate, in, out, relBuilderFactory, description );
             this.out = out;
         }
+
     }
 
 
@@ -258,6 +259,7 @@ public class JdbcRules {
                     return false;
             }
         }
+
     }
 
 
@@ -313,6 +315,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -344,6 +347,7 @@ public class JdbcRules {
                     convert( calc.getInput(), calc.getTraitSet().replace( out ) ),
                     calc.getProgram() );
         }
+
     }
 
 
@@ -404,6 +408,7 @@ public class JdbcRules {
                     input.relCompareString() + "$" +
                     (program != null ? program.toString() : "") + "&";
         }
+
     }
 
 
@@ -421,7 +426,7 @@ public class JdbcRules {
                                     || !RexOver.containsOver( project.getProjects(), null ))
                                     && !userDefinedFunctionInProject( project )
                                     && !knnFunctionInProject( project )
-                                    && ( out.dialect.supportsNestedArrays() || !itemOperatorInProject( project ) ),
+                                    && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
                     Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
 
@@ -450,6 +455,7 @@ public class JdbcRules {
             return false;
         }
 
+
         private static boolean itemOperatorInProject( Project project ) {
             CheckingItemOperatorVisitor visitor = new CheckingItemOperatorVisitor();
             for ( RexNode node : project.getChildExps() ) {
@@ -473,6 +479,7 @@ public class JdbcRules {
                     project.getProjects(),
                     project.getRowType() );
         }
+
     }
 
 
@@ -503,6 +510,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -587,6 +595,7 @@ public class JdbcRules {
                     convert( filter.getInput(), filter.getInput().getTraitSet().replace( out ) ),
                     filter.getCondition() );
         }
+
     }
 
 
@@ -611,6 +620,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -651,6 +661,7 @@ public class JdbcRules {
                 return null;
             }
         }
+
     }
 
 
@@ -710,6 +721,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -752,6 +764,7 @@ public class JdbcRules {
 
             return new JdbcSort( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
         }
+
     }
 
 
@@ -777,6 +790,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -800,6 +814,7 @@ public class JdbcRules {
             final RelTraitSet traitSet = union.getTraitSet().replace( out );
             return new JdbcUnion( rel.getCluster(), traitSet, RelOptRule.convertList( union.getInputs(), out ), union.all );
         }
+
     }
 
 
@@ -829,6 +844,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -855,6 +871,7 @@ public class JdbcRules {
             final RelTraitSet traitSet = intersect.getTraitSet().replace( out );
             return new JdbcIntersect( rel.getCluster(), traitSet, RelOptRule.convertList( intersect.getInputs(), out ), false );
         }
+
     }
 
 
@@ -879,6 +896,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -904,6 +922,7 @@ public class JdbcRules {
             final RelTraitSet traitSet = rel.getTraitSet().replace( out );
             return new JdbcMinus( rel.getCluster(), traitSet, RelOptRule.convertList( minus.getInputs(), out ), false );
         }
+
     }
 
 
@@ -928,6 +947,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -976,6 +996,7 @@ public class JdbcRules {
                     modify.getSourceExpressionList(),
                     modify.isFlattened() );
         }
+
     }
 
 
@@ -1036,6 +1057,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -1057,6 +1079,7 @@ public class JdbcRules {
             Values values = (Values) rel;
             return new JdbcValues( values.getCluster(), values.getRowType(), values.getTuples(), values.getTraitSet().replace( out ) );
         }
+
     }
 
 
@@ -1081,6 +1104,7 @@ public class JdbcRules {
         public Result implement( JdbcImplementor implementor ) {
             return implementor.implement( this );
         }
+
     }
 
 
@@ -1112,6 +1136,7 @@ public class JdbcRules {
         }
 
     }
+
 
     private static class CheckingKnnFunctionVisitor extends RexVisitorImpl<Void> {
 

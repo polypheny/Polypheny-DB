@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,11 @@ import org.polypheny.db.tools.RelBuilderFactory;
 
 
 public class CottontailRules {
+
     public static List<RelOptRule> rules( CottontailConvention out ) {
         return rules( out, RelFactories.LOGICAL_BUILDER );
     }
+
 
     public static List<RelOptRule> rules( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
         return ImmutableList.of(
@@ -42,4 +44,5 @@ public class CottontailRules {
                 new CottontailSortAndProjectRule( out, relBuilderFactory )
         );
     }
+
 }

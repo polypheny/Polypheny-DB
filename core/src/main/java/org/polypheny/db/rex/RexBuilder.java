@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -784,8 +784,8 @@ public class RexBuilder {
      * Internal method to create a call to a literal. Code outside this package should call one of the type-specific methods such as {@link #makeDateLiteral(DateString)}, {@link #makeLiteral(boolean)},
      * {@link #makeLiteral(String)}.
      *
-     * @param o        Value of literal, must be appropriate for the type
-     * @param type     Type of literal
+     * @param o Value of literal, must be appropriate for the type
+     * @param type Type of literal
      * @param typeName SQL type of literal
      * @return Literal
      */
@@ -1477,5 +1477,6 @@ public class RexBuilder {
         }
         return new ByteString( Arrays.copyOf( s.getBytes(), length ) );
     }
+
 }
 

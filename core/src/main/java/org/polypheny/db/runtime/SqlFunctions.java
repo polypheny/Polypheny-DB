@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -175,6 +175,7 @@ public class SqlFunctions {
 //    public static double knn( List value, List target, String metric, @SuppressWarnings("unused") int optimisationFactor ) {
 //        return knn( value, target, metric );
 //    }
+
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static double distance( List value, List target, String metric ) {
@@ -3507,6 +3508,7 @@ public class SqlFunctions {
                     + ", exc=" + exc
                     + '}';
         }
+
     }
 
 
@@ -3556,6 +3558,7 @@ public class SqlFunctions {
             }
             return FlatLists.ofComparable( list );
         }
+
     }
 
 

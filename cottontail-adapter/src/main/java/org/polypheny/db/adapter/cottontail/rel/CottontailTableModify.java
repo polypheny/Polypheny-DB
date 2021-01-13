@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,12 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
-import org.polypheny.db.util.Pair;
 
 
 public class CottontailTableModify extends TableModify implements CottontailRel {
 
     public final CottontailTable cottontailTable;
+
 
     /**
      * Creates a {@code TableModify}.
@@ -107,6 +107,7 @@ public class CottontailTableModify extends TableModify implements CottontailRel 
     public void register( RelOptPlanner planner ) {
         getConvention().register( planner );
     }
+
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
@@ -176,7 +177,6 @@ public class CottontailTableModify extends TableModify implements CottontailRel 
             final int actualColumnIndex = logicalColumnNames.indexOf( logicalName );
             final String originalName = physicalColumnNames.get( actualColumnIndex );
 
-
             Expression source_;
             if ( rexNode instanceof RexLiteral ) {
                 source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) rexNode, columnTypes.get( actualColumnIndex ) );
@@ -205,4 +205,5 @@ public class CottontailTableModify extends TableModify implements CottontailRel 
     public boolean isImplementationCacheable() {
         return true;
     }
+
 }

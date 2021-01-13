@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,14 @@ public abstract class CottontailConverterRule extends ConverterRule {
 
     protected final Convention out;
 
+
     <R extends RelNode> CottontailConverterRule(
             Class<R> clazz,
             Predicate<? super R> predicate,
             RelTrait in,
             CottontailConvention out,
             RelBuilderFactory relBuilderFactory,
-            String description) {
+            String description ) {
         super( clazz, predicate, in, out, relBuilderFactory, description );
         this.out = out;
     }

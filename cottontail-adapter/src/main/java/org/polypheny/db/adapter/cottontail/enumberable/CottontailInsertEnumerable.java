@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@
 package org.polypheny.db.adapter.cottontail.enumberable;
 
 
-import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -120,8 +118,6 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-
-
     @Override
     public Enumerator<T> enumerator() {
         return new CottontailInsertResultEnumerator<>( inserts, wrapper, fromPrepared );
@@ -194,5 +190,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
         public void close() {
 
         }
+
     }
+
 }

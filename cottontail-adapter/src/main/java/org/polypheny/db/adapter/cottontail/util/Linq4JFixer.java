@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.avatica.util.ByteString;
-import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
-import org.polypheny.db.util.DateString;
-import org.polypheny.db.util.TimeString;
-import org.polypheny.db.util.TimestampString;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
@@ -68,7 +64,7 @@ public class Linq4JFixer {
         if ( ((CottontailGrpc.Data) data).hasNullData() ) {
             return null;
         }
-        return Integer.valueOf(((CottontailGrpc.Data) data).getIntData()).byteValue();
+        return Integer.valueOf( ((CottontailGrpc.Data) data).getIntData() ).byteValue();
     }
 
 
@@ -76,7 +72,7 @@ public class Linq4JFixer {
         if ( ((CottontailGrpc.Data) data).hasNullData() ) {
             return null;
         }
-        return Integer.valueOf(((CottontailGrpc.Data) data).getIntData()).shortValue();
+        return Integer.valueOf( ((CottontailGrpc.Data) data).getIntData() ).shortValue();
     }
 
 
@@ -172,6 +168,7 @@ public class Linq4JFixer {
         return ((CottontailGrpc.Data) data).getVectorData().getIntVector().getVectorList();
     }
 
+
     public static Object getFloatVector( Object data ) {
         if ( ((CottontailGrpc.Data) data).hasNullData() ) {
             return null;
@@ -179,12 +176,14 @@ public class Linq4JFixer {
         return ((CottontailGrpc.Data) data).getVectorData().getFloatVector().getVectorList();
     }
 
+
     public static Object getDoubleVector( Object data ) {
         if ( ((CottontailGrpc.Data) data).hasNullData() ) {
             return null;
         }
         return ((CottontailGrpc.Data) data).getVectorData().getDoubleVector().getVectorList();
     }
+
 
     public static Object getLongVector( Object data ) {
         if ( ((CottontailGrpc.Data) data).hasNullData() ) {

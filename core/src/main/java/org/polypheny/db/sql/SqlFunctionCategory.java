@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,8 +34,8 @@
 package org.polypheny.db.sql;
 
 
-import static org.polypheny.db.sql.SqlFunctionCategory.Property.FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.DISTANCE_FUNCTION;
+import static org.polypheny.db.sql.SqlFunctionCategory.Property.FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.SPECIFIC;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.TABLE_FUNCTION;
 import static org.polypheny.db.sql.SqlFunctionCategory.Property.USER_DEFINED;
@@ -75,6 +75,7 @@ public enum SqlFunctionCategory {
     public boolean isUserDefined() {
         return properties.contains( USER_DEFINED );
     }
+
 
     public boolean isKnn() {
         return properties.contains( DISTANCE_FUNCTION );

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,6 @@
 package org.polypheny.db.adapter.cottontail.rel;
 
 
-import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
-import org.polypheny.db.sql.SqlKind;
-import org.polypheny.db.type.PolyType;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate.Operator;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -38,6 +30,7 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.cottontail.rel.CottontailFilter.CompoundPredicate.Op;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
@@ -49,7 +42,14 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.Pair;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate.Operator;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
 public class CottontailFilter extends Filter implements CottontailRel {
@@ -73,6 +73,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
 //            CottontailFilter.Translator.class,
             "generateWhere",
             Object.class );
+
 
     public CottontailFilter( RelOptCluster cluster, RelTraitSet traits, RelNode child, RexNode condition ) {
         super( cluster, traits, child, condition );
@@ -102,17 +103,17 @@ public class CottontailFilter extends Filter implements CottontailRel {
     public static BooleanPredicate convertToCnf( RexNode condition ) {
         BooleanPredicate predicateInner = convertRexToBooleanPredicate( condition );
         BooleanPredicate predicate = new CompoundPredicate( Op.ROOT, predicateInner, null );
-        while (predicate.simplify());
+        while ( predicate.simplify() ) {
+            ;
+        }
 
 //        Translator translator = new Translator( this.getRowType() )
         return predicate;
     }
 
 
-
-
-
     public static class Translator {
+
         private final RelDataType rowType;
         private final List<String> fieldNames;
         private final List<PolyType> columnTypes;
@@ -122,8 +123,9 @@ public class CottontailFilter extends Filter implements CottontailRel {
             this.rowType = rowType;
             List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
             this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
-            this.columnTypes = rowType.getFieldList().stream().map( RelDataTypeField::getType ).map( RelDataType::getPolyType ).collect( Collectors.toList());
+            this.columnTypes = rowType.getFieldList().stream().map( RelDataTypeField::getType ).map( RelDataType::getPolyType ).collect( Collectors.toList() );
         }
+
 
         private Expression generateWhereBuilder(
                 BooleanPredicate predicate,
@@ -131,12 +133,11 @@ public class CottontailFilter extends Filter implements CottontailRel {
         ) {
             ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, builder.newName( "dynamicParameters" ) );
 
-            if ( !( predicate instanceof CompoundPredicate ) || (((CompoundPredicate) predicate).op != Op.ROOT) ) {
+            if ( !(predicate instanceof CompoundPredicate) || (((CompoundPredicate) predicate).op != Op.ROOT) ) {
                 throw new AssertionError( "Predicate must be ROOT." );
             }
 
             Expression filterExpression = convertBooleanPredicate( ((CompoundPredicate) predicate).left, null, dynamicParameterMap_, false );
-
 
             return Expressions.lambda(
                     Expressions.block(
@@ -144,6 +145,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
                                     Expressions.call( CREATE_WHERE_METHOD, filterExpression ) ) ),
                     dynamicParameterMap_ );
         }
+
 
         private Expression convertBooleanPredicate(
                 BooleanPredicate predicate,
@@ -153,7 +155,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
         ) {
             if ( predicate instanceof AtomicPredicate ) {
                 AtomicPredicate atomicPredicate = (AtomicPredicate) predicate;
-
 
                 return translateMatch2( atomicPredicate.node, dynamicParameterMap_, negated );
 
@@ -271,7 +272,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
         }
 
 
-
         public static CompoundBooleanPredicate generateCompoundPredicate(
                 Object operator_,
 //                CompoundBooleanPredicate.Operator operator,
@@ -326,12 +326,8 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
             throw new RuntimeException( "Not a proper filter expression!" );
         }
+
     }
-
-
-
-
-
 
 
     private static BooleanPredicate convertRexToBooleanPredicate( RexNode condition ) {
@@ -357,7 +353,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
                 return returnValue;
             }
-                // How to handle more than 2 arguments?
+            // How to handle more than 2 arguments?
             case OR: {
                 List<BooleanPredicate> operands = new ArrayList<>();
                 BooleanPredicate returnValue = null;
@@ -405,12 +401,15 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
         /**
          * Simplify the underlying node.
+         *
          * @return returns <code>true</code> if the node changed.
          */
         boolean simplify();
 
         void finalise();
+
     }
+
 
     static class AtomicPredicate implements BooleanPredicate {
 
@@ -440,7 +439,9 @@ public class CottontailFilter extends Filter implements CottontailRel {
         public void finalise() {
 
         }
+
     }
+
 
     static class CompoundPredicate implements BooleanPredicate {
 
@@ -494,7 +495,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
                 }
             }
 
-
             if ( this.right != null && this.right instanceof CompoundPredicate ) {
                 CompoundPredicate tempRight = (CompoundPredicate) this.right;
                 // We only do one change because left might turn into an AtomicPredicate!
@@ -512,7 +512,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
                     changed = true;
                 }
             }
-
 
             return changed;
         }
@@ -535,24 +534,28 @@ public class CottontailFilter extends Filter implements CottontailRel {
             return this.op == Op.NOT && this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op == Op.NOT;
         }
 
+
         private static BooleanPredicate removeDoubleNegation( CompoundPredicate predicate ) {
             return ((CompoundPredicate) predicate.left).left;
         }
+
 
         public boolean canPushDownNot() {
             return this.op == Op.NOT && this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op != Op.NOT;
         }
 
+
         private static BooleanPredicate pushDownNot( CompoundPredicate predicate ) {
             CompoundPredicate inner = (CompoundPredicate) predicate.left;
             return new CompoundPredicate( inner.op.inverse(),
                     new CompoundPredicate( Op.NOT, inner.left, null ),
-                    new CompoundPredicate( Op.NOT, inner.right, null ));
+                    new CompoundPredicate( Op.NOT, inner.right, null ) );
         }
+
 
         public boolean canPushDownDisjunction() {
             return this.op == Op.OR && (
-                    (this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op == Op.AND )
+                    (this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op == Op.AND)
                             || (this.right instanceof CompoundPredicate && ((CompoundPredicate) this.right).op == Op.AND));
         }
 
@@ -560,7 +563,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
         private static BooleanPredicate pushDownDisjunction( CompoundPredicate predicate ) {
             CompoundPredicate orPredicate;
             BooleanPredicate otherPredicate;
-            if ( predicate.left instanceof CompoundPredicate && ((CompoundPredicate) predicate.left).op == Op.AND) {
+            if ( predicate.left instanceof CompoundPredicate && ((CompoundPredicate) predicate.left).op == Op.AND ) {
                 orPredicate = (CompoundPredicate) predicate.left;
                 otherPredicate = predicate.right;
             } else {
@@ -570,10 +573,8 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
             return new CompoundPredicate( Op.AND,
                     new CompoundPredicate( Op.OR, orPredicate.left, otherPredicate ),
-                    new CompoundPredicate( Op.OR, orPredicate.right, otherPredicate ));
+                    new CompoundPredicate( Op.OR, orPredicate.right, otherPredicate ) );
         }
-
-
 
 
         public enum Op {
@@ -581,6 +582,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
             OR,
             NOT,
             ROOT;
+
 
             public Op inverse() {
                 switch ( this ) {
@@ -595,5 +597,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
                 throw new RuntimeException( "Unreachable code!" );
             }
         }
+
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ public abstract class SortAndProject extends SingleRel {
     protected final RelDataType projectRowType;
     protected final boolean arrayProject;
 
+
     /**
      * Creates a <code>SingleRel</code>.
      *
@@ -83,7 +84,7 @@ public abstract class SortAndProject extends SingleRel {
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return copy( traitSet, sole(inputs), exps, collation, offset, fetch );
+        return copy( traitSet, sole( inputs ), exps, collation, offset, fetch );
     }
 
 
@@ -149,4 +150,5 @@ public abstract class SortAndProject extends SingleRel {
                 (offset != null ? offset.hashCode() : "") + "$" +
                 (fetch != null ? fetch.hashCode() : "") + "&";
     }
+
 }

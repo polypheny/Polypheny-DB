@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             "query",
             String.class, String.class, Map.class, Function1.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailWrapper.class );
 //            String.class, String.class, Map.class, Function1.class, Function1.class, Integer.class, Integer.class, DataContext.class, Function1.class, CottontailWrapper.class );
-
 
 
     private Iterator<QueryResponseMessage> queryIterator;
@@ -155,7 +154,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
         }
 
-        return new CottontailQueryEnumerable<Object>( queryResponseIterator , rowParser );
+        return new CottontailQueryEnumerable<Object>( queryResponseIterator, rowParser );
     }
 
 
@@ -198,8 +197,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-
-
     @Override
     public Enumerator<T> enumerator() {
         return new CottontailQueryResultEnumerator<>( this.queryIterator, this.rowParser );
@@ -215,10 +212,12 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         private QueryResponseMessage currentQueryResponsePage;
         private Iterator<Tuple> currentResultIterator;
 
+
         CottontailQueryResultEnumerator( Iterator<QueryResponseMessage> queryIterator, Function1<Map<String, Data>, T> rowParser ) {
             this.queryIterator = queryIterator;
             this.rowParser = rowParser;
         }
+
 
         @Override
         public T current() {
@@ -228,7 +227,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public boolean moveNext() {
-
 
             // If we have a current result iterator and that iterator has a next result, use that result.
             // We do this first as this is (hopefully) the most common case.
@@ -299,17 +297,21 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         public void close() {
             // TODO js(ct): do we need to do something here?
         }
+
     }
+
 
     public static class RowTypeParser implements Function1<Map<String, Data>, Object[]> {
 
         private final RelDataType rowType;
         private final List<String> physicalColumnNames;
 
+
         public RowTypeParser( RelDataType rowType, List<String> physicalColumnNames ) {
             this.rowType = rowType;
             this.physicalColumnNames = physicalColumnNames;
         }
+
 
         @Override
         public Object[] apply( Map<String, Data> a0 ) {
@@ -374,5 +376,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             }
             throw new AssertionError( "Not yet supported type: " + type.getPolyType() );
         }
+
     }
+
 }

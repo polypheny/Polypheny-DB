@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,12 @@ package org.polypheny.db.adapter.cottontail.util;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.type.PolyType;
 
 
 public class CottontailTypeConversionUtil {
 
     public static Object convertValue( Object value, PolyType inType, PolyType outType ) {
-
-
 
         switch ( inType ) {
             case BOOLEAN:
@@ -72,7 +69,6 @@ public class CottontailTypeConversionUtil {
 
             return returnList;
         }
-
 
         Boolean bool = (Boolean) value;
         switch ( outType ) {
@@ -152,7 +148,7 @@ public class CottontailTypeConversionUtil {
                 return value;
             case INTEGER:
                 return (int) shortValue;
-                // TODO FINISH
+            // TODO FINISH
             default:
                 throw new IllegalArgumentException( "Cannot convert smallint to type: " + outType );
         }
@@ -182,7 +178,7 @@ public class CottontailTypeConversionUtil {
                 return (float) intValue;
             case DOUBLE:
                 return (double) intValue;
-                // TODO FINISH
+            // TODO FINISH
             default:
                 throw new IllegalArgumentException( "Cannot convert int to type: " + outType );
         }
@@ -223,6 +219,7 @@ public class CottontailTypeConversionUtil {
                 throw new IllegalArgumentException( "Cannot convert decimal to type: " + outType );
         }
     }
+
 
     static Object fromReal( Object value, PolyType outType ) {
         if ( value instanceof List ) {
@@ -330,4 +327,5 @@ public class CottontailTypeConversionUtil {
                 throw new IllegalArgumentException( "Cannot convert varchar to type: " + outType );
         }
     }
+
 }

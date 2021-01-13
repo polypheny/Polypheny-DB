@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
 import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -35,12 +34,14 @@ public class CottontailLimit extends SingleRel implements CottontailRel {
     public final RexNode offset;
     public final RexNode fetch;
 
+
     public CottontailLimit( RelOptCluster cluster, RelTraitSet traitSet, RelNode input, RexNode offset, RexNode fetch ) {
         super( cluster, traitSet, input );
         this.offset = offset;
         this.fetch = fetch;
         assert getConvention() == input.getConvention();
     }
+
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
@@ -84,4 +85,5 @@ public class CottontailLimit extends SingleRel implements CottontailRel {
         pw.itemIf( "fetch", fetch, fetch != null );
         return pw;
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,16 +46,18 @@ public class CottontailSortAndProjectRule extends RelOptRule {
 
     protected final Convention out;
 
-    CottontailSortAndProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory  ) {
+
+    CottontailSortAndProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
         super( operand( Sort.class, operand( Project.class, any() ) ), relBuilderFactory, "CottontailSortAndProjectRule" + out.getName() );
         this.out = out;
     }
+
 
     @Override
     public boolean matches( RelOptRuleCall call ) {
         final Sort sort = call.rel( 0 );
 
-        if ( !( call.rel( 1 ) instanceof Project ) ) {
+        if ( !(call.rel( 1 ) instanceof Project) ) {
             return false;
         }
 
@@ -89,7 +91,7 @@ public class CottontailSortAndProjectRule extends RelOptRule {
                 RexCall rexCall = (RexCall) e;
                 if ( !foundKnnFunction ) {
 
-                    if ( (CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() ))) {
+                    if ( (CottontailToEnumerableConverter.SUPPORTED_ARRAY_COMPONENT_TYPES.contains( rexCall.getOperands().get( 0 ).getType().getComponentType().getPolyType() )) ) {
                         foundKnnFunction = true;
                         knnColumn = i;
                     } else {
@@ -103,10 +105,9 @@ public class CottontailSortAndProjectRule extends RelOptRule {
             }
         }
 
-        if (!(containsInputRefs && foundKnnFunction && !containsValueProjects)) {
+        if ( !(containsInputRefs && foundKnnFunction && !containsValueProjects) ) {
             return false;
         }
-
 
         // Sort checks
         if ( sort.getCollation().getFieldCollations().size() != 1 ) {
@@ -158,4 +159,5 @@ public class CottontailSortAndProjectRule extends RelOptRule {
 
         call.transformTo( sortAndProject );
     }
+
 }

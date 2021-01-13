@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,4 +96,5 @@ public class CottontailSort extends Sort implements CottontailRel {
     public Sort copy( RelTraitSet traitSet, RelNode newInput, RelCollation newCollation, RexNode offset, RexNode fetch ) {
         return new CottontailSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
     }
+
 }

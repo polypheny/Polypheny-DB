@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,6 +221,7 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
         return new Pair<>( projectionMap_, knnBuilder );
     }
 
+
     private static Expression numberBuilderBuilder( RexNode node ) {
         BlockBuilder inner = new BlockBuilder();
         ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
@@ -238,4 +239,5 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
 
         return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
+
 }

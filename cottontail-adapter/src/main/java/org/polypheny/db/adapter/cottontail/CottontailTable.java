@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,6 @@
 package org.polypheny.db.adapter.cottontail;
 
 
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
@@ -29,9 +25,9 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
+import org.polypheny.db.adapter.cottontail.rel.CottontailTableScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.adapter.cottontail.rel.CottontailTableScan;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -46,15 +42,19 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.TranslatableTable;
 import org.polypheny.db.schema.impl.AbstractTableQueryable;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
 
 
 public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
-//public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
+
+    //public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
     private RelProtoDataType protoRowType;
     private CottontailSchema cottontailSchema;
 
@@ -70,6 +70,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     private final String logicalSchemaName;
     private final String logicalTableName;
     private final List<String> logicalColumnNames;
+
 
     protected CottontailTable(
             CottontailSchema cottontailSchema,
@@ -182,6 +183,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
             super( dataContext, schema, CottontailTable.this, tableName );
         }
 
+
         @Override
         public Enumerator<T> enumerator() {
             final JavaTypeFactory typeFactory = dataContext.getTypeFactory();
@@ -197,5 +199,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
                             cottontailTable.physicalColumnNames ) );
             return enumerable.enumerator();
         }
+
     }
+
 }

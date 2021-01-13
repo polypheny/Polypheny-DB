@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -906,6 +906,7 @@ public class RexImpTable {
         public void implementNotNullAdd( AggContext info, AggAddContext add ) {
             add.currentBlock().add( Expressions.statement( Expressions.postIncrementAssign( add.accumulator().get( 0 ) ) ) );
         }
+
     }
 
 
@@ -950,6 +951,7 @@ public class RexImpTable {
             }
             return super.implementNotNullResult( info, result );
         }
+
     }
 
 
@@ -985,6 +987,7 @@ public class RexImpTable {
         public Expression implementNotNullResult( AggContext info, AggResultContext result ) {
             return super.implementNotNullResult( info, result );
         }
+
     }
 
 
@@ -1014,6 +1017,7 @@ public class RexImpTable {
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );
             accAdvance( add, acc, next );
         }
+
     }
 
 
@@ -1059,6 +1063,7 @@ public class RexImpTable {
         public Expression implementResult( AggContext info, AggResultContext result ) {
             return RexToLixTranslator.convert( result.accumulator().get( 1 ), info.returnType() );
         }
+
     }
 
 
@@ -1084,6 +1089,7 @@ public class RexImpTable {
                                     BuiltInMethod.COLLECTION_ADD.method,
                                     add.arguments().get( 0 ) ) ) );
         }
+
     }
 
 
@@ -1113,6 +1119,7 @@ public class RexImpTable {
                                     BuiltInMethod.COLLECTION_ADDALL.method,
                                     add.arguments().get( 0 ) ) ) );
         }
+
     }
 
 
@@ -1141,6 +1148,7 @@ public class RexImpTable {
             Expression next = Expressions.call( method.getDeclaringClass(), method.getName(), acc, Expressions.unbox( arg ) );
             accAdvance( add, acc, next );
         }
+
     }
 
 
@@ -1201,6 +1209,7 @@ public class RexImpTable {
             }
             return e != null ? e : Expressions.constant( 0, info.returnType() );
         }
+
     }
 
 
@@ -1261,6 +1270,7 @@ public class RexImpTable {
             List<Expression> acc = result.accumulator();
             return Expressions.call( afi.isStatic ? null : acc.get( 1 ), afi.resultMethod, acc.get( 0 ) );
         }
+
     }
 
 
@@ -1320,6 +1330,7 @@ public class RexImpTable {
             // Rank is 1-based
             return Expressions.add( super.implementNotNullResult( info, result ), Expressions.constant( 1 ) );
         }
+
     }
 
 
@@ -1332,6 +1343,7 @@ public class RexImpTable {
         protected Expression computeNewRank( Expression acc, WinAggAddContext add ) {
             return Expressions.add( acc, Expressions.constant( 1 ) );
         }
+
     }
 
 
@@ -1381,6 +1393,7 @@ public class RexImpTable {
                             .translate( winResult.rexArguments().get( 0 ), info.returnType() ),
                     getDefaultValue( info.returnType() ) );
         }
+
     }
 
 
@@ -1392,6 +1405,7 @@ public class RexImpTable {
         protected FirstValueImplementor() {
             super( SeekType.START );
         }
+
     }
 
 
@@ -1403,6 +1417,7 @@ public class RexImpTable {
         protected LastValueImplementor() {
             super( SeekType.END );
         }
+
     }
 
 
@@ -1465,6 +1480,7 @@ public class RexImpTable {
             result.currentBlock().add( Expressions.ifThenElse( rowInRange, thenBranch, Expressions.statement( Expressions.assign( res, defaultValue ) ) ) );
             return res;
         }
+
     }
 
 
@@ -1543,6 +1559,7 @@ public class RexImpTable {
             result.currentBlock().add( Expressions.ifThenElse( rowInRange, thenBranch, Expressions.statement( Expressions.assign( res, defaultValue ) ) ) );
             return res;
         }
+
     }
 
 
@@ -1554,6 +1571,7 @@ public class RexImpTable {
         protected LeadImplementor() {
             super( true );
         }
+
     }
 
 
@@ -1565,6 +1583,7 @@ public class RexImpTable {
         protected LagImplementor() {
             super( false );
         }
+
     }
 
 
@@ -1615,6 +1634,7 @@ public class RexImpTable {
 
             return ntile;
         }
+
     }
 
 
@@ -1640,6 +1660,7 @@ public class RexImpTable {
             // Window cannot be empty since ROWS/RANGE is not possible for ROW_NUMBER
             return Expressions.add( Expressions.subtract( result.index(), result.startIndex() ), Expressions.constant( 1 ) );
         }
+
     }
 
 
@@ -1693,6 +1714,7 @@ public class RexImpTable {
         public Expression implementResult( AggContext info, AggResultContext result ) {
             return Expressions.call( BuiltInMethod.JSONIZE.method, result.accumulator().get( 0 ) );
         }
+
     }
 
 
@@ -1748,6 +1770,7 @@ public class RexImpTable {
         public Expression implementResult( AggContext info, AggResultContext result ) {
             return Expressions.call( BuiltInMethod.JSONIZE.method, result.accumulator().get( 0 ) );
         }
+
     }
 
 
@@ -1769,6 +1792,7 @@ public class RexImpTable {
                     translatedOperands.get( 2 ),
                     Expressions.constant( strict ) );
         }
+
     }
 
 
@@ -1839,6 +1863,7 @@ public class RexImpTable {
                     Types.castIfNecessary( type, operand ),
                     Types.castIfNecessary( type, Expressions.constant( timeUnit.multiplier ) ) );
         }
+
     }
 
 
@@ -1867,6 +1892,7 @@ public class RexImpTable {
             final Type returnType = translator.typeFactory.getJavaClass( call.getType() );
             return Types.castIfNecessary( returnType, expression );
         }
+
     }
 
 
@@ -1889,6 +1915,7 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, List<Expression> translatedOperands ) {
             return Expressions.call( SqlFunctions.class, methodName, translatedOperands );
         }
+
     }
 
 
@@ -1988,6 +2015,7 @@ public class RexImpTable {
             }
             return expression;
         }
+
     }
 
 
@@ -2014,6 +2042,7 @@ public class RexImpTable {
             // Certain unary operators do not preserve type. For example, the "-" operator applied to a "byte" expression returns an "int".
             return Expressions.convert_( e, operand.type );
         }
+
     }
 
 
@@ -2219,6 +2248,7 @@ public class RexImpTable {
                         : Expressions.condition( test, ifTrue, ifFalse );
             }
         }
+
     }
 
 
@@ -2243,6 +2273,7 @@ public class RexImpTable {
                         implementRecurse( translator, Util.skip( operands ), nullAs ) );
             }
         }
+
     }
 
 
@@ -2275,6 +2306,7 @@ public class RexImpTable {
             }
             return accurate.implement( translator, call, nullAs );
         }
+
     }
 
 
@@ -2296,6 +2328,7 @@ public class RexImpTable {
             final RelDataType targetType = translator.nullifyType( call.getType(), nullable );
             return translator.translateCast( sourceType, targetType, translatedOperands.get( 0 ) );
         }
+
     }
 
 
@@ -2309,6 +2342,7 @@ public class RexImpTable {
             assert call.getOperands().size() == 1;
             return translatedOperands.get( 0 );
         }
+
     }
 
 
@@ -2321,6 +2355,7 @@ public class RexImpTable {
         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
             return translator.translateConstructor( call.getOperands(), call.getOperator().getKind() );
         }
+
     }
 
 
@@ -2349,6 +2384,7 @@ public class RexImpTable {
                     return new MethodImplementor( BuiltInMethod.ANY_ITEM.method );
             }
         }
+
     }
 
 
@@ -2394,6 +2430,7 @@ public class RexImpTable {
                 throw new AssertionError( "unknown function " + op );
             }
         }
+
     }
 
 
@@ -2439,6 +2476,7 @@ public class RexImpTable {
                                 seek ? NullAs.FALSE : NullAs.TRUE ) );
             }
         }
+
     }
 
 
@@ -2465,6 +2503,7 @@ public class RexImpTable {
             final Expression expression = implementor.implement( translator, call, translatedOperands );
             return Expressions.not( expression );
         }
+
     }
 
 
@@ -2576,6 +2615,8 @@ public class RexImpTable {
                     return e;
             }
         }
+
     }
+
 }
 

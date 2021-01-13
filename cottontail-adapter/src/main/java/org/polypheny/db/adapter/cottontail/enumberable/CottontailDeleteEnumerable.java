@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
-import org.polypheny.db.schema.Function;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
@@ -78,7 +77,7 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             } else {
                 parameterValues = dataContext.getParameterValues().get( 0 );
             }
-            deleteMessages = new ArrayList<>(1);
+            deleteMessages = new ArrayList<>( 1 );
             deleteMessages.add( buildSingleDelete( entity, schema, whereBuilder, parameterValues ) );
         } else {
             deleteMessages = new ArrayList<>();
@@ -151,5 +150,7 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
         public void close() {
 
         }
+
     }
+
 }

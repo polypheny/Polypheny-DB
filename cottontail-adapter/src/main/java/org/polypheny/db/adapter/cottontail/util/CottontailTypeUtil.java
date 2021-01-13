@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,6 @@ import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.DateString;
@@ -459,7 +458,7 @@ public class CottontailTypeUtil {
             return vectorBuilder.setBoolVector(
                     BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ).build() ).build();
         } else if ( firstItem instanceof BigDecimal ) {
-            List<Double> doubleList = ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList());
+            List<Double> doubleList = ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList() );
             return vectorBuilder.setDoubleVector(
                     DoubleVector.newBuilder().addAllVector( doubleList ).build() ).build();
         } else {
@@ -588,7 +587,7 @@ public class CottontailTypeUtil {
                                         distance,
                                         targetVector,
                                         weightsVector
-                                        ) ) ),
+                                ) ) ),
                 dynamicParameterMap_ );
     }
 
@@ -684,4 +683,5 @@ public class CottontailTypeUtil {
 
         return literal;
     }
+
 }

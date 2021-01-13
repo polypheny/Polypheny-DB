@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
-import org.polypheny.db.adapter.cottontail.util.CottontailTypeConversionUtil;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -80,7 +79,7 @@ public class CottontailStore extends Store {
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Standalone", "Embedded" ) ),
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 1865 ),
-            new AdapterSettingString( "database",  false, true, false, "cottontail")
+            new AdapterSettingString( "database", false, true, false, "cottontail" )
     );
 
     // Running embedded
@@ -97,6 +96,7 @@ public class CottontailStore extends Store {
     private transient ManagedChannel channel;
     @Expose(serialize = false, deserialize = false)
     private transient CottontailWrapper wrapper;
+
 
     public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {
         super( storeId, uniqueName, settings, false, false, true );
@@ -237,7 +237,6 @@ public class CottontailStore extends Store {
                 .setEntity( tableEntity )
                 .addAllColumns( columns ).build();
 
-
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
@@ -268,7 +267,7 @@ public class CottontailStore extends Store {
             columnBuilder.clear();
 
             columnBuilder.setName( CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation( catalogColumn.type, catalogColumn.collectionsType, ( catalogColumn.dimension != null) ? catalogColumn.dimension : 0 );
+            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation( catalogColumn.type, catalogColumn.collectionsType, (catalogColumn.dimension != null) ? catalogColumn.dimension : 0 );
             columnBuilder.setType( columnType );
             if ( catalogColumn.dimension != null && catalogColumn.dimension == 1 && columnType.getNumber() != Type.STRING.getNumber() ) {
                 columnBuilder.setLength( catalogColumn.cardinality );
@@ -312,12 +311,10 @@ public class CottontailStore extends Store {
                 .setEntity( newTableEntity )
                 .addAllColumns( columns ).build();
 
-
         // DONE TODO js(ct): Create the new table over here!
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
-
 
         Query query = Query.newBuilder().setFrom( From.newBuilder().setEntity( tableEntity ).build() ).build();
 
@@ -389,12 +386,10 @@ public class CottontailStore extends Store {
                 .setEntity( newTableEntity )
                 .addAllColumns( columns ).build();
 
-
         // DONE TODO js(ct): Create the new table over here!
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
-
 
         Query query = Query.newBuilder().setFrom( From.newBuilder().setEntity( tableEntity ).build() ).build();
 
@@ -402,7 +397,6 @@ public class CottontailStore extends Store {
 
         List<InsertMessage> inserts = new ArrayList<>();
         From from = From.newBuilder().setEntity( newTableEntity ).build();
-
 
         queryResponse.forEachRemaining( queryResponseMessage -> {
             for ( Tuple tuple : queryResponseMessage.getResultsList() ) {
@@ -484,12 +478,10 @@ public class CottontailStore extends Store {
                 .setEntity( newTableEntity )
                 .addAllColumns( columns ).build();
 
-
         // DONE TODO js(ct): Create the new table over here!
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
-
 
         Query query = Query.newBuilder().setFrom( From.newBuilder().setEntity( tableEntity ).build() ).build();
 
@@ -525,7 +517,7 @@ public class CottontailStore extends Store {
     @Override
     public void shutdown() {
         this.wrapper.close();
-        if (this.isEmbedded) {
+        if ( this.isEmbedded ) {
             this.embeddedServer.stop();
         }
     }
@@ -535,4 +527,5 @@ public class CottontailStore extends Store {
     protected void reloadSettings( List<String> updatedSettings ) {
 
     }
+
 }

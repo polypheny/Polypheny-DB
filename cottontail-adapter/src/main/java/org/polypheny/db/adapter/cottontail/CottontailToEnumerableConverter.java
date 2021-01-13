@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -50,7 +49,6 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.plan.RelTraitDef;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.RelNode;
@@ -65,7 +63,6 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
@@ -118,7 +115,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         final CottontailImplementContext cottontailContext = new CottontailImplementContext();
         cottontailContext.blockBuilder = list;
         cottontailContext.visitChild( 0, getInput() );
-
 
         final CottontailConvention convention = (CottontailConvention) getInput().getConvention();
         final RelDataType rowType = getRowType();
@@ -218,8 +214,8 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 cottontailContext.preparedValuesMapBuilder,
                                 DataContext.ROOT,
                                 Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
-                                )
-                        );
+                        )
+                );
                 break;
             case DELETE:
                 enumerable = list.append( "enumerable",
@@ -230,7 +226,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 DataContext.ROOT,
                                 Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
                         )
-                        );
+                );
                 break;
             default:
                 enumerable = null;
@@ -506,4 +502,5 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             return expression;
         }
     }
+
 }

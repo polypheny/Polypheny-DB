@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,6 @@
 package org.polypheny.db.adapter.cottontail.rel;
 
 
-import org.apache.calcite.linq4j.tree.DeclarationStatement;
-import org.apache.calcite.linq4j.tree.Types;
-import org.polypheny.db.adapter.cottontail.CottontailConvention;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
-import org.polypheny.db.type.PolyType;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -37,16 +29,23 @@ import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
 import org.apache.commons.lang3.reflect.TypeUtils;
+import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelOptCost;
+import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 
 
 public class CottontailValues extends Values implements org.polypheny.db.adapter.cottontail.rel.CottontailRel {
@@ -57,9 +56,11 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
 
 //    private static final Method MAP_PUT_METHOD = Types.lookupMethod( Map.class, "put",  )
 
+
     public CottontailValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
     }
+
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
@@ -72,12 +73,10 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
 
         BlockBuilder builder = context.blockBuilder;
 
-
 //        final ParameterExpression valuesMapList_ = Expressions.parameter( Modifier.FINAL, LIST_DATA_MAPS_TYPE, builder.newName( "valuesMapList" ) );
         final ParameterExpression valuesMapList_ = Expressions.parameter( ArrayList.class, builder.newName( "valuesMapList" ) );
         final NewExpression valuesMapListCreator = Expressions.new_( ArrayList.class );
         builder.add( Expressions.declare( Modifier.FINAL, valuesMapList_, valuesMapListCreator ) );
-
 
         final List<Pair<String, PolyType>> physicalColumnNames = new ArrayList<>();
         for ( RelDataTypeField field : this.rowType.getFieldList() ) {
@@ -102,7 +101,7 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
                 }
             }
 
-            builder.add( Expressions.statement ( Expressions.call( valuesMapList_, Types.lookupMethod( List.class, "add", Object.class), valuesMap_ ) ) );
+            builder.add( Expressions.statement( Expressions.call( valuesMapList_, Types.lookupMethod( List.class, "add", Object.class ), valuesMap_ ) ) );
         }
 
         context.blockBuilder = builder;
@@ -111,6 +110,7 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
 
 
     static class Translator {
+
         private final RelDataType rowType;
         private final List<String> fieldNames;
 
@@ -123,4 +123,5 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
 
 
     }
+
 }

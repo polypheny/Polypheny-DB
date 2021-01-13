@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             Function1<Map<Long, Object>, Map<String, CottontailGrpc.Data>> tupleBuilder,
             DataContext dataContext,
             CottontailWrapper wrapper
-            ) {
+    ) {
         List<UpdateMessage> updateMessages;
         if ( dataContext.getParameterValues().size() < 2 ) {
             Map<Long, Object> parameterValues;
@@ -73,7 +73,7 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             } else {
                 parameterValues = dataContext.getParameterValues().get( 0 );
             }
-            updateMessages = new ArrayList<>(1);
+            updateMessages = new ArrayList<>( 1 );
             updateMessages.add( buildSingleUpdate( entity, schema, whereBuilder, tupleBuilder, parameterValues ) );
         } else {
             updateMessages = new ArrayList<>();
@@ -92,7 +92,7 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             Function1<Map<Long, Object>, Where> whereBuilder,
             Function1<Map<Long, Object>, Map<String, CottontailGrpc.Data>> tupleBuilder,
             Map<Long, Object> parameterValues
-            ) {
+    ) {
         UpdateMessage.Builder builder = UpdateMessage.newBuilder();
 
         CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
@@ -118,6 +118,7 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
     public Enumerator<T> enumerator() {
         return new CottontailUpdateEnumerator<>( updates, wrapper );
     }
+
 
     private static class CottontailUpdateEnumerator<T> implements Enumerator<T> {
 
@@ -161,5 +162,7 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
         public void close() {
 
         }
+
     }
+
 }

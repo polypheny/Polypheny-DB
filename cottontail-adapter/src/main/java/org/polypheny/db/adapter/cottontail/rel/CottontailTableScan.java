@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ public class CottontailTableScan extends TableScan implements org.polypheny.db.a
 
     protected final CottontailTable cottontailTable;
 
+
     public CottontailTableScan( RelOptCluster cluster, RelOptTable table, CottontailTable cottontailTable, CottontailConvention cottontailConvention ) {
         super( cluster, cluster.traitSetOf( cottontailConvention ), table );
         this.cottontailTable = cottontailTable;
@@ -55,4 +56,5 @@ public class CottontailTableScan extends TableScan implements org.polypheny.db.a
             context.queryType = QueryType.SELECT;
         }
     }
+
 }
