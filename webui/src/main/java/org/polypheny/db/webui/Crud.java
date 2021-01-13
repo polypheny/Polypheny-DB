@@ -78,6 +78,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
+import org.polypheny.db.adapter.Store.FunctionalIndexInfo;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.StoreManager.AdapterInformation;
 import org.polypheny.db.catalog.Catalog;
@@ -97,8 +98,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
@@ -107,7 +108,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.iface.QueryInterface;
-import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
@@ -387,7 +387,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    Result renameTable ( final Request req, final Response res ) {
+    Result renameTable( final Request req, final Response res ) {
         Index table = this.gson.fromJson( req.body(), Index.class );
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" RENAME TO \"%s\"", table.getSchema(), table.getTable(), table.getName() );
         Transaction transaction = getTransaction();
@@ -1124,7 +1124,7 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while getting a column", e );
             result = new Result( e );
         }
@@ -1414,12 +1414,12 @@ public class Crud implements InformationObserver {
                 resultList.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
             }
 
-            DbColumn[] header = { new DbColumn( "Constraint name" ), new DbColumn( "Constraint type" ), new DbColumn( "Columns" ) };
+            DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
             ArrayList<String[]> data = new ArrayList<>();
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -1545,20 +1545,43 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
             List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, false );
 
-            DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "columns" ), new DbColumn( "type" ) };
+            DbColumn[] header = {
+                    new DbColumn( "Name" ),
+                    new DbColumn( "Columns" ),
+                    new DbColumn( "Location" ),
+                    new DbColumn( "Method" ),
+                    new DbColumn( "Type" ) };
 
             ArrayList<String[]> data = new ArrayList<>();
+
+            // Get explicit indexes
             for ( CatalogIndex catalogIndex : catalogIndexes ) {
-                String[] arr = new String[3];
+                String[] arr = new String[5];
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
-                arr[2] = catalogIndex.type.name();
+                arr[2] = catalog.getStore( catalogIndex.location ).uniqueName;
+                arr[3] = catalogIndex.methodDisplayName;
+                arr[4] = catalogIndex.type.name();
                 data.add( arr );
+            }
+
+            // Get functional indexes
+            for ( Integer storeId : catalogTable.placementsByStore.keySet() ) {
+                Store store = StoreManager.getInstance().getStore( storeId );
+                for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
+                    String[] arr = new String[5];
+                    arr[0] = "";
+                    arr[1] = String.join( ", ", fif.getColumnNames() );
+                    arr[2] = store.getUniqueName();
+                    arr[3] = fif.methodDisplayName;
+                    arr[4] = "FUNCTIONAL";
+                    data.add( arr );
+                }
             }
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | UnknownStoreException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -1606,7 +1629,7 @@ public class Crud implements InformationObserver {
         for ( String col : index.getColumns() ) {
             colJoiner.add( "\"" + col + "\"" );
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING %s", tableId, index.getName(), colJoiner.toString(), index.getMethod() );
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" ON STORE \"%s\"", tableId, index.getName(), colJoiner.toString(), index.getMethod(), index.getStoreUniqueName() );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -1638,7 +1661,7 @@ public class Crud implements InformationObserver {
             for ( CatalogStore catalogStore : catalog.getStores() ) {
                 Store store = StoreManager.getInstance().getStore( catalogStore.id );
                 List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                p.addStore( new Placement.Store( store.getUniqueName(), store.getAdapterName(), store.isDataReadOnly(), store.isSchemaReadOnly(), placements ));
+                p.addStore( new Placement.Store( store.getUniqueName(), store.getAdapterName(), store.isDataReadOnly(), store.isSchemaReadOnly(), placements ) );
             }
             return p;
         } catch ( GenericCatalogException | UnknownTableException e ) {
@@ -1658,10 +1681,10 @@ public class Crud implements InformationObserver {
         if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) && !index.getMethod().toUpperCase().equals( "MODIFY" ) ) {
             return new Result( "Invalid request" );
         }
-        StringJoiner columnJoiner = new StringJoiner( ",", "(", ")");
+        StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
         if ( !index.getMethod().toUpperCase().equals( "DROP" ) ) {
-            for( String col : index.getColumns() ) {
+            for ( String col : index.getColumns() ) {
                 columnJoiner.add( "\"" + col + "\"" );
                 counter++;
             }
@@ -1673,7 +1696,7 @@ public class Crud implements InformationObserver {
                 index.getTable(),
                 index.getMethod().toUpperCase(),
                 columnListStr,
-                index.getName() );
+                index.getStoreUniqueName() );
         Transaction transaction = getTransaction();
         int affectedRows;
         try {
@@ -1711,6 +1734,7 @@ public class Crud implements InformationObserver {
             jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
+            jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
@@ -1796,25 +1820,25 @@ public class Crud implements InformationObserver {
     }
 
 
-    String getQueryInterfaces ( final Request req, final Response res ) {
+    String getQueryInterfaces( final Request req, final Response res ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         ImmutableMap<String, QueryInterface> queryInterfaces = qim.getQueryInterfaces();
         List<QueryInterfaceModel> qIs = new ArrayList<>();
-        for( QueryInterface i: queryInterfaces.values() ) {
+        for ( QueryInterface i : queryInterfaces.values() ) {
             qIs.add( new QueryInterfaceModel( i ) );
         }
-        return gson.toJson( qIs.toArray(new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
+        return gson.toJson( qIs.toArray( new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
     }
 
 
-    String getAvailableQueryInterfaces ( final Request req, final Response res ) {
+    String getAvailableQueryInterfaces( final Request req, final Response res ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         List<QueryInterfaceInformation> interfaces = qim.getAvailableQueryInterfaceTypes();
-        return QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ));
+        return QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ) );
     }
 
 
-    Result addQueryInterface ( final Request req, final Response res ) {
+    Result addQueryInterface( final Request req, final Response res ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         QueryInterfaceInformationRequest request = gson.fromJson( req.body(), QueryInterfaceInformationRequest.class );
         try {
@@ -1826,8 +1850,9 @@ public class Crud implements InformationObserver {
         }
     }
 
-    Result updateQueryInterfaceSettings ( final Request req, final Response res ) {
-        QueryInterfaceModel request = gson.fromJson( req.body(),  QueryInterfaceModel.class );
+
+    Result updateQueryInterfaceSettings( final Request req, final Response res ) {
+        QueryInterfaceModel request = gson.fromJson( req.body(), QueryInterfaceModel.class );
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         try {
             qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
@@ -1837,10 +1862,11 @@ public class Crud implements InformationObserver {
         }
     }
 
-    Result removeQueryInterface ( final Request req, final Response res ) {
+
+    Result removeQueryInterface( final Request req, final Response res ) {
         String uniqueName = req.body();
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        try{
+        try {
             qim.removeQueryInterface( catalog, uniqueName );
             return new Result( new Debug().setAffectedRows( 1 ) );
         } catch ( RuntimeException e ) {
@@ -1921,7 +1947,7 @@ public class Crud implements InformationObserver {
                     tables.add( table );
                 }
             }
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException e ) {
             log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
         }
 
@@ -2217,15 +2243,15 @@ public class Crud implements InformationObserver {
 
             Status status = new Status( "tableImport", request.tables.size() );
             int ithTable = 0;
-            for( TableMapping m : request.tables.values() ) {
+            for ( TableMapping m : request.tables.values() ) {
                 //create table from json
                 Path jsonPath = Paths.get( new File( extractedFolder, m.initialName + ".json" ).getPath() );
                 String json = new String( Files.readAllBytes( jsonPath ), StandardCharsets.UTF_8 );
                 JsonTable table = gson.fromJson( json, JsonTable.class );
                 String newName = m.newName != null ? m.newName : table.tableName;
-                assert( table.tableName.equals( m.initialName ) );
+                assert (table.tableName.equals( m.initialName ));
                 HubResult createdTableError = createTableFromJson( json, newName, request, transaction );
-                if( createdTableError != null ) {
+                if ( createdTableError != null ) {
                     transaction.rollback();
                     return createdTableError;
                     //todo check
@@ -2282,7 +2308,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private HubResult createTableFromJson ( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws GenericCatalogException, QueryExecutionException {
+    private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws GenericCatalogException, QueryExecutionException {
         // create table from .json file
         List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
@@ -2296,7 +2322,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private void importCsvFile ( final String csvFileName, final JsonTable table, final Transaction transaction, final File extractedFolder, final HubRequest request, final String tableName, final Status status, final int ithTable ) throws IOException, QueryExecutionException {
+    private void importCsvFile( final String csvFileName, final JsonTable table, final Transaction transaction, final File extractedFolder, final HubRequest request, final String tableName, final Status status, final int ithTable ) throws IOException, QueryExecutionException {
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         for ( JsonColumn col : table.getColumns() ) {
             columnJoiner.add( "\"" + col.columnName + "\"" );
@@ -2375,11 +2401,11 @@ public class Crud implements InformationObserver {
         int ithTable = 0;
         Status status = new Status( "tableExport", request.tables.size() );
         try {
-            for( TableMapping table: request.tables.values() ) {
+            for ( TableMapping table : request.tables.values() ) {
                 tableFile = new File( tempDir, table.initialName + ".csv" );
                 catalogFile = new File( tempDir, table.initialName + ".json" );
-                tableFiles.add(tableFile);
-                catalogFiles.add(catalogFile);
+                tableFiles.add( tableFile );
+                catalogFiles.add( catalogFile );
                 OutputStreamWriter catalogWriter = new OutputStreamWriter( new FileOutputStream( catalogFile ), charset );
                 FileOutputStream tableStream = new FileOutputStream( tableFile );
                 log.info( String.format( "Exporting %s.%s", request.schema, table.initialName ) );
@@ -2388,7 +2414,6 @@ public class Crud implements InformationObserver {
                 catalogWriter.write( SchemaToJsonMapper.exportTableDefinitionAsJson( catalogTable, request.createPks, request.defaultValues ) );
                 catalogWriter.flush();
                 catalogWriter.close();
-
 
                 String query = String.format( "SELECT * FROM \"%s\".\"%s\"", request.schema, table.initialName );
                 // TODO use iterator instead of Result
@@ -2429,8 +2454,8 @@ public class Crud implements InformationObserver {
             File zipFile = new File( tempDir, "table.zip" );
             FileOutputStream zipStream = new FileOutputStream( zipFile );
             //from https://www.baeldung.com/java-compress-and-uncompress
-            ArrayList<File> allFiles = new ArrayList<>(tableFiles);
-            allFiles.addAll(catalogFiles);
+            ArrayList<File> allFiles = new ArrayList<>( tableFiles );
+            allFiles.addAll( catalogFiles );
             try ( ZipOutputStream zipOut = new ZipOutputStream( zipStream, charset ) ) {
                 for ( File fileToZip : allFiles ) {
                     try ( FileInputStream fis = new FileInputStream( fileToZip ) ) {
@@ -2450,7 +2475,7 @@ public class Crud implements InformationObserver {
 
             metaData.setFileSize( zipFile.length() );
             File metaFile = new File( tempDir, "meta.json" );
-            FileOutputStream metaOutputStream = new FileOutputStream(metaFile);
+            FileOutputStream metaOutputStream = new FileOutputStream( metaFile );
             metaOutputStream.write( gson.toJson( metaData, HubMeta.class ).getBytes() );
             metaOutputStream.flush();
             metaOutputStream.close();
@@ -2469,7 +2494,7 @@ public class Crud implements InformationObserver {
 
             // Get result
             String resultString = jsonResponse.getBody();
-            log.info( String.format( "Exported %s.[%s]", request.schema, request.tables.values().stream().map( n -> n.initialName ).collect( Collectors.joining( "," ))));
+            log.info( String.format( "Exported %s.[%s]", request.schema, request.tables.values().stream().map( n -> n.initialName ).collect( Collectors.joining( "," ) ) ) );
 
             try {
                 return gson.fromJson( resultString, Result.class );
@@ -2614,10 +2639,11 @@ public class Crud implements InformationObserver {
 
     /**
      * Convert data from a query result to Strings readable in the UI
+     *
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    ArrayList<String[]> computeResultData ( final List<List<Object>> rows, final List<DbColumn> header ) {
+    ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
             String[] temp = new String[row.size()];
@@ -2737,7 +2763,11 @@ public class Crud implements InformationObserver {
                     rowsChanged = num;
                 }
             } catch ( RuntimeException e ) {
-                throw new QueryExecutionException( e.getCause().getMessage(), e );
+                if ( e.getCause() != null ) {
+                    throw new QueryExecutionException( e.getCause().getMessage(), e );
+                } else {
+                    throw new QueryExecutionException( e.getMessage(), e );
+                }
             }
             return rowsChanged;
         } else {
@@ -2840,7 +2870,7 @@ public class Crud implements InformationObserver {
      * Get the data types of each column of a table
      *
      * @param schemaName name of the schema
-     * @param tableName  name of the table
+     * @param tableName name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
     private Map<String, PolyType> getColumnTypes( String schemaName, String tableName ) {

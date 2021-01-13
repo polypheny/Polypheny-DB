@@ -98,11 +98,6 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "runtimExecutionGroup" ),
 
-    DEFAULT_INDEX_TYPE( "runtime/defaultIndexType",
-            "Index type to use if no type is specified in the create index statement.",
-            1,
-            ConfigType.INTEGER ),
-
     DEFAULT_COLLATION( "runtime/defaultCollation",
             "Collation to use if no collation is specified",
             2,

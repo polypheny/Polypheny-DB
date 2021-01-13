@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,49 +105,53 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // Checks
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM ddltest" ),
-                        ImmutableList.of( DDLTEST_DATA ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tbigint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[0] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tboolean FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[1] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tdate FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tdecimal FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[3] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tdouble FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[4] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tinteger FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[5] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT treal FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[6] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ttime FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ttimestamp FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tvarchar FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
+                try {
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM ddltest" ),
+                            ImmutableList.of( DDLTEST_DATA ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tbigint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[0] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tboolean FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[1] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdate FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdecimal FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[3] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdouble FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[4] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tinteger FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[5] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT treal FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[6] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttime FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttimestamp FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tvarchar FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
 
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                    connection.commit();
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }
@@ -177,17 +181,20 @@ public class JdbcDdlTest {
                         + "ttinyint TINYINT NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
                         + "PRIMARY KEY (tprimary) )" );
-                statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (1)" );
-                statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (2, null, null, null, null, null, null, null, null, null, null, null, null)" );
-                // Checks
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM ddltest ORDER BY tprimary" ),
-                        ImmutableList.of(
-                                new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null },
-                                new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null } ) );
 
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                try {
+                    statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (1)" );
+                    statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES (2, null, null, null, null, null, null, null, null, null, null, null, null)" );
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM ddltest ORDER BY tprimary" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null },
+                                    new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null } ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }
@@ -200,16 +207,18 @@ public class JdbcDdlTest {
             try ( Statement statement = connection.createStatement() ) {
                 // Create ddltest table
                 statement.executeUpdate( DDLTEST_SQL );
-                boolean failed = false;
                 try {
-                    statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null, null )" );
-                } catch ( AvaticaSqlException e ) {
-                    failed = true;
+                    boolean failed = false;
+                    try {
+                        statement.executeUpdate( "INSERT INTO ddltest(tprimary) VALUES ( null, null, null, null, null, 1, null, null, null, null, null, null )" );
+                    } catch ( AvaticaSqlException e ) {
+                        failed = true;
+                    }
+                    Assert.assertTrue( failed );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
                 }
-                Assert.assertTrue( failed );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
             }
         }
     }
@@ -224,60 +233,62 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // Rename columns
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tbigint TO rtbigint" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tboolean TO rtboolean" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tdate TO rtdate" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tdecimal TO rtdecimal" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tdouble TO rtdouble" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tinteger TO rtinteger" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN treal TO rtreal" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tsmallint TO rtsmallint" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttime TO rttime" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttimestamp TO rttimestamp" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttinyint TO rttinyint" );
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tvarchar TO rtvarchar" );
+                try {
+                    // Rename columns
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tbigint TO rtbigint" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tboolean TO rtboolean" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tdate TO rtdate" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tdecimal TO rtdecimal" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tdouble TO rtdouble" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tinteger TO rtinteger" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN treal TO rtreal" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tsmallint TO rtsmallint" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttime TO rttime" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttimestamp TO rttimestamp" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN ttinyint TO rttinyint" );
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME COLUMN tvarchar TO rtvarchar" );
 
-                // Checks
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtbigint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[0] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtboolean FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[1] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtdate FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtdecimal FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[3] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtdouble FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[4] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtinteger FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[5] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtreal FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[6] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtsmallint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rttime FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rttimestamp FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rttinyint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT rtvarchar FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                    // Checks
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtbigint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[0] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtboolean FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[1] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtdate FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[2] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtdecimal FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[3] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtdouble FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[4] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtinteger FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[5] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtreal FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[6] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtsmallint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[7] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rttime FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[8] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rttimestamp FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[9] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rttinyint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[10] } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT rtvarchar FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ DDLTEST_DATA[11] } ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }
@@ -292,16 +303,18 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // Rename table
-                statement.executeUpdate( "ALTER TABLE ddltest RENAME TO foobartest" );
+                try {
+                    // Rename table
+                    statement.executeUpdate( "ALTER TABLE ddltest RENAME TO foobartest" );
 
-                // Check
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM foobartest" ),
-                        ImmutableList.of( DDLTEST_DATA ) );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE foobartest" );
+                    // Check
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM foobartest" ),
+                            ImmutableList.of( DDLTEST_DATA ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE foobartest" );
+                }
             }
         }
     }
@@ -316,28 +329,30 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // Rename table
-                statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tbigint" );
-                statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tdate" );
-                statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tvarchar" );
+                try {
+                    // Rename table
+                    statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tbigint" );
+                    statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tdate" );
+                    statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tvarchar" );
 
-                // Check
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM ddltest" ),
-                        ImmutableList.of( new Object[]{
-                                DDLTEST_DATA[1],
-                                DDLTEST_DATA[3],
-                                DDLTEST_DATA[4],
-                                DDLTEST_DATA[5],
-                                DDLTEST_DATA[6],
-                                DDLTEST_DATA[7],
-                                DDLTEST_DATA[8],
-                                DDLTEST_DATA[9],
-                                DDLTEST_DATA[10],
-                        } ) );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                    // Check
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM ddltest" ),
+                            ImmutableList.of( new Object[]{
+                                    DDLTEST_DATA[1],
+                                    DDLTEST_DATA[3],
+                                    DDLTEST_DATA[4],
+                                    DDLTEST_DATA[5],
+                                    DDLTEST_DATA[6],
+                                    DDLTEST_DATA[7],
+                                    DDLTEST_DATA[8],
+                                    DDLTEST_DATA[9],
+                                    DDLTEST_DATA[10],
+                            } ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }
@@ -352,44 +367,46 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // Add columns
-                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo1 INTEGER NOT NULL DEFAULT 5 BEFORE tbigint" );
-                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo2 VARCHAR(10) NULL AFTER tinteger" );
-                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo3 BOOLEAN NOT NULL DEFAULT false AFTER tvarchar" );
+                try {
+                    // Add columns
+                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo1 INTEGER NOT NULL DEFAULT 5 BEFORE tbigint" );
+                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo2 VARCHAR(10) NULL AFTER tinteger" );
+                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo3 BOOLEAN NOT NULL DEFAULT false AFTER tvarchar" );
 
-                // Check
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM ddltest" ),
-                        ImmutableList.of( new Object[]{
-                                5,
-                                DDLTEST_DATA[0],
-                                DDLTEST_DATA[1],
-                                DDLTEST_DATA[2],
-                                DDLTEST_DATA[3],
-                                DDLTEST_DATA[4],
-                                DDLTEST_DATA[5],
-                                null,
-                                DDLTEST_DATA[6],
-                                DDLTEST_DATA[7],
-                                DDLTEST_DATA[8],
-                                DDLTEST_DATA[9],
-                                DDLTEST_DATA[10],
-                                DDLTEST_DATA[11],
-                                false
-                        } ) );
+                    // Check
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM ddltest" ),
+                            ImmutableList.of( new Object[]{
+                                    5,
+                                    DDLTEST_DATA[0],
+                                    DDLTEST_DATA[1],
+                                    DDLTEST_DATA[2],
+                                    DDLTEST_DATA[3],
+                                    DDLTEST_DATA[4],
+                                    DDLTEST_DATA[5],
+                                    null,
+                                    DDLTEST_DATA[6],
+                                    DDLTEST_DATA[7],
+                                    DDLTEST_DATA[8],
+                                    DDLTEST_DATA[9],
+                                    DDLTEST_DATA[10],
+                                    DDLTEST_DATA[11],
+                                    false
+                            } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT foo1 FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ 5 } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT foo2 FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ null } ) );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT foo3 FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ false } ) );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT foo1 FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ 5 } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT foo2 FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ null } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT foo3 FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ false } ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }
@@ -404,30 +421,32 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // Add column
-                statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN bar INTEGER ARRAY(1,3) NULL AFTER ttime" );
+                try {
+                    // Add column
+                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN bar INTEGER ARRAY(1,3) NULL AFTER ttime" );
 
-                // Check
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT * FROM ddltest" ),
-                        ImmutableList.of( new Object[]{
-                                DDLTEST_DATA[0],
-                                DDLTEST_DATA[1],
-                                DDLTEST_DATA[2],
-                                DDLTEST_DATA[3],
-                                DDLTEST_DATA[4],
-                                DDLTEST_DATA[5],
-                                DDLTEST_DATA[6],
-                                DDLTEST_DATA[7],
-                                DDLTEST_DATA[8],
-                                null,
-                                DDLTEST_DATA[9],
-                                DDLTEST_DATA[10],
-                                DDLTEST_DATA[11]
-                        } ) );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                    // Check
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT * FROM ddltest" ),
+                            ImmutableList.of( new Object[]{
+                                    DDLTEST_DATA[0],
+                                    DDLTEST_DATA[1],
+                                    DDLTEST_DATA[2],
+                                    DDLTEST_DATA[3],
+                                    DDLTEST_DATA[4],
+                                    DDLTEST_DATA[5],
+                                    DDLTEST_DATA[6],
+                                    DDLTEST_DATA[7],
+                                    DDLTEST_DATA[8],
+                                    null,
+                                    DDLTEST_DATA[9],
+                                    DDLTEST_DATA[10],
+                                    DDLTEST_DATA[11]
+                            } ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }
@@ -442,44 +461,46 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // BigInt --> Integer
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tbigint SET TYPE INTEGER" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tbigint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ ((Long) DDLTEST_DATA[0]).intValue() } ) );
+                try {
+                    // BigInt --> Integer
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tbigint SET TYPE INTEGER" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tbigint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ ((Long) DDLTEST_DATA[0]).intValue() } ) );
 
-                // Decimal --> Double
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdecimal SET TYPE DOUBLE" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tdecimal FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ ((BigDecimal) DDLTEST_DATA[3]).doubleValue() } ) );
+                    // Decimal --> Double
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdecimal SET TYPE DOUBLE" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdecimal FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ ((BigDecimal) DDLTEST_DATA[3]).doubleValue() } ) );
 
-                // Double --> DECIMAL
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdouble SET TYPE DECIMAL(15,6)" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tdouble FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ) );
+                    // Double --> DECIMAL
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdouble SET TYPE DECIMAL(15,6)" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tdouble FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ BigDecimal.valueOf( (double) DDLTEST_DATA[4] ) } ) );
 
-                // Real --> Double
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN treal SET TYPE DOUBLE" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT treal FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ Double.parseDouble( Float.valueOf( (float) DDLTEST_DATA[6] ).toString() ) } ) );
+                    // Real --> Double
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN treal SET TYPE DOUBLE" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT treal FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ Double.parseDouble( Float.valueOf( (float) DDLTEST_DATA[6] ).toString() ) } ) );
 
-                // SmallInt --> Integer
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tsmallint SET TYPE INTEGER" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ (int) (short) DDLTEST_DATA[7] } ) );
+                    // SmallInt --> Integer
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tsmallint SET TYPE INTEGER" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT tsmallint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ (int) (short) DDLTEST_DATA[7] } ) );
 
-                // TinyInt --> SmallInt
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN ttinyint SET TYPE SMALLINT" );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
-                        ImmutableList.of( new Object[]{ (short) (byte) DDLTEST_DATA[10] } ) );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                    // TinyInt --> SmallInt
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN ttinyint SET TYPE SMALLINT" );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ttinyint FROM ddltest" ),
+                            ImmutableList.of( new Object[]{ (short) (byte) DDLTEST_DATA[10] } ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }
@@ -494,31 +515,33 @@ public class JdbcDdlTest {
                 statement.executeUpdate( DDLTEST_SQL );
                 statement.executeUpdate( DDLTEST_DATA_SQL );
 
-                // Reorder columns
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tbigint SET POSITION AFTER tboolean" );
-                statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdecimal SET POSITION BEFORE tdate" );
-                statement.executeUpdate( "ALTER TABLE \"ddltest\" MODIFY COLUMN \"ttinyint\" SET POSITION AFTER \"tvarchar\"" );
+                try {
+                    // Reorder columns
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tbigint SET POSITION AFTER tboolean" );
+                    statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdecimal SET POSITION BEFORE tdate" );
+                    statement.executeUpdate( "ALTER TABLE \"ddltest\" MODIFY COLUMN \"ttinyint\" SET POSITION AFTER \"tvarchar\"" );
 
-                // Check
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT ddltest.* FROM ddltest" ),
-                        ImmutableList.of( new Object[]{
-                                DDLTEST_DATA[1],
-                                DDLTEST_DATA[0],
-                                DDLTEST_DATA[3],
-                                DDLTEST_DATA[2],
-                                DDLTEST_DATA[4],
-                                DDLTEST_DATA[5],
-                                DDLTEST_DATA[6],
-                                DDLTEST_DATA[7],
-                                DDLTEST_DATA[8],
-                                DDLTEST_DATA[9],
-                                DDLTEST_DATA[11],
-                                DDLTEST_DATA[10],
-                        } ) );
-
-                // Drop ddltest table
-                statement.executeUpdate( "DROP TABLE ddltest" );
+                    // Check
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT ddltest.* FROM ddltest" ),
+                            ImmutableList.of( new Object[]{
+                                    DDLTEST_DATA[1],
+                                    DDLTEST_DATA[0],
+                                    DDLTEST_DATA[3],
+                                    DDLTEST_DATA[2],
+                                    DDLTEST_DATA[4],
+                                    DDLTEST_DATA[5],
+                                    DDLTEST_DATA[6],
+                                    DDLTEST_DATA[7],
+                                    DDLTEST_DATA[8],
+                                    DDLTEST_DATA[9],
+                                    DDLTEST_DATA[11],
+                                    DDLTEST_DATA[10],
+                            } ) );
+                } finally {
+                    // Drop ddltest table
+                    statement.executeUpdate( "DROP TABLE ddltest" );
+                }
             }
         }
     }

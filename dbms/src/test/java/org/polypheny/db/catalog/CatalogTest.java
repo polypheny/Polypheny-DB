@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public class CatalogTest {
                 statement.executeUpdate( "CREATE SCHEMA schema1" );
                 statement.executeUpdate( "CREATE TABLE schema1.table1( id INTEGER NOT NULL, PRIMARY KEY(id))" );
                 statement.executeUpdate( "ALTER TABLE schema1.table1 ADD COLUMN name VARCHAR (255) NULL " );
-                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id USING BTREE" );
+                statement.executeUpdate( "ALTER TABLE schema1.table1 ADD UNIQUE INDEX index1 ON id ON STORE hsqldb" );
                 statement.executeUpdate( "CREATE TABLE schema1.table2( id INTEGER NOT NULL, PRIMARY KEY(id) )" );
                 statement.executeUpdate( "ALTER TABLE schema1.table2 ADD CONSTRAINT fk_id FOREIGN KEY (id) REFERENCES schema1.table1(id) ON UPDATE CASCADE ON DELETE SET NULL" );
                 connection.commit();
@@ -181,7 +181,7 @@ public class CatalogTest {
             Connection connection = polyphenyDbConnection.getConnection();
 
             // Check data
-            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, null, 1 };
+            final Object[] index1 = new Object[]{ "APP", "schema1", "table1", false, null, "index1", 0, 1, "id", null, -1, null, null, 1, 1 };
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getIndexInfo( "APP", "schema1", "table1", false, false ),

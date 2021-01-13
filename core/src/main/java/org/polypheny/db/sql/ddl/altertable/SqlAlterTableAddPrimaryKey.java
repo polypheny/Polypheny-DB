@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -110,7 +109,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
                     }
                 }
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownKeyException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }
