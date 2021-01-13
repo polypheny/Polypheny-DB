@@ -26,14 +26,13 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 
 public class CottontailNameUtil {
 
-    private static Catalog catalog = Catalog.getInstance();
     private final static Pattern idRevPattern = Pattern.compile( "^(col|tab|sch)([0-9]+)(?>r([0-9]+))?$" );
 
 
     public static String getPhysicalTableName( int storeId, long tableId ) {
-        List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( storeId, tableId );
+        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( storeId, tableId );
         if ( placements.isEmpty() ) {
-            return null;
+            throw new RuntimeException( "Placements not registered in catalog. This should not happen!" );
         }
 
         return placements.get( 0 ).physicalTableName;

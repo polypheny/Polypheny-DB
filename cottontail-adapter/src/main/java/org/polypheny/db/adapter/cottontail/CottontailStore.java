@@ -71,12 +71,12 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 @Slf4j
 public class CottontailStore extends Store {
 
-    public static final String DESCRIPTION = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.";
-
     public static final String ADAPTER_NAME = "Cottontail-DB";
 
+    public static final String DESCRIPTION = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.";
+
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Standalone", "Embedded" ) ),
+            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Embedded", "Standalone" ) ),
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 1865 ),
             new AdapterSettingString( "database", false, true, false, "cottontail" )
@@ -87,21 +87,17 @@ public class CottontailStore extends Store {
     @Expose(serialize = false, deserialize = false)
     private transient final CottontailGrpcServer embeddedServer;
 
-    private String dbHostname;
-    private int dbPort;
-    private String dbName;
+    private final String dbHostname;
+    private final int dbPort;
+    private final String dbName;
 
     private CottontailSchema currentSchema;
     @Expose(serialize = false, deserialize = false)
-    private transient ManagedChannel channel;
-    @Expose(serialize = false, deserialize = false)
-    private transient CottontailWrapper wrapper;
+    private final transient CottontailWrapper wrapper;
 
 
     public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {
         super( storeId, uniqueName, settings, false, false, true );
-        this.dbHostname = settings.get( "host" );
-        this.dbPort = Integer.parseInt( settings.get( "port" ) );
         this.dbName = settings.get( "database" );
         this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
 
@@ -123,10 +119,6 @@ public class CottontailStore extends Store {
             if ( Catalog.memoryCatalog ) {
                 FileSystemManager.getInstance().recursiveDeleteFolderOnExit( "data/temp-cottontaildb-store" );
             }
-//            File embeddedDir = new File( baseDir, this.dbName );
-//            if ( !embeddedDir.exists() ) {
-//                embeddedDir.mkdir();
-//            }
 
             File configFile = new File( embeddedDir, "config.json" );
             if ( !configFile.exists() ) {
@@ -146,19 +138,23 @@ public class CottontailStore extends Store {
                     e.printStackTrace();
                 }
             }
-//            this.embeddedServer = null;
             this.embeddedServer = CottontailKt.embedded( configFile.getAbsolutePath() );
-//            this.embeddedServer.start();
             this.dbHostname = "localhost";
             this.dbPort = 1865;
         } else {
             this.embeddedServer = null;
+            this.dbHostname = settings.get( "host" );
+            this.dbPort = Integer.parseInt( settings.get( "port" ) );
         }
 
-        this.channel = NettyChannelBuilder.forAddress( this.dbHostname, this.dbPort ).usePlaintext().maxInboundMetadataSize( CottontailWrapper.maxMessageSize ).maxInboundMessageSize( CottontailWrapper.maxMessageSize ).build();
-        this.wrapper = new CottontailWrapper( this.channel );
+        ManagedChannel channel = NettyChannelBuilder
+                .forAddress( this.dbHostname, this.dbPort )
+                .usePlaintext()
+                .maxInboundMetadataSize( CottontailWrapper.maxMessageSize )
+                .maxInboundMessageSize( CottontailWrapper.maxMessageSize )
+                .build();
+        this.wrapper = new CottontailWrapper( channel );
         this.wrapper.checkedCreateSchemaBlocking( CottontailGrpc.Schema.newBuilder().setName( this.dbName ).build() );
-//        this.wrapper.createSchema( CottontailGrpc.Schema.newBuilder().setName( this.dbName ).build() );
     }
 
 
@@ -267,7 +263,10 @@ public class CottontailStore extends Store {
             columnBuilder.clear();
 
             columnBuilder.setName( CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation( catalogColumn.type, catalogColumn.collectionsType, (catalogColumn.dimension != null) ? catalogColumn.dimension : 0 );
+            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation(
+                    catalogColumn.type,
+                    catalogColumn.collectionsType,
+                    (catalogColumn.dimension != null) ? catalogColumn.dimension : 0 );
             columnBuilder.setType( columnType );
             if ( catalogColumn.dimension != null && catalogColumn.dimension == 1 && columnType.getNumber() != Type.STRING.getNumber() ) {
                 columnBuilder.setLength( catalogColumn.cardinality );
@@ -283,7 +282,10 @@ public class CottontailStore extends Store {
     @Override
     public void dropTable( Context context, CatalogTable combinedTable ) {
         String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getStoreId(), combinedTable.id );
-        Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
+        Entity tableEntity = Entity.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( physicalTableName )
+                .build();
 
         this.wrapper.dropEntityBlocking( tableEntity );
     }
@@ -452,7 +454,10 @@ public class CottontailStore extends Store {
     @Override
     public void truncate( Context context, CatalogTable table ) {
         String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getStoreId(), table.id );
-        Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
+        Entity tableEntity = Entity.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( physicalTableName )
+                .build();
 
         this.wrapper.truncateEntityBlocking( tableEntity );
     }

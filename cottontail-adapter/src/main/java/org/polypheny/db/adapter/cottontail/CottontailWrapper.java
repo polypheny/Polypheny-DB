@@ -74,11 +74,6 @@ public class CottontailWrapper implements AutoCloseable {
     }
 
 
-    public synchronized void insureSchemaExists( String schemaName ) {
-
-    }
-
-
     public synchronized ListenableFuture<CottontailGrpc.Status> createEntity( EntityDefinition createMessage ) {
         final CottonDDLFutureStub stub = CottonDDLGrpc.newFutureStub( this.channel );
         return stub.createEntity( createMessage );

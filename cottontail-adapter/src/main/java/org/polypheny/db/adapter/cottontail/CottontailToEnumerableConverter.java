@@ -120,8 +120,12 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         final RelDataType rowType = getRowType();
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), rowType, pref.prefer( JavaRowFormat.ARRAY ) );
 
-        List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
-        List<String> physicalFieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
+        List<Pair<String, String>> pairs = Pair.zip(
+                rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ),
+                rowType.getFieldNames() );
+        List<String> physicalFieldNames = pairs.stream()
+                .map( it -> it.left != null ? it.left : it.right )
+                .collect( Collectors.toList() );
 
         final Expression enumerable;
 
@@ -131,7 +135,8 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 final int fieldCount = getRowType().getFieldCount();
                 BlockBuilder builder = new BlockBuilder();
 
-                final ParameterExpression resultMap_ = Expressions.parameter( TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Data.class ),
+                final ParameterExpression resultMap_ = Expressions.parameter(
+                        TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Data.class ),
                         builder.newName( "resultDataMap" ) );
 
                 if ( fieldCount == 1 ) {
