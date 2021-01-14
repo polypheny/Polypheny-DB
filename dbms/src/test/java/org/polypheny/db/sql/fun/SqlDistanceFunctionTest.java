@@ -54,7 +54,6 @@ public class SqlDistanceFunctionTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-//                statement.executeUpdate( "CREATE SCHEMA knn" );
                 statement.executeUpdate( "CREATE TABLE knninttest( id INTEGER NOT NULL, myarray INTEGER ARRAY(1,2), PRIMARY KEY (id) )" );
                 statement.executeUpdate( "INSERT INTO knninttest VALUES (1, ARRAY[1,1])" );
                 statement.executeUpdate( "INSERT INTO knninttest VALUES (2, ARRAY[2,2])" );
