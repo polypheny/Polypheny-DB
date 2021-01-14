@@ -37,9 +37,6 @@ package org.polypheny.db.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -48,9 +45,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
-import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
@@ -71,22 +65,6 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptTable;
-import org.polypheny.db.prepare.Prepare;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.rel.type.RelDataTypeFactory;
-import org.polypheny.db.rel.type.RelProtoDataType;
-import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.SchemaPlus;
-import org.polypheny.db.schema.Schemas;
-import org.polypheny.db.schema.Wrapper;
-import org.polypheny.db.schema.impl.AbstractTable;
-import org.polypheny.db.schema.impl.AbstractTableQueryable;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -98,7 +76,6 @@ import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.sql2rel.InitializerExpressionFactory;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -375,104 +352,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             throw new RuntimeException( e );
         }
 
-    }
-
-
-    /**
-     * Abstract base class for implementations of {@link ModifiableTable}.
-     */
-    abstract static class AbstractModifiableTable extends AbstractTable implements ModifiableTable {
-
-        AbstractModifiableTable( String tableName ) {
-            super();
-        }
-
-
-        @Override
-        public TableModify toModificationRel(
-                RelOptCluster cluster,
-                RelOptTable table,
-                Prepare.CatalogReader catalogReader,
-                RelNode child,
-                TableModify.Operation operation,
-                List<String> updateColumnList,
-                List<RexNode> sourceExpressionList,
-                boolean flattened ) {
-            return LogicalTableModify.create( table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
-        }
-    }
-
-
-    /**
-     * Table backed by a Java list.
-     */
-    static class MutableArrayTable extends AbstractModifiableTable implements Wrapper {
-
-        final List rows = new ArrayList();
-        private final RelProtoDataType protoStoredRowType;
-        private final RelProtoDataType protoRowType;
-        private final InitializerExpressionFactory initializerExpressionFactory;
-
-
-        /**
-         * Creates a MutableArrayTable.
-         *
-         * @param name Name of table within its schema
-         * @param protoStoredRowType Prototype of row type of stored columns (all columns except virtual columns)
-         * @param protoRowType Prototype of row type (all columns)
-         * @param initializerExpressionFactory How columns are populated
-         */
-        MutableArrayTable( String name, RelProtoDataType protoStoredRowType, RelProtoDataType protoRowType, InitializerExpressionFactory initializerExpressionFactory ) {
-            super( name );
-            this.protoStoredRowType = Objects.requireNonNull( protoStoredRowType );
-            this.protoRowType = Objects.requireNonNull( protoRowType );
-            this.initializerExpressionFactory = Objects.requireNonNull( initializerExpressionFactory );
-        }
-
-
-        @Override
-        public Collection getModifiableCollection() {
-            return rows;
-        }
-
-
-        @Override
-        public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
-            return new AbstractTableQueryable<T>( dataContext, schema, this, tableName ) {
-                @Override
-                public Enumerator<T> enumerator() {
-                    //noinspection unchecked
-                    return (Enumerator<T>) Linq4j.enumerator( rows );
-                }
-            };
-        }
-
-
-        @Override
-        public Type getElementType() {
-            return Object[].class;
-        }
-
-
-        @Override
-        public Expression getExpression( SchemaPlus schema, String tableName, Class clazz ) {
-            return Schemas.tableExpression( schema, getElementType(), tableName, clazz );
-        }
-
-
-        @Override
-        public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
-            return protoRowType.apply( typeFactory );
-        }
-
-
-        @Override
-        public <C> C unwrap( Class<C> aClass ) {
-            if ( aClass.isInstance( initializerExpressionFactory ) ) {
-                return aClass.cast( initializerExpressionFactory );
-            }
-            return super.unwrap( aClass );
-        }
     }
 
 }

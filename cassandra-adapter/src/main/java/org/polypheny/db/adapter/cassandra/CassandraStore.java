@@ -45,8 +45,10 @@ import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -320,6 +322,18 @@ public class CassandraStore extends Store {
 
 
     @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "Cassandra adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "Cassandra adaper does not support dropping indexes" );
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         // TODO JS: implement cassandra prepare
         if ( !displayedPrepareLoggingMessage ) {
@@ -440,12 +454,30 @@ public class CassandraStore extends Store {
 
 
     @Override
-    public void shutdown() {
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return new ArrayList<>();
+    }
 
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        throw new RuntimeException( "Cassandra adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        List<Long> pkIds = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey ).columnIds;
+        return ImmutableList.of( new FunctionalIndexInfo( pkIds, "PRIMARY (unique)" ) );
+    }
+
+
+    @Override
+    public void shutdown() {
         try {
             this.session.close();
         } catch ( RuntimeException e ) {
-            log.warn( "Exception while shutting down " + getUniqueName(), e );
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
 
         if ( this.isEmbedded ) {

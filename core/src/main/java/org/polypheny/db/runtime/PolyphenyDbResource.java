@@ -888,5 +888,18 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("The data store ''{0}'' does not support schema changes!")
     ExInst<PolyphenyDbException> storeIsSchemaReadOnly( String storeName );
+
+    @BaseMessage("The specified data store does not support the index method ''{0}''!")
+    ExInst<PolyphenyDbException> unknownIndexMethod( String indexMethod );
+
+    @BaseMessage("There is no placement of column ''{0}'' on the data store ''{1}''!")
+    ExInst<PolyphenyDbException> missingColumnPlacement( String columnName, String storeName );
+
+    @BaseMessage("Unable to remove placement of column ''{0}'' because it is part of the index ''{1}''!")
+    ExInst<PolyphenyDbException> indexPreventsRemovalOfPlacement( String indexName, String columnName );
+
+    @BaseMessage("There is already an index with the name ''{0}''!")
+    ExInst<PolyphenyDbException> indexExists( String indexName );
+
 }
 

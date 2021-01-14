@@ -78,6 +78,7 @@ import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
+import org.polypheny.db.adapter.Store.FunctionalIndexInfo;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.StoreManager.AdapterInformation;
 import org.polypheny.db.catalog.Catalog;
@@ -97,8 +98,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
@@ -107,7 +108,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.Explore;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.iface.QueryInterface;
-import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformation;
 import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceInformationRequest;
@@ -1126,7 +1126,7 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while getting a column", e );
             result = new Result( e );
         }
@@ -1416,12 +1416,12 @@ public class Crud implements InformationObserver {
                 resultList.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
             }
 
-            DbColumn[] header = { new DbColumn( "Constraint name" ), new DbColumn( "Constraint type" ), new DbColumn( "Columns" ) };
+            DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
             ArrayList<String[]> data = new ArrayList<>();
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -1547,20 +1547,43 @@ public class Crud implements InformationObserver {
             CatalogTable catalogTable = catalog.getTable( databaseName, request.schema, request.table );
             List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, false );
 
-            DbColumn[] header = { new DbColumn( "name" ), new DbColumn( "columns" ), new DbColumn( "type" ) };
+            DbColumn[] header = {
+                    new DbColumn( "Name" ),
+                    new DbColumn( "Columns" ),
+                    new DbColumn( "Location" ),
+                    new DbColumn( "Method" ),
+                    new DbColumn( "Type" ) };
 
             ArrayList<String[]> data = new ArrayList<>();
+
+            // Get explicit indexes
             for ( CatalogIndex catalogIndex : catalogIndexes ) {
-                String[] arr = new String[3];
+                String[] arr = new String[5];
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
-                arr[2] = catalogIndex.type.name();
+                arr[2] = catalog.getStore( catalogIndex.location ).uniqueName;
+                arr[3] = catalogIndex.methodDisplayName;
+                arr[4] = catalogIndex.type.name();
                 data.add( arr );
+            }
+
+            // Get functional indexes
+            for ( Integer storeId : catalogTable.placementsByStore.keySet() ) {
+                Store store = StoreManager.getInstance().getStore( storeId );
+                for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
+                    String[] arr = new String[5];
+                    arr[0] = "";
+                    arr[1] = String.join( ", ", fif.getColumnNames() );
+                    arr[2] = store.getUniqueName();
+                    arr[3] = fif.methodDisplayName;
+                    arr[4] = "FUNCTIONAL";
+                    data.add( arr );
+                }
             }
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | UnknownStoreException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -1608,7 +1631,7 @@ public class Crud implements InformationObserver {
         for ( String col : index.getColumns() ) {
             colJoiner.add( "\"" + col + "\"" );
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING %s", tableId, index.getName(), colJoiner.toString(), index.getMethod() );
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" ON STORE \"%s\"", tableId, index.getName(), colJoiner.toString(), index.getMethod(), index.getStoreUniqueName() );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -1682,7 +1705,7 @@ public class Crud implements InformationObserver {
                 index.getTable(),
                 index.getMethod().toUpperCase(),
                 columnListStr,
-                index.getName() );
+                index.getStoreUniqueName() );
         Transaction transaction = getTransaction();
         int affectedRows;
         try {
@@ -1794,6 +1817,7 @@ public class Crud implements InformationObserver {
             jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
+            jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
@@ -1879,25 +1903,25 @@ public class Crud implements InformationObserver {
     }
 
 
-    String getQueryInterfaces ( final Request req, final Response res ) {
+    String getQueryInterfaces( final Request req, final Response res ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         ImmutableMap<String, QueryInterface> queryInterfaces = qim.getQueryInterfaces();
         List<QueryInterfaceModel> qIs = new ArrayList<>();
-        for( QueryInterface i: queryInterfaces.values() ) {
+        for ( QueryInterface i : queryInterfaces.values() ) {
             qIs.add( new QueryInterfaceModel( i ) );
         }
-        return gson.toJson( qIs.toArray(new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
+        return gson.toJson( qIs.toArray( new QueryInterfaceModel[0] ), QueryInterfaceModel[].class );
     }
 
 
-    String getAvailableQueryInterfaces ( final Request req, final Response res ) {
+    String getAvailableQueryInterfaces( final Request req, final Response res ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         List<QueryInterfaceInformation> interfaces = qim.getAvailableQueryInterfaceTypes();
-        return QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ));
+        return QueryInterfaceInformation.toJson( interfaces.toArray( new QueryInterfaceInformation[0] ) );
     }
 
 
-    Result addQueryInterface ( final Request req, final Response res ) {
+    Result addQueryInterface( final Request req, final Response res ) {
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         QueryInterfaceInformationRequest request = gson.fromJson( req.body(), QueryInterfaceInformationRequest.class );
         try {
@@ -1909,8 +1933,9 @@ public class Crud implements InformationObserver {
         }
     }
 
-    Result updateQueryInterfaceSettings ( final Request req, final Response res ) {
-        QueryInterfaceModel request = gson.fromJson( req.body(),  QueryInterfaceModel.class );
+
+    Result updateQueryInterfaceSettings( final Request req, final Response res ) {
+        QueryInterfaceModel request = gson.fromJson( req.body(), QueryInterfaceModel.class );
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
         try {
             qim.getQueryInterface( request.uniqueName ).updateSettings( request.currentSettings );
@@ -1920,10 +1945,11 @@ public class Crud implements InformationObserver {
         }
     }
 
-    Result removeQueryInterface ( final Request req, final Response res ) {
+
+    Result removeQueryInterface( final Request req, final Response res ) {
         String uniqueName = req.body();
         QueryInterfaceManager qim = QueryInterfaceManager.getInstance();
-        try{
+        try {
             qim.removeQueryInterface( catalog, uniqueName );
             return new Result( new Debug().setAffectedRows( 1 ) );
         } catch ( RuntimeException e ) {
@@ -2004,7 +2030,7 @@ public class Crud implements InformationObserver {
                     tables.add( table );
                 }
             }
-        } catch ( GenericCatalogException | UnknownKeyException e ) {
+        } catch ( GenericCatalogException e ) {
             log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
         }
 
@@ -2820,7 +2846,11 @@ public class Crud implements InformationObserver {
                     rowsChanged = num;
                 }
             } catch ( RuntimeException e ) {
-                throw new QueryExecutionException( e.getCause().getMessage(), e );
+                if ( e.getCause() != null ) {
+                    throw new QueryExecutionException( e.getCause().getMessage(), e );
+                } else {
+                    throw new QueryExecutionException( e.getMessage(), e );
+                }
             }
             return rowsChanged;
         } else {
@@ -2923,7 +2953,7 @@ public class Crud implements InformationObserver {
      * Get the data types of each column of a table
      *
      * @param schemaName name of the schema
-     * @param tableName  name of the table
+     * @param tableName name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
     private Map<String, PolyType> getColumnTypes( String schemaName, String tableName ) {

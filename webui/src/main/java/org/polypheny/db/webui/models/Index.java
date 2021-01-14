@@ -29,6 +29,7 @@ public class Index {
     private String schema;
     private String table;
     private String name;
+    private String storeUniqueName;
     private String method;
     private String[] columns;
 

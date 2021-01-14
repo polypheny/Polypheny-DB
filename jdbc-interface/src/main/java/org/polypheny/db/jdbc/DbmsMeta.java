@@ -86,7 +86,6 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -551,7 +550,7 @@ public class DbmsMeta implements ProtobufMeta {
                         "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
                         "PK_NAME"             // the name of the primary key --> always null (primary keys have no name in Polypheny-DB)
                 );
-            } catch ( GenericCatalogException | UnknownKeyException e ) {
+            } catch ( GenericCatalogException e ) {
                 throw propagate( e );
             }
         }
@@ -1229,7 +1228,7 @@ public class DbmsMeta implements ProtobufMeta {
         try {
             prepare( h, statementHandle.getPreparedQuery() );
             return new ExecuteResult( execute( h, connection, statementHandle, maxRowsInFirstFrame ) );
-        } catch ( Exception e ) {
+        } catch ( Throwable e ) {
             log.error( "Exception while preparing query", e );
             String message = e.getLocalizedMessage();
             throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
@@ -1697,6 +1696,7 @@ public class DbmsMeta implements ProtobufMeta {
             im.removeGroup( informationGroupConnection );
             im.removePage( informationPage );
         }
+
     }
 
 }
