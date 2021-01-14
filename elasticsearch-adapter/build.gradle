@@ -35,8 +35,8 @@ dependencies {
     testImplementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearch_version  // Apache 2.0
     testImplementation group: "org.elasticsearch.plugin", name: "transport-netty4-client", version: transport_netty4_client_version  // Apache 2.0
     testImplementation group: "org.codelibs.elasticsearch.module", name: "lang-painless", version: lang_painless_version  // Apache 2.0
-    //testCompile group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
-    //testCompile group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
+    //testImplementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
+    //testImplementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
 }
 
 
@@ -97,21 +97,12 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        attributes "Version": "$version"
+        //attributes "Version": "$version"
     }
 }
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
-    from sourceSets.main.allSource
-}
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
-    from javadoc.destinationDir
-}
-artifacts {
-    //archives jar // regular jar containing only the compiled source
-    archives sourcesJar // jar file containing the java doc files
-    archives javadocJar // jar file containing the source files
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 

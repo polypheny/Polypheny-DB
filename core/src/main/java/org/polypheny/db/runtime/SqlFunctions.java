@@ -167,6 +167,7 @@ public class SqlFunctions {
     }
 
 
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public static double distance( List value, List target, String metric ) {
         DistanceFunctions.verifyInputs( value, target, null );
