@@ -753,7 +753,7 @@ public abstract class Catalog {
      * @return true if there is an index with this name, false if not.
      * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract boolean checkIfExistsIndex( long tableId, String indexName ) throws GenericCatalogException;
+    public abstract boolean checkIfExistsIndex( long tableId, String indexName );
 
     /**
      * Returns the index with the specified id

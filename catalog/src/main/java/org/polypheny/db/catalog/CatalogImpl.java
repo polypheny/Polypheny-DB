@@ -2487,16 +2487,13 @@ public class CatalogImpl extends Catalog {
      * @param tableId The id of the table
      * @param indexName The name to check for
      * @return true if there is an index with this name, false if not.
-     * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public boolean checkIfExistsIndex( long tableId, String indexName ) throws GenericCatalogException {
+    public boolean checkIfExistsIndex( long tableId, String indexName ) {
         try {
             CatalogTable table = getTable( tableId );
             getIndex( table.id, indexName );
             return true;
-        } catch ( UnknownTableException e ) {
-            throw new GenericCatalogException( e );
         } catch ( UnknownIndexException e ) {
             return false;
         }
@@ -3081,7 +3078,7 @@ public class CatalogImpl extends Catalog {
             }
 
             listeners.firePropertyChange( "table", old, table );
-        } catch ( NullPointerException | UnknownKeyException | UnknownStoreException e ) {
+        } catch ( NullPointerException | UnknownStoreException e ) {
             // TODO @HENNLO
             throw new GenericCatalogException( e );
         }
@@ -3090,7 +3087,7 @@ public class CatalogImpl extends Catalog {
 
     //TODO: Data Migrate
     @Override
-    public void mergeTable( long tableId ) throws UnknownKeyException, UnknownPartitionIdRuntimeException {
+    public void mergeTable( long tableId ) throws UnknownKeyIdRuntimeException, UnknownPartitionIdRuntimeException {
         if ( log.isDebugEnabled() ) {
             log.debug( "Merging table {} has been started", getTable( tableId ).name );
         }

@@ -255,7 +255,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             if ( addedColumns.size() > 0 ) {
                 dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
             }
-        } catch ( GenericCatalogException | UnknownColumnPlacementException | UnknownStoreException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException | UnknownStoreException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -250,7 +250,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             // Copy data to the newly added placements
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
             dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
-        } catch ( GenericCatalogException | UnknownStoreException e ) {
+        } catch ( GenericCatalogException | UnknownStoreException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
     }
