@@ -75,7 +75,7 @@ public class ArraySchema extends AbstractSchema {
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
         }
 
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( arrayStore.getStoreId(), catalogTable.id ).iterator().next().physicalTableName;
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( arrayStore.getAdapterId(), catalogTable.id ).iterator().next().physicalTableName;
         ArrayTable table = new ArrayTable( physicalTableName, RelDataTypeImpl.proto( fieldInfo.build() ), new NullInitializerExpressionFactory(), arrayStore );
         tableMap.put( catalogTable.name, table );
         return table;

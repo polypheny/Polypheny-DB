@@ -78,21 +78,12 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        attributes "Version": "$version"
+        attributes "Version": "$project.version"
     }
 }
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
-    from sourceSets.main.allSource
-}
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
-    from javadoc.destinationDir
-}
-artifacts {
-    //archives jar // regular jar containing only the compiled source
-    archives sourcesJar // jar file containing the java doc files
-    archives javadocJar // jar file containing the source files
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 

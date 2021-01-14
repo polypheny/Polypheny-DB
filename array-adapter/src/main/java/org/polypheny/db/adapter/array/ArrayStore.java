@@ -25,12 +25,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -39,7 +38,7 @@ import org.polypheny.db.transaction.PolyXid;
 
 
 @Slf4j
-public class ArrayStore extends Store {
+public class ArrayStore extends DataStore {
 
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "Array";
@@ -55,7 +54,7 @@ public class ArrayStore extends Store {
 
 
     public ArrayStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, false, false, false );
+        super( storeId, uniqueName, settings, false );
     }
 
 
@@ -100,17 +99,14 @@ public class ArrayStore extends Store {
         }
         data.put( physicalTableName, new LinkedHashSet<>() );
         // Add physical names to placements
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
-            try {
-                catalog.updateColumnPlacementPhysicalNames(
-                        getStoreId(),
-                        placement.columnId,
-                        "public",
-                        physicalTableName,
-                        getPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-                throw new RuntimeException( e );
-            }
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    placement.columnId,
+                    "public",
+                    physicalTableName,
+                    getPhysicalColumnName( placement.columnId ),
+                    true );
         }
     }
 
@@ -134,6 +130,18 @@ public class ArrayStore extends Store {
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         log.warn( "Array adapter does not support dropping columns!" );
+    }
+
+
+    @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "Array adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "Array adapter does not support dropping indexes" );
     }
 
 
@@ -181,6 +189,24 @@ public class ArrayStore extends Store {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return ImmutableList.of();
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        throw new RuntimeException( "Array adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        return ImmutableList.of();
     }
 
 
