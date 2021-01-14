@@ -36,6 +36,8 @@ package org.polypheny.db.sql.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.sql.SqlDrop;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -48,8 +50,10 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 /**
  * Base class for parse trees of {@code DROP TABLE}, {@code DROP VIEW}, and {@code DROP TYPE} statements.
  */
+@Slf4j
 abstract class SqlDropObject extends SqlDrop implements SqlExecutableStatement {
 
+    @Getter
     protected final SqlIdentifier name;
 
 

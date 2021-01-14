@@ -39,6 +39,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -63,6 +64,7 @@ import org.polypheny.db.transaction.Statement;
  */
 public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
 
+    @Getter
     private final SqlIdentifier name;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "DROP SCHEMA", SqlKind.DROP_TABLE );

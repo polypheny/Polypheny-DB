@@ -26,6 +26,9 @@ import java.util.concurrent.Executors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
@@ -188,6 +191,14 @@ public class StatisticsManager<T extends Comparable<T>> {
         }
 
         String[] splits = qualifiedTable.replace( "\"", "" ).split( "\\." );
+        if ( splits.length == 1 ) {
+            // default schema here
+            try {
+                splits = new String[]{ Catalog.getInstance().getDatabase( "APP" ).defaultSchemaName, splits[0] };
+            } catch ( GenericCatalogException | UnknownDatabaseException e ) {
+                throw new RuntimeException( e );
+            }
+        }
         if ( splits.length != 2 ) {
             return;
         }
