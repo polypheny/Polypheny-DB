@@ -1117,6 +1117,45 @@ public class RexLiteral extends RexNode {
     }
 
 
+    public String getValueForFileAdapter() {
+        if ( value == null ) {
+            return null;
+        }
+        switch ( typeName ) {
+            case VARCHAR:
+            case CHAR:
+                return ((NlsString) value).getValue();
+            case BOOLEAN:
+                return Boolean.toString( (Boolean) value );
+            case DATE:
+            case TIME:
+                int i = getValueAs( Integer.class );
+                return String.valueOf( i );
+            case TIMESTAMP:
+                long l = getValueAs( Long.class );
+                return String.valueOf( l );
+            default:
+                return value.toString();
+        }
+    }
+
+
+    /**
+     * see {@code org.polypheny.db.adapter.file.Condition}
+     */
+    public Comparable getValueForFileCondition() {
+        switch ( typeName ) {
+            case TIME:
+            case DATE:
+                return getValueAs( Integer.class );
+            case TIMESTAMP:
+                return getValueAs( Long.class );
+            default:
+                return getValueForQueryParameterizer();
+        }
+    }
+
+
     public static boolean booleanValue( RexNode node ) {
         return (Boolean) ((RexLiteral) node).value;
     }

@@ -84,7 +84,8 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier constraintName;
     final SqlIdentifier store;
     final SqlIdentifier indexName;
-    final SqlIdentifier indexType;
+    final SqlIdentifier indexMethod;
+    final SqlIdentifier storeName;
     final String onUpdate;
     final String onDelete;
     final boolean unique;
@@ -321,12 +322,17 @@ SqlAlterTable SqlAlterTable(Span s) :
             }
         )
         (
-            <USING> indexType = SimpleIdentifier()
+            <USING> indexMethod = SimpleIdentifier()
         |
-            { indexType = null; }
+            { indexMethod = null; }
+        )
+        (
+            <ON> <STORE> storeName = SimpleIdentifier()
+        |
+            { storeName = null; }
         )
         {
-            return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexType, indexName);
+            return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexMethod, indexName, storeName);
         }
     |
         <DROP> <INDEX>
@@ -432,5 +438,33 @@ SqlAlterStoresDrop SqlAlterStoresDrop(Span s) :
     <STORES> <DROP> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
     {
         return new SqlAlterStoresDrop(s.end(this), storeName);
+    }
+}
+
+
+SqlAlterInterfacesAdd SqlAlterInterfacesAdd(Span s) :
+{
+    final SqlNode uniqueName;
+    final SqlNode clazzName;
+    final SqlNode config;
+}
+{
+    <INTERFACES> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <USING> clazzName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterInterfacesAdd(s.end(this), uniqueName, clazzName, config);
+    }
+}
+
+
+SqlAlterInterfacesDrop SqlAlterInterfacesDrop(Span s) :
+{
+    final SqlNode uniqueName;
+}
+{
+    <INTERFACES> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    {
+        return new SqlAlterInterfacesDrop(s.end(this), uniqueName);
     }
 }

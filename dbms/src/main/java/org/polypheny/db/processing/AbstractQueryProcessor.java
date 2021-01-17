@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 package org.polypheny.db.processing;
+
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -1241,7 +1242,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         // Add values to data context
         for ( DataContext.ParameterValue value : queryParameterizer.getValues() ) {
-            statement.getDataContext().addParameterValues( value.getIndex(), value.getType(), ImmutableList.of( value.getValue() ) );
+            statement.getDataContext().addParameterValues( value.getIndex(), value.getType(), Collections.singletonList( value.getValue() ) );
         }
 
         // parameterRowType
@@ -1717,4 +1718,5 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         QueryPlanCache.INSTANCE.reset();
         statement.getRouter().resetCaches();
     }
+
 }

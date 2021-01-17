@@ -38,7 +38,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code CREATE STORE storeName USING adapterName WITH config} statement.
+ * Parse tree for {@code ALTER STORES ADD storeName USING adapterName WITH config} statement.
  */
 @Slf4j
 public class SqlAlterStoresAdd extends SqlAlter {
@@ -88,7 +88,7 @@ public class SqlAlterStoresAdd extends SqlAlter {
         try {
             StoreManager.getInstance().addStore( Catalog.getInstance(), adapterNameStr, storeNameStr, configMap );
         } catch ( Exception e ) {
-            log.error( "Could not deploy store", e );
+            throw new RuntimeException( "Could not deploy store", e );
         }
     }
 

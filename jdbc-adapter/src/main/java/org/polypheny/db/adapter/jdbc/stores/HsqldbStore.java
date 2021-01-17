@@ -12,9 +12,12 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
@@ -23,6 +26,7 @@ import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
@@ -36,7 +40,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
             new AdapterSettingList( "tableType", false, true, false, ImmutableList.of( "Memory", "Cached" ) ),
-            new AdapterSettingString( "path", false, true, false, "." + File.separator ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
             new AdapterSettingList( "trxControlMode", false, true, false, Arrays.asList( "locks", "mvlocks", "mvcc" ) ),
             new AdapterSettingList( "trxIsolationLevel", false, true, false, Arrays.asList( "read_committed", "serializable" ) )
@@ -44,11 +47,11 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( uniqueName, settings, HsqldbSqlDialect.DEFAULT ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
+        super( storeId, uniqueName, settings, createConnectionFactory( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
     }
 
 
-    public static ConnectionFactory createConnectionFactory( final String uniqueName, final Map<String, String> settings, SqlDialect dialect ) {
+    public static ConnectionFactory createConnectionFactory( final int storeId, final String uniqueName, final Map<String, String> settings, SqlDialect dialect ) {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
             throw new RuntimeException( "2PC Mode is not implemented" );
@@ -64,8 +67,8 @@ public class HsqldbStore extends AbstractJdbcStore {
             if ( settings.get( "type" ).equals( "Memory" ) ) {
                 dataSource.setUrl( "jdbc:hsqldb:mem:" + uniqueName + trxSettings );
             } else {
-                String path = settings.get( "path" );
-                dataSource.setUrl( "jdbc:hsqldb:file:" + path + uniqueName + trxSettings );
+                File path = FileSystemManager.getInstance().registerNewFolder( "data/hsqldb/" + storeId );
+                dataSource.setUrl( "jdbc:hsqldb:file:" + path + trxSettings );
             }
             dataSource.setUsername( "sa" );
             dataSource.setPassword( "" );
@@ -90,6 +93,48 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogIndex.key.tableId );
+        StringBuilder builder = new StringBuilder();
+        builder.append( "CREATE " );
+        if ( catalogIndex.unique ) {
+            builder.append( "UNIQUE INDEX " );
+        } else {
+            builder.append( "INDEX " );
+        }
+        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+        builder.append( " ON " )
+                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalTableName ) );
+
+        builder.append( "(" );
+        boolean first = true;
+        for ( long columnId : catalogIndex.key.columnIds ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+        }
+        builder.append( ")" );
+        executeUpdate( builder, context );
+
+        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "DROP INDEX " );
+        builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
@@ -98,6 +143,26 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return ImmutableList.of(
+                new AvailableIndexMethod( "default", "Default" )
+        );
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        return getAvailableIndexMethods().get( 0 );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        return ImmutableList.of();
     }
 
 

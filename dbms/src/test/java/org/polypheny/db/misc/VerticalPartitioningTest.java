@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class VerticalPartitioningTest {
                 try {
                     // Deploy additional store
                     statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
+                            + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
@@ -101,7 +101,7 @@ public class VerticalPartitioningTest {
                 try {
                     // Deploy additional store
                     statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
-                            + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
+                            + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );

@@ -325,9 +325,9 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             if ( SqlType.valueOf( sqlType ) == SqlType.DATE ) {
                 preparedStatement.setDate( i, new java.sql.Date( ((Calendar) value).getTimeInMillis() ) );
             } else if ( SqlType.valueOf( sqlType ) == SqlType.TIME ) {
-                preparedStatement.setTime( i, new java.sql.Time( ((Calendar) value).getTimeInMillis() ) );
+                preparedStatement.setTime( i, new java.sql.Time( ((Calendar) value).getTimeInMillis() ), ((Calendar) value) );
             } else if ( SqlType.valueOf( sqlType ) == SqlType.TIMESTAMP ) {
-                preparedStatement.setTimestamp( i, new java.sql.Timestamp( ((Calendar) value).getTimeInMillis() ) );
+                preparedStatement.setTimestamp( i, new java.sql.Timestamp( ((Calendar) value).getTimeInMillis() ), ((Calendar) value) );
             } else {
                 throw new RuntimeException( "Unsupported use of Calendar" );
             }

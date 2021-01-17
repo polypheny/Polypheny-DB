@@ -47,7 +47,6 @@ import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
-import org.polypheny.db.sql.parser.SqlParser.SqlParserConfig;
 import org.polypheny.db.statistic.StatisticsManager;
 
 
@@ -197,8 +196,9 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public SqlProcessor getSqlProcessor( SqlParserConfig parserConfig ) {
-        return new SqlProcessorImpl( parserConfig );
+    public SqlProcessor getSqlProcessor() {
+        // TODO: This should be cached
+        return new SqlProcessorImpl();
     }
 
 

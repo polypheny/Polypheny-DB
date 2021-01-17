@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,7 @@ public class RelJson {
                     "org.polypheny.db.rel.core.",
                     "org.polypheny.db.rel.logical.",
                     "org.polypheny.db.adapter.cassandra.",
+                    "org.polypheny.db.adapter.file.rel.",
                     "org.polypheny.db.adapter.enumerable.",
                     "org.polypheny.db.adapter.jdbc.",
                     "org.polypheny.db.adapter.jdbc.JdbcRules$",
@@ -472,5 +473,6 @@ public class RelJson {
         // User-defined operators are not yet handled.
         return operator.getName();
     }
+
 }
 

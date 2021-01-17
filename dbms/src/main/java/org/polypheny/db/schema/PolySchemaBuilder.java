@@ -87,7 +87,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
         try {
             //
             // Build logical schema
-            CatalogDatabase catalogDatabase = catalog.getDatabase( 0 );
+            CatalogDatabase catalogDatabase = catalog.getDatabase( 1 );
             for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
                 Map<String, LogicalTable> tableMap = new HashMap<>();
                 SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name ).plus();
@@ -189,6 +189,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
         public Expression getExpression( SchemaPlus parentSchema, String name ) {
             return Expressions.call( DataContext.ROOT, BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method );
         }
+
     }
 
 }

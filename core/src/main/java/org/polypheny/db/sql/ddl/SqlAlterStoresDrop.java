@@ -82,7 +82,7 @@ public class SqlAlterStoresDrop extends SqlAlter {
         try {
             StoreManager.getInstance().removeStore( Catalog.getInstance(), storeNameStr );
         } catch ( Exception e ) {
-            log.error( "Could not remove store {}", storeNameStr, e );
+            throw new RuntimeException( "Could not remove store " + storeNameStr, e );
         }
     }
 

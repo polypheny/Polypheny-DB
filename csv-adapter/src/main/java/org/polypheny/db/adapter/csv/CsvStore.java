@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -100,6 +102,18 @@ public class CsvStore extends Store {
 
 
     @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "CSV adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "CSV adapter does not support dropping indexes" );
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         log.debug( "CSV Store does not support prepare()." );
         return true;
@@ -139,6 +153,24 @@ public class CsvStore extends Store {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return new ArrayList<>();
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        throw new RuntimeException( "CSV adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        return ImmutableList.of();
     }
 
 

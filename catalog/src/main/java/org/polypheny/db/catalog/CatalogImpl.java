@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -66,8 +67,11 @@ import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -109,6 +113,9 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Integer, CatalogStore> stores;
     private static HTreeMap<String, CatalogStore> storeNames;
 
+    private static HTreeMap<Integer, CatalogQueryInterface> queryInterfaces;
+    private static HTreeMap<String, CatalogQueryInterface> queryInterfaceNames;
+
     private static HTreeMap<Long, CatalogKey> keys;
     private static HTreeMap<long[], Long> keyColumns;
 
@@ -120,18 +127,19 @@ public class CatalogImpl extends Catalog {
     private static Long openTable;
 
 
-    private static final AtomicInteger storeIdBuilder = new AtomicInteger();
-    private static final AtomicInteger userIdBuilder = new AtomicInteger();
+    private static final AtomicInteger storeIdBuilder = new AtomicInteger( 1 );
+    private static final AtomicInteger queryInterfaceIdBuilder = new AtomicInteger( 1 );
+    private static final AtomicInteger userIdBuilder = new AtomicInteger( 1 );
 
-    private static final AtomicLong databaseIdBuilder = new AtomicLong();
-    private static final AtomicLong schemaIdBuilder = new AtomicLong();
-    private static final AtomicLong tableIdBuilder = new AtomicLong();
-    private static final AtomicLong columnIdBuilder = new AtomicLong();
+    private static final AtomicLong databaseIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong schemaIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
 
-    private static final AtomicLong keyIdBuilder = new AtomicLong();
-    private static final AtomicLong constraintIdBuilder = new AtomicLong();
-    private static final AtomicLong indexIdBuilder = new AtomicLong();
-    private static final AtomicLong foreignKeyIdBuilder = new AtomicLong();
+    private static final AtomicLong keyIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong constraintIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong indexIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong foreignKeyIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong physicalPositionBuilder = new AtomicLong();
 
@@ -170,7 +178,7 @@ public class CatalogImpl extends Catalog {
 
             if ( isPersistent ) {
                 log.info( "Making the catalog persistent." );
-                File folder = FileSystemManager.getInstance().registerDataFolder( "catalog" );
+                File folder = FileSystemManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
                     log.info( "Reseting catalog on startup." );
@@ -220,7 +228,7 @@ public class CatalogImpl extends Catalog {
                     insertDefaultData();
                 }
 
-            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException | UnknownColumnException e ) {
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException | UnknownQueryInterfaceException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
             if ( doInitInformationPage ) {
@@ -288,6 +296,7 @@ public class CatalogImpl extends Catalog {
             initColumnInfo( db );
             initKeysAndConstraintsInfo( db );
             initStoreInfo( db );
+            initQueryInterfaceInfo( db );
         } catch ( SerializationError e ) {
             log.error( "!!!!!!!!!!! Error while restoring the catalog !!!!!!!!!!!" );
             log.error( "This usually means that there have been changes to the internal structure of the catalog with the last update of Polypheny-DB." );
@@ -409,13 +418,14 @@ public class CatalogImpl extends Catalog {
         restoreIdBuilder( constraints, columnIdBuilder );
         restoreIdBuilder( indexes, indexIdBuilder );
         restoreIdBuilder( stores, storeIdBuilder );
+        restoreIdBuilder( queryInterfaces, queryInterfaceIdBuilder );
         restoreIdBuilder( foreignKeys, foreignKeyIdBuilder );
 
     }
 
 
     /**
-     * initiates all needed maps for stores
+     * Initiates all needed maps for stores
      *
      * stores: storeId -> CatalogStore
      * storeNames: storeName -> CatalogStore
@@ -423,6 +433,18 @@ public class CatalogImpl extends Catalog {
     private void initStoreInfo( DB db ) {
         stores = db.hashMap( "stores", Serializer.INTEGER, new GenericSerializer<CatalogStore>() ).createOrOpen();
         storeNames = db.hashMap( "storeNames", Serializer.STRING, new GenericSerializer<CatalogStore>() ).createOrOpen();
+    }
+
+
+    /**
+     * Initiates all needed maps for query interfaces
+     *
+     * queryInterfaces: ifaceId -> CatalogQueryInterface
+     * queryInterfaceNames: ifaceName -> CatalogQueryInterface
+     */
+    private void initQueryInterfaceInfo( DB db ) {
+        queryInterfaces = db.hashMap( "queryInterfaces", Serializer.INTEGER, new GenericSerializer<CatalogQueryInterface>() ).createOrOpen();
+        queryInterfaceNames = db.hashMap( "queryInterfaceNames", Serializer.STRING, new GenericSerializer<CatalogQueryInterface>() ).createOrOpen();
     }
 
 
@@ -529,7 +551,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownStoreException, UnknownColumnException {
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownStoreException, UnknownQueryInterfaceException, UnknownColumnException {
 
         //////////////
         // init users
@@ -548,7 +570,7 @@ public class CatalogImpl extends Catalog {
         // init database
         long databaseId;
         if ( !databaseNames.containsKey( "APP" ) ) {
-            databaseId = addDatabase( "APP", systemId, "system", 0L, "public" );
+            databaseId = addDatabase( "APP", systemId, "system", 1L, "public" );
         } else {
             databaseId = getDatabase( "APP" ).id;
         }
@@ -558,7 +580,7 @@ public class CatalogImpl extends Catalog {
 
         long schemaId;
         if ( !schemaNames.containsKey( new Object[]{ databaseId, "public" } ) ) {
-            schemaId = addSchema( "public", databaseId, 0, SchemaType.RELATIONAL );
+            schemaId = addSchema( "public", databaseId, 1, SchemaType.RELATIONAL );
         } else {
             schemaId = getSchema( "APP", "public" ).id;
         }
@@ -569,28 +591,24 @@ public class CatalogImpl extends Catalog {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
             hsqldbSettings.put( "tableType", "Memory" );
-            hsqldbSettings.put( "path", "./" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
 
             addStore( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", hsqldbSettings );
         }
-
         if ( !storeNames.containsKey( "csv" ) ) {
-            Map<String, String> csvSetttings = new HashMap<>();
-            csvSetttings.put( "directory", "classpath://hr" );
-            csvSetttings.put( "persistent", "true" );
+            Map<String, String> csvSettings = new HashMap<>();
+            csvSettings.put( "directory", "classpath://hr" );
+            csvSettings.put( "persistent", "true" );
 
-            addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSetttings );
+            addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSettings );
         }
 
+        //////////////
+        // init schema
         CatalogStore csv = getStore( "csv" );
-
         if ( !testMode ) {
-
-            //////////////
-            // init schema
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
                 addTable( "depts", schemaId, systemId, TableType.TABLE, null );
             }
@@ -603,8 +621,21 @@ public class CatalogImpl extends Catalog {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
                 addTable( "work", schemaId, systemId, TableType.TABLE, null );
             }
-
             addDefaultCsvColumns( csv );
+        }
+
+        ////////////////////////
+        // init query interfaces
+        if ( !queryInterfaceNames.containsKey( "jdbc" ) ) {
+            Map<String, String> jdbcSettings = new HashMap<>();
+            jdbcSettings.put( "port", "20591" );
+            jdbcSettings.put( "serialization", "PROTOBUF" );
+            addQueryInterface( "jdbc", "org.polypheny.db.jdbc.JdbcInterface", jdbcSettings );
+        }
+        if ( !queryInterfaceNames.containsKey( "rest" ) ) {
+            Map<String, String> restSettings = new HashMap<>();
+            restSettings.put( "port", "8089" );
+            addQueryInterface( "rest", "org.polypheny.db.restapi.HttpRestServer", restSettings );
         }
 
         try {
@@ -957,7 +988,7 @@ public class CatalogImpl extends Catalog {
      * @param name New name of the schema
      */
     @Override
-    public void renameSchema( long schemaId, String name ) throws GenericCatalogException {
+    public void renameSchema( long schemaId, String name ) {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogSchema schema = new CatalogSchema( old.id, name, old.databaseId, old.ownerId, old.ownerName, old.schemaType );
@@ -969,7 +1000,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "schema", old, schema );
         } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+            throw new UnknownSchemaIdRuntimeException( schemaId );
         }
     }
 
@@ -981,7 +1012,7 @@ public class CatalogImpl extends Catalog {
      * @param ownerId Id of the new owner
      */
     @Override
-    public void setSchemaOwner( long schemaId, long ownerId ) throws GenericCatalogException {
+    public void setSchemaOwner( long schemaId, long ownerId ) {
         try {
             CatalogSchema old = Objects.requireNonNull( schemas.get( schemaId ) );
             CatalogSchema schema = new CatalogSchema( old.id, old.name, old.databaseId, (int) ownerId, old.ownerName, old.schemaType );
@@ -992,7 +1023,7 @@ public class CatalogImpl extends Catalog {
             listeners.firePropertyChange( "schema", old, schema );
 
         } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+            throw new UnknownSchemaIdRuntimeException( schemaId );
         }
     }
 
@@ -1852,13 +1883,28 @@ public class CatalogImpl extends Catalog {
                 // TODO: Check that the column does not contain any null values
                 getColumnPlacements( columnId );
             }
-            CatalogColumn column = new CatalogColumn( old.id, old.name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, nullable, old.collation, old.defaultValue );
+            CatalogColumn column = new CatalogColumn(
+                    old.id,
+                    old.name,
+                    old.tableId,
+                    old.schemaId,
+                    old.databaseId,
+                    old.position,
+                    old.type,
+                    old.collectionsType,
+                    old.length,
+                    old.scale,
+                    old.dimension,
+                    old.cardinality,
+                    nullable,
+                    old.collation,
+                    old.defaultValue );
             synchronized ( this ) {
                 columns.replace( columnId, column );
                 columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
             }
             listeners.firePropertyChange( "column", old, column );
-        } catch ( NullPointerException | UnknownKeyException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1868,7 +1914,7 @@ public class CatalogImpl extends Catalog {
      * Set the collation of a column.
      * If the column already has the specified collation set, this method is a NoOp.
      *
-     * @param columnId  The id of the column
+     * @param columnId The id of the column
      * @param collation The collation to set
      */
     @Override
@@ -1953,8 +1999,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
      *
-     * @param columnId     The id of the column
-     * @param type         The type of the default value
+     * @param columnId The id of the column
+     * @param type The type of the default value
      * @param defaultValue The default value
      */
     @Override
@@ -2033,11 +2079,11 @@ public class CatalogImpl extends Catalog {
      * @return The primary key
      */
     @Override
-    public CatalogPrimaryKey getPrimaryKey( long key ) throws UnknownKeyException {
+    public CatalogPrimaryKey getPrimaryKey( long key ) {
         try {
             return Objects.requireNonNull( primaryKeys.get( key ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownKeyException( key );
+            throw new UnknownKeyIdRuntimeException( key );
         }
     }
 
@@ -2316,22 +2362,6 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Returns the index with the specified id
-     *
-     * @param indexId The id of the index
-     * @return The Index
-     */
-    @Override
-    public CatalogIndex getIndex( long indexId ) throws UnknownIndexException {
-        try {
-            return indexes.values().stream().filter( i -> i.id == indexId ).findFirst().orElseThrow( NullPointerException::new );
-        } catch ( NullPointerException e ) {
-            throw new UnknownIndexException( indexId );
-        }
-    }
-
-
-    /**
      * Checks if there is an index with the specified name in the specified table.
      *
      * @param tableId The id of the table
@@ -2354,27 +2384,98 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Returns the index with the specified id
+     *
+     * @param indexId The id of the index
+     * @return The Index
+     */
+    @Override
+    public CatalogIndex getIndex( long indexId ) {
+        try {
+            return Objects.requireNonNull( indexes.get( indexId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownIndexIdRuntimeException( indexId );
+        }
+    }
+
+
+    /**
+     * Returns list of all indexes
+     *
+     * @return List of indexes
+     */
+    @Override
+    public List<CatalogIndex> getIndexes() {
+        return new ArrayList<>( indexes.values() );
+    }
+
+
+    /**
      * Adds an index over the specified columns
      *
      * @param tableId The id of the table
      * @param columnIds A list of column ids
-     * @param unique Weather the index should be unique
-     * @param type The type of index
+     * @param unique Weather the index is unique
+     * @param method Name of the index method (e.g. btree_unique)
+     * @param methodDisplayName Display name of the index method (e.g. BTREE)
+     * @param location Id of the data store where the index is located (0 for Polypheny-DB itself)
+     * @param type The type of index (manual, automatic)
      * @param indexName The name of the index
      * @return The id of the created index
      */
     @Override
-    public long addIndex( long tableId, List<Long> columnIds, boolean unique, IndexType type, String indexName ) throws GenericCatalogException {
+    public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException {
         long keyId = getOrAddKey( tableId, columnIds );
         if ( unique ) {
             // TODO: Check if the current values are unique
         }
         long id = indexIdBuilder.getAndIncrement();
         synchronized ( this ) {
-            indexes.put( id, new CatalogIndex( id, indexName, unique, type, null, keyId, Objects.requireNonNull( keys.get( keyId ) ) ) );
+            indexes.put( id, new CatalogIndex(
+                    id,
+                    indexName,
+                    unique,
+                    method,
+                    methodDisplayName,
+                    type,
+                    location,
+                    keyId,
+                    Objects.requireNonNull( keys.get( keyId ) ),
+                    null ) );
         }
         listeners.firePropertyChange( "index", null, keyId );
         return id;
+    }
+
+
+    /**
+     * Set physical index name.
+     *
+     * @param indexId The id of the index
+     * @param physicalName The physical name to be set
+     */
+    @Override
+    public void setIndexPhysicalName( long indexId, String physicalName ) {
+        try {
+            CatalogIndex oldEntry = Objects.requireNonNull( indexes.get( indexId ) );
+            CatalogIndex newEntry = new CatalogIndex(
+                    oldEntry.id,
+                    oldEntry.name,
+                    oldEntry.unique,
+                    oldEntry.method,
+                    oldEntry.methodDisplayName,
+                    oldEntry.type,
+                    oldEntry.location,
+                    oldEntry.keyId,
+                    oldEntry.key,
+                    physicalName );
+            synchronized ( this ) {
+                indexes.replace( indexId, newEntry );
+            }
+            listeners.firePropertyChange( "index", oldEntry, newEntry );
+        } catch ( NullPointerException e ) {
+            throw new UnknownIndexIdRuntimeException( indexId );
+        }
     }
 
 
@@ -2390,12 +2491,11 @@ public class CatalogImpl extends Catalog {
             if ( index.unique ) {
                 if ( getKeyUniqueCount( index.keyId ) == 1 && isForeignKey( index.keyId ) ) {
                     // This unique index is the only constraint for the uniqueness of this key.
-                    throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To delete this index, first add a unique constraint." );
+                    //throw new GenericCatalogException( "This key is referenced by at least one foreign key which requires this key to be unique. To delete this index, first add a unique constraint." );
                 }
             }
             synchronized ( this ) {
                 indexes.remove( indexId );
-
             }
             listeners.firePropertyChange( "index", index.key, null );
             deleteKeyIfNoLongerUsed( index.keyId );
@@ -2557,8 +2657,8 @@ public class CatalogImpl extends Catalog {
      * Add a store
      *
      * @param uniqueName The unique name of the store
-     * @param adapter    The class name of the adapter
-     * @param settings   The configuration of the store
+     * @param adapter The class name of the adapter
+     * @param settings The configuration of the store
      * @return The id of the newly added store
      */
     @Override
@@ -2596,11 +2696,113 @@ public class CatalogImpl extends Catalog {
             synchronized ( this ) {
                 stores.remove( storeId );
                 storeNames.remove( store.uniqueName );
-
+            }
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( "An error occurred while deleting the query interface." );
+            }
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( "Could not delete Store" );
             }
             listeners.firePropertyChange( "store", store, null );
         } catch ( NullPointerException e ) {
             throw new UnknownStoreException( storeId );
+        }
+    }
+
+
+    /**
+     * Get list of all query interfaces
+     *
+     * @return List of query interfaces
+     */
+    @Override
+    public List<CatalogQueryInterface> getQueryInterfaces() {
+        return new ArrayList<>( queryInterfaces.values() );
+    }
+
+
+    /**
+     * Get a query interface by its unique name
+     */
+    @Override
+    public CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException {
+        uniqueName = uniqueName.toLowerCase();
+        try {
+            return Objects.requireNonNull( queryInterfaceNames.get( uniqueName ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownQueryInterfaceException( uniqueName );
+        }
+    }
+
+
+    /**
+     * Get a query interface by its id
+     */
+    @Override
+    public CatalogQueryInterface getQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException {
+        try {
+            return Objects.requireNonNull( queryInterfaces.get( ifaceId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownQueryInterfaceException( ifaceId );
+        }
+    }
+
+
+    /**
+     * Add a query interface
+     *
+     * @param uniqueName The unique name of the query interface
+     * @param clazz The class name of the query interface
+     * @param settings The configuration of the query interface
+     * @return The id of the newly added query interface
+     */
+    @Override
+    public int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) throws GenericCatalogException {
+        uniqueName = uniqueName.toLowerCase();
+
+        int id = queryInterfaceIdBuilder.getAndIncrement();
+        Map<String, String> temp = new HashMap<>();
+        settings.forEach( temp::put );
+        CatalogQueryInterface queryInterface = new CatalogQueryInterface( id, uniqueName, clazz, temp );
+        synchronized ( this ) {
+            queryInterfaces.put( id, queryInterface );
+            queryInterfaceNames.put( uniqueName, queryInterface );
+        }
+        try {
+            commit();
+        } catch ( NoTablePrimaryKeyException e ) {
+            throw new RuntimeException( "An error occurred while creating the query interface." );
+        }
+        listeners.firePropertyChange( "queryInterface", null, queryInterface );
+        return id;
+    }
+
+
+    /**
+     * Delete a query interface
+     *
+     * @param ifaceId The id of the query interface to delete
+     */
+    @Override
+    public void deleteQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException {
+        try {
+            CatalogQueryInterface queryInterface = Objects.requireNonNull( queryInterfaces.get( ifaceId ) );
+            synchronized ( this ) {
+                queryInterfaces.remove( ifaceId );
+                queryInterfaceNames.remove( queryInterface.name );
+            }
+            try {
+                commit();
+            } catch ( NoTablePrimaryKeyException e ) {
+                throw new RuntimeException( "An error occurred while deleting the query interface." );
+            }
+            listeners.firePropertyChange( "queryInterface", queryInterface, null );
+        } catch ( NullPointerException e ) {
+            throw new UnknownQueryInterfaceException( ifaceId );
         }
     }
 
@@ -2752,5 +2954,7 @@ public class CatalogImpl extends Catalog {
                 assert (stores.containsKey( placement.storeId ));
             } );
         }
+
     }
+
 }

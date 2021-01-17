@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaSeverity;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.remote.AvaticaRuntimeException;
+import org.apache.calcite.avatica.util.Casing;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -90,12 +91,21 @@ import org.polypheny.db.util.SourceStringReader;
 @Slf4j
 public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
-    private final SqlParserConfig parserConfig;
+    private static final SqlParserConfig parserConfig;
     private PolyphenyDbSqlValidator validator;
 
 
-    public SqlProcessorImpl( SqlParserConfig parserConfig ) {
-        this.parserConfig = parserConfig;
+    static {
+        SqlParser.ConfigBuilder configConfigBuilder = SqlParser.configBuilder();
+        configConfigBuilder.setCaseSensitive( RuntimeConfig.CASE_SENSITIVE.getBoolean() );
+        configConfigBuilder.setUnquotedCasing( Casing.TO_LOWER );
+        configConfigBuilder.setQuotedCasing( Casing.TO_LOWER );
+        parserConfig = configConfigBuilder.build();
+    }
+
+
+    public SqlProcessorImpl() {
+
     }
 
 
@@ -391,10 +401,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
     /**
      * Returns a relational expression that is to be substituted for an access to a SQL view.
      *
-     * @param rowType     Row type of the view
+     * @param rowType Row type of the view
      * @param queryString Body of the view
-     * @param schemaPath  Path of a schema wherein to find referenced tables
-     * @param viewPath    Path of the view, ending with its name; may be null
+     * @param schemaPath Path of a schema wherein to find referenced tables
+     * @param viewPath Path of the view, ending with its name; may be null
      * @return Relational expression
      */
     @Override
