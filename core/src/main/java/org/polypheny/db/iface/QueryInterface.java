@@ -103,7 +103,7 @@ public abstract class QueryInterface implements Runnable {
                 } else {
                     throw new RuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                 }
-            } else if ( s.required ) {
+            } else if ( s.required && s.modifiable ) {
                 throw new RuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }

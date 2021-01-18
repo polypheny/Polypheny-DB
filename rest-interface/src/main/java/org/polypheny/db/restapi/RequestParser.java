@@ -22,6 +22,7 @@ import com.google.gson.Gson;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
@@ -138,7 +140,7 @@ public class RequestParser {
     public ResourceGetRequest parseGetResourceRequest( Request request, String resourceName ) throws ParserException {
 
         List<CatalogTable> tables = this.parseTables( resourceName );
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
@@ -149,7 +151,7 @@ public class RequestParser {
 
         List<Pair<RequestColumn, Boolean>> sorting = this.parseSorting( request, nameMapping );
 
-        Filters filters = this.parseFilters( request, nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
 
         return new ResourceGetRequest( tables, requestColumns, nameMapping, groupings, limit, offset, sorting, filters );
     }
@@ -157,11 +159,20 @@ public class RequestParser {
 
     public ResourcePostRequest parsePostResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
         List<CatalogTable> tables = this.parseTables( resourceName );
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
 
-        return new ResourcePostRequest( tables, requestColumns, nameMapping, values );
+        return new ResourcePostRequest( tables, requestColumns, nameMapping, values, false );
+    }
+
+    public ResourcePostRequest parsePostMultipartRequest( String resourceName, String[] projections, List<Object> insertValues ) throws ParserException {
+        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
+        Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
+        List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
+
+        return new ResourcePostRequest( tables, requestColumns, nameMapping, values, true );
     }
 
 
@@ -169,14 +180,24 @@ public class RequestParser {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
         // TODO js: make sure there are no actual projections
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-        Filters filters = this.parseFilters( request, nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
 
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
 
-        return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters );
+        return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters, false );
+    }
+
+
+    public ResourcePatchRequest parsePatchMultipartRequest( String resourceName, String[] projections, Map<String, String[]> filterMap, List<Object> insertValues ) {
+        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
+        Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
+        Filters filters = this.parseFilters( filterMap, nameMapping );
+        List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
+        return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters, true );
     }
 
 
@@ -184,11 +205,11 @@ public class RequestParser {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
 
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-        Filters filters = this.parseFilters( request, nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
 
         return new ResourceDeleteRequest( tables, requestColumns, nameMapping, filters );
     }
@@ -251,7 +272,7 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    List<RequestColumn> newParseProjectionsAndAggregations( Request request, List<CatalogTable> tables ) throws ParserException {
+    List<RequestColumn> newParseProjectionsAndAggregations( String[] possibleProjectionValues, List<CatalogTable> tables ) throws ParserException {
         // Helper structures & data
         Map<Long, Integer> tableOffsets = new HashMap<>();
         Set<Long> validColumns = new HashSet<>();
@@ -263,16 +284,22 @@ public class RequestParser {
         }
 
         List<RequestColumn> columns;
-        if ( !request.queryMap().hasKey( "_project" ) ) {
+        if ( possibleProjectionValues == null ) {
             columns = this.generateRequestColumnsWithoutProject( tables, tableOffsets );
         } else {
-            QueryParamsMap projectionMap = request.queryMap().get( "_project" );
-            String[] possibleProjectionValues = projectionMap.values();
             String possibleProjectionsString = possibleProjectionValues[0];
             columns = this.generateRequestColumnsWithProject( possibleProjectionsString, tableOffsets, validColumns );
         }
 
         return columns;
+    }
+
+    private String[] getProjectionsValues( Request request ) {
+        if ( !request.queryMap().hasKey( "_project" ) ) {
+            return null;
+        }
+        QueryParamsMap projectionMap = request.queryMap().get( "_project" );
+        return projectionMap.values();
     }
 
 
@@ -527,11 +554,11 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    Filters parseFilters( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
+    Filters parseFilters( Map<String, String[]> filterMap, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
         Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters = new HashMap<>();
         Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters = new HashMap<>();
 
-        for ( String possibleFilterKey : request.queryMap().toMap().keySet() ) {
+        for ( String possibleFilterKey : filterMap.keySet() ) {
             if ( possibleFilterKey.startsWith( "_" ) ) {
                 log.debug( "Not a filter: {}", possibleFilterKey );
                 continue;
@@ -552,7 +579,7 @@ public class RequestParser {
             List<Pair<SqlOperator, Object>> literalFilterOperators = new ArrayList<>();
             List<Pair<SqlOperator, RequestColumn>> columnFilterOperators = new ArrayList<>();
 
-            for ( String filterString : request.queryMap().get( possibleFilterKey ).values() ) {
+            for ( String filterString : filterMap.get( possibleFilterKey ) ) {
                 Pair<SqlOperator, String> rightHandSide = this.parseFilterOperation( filterString );
                 Object literal = this.parseLiteralValue( catalogColumn.getColumn().type, rightHandSide.right );
                 // TODO: add column filters here
@@ -571,6 +598,15 @@ public class RequestParser {
         }
 
         return new Filters( literalFilters, columnFilters );
+    }
+
+
+    private Map<String, String[]> getFilterMap( Request request ) {
+        HashMap<String, String[]> filterMap = new HashMap<>();
+        for ( String filterKey : request.queryMap().toMap().keySet() ) {
+            filterMap.put( filterKey, request.queryMap().get( filterKey ).values() );
+        }
+        return filterMap;
     }
 
 
@@ -635,7 +671,7 @@ public class RequestParser {
                         parsedLiteral = dateString;
                         break;
                     case TIMESTAMP:
-                        Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
+                        Instant instant = LocalDateTime.parse( literal, DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss" ) ).toInstant( ZoneOffset.UTC );
                         long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
                         TimestampString timestampString = TimestampString.fromMillisSinceEpoch( millisecondsSinceEpoch );
                         parsedLiteral = timestampString;
@@ -647,6 +683,9 @@ public class RequestParser {
                     default:
                         return null;
                 }
+            } else if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                //the binary data will be fetched later
+                return null;
             } else {
                 // TODO js: error handling.
                 log.warn( "Unable to convert literal value. Returning null. Type: {}, Value: {}.", type, literal );

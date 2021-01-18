@@ -136,6 +136,13 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "planningGroup" ),
 
+    VALIDATE_MM_CONTENT_TYPE( "validation/validateMultimediaContentType",
+            "Validate multimedia data by checking its content-type.",
+            true,
+            ConfigType.BOOLEAN,
+            "validationGroup"
+    ),
+
     TWO_PC_MODE( "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
@@ -296,11 +303,14 @@ public enum RuntimeConfig {
         queryPlanCachingGroup.withTitle( "Query Plan Caching" );
         final WebUiGroup implementationCachingGroup = new WebUiGroup( "implementationCachingGroup", processingPage.getId() );
         implementationCachingGroup.withTitle( "Implementation Caching" );
+        final WebUiGroup validationGroup = new WebUiGroup( "validationGroup", processingPage.getId() );
+        validationGroup.withTitle( "Query Validation" );
         configManager.registerWebUiPage( processingPage );
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
         configManager.registerWebUiGroup( queryPlanCachingGroup );
         configManager.registerWebUiGroup( implementationCachingGroup );
+        configManager.registerWebUiGroup( validationGroup );
 
         // Runtime settings
         final WebUiPage runtimePage = new WebUiPage(

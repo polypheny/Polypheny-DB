@@ -102,7 +102,15 @@ public interface FileRel extends RelNode {
             } else {
                 Integer[] projectionMapping = new Integer[project.size()];
                 for ( int i = 0; i < project.size(); i++ ) {
-                    projectionMapping[i] = columnNames.indexOf( project.get( i ) );
+                    String ithProject = project.get( i );
+                    if ( ithProject.contains( "." ) ) {
+                        ithProject = ithProject.substring( ithProject.lastIndexOf( "." ) + 1 );
+                    }
+                    int indexOf = columnNames.indexOf( ithProject );
+                    if ( indexOf == -1 ) {
+                        throw new RuntimeException( "Could not perform the projection." );
+                    }
+                    projectionMapping[i] = indexOf;
                 }
                 return projectionMapping;
             }

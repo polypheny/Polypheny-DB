@@ -30,6 +30,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Map;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelShuttleImpl;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -114,6 +115,13 @@ public class ParameterValueValidator extends RelShuttleImpl {
                         valid = o instanceof Boolean;
                         break;
                     case MULTIMEDIA:
+                        if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {
+                            if ( o instanceof byte[] || o instanceof InputStream || o instanceof File ) {
+                                return super.visitDynamicParam( dynamicParam );
+                            } else {
+                                throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ) );
+                            }
+                        }
                         ContentInfoUtil util = new ContentInfoUtil();
                         ContentInfo info;
                         if ( o instanceof byte[] ) {
@@ -138,7 +146,7 @@ public class ParameterValueValidator extends RelShuttleImpl {
                         } else {
                             throw new InvalidParameterValueException( "Multimedia object in unexpected form " + o.getClass().getSimpleName() );
                         }
-                        if ( info == null && polyType != PolyType.FILE ) {
+                        if ( info == null ) {
                             throw new InvalidParameterValueException( String.format( "The content type of the %s file could not be determined and is thus invalid", polyType ) );
                         }
                         ContentType[] imageTypes = new ContentType[]{ ContentType.APPLE_QUICKTIME_IMAGE, ContentType.BMP, ContentType.GIF, ContentType.JPEG, ContentType.JPEG_2000, ContentType.PBM, ContentType.PGM, ContentType.PNG, ContentType.PPM, ContentType.SVG, ContentType.TIFF };
