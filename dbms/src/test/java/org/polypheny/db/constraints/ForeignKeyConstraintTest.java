@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -149,7 +150,10 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 VALUES (3, 1), (4, 3)" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates foreign key constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT COUNT(ctid) FROM constraint_test" ),
@@ -231,7 +235,10 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test2 SELECT ctid + 10 AS ct2id, ctid * 2 AS ctid FROM constraint_test" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates foreign key constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -319,7 +326,10 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "UPDATE constraint_test2 SET ctid = ctid + 2" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Update violates foreign key constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -411,7 +421,10 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE ctid = 1" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Update violates foreign key constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -502,7 +515,10 @@ public class ForeignKeyConstraintTest {
                     try {
                         statement.executeUpdate( "DELETE FROM constraint_test WHERE ctid = 1" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Delete violates foreign key constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),

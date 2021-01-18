@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.AvaticaSqlException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -128,12 +129,18 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (1, 2, 3, 4)" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 1, 1, 4)" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test" ),
@@ -166,7 +173,10 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test VALUES (2, 2, 3, 4), (4, 2, 3, 1)" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test" ),
@@ -233,7 +243,10 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT * FROM constraint_test" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -269,7 +282,10 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "INSERT INTO constraint_test SELECT c AS ctid, a + 2 AS a, b, c FROM constraint_test" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -317,7 +333,10 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
 
                     // This should work
@@ -341,7 +360,10 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -387,7 +409,10 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
 
                     // This should work
@@ -420,7 +445,10 @@ public class UniqueConstraintTest {
                     try {
                         preparedStatement.executeBatch();
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Insert violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                 } finally {
                     statement.executeUpdate( "DROP TABLE constraint_test" );
@@ -486,17 +514,26 @@ public class UniqueConstraintTest {
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 1" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Update violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET a = 42, b = 73" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Update violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     try {
                         statement.executeUpdate( "UPDATE constraint_test SET ctid = 4 WHERE a = 3" );
                         Assert.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception ignored ) {
+                    } catch ( AvaticaSqlException e ) {
+                        if ( !e.getErrorMessage().contains( "Remote driver error: Update violates unique constraint" ) ) {
+                            throw new RuntimeException( "Unexpected exception", e );
+                        }
                     }
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
