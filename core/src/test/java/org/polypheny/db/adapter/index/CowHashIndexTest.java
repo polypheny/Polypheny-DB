@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,44 +43,45 @@ public class CowHashIndexTest {
                 Pair.of( Arrays.asList( 2, 3, 4 ), Collections.singletonList( 2 ) ),
                 Pair.of( Arrays.asList( 3, 4, 5 ), Collections.singletonList( 3 ) ),
                 Pair.of( Arrays.asList( 4, 5, 6 ), Collections.singletonList( 4 ) )
-        ));
+        ) );
         idx.delete( xid1, Arrays.asList( 2, 3, 4 ) );
         // Make sure the values are not yet visible by either transaction
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 3, 4, 5 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 3, 4, 5 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 1, 2, 3 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 3, 4, 5 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 1, 2, 3 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 3, 4, 5 ) ) );
         // Invoke atom isolation barrier
         idx.barrier( xid1 );
         // Make sure the values are only visible by transaction 1
-        Assert.assertTrue( idx.contains( xid1,Arrays.asList( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertTrue( idx.contains( xid1,Arrays.asList( 3, 4, 5 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 3, 4, 5 ) ) );
+        Assert.assertTrue( idx.contains( xid1, Arrays.asList( 1, 2, 3 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertTrue( idx.contains( xid1, Arrays.asList( 3, 4, 5 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 1, 2, 3 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 3, 4, 5 ) ) );
         // Commit
         idx.commit( xid1 );
         // Make sure the values are visible by both transactions
-        Assert.assertTrue( idx.contains( xid1,Arrays.asList( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertTrue( idx.contains( xid1,Arrays.asList( 3, 4, 5 ) ) );
-        Assert.assertTrue( idx.contains( xid2,Arrays.asList( 1, 2, 3 ) ) );
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertTrue( idx.contains( xid2,Arrays.asList( 3, 4, 5 ) ) );
+        Assert.assertTrue( idx.contains( xid1, Arrays.asList( 1, 2, 3 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertTrue( idx.contains( xid1, Arrays.asList( 3, 4, 5 ) ) );
+        Assert.assertTrue( idx.contains( xid2, Arrays.asList( 1, 2, 3 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertTrue( idx.contains( xid2, Arrays.asList( 3, 4, 5 ) ) );
         // Insert, then rollback
         idx.insert( xid1, Arrays.asList( 2, 3, 4 ), Collections.singletonList( 1 ) );
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 2, 3, 4 ) ) );
         idx.barrier( xid1 );
-        Assert.assertTrue( idx.contains( xid1,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertTrue( idx.contains( xid1, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 2, 3, 4 ) ) );
         idx.rollback( xid1 );
-        Assert.assertFalse( idx.contains( xid1,Arrays.asList( 2, 3, 4 ) ) );
-        Assert.assertFalse( idx.contains( xid2,Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid1, Arrays.asList( 2, 3, 4 ) ) );
+        Assert.assertFalse( idx.contains( xid2, Arrays.asList( 2, 3, 4 ) ) );
     }
+
 
     @Test
     public void testDuplicateDetection() {
@@ -103,7 +104,7 @@ public class CowHashIndexTest {
                 Pair.of( Arrays.asList( 4, 5, 6 ), Collections.singletonList( 4 ) ),
                 Pair.of( Arrays.asList( 3, 4, 5 ), Collections.singletonList( 5 ) ),
                 Pair.of( Arrays.asList( 5, 6, 7 ), Collections.singletonList( 6 ) )
-        ));
+        ) );
         try {
             idx.barrier( xid1 );
             Assert.fail( "Expected ConstraintViolationException not thrown!" );
@@ -125,6 +126,7 @@ public class CowHashIndexTest {
         idx.rollback( xid1 );
     }
 
+
     @Test
     public void testContains() {
         CoWHashIndex idx = new CoWHashIndex( 42L, "idx_test", null, null, Collections.emptyList(), Collections.emptyList() );
@@ -134,7 +136,7 @@ public class CowHashIndexTest {
                 Pair.of( Arrays.asList( 3, 4, 5 ), Collections.singletonList( 3 ) ),
                 Pair.of( Arrays.asList( 4, 5, 6 ), Collections.singletonList( 4 ) ),
                 Pair.of( Arrays.asList( 5, 6, 7 ), Collections.singletonList( 5 ) )
-        ));
+        ) );
         idx.barrier( xid1 );
         Assert.assertTrue( idx.contains( xid1, Arrays.asList( 3, 4, 5 ) ) );
         Assert.assertFalse( idx.contains( xid1, Arrays.asList( 1, 2, 3 ) ) );

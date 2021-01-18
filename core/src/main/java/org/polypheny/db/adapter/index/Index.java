@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ public abstract class Index {
     // The primary key columns the index resolves to
     protected List<String> targetColumns;
 
+
     public abstract String getMethod();
 
     public abstract boolean isUnique();
@@ -74,6 +75,7 @@ public abstract class Index {
     public List<String> getColumns() {
         return ImmutableList.copyOf( this.columns );
     }
+
 
     public List<String> getTargetColumns() {
         return ImmutableList.copyOf( this.targetColumns );
@@ -103,8 +105,8 @@ public abstract class Index {
         final Iterator<Object> iterator = enumerable.iterator();
         final List<List<Object>> rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
         final List<Pair<List<Object>, List<Object>>> kv = new ArrayList<>( rows.size() );
-        for (final List<Object> row : rows) {
-            if (row.size() > columns.size()) {
+        for ( final List<Object> row : rows ) {
+            if ( row.size() > columns.size() ) {
                 kv.add( new Pair<>( row.subList( 0, columns.size() ), row.subList( columns.size(), columns.size() + targetColumns.size() ) ) );
             } else {
                 // Columns and target columns are identical, i.e. this is a primary key index
@@ -117,11 +119,13 @@ public abstract class Index {
         this.initialize();
     }
 
+
     abstract void commit( PolyXid xid );
 
     abstract void rollback( PolyXid xid );
 
-    abstract public void barrier( PolyXid xid);
+    abstract public void barrier( PolyXid xid );
+
 
     /**
      * The default implementation is simply a loop over the iterable.
@@ -132,6 +136,7 @@ public abstract class Index {
             this.insert( xid, row.getKey(), row.getValue() );
         }
     }
+
 
     /**
      * The default implementation is simply a loop over the iterable.
@@ -223,6 +228,7 @@ public abstract class Index {
 
     abstract Object getRaw();
 
+
     interface IndexFactory {
 
         boolean canProvide(
@@ -243,9 +249,11 @@ public abstract class Index {
 
     }
 
+
     /*
      *  Helpers
      */
+
 
     protected ImmutableList<RexLiteral> makeRexRow( final RelDataType rowType, final RexBuilder rexBuilder, final List<Object> tuple ) {
         assert rowType.getFieldCount() == tuple.size();

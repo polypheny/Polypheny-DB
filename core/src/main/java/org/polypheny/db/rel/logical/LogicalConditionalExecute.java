@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,14 @@ public class LogicalConditionalExecute extends ConditionalExecute {
 
 
     public static LogicalConditionalExecute create( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
-        return new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, condition, exceptionClass, exceptionMessage );
+        return new LogicalConditionalExecute(
+                right.getCluster(),
+                right.getTraitSet(),
+                left,
+                right,
+                condition,
+                exceptionClass,
+                exceptionMessage );
     }
 
 
@@ -40,8 +47,16 @@ public class LogicalConditionalExecute extends ConditionalExecute {
         return create( left, right, copy, copy.getCheckDescription() );
     }
 
+
     public static LogicalConditionalExecute create( RelNode left, RelNode right, LogicalConditionalExecute copy, String description ) {
-        final LogicalConditionalExecute lce = new LogicalConditionalExecute( right.getCluster(), right.getTraitSet(), left, right, copy.condition, copy.exceptionClass, copy.exceptionMessage );
+        final LogicalConditionalExecute lce = new LogicalConditionalExecute(
+                right.getCluster(),
+                right.getTraitSet(),
+                left,
+                right,
+                copy.condition,
+                copy.exceptionClass,
+                copy.exceptionMessage );
         lce.checkDescription = description;
         lce.catalogSchema = copy.catalogSchema;
         lce.catalogTable = copy.catalogTable;
@@ -53,7 +68,14 @@ public class LogicalConditionalExecute extends ConditionalExecute {
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        final LogicalConditionalExecute lce =  new LogicalConditionalExecute( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), condition, exceptionClass, exceptionMessage );
+        final LogicalConditionalExecute lce = new LogicalConditionalExecute(
+                inputs.get( 0 ).getCluster(),
+                traitSet,
+                inputs.get( 0 ),
+                inputs.get( 1 ),
+                condition,
+                exceptionClass,
+                exceptionMessage );
         lce.setCheckDescription( checkDescription );
         lce.setCatalogSchema( catalogSchema );
         lce.setCatalogTable( catalogTable );
@@ -61,6 +83,5 @@ public class LogicalConditionalExecute extends ConditionalExecute {
         lce.setValues( values );
         return lce;
     }
-
 
 }

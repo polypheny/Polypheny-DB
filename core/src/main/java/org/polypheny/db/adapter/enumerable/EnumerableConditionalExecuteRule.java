@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         final LogicalConditionalExecute lce = (LogicalConditionalExecute) rel;
         final RelNode input = RelOptRule.convert( lce.getLeft(), lce.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final RelNode action = RelOptRule.convert( lce.getRight(), lce.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-        final EnumerableConditionalExecute ece =  EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
+        final EnumerableConditionalExecute ece = EnumerableConditionalExecute.create( input, action, lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
         ece.setCheckDescription( lce.getCheckDescription() );
         ece.setCatalogSchema( lce.getCatalogSchema() );
         ece.setCatalogTable( lce.getCatalogTable() );
@@ -48,4 +48,5 @@ public class EnumerableConditionalExecuteRule extends ConverterRule {
         ece.setValues( lce.getValues() );
         return ece;
     }
+
 }

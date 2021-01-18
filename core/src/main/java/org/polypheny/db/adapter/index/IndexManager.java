@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public class IndexManager {
     private final AtomicLong indexLookupNoIndexCounter = new AtomicLong();
     private final AtomicLong indexLookupMissesCounter = new AtomicLong();
 
-    private static List<IndexFactory> INDEX_FACTORIES = Arrays.asList(
+    private static final List<IndexFactory> INDEX_FACTORIES = Arrays.asList(
             new CoWHashIndex.Factory(),
             new CowMultiHashIndex.Factory()
     );
@@ -110,33 +110,35 @@ public class IndexManager {
 
     public void barrier( PolyXid xid ) {
         List<Index> idxs = openTransactions.get( xid );
-        if (idxs == null) {
+        if ( idxs == null ) {
             return;
         }
-        for (final Index idx : idxs) {
+        for ( final Index idx : idxs ) {
             idx.barrier( xid );
         }
     }
 
+
     public void commit( PolyXid xid ) {
         List<Index> idxs = openTransactions.remove( xid );
-        if (idxs == null) {
+        if ( idxs == null ) {
             return;
         }
-        for (final Index idx : idxs) {
+        for ( final Index idx : idxs ) {
             idx.barrier( xid );
         }
-        for (final Index idx : idxs) {
+        for ( final Index idx : idxs ) {
             idx.commit( xid );
         }
     }
 
+
     public void rollback( PolyXid xid ) {
         List<Index> idxs = openTransactions.remove( xid );
-        if (idxs == null) {
+        if ( idxs == null ) {
             return;
         }
-        for (final Index idx : idxs) {
+        for ( final Index idx : idxs ) {
             idx.rollback( xid );
         }
     }
@@ -233,26 +235,33 @@ public class IndexManager {
 
 
     public List<Index> getIndices( CatalogSchema schema, CatalogTable table ) {
-        return this.indexById.values().stream().filter( index -> index.schema.equals( schema ) && index.table.equals( table ) ).collect( Collectors.toList() );
+        return this.indexById.values().stream()
+                .filter( index -> index.schema.equals( schema ) && index.table.equals( table ) )
+                .collect( Collectors.toList() );
     }
+
 
     public void incrementHit() {
         indexLookupHitsCounter.incrementAndGet();
     }
 
+
     public void incrementNoIndex() {
         indexLookupNoIndexCounter.incrementAndGet();
     }
+
 
     public void incrementMiss() {
         indexLookupMissesCounter.incrementAndGet();
     }
 
-    public void resetCounters()  {
+
+    public void resetCounters() {
         indexLookupHitsCounter.set( 0 );
         indexLookupNoIndexCounter.set( 0 );
         indexLookupMissesCounter.set( 0 );
     }
+
 
     private void registerMonitoringPage() {
         InformationManager im = InformationManager.getInstance();
@@ -302,7 +311,7 @@ public class IndexManager {
 
             hitInfoGraph.updateGraph(
                     new String[]{ "Replaced", "Not Replaced", "No Index Available" },
-                    new GraphData<>( "heap-data", new Long[] { hits, misses, noIndex } )
+                    new GraphData<>( "heap-data", new Long[]{ hits, misses, noIndex } )
             );
 
             DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();

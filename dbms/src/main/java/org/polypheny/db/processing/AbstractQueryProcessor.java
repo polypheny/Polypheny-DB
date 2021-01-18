@@ -398,7 +398,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                             table = catalog.getTable( schema.id, tableName );
                         } catch ( UnknownTableException | GenericCatalogException | UnknownDatabaseException | UnknownCollationException | UnknownSchemaException | UnknownSchemaTypeException e ) {
                             // This really should not happen
-                            log.error( String.format( "Table not found: %s", ltm.getTable().getQualifiedName().get( 0 ) ), e );
+                            log.error( "Table not found: {}", ltm.getTable().getQualifiedName().get( 0 ), e );
                             throw new RuntimeException( e );
                         }
                         final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );

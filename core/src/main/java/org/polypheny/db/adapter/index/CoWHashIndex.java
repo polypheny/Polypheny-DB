@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.core.Values;
@@ -37,8 +38,8 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.util.Pair;
 
 
+@Slf4j
 class CoWHashIndex extends Index {
-
 
     private Map<List<Object>, List<Object>> index = new HashMap<>();
     private boolean initialized = false;
@@ -192,10 +193,11 @@ class CoWHashIndex extends Index {
         return (Values) builder.values( ImmutableList.copyOf( tuples ), rowType ).build();
     }
 
+
     @Override
     public Values getAsValues( PolyXid xid, RelBuilder builder, RelDataType rowType, List<Object> key ) {
-        System.err.println(index.values().stream().findFirst().get().stream().map( Object::getClass ).collect( Collectors.toList() ));
-        System.err.println(key.stream().map( Object::getClass ).collect( Collectors.toList() ));
+        log.error( "{}", index.values().stream().findFirst().get().stream().map( Object::getClass ).collect( Collectors.toList() ) );
+        log.error( "{}", key.stream().map( Object::getClass ).collect( Collectors.toList() ) );
         final Map<List<Object>, List<Object>> ci = cowIndex.get( xid );
         final RexBuilder rexBuilder = builder.getRexBuilder();
         List<Object> raw = index.get( key );
@@ -207,6 +209,7 @@ class CoWHashIndex extends Index {
         }
         return (Values) builder.values( ImmutableList.of( makeRexRow( rowType, rexBuilder, key ) ), rowType ).build();
     }
+
 
     @Override
     Map<List<Object>, List<Object>> getRaw() {
@@ -223,15 +226,18 @@ class CoWHashIndex extends Index {
         initialized = false;
     }
 
+
     @Override
     boolean isInitialized() {
         return initialized;
     }
 
+
     @Override
     void initialize() {
         initialized = true;
     }
+
 
     @Override
     public int size() {
@@ -353,19 +359,29 @@ class CoWHashIndex extends Index {
     static class Factory implements IndexFactory {
 
         @Override
-        public boolean canProvide( String method, Boolean unique, Boolean persitent ) {
+        public boolean canProvide( String method, Boolean unique, Boolean persistent ) {
             return
                     (method == null || method.equals( "hash" ))
                             && (unique == null || unique)
-                            && (persitent == null || !persitent);
+                            && (persistent == null || !persistent);
 
         }
 
 
         @Override
-        public Index create( long id, String name, String method, Boolean unique, Boolean persitent, CatalogSchema schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
+        public Index create(
+                long id,
+                String name,
+                String method,
+                Boolean unique,
+                Boolean persistent,
+                CatalogSchema schema,
+                CatalogTable table,
+                List<String> columns,
+                List<String> targetColumns ) {
             return new CoWHashIndex( id, name, schema, table, columns, targetColumns );
         }
+
     }
 
 }

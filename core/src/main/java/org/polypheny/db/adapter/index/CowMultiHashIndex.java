@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,15 +118,18 @@ public class CowMultiHashIndex extends Index {
         barrierIndex.clear();
     }
 
+
     @Override
     boolean isInitialized() {
         return initialized;
     }
 
+
     @Override
     void initialize() {
         initialized = true;
     }
+
 
     @Override
     public int size() {
@@ -201,11 +204,12 @@ public class CowMultiHashIndex extends Index {
         return (Values) builder.values( ImmutableList.copyOf( tuples ), rowType ).build();
     }
 
+
     @Override
     public Values getAsValues( PolyXid xid, RelBuilder builder, RelDataType rowType, List<Object> key ) {
         final Map<List<Object>, Set<List<Object>>> ci = cowIndex.get( xid );
         final RexBuilder rexBuilder = builder.getRexBuilder();
-        final List<ImmutableList<RexLiteral>> tuples = new ArrayList<>(  );
+        final List<ImmutableList<RexLiteral>> tuples = new ArrayList<>();
         Set<List<Object>> raw = index.get( key );
         if ( ci != null && ci.containsKey( key ) ) {
             raw = ci.get( key );
@@ -351,17 +355,28 @@ public class CowMultiHashIndex extends Index {
     static class Factory implements IndexFactory {
 
         @Override
-        public boolean canProvide( String method, Boolean unique, Boolean persitent ) {
+        public boolean canProvide( String method, Boolean unique, Boolean persistent ) {
             return
                     (method == null || method.equals( "hash" ))
                             && (unique == null || !unique)
-                            && (persitent == null || !persitent);
+                            && (persistent == null || !persistent);
         }
 
 
         @Override
-        public Index create( long id, String name, String method, Boolean unique, Boolean persitent, CatalogSchema schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
+        public Index create(
+                long id,
+                String name,
+                String method,
+                Boolean unique,
+                Boolean persistent,
+                CatalogSchema schema,
+                CatalogTable table,
+                List<String> columns,
+                List<String> targetColumns ) {
             return new CowMultiHashIndex( id, name, schema, table, columns, targetColumns );
         }
+
     }
+
 }
