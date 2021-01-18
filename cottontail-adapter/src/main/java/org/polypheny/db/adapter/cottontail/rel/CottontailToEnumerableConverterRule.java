@@ -27,11 +27,17 @@ import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
-public class CottontailToEnumberableConverterRule extends ConverterRule {
+public class CottontailToEnumerableConverterRule extends ConverterRule {
 
 
-    public CottontailToEnumberableConverterRule( CottontailConvention in, RelBuilderFactory relBuilderFactory ) {
-        super( RelNode.class, (Predicate<RelNode>) r -> true, in, EnumerableConvention.INSTANCE, relBuilderFactory, "CottontailToEnumerableConverterRule:" + in.getName() );
+    public CottontailToEnumerableConverterRule( CottontailConvention in, RelBuilderFactory relBuilderFactory ) {
+        super(
+                RelNode.class,
+                (Predicate<RelNode>) r -> true,
+                in,
+                EnumerableConvention.INSTANCE,
+                relBuilderFactory,
+                "CottontailToEnumerableConverterRule:" + in.getName() );
     }
 
 

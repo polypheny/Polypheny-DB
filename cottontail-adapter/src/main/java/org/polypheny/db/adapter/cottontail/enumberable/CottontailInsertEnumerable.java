@@ -52,15 +52,13 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
             String.class, String.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
 
-    private List<InsertMessage> inserts;
-    private DataContext dataContext;
-    private CottontailWrapper wrapper;
-    private boolean fromPrepared;
+    private final List<InsertMessage> inserts;
+    private final CottontailWrapper wrapper;
+    private final boolean fromPrepared;
 
 
     public CottontailInsertEnumerable( List<InsertMessage> inserts, DataContext dataContext, CottontailWrapper wrapper, boolean fromPrepared ) {
         this.inserts = inserts;
-        this.dataContext = dataContext;
         this.wrapper = wrapper;
         this.fromPrepared = fromPrepared;
     }

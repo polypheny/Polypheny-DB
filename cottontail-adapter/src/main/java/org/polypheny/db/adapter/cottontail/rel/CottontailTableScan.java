@@ -28,7 +28,7 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableScan;
 
 
-public class CottontailTableScan extends TableScan implements org.polypheny.db.adapter.cottontail.rel.CottontailRel {
+public class CottontailTableScan extends TableScan implements CottontailRel {
 
     protected final CottontailTable cottontailTable;
 

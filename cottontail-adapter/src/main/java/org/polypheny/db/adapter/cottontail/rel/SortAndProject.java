@@ -37,7 +37,6 @@ import org.polypheny.db.util.Pair;
 
 public abstract class SortAndProject extends SingleRel {
 
-
     // Sort part
     public final RelCollation collation;
     protected final ImmutableList<RexNode> fieldExps;
@@ -56,7 +55,17 @@ public abstract class SortAndProject extends SingleRel {
      * @param cluster Cluster this relational expression belongs to
      * @param child Input relational expression
      */
-    protected SortAndProject( RelOptCluster cluster, RelTraitSet traits, RelNode child, RelCollation collation, RexNode offset, RexNode fetch, List<? extends RexNode> projects, RelDataType rowType, RelDataType projectRowType, boolean arrayProject ) {
+    protected SortAndProject(
+            RelOptCluster cluster,
+            RelTraitSet traits,
+            RelNode child,
+            RelCollation collation,
+            RexNode offset,
+            RexNode fetch,
+            List<? extends RexNode> projects,
+            RelDataType rowType,
+            RelDataType projectRowType,
+            boolean arrayProject ) {
         super( cluster, traits, child );
 
         // Sort part

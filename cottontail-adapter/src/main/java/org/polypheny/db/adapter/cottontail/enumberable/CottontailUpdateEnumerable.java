@@ -45,14 +45,12 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             "update",
             String.class, String.class, Function1.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
-    private List<UpdateMessage> updates;
-    private DataContext dataContext;
-    private CottontailWrapper wrapper;
+    private final List<UpdateMessage> updates;
+    private final CottontailWrapper wrapper;
 
 
     public CottontailUpdateEnumerable( List<UpdateMessage> updates, DataContext dataContext, CottontailWrapper wrapper ) {
         this.updates = updates;
-        this.dataContext = dataContext;
         this.wrapper = wrapper;
     }
 

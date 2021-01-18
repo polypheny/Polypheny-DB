@@ -52,16 +52,14 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
-
     public static final Method CREATE_QUERY_METHOD = Types.lookupMethod(
             CottontailQueryEnumerable.class,
             "query",
             String.class, String.class, Map.class, Function1.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailWrapper.class );
-//            String.class, String.class, Map.class, Function1.class, Function1.class, Integer.class, Integer.class, DataContext.class, Function1.class, CottontailWrapper.class );
 
 
-    private Iterator<QueryResponseMessage> queryIterator;
-    private Function1<Map<String, Data>, T> rowParser;
+    private final Iterator<QueryResponseMessage> queryIterator;
+    private final Function1<Map<String, Data>, T> rowParser;
 
 
     public CottontailQueryEnumerable( Iterator<QueryResponseMessage> queryIterator, Function1<Map<String, Data>, T> rowParser ) {
@@ -227,7 +225,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public boolean moveNext() {
-
             // If we have a current result iterator and that iterator has a next result, use that result.
             // We do this first as this is (hopefully) the most common case.
             if ( this.currentResultIterator != null && this.currentResultIterator.hasNext() ) {
@@ -289,7 +286,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         @Override
         public void reset() {
             // TODO js(ct): do we need to do something here?
-//            throw new RuntimeException( "Cottontail does not yet support reset" );
         }
 
 

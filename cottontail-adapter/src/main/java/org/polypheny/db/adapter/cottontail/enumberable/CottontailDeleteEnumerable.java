@@ -44,14 +44,12 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             "delete",
             String.class, String.class, Function1.class, DataContext.class, CottontailWrapper.class );
 
-    private List<DeleteMessage> deletes;
-    private DataContext dataContext;
-    private CottontailWrapper wrapper;
+    private final List<DeleteMessage> deletes;
+    private final CottontailWrapper wrapper;
 
 
     public CottontailDeleteEnumerable( List<DeleteMessage> deletes, DataContext dataContext, CottontailWrapper wrapper ) {
         this.deletes = deletes;
-        this.dataContext = dataContext;
         this.wrapper = wrapper;
     }
 
