@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.enumerable;
 
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
-import org.polypheny.db.plan.volcano.RelSubset;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.convert.ConverterRule;
 import org.polypheny.db.rel.core.RelFactories;

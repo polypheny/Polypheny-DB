@@ -2825,6 +2825,7 @@ public class CatalogImpl extends Catalog {
         return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );
     }
 
+
     @Override
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
         return indexes.values().stream().filter( i -> i.keyId == key.id ).collect( Collectors.toList() );

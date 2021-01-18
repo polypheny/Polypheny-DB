@@ -19,9 +19,6 @@ package org.polypheny.db.adapter.index;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 import org.polypheny.db.rel.exceptions.ConstraintViolationException;

@@ -30,21 +30,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.routing.Router;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.rel.core.TableModify;
-import org.polypheny.db.rel.logical.LogicalConditionalExecute;
-import org.polypheny.db.rel.logical.LogicalModifyCollect;
-import org.polypheny.db.rel.logical.LogicalTableModify;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.schema.ModifiableTable;
-import org.polypheny.db.schema.PolySchemaBuilder;
-import org.polypheny.db.schema.Table;
-import org.polypheny.db.tools.RelBuilder;
-import org.polypheny.db.transaction.Transaction;
 
 
 public class SimpleRouter extends AbstractRouter {

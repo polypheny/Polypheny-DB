@@ -42,8 +42,6 @@ import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.time.Clock;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.AbstractList;
 import java.util.Calendar;
@@ -72,7 +70,6 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
-import org.polypheny.db.util.TimestampWithTimeZoneString;
 import org.polypheny.db.util.Unsafe;
 import org.polypheny.db.util.Util;
 

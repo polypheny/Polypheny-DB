@@ -126,8 +126,6 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.runtime.Hook.Closeable;
-import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.statistic.StatisticsManager;

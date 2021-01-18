@@ -24,13 +24,10 @@ import lombok.Setter;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
-import org.polypheny.db.plan.RelOptCost;
-import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelWriter;
-import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
 
 
