@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
-import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.rel.core.Values;
@@ -66,8 +65,8 @@ public class CowMultiHashIndex extends Index {
 
 
     @Override
-    public IndexType getType() {
-        return IndexType.HASH;
+    public String getMethod() {
+        return "hash";
     }
 
 
@@ -352,16 +351,16 @@ public class CowMultiHashIndex extends Index {
     static class Factory implements IndexFactory {
 
         @Override
-        public boolean canProvide( IndexType type, Boolean unique, Boolean persitent ) {
+        public boolean canProvide( String method, Boolean unique, Boolean persitent ) {
             return
-                    ( type == null || type == IndexType.HASH )
-                    && ( unique == null || !unique )
-                    && ( persitent == null || !persitent );
+                    (method == null || method.equals( "hash" ))
+                            && (unique == null || !unique)
+                            && (persitent == null || !persitent);
         }
 
 
         @Override
-        public Index create( long id, String name, IndexType type, Boolean unique, Boolean persitent, CatalogSchema schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
+        public Index create( long id, String name, String method, Boolean unique, Boolean persitent, CatalogSchema schema, CatalogTable table, List<String> columns, List<String> targetColumns ) {
             return new CowMultiHashIndex( id, name, schema, table, columns, targetColumns );
         }
     }

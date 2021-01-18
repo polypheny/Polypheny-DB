@@ -22,25 +22,21 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AvailableIndexMethod;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -129,78 +125,102 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
             IndexType type = IndexType.MANUAL;
 
-            Store storeInstance;
-            if ( storeName == null ) {
-                // Polystore Index
-                throw new RuntimeException( "Polypheny-DB does not yet support polystore indexes" );
-            } else {
-                storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
-                if ( storeInstance == null ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.unknownStoreName( storeName.getSimple() ) );
-                }
-            }
-
-            // Check whether the store supports schema changes
-            if ( storeInstance.isSchemaReadOnly() ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-            }
-
-            // Check if there if all required columns are present on this store
-            for ( long columnId : columnIds ) {
-                if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), columnId ) ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.missingColumnPlacement( Catalog.getInstance().getColumn( columnId ).name, storeInstance.getUniqueName() ) );
-                }
-            }
-
             // Check if there is already a index with this name for this table
             if ( Catalog.getInstance().checkIfExistsIndex( catalogTable.id, indexName.getSimple() ) ) {
                 throw SqlUtil.newContextException( indexName.getParserPosition(), RESOURCE.indexExists( indexName.getSimple() ) );
             }
 
-            String method;
-            String methodDisplayName;
-            if ( indexMethod != null ) {
-                AvailableIndexMethod aim = null;
-                for ( AvailableIndexMethod availableIndexMethod : storeInstance.getAvailableIndexMethods() ) {
-                    if ( availableIndexMethod.name.equals( indexMethod.getSimple() ) ) {
-                        aim = availableIndexMethod;
+            if ( storeName == null ) { // Polystore Index
+                String method;
+                String methodDisplayName;
+                if ( indexMethod != null ) {
+                    AvailableIndexMethod aim = null;
+                    for ( AvailableIndexMethod availableIndexMethod : IndexManager.getAvailableIndexMethods() ) {
+                        if ( availableIndexMethod.name.equals( indexMethod.getSimple() ) ) {
+                            aim = availableIndexMethod;
+                        }
                     }
+                    if ( aim == null ) {
+                        throw SqlUtil.newContextException(
+                                storeName.getParserPosition(),
+                                RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
+                    }
+                    method = aim.name;
+                    methodDisplayName = aim.displayName;
+                } else {
+                    method = IndexManager.getDefaultIndexMethod().name;
+                    methodDisplayName = IndexManager.getDefaultIndexMethod().displayName;
                 }
-                if ( aim == null ) {
+
+                long indexId = Catalog.getInstance().addIndex(
+                        catalogTable.id,
+                        columnIds,
+                        unique,
+                        method,
+                        methodDisplayName,
+                        0,
+                        type,
+                        indexName.getSimple() );
+
+                IndexManager.getInstance().addIndex( Catalog.getInstance().getIndex( indexId ), statement );
+            } else { // Store Index
+                Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
+                if ( storeInstance == null ) {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
-                            RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
+                            RESOURCE.unknownStoreName( storeName.getSimple() ) );
                 }
-                method = aim.name;
-                methodDisplayName = aim.displayName;
-            } else {
-                method = storeInstance.getDefaultIndexMethod().name;
-                methodDisplayName = storeInstance.getDefaultIndexMethod().displayName;
-            }
 
-            long indexId = Catalog.getInstance().addIndex(
-                    catalogTable.id,
-                    columnIds,
-                    unique,
-                    method,
-                    methodDisplayName,
-                    storeInstance.getStoreId(),
-                    type,
-                    indexName.getSimple() );
+                // Check whether the store supports schema changes
+                if ( storeInstance.isSchemaReadOnly() ) {
+                    throw SqlUtil.newContextException(
+                            storeName.getParserPosition(),
+                            RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
+                }
 
-            CatalogIndex catalogIndex = Catalog.getInstance().getIndex( indexId );
-            if ( catalogIndex.location == 0 ) {
-                IndexManager.getInstance().addIndex( Catalog.getInstance().getIndex( indexId ), statement );
-            } else {
-                storeInstance.addIndex( context,catalogIndex );
+                // Check if there if all required columns are present on this store
+                for ( long columnId : columnIds ) {
+                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), columnId ) ) {
+                        throw SqlUtil.newContextException(
+                                storeName.getParserPosition(),
+                                RESOURCE.missingColumnPlacement( Catalog.getInstance().getColumn( columnId ).name, storeInstance.getUniqueName() ) );
+                    }
+                }
+
+                String method;
+                String methodDisplayName;
+                if ( indexMethod != null ) {
+                    AvailableIndexMethod aim = null;
+                    for ( AvailableIndexMethod availableIndexMethod : storeInstance.getAvailableIndexMethods() ) {
+                        if ( availableIndexMethod.name.equals( indexMethod.getSimple() ) ) {
+                            aim = availableIndexMethod;
+                        }
+                    }
+                    if ( aim == null ) {
+                        throw SqlUtil.newContextException(
+                                storeName.getParserPosition(),
+                                RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
+                    }
+                    method = aim.name;
+                    methodDisplayName = aim.displayName;
+                } else {
+                    method = storeInstance.getDefaultIndexMethod().name;
+                    methodDisplayName = storeInstance.getDefaultIndexMethod().displayName;
+                }
+
+                long indexId = Catalog.getInstance().addIndex(
+                        catalogTable.id,
+                        columnIds,
+                        unique,
+                        method,
+                        methodDisplayName,
+                        storeInstance.getStoreId(),
+                        type,
+                        indexName.getSimple() );
+
+                storeInstance.addIndex( context, Catalog.getInstance().getIndex( indexId ) );
             }
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownSchemaException | UnknownTableException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );
         }
     }

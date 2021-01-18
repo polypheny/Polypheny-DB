@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.avatica.MetaImpl;
-import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
@@ -65,7 +64,7 @@ public abstract class Index {
     // The primary key columns the index resolves to
     protected List<String> targetColumns;
 
-    public abstract IndexType getType();
+    public abstract String getMethod();
 
     public abstract boolean isUnique();
 
@@ -227,20 +226,20 @@ public abstract class Index {
     interface IndexFactory {
 
         boolean canProvide(
-                final IndexType type,
+                final String method,
                 final Boolean unique,
-                final Boolean persitent);
+                final Boolean persitent );
 
         Index create(
                 final long id,
                 final String name,
-                final IndexType type,
+                final String method,
                 final Boolean unique,
                 final Boolean persitent,
                 final CatalogSchema schema,
                 final CatalogTable table,
                 final List<String> columns,
-                final List<String> targetColumns);
+                final List<String> targetColumns );
 
     }
 

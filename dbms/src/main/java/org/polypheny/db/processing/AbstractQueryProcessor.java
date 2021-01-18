@@ -67,7 +67,6 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -277,6 +276,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
                     true );
             routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Routing" );
+            }
         } else {
             routedRoot = logicalRoot;
         }
@@ -284,7 +286,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         //
         // Implementation Caching
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Routing" );
             statement.getDuration().start( "Implementation Caching" );
         }
         RelRoot parameterizedRoot = null;
@@ -676,7 +677,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             final CatalogConstraint pkc = new CatalogConstraint(
                     0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception", e );
             return logicalRoot;
         }
@@ -692,7 +693,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             final RexBuilder rexBuilder = root.getCluster().getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
-                    log.warn( "Unknown constraint type: " + constraint.type );
+                    log.warn( "Unknown constraint type: {}", constraint.type );
                     continue;
                 }
                 // Enforce uniqueness between the already existing values and the new values
@@ -834,7 +835,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             RexBuilder rexBuilder = builder.getRexBuilder();
             for ( final CatalogConstraint constraint : constraints ) {
                 if ( constraint.type != ConstraintType.UNIQUE ) {
-                    log.warn( "Unknown constraint type: " + constraint.type );
+                    log.warn( "Unknown constraint type: {}", constraint.type );
                     continue;
                 }
                 // Check if update affects this constraint

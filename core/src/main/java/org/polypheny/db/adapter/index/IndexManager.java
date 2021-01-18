@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.index;
 
 
+import com.google.common.collect.ImmutableList;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -26,9 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import org.polypheny.db.adapter.Store.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.IndexType;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
@@ -86,12 +87,26 @@ public class IndexManager {
         registerMonitoringPage();
     }
 
+
+    public static List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return ImmutableList.of(
+                new AvailableIndexMethod( "hash", "HASH" )
+        );
+    }
+
+
+    public static AvailableIndexMethod getDefaultIndexMethod() {
+        return getAvailableIndexMethods().get( 0 );
+    }
+
+
     void begin( PolyXid xid, Index index ) {
-        if (!openTransactions.containsKey( xid )) {
-            openTransactions.put( xid, new ArrayList<>(  ) );
+        if ( !openTransactions.containsKey( xid ) ) {
+            openTransactions.put( xid, new ArrayList<>() );
         }
         openTransactions.get( xid ).add( index );
     }
+
 
     public void barrier( PolyXid xid ) {
         List<Index> idxs = openTransactions.get( xid );
@@ -145,25 +160,33 @@ public class IndexManager {
 
 
     public void addIndex( final CatalogIndex index, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownUserException, UnknownDatabaseException, TransactionException {
-        // TODO(s3lph): type, persistent
-        addIndex( index.id, index.name, index.key, null, index.unique, null, statement );
+        // TODO(s3lph): persistent
+        addIndex( index.id, index.name, index.key, index.method, index.unique, null, statement );
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final IndexType type, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
-        final IndexFactory factory = INDEX_FACTORIES.stream().filter( it -> it.canProvide( type, unique, persistent ) ).findFirst().orElseThrow( IllegalArgumentException::new );
+    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
+        final IndexFactory factory = INDEX_FACTORIES.stream()
+                .filter( it -> it.canProvide( method, unique, persistent ) )
+                .findFirst()
+                .orElseThrow( IllegalArgumentException::new );
         final CatalogTable table = Catalog.getInstance().getTable( key.tableId );
         final CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
         final Index index = factory.create(
-                id, name,
-                type, unique, persistent,
+                id,
+                name,
+                method,
+                unique,
+                persistent,
                 Catalog.getInstance().getSchema( key.schemaId ),
                 table,
                 key.getColumnNames(),
                 pk.getColumnNames() );
         indexById.put( id, index );
         indexByName.put( name, index );
-        final Transaction tx = statement != null ? statement.getTransaction() : transactionManager.startTransaction( "pa", "APP", false, "Index Manager" );
+        final Transaction tx = statement != null
+                ? statement.getTransaction()
+                : transactionManager.startTransaction( "pa", "APP", false, "Index Manager" );
         try {
             index.rebuild( tx );
             if ( statement == null ) {
@@ -197,14 +220,14 @@ public class IndexManager {
     }
 
 
-    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns, IndexType type, Boolean unique, Boolean persistent ) {
+    public Index getIndex( CatalogSchema schema, CatalogTable table, List<String> columns, String method, Boolean unique, Boolean persistent ) {
         return this.indexById.values().stream().filter( index ->
                 index.schema.equals( schema )
                         && index.table.equals( table )
                         && index.columns.equals( columns )
-                        && ( type == null || ( index.getType() == type ) )
-                        && ( unique == null || ( index.isUnique() == unique ) )
-                        && ( persistent == null || ( index.isPersistent() == persistent ) )
+                        && (method == null || (index.getMethod().equals( method )))
+                        && (unique == null || (index.isUnique() == unique))
+                        && (persistent == null || (index.isPersistent() == persistent))
         ).findFirst().orElse( null );
     }
 

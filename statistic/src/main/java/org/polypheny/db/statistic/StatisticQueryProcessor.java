@@ -42,7 +42,6 @@ import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.runtime.Hook.Closeable;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
@@ -251,9 +250,10 @@ public class StatisticQueryProcessor {
         } catch ( Throwable t ) {
             if ( iterator != null ) {
                 try {
-                    if ( iterator instanceof Closeable ) {
-                        ( (Closeable) iterator ).close();
-                    }
+                    ((AutoCloseable) iterator).close();
+                    //if ( iterator instanceof Closeable ) {
+                    //    ( (Closeable) iterator ).close();
+                    //}
                 } catch ( Exception e ) {
                     log.error( "Exception while closing result iterator", e );
                 }
@@ -290,9 +290,10 @@ public class StatisticQueryProcessor {
             return new StatisticResult( names, types, d );
         } finally {
             try {
-                if ( iterator instanceof Closeable ) {
-                    ( (Closeable) iterator ).close();
-                }
+                ((AutoCloseable) iterator).close();
+                //if ( iterator instanceof Closeable ) {
+                //    ( (Closeable) iterator ).close();
+                //}
             } catch ( Exception e ) {
                 log.error( "Exception while closing result iterator2", e );
             }

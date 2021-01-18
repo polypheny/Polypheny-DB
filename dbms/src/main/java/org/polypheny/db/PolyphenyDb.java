@@ -23,8 +23,8 @@ import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -239,8 +239,12 @@ public class PolyphenyDb {
         statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
 
         // Initialize index manager
-        IndexManager.getInstance().initialize( transactionManager );
-        IndexManager.getInstance().restoreIndices();
+        try {
+            IndexManager.getInstance().initialize( transactionManager );
+            IndexManager.getInstance().restoreIndices();
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
+            throw new RuntimeException( "Something went wrong while initializing index manager.", e );
+        }
 
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();
