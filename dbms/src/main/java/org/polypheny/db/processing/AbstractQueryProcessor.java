@@ -1015,13 +1015,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             for ( final CatalogForeignKey foreignKey : exportedKeys ) {
                 final String constraintRule = root.isDelete() ? "ON DELETE " + foreignKey.deleteRule : "ON UPDATE " + foreignKey.updateRule;
                 switch ( root.isDelete() ? foreignKey.deleteRule : foreignKey.updateRule ) {
-                    case NONE:
-                        continue;
                     case RESTRICT:
                         break;
-                    case CASCADE:
-                    case SET_NULL:
-                    case SET_DEFAULT:
                     default:
                         throw new NotImplementedException( String.format( "The foreign key option %s is not yet implemented.", constraintRule ) );
                 }

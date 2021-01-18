@@ -1113,11 +1113,10 @@ public abstract class Catalog {
 
     public enum ForeignKeyOption {
         // IDs according to JDBC standard
-        CASCADE( 0 ),
-        RESTRICT( 1 ),
-        SET_NULL( 2 ),
-        SET_DEFAULT( 4 ),
-        NONE( 5 );
+        //CASCADE( 0 ),
+        RESTRICT( 1 );
+        //SET_NULL( 2 ),
+        //SET_DEFAULT( 4 );
 
         private final int id;
 
@@ -1143,17 +1142,17 @@ public abstract class Catalog {
 
 
         public static ForeignKeyOption parse( @NonNull String str ) throws UnknownForeignKeyOptionException {
-            if ( str.equalsIgnoreCase( "CASCADE" ) ) {
-                return ForeignKeyOption.CASCADE;
-            } else if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
+            if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
                 return ForeignKeyOption.RESTRICT;
+            } /*else if ( str.equalsIgnoreCase( "CASCADE" ) ) {
+                return ForeignKeyOption.CASCADE;
             } else if ( str.equalsIgnoreCase( "SET NULL" ) ) {
                 return ForeignKeyOption.SET_NULL;
             } else if ( str.equalsIgnoreCase( "SET DEFAULT" ) ) {
                 return ForeignKeyOption.SET_DEFAULT;
             } else if ( str.equalsIgnoreCase( "NONE" ) ) {
                 return ForeignKeyOption.NONE;
-            }
+            }*/
             throw new UnknownForeignKeyOptionException( str );
         }
     }
