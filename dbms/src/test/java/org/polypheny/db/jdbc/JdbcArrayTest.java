@@ -236,29 +236,29 @@ public class JdbcArrayTest {
                             statement.executeQuery( "SELECT id FROM arraytest WHERE intarray = array[1,2]" ),
                             ImmutableList.of( new Object[]{ 1 } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[9999999,8888888]" ),
-                        ImmutableList.of( new Object[]{ 1 } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[9999999,8888888]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM arraytest WHERE booleanarray = array[true,false]" ),
-                        ImmutableList.of( new Object[]{ 1 } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE booleanarray = array[true,false]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM arraytest WHERE decimalarray = array[22.2,11.1]" ),
-                        ImmutableList.of( new Object[]{ 1 } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE decimalarray = array[22.2,11.1]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM arraytest WHERE doublearray = array[cast(2.0 as double),cast(2.5 as double)]" ),
-                        ImmutableList.of( new Object[]{ 1 } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE doublearray = array[cast(2.0 as double),cast(2.5 as double)]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT id FROM arraytest WHERE smallintarray = array[56,44]" ),
-                        ImmutableList.of( new Object[]{ 1 } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE smallintarray = array[56,44]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
 
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT intarray FROM arraytest WHERE varchararray = array[ 'foo', 'bar' ]" ),
-                        ImmutableList.of( new Object[]{ new Object[]{ 1, 2 } } ) );
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT intarray FROM arraytest WHERE varchararray = array[ 'foo', 'bar' ]" ),
+                            ImmutableList.of( new Object[]{ new Object[]{ 1, 2 } } ) );
 
                     connection.commit();
                 } finally {

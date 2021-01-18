@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.cottontail.rel;
 
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +29,6 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Types;
-import org.apache.commons.lang3.reflect.TypeUtils;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.plan.RelOptCluster;
@@ -45,17 +43,9 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 
 
 public class CottontailValues extends Values implements org.polypheny.db.adapter.cottontail.rel.CottontailRel {
-
-
-    public static final Type DATA_MAP_TYPE = TypeUtils.parameterize( HashMap.class, String.class, Data.class );
-    public static final Type LIST_DATA_MAPS_TYPE = TypeUtils.parameterize( ArrayList.class, DATA_MAP_TYPE );
-
-//    private static final Method MAP_PUT_METHOD = Types.lookupMethod( Map.class, "put",  )
-
 
     public CottontailValues( RelOptCluster cluster, RelDataType rowType, ImmutableList<ImmutableList<RexLiteral>> tuples, RelTraitSet traits ) {
         super( cluster, rowType, tuples, traits );
@@ -70,10 +60,8 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
 
     @Override
     public void implement( CottontailImplementContext context ) {
-
         BlockBuilder builder = context.blockBuilder;
 
-//        final ParameterExpression valuesMapList_ = Expressions.parameter( Modifier.FINAL, LIST_DATA_MAPS_TYPE, builder.newName( "valuesMapList" ) );
         final ParameterExpression valuesMapList_ = Expressions.parameter( ArrayList.class, builder.newName( "valuesMapList" ) );
         final NewExpression valuesMapListCreator = Expressions.new_( ArrayList.class );
         builder.add( Expressions.declare( Modifier.FINAL, valuesMapList_, valuesMapListCreator ) );
@@ -89,16 +77,14 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
             builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
             for ( Pair<Pair<String, PolyType>, RexLiteral> pair : Pair.zip( physicalColumnNames, tuple ) ) {
-                if ( true ) {
-//                if ( !pair.getValue().isNull() ) {
-                    builder.add(
-                            Expressions.statement(
-                                    Expressions.call( valuesMap_,
-                                            BuiltInMethod.MAP_PUT.method,
-                                            Expressions.constant( pair.left.left ),
-                                            CottontailTypeUtil.rexLiteralToDataExpression( pair.right, pair.left.right ) ) )
-                    );
-                }
+//              if ( !pair.getValue().isNull() ) {
+                builder.add(
+                        Expressions.statement(
+                                Expressions.call( valuesMap_,
+                                        BuiltInMethod.MAP_PUT.method,
+                                        Expressions.constant( pair.left.left ),
+                                        CottontailTypeUtil.rexLiteralToDataExpression( pair.right, pair.left.right ) ) )
+                );
             }
 
             builder.add( Expressions.statement( Expressions.call( valuesMapList_, Types.lookupMethod( List.class, "add", Object.class ), valuesMap_ ) ) );
@@ -120,7 +106,6 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
             List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
             this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
         }
-
 
     }
 

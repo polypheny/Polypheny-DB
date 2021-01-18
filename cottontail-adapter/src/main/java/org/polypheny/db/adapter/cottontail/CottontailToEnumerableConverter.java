@@ -266,7 +266,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 //            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( CottontailGrpc.Data.class, result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
 //            final Expression getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( CottontailGrpc.Data.class, result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
         } catch ( Exception e ) {
-            e.printStackTrace();
             throw new RuntimeException( e );
         }
 

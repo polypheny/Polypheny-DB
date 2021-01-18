@@ -134,9 +134,7 @@ public class CottontailTableModify extends TableModify implements CottontailRel 
             case UPDATE:
                 context.queryType = QueryType.UPDATE;
                 context.preparedValuesMapBuilder = buildUpdateTupleBuilder( context );
-
                 break;
-//                throw new RuntimeException( "Update is not yet supported." );
             case DELETE:
                 context.queryType = QueryType.DELETE;
 //                context.cottontailTable = this.cottontailTable;

@@ -57,7 +57,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             "query",
             String.class, String.class, Map.class, Function1.class, Function1.class, Function1.class, Function1.class, DataContext.class, Function1.class, CottontailWrapper.class );
 
-
     private final Iterator<QueryResponseMessage> queryIterator;
     private final Function1<Map<String, Data>, T> rowParser;
 
@@ -128,8 +127,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
                 queryBuilder.setKnn( knnBuilder.apply( parameterValues ) );
             }*/
 
-            queryResponseIterator = wrapper.query(
-                    QueryMessage.newBuilder().setQuery( query ).build() );
+            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
 
         } else {
             BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();

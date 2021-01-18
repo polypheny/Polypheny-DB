@@ -38,7 +38,6 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
 
-
     public static final Method CREATE_DELETE_METHOD = Types.lookupMethod(
             CottontailDeleteEnumerable.class,
             "delete",

@@ -136,7 +136,7 @@ public class CottontailStore extends Store {
                     fileWriter.write( "} }" );
                     fileWriter.close();
                 } catch ( IOException e ) {
-                    e.printStackTrace();
+                    throw new RuntimeException( e );
                 }
             }
             this.embeddedServer = CottontailKt.embedded( configFile.getAbsolutePath() );

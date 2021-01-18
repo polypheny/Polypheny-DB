@@ -45,12 +45,10 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
             "fromValues",
             String.class, String.class, List.class, CottontailWrapper.class );
 
-
     public static final Method CREATE_INSERT_PREPARED = Types.lookupMethod(
             CottontailInsertEnumerable.class,
             "fromPreparedStatements",
             String.class, String.class, Function1.class, DataContext.class, CottontailWrapper.class );
-
 
     private final List<InsertMessage> inserts;
     private final CottontailWrapper wrapper;
@@ -156,7 +154,6 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public boolean moveNext() {
-
             if ( !this.executed ) {
 //            if ( this.insertMessageIterator.hasNext() ) {
                 this.wasSuccessful = this.wrapper.insert( this.inserts );
