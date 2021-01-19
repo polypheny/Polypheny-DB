@@ -125,6 +125,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
+        boolean isAnalyze = statement.getTransaction().isAnalyze();
 
         final StopWatch stopWatch = new StopWatch();
 
@@ -142,7 +143,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         // Locking
         if ( !isRouted ) {
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( isAnalyze ) {
                 statement.getDuration().start( "Locking" );
 
             }
@@ -169,7 +170,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         if ( isRouted ) {
             routedRoot = logicalRoot;
         } else {
-            if ( statement.getTransaction().isAnalyze() ) {
+            if ( isAnalyze ) {
                 statement.getDuration().stop( "Locking" );
                 statement.getDuration().start( "Routing" );
             }
@@ -189,7 +190,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         //
         // Implementation Caching
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Routing" );
             statement.getDuration().start( "Implementation Caching" );
         }
@@ -206,7 +207,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             PreparedResult preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.rel );
             if ( preparedResult != null ) {
                 PolyphenyDbSignature signature = createSignature( preparedResult, routedRoot, resultConvention, executionTimeMonitor );
-                if ( statement.getTransaction().isAnalyze() ) {
+                if ( isAnalyze ) {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
                 return signature;
@@ -215,7 +216,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         //
         // Plan Caching
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Implementation Caching" );
             statement.getDuration().start( "Plan Caching" );
         }
@@ -239,7 +240,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         //
         // Planning & Optimization
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Plan Caching" );
             statement.getDuration().start( "Planning & Optimization" );
         }
@@ -263,7 +264,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         //
         // Implementation
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Planning & Optimization" );
             statement.getDuration().start( "Implementation" );
         }
@@ -281,7 +282,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
         PolyphenyDbSignature signature = createSignature( preparedResult, optimalRoot, resultConvention, executionTimeMonitor );
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( isAnalyze ) {
             statement.getDuration().stop( "Implementation" );
         }
 
@@ -703,4 +704,5 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         QueryPlanCache.INSTANCE.reset();
         statement.getRouter().resetCaches();
     }
+
 }

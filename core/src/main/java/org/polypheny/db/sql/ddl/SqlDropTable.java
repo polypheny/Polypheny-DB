@@ -45,7 +45,6 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
@@ -119,6 +118,18 @@ public class SqlDropTable extends SqlDropObject {
             }
         }
 
+        // Delete all indexes
+        try {
+            for ( CatalogIndex index : catalog.getIndexes( table.id, false ) ) {
+                // Delete index on store
+                StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
+                // Delete index in catalog
+                catalog.deleteIndex( index.id );
+            }
+        } catch ( GenericCatalogException e ) {
+            throw new PolyphenyDbContextException( "Exception while dropping indexes on data store.", e );
+        }
+
         // Delete data from the stores and remove the column placement
         try {
             for ( int storeId : table.placementsByStore.keySet() ) {
@@ -152,7 +163,7 @@ public class SqlDropTable extends SqlDropObject {
             for ( CatalogIndex index : indexes ) {
                 catalog.deleteIndex( index.id );
             }
-        } catch ( GenericCatalogException | UnknownIndexException e ) {
+        } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
         }
 
@@ -192,5 +203,6 @@ public class SqlDropTable extends SqlDropObject {
         // Rest plan cache and implementation cache
         statement.getQueryProcessor().resetCaches();
     }
+
 }
 

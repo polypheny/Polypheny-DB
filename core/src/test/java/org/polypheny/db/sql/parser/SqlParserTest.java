@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -7291,6 +7291,7 @@ public class SqlParserTest {
         void checkExpFails( String sql, String expectedMsgPattern );
 
         void checkNode( String sql, Matcher<SqlNode> matcher );
+
     }
 
 
@@ -7389,6 +7390,7 @@ public class SqlParserTest {
 
             SqlValidatorTestCase.checkEx( thrown, expectedMsgPattern, sap );
         }
+
     }
 
 
@@ -7474,6 +7476,7 @@ public class SqlParserTest {
         public void checkExpFails( String sql, String expectedMsgPattern ) {
             // Do nothing. We're not interested in unparsing invalid SQL
         }
+
     }
 
 
@@ -7545,6 +7548,7 @@ public class SqlParserTest {
         public Sql sansCarets() {
             return new Sql( sql.replace( "^", "" ), expression );
         }
+
     }
 
 
@@ -7575,6 +7579,8 @@ public class SqlParserTest {
                     sql.replace( "$op", op ).replace( "$p", period ),
                     expected.replace( "$op", op ) );
         }
+
     }
+
 }
 

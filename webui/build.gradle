@@ -1,4 +1,3 @@
-
 group "org.polypheny"
 
 version = versionMajor + "." + versionMinor + versionQualifier
@@ -25,8 +24,8 @@ configurations.all {
 
 
 configurations {
-   uiFiles { transitive = false } 
-} 
+    uiFiles { transitive = false }
+}
 
 
 dependencies {
@@ -54,7 +53,6 @@ dependencies {
 }
 
 
-
 sourceSets {
     main {
         java {
@@ -62,7 +60,7 @@ sourceSets {
             outputDir = file(project.buildDir.absolutePath + "/classes")
         }
         resources {
-            srcDirs = ["src/main/resources","$buildDir/webapp"]
+            srcDirs = ["src/main/resources", "$buildDir/webapp"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
     }
@@ -79,27 +77,25 @@ sourceSets {
 }
 
 
-
 // unzip ui files
-task unzipUiFIles(type: Copy) {
-   from zipTree(configurations.uiFiles.singleFile)
-   into "$buildDir/webapp"
-   doLast {
-       file("$buildDir/webapp/index").mkdirs()
-       ant.move file: "$buildDir/webapp/webapp/index.html",
+task unzipUiFiles(type: Copy) {
+    from zipTree(configurations.uiFiles.singleFile)
+    into "$buildDir/webapp"
+    doLast {
+        file("$buildDir/webapp/index").mkdirs()
+        ant.move file: "$buildDir/webapp/webapp/index.html",
                 toDir: "$buildDir/webapp/index/"
     }
 }
 
-classes.dependsOn(unzipUiFIles)
-
+classes.dependsOn(unzipUiFiles)
 
 
 /**
  * JavaDoc
  */
 javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
+    if (JavaVersion.current().isJava9Compatible()) {
         options.addBooleanOption("html5", true)
     }
     // suppress most of the warnings
@@ -109,7 +105,6 @@ javadoc {
 }
 
 
-
 /**
  * JARs
  */
@@ -117,24 +112,14 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        attributes "Version": "$version"
+        //attributes "Version": "$version"
     }
     from("$buildDir/webapp") // include webapp files
 }
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
-    from sourceSets.main.allSource
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier "javadoc"
-    from javadoc.destinationDir
-}
-artifacts {
-    //archives jar // regular jar containing only the compiled source
-    archives sourcesJar // jar file containing the java doc files
-    archives javadocJar // jar file containing the source files
-}
-
 
 
 /**

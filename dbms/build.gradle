@@ -7,7 +7,7 @@ version = versionMajor + "." + versionMinor + versionQualifier
 buildscript {
     dependencies {
         // Shadowing; used to make a fat jar (https://github.com/johnrengelman/shadow)
-        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: "5.0.0"
+        classpath group: "com.github.jengelman.gradle.plugins", name: "shadow", version: shadow_plugin_version
     }
 }
 
@@ -65,10 +65,10 @@ dependencies {
 
     testImplementation group: 'com.konghq', name: 'unirest-java', version: unirest_version
 
-    //testCompile group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
-    //testCompile group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
-    //testCompile group: "net.hydromatic", name: "quidem", version: quidem_version
-    //testCompile group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
+    //testImplementation group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
+    //testImplementation group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
+    //testImplementation group: "net.hydromatic", name: "quidem", version: quidem_version
+    //testImplementation group: "net.hydromatic", name: "scott-data-hsqldb", version: scott_data_hsqldb_version
 
 }
 
@@ -118,7 +118,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        attributes "Version": "$version"
+        //attributes "Version": "$version"
         attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
 }

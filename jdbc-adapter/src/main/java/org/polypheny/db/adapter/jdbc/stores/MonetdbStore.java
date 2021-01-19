@@ -30,6 +30,7 @@ import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -188,6 +189,18 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        throw new RuntimeException( "MonetDB adapter does not support dropping indexes" );
+    }
+
+
+    @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
@@ -196,6 +209,27 @@ public class MonetdbStore extends AbstractJdbcStore {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        // According to the MonetDB documentation, MonetDB takes create index statements only as an advice and often freely
+        // neglects them. Indexes are created and removed automatically. We therefore decided to not support manually creating
+        // indexes on MonetDB.
+        return ImmutableList.of();
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        throw new RuntimeException( "MonetDB adapter does not support adding indexes" );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        return ImmutableList.of(); // TODO
     }
 
 

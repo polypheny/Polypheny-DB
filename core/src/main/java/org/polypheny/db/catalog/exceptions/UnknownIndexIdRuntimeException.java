@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,10 @@
 
 package org.polypheny.db.catalog.exceptions;
 
+public class UnknownIndexIdRuntimeException extends CatalogRuntimeException {
 
-public class UnknownIndexException extends CatalogException {
-
-
-    public UnknownIndexException( String indexName ) {
-        super( "There is no index with this name: '" + indexName + "'." );
-    }
-
-
-    public UnknownIndexException( long tableId, String indexName ) {
-        super( "Unknown index on table: " + tableId + " with name: " + indexName );
+    public UnknownIndexIdRuntimeException( long indexId ) {
+        super( "Unknown index id: " + indexId + ". There is no index with this id." );
     }
 
 }

@@ -26,8 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -48,9 +50,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database", false, true, false, "postgres" ),
-            new AdapterSettingString( "username", false, true, false, "postgres" ),
-            new AdapterSettingString( "password", false, true, false, "" ),
+            new AdapterSettingString( "database", false, true, false, "polypheny" ),
+            new AdapterSettingString( "username", false, true, false, "polypheny" ),
+            new AdapterSettingString( "password", false, true, false, "polypheny" ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
     );
 
@@ -86,7 +88,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( columnPlacement.physicalTableName ) );
         builder.append( " ALTER COLUMN " ).append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) );
         builder.append( " TYPE " ).append( getTypeString( catalogColumn.type ) );
-        if( catalogColumn.collectionsType != null ) {
+        if ( catalogColumn.collectionsType != null ) {
             builder.append( " " ).append( catalogColumn.collectionsType.toString() );
         }
         if ( catalogColumn.length != null ) {
@@ -101,7 +103,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .append( dialect.quoteIdentifier( columnPlacement.physicalColumnName ) )
                 .append( "::" )
                 .append( getTypeString( catalogColumn.type ) );
-        if( catalogColumn.collectionsType != null ) {
+        if ( catalogColumn.collectionsType != null ) {
             builder.append( " " ).append( catalogColumn.collectionsType.toString() );
         }
         executeUpdate( builder, context );
@@ -121,6 +123,68 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     @Override
+    public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogIndex.key.tableId );
+        StringBuilder builder = new StringBuilder();
+        builder.append( "CREATE " );
+        if ( catalogIndex.unique ) {
+            builder.append( "UNIQUE INDEX " );
+        } else {
+            builder.append( "INDEX " );
+        }
+        String physicalIndexName = getPhysicalIndexName( catalogIndex.key.tableId, catalogIndex.id );
+        builder.append( dialect.quoteIdentifier( physicalIndexName ) );
+        builder.append( " ON " )
+                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalSchemaName ) )
+                .append( "." )
+                .append( dialect.quoteIdentifier( ccps.get( 0 ).physicalTableName ) );
+
+        builder.append( "(" );
+        boolean first = true;
+        for ( long columnId : catalogIndex.key.columnIds ) {
+            if ( !first ) {
+                builder.append( ", " );
+            }
+            first = false;
+            builder.append( dialect.quoteIdentifier( getPhysicalColumnName( columnId ) ) ).append( " " );
+        }
+        builder.append( ")" );
+
+        builder.append( " USING " );
+        switch ( catalogIndex.method ) {
+            case "btree":
+            case "btree_unique":
+                builder.append( "btree" );
+                break;
+            case "hash":
+            case "hash_unique":
+                builder.append( "hash" );
+                break;
+            case "gin":
+            case "gin_unique":
+                builder.append( "gin" );
+                break;
+            case "brin":
+                builder.append( "gin" );
+                break;
+        }
+
+        executeUpdate( builder, context );
+
+        Catalog.getInstance().setIndexPhysicalName( catalogIndex.id, physicalIndexName );
+    }
+
+
+    @Override
+    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
+        StringBuilder builder = new StringBuilder();
+        builder.append( "DROP INDEX " );
+        builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
+        executeUpdate( builder, context );
+    }
+
+
+    @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
@@ -129,6 +193,29 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
+    }
+
+
+    @Override
+    public List<AvailableIndexMethod> getAvailableIndexMethods() {
+        return ImmutableList.of(
+                new AvailableIndexMethod( "btree", "B-TREE" ),
+                new AvailableIndexMethod( "hash", "HASH" ),
+                new AvailableIndexMethod( "gin", "GIN (Generalized Inverted Index)" ),
+                new AvailableIndexMethod( "brin", "BRIN (Block Range index)" )
+        );
+    }
+
+
+    @Override
+    public AvailableIndexMethod getDefaultIndexMethod() {
+        return getAvailableIndexMethods().get( 0 );
+    }
+
+
+    @Override
+    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
+        return ImmutableList.of();
     }
 
 

@@ -84,7 +84,8 @@ SqlAlterTable SqlAlterTable(Span s) :
     final SqlIdentifier constraintName;
     final SqlIdentifier store;
     final SqlIdentifier indexName;
-    final SqlIdentifier indexType;
+    final SqlIdentifier indexMethod;
+    final SqlIdentifier storeName;
     final String onUpdate;
     final String onDelete;
     final boolean unique;
@@ -324,12 +325,17 @@ SqlAlterTable SqlAlterTable(Span s) :
             }
         )
         (
-            <USING> indexType = SimpleIdentifier()
+            <USING> indexMethod = SimpleIdentifier()
         |
-            { indexType = null; }
+            { indexMethod = null; }
+        )
+        (
+            <ON> <STORE> storeName = SimpleIdentifier()
+        |
+            { storeName = null; }
         )
         {
-            return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexType, indexName);
+            return new SqlAlterTableAddIndex(s.end(this), table, columnList, unique, indexMethod, indexName, storeName);
         }
     |
         <DROP> <INDEX>

@@ -35,7 +35,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
@@ -95,7 +94,7 @@ public class DataMigratorImpl implements DataMigrator {
                     selectColumnList.add( catalogColumn );
                 }
             }
-        } catch ( UnknownTableException | GenericCatalogException | UnknownKeyException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
 
@@ -223,7 +222,7 @@ public class DataMigratorImpl implements DataMigrator {
         try {
             catalogTable = Catalog.getInstance().getTable( to.get( 0 ).tableId );
             primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-        } catch ( GenericCatalogException | UnknownKeyException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
         try {
