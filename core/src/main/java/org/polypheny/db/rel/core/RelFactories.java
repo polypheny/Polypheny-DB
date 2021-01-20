@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,9 @@ import org.polypheny.db.plan.ViewExpanders;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelDistribution;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.ConditionalExecute.Condition;
 import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
 import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -103,6 +105,8 @@ public class RelFactories {
 
     public static final TableScanFactory DEFAULT_TABLE_SCAN_FACTORY = new TableScanFactoryImpl();
 
+    public static final ConditionalExecuteFactory DEFAULT_CONDITIONAL_EXECUTE_FACTORY = new ConditionalExecuteFactoryImpl();
+
     /**
      * A {@link RelBuilderFactory} that creates a {@link RelBuilder} that will create logical relational expressions for everything.
      */
@@ -120,7 +124,8 @@ public class RelFactories {
                             DEFAULT_MATCH_FACTORY,
                             DEFAULT_SET_OP_FACTORY,
                             DEFAULT_VALUES_FACTORY,
-                            DEFAULT_TABLE_SCAN_FACTORY ) );
+                            DEFAULT_TABLE_SCAN_FACTORY,
+                            DEFAULT_CONDITIONAL_EXECUTE_FACTORY) );
 
 
     private RelFactories() {
@@ -511,6 +516,30 @@ public class RelFactories {
         public RelNode createMatch( RelNode input, RexNode pattern, RelDataType rowType, boolean strictStart, boolean strictEnd, Map<String, RexNode> patternDefinitions, Map<String, RexNode> measures,
                 RexNode after, Map<String, ? extends SortedSet<String>> subsets, boolean allRows, List<RexNode> partitionKeys, RelCollation orderKeys, RexNode interval ) {
             return LogicalMatch.create( input, rowType, pattern, strictStart, strictEnd, patternDefinitions, measures, after, subsets, allRows, partitionKeys, orderKeys, interval );
+        }
+    }
+
+
+    /**
+     * Can create a {@link ConditionalExecute} of the appropriate type for a rule's calling convention.
+     */
+    public interface ConditionalExecuteFactory {
+
+        /**
+         * Creates a {@link ConditionalExecute}.
+         */
+        RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage );
+    }
+
+
+    /**
+     * Implementation of {@link MatchFactory} that returns a {@link LogicalMatch}.
+     */
+    private static class ConditionalExecuteFactoryImpl implements ConditionalExecuteFactory {
+
+        @Override
+        public RelNode createConditionalExecute( RelNode left, RelNode right, Condition condition, Class<? extends Exception> exceptionClass, String exceptionMessage ) {
+            return LogicalConditionalExecute.create( left, right, condition, exceptionClass, exceptionMessage );
         }
     }
 }

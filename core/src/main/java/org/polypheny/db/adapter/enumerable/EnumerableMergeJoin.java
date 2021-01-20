@@ -122,10 +122,10 @@ public class EnumerableMergeJoin extends EquiJoin implements EnumerableRel {
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         BlockBuilder builder = new BlockBuilder();
         final Result leftResult = implementor.visitChild( this, 0, (EnumerableRel) left, pref );
-        final Expression leftExpression = builder.append( "left", leftResult.block );
+        final Expression leftExpression = builder.append( "left" + System.nanoTime(), leftResult.block );
         final ParameterExpression left_ = Expressions.parameter( leftResult.physType.getJavaRowType(), "left" );
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableRel) right, pref );
-        final Expression rightExpression = builder.append( "right", rightResult.block );
+        final Expression rightExpression = builder.append( "right" + System.nanoTime(), rightResult.block );
         final ParameterExpression right_ = Expressions.parameter( rightResult.physType.getJavaRowType(), "right" );
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final PhysType physType = PhysTypeImpl.of( typeFactory, getRowType(), pref.preferArray() );

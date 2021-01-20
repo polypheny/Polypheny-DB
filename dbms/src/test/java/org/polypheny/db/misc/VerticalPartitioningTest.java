@@ -57,7 +57,7 @@ public class VerticalPartitioningTest {
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
 
-                    // Change placement on intial store
+                    // Change placement on initial store
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
                     // Insert data
@@ -106,7 +106,7 @@ public class VerticalPartitioningTest {
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
 
-                    // Change placement on intial store
+                    // Change placement on initial store
                     statement.executeUpdate( "ALTER TABLE \"partitioningtest\" MODIFY PLACEMENT (tinteger) ON STORE \"hsqldb\"" );
 
                     // Insert Data
