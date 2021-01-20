@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,13 +197,14 @@ public class RexLiteral extends RexNode {
             System.err.println( value.getClass().getCanonicalName() );
             System.err.println( type );
             System.err.println( typeName );
-            throw new IllegalArgumentException(  );
+            throw new IllegalArgumentException();
         }
 //        Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
         Preconditions.checkArgument( (value != null) || type.isNullable() );
         Preconditions.checkArgument( typeName != PolyType.ANY );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
     }
+
 
     public RexLiteral( Comparable value, RelDataType type, PolyType typeName, boolean raw ) {
         this.value = value;
@@ -316,18 +317,19 @@ public class RexLiteral extends RexNode {
                 } else if ( value instanceof LocalDateTime ) {
                     final LocalDateTime dt = (LocalDateTime) value;
                     final TimestampString ts = new TimestampString(
-                        dt.getYear(),
-                        dt.getMonthValue(),
-                        dt.getDayOfMonth(),
-                        dt.getHour(),
-                        dt.getMinute(),
-                        dt.getSecond()
+                            dt.getYear(),
+                            dt.getMonthValue(),
+                            dt.getDayOfMonth(),
+                            dt.getHour(),
+                            dt.getMinute(),
+                            dt.getSecond()
                     );
                     return new Pair<>( ts, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
                 }
         }
         return new Pair<>( value, typeName.getPolyType() );
     }
+
 
     /**
      * @return whether value is appropriate for its type (we have rules about these things)
@@ -1244,5 +1246,6 @@ public class RexLiteral extends RexNode {
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitLiteral( this, arg );
     }
+
 }
 

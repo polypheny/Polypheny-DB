@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,15 @@ public class DeferredIndexUpdate {
     private final Iterable<List<Object>> deleteTuples;
 
 
-    private DeferredIndexUpdate( final Operation operation, final Iterable<Pair<List<Object>, List<Object>>> insertTuples, final Iterable<List<Object>> deleteTuples ) {
+    private DeferredIndexUpdate(
+            final Operation operation,
+            final Iterable<Pair<List<Object>, List<Object>>> insertTuples,
+            final Iterable<List<Object>> deleteTuples ) {
         this.operation = operation;
         this.insertTuples = insertTuples;
         this.deleteTuples = deleteTuples;
     }
+
 
     public void execute( final Index index ) {
         switch ( operation ) {
@@ -46,7 +50,7 @@ public class DeferredIndexUpdate {
                 index.insertAll( insertTuples );
                 break;
             case DELETE:
-                if (insertTuples != null) {
+                if ( insertTuples != null ) {
                     index.deleteAllPrimary( insertTuples );
                 } else {
                     index.deleteAll( deleteTuples );
@@ -61,13 +65,13 @@ public class DeferredIndexUpdate {
     }
 
 
-    public static DeferredIndexUpdate createDelete(  final Iterable<List<Object>> tuples ) {
+    public static DeferredIndexUpdate createDelete( final Iterable<List<Object>> tuples ) {
         return new DeferredIndexUpdate( Operation.DELETE, null, tuples );
     }
 
-    public static DeferredIndexUpdate createDeletePrimary(  final Iterable<Pair<List<Object>, List<Object>>> tuples ) {
+
+    public static DeferredIndexUpdate createDeletePrimary( final Iterable<Pair<List<Object>, List<Object>>> tuples ) {
         return new DeferredIndexUpdate( Operation.DELETE, tuples, null );
     }
-
 
 }

@@ -356,10 +356,9 @@ public class CowMultiHashIndex extends Index {
 
         @Override
         public boolean canProvide( String method, Boolean unique, Boolean persistent ) {
-            return
-                    (method == null || method.equals( "hash" ))
-                            && (unique == null || !unique)
-                            && (persistent == null || !persistent);
+            return (method == null || method.equals( "hash" ))
+                    && (unique == null || !unique)
+                    && (persistent == null || !persistent);
         }
 
 
