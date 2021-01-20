@@ -254,13 +254,13 @@ public enum RuntimeConfig {
 
     UNIQUE_CONSTRAINT_ENFORCEMENT( "runtime/uniqueConstraintEnforcement",
             "Enable enforcement of uniqueness constraints.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
     FOREIGN_KEY_ENFORCEMENT( "runtime/foreignKeyEnforcement",
             "Enable enforcement of foreign key constraints.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "constraintEnforcementGroup" ),
 
@@ -272,7 +272,7 @@ public enum RuntimeConfig {
 
     POLYSTORE_INDEXES_SIMPLIFY( "runtime/polystoreIndexesSimplify",
             "Enable query simplification using polystore level indexes.",
-            true,
+            false,
             ConfigType.BOOLEAN,
             "polystoreIndexGroup" );
 
