@@ -127,16 +127,16 @@ public class HttpRestServer extends QueryInterface {
                     restServer.halt( 401, e.getMessage() );
                 }
             } );
-            restServer.get( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName" ) ), gson::toJson );
-            restServer.post( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName" ) ), gson::toJson );
-            restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName" ) ), gson::toJson );
-            restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName" ) ), gson::toJson );
+            restServer.get( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName" ) ) );
+            restServer.post( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName" ) ) );
+            restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName" ) ) );
+            restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName" ) ) );
             restServer.post( "/multipart", "multipart/form-data", ( q, a ) -> this.processMultipart( rest, RequestType.POST, q, a ), gson::toJson );
         } );
     }
 
 
-    private Map<String, Object> processResourceRequest( Rest rest, RequestType type, Request request, Response response, String resourceName ) {
+    String processResourceRequest( Rest rest, RequestType type, Request request, Response response, String resourceName ) {
         try {
             switch ( type ) {
                 case DELETE:
@@ -157,6 +157,7 @@ public class HttpRestServer extends QueryInterface {
                     return rest.processPostResource( resourcePostRequest, request, response, null );
             }
         } catch ( ParserException e ) {
+            log.error( "ParserException", e );
             response.status( 400 );
             Map<String, Object> bodyReturn = new HashMap<>();
             bodyReturn.put( "system", "parser" );
@@ -165,8 +166,9 @@ public class HttpRestServer extends QueryInterface {
             bodyReturn.put( "error", e.getErrorCode().name );
             bodyReturn.put( "error_description", e.getErrorCode().description );
             bodyReturn.put( "violating_input", e.getViolatingInput() );
-            return bodyReturn;
+            return gson.toJson( bodyReturn );
         } catch ( RestException e ) {
+            log.error( "RestException", e );
             response.status( 400 );
             Map<String, Object> bodyReturn = new HashMap<>();
             bodyReturn.put( "system", "rest" );
@@ -174,7 +176,7 @@ public class HttpRestServer extends QueryInterface {
             bodyReturn.put( "error_code", e.getErrorCode().code );
             bodyReturn.put( "error", e.getErrorCode().name );
             bodyReturn.put( "error_description", e.getErrorCode().description );
-            return bodyReturn;
+            return gson.toJson( bodyReturn );
         }
 
         log.error( "processResourceRequest should never reach this point in the code!" );
@@ -204,7 +206,7 @@ public class HttpRestServer extends QueryInterface {
     }
 
 
-    private Map<String, Object> processMultipart( Rest rest, RequestType type, Request req, Response res ) {
+    String processMultipart( Rest rest, RequestType type, Request req, Response res ) {
         Gson gson = new Gson();
         initMultipart( req );
 
@@ -246,6 +248,7 @@ public class HttpRestServer extends QueryInterface {
                     resourcePatchRequest.useDynamicParams = true;
                     return rest.processPostResource( resourcePatchRequest, null, null, inputStreams );
                 } catch ( ParserException e ) {
+                    log.error( "ParserException", e );
                     res.status( 400 );
                     Map<String, Object> bodyReturn = new HashMap<>();
                     bodyReturn.put( "system", "parser" );
@@ -254,8 +257,9 @@ public class HttpRestServer extends QueryInterface {
                     bodyReturn.put( "error", e.getErrorCode().name );
                     bodyReturn.put( "error_description", e.getErrorCode().description );
                     bodyReturn.put( "violating_input", e.getViolatingInput() );
-                    return bodyReturn;
+                    return gson.toJson( bodyReturn );
                 } catch ( RestException e ) {
+                    log.error( "RestException", e );
                     res.status( 400 );
                     Map<String, Object> bodyReturn = new HashMap<>();
                     bodyReturn.put( "system", "rest" );
@@ -263,7 +267,7 @@ public class HttpRestServer extends QueryInterface {
                     bodyReturn.put( "error_code", e.getErrorCode().code );
                     bodyReturn.put( "error", e.getErrorCode().name );
                     bodyReturn.put( "error_description", e.getErrorCode().description );
-                    return bodyReturn;
+                    return gson.toJson( bodyReturn );
                 }
         }
         log.error( "processMultipart should never reach this point in the code!" );

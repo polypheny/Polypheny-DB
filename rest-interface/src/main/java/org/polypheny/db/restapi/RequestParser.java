@@ -22,7 +22,6 @@ import com.google.gson.Gson;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -671,7 +670,7 @@ public class RequestParser {
                         parsedLiteral = dateString;
                         break;
                     case TIMESTAMP:
-                        Instant instant = LocalDateTime.parse( literal, DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss" ) ).toInstant( ZoneOffset.UTC );
+                        Instant instant = LocalDateTime.parse( literal ).toInstant( ZoneOffset.UTC );
                         long millisecondsSinceEpoch = instant.getEpochSecond() * 1000L + instant.getNano() / 1000000L;
                         TimestampString timestampString = TimestampString.fromMillisSinceEpoch( millisecondsSinceEpoch );
                         parsedLiteral = timestampString;
