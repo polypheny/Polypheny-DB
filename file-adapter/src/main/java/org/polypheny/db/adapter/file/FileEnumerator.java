@@ -95,13 +95,13 @@ public class FileEnumerator<E> implements Enumerator<E> {
         this.projectionMapping = projectionMapping;
 
         if ( updates != null ) {
-            //in case of an UPDATE, the projectionMapping represent the indexes of the columns that will be updated
+            // In case of an UPDATE, the projectionMapping represent the indexes of the columns that will be updated
             for ( Value update : updates ) {
                 this.updates.put( update.getColumnReference(), update );
             }
         }
 
-        //pkMapping
+        // pkMapping
         Integer[] pkMapping = new Integer[pkIds.size()];
         int ii = 0;
         List<Long> colIdsAsList = Arrays.asList( columnIds.clone() );
@@ -128,7 +128,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
         } else {
             this.columnTypes = columnTypes;
         }
-        //We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
+        // We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
         @SuppressWarnings("UnstableApiUsage")
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
         FileFilter fileFilter = file -> !file.isHidden() && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
@@ -137,10 +137,10 @@ public class FileEnumerator<E> implements Enumerator<E> {
             columnFolders.add( columnFolder );
         }
         if ( columnsToIterate.length == 1 ) {
-            //if we go over a single column, we can iterate it, even if null values are not present as files
+            // If we go over a single column, we can iterate it, even if null values are not present as files
             this.fileList = FileStore.getColumnFolder( rootPath, columnsToIterate[0] ).listFiles( fileFilter );
         } else {
-            //iterate over a PK-column, because they are always NOT NULL
+            // Iterate over a PK-column, because they are always NOT NULL
             this.fileList = FileStore.getColumnFolder( rootPath, pkIds.get( 0 ) ).listFiles( fileFilter );
         }
         numOfCols = columnFolders.size();
@@ -242,7 +242,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     if ( curr.length == 1 ) {
                         current = (E) curr[0];
                     } else {
-                        //if all values are null: continue
+                        // If all values are null: continue
                         //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
                         if ( curr == null ) {
                             fileListPosition++;
@@ -283,7 +283,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     for ( File colFolder : columnFolders ) {
                         File source = new File( colFolder, oldFileName );
 
-                        //write new file
+                        // write new file
                         if ( updateObj[j] != null ) {
                             File insertFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
                             /*if( newFile.exists() ) {

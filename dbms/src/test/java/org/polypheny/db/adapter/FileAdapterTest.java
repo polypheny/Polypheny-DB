@@ -194,24 +194,27 @@ public class FileAdapterTest {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( "CREATE TABLE public.bin (id INTEGER NOT NULL, blb FILE, PRIMARY KEY (id)) ON STORE \"mm\"" );
-                PreparedStatement ps = connection.prepareStatement( "INSERT INTO public.bin VALUES (?,x'6869')" );
-                ps.setInt( 1, 1 );
-                ps.executeUpdate();
-                ps.close();
-                ps = connection.prepareStatement( "INSERT INTO public.bin VALUES (?,?)" );
-                ps.setInt( 1, 2 );
-                ps.setBytes( 2, "hello".getBytes() );
-                ps.executeUpdate();
-                ps.close();
-                ResultSet rs = statement.executeQuery( "SELECT id, blb FROM public.bin ORDER BY id ASC" );
-                TestHelper.checkResultSet( rs, ImmutableList.of(
-                        new Object[]{ 1, "hi".getBytes() },
-                        new Object[]{ 2, "hello".getBytes() }
-                ) );
-                rs.close();
 
-                statement.executeUpdate( "DROP TABLE public.bin" );
-                connection.commit();
+                try {
+                    PreparedStatement ps = connection.prepareStatement( "INSERT INTO public.bin VALUES (?,x'6869')" );
+                    ps.setInt( 1, 1 );
+                    ps.executeUpdate();
+                    ps.close();
+                    ps = connection.prepareStatement( "INSERT INTO public.bin VALUES (?,?)" );
+                    ps.setInt( 1, 2 );
+                    ps.setBytes( 2, "hello".getBytes() );
+                    ps.executeUpdate();
+                    ps.close();
+                    ResultSet rs = statement.executeQuery( "SELECT id, blb FROM public.bin ORDER BY id ASC" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of(
+                            new Object[]{ 1, "hi".getBytes() },
+                            new Object[]{ 2, "hello".getBytes() }
+                    ) );
+                    rs.close();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE public.bin" );
+                    connection.commit();
+                }
             }
         }
     }
