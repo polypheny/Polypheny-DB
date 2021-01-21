@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1113,10 +1113,10 @@ public abstract class Catalog {
 
     public enum ForeignKeyOption {
         // IDs according to JDBC standard
-        CASCADE( 0 ),
-        RESTRICT( 1 ),
-        SET_NULL( 2 ),
-        SET_DEFAULT( 4 );
+        //CASCADE( 0 ),
+        RESTRICT( 1 );
+        //SET_NULL( 2 ),
+        //SET_DEFAULT( 4 );
 
         private final int id;
 
@@ -1142,15 +1142,15 @@ public abstract class Catalog {
 
 
         public static ForeignKeyOption parse( @NonNull String str ) throws UnknownForeignKeyOptionException {
-            if ( str.equalsIgnoreCase( "CASCADE" ) ) {
-                return ForeignKeyOption.CASCADE;
-            } else if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
+            if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
                 return ForeignKeyOption.RESTRICT;
+            } /*else if ( str.equalsIgnoreCase( "CASCADE" ) ) {
+                return ForeignKeyOption.CASCADE;
             } else if ( str.equalsIgnoreCase( "SET NULL" ) ) {
                 return ForeignKeyOption.SET_NULL;
             } else if ( str.equalsIgnoreCase( "SET DEFAULT" ) ) {
                 return ForeignKeyOption.SET_DEFAULT;
-            }
+            }*/
             throw new UnknownForeignKeyOptionException( str );
         }
     }

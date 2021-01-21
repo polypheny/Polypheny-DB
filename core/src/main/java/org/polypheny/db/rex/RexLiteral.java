@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.AbstractList;
 import java.util.Calendar;
 import java.util.List;
@@ -66,6 +67,7 @@ import org.polypheny.db.util.ConversionUtil;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Litmus;
 import org.polypheny.db.util.NlsString;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SaffronProperties;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
@@ -187,13 +189,28 @@ public class RexLiteral extends RexNode {
     /**
      * Creates a <code>RexLiteral</code>.
      */
-    RexLiteral( Comparable value, RelDataType type, PolyType typeName ) {
+    public RexLiteral( Comparable value, RelDataType type, PolyType typeName ) {
         this.value = value;
         this.type = Objects.requireNonNull( type );
         this.typeName = Objects.requireNonNull( typeName );
-        Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
-        Preconditions.checkArgument( (value == null) == type.isNullable() );
+        if ( !valueMatchesType( value, typeName, true ) ) {
+            System.err.println( value );
+            System.err.println( value.getClass().getCanonicalName() );
+            System.err.println( type );
+            System.err.println( typeName );
+            throw new IllegalArgumentException();
+        }
+//        Preconditions.checkArgument( valueMatchesType( value, typeName, true ) );
+        Preconditions.checkArgument( (value != null) || type.isNullable() );
         Preconditions.checkArgument( typeName != PolyType.ANY );
+        this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
+    }
+
+
+    public RexLiteral( Comparable value, RelDataType type, PolyType typeName, boolean raw ) {
+        this.value = value;
+        this.type = Objects.requireNonNull( type );
+        this.typeName = Objects.requireNonNull( typeName );
         this.digest = computeDigest( RexDigestIncludeType.OPTIONAL );
     }
 
@@ -247,6 +264,71 @@ public class RexLiteral extends RexNode {
      */
     RexDigestIncludeType digestIncludesType() {
         return shouldIncludeType( value, type );
+    }
+
+
+    public static Pair<Comparable, PolyType> convertType( Comparable value, RelDataType typeName ) {
+        switch ( typeName.getPolyType() ) {
+            case INTEGER:
+            case BIGINT:
+            case TINYINT:
+            case SMALLINT:
+            case DECIMAL:
+            case DOUBLE:
+            case FLOAT:
+            case REAL:
+                if ( value instanceof Short ) {
+                    return new Pair<>( new BigDecimal( (short) value ), PolyType.DECIMAL );
+                } else if ( value instanceof Byte ) {
+                    return new Pair<>( new BigDecimal( (byte) value ), PolyType.DECIMAL );
+                } else if ( value instanceof Character ) {
+                    return new Pair<>( new BigDecimal( (char) value ), PolyType.DECIMAL );
+                } else if ( value instanceof Integer ) {
+                    return new Pair<>( new BigDecimal( (int) value ), PolyType.DECIMAL );
+                } else if ( value instanceof Long ) {
+                    return new Pair<>( new BigDecimal( (long) value ), PolyType.DECIMAL );
+                } else if ( value instanceof Float ) {
+                    return new Pair<>( new BigDecimal( (float) value ), PolyType.DECIMAL );
+                } else if ( value instanceof Double ) {
+                    return new Pair<>( new BigDecimal( (double) value ), PolyType.DECIMAL );
+                }
+            case VARCHAR:
+            case CHAR:
+                if ( value instanceof String ) {
+                    return new Pair<>( new NlsString( (String) value, typeName.getCharset().name(), typeName.getCollation() ), PolyType.CHAR );
+                }
+            case TIMESTAMP:
+                if ( value instanceof String ) {
+                    return new Pair<>( new TimestampString( (String) value ), PolyType.TIMESTAMP );
+                } else if ( value instanceof LocalDateTime ) {
+                    final LocalDateTime dt = (LocalDateTime) value;
+                    final TimestampString ts = new TimestampString(
+                            dt.getYear(),
+                            dt.getMonthValue(),
+                            dt.getDayOfMonth(),
+                            dt.getHour(),
+                            dt.getMinute(),
+                            dt.getSecond()
+                    );
+                    return new Pair<>( ts, PolyType.TIMESTAMP );
+                }
+            case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+                if ( value instanceof String ) {
+                    return new Pair<>( new TimestampString( (String) value ), PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+                } else if ( value instanceof LocalDateTime ) {
+                    final LocalDateTime dt = (LocalDateTime) value;
+                    final TimestampString ts = new TimestampString(
+                            dt.getYear(),
+                            dt.getMonthValue(),
+                            dt.getDayOfMonth(),
+                            dt.getHour(),
+                            dt.getMinute(),
+                            dt.getSecond()
+                    );
+                    return new Pair<>( ts, PolyType.TIMESTAMP_WITH_LOCAL_TIME_ZONE );
+                }
+        }
+        return new Pair<>( value, typeName.getPolyType() );
     }
 
 
@@ -1167,5 +1249,6 @@ public class RexLiteral extends RexNode {
     public <R, P> R accept( RexBiVisitor<R, P> visitor, P arg ) {
         return visitor.visitLiteral( this, arg );
     }
+
 }
 

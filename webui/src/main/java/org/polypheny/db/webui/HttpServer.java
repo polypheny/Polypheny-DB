@@ -166,6 +166,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getStores", crud::getStores );
 
+        webuiServer.post( "/getAvailableStoresForIndexes", crud::getAvailableStoresForIndexes );
+
         webuiServer.post( "/removeStore", crud::removeStore, gson::toJson );
 
         webuiServer.post( "/updateStoreSettings", crud::updateStoreSettings, gson::toJson );

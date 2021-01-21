@@ -36,6 +36,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 
+@SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
 public class FileAdapterTest {
 
     @BeforeClass
