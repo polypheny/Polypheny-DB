@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
     private final SqlIdentifier partitionType;
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
-    private final List< List<SqlNode>> partitionQualifierList;
+    private final List<List<SqlNode>> partitionQualifierList;
 
 
     public SqlAlterTableAddPartitions(
@@ -60,7 +60,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             SqlIdentifier partitionType,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
-            List< List<SqlNode>> partitionQualifierList ) {
+            List<List<SqlNode>> partitionQualifierList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.partitionType = Objects.requireNonNull( partitionType );
@@ -107,9 +107,9 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                 }
 
                 List<String> partitionValue = new ArrayList<>();
-                List <List<String>> partitionQualifierStringList = new ArrayList<>();
-                 for ( List<SqlNode> partitionValueList: partitionQualifierList) {
-                    partitionQualifierStringList.add(partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ));
+                List<List<String>> partitionQualifierStringList = new ArrayList<>();
+                for ( List<SqlNode> partitionValueList : partitionQualifierList ) {
+                    partitionQualifierStringList.add( partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ) );
                 }
 
                 // TODO maybe create partitions multithreaded
@@ -132,4 +132,5 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             throw new RuntimeException( e );
         }
     }
+
 }

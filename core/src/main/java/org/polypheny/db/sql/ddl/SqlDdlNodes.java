@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,8 +80,8 @@ public class SqlDdlNodes {
      */
     public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList,
             //List<SqlIdentifier> partitionQualifierList, SqlNode partitionValueQualifier
-            List< List<SqlNode>> partitionQualifierList) {
-        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList);
+            List<List<SqlNode>> partitionQualifierList ) {
+        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList );
     }
 
 
@@ -215,5 +215,6 @@ public class SqlDdlNodes {
         JAR,
         ARCHIVE
     }
+
 }
 

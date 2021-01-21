@@ -1029,10 +1029,10 @@ public abstract class Catalog {
     public abstract void deletePartitionsOnDataPlacement( int storeId, long tableId );
 
     /**
-     *  Checks depending on the current partition distribution and partitionType
-     *  If this would be sufficient. Basically a passthrough method to simplify the code
+     * Checks depending on the current partition distribution and partitionType
+     * If this would be sufficient. Basically a passthrough method to simplify the code
      *
-     * @param tableId  table to be checked
+     * @param tableId table to be checked
      * @return If its correctly distributed or not
      */
     public abstract boolean validatePartitionDistribution( int storeId, long tableId, long columnId );

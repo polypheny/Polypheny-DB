@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
@@ -98,7 +96,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     private final int numPartitions;
     private final List<SqlIdentifier> partitionNamesList;
 
-    private final List< List<SqlNode>> partitionQualifierList;
+    private final List<List<SqlNode>> partitionQualifierList;
 
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
@@ -119,7 +117,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             SqlIdentifier partitionColumn,
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
-            List< List<SqlNode>> partitionQualifierList) {
+            List<List<SqlNode>> partitionQualifierList ) {
 
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
@@ -329,10 +327,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 }
 
                 List<String> partitionValue = new ArrayList<>();
-                List <List<String>> partitionQualifierStringList = new ArrayList<>();
-                for ( List<SqlNode> partitionValueList: partitionQualifierList) {
+                List<List<String>> partitionQualifierStringList = new ArrayList<>();
+                for ( List<SqlNode> partitionValueList : partitionQualifierList ) {
 
-                    partitionQualifierStringList.add(partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ));
+                    partitionQualifierStringList.add( partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ) );
                 }
 
                 // TODO maybe create partitions multithreaded

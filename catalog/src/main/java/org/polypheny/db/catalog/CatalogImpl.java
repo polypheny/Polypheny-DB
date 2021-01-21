@@ -67,9 +67,9 @@ import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
@@ -2988,13 +2988,11 @@ public class CatalogImpl extends Catalog {
             CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
             log.debug( "Start partitioning on columnId '{}' with partition type {}", partitionColumnId, partitionType );
 
-
             long partId;
             List<Long> tempPartIds = new ArrayList<>();
             if ( partitionNames.size() >= 2 && numPartitions == 0 ) {
                 numPartitions = partitionNames.size();
             }
-
 
             // Calculate how many partitions exist if partitioning is applied.
             // Loop over value to create those partitions with partitionKey to uniquelyIdentify partition
@@ -3186,7 +3184,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-
     /**
      * Get placements by partition. Identify the location of partitions
      *
@@ -3288,12 +3285,12 @@ public class CatalogImpl extends Catalog {
         }
 
         List<Long> partitionIndexList = new ArrayList<>();
-            CatalogTable catalogTable = getTable( tableId );
-            for ( int index = 0; index < catalogTable.numPartitions; index++ ) {
-                if ( partitions.contains( catalogTable.partitionIds.get( index ) ) ) {
-                    partitionIndexList.add( (long) index );
-                }
+        CatalogTable catalogTable = getTable( tableId );
+        for ( int index = 0; index < catalogTable.numPartitions; index++ ) {
+            if ( partitions.contains( catalogTable.partitionIds.get( index ) ) ) {
+                partitionIndexList.add( (long) index );
             }
+        }
         return partitionIndexList;
     }
 
@@ -3321,10 +3318,10 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     *  Checks depending on the current partition distribution and partitionType
-     *  If this would be sufficient. Basically a passthrough method to simplify the code
+     * Checks depending on the current partition distribution and partitionType
+     * If this would be sufficient. Basically a passthrough method to simplify the code
      *
-     * @param tableId  table to be checked
+     * @param tableId table to be checked
      * @return If its correctly distributed or not
      */
     @Override
