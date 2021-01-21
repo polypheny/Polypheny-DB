@@ -424,7 +424,7 @@ public class CatalogTest {
         CatalogColumn column3 = catalog.getColumn( columnId3 );
 
         catalog.addPrimaryKey( tableId, Collections.singletonList( columnId1 ) );
-        catalog.addForeignKey( tableId2, Collections.singletonList( columnId3 ), tableId, Collections.singletonList( columnId1 ), "name", ForeignKeyOption.CASCADE, ForeignKeyOption.SET_NULL );
+        catalog.addForeignKey( tableId2, Collections.singletonList( columnId3 ), tableId, Collections.singletonList( columnId1 ), "name", ForeignKeyOption.RESTRICT, ForeignKeyOption.RESTRICT );
         assertEquals( 1, catalog.getForeignKeys( tableId2 ).size() );
         assertEquals( 1, catalog.getForeignKeys( tableId2 ).get( 0 ).columnIds.size() );
         assertEquals( columnId3, (long) catalog.getForeignKeys( tableId2 ).get( 0 ).columnIds.get( 0 ) );

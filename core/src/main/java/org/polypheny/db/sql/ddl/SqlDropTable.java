@@ -39,6 +39,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
@@ -122,8 +123,13 @@ public class SqlDropTable extends SqlDropObject {
         // Delete all indexes
         try {
             for ( CatalogIndex index : catalog.getIndexes( table.id, false ) ) {
-                // Delete index on store
-                StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
+                if ( index.location == 0 ) {
+                    // Delete polystore index
+                    IndexManager.getInstance().deleteIndex( index );
+                } else {
+                    // Delete index on store
+                    StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
+                }
                 // Delete index in catalog
                 catalog.deleteIndex( index.id );
             }
@@ -166,6 +172,7 @@ public class SqlDropTable extends SqlDropObject {
             List<CatalogIndex> indexes = catalog.getIndexes( table.id, false );
             for ( CatalogIndex index : indexes ) {
                 catalog.deleteIndex( index.id );
+                IndexManager.getInstance().deleteIndex( index );
             }
         } catch ( GenericCatalogException e ) {
             throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );

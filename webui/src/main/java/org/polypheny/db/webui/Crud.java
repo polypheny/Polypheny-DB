@@ -21,6 +21,7 @@ import au.com.bytecode.opencsv.CSVReader;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -81,6 +82,7 @@ import org.polypheny.db.adapter.Store.AdapterSetting;
 import org.polypheny.db.adapter.Store.FunctionalIndexInfo;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.StoreManager.AdapterInformation;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
@@ -1559,9 +1561,16 @@ public class Crud implements InformationObserver {
             // Get explicit indexes
             for ( CatalogIndex catalogIndex : catalogIndexes ) {
                 String[] arr = new String[5];
+                String storeUniqueName;
+                if ( catalogIndex.location == 0 ) {
+                    //a polystore index
+                    storeUniqueName = "Polypheny-DB";
+                } else {
+                    storeUniqueName = catalog.getStore( catalogIndex.location ).uniqueName;
+                }
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
-                arr[2] = catalog.getStore( catalogIndex.location ).uniqueName;
+                arr[2] = storeUniqueName;
                 arr[3] = catalogIndex.methodDisplayName;
                 arr[4] = catalogIndex.type.name();
                 data.add( arr );
@@ -1631,7 +1640,13 @@ public class Crud implements InformationObserver {
         for ( String col : index.getColumns() ) {
             colJoiner.add( "\"" + col + "\"" );
         }
-        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" ON STORE \"%s\"", tableId, index.getName(), colJoiner.toString(), index.getMethod(), index.getStoreUniqueName() );
+        String onStore;
+        if ( index.getStoreUniqueName().equals( "Polypheny-DB" ) ) {
+            onStore = "";
+        } else {
+            onStore = String.format( "ON STORE \"%s\"", index.getStoreUniqueName() );
+        }
+        String query = String.format( "ALTER TABLE %s ADD INDEX \"%s\" ON %s USING \"%s\" %s", tableId, index.getName(), colJoiner.toString(), index.getMethod(), onStore );
         try {
             int a = executeSqlUpdate( transaction, query );
             transaction.commit();
@@ -1654,6 +1669,11 @@ public class Crud implements InformationObserver {
      */
     Placement getPlacements( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
+        return getPlacements( index );
+    }
+
+
+    private Placement getPlacements( final Index index ) {
         String schemaName = index.getSchema();
         String tableName = index.getTable();
         try {
@@ -1796,6 +1816,13 @@ public class Crud implements InformationObserver {
      * Get current stores
      */
     String getStores( final Request req, final Response res ) {
+        ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
+        Store[] out = stores.values().toArray( new Store[0] );
+        return storeSerializer().toJson( out, Store[].class );
+    }
+
+
+    private Gson storeSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
             List<AdapterSetting> adapterSettings = new ArrayList<>();
@@ -1820,10 +1847,36 @@ public class Crud implements InformationObserver {
             jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
-        Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
+        return new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
+    }
+
+
+    /**
+     * Get the available stores on which a new index can be placed. 'Polypheny-DB' is part of the list, if polystore-indexes are enabled
+     */
+    String getAvailableStoresForIndexes( final Request req, final Response res ) {
+        Index index = gson.fromJson( req.body(), Index.class );
+        Placement dataPlacements = getPlacements( index );
         ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
-        Store[] out = stores.values().toArray( new Store[0] );
-        return storeGson.toJson( out, Store[].class );
+        List<Store> filteredStores = stores.values().stream().filter( ( s ) -> {
+            if ( s.isSchemaReadOnly() || s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
+                return false;
+            }
+            if ( dataPlacements.stores.stream().noneMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) ) ) {
+                return false;
+            }
+            return true;
+        } ).collect( Collectors.toList() );
+        //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
+        Gson storeSerializer = storeSerializer();
+        JsonArray jsonArray = storeSerializer.toJsonTree( filteredStores.toArray( new Store[0] ) ).getAsJsonArray();
+        if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
+            JsonObject pdbFakeStore = new JsonObject();
+            pdbFakeStore.addProperty( "uniqueName", "Polypheny-DB" );
+            pdbFakeStore.add( "availableIndexMethods", storeSerializer.toJsonTree( IndexManager.getAvailableIndexMethods() ) );
+            jsonArray.add( pdbFakeStore );
+        }
+        return storeSerializer.toJson( jsonArray );
     }
 
 
@@ -2790,11 +2843,11 @@ public class Crud implements InformationObserver {
         SqlNode parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( SqlKind.DDL ) ) {
-
             signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
+
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
         }

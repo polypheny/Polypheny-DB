@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 public class Placement {
 
     Throwable exception;
-    List<Store> stores = new ArrayList<>();
+    public List<Store> stores = new ArrayList<>();
     boolean isPartitioned;
     List<String> partitionNames;
 
@@ -57,7 +57,7 @@ public class Placement {
 
     public static class Store {
 
-        private final String uniqueName;
+        public final String uniqueName;
         private final String adapterName;
         private final boolean dataReadOnly;
         private final boolean schemaReadOnly;

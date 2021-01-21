@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ package org.polypheny.db.rel.logical;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
@@ -46,6 +48,7 @@ import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.metadata.RelMdCollation;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.sql.validate.SqlValidatorUtil;
@@ -104,6 +107,19 @@ public final class LogicalProject extends Project {
     }
 
 
+    public static LogicalProject identity( final RelNode input ) {
+        return create(
+                input,
+                IntStream.range( 0, input.getRowType().getFieldCount() )
+                        .mapToObj( i ->
+                                new RexInputRef( i, input.getRowType().getFieldList().get( i ).getType() )
+                        )
+                        .collect( Collectors.toList() ),
+                input.getRowType()
+        );
+    }
+
+
     @Override
     public LogicalProject copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
         return new LogicalProject( getCluster(), traitSet, input, projects, rowType );
@@ -114,5 +130,6 @@ public final class LogicalProject extends Project {
     public RelNode accept( RelShuttle shuttle ) {
         return shuttle.visit( this );
     }
+
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -104,8 +105,13 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             try {
                 for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
                     if ( index.location == storeInstance.getStoreId() ) {
-                        // Delete index on store
-                        StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
+                        if ( index.location == 0 ) {
+                            // Delete polystore index
+                            IndexManager.getInstance().deleteIndex( index );
+                        } else {
+                            // Delete index on store
+                            StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
+                        }
                         // Delete index in catalog
                         Catalog.getInstance().deleteIndex( index.id );
                     }

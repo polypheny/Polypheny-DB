@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,10 +53,12 @@ import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.core.ConditionalExecute;
 import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.SetOp;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.TableModify.Operation;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalModifyCollect;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -117,6 +119,8 @@ public abstract class AbstractRouter implements Router {
         analyze( statement, logicalRoot );
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
             routed = routeDml( logicalRoot.rel, statement );
+        } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
+            routed = handleConditionalExecute( logicalRoot.rel, statement );
         } else {
             RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
             builder = buildDql( logicalRoot.rel, builder, statement, logicalRoot.rel.getCluster() );
@@ -303,6 +307,22 @@ public abstract class AbstractRouter implements Router {
             }
         }
         return node.copy( node.getTraitSet(), inputs );
+    }
+
+
+    protected RelNode handleConditionalExecute( RelNode node, Statement statement ) {
+        LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+        RelBuilder builder = RelBuilder.create( statement, node.getCluster() );
+        buildSelect( lce.getLeft(), builder, statement, node.getCluster() );
+        RelNode action;
+        if ( lce.getRight() instanceof LogicalConditionalExecute ) {
+            action = handleConditionalExecute( lce.getRight(), statement );
+        } else if ( lce.getRight() instanceof TableModify ) {
+            action = routeDml( lce.getRight(), statement );
+        } else {
+            throw new IllegalArgumentException();
+        }
+        return LogicalConditionalExecute.create( builder.build(), action, lce );
     }
 
 

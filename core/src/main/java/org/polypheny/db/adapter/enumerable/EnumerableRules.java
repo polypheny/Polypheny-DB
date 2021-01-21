@@ -61,6 +61,11 @@ public class EnumerableRules {
     private EnumerableRules() {
     }
 
+    public static final EnumerableConditionalExecuteRule ENUMERABLE_CONDITIONAL_EXECUTE_RULE = new EnumerableConditionalExecuteRule();
+
+    public static final EnumerableConditionalExecuteTrueRule ENUMERABLE_CONDITIONAL_EXECUTE_TRUE_RULE = new EnumerableConditionalExecuteTrueRule();
+
+    public static final EnumerableConditionalExecuteFalseRule ENUMERABLE_CONDITIONAL_EXECUTE_FALSE_RULE = new EnumerableConditionalExecuteFalseRule();
 
     public static final EnumerableProjectRule ENUMERABLE_PROJECT_RULE = new EnumerableProjectRule();
 

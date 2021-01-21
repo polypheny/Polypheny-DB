@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,22 @@ import java.sql.Types;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
@@ -42,7 +49,18 @@ import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.enumerable.EnumerableInterpretable;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRel.Prefer;
+import org.polypheny.db.adapter.index.Index;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogSchema;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -62,13 +80,36 @@ import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.RelShuttle;
 import org.polypheny.db.rel.RelShuttleImpl;
+import org.polypheny.db.rel.core.ConditionalExecute.Condition;
+import org.polypheny.db.rel.core.Project;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.core.TableFunctionScan;
+import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.core.Values;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
+import org.polypheny.db.rel.logical.LogicalCorrelate;
+import org.polypheny.db.rel.logical.LogicalExchange;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalIntersect;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalMatch;
+import org.polypheny.db.rel.logical.LogicalMinus;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalSort;
 import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.LogicalUnion;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -92,6 +133,7 @@ import org.polypheny.db.transaction.TableAccessMap.TableIdentifier;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
@@ -125,7 +167,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
     @Override
     public PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted ) {
-        boolean isAnalyze = statement.getTransaction().isAnalyze();
+        return prepareQuery( logicalRoot, parameterRowType, isRouted, false );
+    }
+
+
+    protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+        boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
+        boolean lock = !isSubquery;
 
         final StopWatch stopWatch = new StopWatch();
 
@@ -141,40 +189,68 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         ? BindableConvention.INSTANCE
                         : EnumerableConvention.INSTANCE;
 
-        // Locking
-        if ( !isRouted ) {
-            if ( isAnalyze ) {
-                statement.getDuration().start( "Locking" );
-
-            }
-            try {
-                // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
-                LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                // Get locks for individual tables
-                TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
-                for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
-                    Mode mode = accessMap.getTableAccessMode( tableIdentifier );
-                    if ( mode == Mode.READ_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
-                    } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
-                        LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-                    }
-                }
-            } catch ( DeadlockException e ) {
-                throw new RuntimeException( e );
-            }
-        }
-
-        // Route
         RelRoot routedRoot;
-        if ( isRouted ) {
-            routedRoot = logicalRoot;
-        } else {
+        if ( !isRouted ) {
+            if ( lock ) {
+                // Locking
+                if ( isAnalyze ) {
+                    statement.getDuration().start( "Locking" );
+                }
+                try {
+                    // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
+                    LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                    // Get locks for individual tables
+                    TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+                    for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
+                        Mode mode = accessMap.getTableAccessMode( tableIdentifier );
+                        if ( mode == Mode.READ_ACCESS ) {
+                            LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
+                        } else if ( mode == Mode.WRITE_ACCESS || mode == Mode.READWRITE_ACCESS ) {
+                            LockManager.INSTANCE.lock( tableIdentifier, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+                        }
+                    }
+                } catch ( DeadlockException e ) {
+                    throw new RuntimeException( e );
+                }
+            }
+
+            // Index Update
             if ( isAnalyze ) {
                 statement.getDuration().stop( "Locking" );
+                statement.getDuration().start( "Index Update" );
+            }
+            RelRoot indexUpdateRoot = logicalRoot;
+            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
+                IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
+                indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
+            }
+
+            // Constraint Enforcement Rewrite
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Index Update" );
+                statement.getDuration().start( "Constraint Enforcement" );
+            }
+            RelRoot constraintsRoot = indexUpdateRoot;
+            if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+                ConstraintEnforcer constraintEnforcer = new EnumerableConstraintEnforcer();
+                constraintsRoot = constraintEnforcer.enforce( constraintsRoot, statement );
+            }
+
+            // Index Lookup Rewrite
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Constraint Enforcement" );
+                statement.getDuration().start( "Index Lookup Rewrite" );
+            }
+            RelRoot indexLookupRoot = constraintsRoot;
+            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
+                indexLookupRoot = indexLookup( indexLookupRoot, statement, executionTimeMonitor );
+            }
+
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Index Lookup Rewrite" );
                 statement.getDuration().start( "Routing" );
             }
-            routedRoot = route( logicalRoot, statement, executionTimeMonitor );
+            routedRoot = route( indexLookupRoot, statement, executionTimeMonitor );
 
             RelStructuredTypeFlattener typeFlattener = new RelStructuredTypeFlattener(
                     RelBuilder.create( statement, routedRoot.rel.getCluster() ),
@@ -182,12 +258,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     ViewExpanders.toRelContext( this, routedRoot.rel.getCluster() ),
                     true );
             routedRoot = routedRoot.withRel( typeFlattener.rewrite( routedRoot.rel ) );
+            if ( isAnalyze ) {
+                statement.getDuration().stop( "Routing" );
+            }
+        } else {
+            routedRoot = logicalRoot;
         }
 
         //
         // Implementation Caching
         if ( isAnalyze ) {
-            statement.getDuration().stop( "Routing" );
             statement.getDuration().start( "Implementation Caching" );
         }
         RelRoot parameterizedRoot = null;
@@ -288,6 +368,380 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
         return signature;
+    }
+
+
+    private RelRoot indexUpdate( RelRoot root, Statement statement, RelDataType parameterRowType ) {
+        if ( root.kind.belongsTo( SqlKind.DML ) ) {
+            final RelShuttle shuttle = new RelShuttleImpl() {
+
+                @Override
+                public RelNode visit( RelNode node ) {
+                    RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
+                    if ( node instanceof LogicalTableModify ) {
+                        final Catalog catalog = Catalog.getInstance();
+                        final LogicalTableModify ltm = (LogicalTableModify) node;
+                        final CatalogTable table;
+                        final CatalogSchema schema;
+                        try {
+                            String tableName;
+                            if ( ltm.getTable().getQualifiedName().size() == 3 ) { // DatabaseName.SchemaName.TableName
+                                schema = catalog.getSchema( ltm.getTable().getQualifiedName().get( 0 ), ltm.getTable().getQualifiedName().get( 1 ) );
+                                tableName = ltm.getTable().getQualifiedName().get( 2 );
+                            } else if ( ltm.getTable().getQualifiedName().size() == 2 ) { // SchemaName.TableName
+                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), ltm.getTable().getQualifiedName().get( 0 ) );
+                                tableName = ltm.getTable().getQualifiedName().get( 1 );
+                            } else { // TableName
+                                schema = catalog.getSchema( statement.getPrepareContext().getDatabaseId(), statement.getPrepareContext().getDefaultSchemaName() );
+                                tableName = ltm.getTable().getQualifiedName().get( 0 );
+                            }
+                            table = catalog.getTable( schema.id, tableName );
+                        } catch ( UnknownTableException | GenericCatalogException | UnknownDatabaseException | UnknownCollationException | UnknownSchemaException | UnknownSchemaTypeException e ) {
+                            // This really should not happen
+                            log.error( "Table not found: {}", ltm.getTable().getQualifiedName().get( 0 ), e );
+                            throw new RuntimeException( e );
+                        }
+                        final List<Index> indices = IndexManager.getInstance().getIndices( schema, table );
+
+                        // Check if there are any indexes effected by this table modify
+                        if ( indices.size() == 0 ) {
+                            // Nothing to do here
+                            return super.visit( node );
+                        }
+
+                        if ( ltm.isInsert() && ltm.getInput() instanceof Values ) {
+                            final LogicalValues lvalues = (LogicalValues) ltm.getInput( 0 ).accept( new RelDeepCopyShuttle() );
+                            for ( final Index index : indices ) {
+                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lvalues.tuples.size() );
+                                for ( final ImmutableList<RexLiteral> row : lvalues.getTuples() ) {
+                                    final List<Object> rowValues = new ArrayList<>();
+                                    final List<Object> targetRowValues = new ArrayList<>();
+                                    for ( final String column : index.getColumns() ) {
+                                        final RexLiteral fieldValue = row.get(
+                                                lvalues.getRowType().getField( column, false, false ).getIndex()
+                                        );
+                                        rowValues.add( fieldValue.getValue2() );
+                                    }
+                                    for ( final String column : index.getTargetColumns() ) {
+                                        final RexLiteral fieldValue = row.get(
+                                                lvalues.getRowType().getField( column, false, false ).getIndex()
+                                        );
+                                        targetRowValues.add( fieldValue.getValue2() );
+                                    }
+                                    tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
+                                }
+                                index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
+                            }
+                        } else if ( ltm.isInsert() && ltm.getInput() instanceof LogicalProject && ((LogicalProject) ltm.getInput()).getInput().getRowType().toString().equals( "RecordType(INTEGER ZERO)" ) ) {
+                            final LogicalProject lproject = (LogicalProject) ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            for ( final Index index : indices ) {
+                                final Set<Pair<List<Object>, List<Object>>> tuplesToInsert = new HashSet<>( lproject.getProjects().size() );
+                                final List<Object> rowValues = new ArrayList<>();
+                                final List<Object> targetRowValues = new ArrayList<>();
+                                for ( final String column : index.getColumns() ) {
+                                    final RexNode fieldValue = lproject.getProjects().get(
+                                            lproject.getRowType().getField( column, false, false ).getIndex()
+                                    );
+                                    if ( fieldValue instanceof RexLiteral ) {
+                                        rowValues.add( ((RexLiteral) fieldValue).getValue2() );
+                                    } else if ( fieldValue instanceof RexDynamicParam ) {
+                                        //
+                                        // TODO: This is dynamic parameter. We need to do the index update in the generated code!
+                                        //
+                                        throw new RuntimeException( "Index updates are not yet supported for prepared statements" );
+                                    } else {
+                                        throw new RuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
+                                    }
+                                }
+                                for ( final String column : index.getTargetColumns() ) {
+                                    final RexNode fieldValue = lproject.getProjects().get(
+                                            lproject.getRowType().getField( column, false, false ).getIndex()
+                                    );
+                                    if ( fieldValue instanceof RexLiteral ) {
+                                        targetRowValues.add( ((RexLiteral) fieldValue).getValue2() );
+                                    } else if ( fieldValue instanceof RexDynamicParam ) {
+                                        //
+                                        // TODO: This is dynamic parameter. We need to do the index update in the generated code!
+                                        //
+                                        throw new RuntimeException( "Index updates are not yet supported for prepared statements" );
+                                    } else {
+                                        throw new RuntimeException( "Unexpected rex type: " + fieldValue.getClass() );
+                                    }
+                                }
+                                tuplesToInsert.add( new Pair<>( rowValues, targetRowValues ) );
+                                index.insertAll( statement.getTransaction().getXid(), tuplesToInsert );
+                            }
+                        } else if ( ltm.isDelete() || ltm.isUpdate() || ltm.isMerge() || (ltm.isInsert() && !(ltm.getInput() instanceof Values)) ) {
+                            final Map<String, Integer> nameMap = new HashMap<>();
+                            final Map<String, Integer> newValueMap = new HashMap<>();
+                            RelNode original = ltm.getInput().accept( new RelDeepCopyShuttle() );
+                            if ( !(original instanceof LogicalProject) ) {
+                                original = LogicalProject.identity( original );
+                            }
+                            LogicalProject originalProject = (LogicalProject) original;
+
+                            for ( int i = 0; i < originalProject.getNamedProjects().size(); ++i ) {
+                                final Pair<RexNode, String> np = originalProject.getNamedProjects().get( i );
+                                nameMap.put( np.right, i );
+                                if ( ltm.isUpdate() || ltm.isMerge() ) {
+                                    int j = ltm.getUpdateColumnList().indexOf( np.right );
+                                    if ( j >= 0 ) {
+                                        RexNode newValue = ltm.getSourceExpressionList().get( j );
+                                        for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
+                                            if ( originalProject.getNamedProjects().get( k ).left.equals( newValue ) ) {
+                                                newValueMap.put( np.right, k );
+                                                break;
+                                            }
+                                        }
+                                    }
+                                } else if ( ltm.isInsert() ) {
+                                    int j = originalProject.getRowType().getField( np.right, true, false ).getIndex();
+                                    if ( j >= 0 ) {
+                                        RexNode newValue = rexBuilder.makeInputRef( originalProject, j );
+                                        for ( int k = 0; k < originalProject.getNamedProjects().size(); ++k ) {
+                                            if ( originalProject.getNamedProjects().get( k ).left.equals( newValue ) ) {
+                                                newValueMap.put( np.right, k );
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            // Prepare subquery
+//                            if ( ltm.isUpdate() || ltm.isMerge() ) {
+//                                List<RexNode> expr = new ArrayList<>(  );
+//                                //FIXME(s3lph) some index out of bounds stuff
+//                                for ( final String name : originalProject.getRowType().getFieldNames() ) {
+//                                    if ( ltm.getUpdateColumnList().contains( name )) {
+//                                        expr.add( ltm.getSourceExpressionList().get( ltm.getUpdateColumnList().indexOf( name ) ) );
+//                                    } else {
+//                                        expr.add( rexBuilder.makeInputRef( originalProject, originalProject.getRowType().getField( name, true, false ).getIndex() ) );
+//                                    }
+//                                }
+//                                List<RelDataType> types = ltm.getSourceExpressionList().stream().map( RexNode::getType ).collect( Collectors.toList() );
+//                                RelDataType type = transaction.getTypeFactory().createStructType( types, originalProject.getRowType().getFieldNames() );
+//                                originalProject = LogicalProject.create( originalProject, expr, type );
+//                            }
+                            RelRoot scanRoot = RelRoot.of( originalProject, SqlKind.SELECT );
+                            final PolyphenyDbSignature scanSig = prepareQuery( scanRoot, parameterRowType, false, true );
+                            final Iterable<Object> enumerable = scanSig.enumerable( statement.getDataContext() );
+                            final Iterator<Object> iterator = enumerable.iterator();
+                            final List<List<Object>> rows = MetaImpl.collect( scanSig.cursorFactory, iterator, new ArrayList<>() );
+                            // Build new query tree
+                            final List<ImmutableList<RexLiteral>> records = new ArrayList<>();
+                            for ( final List<Object> row : rows ) {
+                                final List<RexLiteral> record = new ArrayList<>();
+                                for ( int i = 0; i < row.size(); ++i ) {
+                                    RelDataType fieldType = originalProject.getRowType().getFieldList().get( i ).getType();
+                                    Pair<Comparable, PolyType> converted = RexLiteral.convertType( (Comparable) row.get( i ), fieldType );
+                                    record.add( new RexLiteral(
+                                            converted.left,
+                                            fieldType,
+                                            converted.right
+                                    ) );
+                                }
+                                records.add( ImmutableList.copyOf( record ) );
+                            }
+                            final ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.copyOf( records );
+                            final RelNode newValues = LogicalValues.create( originalProject.getCluster(), originalProject.getRowType(), values );
+                            final RelNode newProject = LogicalProject.identity( newValues );
+//                            List<RexNode> sourceExpr = ltm.getSourceExpressionList();
+//                            if ( ltm.isUpdate() || ltm.isMerge() ) {
+//                                //FIXME(s3lph): Wrong index
+//                                sourceExpr = IntStream.range( 0, sourceExpr.size() )
+//                                        .mapToObj( i -> rexBuilder.makeFieldAccess( rexBuilder.makeInputRef( newProject, i ), 0 ) )
+//                                        .collect( Collectors.toList() );
+//                            }
+//                            final RelNode replacement = LogicalTableModify.create(
+//                                    ltm.getTable(),
+//                                    transaction.getCatalogReader(),
+//                                    newProject,
+//                                    ltm.getOperation(),
+//                                    ltm.getUpdateColumnList(),
+//                                    sourceExpr,
+//                                    ltm.isFlattened()
+//                            );
+                            final RelNode replacement = ltm.copy( ltm.getTraitSet(), Collections.singletonList( newProject ) );
+                            // Schedule the index deletions
+                            if ( !ltm.isInsert() ) {
+                                for ( final Index index : indices ) {
+                                    if ( ltm.isUpdate() ) {
+                                        // Index not affected by this update, skip
+                                        if ( index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                            continue;
+                                        }
+                                    }
+                                    final Set<Pair<List<Object>, List<Object>>> rowsToDelete = new HashSet<>( rows.size() );
+                                    for ( List<Object> row : rows ) {
+                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
+                                        for ( final String column : index.getColumns() ) {
+                                            rowProjection.add( row.get( nameMap.get( column ) ) );
+                                        }
+                                        for ( final String column : index.getTargetColumns() ) {
+                                            targetRowProjection.add( row.get( nameMap.get( column ) ) );
+                                        }
+                                        rowsToDelete.add( new Pair<>( rowProjection, targetRowProjection ) );
+                                    }
+                                    index.deleteAllPrimary( statement.getTransaction().getXid(), rowsToDelete );
+                                }
+                            }
+                            //Schedule the index insertions for INSERT and UPDATE operations
+                            if ( !ltm.isDelete() ) {
+                                for ( final Index index : indices ) {
+                                    // Index not affected by this update, skip
+                                    if ( ltm.isUpdate() && index.getColumns().stream().noneMatch( ltm.getUpdateColumnList()::contains ) ) {
+                                        continue;
+                                    }
+                                    if ( ltm.isInsert() && index.getColumns().stream().noneMatch( ltm.getInput().getRowType().getFieldNames()::contains ) ) {
+                                        continue;
+                                    }
+                                    final Set<Pair<List<Object>, List<Object>>> rowsToReinsert = new HashSet<>( rows.size() );
+                                    for ( List<Object> row : rows ) {
+                                        final List<Object> rowProjection = new ArrayList<>( index.getColumns().size() );
+                                        final List<Object> targetRowProjection = new ArrayList<>( index.getTargetColumns().size() );
+                                        for ( final String column : index.getColumns() ) {
+                                            if ( newValueMap.containsKey( column ) ) {
+                                                rowProjection.add( row.get( newValueMap.get( column ) ) );
+                                            } else {
+                                                // Value unchanged, reuse old value
+                                                rowProjection.add( row.get( nameMap.get( column ) ) );
+                                            }
+                                        }
+                                        for ( final String column : index.getTargetColumns() ) {
+                                            targetRowProjection.add( row.get( nameMap.get( column ) ) );
+                                        }
+                                        rowsToReinsert.add( new Pair<>( rowProjection, targetRowProjection ) );
+                                    }
+                                    index.insertAll( statement.getTransaction().getXid(), rowsToReinsert );
+                                }
+                            }
+                            return replacement;
+                        }
+
+                    }
+                    return super.visit( node );
+                }
+
+            };
+            final RelNode newRoot = shuttle.visit( root.rel );
+            return RelRoot.of( newRoot, root.kind );
+
+        }
+        return root;
+    }
+
+
+    private RelRoot indexLookup( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
+        final RelBuilder builder = RelBuilder.create( statement, logicalRoot.rel.getCluster() );
+        final RexBuilder rexBuilder = builder.getRexBuilder();
+        RelNode newRoot = logicalRoot.rel;
+        if ( logicalRoot.kind.belongsTo( SqlKind.DML ) ) {
+            final RelShuttle shuttle = new RelShuttleImpl() {
+
+                @Override
+                public RelNode visit( RelNode node ) {
+                    if ( node instanceof LogicalConditionalExecute ) {
+                        final LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+                        final Index index = IndexManager.getInstance().getIndex(
+                                lce.getCatalogSchema(),
+                                lce.getCatalogTable(),
+                                lce.getCatalogColumns()
+                        );
+                        if ( index != null ) {
+                            final LogicalConditionalExecute visited = (LogicalConditionalExecute) super.visit( lce );
+                            Condition c = null;
+                            switch ( lce.getCondition() ) {
+                                case TRUE:
+                                case FALSE:
+                                    c = lce.getCondition();
+                                    break;
+                                case EQUAL_TO_ZERO:
+                                    c = index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.FALSE : Condition.TRUE;
+                                    break;
+                                case GREATER_ZERO:
+                                    c = index.containsAny( statement.getTransaction().getXid(), lce.getValues() ) ? Condition.TRUE : Condition.FALSE;
+                                    break;
+                            }
+                            final LogicalConditionalExecute simplified =
+                                    LogicalConditionalExecute.create( visited.getLeft(), visited.getRight(), c, visited.getExceptionClass(), visited.getExceptionMessage() );
+                            simplified.setCheckDescription( lce.getCheckDescription() );
+                        }
+                    }
+                    return super.visit( node );
+                }
+
+            };
+            newRoot = newRoot.accept( shuttle );
+        }
+        final RelShuttle shuttle2 = new RelShuttleImpl() {
+
+            @Override
+            public RelNode visit( LogicalProject project ) {
+                if ( project.getInput() instanceof LogicalTableScan ) {
+                    // Figure out the original column names required for index lookup
+                    final LogicalTableScan scan = (LogicalTableScan) project.getInput();
+                    final String table = scan.getTable().getQualifiedName().get( scan.getTable().getQualifiedName().size() - 1 );
+                    final List<String> columns = new ArrayList<>( project.getChildExps().size() );
+                    final List<RelDataType> ctypes = new ArrayList<>( project.getChildExps().size() );
+                    for ( final RexNode expr : project.getChildExps() ) {
+                        if ( !(expr instanceof RexInputRef) ) {
+                            IndexManager.getInstance().incrementMiss();
+                            return super.visit( project );
+                        }
+                        final RexInputRef rir = (RexInputRef) expr;
+                        final RelDataTypeField field = scan.getRowType().getFieldList().get( rir.getIndex() );
+                        final String column = field.getName();
+                        columns.add( column );
+                        ctypes.add( field.getType() );
+                    }
+                    // Retrieve the catalog schema and database representations required for index lookup
+                    final CatalogSchema schema = statement.getTransaction().getDefaultSchema();
+                    final CatalogTable ctable;
+                    try {
+                        ctable = Catalog.getInstance().getTable( schema.id, table );
+                    } catch ( UnknownTableException | GenericCatalogException e ) {
+                        log.error( "Could not fetch table", e );
+                        IndexManager.getInstance().incrementNoIndex();
+                        return super.visit( project );
+                    }
+                    // Retrieve any index and use for simplification
+                    final Index idx = IndexManager.getInstance().getIndex( schema, ctable, columns );
+                    if ( idx == null ) {
+                        // No index available for simplification
+                        IndexManager.getInstance().incrementNoIndex();
+                        return super.visit( project );
+                    }
+                    // TODO: Avoid copying stuff around
+                    final RelDataType compositeType = builder.getTypeFactory().createStructType( ctypes, columns );
+                    final Values replacement = idx.getAsValues( statement.getTransaction().getXid(), builder, compositeType );
+                    final LogicalProject rProject = new LogicalProject(
+                            replacement.getCluster(),
+                            replacement.getTraitSet(),
+                            replacement,
+                            IntStream.range( 0, compositeType.getFieldCount() )
+                                    .mapToObj( i -> rexBuilder.makeInputRef( replacement, i ) )
+                                    .collect( Collectors.toList() ),
+                            compositeType );
+                    IndexManager.getInstance().incrementHit();
+                    return rProject;
+                }
+                return super.visit( project );
+            }
+
+
+            @Override
+            public RelNode visit( RelNode node ) {
+                if ( node instanceof LogicalProject ) {
+                    final LogicalProject lp = (LogicalProject) node;
+                    lp.getMapping();
+                }
+                return super.visit( node );
+            }
+
+        };
+        newRoot = newRoot.accept( shuttle2 );
+        return RelRoot.of( newRoot, logicalRoot.kind );
     }
 
 
@@ -675,22 +1129,122 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     }
 
 
-    private static class RelCloneShuttle extends RelShuttleImpl {
+    static class RelDeepCopyShuttle extends RelShuttleImpl {
 
-        @Override
-        protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
-            stack.push( parent );
-            try {
-                RelNode child2 = child.accept( this );
-                final List<RelNode> newInputs = new ArrayList<>( parent.getInputs() );
-                newInputs.set( i, child2 );
-                //noinspection unchecked
-                return (T) parent.copy( parent.getTraitSet(), newInputs );
-            } finally {
-                stack.pop();
-            }
+        private RelTraitSet copy( final RelTraitSet other ) {
+            return RelTraitSet.createEmpty().merge( other );
         }
 
+
+        @Override
+        public RelNode visit( TableScan scan ) {
+            final RelNode node = super.visit( scan );
+            return new LogicalTableScan( node.getCluster(), copy( node.getTraitSet() ), node.getTable() );
+        }
+
+
+        @Override
+        public RelNode visit( TableFunctionScan scan ) {
+            final RelNode node = super.visit( scan );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalValues values ) {
+            final Values node = (Values) super.visit( values );
+            return new LogicalValues( node.getCluster(), copy( node.getTraitSet() ), node.getRowType(), node.getTuples() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalFilter filter ) {
+            final LogicalFilter node = (LogicalFilter) super.visit( filter );
+            return new LogicalFilter( node.getCluster(), copy( node.getTraitSet() ), node.getInput().accept( this ), node.getCondition(), node.getVariablesSet() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalProject project ) {
+            final Project node = (Project) super.visit( project );
+            return new LogicalProject( node.getCluster(), copy( node.getTraitSet() ), node.getInput(), node.getProjects(), node.getRowType() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalJoin join ) {
+            final RelNode node = super.visit( join );
+            return new LogicalJoin( node.getCluster(), copy( node.getTraitSet() ), this.visit( join.getLeft() ), this.visit( join.getRight() ), join.getCondition(), join.getVariablesSet(), join.getJoinType(), join.isSemiJoinDone(), ImmutableList.copyOf( join.getSystemFieldList() ) );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalCorrelate correlate ) {
+            final RelNode node = super.visit( correlate );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalUnion union ) {
+            final RelNode node = super.visit( union );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalIntersect intersect ) {
+            final RelNode node = super.visit( intersect );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMinus minus ) {
+            final RelNode node = super.visit( minus );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalAggregate aggregate ) {
+            final RelNode node = super.visit( aggregate );
+            return new LogicalAggregate( node.getCluster(), copy( node.getTraitSet() ), visit( aggregate.getInput() ), aggregate.indicator, aggregate.getGroupSet(), aggregate.groupSets, aggregate.getAggCallList() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalMatch match ) {
+            final RelNode node = super.visit( match );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalSort sort ) {
+            final RelNode node = super.visit( sort );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalExchange exchange ) {
+            final RelNode node = super.visit( exchange );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
+
+
+        @Override
+        public RelNode visit( LogicalConditionalExecute lce ) {
+            return new LogicalConditionalExecute( lce.getCluster(), copy( lce.getTraitSet() ), visit( lce.getLeft() ), visit( lce.getRight() ), lce.getCondition(), lce.getExceptionClass(), lce.getExceptionMessage() );
+        }
+
+
+        @Override
+        public RelNode visit( RelNode other ) {
+            final RelNode node = super.visit( other );
+            return node.copy( copy( node.getTraitSet() ), node.getInputs() );
+        }
     }
 
 
