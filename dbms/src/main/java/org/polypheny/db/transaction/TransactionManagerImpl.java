@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,6 +102,7 @@ public class TransactionManagerImpl implements TransactionManager {
     public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
         return startTransaction( user, database, analyze, origin, MultimediaFlavor.DEFAULT );
     }
+
 
     @Override
     public void removeTransaction( PolyXid xid ) throws TransactionException {

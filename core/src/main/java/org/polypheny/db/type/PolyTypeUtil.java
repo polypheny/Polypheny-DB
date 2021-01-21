@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -696,9 +696,9 @@ public abstract class PolyTypeUtil {
      * {@code SqlTypeFactoryImpl#leastRestrictiveSqlType} isn't complete enough yet.
      * Once it is, this param (and the non-coerce rules of {@link PolyTypeAssignmentRules}) should go away.
      *
-     * @param toType   target of assignment
+     * @param toType target of assignment
      * @param fromType source of assignment
-     * @param coerce   if true, the SQL rules for CAST are used; if false, the rules are similar to Java; e.g. you can't assign short x = (int) y, and you can't assign int x = (String) z.
+     * @param coerce if true, the SQL rules for CAST are used; if false, the rules are similar to Java; e.g. you can't assign short x = (int) y, and you can't assign int x = (String) z.
      * @return true iff cast is legal
      */
     public static boolean canCastFrom( RelDataType toType, RelDataType fromType, boolean coerce ) {
@@ -783,8 +783,8 @@ public abstract class PolyTypeUtil {
      * a representative null value field is also prepended (with state NULL for a null value and FALSE for non-null), and
      * all component types are asserted to be nullable, since SQL doesn't allow NOT NULL to be specified on attributes.
      *
-     * @param typeFactory   factory which should produced flattened type
-     * @param recordType    type with possible nesting
+     * @param typeFactory factory which should produced flattened type
+     * @param recordType type with possible nesting
      * @param flatteningMap if non-null, receives map from unflattened ordinal to flattened ordinal (must have length at least recordType.getFieldList().size())
      * @return flattened equivalent
      */
@@ -1017,7 +1017,7 @@ public abstract class PolyTypeUtil {
      * This is useful when identifying data types of a function that is going to operate on inputs that are specified as
      * field ordinals (e.g. aggregate calls).
      *
-     * @param rowType        input row type
+     * @param rowType input row type
      * @param requiredFields ordinals of the projected fields
      * @return list of data types that are requested by requiredFields
      */
@@ -1417,4 +1417,5 @@ public abstract class PolyTypeUtil {
                 return s;
         }
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,15 +45,18 @@ public class FileProject extends Project implements FileRel {
         super( cluster, traits, input, projects, rowType );
     }
 
+
     @Override
     public Project copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelDataType rowType ) {
         return new FileProject( getCluster(), traitSet, input, projects, rowType );
     }
 
+
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
+
 
     @Override
     public void implement( FileImplementor implementor ) {
@@ -96,4 +99,5 @@ public class FileProject extends Project implements FileRel {
         }
         implementor.project( fields );
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ public class BatchUpdateRequest {
         final Map<String, Value> newValues = new HashMap<>();
         int counter = 1;
 
+
         public String getQuery( String tableId, Statement statement, HttpServletRequest httpRequest ) throws IOException, ServletException {
             StringBuilder sBuilder = new StringBuilder();
             StringJoiner setClauses = new StringJoiner( "," );
@@ -91,6 +92,7 @@ public class BatchUpdateRequest {
             sBuilder.append( " WHERE " ).append( whereClauses.toString() );
             return sBuilder.toString();
         }
+
     }
 
 

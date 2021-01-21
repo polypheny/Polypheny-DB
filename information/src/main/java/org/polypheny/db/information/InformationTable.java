@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class InformationTable extends InformationHtml {
     /**
      * Constructor
      *
-     * @param group  The information group this element belongs to
+     * @param group The information group this element belongs to
      * @param labels The labels
      */
     public InformationTable( InformationGroup group, List<String> labels ) {
@@ -45,7 +45,7 @@ public class InformationTable extends InformationHtml {
      * Constructor
      *
      * @param groupId The id of the information group this element belongs to
-     * @param labels  The labels
+     * @param labels The labels
      */
     public InformationTable( String groupId, List<String> labels ) {
         this( UUID.randomUUID().toString(), groupId, labels );
@@ -55,9 +55,9 @@ public class InformationTable extends InformationHtml {
     /**
      * Constructor
      *
-     * @param id      The unique id for this information element
+     * @param id The unique id for this information element
      * @param groupId The id of the information group this element belongs to
-     * @param labels  The labels
+     * @param labels The labels
      */
     public InformationTable( String id, String groupId, List<String> labels ) {
         super( id, groupId, "" );

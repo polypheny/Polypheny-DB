@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,11 @@ public class ResourcePatchRequest extends ResourceValuesRequest {
     public final Map<String, RequestColumn> nameMapping;
     public final Filters filters;
 
+
     public ResourcePatchRequest( List<CatalogTable> tables, List<RequestColumn> requestColumns, List<List<Pair<RequestColumn, Object>>> values, Map<String, RequestColumn> nameMapping, Filters filters, boolean useDynamicParams ) {
         super( tables, requestColumns, values, useDynamicParams );
         this.nameMapping = nameMapping;
         this.filters = filters;
     }
+
 }

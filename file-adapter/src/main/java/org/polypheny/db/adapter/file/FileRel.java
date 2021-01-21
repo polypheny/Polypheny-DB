@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,9 +62,11 @@ public interface FileRel extends RelNode {
         @Setter
         List<Value> updates;
 
+
         public FileImplementor() {
             //intentionally empty
         }
+
 
         public void setFileTable( final FileTranslatableTable fileTable ) {
             this.fileTable = fileTable;
@@ -72,10 +74,12 @@ public interface FileRel extends RelNode {
             this.columnNames.addAll( fileTable.getColumnNames() );
         }
 
+
         public void setColumnNames( final List<String> columnNames ) {
             this.columnNames.clear();
             this.columnNames.addAll( columnNames );
         }
+
 
         public void project( final List<String> columnNames ) {
             //a normal project
@@ -95,6 +99,7 @@ public interface FileRel extends RelNode {
                 }
             }
         }
+
 
         public Integer[] getProjectionMapping() {
             if ( project.size() == 0 ) {
@@ -116,9 +121,11 @@ public interface FileRel extends RelNode {
             }
         }
 
+
         public void addInsertValue( final Value... row ) {
             insertValues.add( row );
         }
+
 
         /**
          * Has to be called in every implement method of all FileRel instances

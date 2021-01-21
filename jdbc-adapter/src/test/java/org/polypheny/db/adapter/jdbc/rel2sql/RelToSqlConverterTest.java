@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1138,7 +1138,7 @@ public class RelToSqlConverterTest {
                         + "ON \"product\".\"product_class_id\" = \"product_class\""
                         + ".\"product_class_id\"\n"
                         + "WHERE \"customer\".\"city\" = 'San Francisco' AND "
-                + "\"product_class\".\"product_department\" = 'Snacks'";
+                        + "\"product_class\".\"product_department\" = 'Snacks'";
         sql( query ).ok( expected );
     }
 
@@ -2323,15 +2323,15 @@ public class RelToSqlConverterTest {
                         + "WHERE \"customer\".\"city\" = 'San Francisco' "
                         + "AND \"product_class\".\"product_department\" = 'Snacks') "
                         + "MATCH_RECOGNIZE(\n"
-                + "ONE ROW PER MATCH\n"
-                + "AFTER MATCH SKIP TO NEXT ROW\n"
-                + "PATTERN (\"STRT\" \"DOWN\" + \"UP\" +)\n"
-                + "DEFINE "
-                + "\"DOWN\" AS PREV(\"DOWN\".\"net_weight\", 0) < "
-                + "PREV(\"DOWN\".\"net_weight\", 1), "
-                + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
-                + "PREV(\"UP\".\"net_weight\", 1))\n"
-                + "ORDER BY \"net_weight\"";
+                        + "ONE ROW PER MATCH\n"
+                        + "AFTER MATCH SKIP TO NEXT ROW\n"
+                        + "PATTERN (\"STRT\" \"DOWN\" + \"UP\" +)\n"
+                        + "DEFINE "
+                        + "\"DOWN\" AS PREV(\"DOWN\".\"net_weight\", 0) < "
+                        + "PREV(\"DOWN\".\"net_weight\", 1), "
+                        + "\"UP\" AS PREV(\"UP\".\"net_weight\", 0) > "
+                        + "PREV(\"UP\".\"net_weight\", 1))\n"
+                        + "ORDER BY \"net_weight\"";
         sql( sql ).ok( expected );
     }
 
@@ -3444,5 +3444,6 @@ public class RelToSqlConverterTest {
         }
 
     }
+
 }
 

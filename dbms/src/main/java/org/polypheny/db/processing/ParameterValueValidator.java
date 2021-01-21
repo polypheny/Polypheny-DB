@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,12 @@ public class ParameterValueValidator extends RelShuttleImpl {
     final RelDataType rowType;
     final DataContext dataContext;
 
+
     public ParameterValueValidator( final RelDataType rowType, DataContext dataContext ) {
         this.rowType = rowType;
         this.dataContext = dataContext;
     }
+
 
     /**
      * Visits a particular child of a parent, without copying a child
@@ -64,12 +66,14 @@ public class ParameterValueValidator extends RelShuttleImpl {
         }
     }
 
+
     @Override
     public RelNode visit( LogicalProject project ) {
         ParameterValueValidator2 validator2 = new ParameterValueValidator2();
         validator2.apply( project.getChildExps() );
         return super.visit( project );
     }
+
 
     class ParameterValueValidator2 extends RexShuttle {
 
@@ -179,6 +183,7 @@ public class ParameterValueValidator extends RelShuttleImpl {
             }
             return super.visitDynamicParam( dynamicParam );
         }
+
     }
 
 
@@ -188,9 +193,11 @@ public class ParameterValueValidator extends RelShuttleImpl {
             super( message );
         }
 
+
         public InvalidParameterValueException( String message, Throwable cause ) {
             super( message, cause );
         }
+
     }
 
 }

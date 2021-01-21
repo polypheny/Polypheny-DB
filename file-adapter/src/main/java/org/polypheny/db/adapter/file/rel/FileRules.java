@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,14 +54,17 @@ public class FileRules {
         );
     }
 
+
     static class FileTableModificationRule extends ConverterRule {
 
         protected final FileConvention convention;
+
 
         public FileTableModificationRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
             super( TableModify.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileTableModificationRule:" + out.getName() );
             this.convention = out;
         }
+
 
         @Override
         public boolean matches( RelOptRuleCall call ) {
@@ -92,6 +95,7 @@ public class FileRules {
                     modify.isFlattened()
             );
         }
+
     }
 
 
@@ -101,11 +105,13 @@ public class FileRules {
             super( RelNode.class, r -> true, convention, EnumerableConvention.INSTANCE, relBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
         }
 
+
         @Override
         public RelNode convert( RelNode rel ) {
             RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
             return new FileToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
         }
+
     }
 
 
@@ -113,10 +119,12 @@ public class FileRules {
 
         protected final FileConvention convention;
 
+
         public FileProjectRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Project.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileProjectRule:" + out.getName() );
             this.convention = out;
         }
+
 
         /**
          * Needed for the {@link FileUnionRule}.
@@ -135,6 +143,7 @@ public class FileRules {
             return super.matches( call );
         }
 
+
         @Override
         public RelNode convert( RelNode rel ) {
             final Project project = (Project) rel;
@@ -148,12 +157,14 @@ public class FileRules {
                     project.getRowType()
             );
         }
+
     }
 
 
     static class FileValuesRule extends ConverterRule {
 
         FileConvention convention;
+
 
         FileValuesRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Values.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileValuesRule:" + out.getName() );
@@ -170,6 +181,7 @@ public class FileRules {
                     values.getTuples(),
                     values.getTraitSet().replace( convention ) );
         }
+
     }
 
 
@@ -177,10 +189,12 @@ public class FileRules {
 
         FileConvention convention;
 
+
         public FileUnionRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Union.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileUnionRule:" + out.getName() );
             this.convention = out;
         }
+
 
         /**
          * The FileUnion is needed for insert statements with arrays
@@ -197,6 +211,7 @@ public class FileRules {
             final RelTraitSet traitSet = union.getTraitSet().replace( convention );
             return new FileUnion( union.getCluster(), traitSet, RelOptRule.convertList( union.getInputs(), convention ), union.all );
         }
+
     }
 
 
@@ -204,10 +219,12 @@ public class FileRules {
 
         FileConvention convention;
 
+
         public FileFilterRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
             super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileFilterRule:" + out.getName() );
             this.convention = out;
         }
+
 
         /**
          * The FileUnion is needed for insert statements with arrays
@@ -224,6 +241,7 @@ public class FileRules {
             final RelTraitSet traitSet = filter.getTraitSet().replace( convention );
             return new FileFilter( filter.getCluster(), traitSet, filter.getInput(), filter.getCondition() );
         }
+
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,10 +40,12 @@ public class FileValues extends Values implements FileRel {
         super( cluster, rowType, tuples, traits );
     }
 
+
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
+
 
     @Override
     public void implement( final FileImplementor implementor ) {
@@ -68,4 +70,5 @@ public class FileValues extends Values implements FileRel {
             implementor.addInsertValue( row );
         }
     }
+
 }

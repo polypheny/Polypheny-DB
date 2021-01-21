@@ -68,12 +68,14 @@ public class RestResult {
     FileOutputStream fos;
     ZipOutputStream zipOut;
 
+
     public RestResult( SqlKind sqlKind, Iterator<Object> iterator, RelDataType dataType, List<ColumnMetaData> columns ) {
         this.sqlKind = sqlKind;
         this.iterator = iterator;
         this.dataType = dataType;
         this.columns = columns;
     }
+
 
     public RestResult transform() {
         if ( sqlKind.belongsTo( SqlKind.DML ) ) {
@@ -83,6 +85,7 @@ public class RestResult {
         }
         return this;
     }
+
 
     private void transformDML() {
         Object object;
@@ -112,6 +115,7 @@ public class RestResult {
         result.add( map );
         this.result = result;
     }
+
 
     private void transformNonDML() {
         StopWatch stopWatch = new StopWatch();
@@ -158,6 +162,7 @@ public class RestResult {
         this.result = result;
     }
 
+
     private String addZipEntry( final Object data ) {
         //see https://www.baeldung.com/java-compress-and-uncompress
         containsFiles = true;
@@ -192,6 +197,7 @@ public class RestResult {
         return tempFileName;
     }
 
+
     private String getContentType( Object o ) {
         ContentInfoUtil util = new ContentInfoUtil();
         ContentInfo info;
@@ -224,6 +230,7 @@ public class RestResult {
             return "";
         }
     }
+
 
     public String getResult( final Response res ) {
         Gson gson = new Gson();

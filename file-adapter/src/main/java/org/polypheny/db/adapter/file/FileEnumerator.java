@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
     final Gson gson;
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
+
 
     /**
      * FileEnumerator
@@ -145,10 +146,12 @@ public class FileEnumerator<E> implements Enumerator<E> {
         numOfCols = columnFolders.size();
     }
 
+
     @Override
     public E current() {
         return current;
     }
+
 
     @Override
     public boolean moveNext() {
@@ -379,15 +382,18 @@ public class FileEnumerator<E> implements Enumerator<E> {
         return out;
     }
 
+
     @Override
     public void reset() {
         fileListPosition = 0;
     }
 
+
     @Override
     public void close() {
 
     }
+
 
     /**
      * Hash only the elements of a row that are part of the primary key

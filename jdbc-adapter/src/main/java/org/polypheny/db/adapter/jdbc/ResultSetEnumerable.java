@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -522,6 +522,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 }
             }
         }
+
     }
 
 
@@ -569,6 +570,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         // returns true if this needs to be executed as batch
         boolean enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
+
     }
+
 }
 

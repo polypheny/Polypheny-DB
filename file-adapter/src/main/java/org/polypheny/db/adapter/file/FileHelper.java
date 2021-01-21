@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,9 +42,11 @@ public class FileHelper {
      * DATE / TIME / TIMESTAMP HELPER FUNCTIONS
      * */
 
+
     static boolean isSqlDateOrTimeOrTS( final Object o ) {
         return (o instanceof Date) || (o instanceof Time) || (o instanceof Timestamp);
     }
+
 
     static Long sqlToLong( final Object o ) {
         if ( o instanceof Time ) {
@@ -57,13 +59,16 @@ public class FileHelper {
         throw new IllegalArgumentException( "Unexpected input, must be SQL Time, Date or Timestamp" );
     }
 
+
     static Long sqlToLong( final Time time ) {
         return time.getTime();
     }
 
+
     static Long sqlToLong( final Date date ) {
         return date.toLocalDate().toEpochDay();
     }
+
 
     static Long sqlToLong( final Timestamp timestamp ) {
         return timestamp.toInstant().toEpochMilli();

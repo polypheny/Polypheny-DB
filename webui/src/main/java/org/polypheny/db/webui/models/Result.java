@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 /**
  * Contains data from a query, the titles of the columns and information about the pagination
  */
-@Accessors( chain = true )
+@Accessors(chain = true)
 public class Result {
 
     /**

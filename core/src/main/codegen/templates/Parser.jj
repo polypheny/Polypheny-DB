@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4578,13 +4578,13 @@ PolyType PolyType(Span s) :
 |
     <FLOAT> { return PolyType.FLOAT; }
 |
-   <FILE> { return PolyType.FILE; }
+    <FILE> { return PolyType.FILE; }
 |
-<IMAGE> { return PolyType.IMAGE; }
+    <IMAGE> { return PolyType.IMAGE; }
 |
-<VIDEO> { return PolyType.VIDEO; }
+    <VIDEO> { return PolyType.VIDEO; }
 |
-<SOUND> { return PolyType.SOUND; }
+    <SOUND> { return PolyType.SOUND; }
 |
     <ANY> { return PolyType.ANY; }
 }

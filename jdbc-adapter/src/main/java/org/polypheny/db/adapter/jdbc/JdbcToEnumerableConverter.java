@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -279,7 +279,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             Expression target,
             Expression calendar_,
             CalendarPolicy calendarPolicy,
-            SqlDialect dialect) {
+            SqlDialect dialect ) {
         final Primitive primitive = Primitive.ofBoxOr( physType.fieldClass( i ) );
         final RelDataType fieldType = physType.getRowType().getFieldList().get( i ).getType();
         final List<Expression> dateTimeArgs = new ArrayList<>();
@@ -334,7 +334,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                                 .append( Expressions.call( resultSet_, getMethod2( polyType ), dateTimeArgs ) )
                                 .appendIf( offset, getTimeZoneExpression( implementor ) ) );
                 break;
-                //When it is of type array, fetch with getObject, because it could either be an array or the elementType
+            //When it is of type array, fetch with getObject, because it could either be an array or the elementType
                 /*case ARRAY:
                 if( dialect.supportsNestedArrays() ) {
                     final Expression x = Expressions.convert_(
@@ -432,4 +432,5 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
         return result.asStatement().toSqlString( dialect );
     }
+
 }

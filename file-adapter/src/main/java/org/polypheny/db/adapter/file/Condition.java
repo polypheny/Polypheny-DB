@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ public class Condition {
     private Object literal;
     private ArrayList<Condition> operands = new ArrayList<>();
 
+
     public Condition( final RexCall call ) {
         this.operator = call.getOperator().getKind();
         for ( RexNode rex : call.getOperands() ) {
@@ -84,9 +85,9 @@ public class Condition {
     /**
      * For linq4j Expressions
      */
-    public Expression getExpression () {
+    public Expression getExpression() {
         List<Expression> operandsExpressions = new ArrayList<>();
-        for( Condition operand : operands ) {
+        for ( Condition operand : operands ) {
             operandsExpressions.add( operand.getExpression() );
         }
 

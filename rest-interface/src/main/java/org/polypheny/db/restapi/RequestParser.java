@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -165,6 +165,7 @@ public class RequestParser {
         return new ResourcePostRequest( tables, requestColumns, nameMapping, values, false );
     }
 
+
     public ResourcePostRequest parsePostMultipartRequest( String resourceName, String[] projections, List<Object> insertValues ) throws ParserException {
         List<CatalogTable> tables = this.parseTables( resourceName );
         List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
@@ -292,6 +293,7 @@ public class RequestParser {
 
         return columns;
     }
+
 
     private String[] getProjectionsValues( Request request ) {
         if ( !request.queryMap().hasKey( "_project" ) ) {
@@ -771,6 +773,7 @@ public class RequestParser {
 
         public final Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters;
         public final Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters;
+
     }
 
 

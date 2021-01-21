@@ -1249,6 +1249,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             final RelNode node = super.visit( other );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
+
     }
 
 
