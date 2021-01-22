@@ -109,8 +109,8 @@ public class PolyphenyDb {
             }
         }
 
-        // Backup data folder (running in test mode)
-        if ( testMode && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
+        // Backup data folder (running in test mode / memory mode)
+        if ( (testMode || memoryCatalog) && FileSystemManager.getInstance().checkIfExists( "data" ) ) {
             if ( !FileSystemManager.getInstance().moveFolder( "data", "data.backup" ) ) {
                 throw new RuntimeException( "Unable to create the backup folder." );
             }

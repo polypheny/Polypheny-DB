@@ -103,22 +103,13 @@ public class CottontailStore extends Store {
         this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
 
         if ( this.isEmbedded ) {
-            File adapterRoot; //  = FileSystemManager.getInstance().registerDataFolder( "cottontail-db" );
-
-            if ( Catalog.memoryCatalog ) {
-                adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/temp-cottontaildb-store" );
-            } else {
-                adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/cottontaildb-store" );
-            }
+            File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/cottontaildb-store" );
             File embeddedDir = new File( adapterRoot, "store" + getStoreId() );
 
             if ( !embeddedDir.exists() ) {
                 if ( !embeddedDir.mkdirs() ) {
                     throw new RuntimeException( "Could not create root directory" );
                 }
-            }
-            if ( Catalog.memoryCatalog ) {
-                FileSystemManager.getInstance().recursiveDeleteFolderOnExit( "data/temp-cottontaildb-store" );
             }
 
             File configFile = new File( embeddedDir, "config.json" );
