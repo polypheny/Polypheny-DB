@@ -74,21 +74,13 @@ public class FileStore extends Store {
 
 
     private void setRootDir() {
-        File adapterRoot;
-        if ( Catalog.memoryCatalog ) {
-            adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/temp-file-store" );
-        } else {
-            adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
-        }
+        File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
         rootDir = new File( adapterRoot, "store" + getStoreId() );
 
         if ( !rootDir.exists() ) {
             if ( !rootDir.mkdirs() ) {
                 throw new RuntimeException( "Could not create root directory" );
             }
-        }
-        if ( Catalog.memoryCatalog ) {
-            FileSystemManager.getInstance().recursiveDeleteFolderOnExit( "data/temp-file-store" );
         }
         //subfolder for the write ahead log
         this.WAL = new File( rootDir, "WAL" );
