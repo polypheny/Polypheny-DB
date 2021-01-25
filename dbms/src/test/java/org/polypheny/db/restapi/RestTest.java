@@ -164,7 +164,7 @@ public class RestTest {
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.resttest" )
                 .queryString( "test.resttest.ttinyint", "=" + 22 );
         Assert.assertEquals(
-                "{\"result\":[{\"test.resttest.tsmallint\":45,\"test.resttest.tdecimal\":123.00,\"test.resttest.ttinyint\":22,\"test.resttest.treal\":0.3333,\"test.resttest.tinteger\":9876,\"test.resttest.ttime\":\"43505000\",\"test.resttest.tbigint\":1234,\"test.resttest.tboolean\":true,\"test.resttest.tdate\":18466,\"test.resttest.tdouble\":1.999999,\"test.resttest.tvarchar\":\"hallo\",\"test.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1,\"query\":\"test.resttest.ttinyint\\u003d%3D22\",\"uri\":\"/restapi/v1/res/test.resttest\"}",
+                "{\"result\":[{\"test.resttest.tsmallint\":45,\"test.resttest.tdecimal\":123.00,\"test.resttest.ttinyint\":22,\"test.resttest.treal\":0.3333,\"test.resttest.tinteger\":9876,\"test.resttest.ttime\":\"43505000\",\"test.resttest.tbigint\":1234,\"test.resttest.tboolean\":true,\"test.resttest.tdate\":18466,\"test.resttest.tdouble\":1.999999,\"test.resttest.tvarchar\":\"hallo\",\"test.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}",
                 executeRest( request ).getBody() );
 
         // Delete
@@ -179,7 +179,7 @@ public class RestTest {
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.resttest" )
                 .queryString( "test.resttest.tinteger", "=" + 9876 );
         Assert.assertEquals(
-                "{\"result\":[],\"size\":0,\"query\":\"test.resttest.tinteger\\u003d%3D9876\",\"uri\":\"/restapi/v1/res/test.resttest\"}",
+                "{\"result\":[],\"size\":0}",
                 executeRest( request ).getBody() );
     }
 

@@ -108,10 +108,8 @@ public class RestResult {
             rowsChanged = num;
         }
         List<Map<String, Object>> result = new ArrayList<>();
-        ArrayList<Object> row = new ArrayList<>();
-        row.add( rowsChanged );
         HashMap<String, Object> map = new HashMap<>();
-        map.put( columns.get( 0 ).columnName, row );
+        map.put( columns.get( 0 ).columnName, rowsChanged );
         result.add( map );
         this.result = result;
     }
