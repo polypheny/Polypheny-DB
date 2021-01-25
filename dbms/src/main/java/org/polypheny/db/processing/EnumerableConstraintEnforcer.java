@@ -380,12 +380,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable;
-                try {
-                    foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
+                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
                 builder.push( input );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
@@ -461,12 +456,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable;
-                try {
-                    foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
+                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );

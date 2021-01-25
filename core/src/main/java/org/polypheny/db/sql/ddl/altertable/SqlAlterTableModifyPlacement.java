@@ -22,8 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -33,7 +32,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -93,31 +91,21 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
             columnIds.add( catalogColumn.id );
         }
-        Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
-        if ( storeInstance == null ) {
-            throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
-                    RESOURCE.unknownStoreName( storeName.getSimple() ) );
-        }
+        DataStore storeInstance = getDataStoreInstance( storeName );
         try {
             // Check whether this placement already exists
-            if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
+            if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
                 throw SqlUtil.newContextException(
                         storeName.getParserPosition(),
                         RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
-            // Check whether the store supports schema changes
-            if ( storeInstance.isSchemaReadOnly() ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-            }
+
             // Which columns to remove
-            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) ) {
+            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
                 if ( !columnIds.contains( placement.columnId ) ) {
                     // Check whether there are any indexes located on the store requiring this column
                     for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
-                        if ( index.location == storeInstance.getStoreId() && index.key.columnIds.contains( placement.columnId ) ) {
+                        if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( placement.columnId ) ) {
                             throw SqlUtil.newContextException(
                                     storeName.getParserPosition(),
                                     RESOURCE.indexPreventsRemovalOfPlacement( index.name, Catalog.getInstance().getColumn( placement.columnId ).name ) );
@@ -130,7 +118,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         if ( placement.placementType == PlacementType.MANUAL ) {
                             // Make placement manual
                             Catalog.getInstance().updateColumnPlacementType(
-                                    storeInstance.getStoreId(),
+                                    storeInstance.getAdapterId(),
                                     placement.columnId,
                                     PlacementType.AUTOMATIC );
                         }
@@ -142,25 +130,25 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
                         }
                         // Drop Column on store
-                        storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), placement.columnId ) );
+                        storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getAdapterId(), placement.columnId ) );
                         // Drop column placement
-                        Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), placement.columnId );
+                        Catalog.getInstance().deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
                     }
                 }
             }
             // Which columns to add
             List<CatalogColumn> addedColumns = new LinkedList<>();
             for ( long cid : columnIds ) {
-                if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), cid ) ) {
-                    CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), cid );
+                if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
+                    CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getAdapterId(), cid );
                     if ( placement.placementType == PlacementType.AUTOMATIC ) {
                         // Make placement manual
-                        Catalog.getInstance().updateColumnPlacementType( storeInstance.getStoreId(), cid, PlacementType.MANUAL );
+                        Catalog.getInstance().updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
                     }
                 } else {
                     // Create column placement
                     Catalog.getInstance().addColumnPlacement(
-                            storeInstance.getStoreId(),
+                            storeInstance.getAdapterId(),
                             cid,
                             PlacementType.MANUAL,
                             null,
@@ -175,9 +163,9 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             // Copy the data to the newly added column placements
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
             if ( addedColumns.size() > 0 ) {
-                dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
+                dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getAdapter( storeInstance.getAdapterId() ), addedColumns );
             }
-        } catch ( GenericCatalogException | UnknownColumnPlacementException | UnknownStoreException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
 

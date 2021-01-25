@@ -41,8 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -56,7 +55,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
@@ -176,19 +175,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 throw SqlUtil.newContextException( SqlParserPos.ZERO, RESOURCE.createTableRequiresColumnList() );
             }
 
-            List<Store> stores;
+            List<DataStore> stores;
             if ( this.store != null ) {
-                Store storeInstance = StoreManager.getInstance().getStore( this.store.getSimple() );
-                if ( storeInstance == null ) {
-                    throw SqlUtil.newContextException( store.getParserPosition(), RESOURCE.unknownStoreName( store.getSimple() ) );
-                }
-                // Check whether the store supports schema changes
-                if ( storeInstance.isSchemaReadOnly() ) {
-                    throw SqlUtil.newContextException(
-                            store.getParserPosition(),
-                            RESOURCE.storeIsSchemaReadOnly( store.getSimple() ) );
-                }
-                stores = ImmutableList.of( storeInstance );
+                stores = ImmutableList.of( getDataStoreInstance( store ) );
             } else {
                 // Ask router on which store(s) the table should be placed
                 stores = statement.getRouter().createTable( schemaId, statement );
@@ -231,9 +220,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             collation
                     );
 
-                    for ( Store s : stores ) {
+                    for ( DataStore s : stores ) {
                         catalog.addColumnPlacement(
-                                s.getStoreId(),
+                                s.getAdapterId(),
                                 addedColumnId,
                                 store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL,
                                 null,
@@ -275,10 +264,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
             CatalogTable catalogTable = catalog.getTable( tableId );
-            for ( Store store : stores ) {
+            for ( DataStore store : stores ) {
                 store.createTable( context, catalogTable );
             }
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownUserException e ) {
             throw new RuntimeException( e );
         }
     }

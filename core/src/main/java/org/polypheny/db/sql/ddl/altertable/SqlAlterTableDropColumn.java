@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.StoreManager;
@@ -32,7 +30,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -87,13 +84,9 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, column );
         try {
-            // Check whether all stores support schema changes
+            // Make sure that all adapters are of type store (and not source)
             for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacements( catalogColumn.id ) ) {
-                if ( StoreManager.getInstance().getStore( dp.storeId ).isSchemaReadOnly() ) {
-                    throw SqlUtil.newContextException(
-                            SqlParserPos.ZERO,
-                            RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( dp.storeId ).getUniqueName() ) );
-                }
+                getDataStoreInstance( dp.adapterId );
             }
             Catalog catalog = Catalog.getInstance();
             // Check if column is part of an key
@@ -114,8 +107,8 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
             // Delete column from underlying data stores
             for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacementsByColumn( catalogColumn.id ) ) {
-                StoreManager.getInstance().getStore( dp.storeId ).dropColumn( context, dp );
-                Catalog.getInstance().deleteColumnPlacement( dp.storeId, dp.columnId );
+                StoreManager.getInstance().getStore( dp.adapterId ).dropColumn( context, dp );
+                Catalog.getInstance().deleteColumnPlacement( dp.adapterId, dp.columnId );
             }
 
             // Delete from catalog

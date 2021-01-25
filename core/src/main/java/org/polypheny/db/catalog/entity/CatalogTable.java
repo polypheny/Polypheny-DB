@@ -48,7 +48,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final TableType tableType;
     public final String definition;
     public final Long primaryKey;
-    public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
+    public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
 
 
     public CatalogTable(
@@ -62,7 +62,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             @NonNull final TableType type,
             final String definition,
             final Long primaryKey,
-            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore ) {
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -73,7 +73,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.tableType = type;
         this.definition = definition;
         this.primaryKey = primaryKey;
-        this.placementsByStore = placementsByStore;
+        this.placementsByAdapter = placementsByAdapter;
     }
 
 

@@ -17,12 +17,12 @@
 package org.polypheny.db.processing;
 
 import java.util.List;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.transaction.Transaction;
 
 public interface DataMigrator {
 
-    void copyData( Transaction transaction, CatalogStore store, List<CatalogColumn> columns );
+    void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns );
 
 }

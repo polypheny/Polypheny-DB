@@ -19,7 +19,7 @@ package org.polypheny.db.transaction;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.information.InformationManager;
@@ -41,9 +41,9 @@ public interface Transaction {
 
     void rollback() throws TransactionException;
 
-    void registerInvolvedStore( Store store );
+    void registerInvolvedAdapter( Adapter adapter );
 
-    List<Store> getInvolvedStores();
+    List<Adapter> getInvolvedAdapters();
 
     PolyphenyDbSchema getSchema();
 

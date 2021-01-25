@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
@@ -54,7 +54,7 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcStore extends Store {
+public abstract class AbstractJdbcStore extends DataStore {
 
     private InformationPage informationPage;
     private InformationGroup informationGroupConnectionPool;
@@ -73,7 +73,7 @@ public abstract class AbstractJdbcStore extends Store {
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
             boolean persistent ) {
-        super( storeId, uniqueName, settings, false, false, persistent );
+        super( storeId, uniqueName, settings, persistent );
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager
@@ -147,10 +147,10 @@ public abstract class AbstractJdbcStore extends Store {
         StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
         executeUpdate( query, context );
         // Add physical names to placements
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
             try {
                 catalog.updateColumnPlacementPhysicalNames(
-                        getStoreId(),
+                        getAdapterId(),
                         placement.columnId,
                         getDefaultPhysicalSchemaName(),
                         physicalTableName,
@@ -171,7 +171,7 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( dialect.quoteIdentifier( physicalTableName ) )
                 .append( " ( " );
         boolean first = true;
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
             CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
@@ -217,7 +217,7 @@ public abstract class AbstractJdbcStore extends Store {
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows adding columns to linked tables.
         CatalogColumnPlacement ccp = null;
-        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
             // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
             if ( p.columnId != catalogColumn.id ) {
                 ccp = p;
@@ -236,7 +236,7 @@ public abstract class AbstractJdbcStore extends Store {
         // Add physical name to placement
         try {
             catalog.updateColumnPlacementPhysicalNames(
-                    getStoreId(),
+                    getAdapterId(),
                     catalogColumn.id,
                     physicalSchemaName,
                     physicalTableName,
@@ -342,8 +342,8 @@ public abstract class AbstractJdbcStore extends Store {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
@@ -370,8 +370,8 @@ public abstract class AbstractJdbcStore extends Store {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
@@ -383,7 +383,7 @@ public abstract class AbstractJdbcStore extends Store {
 
     protected void executeUpdate( StringBuilder builder, Context context ) {
         try {
-            context.getStatement().getTransaction().registerInvolvedStore( this );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new RuntimeException( e );

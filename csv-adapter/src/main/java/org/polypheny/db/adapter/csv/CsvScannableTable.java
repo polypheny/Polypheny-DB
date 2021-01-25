@@ -67,7 +67,7 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
 
     @Override
     public Enumerable<Object[]> scan( DataContext dataContext ) {
-        dataContext.getStatement().getTransaction().registerInvolvedStore( csvStore );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvStore );
         final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object[]>() {

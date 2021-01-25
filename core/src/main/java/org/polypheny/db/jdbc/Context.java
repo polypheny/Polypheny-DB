@@ -66,5 +66,4 @@ public interface Context {
 
     int getCurrentUserId();
 
-    int getDefaultStore();
 }

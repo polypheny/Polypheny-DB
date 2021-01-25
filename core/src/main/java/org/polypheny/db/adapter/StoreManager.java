@@ -26,23 +26,21 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import org.polypheny.db.adapter.Store.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AdapterSetting;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogStore;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.reflections.Reflections;
 
 
-public class StoreManager {
+public class StoreManager extends AdapterManager {
 
     private static final StoreManager INSTANCE = new StoreManager();
 
-    private final Map<Integer, Store> storesById = new HashMap<>();
-    private final Map<String, Store> storesByName = new HashMap<>();
 
     public static StoreManager getInstance() {
         return INSTANCE;
@@ -54,29 +52,42 @@ public class StoreManager {
     }
 
 
-    public Store getStore( String uniqueName ) {
-        uniqueName = uniqueName.toLowerCase();
-        return storesByName.get( uniqueName );
+    public DataStore getStore( String uniqueName ) {
+        Adapter adapter = getAdapter( uniqueName );
+        if ( adapter instanceof DataStore ) {
+            return (DataStore) adapter;
+        }
+        return null;
     }
 
 
-    public Store getStore( int id ) {
-        return storesById.get( id );
+    public DataStore getStore( int id ) {
+        Adapter adapter = getAdapter( id );
+        if ( adapter instanceof DataStore ) {
+            return (DataStore) adapter;
+        }
+        return null;
     }
 
 
-    public ImmutableMap<String, Store> getStores() {
-        return ImmutableMap.copyOf( storesByName );
+    public ImmutableMap<String, DataStore> getStores() {
+        Map<String, DataStore> map = new HashMap<>();
+        for ( Entry<String, Adapter> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataStore ) {
+                map.put( entry.getKey(), (DataStore) entry.getValue() );
+            }
+        }
+        return ImmutableMap.copyOf( map );
     }
 
 
-    public List<AdapterInformation> getAvailableAdapters() {
+    public List<AdapterInformation> getAvailableStoreAdapters() {
         Reflections reflections = new Reflections( "org.polypheny.db" );
-        Set<Class> classes = ImmutableSet.copyOf( reflections.getSubTypesOf( Store.class ) );
+        Set<Class> classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataStore.class ) );
         List<AdapterInformation> result = new LinkedList<>();
         try {
             //noinspection unchecked
-            for ( Class<Store> clazz : classes ) {
+            for ( Class<DataStore> clazz : classes ) {
                 // Exclude abstract classes
                 if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
                     String name = (String) clazz.getDeclaredField( "ADAPTER_NAME" ).get( null );
@@ -92,39 +103,19 @@ public class StoreManager {
     }
 
 
-    /**
-     * Restores stores from catalog
-     */
-    public void restoreStores( Catalog catalog ) {
-        try {
-            List<CatalogStore> stores = catalog.getStores();
-            for ( CatalogStore store : stores ) {
-                Class<?> clazz = Class.forName( store.adapterClazz );
-                Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
-                Store instance = (Store) ctor.newInstance( store.id, store.uniqueName, store.settings );
-                storesByName.put( instance.getUniqueName(), instance );
-                storesById.put( instance.getStoreId(), instance );
-            }
-        } catch ( GenericCatalogException | NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
-            throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
-        }
-    }
-
-
-    public Store addStore( Catalog catalog, String clazzName, String uniqueName, Map<String, String> settings ) {
+    public DataStore addStore( Catalog catalog, String clazzName, String uniqueName, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
-        if (storesByName.containsKey( uniqueName )) {
-            throw new RuntimeException( "There is already a store with this unique name" );
+        if ( getAdapters().containsKey( uniqueName ) ) {
+            throw new RuntimeException( "There is already an adapter with this unique name" );
         }
-        Store instance;
+        DataStore instance;
         try {
             Class<?> clazz = Class.forName( clazzName );
             Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
-            int storeId = catalog.addStore( uniqueName, clazzName, settings );
-            instance = (Store) ctor.newInstance( storeId, uniqueName, settings );
-            storesByName.put( instance.getUniqueName(), instance );
-            storesById.put( instance.getStoreId(), instance );
-        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException | GenericCatalogException e ) {
+            int storeId = catalog.addAdapter( uniqueName, clazzName, AdapterType.STORE, settings );
+            instance = (DataStore) ctor.newInstance( storeId, uniqueName, settings );
+            addAdapter( instance );
+        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e ) {
             throw new RuntimeException( "Something went wrong while adding a new store", e );
         }
         return instance;
@@ -133,39 +124,30 @@ public class StoreManager {
 
     public void removeStore( Catalog catalog, String uniqueName ) {
         uniqueName = uniqueName.toLowerCase();
-        if (!storesByName.containsKey( uniqueName )) {
-            throw new RuntimeException( "Unknown store: " + uniqueName );
+        DataStore storeInstance = getStore( uniqueName );
+        if ( storeInstance == null ) {
+            throw new RuntimeException( "Unknown data store: " + uniqueName );
         }
         try {
-            CatalogStore catalogStore = catalog.getStore( uniqueName );
+            CatalogAdapter catalogAdapter = catalog.getAdapter( uniqueName );
 
             // Check if the store has any placements
-            List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id );
-            if (placements.size() != 0) {
-                throw new RuntimeException( "There is still data placed on this store" );
+            List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( catalogAdapter.id );
+            if ( placements.size() != 0 ) {
+                throw new RuntimeException( "There is still data placed on this data store" );
             }
 
             // Shutdown store
-            storesByName.get( uniqueName ).shutdown();
+            storeInstance.shutdown();
 
             // remove store from maps
-            storesById.remove( catalogStore.id );
-            storesByName.remove( uniqueName );
+            removeAdapter( storeInstance );
 
             // delete store from catalog
-            catalog.deleteStore( catalogStore.id );
-        } catch ( GenericCatalogException | UnknownStoreException e ) {
-            throw new RuntimeException( "Something went wrong while removing a store", e );
+            catalog.deleteAdapter( catalogAdapter.id );
+        } catch ( UnknownAdapterException e ) {
+            throw new RuntimeException( "Something went wrong while removing a data store", e );
         }
-    }
-
-
-    @AllArgsConstructor
-    public static class AdapterInformation {
-        public final String name;
-        public final String description;
-        public final Class clazz;
-        public final List<AdapterSetting> settings;
     }
 
 }

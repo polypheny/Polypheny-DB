@@ -901,5 +901,8 @@ public interface PolyphenyDbResource {
     @BaseMessage("There is already an index with the name ''{0}''!")
     ExInst<PolyphenyDbException> indexExists( String indexName );
 
+    @BaseMessage("The adapter name ''{0}'' refers to a data source. DDL statements are not allowed for data sources!")
+    ExInst<PolyphenyDbException> ddlOnDataSource( String uniqueName );
+
 }
 

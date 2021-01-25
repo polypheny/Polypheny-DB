@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -56,22 +56,22 @@ public class SimpleRouter extends AbstractRouter {
     // Execute the table scan on the first placement of a table
     @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
-        // Find the store with the most column placements
-        int storeIdWithMostPlacements = -1;
+        // Find the adapter with the most column placements
+        int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet() ) {
+        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
             if ( entry.getValue().size() > numOfPlacements ) {
-                storeIdWithMostPlacements = entry.getKey();
+                adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
             }
         }
 
-        // Take the store with most placements as base and add missing column placements
+        // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
         try {
             for ( long cid : table.columnIds ) {
-                if ( table.placementsByStore.get( storeIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( storeIdWithMostPlacements, cid ) );
+                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
+                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
                 } else {
                     placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
                 }
@@ -84,23 +84,21 @@ public class SimpleRouter extends AbstractRouter {
     }
 
 
-    // Create table on the first store in the list that supports schema changes
+    // Create table on the first store in the list
     @Override
-    public List<Store> createTable( long schemaId, Statement statement ) {
-        Map<String, Store> availableStores = StoreManager.getInstance().getStores();
-        for ( Store store : availableStores.values() ) {
-            if ( !store.isSchemaReadOnly() ) {
-                return ImmutableList.of( store );
-            }
+    public List<DataStore> createTable( long schemaId, Statement statement ) {
+        Map<String, DataStore> availableStores = StoreManager.getInstance().getStores();
+        for ( DataStore store : availableStores.values() ) {
+            return ImmutableList.of( store );
         }
-        throw new RuntimeException( "No suitable store found" );
+        throw new RuntimeException( "No suitable data store found" );
     }
 
 
-    // Add column on the first store holding a placement of this table that supports schema changes
+    // Add column on the first store holding a placement of this table
     @Override
-    public List<Store> addColumn( CatalogTable catalogTable, Statement statement ) {
-        return ImmutableList.of( StoreManager.getInstance().getStore( catalogTable.placementsByStore.keySet().asList().get( 0 ) ) );
+    public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
+        return ImmutableList.of( StoreManager.getInstance().getStore( catalogTable.placementsByAdapter.keySet().asList().get( 0 ) ) );
     }
 
 

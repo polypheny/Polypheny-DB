@@ -449,12 +449,6 @@ public final class Schemas {
 
 
             @Override
-            public int getDefaultStore() {
-                return 0;
-            }
-
-
-            @Override
             public PolyphenyDbPrepare.SparkHandler spark() {
                 final boolean enable = RuntimeConfig.SPARK_ENGINE.getBoolean();
                 return PolyphenyDbPrepare.Dummy.getSparkHandler( enable );

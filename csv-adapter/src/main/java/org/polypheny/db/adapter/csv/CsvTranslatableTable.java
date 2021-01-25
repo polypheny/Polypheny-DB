@@ -77,7 +77,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
      * Called from generated code.
      */
     public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
-        dataContext.getStatement().getTransaction().registerInvolvedStore( csvStore );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvStore );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object>() {
             @Override

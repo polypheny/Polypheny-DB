@@ -41,7 +41,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
-    private final InformationTable storeInformation;
+    private final InformationTable adapterInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -51,7 +51,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
 
-        this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name" ) );
+        this.adapterInformation = addCatalogInformationTable( page, "Adapters", Arrays.asList( "ID", "Name", "Type" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
@@ -95,17 +95,16 @@ public class CatalogInfoPage implements PropertyChangeListener {
         schemaInformation.reset();
         tableInformation.reset();
         columnInformation.reset();
-        storeInformation.reset();
+        adapterInformation.reset();
         indexInformation.reset();
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
         }
         try {
-            catalog.getStores().forEach( s -> {
-                storeInformation.addRow( s.id, s.uniqueName );
+            catalog.getAdapters().forEach( s -> {
+                adapterInformation.addRow( s.id, s.uniqueName, s.type );
             } );
-
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
             } );

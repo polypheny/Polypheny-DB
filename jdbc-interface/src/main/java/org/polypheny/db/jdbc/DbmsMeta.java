@@ -1295,7 +1295,7 @@ public class DbmsMeta implements ProtobufMeta {
                 } else {
                     num = ((Number) object).intValue();
                 }
-                // Check if num is equal for all stores
+                // Check if num is equal for all adapters
                 if ( rowsChanged != -1 && rowsChanged != num ) {
                     throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
                 }

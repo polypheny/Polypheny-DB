@@ -77,17 +77,19 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.Store.AdapterSetting;
-import org.polypheny.db.adapter.Store.FunctionalIndexInfo;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.adapter.StoreManager.AdapterInformation;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -95,13 +97,11 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
@@ -143,7 +143,6 @@ import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
-import org.polypheny.db.webui.models.Adapter;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.Debug;
@@ -1561,10 +1560,10 @@ public class Crud implements InformationObserver {
                 String[] arr = new String[5];
                 String storeUniqueName;
                 if ( catalogIndex.location == 0 ) {
-                    //a polystore index
+                    // a polystore index
                     storeUniqueName = "Polypheny-DB";
                 } else {
-                    storeUniqueName = catalog.getStore( catalogIndex.location ).uniqueName;
+                    storeUniqueName = catalog.getAdapter( catalogIndex.location ).uniqueName;
                 }
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
@@ -1575,8 +1574,8 @@ public class Crud implements InformationObserver {
             }
 
             // Get functional indexes
-            for ( Integer storeId : catalogTable.placementsByStore.keySet() ) {
-                Store store = StoreManager.getInstance().getStore( storeId );
+            for ( Integer storeId : catalogTable.placementsByAdapter.keySet() ) {
+                DataStore store = StoreManager.getInstance().getStore( storeId );
                 for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
                     String[] arr = new String[5];
                     arr[0] = "";
@@ -1590,7 +1589,7 @@ public class Crud implements InformationObserver {
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | GenericCatalogException | UnknownStoreException e ) {
+        } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -1677,10 +1676,10 @@ public class Crud implements InformationObserver {
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
             Placement p = new Placement();
-            for ( CatalogStore catalogStore : catalog.getStores() ) {
-                Store store = StoreManager.getInstance().getStore( catalogStore.id );
-                List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                p.addStore( new Placement.Store( store.getUniqueName(), store.getAdapterName(), store.isDataReadOnly(), store.isSchemaReadOnly(), placements ) );
+            for ( CatalogAdapter catalogAdapter : catalog.getAdapters() ) {
+                Adapter adapter = StoreManager.getInstance().getAdapter( catalogAdapter.id );
+                List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id );
+                p.addAdapter( new Placement.Store( adapter.getUniqueName(), adapter.getAdapterName(), placements ) );
             }
             return p;
         } catch ( GenericCatalogException | UnknownTableException e ) {
@@ -1729,18 +1728,18 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Get current stores
+     * Get deployed data stores
      */
     String getStores( final Request req, final Response res ) {
-        ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
-        Store[] out = stores.values().toArray( new Store[0] );
-        return storeSerializer().toJson( out, Store[].class );
+        ImmutableMap<String, DataStore> stores = StoreManager.getInstance().getStores();
+        DataStore[] out = stores.values().toArray( new DataStore[0] );
+        return storeSerializer().toJson( out, DataStore[].class );
     }
 
 
     private Gson storeSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
-        JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
+        JsonSerializer<DataStore> storeSerializer = ( src, typeOfSrc, context ) -> {
             List<AdapterSetting> adapterSettings = new ArrayList<>();
             for ( AdapterSetting s : src.getAvailableSettings() ) {
                 for ( String current : src.getCurrentSettings().keySet() ) {
@@ -1751,19 +1750,17 @@ public class Crud implements InformationObserver {
             }
 
             JsonObject jsonStore = new JsonObject();
-            jsonStore.addProperty( "storeId", src.getStoreId() );
+            jsonStore.addProperty( "storeId", src.getAdapterId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
             jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
-            jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
-            jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
             jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
-        return new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
+        return new GsonBuilder().registerTypeAdapter( DataStore.class, storeSerializer ).create();
     }
 
 
@@ -1773,9 +1770,9 @@ public class Crud implements InformationObserver {
     String getAvailableStoresForIndexes( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
         Placement dataPlacements = getPlacements( index );
-        ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
-        List<Store> filteredStores = stores.values().stream().filter( ( s ) -> {
-            if ( s.isSchemaReadOnly() || s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
+        ImmutableMap<String, DataStore> stores = StoreManager.getInstance().getStores();
+        List<DataStore> filteredStores = stores.values().stream().filter( ( s ) -> {
+            if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
                 return false;
             }
             if ( dataPlacements.stores.stream().noneMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) ) ) {
@@ -1785,7 +1782,7 @@ public class Crud implements InformationObserver {
         } ).collect( Collectors.toList() );
         //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
         Gson storeSerializer = storeSerializer();
-        JsonArray jsonArray = storeSerializer.toJsonTree( filteredStores.toArray( new Store[0] ) ).getAsJsonArray();
+        JsonArray jsonArray = storeSerializer.toJsonTree( filteredStores.toArray( new DataStore[0] ) ).getAsJsonArray();
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
             JsonObject pdbFakeStore = new JsonObject();
             pdbFakeStore.addProperty( "uniqueName", "Polypheny-DB" );
@@ -1799,9 +1796,9 @@ public class Crud implements InformationObserver {
     /**
      * Update the settings of a store
      */
-    Store updateStoreSettings( final Request req, final Response res ) {
+    DataStore updateStoreSettings( final Request req, final Response res ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
-        JsonDeserializer<Store> storeDeserializer = ( json, typeOfT, context ) -> {
+        JsonDeserializer<DataStore> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
             String type = jsonObject.get( "type" ).getAsString();
             try {
@@ -1810,13 +1807,13 @@ public class Crud implements InformationObserver {
                 throw new JsonParseException( "Unknown element type: " + type, cnfe );
             }
         };
-        Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeDeserializer ).create();
-        Store store = storeGson.fromJson( req.body(), Store.class );
-        StoreManager.getInstance().getStore( store.getStoreId() ).updateSettings( store.getCurrentSettings() );
+        Gson storeGson = new GsonBuilder().registerTypeAdapter( DataStore.class, storeDeserializer ).create();
+        DataStore store = storeGson.fromJson( req.body(), DataStore.class );
+        StoreManager.getInstance().getStore( store.getAdapterId() ).updateSettings( store.getCurrentSettings() );
         return store;
     }
 
-
+    // TODO NH: Rename getAvailableStores
     /**
      * Get available adapters
      */
@@ -1831,23 +1828,23 @@ public class Crud implements InformationObserver {
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
 
-        List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableAdapters();
+        List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableStoreAdapters();
         AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
         return adapterGson.toJson( out, AdapterInformation[].class );
     }
 
 
     /**
-     * Deploy a new store
+     * Deploy a new data store
      */
     boolean addStore( final Request req, final Response res ) {
         String body = req.body();
-        Adapter a = this.gson.fromJson( body, Adapter.class );
+        org.polypheny.db.webui.models.Adapter a = this.gson.fromJson( body, org.polypheny.db.webui.models.Adapter.class );
 
         try {
             StoreManager.getInstance().addStore( catalog, a.clazzName, a.uniqueName, a.settings );
         } catch ( Exception e ) {
-            log.error( "Could not deploy store", e );
+            log.error( "Could not deploy data store", e );
             return false;
         }
         return true;
@@ -2669,7 +2666,7 @@ public class Crud implements InformationObserver {
                                 dbCol.defaultValue = catalogColumn.defaultValue.value;
                             }
                         }
-                    } catch ( UnknownColumnException | GenericCatalogException | UnknownTableException e ) {
+                    } catch ( UnknownColumnException | GenericCatalogException e ) {
                         log.error( "Caught exception", e );
                     }
                 }
@@ -2808,7 +2805,7 @@ public class Crud implements InformationObserver {
                     } else {
                         throw new QueryExecutionException( "Result is null" );
                     }
-                    // Check if num is equal for all stores
+                    // Check if num is equal for all adapters
                     if ( rowsChanged != -1 && rowsChanged != num ) {
                         throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
                     }

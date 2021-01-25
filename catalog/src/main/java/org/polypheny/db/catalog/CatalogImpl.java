@@ -41,8 +41,10 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -54,11 +56,12 @@ import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
@@ -72,8 +75,8 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
+import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Transaction;
@@ -110,8 +113,8 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], CatalogColumn> columnNames;
     private static BTreeMap<Object[], CatalogColumnPlacement> columnPlacements;
 
-    private static HTreeMap<Integer, CatalogStore> stores;
-    private static HTreeMap<String, CatalogStore> storeNames;
+    private static HTreeMap<Integer, CatalogAdapter> adapters;
+    private static HTreeMap<String, CatalogAdapter> adapterNames;
 
     private static HTreeMap<Integer, CatalogQueryInterface> queryInterfaces;
     private static HTreeMap<String, CatalogQueryInterface> queryInterfaceNames;
@@ -127,7 +130,7 @@ public class CatalogImpl extends Catalog {
     private static Long openTable;
 
 
-    private static final AtomicInteger storeIdBuilder = new AtomicInteger( 1 );
+    private static final AtomicInteger adapterIdBuilder = new AtomicInteger( 1 );
     private static final AtomicInteger queryInterfaceIdBuilder = new AtomicInteger( 1 );
     private static final AtomicInteger userIdBuilder = new AtomicInteger( 1 );
 
@@ -228,7 +231,7 @@ public class CatalogImpl extends Catalog {
                     insertDefaultData();
                 }
 
-            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownStoreException | UnknownQueryInterfaceException | UnknownColumnException e ) {
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownAdapterException | UnknownQueryInterfaceException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
             if ( doInitInformationPage ) {
@@ -295,7 +298,7 @@ public class CatalogImpl extends Catalog {
             initTableInfo( db );
             initColumnInfo( db );
             initKeysAndConstraintsInfo( db );
-            initStoreInfo( db );
+            initAdapterInfo( db );
             initQueryInterfaceInfo( db );
         } catch ( SerializationError e ) {
             log.error( "!!!!!!!!!!! Error while restoring the catalog !!!!!!!!!!!" );
@@ -307,10 +310,10 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Restores all columnPlacements in the dedicated store
+     * Restores all columnPlacements in the dedicated adapters
      */
     @Override
-    public void restoreColumnPlacements( Transaction transaction ) throws GenericCatalogException {
+    public void restoreColumnPlacements( Transaction transaction ) {
         StoreManager manager = StoreManager.getInstance();
 
         Map<Integer, List<Long>> restoredTables = new HashMap<>();
@@ -320,56 +323,44 @@ public class CatalogImpl extends Catalog {
             if ( placements.size() == 0 ) {
                 // no placements shouldn't happen
             } else if ( placements.size() == 1 ) {
-                Store store = manager.getStore( placements.get( 0 ).storeId );
+                DataStore store = manager.getStore( placements.get( 0 ).adapterId );
                 if ( !store.isPersistent() ) {
-
-                    CatalogTable catalogTable = null;
-                    try {
-                        catalogTable = getTable( c.tableId );
-                    } catch ( UnknownTableException e ) {
-                        throw new GenericCatalogException( e );
-                    }
+                    CatalogTable catalogTable = getTable( c.tableId );
                     // TODO only full placements atm here
 
-                    if ( !restoredTables.containsKey( store.getStoreId() ) ) {
+                    if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
                         store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                        restoredTables.put( store.getStoreId(), Collections.singletonList( catalogTable.id ) );
+                        restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
 
-                    } else if ( !(restoredTables.containsKey( store.getStoreId() ) && restoredTables.get( store.getStoreId() ).contains( catalogTable.id )) ) {
+                    } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
                         store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                        List<Long> ids = new ArrayList<>( restoredTables.get( store.getStoreId() ) );
+                        List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
                         ids.add( catalogTable.id );
-                        restoredTables.put( store.getStoreId(), ids );
+                        restoredTables.put( store.getAdapterId(), ids );
                     }
 
                 }
             } else {
-                Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.storeId, p -> manager.getStore( p.storeId ).isPersistent() ) );
+                Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.adapterId, p -> manager.getStore( p.adapterId ).isPersistent() ) );
 
-                if ( !persistent.containsValue( true ) ) {
-                    // no persistent placement for this column
-                    try {
-                        CatalogTable table = getTable( c.tableId );
-                        for ( CatalogColumnPlacement p : placements ) {
-                            Store store = manager.getStore( p.storeId );
+                if ( !persistent.containsValue( true ) ) { // no persistent placement for this column
+                    CatalogTable table = getTable( c.tableId );
+                    for ( CatalogColumnPlacement p : placements ) {
+                        DataStore store = manager.getStore( p.adapterId );
 
-                            if ( !restoredTables.containsKey( store.getStoreId() ) ) {
-                                store.createTable( transaction.createStatement().getPrepareContext(), table );
-                                List<Long> ids = new ArrayList<>();
-                                ids.add( table.id );
-                                restoredTables.put( store.getStoreId(), ids );
+                        if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
+                            store.createTable( transaction.createStatement().getPrepareContext(), table );
+                            List<Long> ids = new ArrayList<>();
+                            ids.add( table.id );
+                            restoredTables.put( store.getAdapterId(), ids );
 
-                            } else if ( !(restoredTables.containsKey( store.getStoreId() ) && restoredTables.get( store.getStoreId() ).contains( table.id )) ) {
-                                store.createTable( transaction.createStatement().getPrepareContext(), table );
-                                List<Long> ids = new ArrayList<>( restoredTables.get( store.getStoreId() ) );
-                                ids.add( table.id );
-                                restoredTables.put( store.getStoreId(), ids );
-                            }
+                        } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( table.id )) ) {
+                            store.createTable( transaction.createStatement().getPrepareContext(), table );
+                            List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
+                            ids.add( table.id );
+                            restoredTables.put( store.getAdapterId(), ids );
                         }
-                    } catch ( UnknownTableException e ) {
-                        throw new GenericCatalogException( e );
                     }
-
                 } else if ( persistent.containsValue( true ) && persistent.containsValue( false ) ) {
                     // TODO DL change so column gets copied
                     for ( Entry<Integer, Boolean> p : persistent.entrySet() ) {
@@ -380,11 +371,6 @@ public class CatalogImpl extends Catalog {
                 }
             }
         }
-    }
-
-
-    private String buildStoreSchemaName( String storeName, String logicalSchema, String physicalSchema ) {
-        return storeName + "_" + logicalSchema + "_" + physicalSchema;
     }
 
 
@@ -417,7 +403,7 @@ public class CatalogImpl extends Catalog {
         restoreIdBuilder( keys, keyIdBuilder );
         restoreIdBuilder( constraints, columnIdBuilder );
         restoreIdBuilder( indexes, indexIdBuilder );
-        restoreIdBuilder( stores, storeIdBuilder );
+        restoreIdBuilder( adapters, adapterIdBuilder );
         restoreIdBuilder( queryInterfaces, queryInterfaceIdBuilder );
         restoreIdBuilder( foreignKeys, foreignKeyIdBuilder );
 
@@ -425,14 +411,14 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Initiates all needed maps for stores
+     * Initiates all needed maps for adapters
      *
-     * stores: storeId -> CatalogStore
-     * storeNames: storeName -> CatalogStore
+     * adapters: adapterId -> CatalogAdapter
+     * adapterName: adapterName -> CatalogAdapter
      */
-    private void initStoreInfo( DB db ) {
-        stores = db.hashMap( "stores", Serializer.INTEGER, new GenericSerializer<CatalogStore>() ).createOrOpen();
-        storeNames = db.hashMap( "storeNames", Serializer.STRING, new GenericSerializer<CatalogStore>() ).createOrOpen();
+    private void initAdapterInfo( DB db ) {
+        adapters = db.hashMap( "adapters", Serializer.INTEGER, new GenericSerializer<CatalogAdapter>() ).createOrOpen();
+        adapterNames = db.hashMap( "adapterNames", Serializer.STRING, new GenericSerializer<CatalogAdapter>() ).createOrOpen();
     }
 
 
@@ -485,7 +471,7 @@ public class CatalogImpl extends Catalog {
      *
      * columns: columnId -> CatalogColumn
      * columnNames: new Object[]{databaseId, schemaId, tableId, columnName} -> CatalogColumn
-     * columnPlacements: new Object[]{storeId, columnId} -> CatalogPlacement
+     * columnPlacements: new Object[]{adapterId, columnId} -> CatalogPlacement
      */
     private void initColumnInfo( DB db ) {
         //noinspection unchecked
@@ -551,7 +537,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownStoreException, UnknownQueryInterfaceException, UnknownColumnException {
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownAdapterException, UnknownQueryInterfaceException, UnknownColumnException {
 
         //////////////
         // init users
@@ -586,8 +572,8 @@ public class CatalogImpl extends Catalog {
         }
 
         //////////////
-        // init store
-        if ( !storeNames.containsKey( "hsqldb" ) ) {
+        // init adapters
+        if ( !adapterNames.containsKey( "hsqldb" ) ) {
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
             hsqldbSettings.put( "tableType", "Memory" );
@@ -595,19 +581,19 @@ public class CatalogImpl extends Catalog {
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
 
-            addStore( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", hsqldbSettings );
+            addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
         }
-        if ( !storeNames.containsKey( "csv" ) ) {
+        if ( !adapterNames.containsKey( "csv" ) ) {
             Map<String, String> csvSettings = new HashMap<>();
             csvSettings.put( "directory", "classpath://hr" );
             csvSettings.put( "persistent", "true" );
 
-            addStore( "csv", "org.polypheny.db.adapter.csv.CsvStore", csvSettings );
+            addAdapter( "csv", "org.polypheny.db.adapter.csv.CsvStore", AdapterType.STORE, csvSettings );
         }
 
         //////////////
         // init schema
-        CatalogStore csv = getStore( "csv" );
+        CatalogAdapter csv = getAdapter( "csv" );
         if ( !testMode ) {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
                 addTable( "depts", schemaId, systemId, TableType.TABLE, null );
@@ -650,7 +636,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Initiates default columns for csv files
      */
-    private void addDefaultCsvColumns( CatalogStore csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException, UnknownColumnException {
+    private void addDefaultCsvColumns( CatalogAdapter csv ) throws UnknownSchemaException, UnknownTableException, GenericCatalogException, UnknownColumnException {
         CatalogSchema schema = getSchema( "APP", "public" );
         CatalogTable depts = getTable( schema.id, "depts" );
 
@@ -696,7 +682,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void addDefaultColumn( CatalogStore csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) throws GenericCatalogException, UnknownTableException {
+    private void addDefaultColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) throws GenericCatalogException, UnknownTableException {
         if ( !checkIfExistsColumn( table.id, name ) ) {
             long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, table.name, name );
@@ -1141,11 +1127,11 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogTable getTable( long tableId ) throws UnknownTableException {
+    public CatalogTable getTable( long tableId ) {
         try {
             return Objects.requireNonNull( tables.get( tableId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
+            throw new UnknownTableIdRuntimeException( tableId );
         }
     }
 
@@ -1219,42 +1205,37 @@ public class CatalogImpl extends Catalog {
      * @param tableType The table type
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
-     * @throws GenericCatalogException when some needed information is not accessible
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws GenericCatalogException {
-        try {
-            long id = tableIdBuilder.getAndIncrement();
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
-            CatalogUser owner = Objects.requireNonNull( users.get( ownerId ) );
-            CatalogTable table = new CatalogTable(
-                    id,
-                    name,
-                    ImmutableList.of(),
-                    schemaId,
-                    schema.databaseId,
-                    ownerId,
-                    owner.name,
-                    tableType,
-                    definition,
-                    null,
-                    ImmutableMap.of() );
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws UnknownSchemaException, UnknownUserException {
+        long id = tableIdBuilder.getAndIncrement();
+        CatalogSchema schema = getSchema( schemaId );
+        CatalogUser owner = getUser( ownerId );
+        CatalogTable table = new CatalogTable(
+                id,
+                name,
+                ImmutableList.of(),
+                schemaId,
+                schema.databaseId,
+                ownerId,
+                owner.name,
+                tableType,
+                definition,
+                null,
+                ImmutableMap.of() );
 
-            synchronized ( this ) {
-                tables.put( id, table );
+        synchronized ( this ) {
+            tables.put( id, table );
 
-                tableChildren.put( id, ImmutableList.<Long>builder().build() );
-                tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, table );
-                List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
-                children.add( id );
-                schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
-            }
-            openTable = id;
-            listeners.firePropertyChange( "table", null, table );
-            return id;
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+            tableChildren.put( id, ImmutableList.<Long>builder().build() );
+            tableNames.put( new Object[]{ schema.databaseId, schemaId, name }, table );
+            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( schemaId ) ) );
+            children.add( id );
+            schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
         }
+        openTable = id;
+        listeners.firePropertyChange( "table", null, table );
+        return id;
     }
 
 
@@ -1267,12 +1248,8 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean checkIfExistsTable( long schemaId, String tableName ) throws UnknownSchemaException {
-        try {
-            CatalogSchema schema = Objects.requireNonNull( schemas.get( schemaId ) );
-            return tableNames.containsKey( new Object[]{ schema.databaseId, schemaId, tableName } );
-        } catch ( NullPointerException e ) {
-            throw new UnknownSchemaException( schemaId );
-        }
+        CatalogSchema schema = getSchema( schemaId );
+        return tableNames.containsKey( new Object[]{ schema.databaseId, schemaId, tableName } );
     }
 
 
@@ -1283,19 +1260,15 @@ public class CatalogImpl extends Catalog {
      * @param name New name of the table
      */
     @Override
-    public void renameTable( long tableId, String name ) throws GenericCatalogException {
-        try {
-            CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
-            CatalogTable table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByStore );
-            synchronized ( this ) {
-                tables.replace( tableId, table );
-                tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
-                tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
-            }
-            listeners.firePropertyChange( "table", old, table );
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+    public void renameTable( long tableId, String name ) {
+        CatalogTable old = getTable( tableId );
+        CatalogTable table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter );
+        synchronized ( this ) {
+            tables.replace( tableId, table );
+            tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
+            tableNames.put( new Object[]{ table.databaseId, table.schemaId, name }, table );
         }
+        listeners.firePropertyChange( "table", old, table );
     }
 
 
@@ -1305,31 +1278,27 @@ public class CatalogImpl extends Catalog {
      * @param tableId The id of the table to delete
      */
     @Override
-    public void deleteTable( long tableId ) throws GenericCatalogException {
-        try {
-            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( table.schemaId ) ) );
-            children.remove( tableId );
-            synchronized ( this ) {
-                schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
+    public void deleteTable( long tableId ) {
+        CatalogTable table = getTable( tableId );
+        List<Long> children = new ArrayList<>( Objects.requireNonNull( schemaChildren.get( table.schemaId ) ) );
+        children.remove( tableId );
+        synchronized ( this ) {
+            schemaChildren.replace( table.schemaId, ImmutableList.copyOf( children ) );
 
-                for ( Long columnId : Objects.requireNonNull( tableChildren.get( tableId ) ) ) {
-                    deleteColumn( columnId );
-                }
-
-                tableChildren.remove( tableId );
-                tables.remove( tableId );
-                tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
-                // primary key was deleted and open table has to be closed
-                if ( openTable != null && openTable == tableId ) {
-                    openTable = null;
-                }
-
+            for ( Long columnId : Objects.requireNonNull( tableChildren.get( tableId ) ) ) {
+                deleteColumn( columnId );
             }
-            listeners.firePropertyChange( "table", table, null );
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+
+            tableChildren.remove( tableId );
+            tables.remove( tableId );
+            tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
+            // primary key was deleted and open table has to be closed
+            if ( openTable != null && openTable == tableId ) {
+                openTable = null;
+            }
+
         }
+        listeners.firePropertyChange( "table", table, null );
     }
 
 
@@ -1340,19 +1309,15 @@ public class CatalogImpl extends Catalog {
      * @param ownerId Id of the new owner
      */
     @Override
-    public void setTableOwner( long tableId, int ownerId ) throws GenericCatalogException {
-        try {
-            CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
-            CatalogUser user = Objects.requireNonNull( users.get( ownerId ) );
-            CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByStore );
-            synchronized ( this ) {
-                tables.replace( tableId, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-            }
-            listeners.firePropertyChange( "table", old, table );
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+    public void setTableOwner( long tableId, int ownerId ) throws UnknownUserException {
+        CatalogTable old = getTable( tableId );
+        CatalogUser user = getUser( ownerId );
+        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter );
+        synchronized ( this ) {
+            tables.replace( tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
         }
+        listeners.firePropertyChange( "table", old, table );
     }
 
 
@@ -1363,67 +1328,60 @@ public class CatalogImpl extends Catalog {
      * @param keyId The id of the key to set as primary key. Set null to set no primary key.
      */
     @Override
-    public void setPrimaryKey( long tableId, Long keyId ) throws GenericCatalogException {
+    public void setPrimaryKey( long tableId, Long keyId ) {
+        CatalogTable old = getTable( tableId );
+        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByAdapter );
+        synchronized ( this ) {
+            tables.replace( tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
-        try {
-            CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
-            CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByStore );
-            synchronized ( this ) {
-                tables.replace( tableId, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-
-                if ( keyId == null ) {
-                    openTable = tableId;
-                } else {
-                    primaryKeys.put( keyId, new CatalogPrimaryKey( Objects.requireNonNull( keys.get( keyId ) ) ) );
-                    openTable = null;
-                }
+            if ( keyId == null ) {
+                openTable = tableId;
+            } else {
+                primaryKeys.put( keyId, new CatalogPrimaryKey( Objects.requireNonNull( keys.get( keyId ) ) ) );
+                openTable = null;
             }
-            listeners.firePropertyChange( "table", old, table );
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
         }
+        listeners.firePropertyChange( "table", old, table );
     }
 
 
     /**
      * Adds a placement for a column.
      *
-     * @param storeId The store on which the table should be placed on
+     * @param adapterId The store on which the table should be placed on
      * @param columnId The id of the column to be placed
      * @param placementType The type of placement
-     * @param physicalSchemaName The schema name on the data store
-     * @param physicalTableName The table name on the data store
-     * @param physicalColumnName The column name on the data store
-     * @throws GenericCatalogException A generic catalog exception
+     * @param physicalSchemaName The schema name on the adapter
+     * @param physicalTableName The table name on the adapter
+     * @param physicalColumnName The column name on the adapter
      */
     @Override
-    public void addColumnPlacement( int storeId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws GenericCatalogException {
-        try {
-            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
-            CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
-            CatalogColumnPlacement placement = new CatalogColumnPlacement(
-                    column.tableId,
-                    columnId,
-                    storeId,
-                    store.uniqueName,
-                    placementType,
-                    physicalSchemaName,
-                    physicalTableName,
-                    physicalColumnName,
-                    physicalPositionBuilder.getAndIncrement() );
+    public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
+        CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+        CatalogAdapter store = Objects.requireNonNull( adapters.get( adapterId ) );
+        CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                column.tableId,
+                columnId,
+                adapterId,
+                store.uniqueName,
+                placementType,
+                physicalSchemaName,
+                physicalTableName,
+                physicalColumnName,
+                physicalPositionBuilder.getAndIncrement() );
 
             synchronized ( this ) {
-                columnPlacements.put( new Object[]{ storeId, columnId }, placement );
+                columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
 
                 CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
-                Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByStore );
-                if ( placementsByStore.containsKey( storeId ) ) {
-                    List<Long> placements = new ArrayList<>( placementsByStore.get( storeId ) );
+                Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
+                if ( placementsByStore.containsKey( adapterId ) ) {
+                    List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
                     placements.add( columnId );
-                    placementsByStore.replace( storeId, ImmutableList.copyOf( placements ) );
+                    placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
                 } else {
-                    placementsByStore.put( storeId, ImmutableList.of( columnId ) );
+                    placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
                 }
                 CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
 
@@ -1431,43 +1389,33 @@ public class CatalogImpl extends Catalog {
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
             }
             listeners.firePropertyChange( "columnPlacement", null, placement );
-        } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
-        }
     }
 
 
     /**
-     * Deletes a column placement
+     * Deletes a column placement from a specified adapter.
      *
-     * @param storeId The id of the store
+     * @param adapterId The id of the adapter
      * @param columnId The id of the column
      */
     @Override
-    public void deleteColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
-
-        try {
-            CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
-            Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( oldTable.placementsByStore );
-            List<Long> placements = new ArrayList<>( placementsByStore.get( storeId ) );
-            placements.remove( columnId );
-            if ( placements.size() != 0 ) {
-                placementsByStore.put( storeId, ImmutableList.copyOf( placements ) );
-            } else {
-                placementsByStore.remove( storeId );
-            }
-            CatalogTable table = new CatalogTable( oldTable.id, oldTable.name, oldTable.columnIds, oldTable.schemaId, oldTable.databaseId, oldTable.ownerId, oldTable.ownerName, oldTable.tableType, oldTable.definition, oldTable.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
-            synchronized ( this ) {
-                tables.replace( table.id, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-                columnPlacements.remove( new Object[]{ storeId, columnId } );
-            }
-            listeners.firePropertyChange( "columnPlacement", table, null );
-        } catch ( UnknownTableException | UnknownColumnIdRuntimeException e ) {
-            throw new GenericCatalogException( e );
+    public void deleteColumnPlacement( int adapterId, long columnId ) {
+        CatalogTable oldTable = getTable( getColumn( columnId ).tableId );
+        Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( oldTable.placementsByAdapter );
+        List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
+        placements.remove( columnId );
+        if ( placements.size() != 0 ) {
+            placementsByStore.put( adapterId, ImmutableList.copyOf( placements ) );
+        } else {
+            placementsByStore.remove( adapterId );
         }
-
-
+        CatalogTable table = new CatalogTable( oldTable.id, oldTable.name, oldTable.columnIds, oldTable.schemaId, oldTable.databaseId, oldTable.ownerId, oldTable.ownerName, oldTable.tableType, oldTable.definition, oldTable.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
+        synchronized ( this ) {
+            tables.replace( table.id, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            columnPlacements.remove( new Object[]{ adapterId, columnId } );
+        }
+        listeners.firePropertyChange( "columnPlacement", table, null );
     }
 
 
@@ -1489,28 +1437,34 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get column placements on a store
+     * Get column placements on a adapter
      *
-     * @param storeId The id of the store
-     * @return List of column placements on this store
+     * @param adapterId The id of the adapter
+     * @return List of column placements on the specified adapter
      */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId ) {
-        return new ArrayList<>( columnPlacements.prefixSubMap( new Object[]{ storeId } ).values() );
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId ) {
+        return new ArrayList<>( columnPlacements.prefixSubMap( new Object[]{ adapterId } ).values() );
     }
 
 
+    /**
+     * Get column placements of a specific table on a specific adapter
+     *
+     * @param adapterId The id of the adapter
+     * @return List of column placements of the table on the specified adapter
+     */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnStore( int storeId, long tableId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId ) {
         final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingInt( p -> getColumn( p.columnId ).position );
-        return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
+        return getColumnPlacementsOnAdapter( adapterId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
     }
 
 
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnStoreSortedByPhysicalPosition( int storeId, long tableId ) {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int adapterId, long tableId ) {
         final Comparator<CatalogColumnPlacement> columnPlacementComparator = Comparator.comparingLong( p -> p.physicalPosition );
-        return getColumnPlacementsOnStore( storeId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
+        return getColumnPlacementsOnAdapter( adapterId ).stream().filter( p -> p.tableId == tableId ).sorted( columnPlacementComparator ).collect( Collectors.toList() );
     }
 
 
@@ -1532,36 +1486,50 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Get column placements in a specific schema on a specific adapter
+     *
+     * @param adapterId The id of the adapter
+     * @param schemaId The id of the schema
+     * @return List of column placements on this adapter and schema
+     */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnStoreAndSchema( int storeId, long schemaId ) throws GenericCatalogException {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId ) throws GenericCatalogException {
         try {
-            return getColumnPlacementsOnStore( storeId ).stream().filter( p -> Objects.requireNonNull( columns.get( p.columnId ) ).schemaId == schemaId ).collect( Collectors.toList() );
+            return getColumnPlacementsOnAdapter( adapterId ).stream().filter( p -> Objects.requireNonNull( columns.get( p.columnId ) ).schemaId == schemaId ).collect( Collectors.toList() );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
 
 
+    /**
+     * Update type of a placement.
+     *
+     * @param adapterId The id of the adapter
+     * @param columnId The id of the column
+     * @param placementType The new type of placement
+     */
     @Override
-    public void updateColumnPlacementType( int storeId, long columnId, PlacementType placementType ) throws UnknownColumnPlacementException {
+    public void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType ) throws UnknownColumnPlacementException {
         try {
-            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
+            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
                     old.tableId,
                     old.columnId,
-                    old.storeId,
-                    old.storeUniqueName,
+                    old.adapterId,
+                    old.adapterUniqueName,
                     placementType,
                     old.physicalSchemaName,
                     old.physicalTableName,
                     old.physicalColumnName,
                     physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
-                columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
+                columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnPlacementException( storeId, columnId );
+            throw new UnknownColumnPlacementException( adapterId, columnId );
         }
     }
 
@@ -1569,32 +1537,32 @@ public class CatalogImpl extends Catalog {
     /**
      * Change physical names of a placement.
      *
-     * @param storeId The id of the store
+     * @param adapterId The id of the adapter
      * @param columnId The id of the column
      * @param physicalSchemaName The physical schema name
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
      */
     @Override
-    public void updateColumnPlacementPhysicalNames( int storeId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws UnknownColumnPlacementException {
+    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws UnknownColumnPlacementException {
         try {
-            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
+            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
                     old.tableId,
                     old.columnId,
-                    old.storeId,
-                    old.storeUniqueName,
+                    old.adapterId,
+                    old.adapterUniqueName,
                     old.placementType,
                     physicalSchemaName,
                     physicalTableName,
                     physicalColumnName,
                     physicalPositionBuilder.getAndIncrement() );
             synchronized ( this ) {
-                columnPlacements.replace( new Object[]{ storeId, columnId }, placement );
+                columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnPlacementException( storeId, columnId );
+            throw new UnknownColumnPlacementException( adapterId, columnId );
         }
     }
 
@@ -1754,7 +1722,7 @@ public class CatalogImpl extends Catalog {
 
                 List<Long> columnIds = new ArrayList<>( table.columnIds );
                 columnIds.add( id );
-                CatalogTable updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByStore );
+                CatalogTable updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter );
 
                 tables.replace( tableId, updatedTable );
                 tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
@@ -1920,7 +1888,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setCollation( long columnId, Collation collation ) {
         try {
-            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
+            CatalogColumn old = getColumn( columnId );
 
             if ( old.type.getFamily() != PolyTypeFamily.CHARACTER ) {
                 throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
@@ -1945,13 +1913,9 @@ public class CatalogImpl extends Catalog {
      * @return true if there is a column with this name, false if not.
      */
     @Override
-    public boolean checkIfExistsColumn( long tableId, String columnName ) throws UnknownTableException {
-        try {
-            CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
-            return columnNames.containsKey( new Object[]{ table.databaseId, table.schemaId, tableId, columnName } );
-        } catch ( NullPointerException e ) {
-            throw new UnknownTableException( tableId );
-        }
+    public boolean checkIfExistsColumn( long tableId, String columnName ) {
+        CatalogTable table = getTable( tableId );
+        return columnNames.containsKey( new Object[]{ table.databaseId, table.schemaId, tableId, columnName } );
     }
 
 
@@ -1961,36 +1925,32 @@ public class CatalogImpl extends Catalog {
      * @param columnId The id of the column to delete
      */
     @Override
-    public void deleteColumn( long columnId ) throws GenericCatalogException {
-        try {
-            //TODO also delete keys with that column?
-            CatalogColumn column = Objects.requireNonNull( columns.get( columnId ) );
+    public void deleteColumn( long columnId ) {
+        //TODO also delete keys with that column?
+        CatalogColumn column = getColumn( columnId );
 
-            List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( column.tableId ) ) );
-            children.remove( columnId );
+        List<Long> children = new ArrayList<>( Objects.requireNonNull( tableChildren.get( column.tableId ) ) );
+        children.remove( columnId );
 
-            CatalogTable old = getTable( column.tableId );
-            List<Long> columnIds = new ArrayList<>( old.columnIds );
-            columnIds.remove( columnId );
-            CatalogTable table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByStore );
+        CatalogTable old = getTable( column.tableId );
+        List<Long> columnIds = new ArrayList<>( old.columnIds );
+        columnIds.remove( columnId );
+        CatalogTable table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter );
 
-            synchronized ( this ) {
-                columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
-                tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
+        synchronized ( this ) {
+            columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );
+            tableChildren.replace( column.tableId, ImmutableList.copyOf( children ) );
 
-                deleteDefaultValue( columnId );
-                for ( CatalogColumnPlacement p : getColumnPlacements( columnId ) ) {
-                    deleteColumnPlacement( p.storeId, p.columnId );
-                }
-                tables.replace( column.tableId, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-
-                columns.remove( columnId );
+            deleteDefaultValue( columnId );
+            for ( CatalogColumnPlacement p : getColumnPlacements( columnId ) ) {
+                deleteColumnPlacement( p.adapterId, p.columnId );
             }
-            listeners.firePropertyChange( "column", column, null );
-        } catch ( NullPointerException | UnknownColumnIdRuntimeException | UnknownTableException e ) {
-            throw new GenericCatalogException( e );
+            tables.replace( column.tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+
+            columns.remove( columnId );
         }
+        listeners.firePropertyChange( "column", column, null );
     }
 
     // TODO: String is only a temporary solution
@@ -2093,10 +2053,9 @@ public class CatalogImpl extends Catalog {
         try {
             Long primary = getTable( Objects.requireNonNull( keys.get( key ) ).tableId ).primaryKey;
             return primary != null && primary == key;
-        } catch ( UnknownTableException e ) {
-            throw new RuntimeException( e );
+        } catch ( NullPointerException e ) {
+            throw new RuntimeException( "Unknown Key" );
         }
-
     }
 
 
@@ -2367,16 +2326,13 @@ public class CatalogImpl extends Catalog {
      * @param tableId The id of the table
      * @param indexName The name to check for
      * @return true if there is an index with this name, false if not.
-     * @throws GenericCatalogException A generic catalog exception
      */
     @Override
-    public boolean checkIfExistsIndex( long tableId, String indexName ) throws GenericCatalogException {
+    public boolean checkIfExistsIndex( long tableId, String indexName ) {
         try {
             CatalogTable table = getTable( tableId );
             getIndex( table.id, indexName );
             return true;
-        } catch ( UnknownTableException e ) {
-            throw new GenericCatalogException( e );
         } catch ( UnknownIndexException e ) {
             return false;
         }
@@ -2612,104 +2568,104 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get list of all stores
+     * Get list of all adapters
      *
-     * @return List of stores
+     * @return List of adapters
      */
     @Override
-    public List<CatalogStore> getStores() {
-        return new ArrayList<>( stores.values() );
+    public List<CatalogAdapter> getAdapters() {
+        return new ArrayList<>( adapters.values() );
     }
 
 
     /**
-     * Get a store by its unique name
+     * Get an adapter by its unique name
      *
-     * @return List of stores
+     * @return The adapter
      */
     @Override
-    public CatalogStore getStore( String uniqueName ) throws UnknownStoreException {
+    public CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException {
         uniqueName = uniqueName.toLowerCase();
         try {
-            return Objects.requireNonNull( storeNames.get( uniqueName ) );
+            return Objects.requireNonNull( adapterNames.get( uniqueName ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownStoreException( uniqueName );
+            throw new UnknownAdapterException( uniqueName );
         }
     }
 
 
     /**
-     * Get a store by its id
+     * Get an adapter by its id
      *
-     * @return List of stores
+     * @return The adapter
      */
     @Override
-    public CatalogStore getStore( int storeId ) throws UnknownStoreException {
+    public CatalogAdapter getAdapter( int adapterId ) {
         try {
-            return Objects.requireNonNull( stores.get( storeId ) );
+            return Objects.requireNonNull( adapters.get( adapterId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownStoreException( storeId );
+            throw new UnknownAdapterIdRuntimeException( adapterId );
         }
     }
 
 
     /**
-     * Add a store
+     * Add an adapter
      *
-     * @param uniqueName The unique name of the store
-     * @param adapter The class name of the adapter
-     * @param settings The configuration of the store
-     * @return The id of the newly added store
+     * @param uniqueName The unique name of the adapter
+     * @param clazz The class name of the adapter
+     * @param type The type of adapter
+     * @param settings The configuration of the adapter
+     * @return The id of the newly added adapter
      */
     @Override
-    public int addStore( String uniqueName, String adapter, Map<String, String> settings ) {
+    public int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
 
-        int id = storeIdBuilder.getAndIncrement();
+        int id = adapterIdBuilder.getAndIncrement();
         Map<String, String> temp = new HashMap<>();
         settings.forEach( temp::put );
-        CatalogStore store = new CatalogStore( id, uniqueName, adapter, temp );
+        CatalogAdapter adapter = new CatalogAdapter( id, uniqueName, clazz, type, temp );
         synchronized ( this ) {
-            stores.put( id, store );
-            storeNames.put( uniqueName, store );
+            adapters.put( id, adapter );
+            adapterNames.put( uniqueName, adapter );
         }
         try {
             commit();
         } catch ( NoTablePrimaryKeyException e ) {
-            throw new RuntimeException( "An error occurred while creating the store." );
+            throw new RuntimeException( "An error occurred while creating the adapter." );
         }
-        listeners.firePropertyChange( "store", null, store );
+        listeners.firePropertyChange( "adapter", null, adapter );
         return id;
     }
 
 
     /**
-     * Delete a store
+     * Delete an adapter
      *
-     * @param storeId The id of the store to delete
+     * @param adapterId The id of the adapter to delete
      */
     @Override
-    public void deleteStore( int storeId ) throws UnknownStoreException {
-        // TODO remove database/schemas/... as well? affectedRow?
+    public void deleteAdapter( int adapterId ) {
         try {
-            CatalogStore store = Objects.requireNonNull( stores.get( storeId ) );
+            CatalogAdapter adapter = Objects.requireNonNull( adapters.get( adapterId ) );
             synchronized ( this ) {
-                stores.remove( storeId );
-                storeNames.remove( store.uniqueName );
+                adapters.remove( adapterId );
+                adapterNames.remove( adapter.uniqueName );
             }
             try {
                 commit();
             } catch ( NoTablePrimaryKeyException e ) {
-                throw new RuntimeException( "An error occurred while deleting the query interface." );
+                throw new RuntimeException( "An error occurred while deleting the adapter." );
             }
             try {
                 commit();
             } catch ( NoTablePrimaryKeyException e ) {
-                throw new RuntimeException( "Could not delete Store" );
+                throw new RuntimeException( "Could not delete adapter" );
             }
-            listeners.firePropertyChange( "store", store, null );
+            listeners.firePropertyChange( "adapter", adapter, null );
         } catch ( NullPointerException e ) {
-            throw new UnknownStoreException( storeId );
+            throw new UnknownAdapterIdRuntimeException( adapterId );
         }
     }
 
@@ -2946,7 +2902,7 @@ public class CatalogImpl extends Catalog {
 
             columnPlacements.forEach( ( key, placement ) -> {
                 assert (columns.containsKey( placement.columnId ));
-                assert (stores.containsKey( placement.storeId ));
+                assert (adapters.containsKey( placement.adapterId ));
             } );
         }
 

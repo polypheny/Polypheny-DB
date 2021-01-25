@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -55,7 +55,7 @@ public class TransactionManagerImpl implements TransactionManager {
         im.addGroup( runningTransactionsGroup );
         InformationTable runningTransactionsTable = new InformationTable(
                 runningTransactionsGroup,
-                Arrays.asList( "ID", "XID Hash", "Statements", "Analyze", "Involved Stores", "Origin" ) );
+                Arrays.asList( "ID", "XID Hash", "Statements", "Analyze", "Involved Adapters", "Origin" ) );
         im.registerInformation( runningTransactionsTable );
         page.setRefreshFunction( () -> {
             runningTransactionsTable.reset();
@@ -64,7 +64,7 @@ public class TransactionManagerImpl implements TransactionManager {
                     k.toString().hashCode(),
                     v.getNumberOfStatements(),
                     v.isAnalyze(),
-                    v.getInvolvedStores().stream().map( Store::getUniqueName ).collect( Collectors.joining( ", " ) ),
+                    v.getInvolvedAdapters().stream().map( Adapter::getUniqueName ).collect( Collectors.joining( ", " ) ),
                     v.getOrigin() ) );
         } );
     }

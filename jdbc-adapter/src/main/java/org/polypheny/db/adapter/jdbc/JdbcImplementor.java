@@ -78,7 +78,7 @@ public class JdbcImplementor extends RelToSqlConverter {
         if ( tableNames.size() == 1 ) {
             // only table name
             // NOTICE MV: I think, this case should no longer happen because there should always be a schema in the form
-            //  <storeUniqueName>_<logicalSchema>_<physicalSchema> be set.
+            //  <adapterUniqueName>_<logicalSchema>_<physicalSchema> be set.
             // TODO MV: Consider removing this case
             table = schema.getTableMap().get( tableNames.get( 0 ) );
         } else if ( tableNames.size() == 2 ) {

@@ -76,7 +76,7 @@ public class CassandraPhysicalNameProvider {
     public String getPhysicalColumnName( long columnId ) throws RuntimeException {
         // TODO JS: This really should be a direct call to the catalog!
         List<CatalogColumnPlacement> placements;
-        placements = catalog.getColumnPlacementsOnStore( this.storeId );
+        placements = catalog.getColumnPlacementsOnAdapter( this.storeId );
 
         for ( CatalogColumnPlacement placement : placements ) {
             if ( placement.columnId == columnId ) {
@@ -84,7 +84,7 @@ public class CassandraPhysicalNameProvider {
             }
         }
 
-        throw new RuntimeException( "Column placement not found for store " + this.storeId + " and column " + columnId );
+        throw new RuntimeException( "Column placement not found for data store " + this.storeId + " and column " + columnId );
     }
 
 

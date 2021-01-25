@@ -533,7 +533,7 @@ public class Rest {
                     } else {
                         throw new RuntimeException( "Result is null" );
                     }
-                    // Check if num is equal for all stores
+                    // Check if num is equal for all adapters
                     if ( rowsChanged != -1 && rowsChanged != num ) {
                         throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
                     }

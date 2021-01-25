@@ -19,7 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
@@ -80,7 +80,7 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
             if ( index.location == 0 ) {
                 IndexManager.getInstance().deleteIndex( index );
             } else {
-                Store storeInstance = StoreManager.getInstance().getStore( index.location );
+                DataStore storeInstance = StoreManager.getInstance().getStore( index.location );
                 storeInstance.dropIndex( context, index );
             }
 

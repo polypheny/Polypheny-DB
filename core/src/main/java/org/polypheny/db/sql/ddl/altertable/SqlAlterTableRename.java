@@ -23,9 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -87,7 +85,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
             // Rest plan cache and implementation cache (not sure if required in this case)
             statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException | UnknownTableException | UnknownSchemaException e ) {
+        } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -22,9 +22,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.Store.AvailableIndexMethod;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
@@ -142,7 +141,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                     }
                     if ( aim == null ) {
                         throw SqlUtil.newContextException(
-                                storeName.getParserPosition(),
+                                indexMethod.getParserPosition(),
                                 RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
                     }
                     method = aim.name;
@@ -164,23 +163,16 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
                 IndexManager.getInstance().addIndex( Catalog.getInstance().getIndex( indexId ), statement );
             } else { // Store Index
-                Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
+                DataStore storeInstance = getDataStoreInstance( storeName );
                 if ( storeInstance == null ) {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
                             RESOURCE.unknownStoreName( storeName.getSimple() ) );
                 }
 
-                // Check whether the store supports schema changes
-                if ( storeInstance.isSchemaReadOnly() ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-                }
-
                 // Check if there if all required columns are present on this store
                 for ( long columnId : columnIds ) {
-                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), columnId ) ) {
+                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), columnId ) ) {
                         throw SqlUtil.newContextException(
                                 storeName.getParserPosition(),
                                 RESOURCE.missingColumnPlacement( Catalog.getInstance().getColumn( columnId ).name, storeInstance.getUniqueName() ) );
@@ -198,7 +190,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                     }
                     if ( aim == null ) {
                         throw SqlUtil.newContextException(
-                                storeName.getParserPosition(),
+                                indexMethod.getParserPosition(),
                                 RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
                     }
                     method = aim.name;
@@ -214,7 +206,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                         unique,
                         method,
                         methodDisplayName,
-                        storeInstance.getStoreId(),
+                        storeInstance.getAdapterId(),
                         type,
                         indexName.getSimple() );
 

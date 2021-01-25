@@ -20,7 +20,8 @@ package org.polypheny.db.catalog.exceptions;
 public class UnknownColumnPlacementException extends CatalogException {
 
 
-    public UnknownColumnPlacementException( long storeId, long columnId ) {
-        super( "There is no column placement for column id '" + columnId + "' on store id '" + storeId + "'" );
+    public UnknownColumnPlacementException( long adapterId, long columnId ) {
+        super( "There is no column placement for column id '" + columnId + "' on adapter with id '" + adapterId + "'" );
     }
+
 }

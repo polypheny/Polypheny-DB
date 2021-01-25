@@ -22,8 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -31,7 +30,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -88,7 +86,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
-        Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
+        DataStore storeInstance = getDataStoreInstance( storeName );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
@@ -96,24 +94,18 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
         }
         try {
             // Check whether this placement already exists
-            if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
+            if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
                 throw SqlUtil.newContextException(
                         storeName.getParserPosition(),
                         RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
-            // Check whether the store supports schema changes
-            if ( storeInstance.isSchemaReadOnly() ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-            }
             // Make sure that this store does not contain a placement of this column
-            if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) ) {
-                CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), catalogColumn.id );
+            if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) ) {
+                CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id );
                 if ( placement.placementType == PlacementType.AUTOMATIC ) {
                     // Make placement manual
                     Catalog.getInstance().updateColumnPlacementType(
-                            storeInstance.getStoreId(),
+                            storeInstance.getAdapterId(),
                             catalogColumn.id,
                             PlacementType.MANUAL );
                 } else {
@@ -124,7 +116,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
             } else {
                 // Create column placement
                 Catalog.getInstance().addColumnPlacement(
-                        storeInstance.getStoreId(),
+                        storeInstance.getAdapterId(),
                         catalogColumn.id,
                         PlacementType.MANUAL,
                         null,
@@ -134,9 +126,9 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
                 storeInstance.addColumn( context, catalogTable, catalogColumn );
                 // Copy the data to the newly added column placements
                 DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-                dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), ImmutableList.of( catalogColumn ) );
+                dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getAdapter( storeInstance.getAdapterId() ), ImmutableList.of( catalogColumn ) );
             }
-        } catch ( GenericCatalogException | UnknownColumnPlacementException | UnknownStoreException e ) {
+        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
     }

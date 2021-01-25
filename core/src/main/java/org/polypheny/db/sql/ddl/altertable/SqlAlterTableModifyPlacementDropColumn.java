@@ -21,8 +21,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -85,7 +84,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
-        Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
+        DataStore storeInstance = getDataStoreInstance( storeName );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
@@ -93,26 +92,20 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
         }
         try {
             // Check whether this placement already exists
-            if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
+            if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
                 throw SqlUtil.newContextException(
                         storeName.getParserPosition(),
                         RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
-            // Check whether the store supports schema changes
-            if ( storeInstance.isSchemaReadOnly() ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-            }
             // Check whether this store actually contains a placement of this column
-            if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) ) {
+            if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) ) {
                 throw SqlUtil.newContextException(
                         storeName.getParserPosition(),
                         RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
             }
             // Check whether there are any indexes located on the store requiring this column
             for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
-                if ( index.location == storeInstance.getStoreId() && index.key.columnIds.contains( catalogColumn.id ) ) {
+                if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( catalogColumn.id ) ) {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
                             RESOURCE.indexPreventsRemovalOfPlacement( index.name, catalogColumn.name ) );
@@ -131,9 +124,9 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
                         RESOURCE.placementIsPrimaryKey( catalogColumn.name ) );
             }
             // Drop Column on store
-            storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) );
+            storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) );
             // Drop column placement
-            Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), catalogColumn.id );
+            Catalog.getInstance().deleteColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }

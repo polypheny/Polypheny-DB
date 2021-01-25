@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -23,7 +23,7 @@ import org.polypheny.db.transaction.PolyXid;
 
 
 @Slf4j
-public class CsvStore extends Store {
+public class CsvStore extends DataStore {
 
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "CSV";
@@ -39,7 +39,7 @@ public class CsvStore extends Store {
 
 
     public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, true, true, true );
+        super( storeId, uniqueName, settings, true );
         setCsvDir( settings );
     }
 

@@ -24,8 +24,6 @@ import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -82,8 +80,6 @@ public class SqlAlterTableOwner extends SqlAlterTable {
         try {
             CatalogUser catalogUser = Catalog.getInstance().getUser( newOwnerName );
             Catalog.getInstance().setTableOwner( catalogTable.id, catalogUser.id );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
         } catch ( UnknownUserException e ) {
             throw SqlUtil.newContextException( owner.getParserPosition(), RESOURCE.userNotFound( owner.getSimple() ) );
         }

@@ -206,7 +206,7 @@ public class PolyphenyDb {
             Catalog.testMode = testMode;
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
-            StoreManager.getInstance().restoreStores( catalog );
+            StoreManager.getInstance().restoreAdapters( catalog );
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
@@ -241,7 +241,7 @@ public class PolyphenyDb {
         // Initialize index manager
         try {
             IndexManager.getInstance().initialize( transactionManager );
-            IndexManager.getInstance().restoreIndices();
+            IndexManager.getInstance().restoreIndexes();
         } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }

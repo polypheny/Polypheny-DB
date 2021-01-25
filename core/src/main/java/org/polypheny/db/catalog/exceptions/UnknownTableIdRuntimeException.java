@@ -17,16 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownQueryInterfaceException extends CatalogException {
+public class UnknownTableIdRuntimeException extends CatalogRuntimeException {
 
-
-    public UnknownQueryInterfaceException( String ifaceName ) {
-        super( "There is no query interface with name " + ifaceName );
-    }
-
-
-    public UnknownQueryInterfaceException( int ifaceId ) {
-        super( "There is no query interface with the id " + ifaceId );
+    public UnknownTableIdRuntimeException( long tableId ) {
+        super( "There is no table with id '" + tableId + "'." );
     }
 
 }

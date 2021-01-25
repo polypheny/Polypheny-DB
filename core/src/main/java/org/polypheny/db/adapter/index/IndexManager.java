@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import org.polypheny.db.adapter.Store.AvailableIndexMethod;
+import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -149,7 +149,7 @@ public class IndexManager {
     }
 
 
-    public void restoreIndices() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
+    public void restoreIndexes() throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
         for ( final CatalogIndex index : Catalog.getInstance().getIndexes() ) {
             addIndex( index );
         }

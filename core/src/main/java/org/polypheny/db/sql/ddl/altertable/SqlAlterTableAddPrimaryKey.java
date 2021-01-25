@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -94,22 +93,22 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
             List<CatalogColumnPlacement> oldPkPlacements = Catalog.getInstance().getColumnPlacements( pkColumnId );
             for ( CatalogColumnPlacement ccp : oldPkPlacements ) {
                 for ( long columnId : columnIds ) {
-                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( ccp.storeId, columnId ) ) {
+                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( ccp.adapterId, columnId ) ) {
                         Catalog.getInstance().addColumnPlacement(
-                                ccp.storeId,
+                                ccp.adapterId,
                                 columnId,
                                 PlacementType.AUTOMATIC,
                                 null, // Will be set later
                                 null, // Will be set later
                                 null ); // Will be set later
-                        StoreManager.getInstance().getStore( ccp.storeId ).addColumn(
+                        StoreManager.getInstance().getStore( ccp.adapterId ).addColumn(
                                 context,
                                 Catalog.getInstance().getTable( ccp.tableId ),
                                 Catalog.getInstance().getColumn( columnId ) );
                     }
                 }
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -32,8 +32,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
     public final long tableId;
     public final long columnId;
-    public final int storeId;
-    public final String storeUniqueName;
+    public final int adapterId;
+    public final String adapterUniqueName;
     public final PlacementType placementType;
 
     public final long physicalPosition;
@@ -46,8 +46,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
     public CatalogColumnPlacement(
             final long tableId,
             final long columnId,
-            final int storeId,
-            @NonNull final String storeUniqueName,
+            final int adapterId,
+            @NonNull final String adapterUniqueName,
             @NonNull final PlacementType placementType,
             final String physicalSchemaName,
             final String physicalTableName,
@@ -55,8 +55,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
             final long physicalPosition ) {
         this.tableId = tableId;
         this.columnId = columnId;
-        this.storeId = storeId;
-        this.storeUniqueName = storeUniqueName;
+        this.adapterId = adapterId;
+        this.adapterUniqueName = adapterUniqueName;
         this.placementType = placementType;
         this.physicalSchemaName = physicalSchemaName;
         this.physicalTableName = physicalTableName;
@@ -84,8 +84,8 @@ public class CatalogColumnPlacement implements CatalogEntity {
 
 
     @SneakyThrows
-    public String getStoreUniqueName() {
-        return Catalog.getInstance().getStore( storeId ).uniqueName;
+    public String getAdapterUniqueName() {
+        return Catalog.getInstance().getAdapter( adapterId ).uniqueName;
     }
 
 
@@ -94,7 +94,7 @@ public class CatalogColumnPlacement implements CatalogEntity {
     public Serializable[] getParameterArray() {
         return new Serializable[]{
                 getLogicalTableName(),
-                storeUniqueName,
+                adapterUniqueName,
                 placementType.name(),
                 physicalSchemaName,
                 physicalTableName,

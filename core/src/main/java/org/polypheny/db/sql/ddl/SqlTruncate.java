@@ -72,7 +72,7 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
         CatalogTable table = getCatalogTable( context, name );
 
         //  Execute truncate on all placements
-        table.placementsByStore.forEach( ( storeId, placements ) -> {
+        table.placementsByAdapter.forEach( ( storeId, placements ) -> {
             StoreManager.getInstance().getStore( storeId ).truncate( context, table );
         } );
     }

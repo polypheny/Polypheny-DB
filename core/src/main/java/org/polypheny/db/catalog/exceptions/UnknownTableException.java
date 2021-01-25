@@ -33,8 +33,4 @@ public class UnknownTableException extends CatalogException {
         super( "There is no table with name '" + tableName + "' in the schema with the id '" + schemaId + "'." );
     }
 
-
-    public UnknownTableException( long tableId ) {
-        super( "There is no table with id '" + tableId + "'." );
-    }
 }

@@ -17,15 +17,11 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownStoreException extends CatalogException {
+public class UnknownAdapterException extends CatalogException {
 
 
-    public UnknownStoreException( String storeName ) {
-        super( "There is no store with name " + storeName );
+    public UnknownAdapterException( String adapterName ) {
+        super( "There is no adapter with name " + adapterName );
     }
 
-
-    public UnknownStoreException( int storeId ) {
-        super( "There is no store with the id " + storeId );
-    }
 }

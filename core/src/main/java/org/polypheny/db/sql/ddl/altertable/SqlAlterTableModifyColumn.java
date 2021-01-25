@@ -17,8 +17,6 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
-import static org.polypheny.db.util.Static.RESOURCE;
-
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.adapter.StoreManager;
@@ -33,7 +31,6 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -142,13 +139,9 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
         try {
             if ( type != null ) {
-                // Check whether all stores support schema changes
-                for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-                    if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
-                        throw SqlUtil.newContextException(
-                                SqlParserPos.ZERO,
-                                RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
-                    }
+                // Make sure that all adapters are of type store (and not source)
+                for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
+                    getDataStoreInstance( storeId );
                 }
                 PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
                 final PolyType collectionsType = type.getCollectionsTypeName() == null ?
@@ -162,7 +155,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                         type.getDimension() == -1 ? null : type.getDimension(),
                         type.getCardinality() == -1 ? null : type.getCardinality());
                 for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
-                    StoreManager.getInstance().getStore( placement.storeId ).updateColumnType(
+                    StoreManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                             context,
                             placement,
                             getCatalogColumn( catalogTable.id, columnName ) );

@@ -19,7 +19,6 @@ package org.polypheny.db.processing;
 
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -39,7 +38,7 @@ public class AuthenticatorImpl implements Authenticator {
             } else {
                 throw new AuthenticationException( "Wrong password for user '" + username + "'!" );
             }
-        } catch ( UnknownUserException | GenericCatalogException e ) {
+        } catch ( UnknownUserException e ) {
             throw new AuthenticationException( e );
         }
     }

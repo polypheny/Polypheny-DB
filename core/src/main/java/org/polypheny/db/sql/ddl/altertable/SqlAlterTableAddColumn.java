@@ -22,7 +22,7 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -142,13 +141,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                 throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
             }
 
-            // Check whether all stores support schema changes
-            for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-                if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
-                    throw SqlUtil.newContextException(
-                            SqlParserPos.ZERO,
-                            RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
-                }
+            // Make sure that all adapters are of type store (and not source)
+            for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
+                getDataStoreInstance( storeId );
             }
 
             List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
@@ -195,29 +190,25 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             }
 
             // Ask router on which stores this column shall be placed
-            List<Store> stores = statement.getRouter().addColumn( catalogTable, statement );
+            List<DataStore> stores = statement.getRouter().addColumn( catalogTable, statement );
 
             // Add column on underlying data stores and insert default value
-            for ( Store store : stores ) {
+            for ( DataStore store : stores ) {
                 Catalog.getInstance().addColumnPlacement(
-                        store.getStoreId(),
+                        store.getAdapterId(),
                         addedColumn.id,
                         PlacementType.AUTOMATIC,
                         null, // Will be set later
                         null, // Will be set later
                         null ); // Will be set later
-                StoreManager.getInstance().getStore( store.getStoreId() ).addColumn( context, catalogTable, addedColumn );
+                StoreManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
             }
 
             // Rest plan cache and implementation cache (not sure if required in this case)
             statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( GenericCatalogException e ) {
             if ( columnId != null ) {
-                try {
-                    Catalog.getInstance().deleteColumn( columnId );
-                } catch ( GenericCatalogException ex ) {
-                    log.error( "Exception while deleting column to undo changes. This might leave the catalog in an invalid state!", e );
-                }
+                Catalog.getInstance().deleteColumn( columnId );
             }
             throw new RuntimeException( e );
         }

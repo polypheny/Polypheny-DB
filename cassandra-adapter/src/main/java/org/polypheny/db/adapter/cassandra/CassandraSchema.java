@@ -131,7 +131,7 @@ public class CassandraSchema extends AbstractSchema {
 
 
     public void registerStore( DataContext dataContext ) {
-        dataContext.getStatement().getTransaction().registerInvolvedStore( this.cassandraStore );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.cassandraStore );
     }
 
 
