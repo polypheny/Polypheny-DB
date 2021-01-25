@@ -133,9 +133,7 @@ public abstract class AbstractRouter implements Router {
         if ( statement.getTransaction().isAnalyze() ) {
             InformationGroup group = new InformationGroup( page, "Selected Stores" );
             statement.getTransaction().getQueryAnalyzer().addGroup( group );
-            InformationTable table = new InformationTable(
-                    group,
-                    ImmutableList.of( "Table", "Store", "Physical Name" ) );
+            InformationTable table = new InformationTable( group, ImmutableList.of( "Table", "Store", "Physical Name" ) );
             selectedStores.forEach( ( k, v ) -> {
                 try {
                     CatalogTable catalogTable = Catalog.getInstance().getTable( k );
@@ -200,12 +198,14 @@ public abstract class AbstractRouter implements Router {
                         } );
 
                         if ( whereClauseVisitor.valueIdentified ) {
-                            List<Object> values = whereClauseVisitor.getValues().stream().map( Object::toString )
+                            List<Object> values = whereClauseVisitor.getValues().stream()
+                                    .map( Object::toString )
                                     .collect( Collectors.toList() );
                             int scanId = 0;
                             if ( !values.isEmpty() ) {
                                 scanId = ((LogicalFilter) node).getInput().getId();
-                                filterMap.put( scanId, whereClauseVisitor.getValues().stream().map( Object::toString )
+                                filterMap.put( scanId, whereClauseVisitor.getValues().stream()
+                                        .map( Object::toString )
                                         .collect( Collectors.toList() ) );
                             }
                             buildDql( node.getInput( i ), builder, statement, cluster );
@@ -403,9 +403,7 @@ public abstract class AbstractRouter implements Router {
                     }
 
                     // Identify where clause of UPDATE
-
                     if ( catalogTable.isPartitioned ) {
-
                         boolean worstCaseRouting = false;
 
                         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
@@ -425,7 +423,8 @@ public abstract class AbstractRouter implements Router {
                         List<String> whereClauseValue = null;
                         if ( !whereClauseVisitor.getValues().isEmpty() ) {
                             if ( whereClauseVisitor.getValues().size() == 1 ) {
-                                whereClauseValue = whereClauseVisitor.getValues().stream().map( Object::toString )
+                                whereClauseValue = whereClauseVisitor.getValues().stream()
+                                        .map( Object::toString )
                                         .collect( Collectors.toList() );
                                 log.debug( "Found Where Clause Values: {}", whereClauseValue );
                                 worstCaseRouting = true;
@@ -459,14 +458,13 @@ public abstract class AbstractRouter implements Router {
                                         break;
                                     }
                                 } catch ( GenericCatalogException | UnknownColumnException e ) {
-                                    e.printStackTrace();
+                                    throw new RuntimeException( e );
                                 }
                                 index++;
                             }
 
                             // If only one where clause op
                             if ( whereClauseValue != null && partitionColumnIdentified ) {
-
                                 if ( whereClauseValue.size() == 1 && identPart == partitionManager.getTargetPartitionId( catalogTable, whereClauseValue.get( 0 ) ) ) {
                                     worstCaseRouting = false;
                                 } else {
@@ -508,12 +506,8 @@ public abstract class AbstractRouter implements Router {
                             } else if ( ((LogicalTableModify) node).getInput() instanceof LogicalProject
                                     && ((LogicalProject) ((LogicalTableModify) node).getInput()).getInput() instanceof LogicalValues ) {
 
-                                String partitionColumnName;
-
-                                partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
-
+                                String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
                                 List<String> fieldNames = ((LogicalTableModify) node).getInput().getRowType().getFieldNames();
-
                                 for ( i = 0; i < fieldNames.size(); i++ ) {
                                     String columnName = fieldNames.get( i );
                                     if ( partitionColumnName.equals( columnName ) ) {
@@ -929,7 +923,6 @@ public abstract class AbstractRouter implements Router {
             if ( call.operands.size() == 2 ) {
 
                 if ( call.operands.get( 0 ) instanceof RexInputRef ) {
-
                     if ( ((RexInputRef) call.operands.get( 0 )).getIndex() == partitionColumnIndex ) {
                         if ( call.operands.get( 1 ) instanceof RexLiteral ) {
                             value = ((RexLiteral) call.operands.get( 1 )).getValueForQueryParameterizer();
