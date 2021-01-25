@@ -47,6 +47,7 @@ public interface FileRel extends RelNode {
         @Getter
         private final List<String> columnNames = new ArrayList<>();
         private final List<String> project = new ArrayList<>();
+        private List<Integer> projectionMapping;
         @Getter
         private final List<Value[]> insertValues = new ArrayList<>();
         @Getter
@@ -81,7 +82,15 @@ public interface FileRel extends RelNode {
         }
 
 
-        public void project( final List<String> columnNames ) {
+        /**
+         * A FileProject can directly provide the projectionMapping, a FileModify will provide the columnNames only
+         */
+        public void project( final List<String> columnNames, final List<Integer> projectionMapping ) {
+            if ( projectionMapping != null ) {
+                this.projectionMapping = projectionMapping;
+                projectInsertValues( projectionMapping );
+                return;
+            }
             //a normal project
             if ( updates == null ) {
                 this.project.clear();
@@ -90,18 +99,44 @@ public interface FileRel extends RelNode {
             //in case of an update, assign the columnReferences in the updates
             else if ( operation == Operation.UPDATE ) {
                 if ( columnNames.size() != updates.size() ) {
-                    throw new RuntimeException( "This should not happen" );
+                    //the mapping will be derived later, in the FileTableModify
+                    return;
                 }
                 int i = 0;
+                List<Integer> mapping = new ArrayList<>();
                 for ( Value update : updates ) {
-                    update.setColumnReference( getFileTable().getColumnNames().indexOf( columnNames.get( i ) ) );
+                    int index = getFileTable().getColumnNames().indexOf( columnNames.get( i ) );
+                    update.setColumnReference( index );
+                    mapping.add( index );
                     i++;
+                }
+                this.projectionMapping = mapping;
+            }
+        }
+
+
+        /**
+         * For multi-store inserts, it may be necessary to project the insert values
+         */
+        private void projectInsertValues( final List<Integer> mapping ) {
+            if ( insertValues.size() > 0 && insertValues.get( 0 ).length > mapping.size() ) {
+                for ( int i = 0; i < insertValues.size(); i++ ) {
+                    Value[] values = insertValues.get( i );
+                    Value[] projected = new Value[mapping.size()];
+                    int j = 0;
+                    for ( Integer m : mapping ) {
+                        projected[j++] = values[m];
+                    }
+                    insertValues.set( i, projected );
                 }
             }
         }
 
 
         public Integer[] getProjectionMapping() {
+            if ( projectionMapping != null ) {
+                return projectionMapping.toArray( new Integer[0] );
+            }
             if ( project.size() == 0 ) {
                 return null;
             } else {

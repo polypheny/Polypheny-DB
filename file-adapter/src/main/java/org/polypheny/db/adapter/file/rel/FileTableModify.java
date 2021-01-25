@@ -17,9 +17,11 @@
 package org.polypheny.db.adapter.file.rel;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileRel;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
+import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -31,6 +33,8 @@ import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -71,8 +75,24 @@ public class FileTableModify extends TableModify implements FileRel {
         FileTranslatableTable fileTable = (FileTranslatableTable) ((RelOptTableImpl) getTable()).getTable();
         implementor.setFileTable( fileTable );
         if ( getOperation() == Operation.UPDATE ) {
+            if ( getSourceExpressionList() != null ) {
+                implementor.getUpdates().clear();
+                List<Value> values = new ArrayList<>();
+                int i = 0;
+                for ( RexNode src : getSourceExpressionList() ) {
+                    if ( src instanceof RexLiteral ) {
+                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), src, false ) );
+                    } else if ( src instanceof RexDynamicParam ) {
+                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexDynamicParam) src).getIndex(), true ) );
+                    } else {
+                        throw new RuntimeException( "Unknown element in sourceExpressionList: " + src.toString() );
+                    }
+                    i++;
+                }
+                implementor.setUpdates( values );
+            }
             //set the columns that should be updated in the projection list
-            implementor.project( this.getUpdateColumnList() );
+            implementor.project( this.getUpdateColumnList(), null );
         }
     }
 

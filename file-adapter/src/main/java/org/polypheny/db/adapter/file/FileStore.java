@@ -152,7 +152,7 @@ public class FileStore extends Store {
         context.getStatement().getTransaction().registerInvolvedStore( this );
         File newColumnFolder = getColumnFolder( catalogColumn.id );
         if ( !newColumnFolder.mkdir() ) {
-            throw new RuntimeException( "Could not create column folder" );
+            throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
         }
         try {
             catalog.updateColumnPlacementPhysicalNames(

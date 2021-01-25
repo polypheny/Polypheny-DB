@@ -35,6 +35,7 @@ import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rel.type.RelRecordType;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
@@ -61,14 +62,21 @@ public class FileProject extends Project implements FileRel {
     @Override
     public void implement( FileImplementor implementor ) {
         if ( implementor.getOperation() == Operation.INSERT ) {
-            //don't visit FileValues, the values are in the exps field
-            //for non-array inserts, there is no FileProject
+            // Visit FileValues only if there are RexInputRefs. Else the values will be in the exps field
+            // For non-array inserts, there is no FileProject
             Value[] row = new Value[exps.size()];
             Gson gson = new Gson();
             int i = 0;
+            boolean containsInputRefs = false;
             for ( RexNode node : exps ) {
                 if ( node instanceof RexLiteral ) {
                     row[i] = new Value( i, ((RexLiteral) node).getValueForFileAdapter(), false );
+                } else if ( node instanceof RexInputRef ) {
+                    if ( containsInputRefs ) {
+                        continue;
+                    }
+                    containsInputRefs = true;
+                    implementor.visitChild( 0, getInput() );
                 } else if ( node instanceof RexCall ) {
                     RexCall call = (RexCall) node;
                     ArrayList<Object> arrayValues = new ArrayList<>();
@@ -81,7 +89,9 @@ public class FileProject extends Project implements FileRel {
                 }
                 i++;
             }
-            implementor.addInsertValue( row );
+            if ( !containsInputRefs ) {
+                implementor.addInsertValue( row );
+            }
         } else {
             implementor.visitChild( 0, getInput() );
         }
@@ -90,14 +100,29 @@ public class FileProject extends Project implements FileRel {
         }
         RelRecordType rowType = (RelRecordType) getRowType();
         List<String> fields = new ArrayList<>();
-        for ( RelDataTypeField field : rowType.getFieldList() ) {
-            if ( field.getKey().startsWith( "EXPR$" ) ) {
-                //don't set EXPR-columns in FileImplementor
-                return;
+
+        ArrayList<Integer> mapping = new ArrayList<>();
+        boolean inputRefsOnly = true;
+        for ( RexNode e : exps ) {
+            if ( e instanceof RexInputRef ) {
+                mapping.add( new Long( ((RexInputRef) e).getIndex() ).intValue() );
+            } else {
+                inputRefsOnly = false;
+                break;
             }
-            fields.add( field.getKey() );
         }
-        implementor.project( fields );
+        if ( inputRefsOnly ) {
+            implementor.project( null, mapping );
+        } else {
+            for ( RelDataTypeField field : rowType.getFieldList() ) {
+                if ( field.getKey().startsWith( "EXPR$" ) ) {
+                    //don't set EXPR-columns in FileImplementor
+                    return;
+                }
+                fields.add( field.getKey() );
+            }
+            implementor.project( fields, null );
+        }
     }
 
 }

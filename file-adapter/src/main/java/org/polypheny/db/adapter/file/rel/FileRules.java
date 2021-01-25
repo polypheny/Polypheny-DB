@@ -22,6 +22,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
+import org.polypheny.db.adapter.file.FileTranslatableTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
 import org.polypheny.db.plan.RelOptRuleCall;
@@ -68,6 +69,14 @@ public class FileRules {
 
         @Override
         public boolean matches( RelOptRuleCall call ) {
+            final TableModify tableModify = call.rel( 0 );
+            if ( tableModify.getTable().unwrap( FileTranslatableTable.class ) == null ) {
+                return false;
+            }
+            FileTranslatableTable table = tableModify.getTable().unwrap( FileTranslatableTable.class );
+            if ( convention.getFileSchema() != table.getFileSchema() ) {
+                return false;
+            }
             convention.setModification( true );
             return true;
         }
@@ -232,7 +241,7 @@ public class FileRules {
          */
         @Override
         public boolean matches( RelOptRuleCall call ) {
-            return super.matches( call );
+            return call.rel( 0 ).getInput( 0 ).getConvention() == convention;
         }
 
 

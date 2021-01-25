@@ -43,7 +43,7 @@ public class FileValues extends Values implements FileRel {
 
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
+        return super.computeSelfCost( planner, mq );
     }
 
 
