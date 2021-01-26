@@ -37,6 +37,7 @@ package org.polypheny.db.rel;
 import org.polypheny.db.rel.core.TableFunctionScan;
 import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalConditionalExecute;
 import org.polypheny.db.rel.logical.LogicalCorrelate;
 import org.polypheny.db.rel.logical.LogicalExchange;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -82,6 +83,8 @@ public interface RelShuttle {
     RelNode visit( LogicalSort sort );
 
     RelNode visit( LogicalExchange exchange );
+
+    RelNode visit( LogicalConditionalExecute lce );
 
     RelNode visit( RelNode other );
 }

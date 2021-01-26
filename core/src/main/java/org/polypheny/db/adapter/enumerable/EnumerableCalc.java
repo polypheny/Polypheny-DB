@@ -173,7 +173,7 @@ public class EnumerableCalc extends Calc implements EnumerableRel {
         builder3.add( Expressions.return_( null, physType.record( expressions ) ) );
         BlockStatement currentBody = builder3.toBlock();
 
-        final Expression inputEnumerable = builder.append( "inputEnumerable", result.block, false );
+        final Expression inputEnumerable = builder.append( builder.newName( "inputEnumerable" + System.nanoTime() ), result.block, false );
         final Expression body =
                 Expressions.new_(
                         enumeratorType,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,14 @@ import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.exploreByExample.ExploreManager;
@@ -234,6 +237,14 @@ public class PolyphenyDb {
         final StatisticQueryProcessor statisticQueryProcessor = new StatisticQueryProcessor( transactionManager, authenticator );
         StatisticsManager<?> statisticsManager = StatisticsManager.getInstance();
         statisticsManager.setSqlQueryInterface( statisticQueryProcessor );
+
+        // Initialize index manager
+        try {
+            IndexManager.getInstance().initialize( transactionManager );
+            IndexManager.getInstance().restoreIndices();
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException | TransactionException | UnknownKeyException e ) {
+            throw new RuntimeException( "Something went wrong while initializing index manager.", e );
+        }
 
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();

@@ -29,6 +29,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
@@ -144,6 +145,8 @@ public class TransactionImpl implements Transaction, Comparable {
             if ( changedTables.size() > 0 ) {
                 StatisticsManager.getInstance().apply( changedTables );
             }
+
+            IndexManager.getInstance().commit( this.xid );
         } else {
             log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
             rollback();
@@ -164,6 +167,7 @@ public class TransactionImpl implements Transaction, Comparable {
             for ( Store store : involvedStores ) {
                 store.rollback( xid );
             }
+            IndexManager.getInstance().rollback( this.xid );
             Catalog.getInstance().rollback();
         } finally {
             // Release locks

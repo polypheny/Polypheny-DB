@@ -259,7 +259,7 @@ public class Bindables {
             double p = ((double) projects.size() + 2d) / ((double) table.getRowType().getFieldCount() + 2d);
 
             // Multiply the cost by a factor that makes a scan more attractive if filters and projects are pushed to the table scan
-            return super.computeSelfCost( planner, mq ).multiplyBy( f * p * 0.01d );
+            return super.computeSelfCost( planner, mq ).multiplyBy( f * p * 0.01d * 100.0d );  //TODO(s3lph): Temporary *100, otherwise foreign key enforcement breaks
         }
 
 
