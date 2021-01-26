@@ -353,6 +353,8 @@ public class CottontailTypeUtil {
                 } else if ( value instanceof Calendar ) {
                     TimestampString timestampString = TimestampString.fromCalendarFields( (Calendar) value );
                     return builder.setLongData( timestampString.getMillisSinceEpoch() ).build();
+                } else if ( value instanceof Long ) {
+                    return builder.setLongData( (Long) value ).build();
                 }
                 break;
             }
