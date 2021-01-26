@@ -109,7 +109,7 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
 
     @Override
     public Collection getModifiableCollection() {
-        return null;
+        throw new RuntimeException( "getModifiableCollection() is not implemented for Cottontail adapter!" );
     }
 
 
