@@ -19,6 +19,7 @@ package org.polypheny.db.restapi;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -616,6 +617,9 @@ public class RequestParser {
     @VisibleForTesting
     Object parseLiteralValue( PolyType type, Object objectLiteral ) throws ParserException {
         if ( !(objectLiteral instanceof String) ) {
+            if ( objectLiteral instanceof Double && type == PolyType.DECIMAL ) {
+                return BigDecimal.valueOf( (Double) objectLiteral );
+            }
             return objectLiteral;
         } else {
             Object parsedLiteral;
@@ -625,7 +629,11 @@ public class RequestParser {
             } else if ( PolyType.INT_TYPES.contains( type ) ) {
                 parsedLiteral = Long.valueOf( literal );
             } else if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
-                parsedLiteral = Double.valueOf( literal );
+                if ( type == PolyType.DECIMAL ) {
+                    parsedLiteral = new BigDecimal( literal );
+                } else {
+                    parsedLiteral = Double.valueOf( literal );
+                }
             } else if ( PolyType.CHAR_TYPES.contains( type ) ) {
                 parsedLiteral = literal;
             } else if ( PolyType.DATETIME_TYPES.contains( type ) ) {

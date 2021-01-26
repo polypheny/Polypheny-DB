@@ -318,6 +318,8 @@ public class CottontailTypeUtil {
                     return builder.setStringData( BigDecimal.valueOf( (Double) value ).toString() ).build();
                 } else if ( value instanceof Long ) {
                     return builder.setStringData( BigDecimal.valueOf( (Long) value ).toString() ).build();
+                } else if ( value instanceof String ) {
+                    return builder.setStringData( new BigDecimal( (String) value ).toString() ).build();
                 }
                 break;
             }
@@ -328,6 +330,8 @@ public class CottontailTypeUtil {
                     java.sql.Time time = (java.sql.Time) value;
                     TimeString timeString = new TimeString( time.toString() );
                     return builder.setIntData( timeString.getMillisOfDay() ).build();
+                } else if ( value instanceof Integer ) {
+                    return builder.setIntData( (Integer) value ).build();
                 }
                 break;
             }
@@ -337,6 +341,8 @@ public class CottontailTypeUtil {
                 } else if ( value instanceof java.sql.Date ) {
                     DateString dateString = new DateString( value.toString() );
                     return builder.setIntData( dateString.getDaysSinceEpoch() ).build();
+                } else if ( value instanceof Integer ) {
+                    return builder.setIntData( (Integer) value ).build();
                 }
                 break;
             }
