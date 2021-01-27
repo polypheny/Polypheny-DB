@@ -203,7 +203,7 @@ public class RestResult {
             try {
                 info = util.findMatch( (File) o );
             } catch ( IOException e ) {
-                log.error( "Could not determine content type of file " + ((File) o).getAbsolutePath() );
+                log.error( "Could not determine content type of file {}", ((File) o).getAbsolutePath() );
                 return "";
             }
         } else if ( o instanceof byte[] ) {
@@ -256,7 +256,7 @@ public class RestResult {
                     os.write( buf, 0, len );
                 }
                 if ( !zipFile.delete() ) {
-                    log.warn( "Could not delete " + zipFile.getAbsolutePath() );
+                    log.warn( "Could not delete {}", zipFile.getAbsolutePath() );
                 }
             } catch ( IOException e ) {
                 zipFile.delete();

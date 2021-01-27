@@ -181,7 +181,7 @@ public class CatalogImpl extends Catalog {
                 File folder = FileSystemManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
-                    log.info( "Reseting catalog on startup." );
+                    log.info( "Resetting catalog on startup." );
                     if ( new File( folder, fileName ).exists() ) {
                         //noinspection ResultOfMethodCallIgnored
                         new File( folder, fileName ).delete();
@@ -1651,7 +1651,6 @@ public class CatalogImpl extends Catalog {
      *
      * @param columnId The id of the column
      * @return A CatalogColumn
-     * @throws UnknownColumnException If there is no column with this id
      */
     @Override
     public CatalogColumn getColumn( long columnId ) {

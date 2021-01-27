@@ -24,7 +24,7 @@ import java.util.UUID;
 
 public class InformationTable extends InformationHtml {
 
-    @SuppressWarnings({ "FieldCanBeLocal", "unused" })
+    @SuppressWarnings({ "unused" })
     private List<String> labels;
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private List<List<String>> rows = new LinkedList<>();

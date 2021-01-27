@@ -72,7 +72,7 @@ public class InformationServer implements InformationObserver {
             try {
                 InformationPage page = im.getPage( req.body() );
                 if ( page == null ) {
-                    log.error( "Request for unknown page: " + req.body() );
+                    log.error( "Request for unknown page: {}", req.body() );
                     return "";
                 }
                 return page.asJson();

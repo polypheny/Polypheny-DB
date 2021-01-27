@@ -56,6 +56,7 @@ public class ParameterValueValidator extends RelShuttleImpl {
     /**
      * Visits a particular child of a parent, without copying a child
      */
+    @Override
     protected <T extends RelNode> T visitChild( T parent, int i, RelNode child ) {
         stack.push( parent );
         try {

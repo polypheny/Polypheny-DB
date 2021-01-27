@@ -459,9 +459,9 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder query = new StringBuilder();
-        if ( request.action.toLowerCase().equals( "drop" ) ) {
+        if ( request.action.equalsIgnoreCase( "drop" ) ) {
             query.append( "DROP TABLE " );
-        } else if ( request.action.toLowerCase().equals( "truncate" ) ) {
+        } else if ( request.action.equalsIgnoreCase( "truncate" ) ) {
             query.append( "TRUNCATE TABLE " );
         }
         String tableId = String.format( "\"%s\".\"%s\"", request.schema, request.table );
@@ -638,7 +638,7 @@ public class Crud implements InformationObserver {
             transaction.commit();
             return new Result( new Debug().setAffectedRows( numRows ).setGeneratedQuery( query ) );
         } catch ( QueryExecutionException | TransactionException e ) {
-            log.info( "Generated query:" + query );
+            log.info( "Generated query: {}", query );
             log.error( "Could not insert row", e );
             try {
                 transaction.rollback();
@@ -804,6 +804,7 @@ public class Crud implements InformationObserver {
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+                //noinspection SuspiciousDateFormat
                 DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
                 String durationText = df.format( new Date( millis ) );
                 text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
@@ -1849,12 +1850,12 @@ public class Crud implements InformationObserver {
      */
     Result addDropPlacement( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
-        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) && !index.getMethod().toUpperCase().equals( "MODIFY" ) ) {
+        if ( !index.getMethod().equalsIgnoreCase( "ADD" ) && !index.getMethod().equalsIgnoreCase( "DROP" ) && !index.getMethod().equalsIgnoreCase( "MODIFY" ) ) {
             return new Result( "Invalid request" );
         }
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
-        if ( !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+        if ( !index.getMethod().equalsIgnoreCase( "DROP" ) ) {
             for ( String col : index.getColumns() ) {
                 columnJoiner.add( "\"" + col + "\"" );
                 counter++;
@@ -2757,7 +2758,7 @@ public class Crud implements InformationObserver {
                 //see https://github.com/dessalines/torrenttunes-client/blob/master/src/main/java/com/torrenttunes/client/webservice/Platform.java
                 res.header( "Accept-Ranges", "bytes" );
                 res.status( 206 );//partial content
-                int len = new Long( rangeEnd - rangeStart ).intValue() + 1;
+                int len = Long.valueOf( rangeEnd - rangeStart ).intValue() + 1;
                 res.header( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
                 res.header( "Content-Length", String.valueOf( len ) );
 

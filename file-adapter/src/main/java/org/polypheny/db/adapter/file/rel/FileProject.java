@@ -105,7 +105,7 @@ public class FileProject extends Project implements FileRel {
         boolean inputRefsOnly = true;
         for ( RexNode e : exps ) {
             if ( e instanceof RexInputRef ) {
-                mapping.add( new Long( ((RexInputRef) e).getIndex() ).intValue() );
+                mapping.add( Long.valueOf( ((RexInputRef) e).getIndex() ).intValue() );
             } else {
                 inputRefsOnly = false;
                 break;

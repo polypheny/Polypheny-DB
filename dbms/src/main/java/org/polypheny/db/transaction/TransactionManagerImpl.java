@@ -107,7 +107,7 @@ public class TransactionManagerImpl implements TransactionManager {
     @Override
     public void removeTransaction( PolyXid xid ) throws TransactionException {
         if ( !transactions.containsKey( xid ) ) {
-            log.warn( "Unknown transaction id: " + xid );
+            log.warn( "Unknown transaction id: {}", xid );
         } else {
             transactions.remove( xid );
         }

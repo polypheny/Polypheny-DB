@@ -59,7 +59,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
      * insert all data, set current to the insertCount, return true
      * Second call:
      * return false
-     * see {@link org.polypheny.db.webui.Crud#executeSqlUpdate}
+     * see {@code org.polypheny.db.webui.Crud#executeSqlUpdate}
      */
     @Override
     public boolean moveNext() {
@@ -98,7 +98,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
 
                     }
                 }
-                current = (E) new Long( insertPosition );
+                current = (E) Long.valueOf( insertPosition );
                 inserted = true;
                 return true;
             }

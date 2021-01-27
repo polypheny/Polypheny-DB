@@ -215,6 +215,7 @@ public class FileRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Union union = (Union) rel;
             final RelTraitSet traitSet = union.getTraitSet().replace( convention );
@@ -245,6 +246,7 @@ public class FileRules {
         }
 
 
+        @Override
         public RelNode convert( RelNode rel ) {
             final Filter filter = (Filter) rel;
             final RelTraitSet traitSet = filter.getTraitSet().replace( convention );
