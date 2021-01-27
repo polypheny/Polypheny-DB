@@ -86,6 +86,8 @@ public class FileProject extends Project implements FileRel {
                     row[i] = new Value( i, gson.toJson( arrayValues ), false );
                 } else if ( node instanceof RexDynamicParam ) {
                     row[i] = new Value( i, ((RexDynamicParam) node).getIndex(), true );
+                } else {
+                    throw new RuntimeException( "Could not implement " + node.getClass().getSimpleName() + " " + node.toString() );
                 }
                 i++;
             }

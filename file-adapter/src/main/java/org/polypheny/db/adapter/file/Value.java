@@ -26,6 +26,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
@@ -110,8 +111,12 @@ public class Value {
                 RexNode lit = exps.get( i + offset );
                 if ( lit instanceof RexLiteral ) {
                     valueList.add( new Value( null, ((RexLiteral) lit).getValueForFileCondition(), false ) );
-                } else {
+                } else if ( lit instanceof RexDynamicParam ) {
                     valueList.add( new Value( null, ((RexDynamicParam) lit).getIndex(), true ) );
+                } else if ( lit instanceof RexInputRef ) {
+                    valueList.add( new Value( ((RexInputRef) lit).getIndex(), null, false ) );
+                } else {
+                    throw new RuntimeException( "Could not implement " + lit.getClass().getSimpleName() + " " + lit.toString() );
                 }
             }
         }
