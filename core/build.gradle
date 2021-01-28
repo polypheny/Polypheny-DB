@@ -112,7 +112,7 @@ sourceSets {
 
 
 /**
- * Compile Pipline
+ * Compile Pipeline
  */
 task generateFmppSources {
     inputs.dir("src/main/codegen/templates")
@@ -175,7 +175,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        //attributes "Version": "$version"
+        attributes "Version": "$project.version"
     }
 }
 task sourcesJar(type: Jar, dependsOn: classes) {

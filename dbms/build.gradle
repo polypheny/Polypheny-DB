@@ -116,7 +116,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        //attributes "Version": "$version"
+        attributes "Version": "$project.version"
         attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
 }
