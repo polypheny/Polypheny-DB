@@ -21,16 +21,12 @@ import lombok.Getter;
 
 public abstract class DataSource extends Adapter {
 
-
-    protected final Map<String, String> settings;
-
     @Getter
     private final boolean dataReadOnly;
 
 
     protected DataSource( final int adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly ) {
-        super( adapterId, uniqueName );
-        this.settings = settings;
+        super( adapterId, uniqueName, settings );
         this.dataReadOnly = dataReadOnly;
     }
 

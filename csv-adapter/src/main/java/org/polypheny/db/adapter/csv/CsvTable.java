@@ -52,17 +52,17 @@ public abstract class CsvTable extends AbstractTable {
     protected final Source source;
     protected final RelProtoDataType protoRowType;
     protected List<CsvFieldType> fieldTypes;
-    protected final CsvStore csvStore;
+    protected final CsvSource csvSource;
 
 
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
+    CsvTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvSource csvSource ) {
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
-        this.csvStore = csvStore;
+        this.csvSource = csvSource;
     }
 
 

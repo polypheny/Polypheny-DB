@@ -20,8 +20,6 @@ package org.polypheny.db.adapter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
@@ -34,8 +32,6 @@ import org.polypheny.db.jdbc.Context;
 
 public abstract class DataStore extends Adapter {
 
-    protected final Map<String, String> settings;
-
     @Getter
     private final boolean persistent;
 
@@ -43,10 +39,7 @@ public abstract class DataStore extends Adapter {
 
 
     public DataStore( final int adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent ) {
-        super( adapterId, uniqueName );
-        // Make sure the settings are actually valid
-        this.validateSettings( settings, true );
-        this.settings = settings;
+        super( adapterId, uniqueName, settings );
         this.persistent = persistent;
     }
 
@@ -72,40 +65,6 @@ public abstract class DataStore extends Adapter {
     public abstract AvailableIndexMethod getDefaultIndexMethod();
 
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable );
-
-    public abstract void shutdown();
-
-    /**
-     * Informs a store that its settings have changed.
-     *
-     * @param updatedSettings List of setting names that have changed.
-     */
-    protected abstract void reloadSettings( List<String> updatedSettings );
-
-
-    protected List<String> applySettings( Map<String, String> newSettings ) {
-        List<String> updatedSettings = new ArrayList<>();
-        for ( Entry<String, String> newSetting : newSettings.entrySet() ) {
-            if ( !Objects.equals( this.settings.get( newSetting.getKey() ), newSetting.getValue() ) ) {
-                this.settings.put( newSetting.getKey(), newSetting.getValue() );
-                updatedSettings.add( newSetting.getKey() );
-            }
-        }
-
-        return updatedSettings;
-    }
-
-
-    public void updateSettings( Map<String, String> newSettings ) {
-        this.validateSettings( newSettings, false );
-        List<String> updatedSettings = this.applySettings( newSettings );
-        this.reloadSettings( updatedSettings );
-    }
-
-
-    public Map<String, String> getCurrentSettings() {
-        return settings;
-    }
 
 
     @AllArgsConstructor

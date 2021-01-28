@@ -5,17 +5,13 @@ import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -23,7 +19,7 @@ import org.polypheny.db.transaction.PolyXid;
 
 
 @Slf4j
-public class CsvStore extends DataStore {
+public class CsvSource extends DataSource {
 
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "CSV";
@@ -31,14 +27,14 @@ public class CsvStore extends DataStore {
     public static final String DESCRIPTION = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "directory", false, true, true, "testTestCsv" )
+            new AdapterSettingString( "directory", false, true, true, "test" )
     );
 
     private URL csvDir;
     private CsvSchema currentSchema;
 
 
-    public CsvStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
+    public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
         setCsvDir( settings );
     }
@@ -47,8 +43,7 @@ public class CsvStore extends DataStore {
     private void setCsvDir( Map<String, String> settings ) {
         String dir = settings.get( "directory" );
         if ( dir.startsWith( "classpath://" ) ) {
-            URL url = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
-            csvDir = url;
+            csvDir = this.getClass().getClassLoader().getResource( dir.replace( "classpath://", "" ) + "/" );
         } else {
             try {
                 csvDir = new File( dir ).toURI().toURL();
@@ -78,42 +73,6 @@ public class CsvStore extends DataStore {
 
 
     @Override
-    public void createTable( Context context, CatalogTable catalogTable ) {
-        throw new RuntimeException( "CSV adapter does not support creating table" );
-    }
-
-
-    @Override
-    public void dropTable( Context context, CatalogTable catalogTable ) {
-        log.warn( "CSV adapter does not support dropping tables!" );
-    }
-
-
-    @Override
-    public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
-        log.warn( "CSV adapter does not support adding columns!" );
-    }
-
-
-    @Override
-    public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-        log.warn( "CSV adapter does not support dropping columns!" );
-    }
-
-
-    @Override
-    public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        throw new RuntimeException( "CSV adapter does not support adding indexes" );
-    }
-
-
-    @Override
-    public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        throw new RuntimeException( "CSV adapter does not support dropping indexes" );
-    }
-
-
-    @Override
     public boolean prepare( PolyXid xid ) {
         log.debug( "CSV Store does not support prepare()." );
         return true;
@@ -133,18 +92,6 @@ public class CsvStore extends DataStore {
 
 
     @Override
-    public void truncate( Context context, CatalogTable table ) {
-        log.warn( "CSV Store does not support truncate." );
-    }
-
-
-    @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
-        throw new RuntimeException( "CSV adapter does not support updating column types!" );
-    }
-
-
-    @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
@@ -153,24 +100,6 @@ public class CsvStore extends DataStore {
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
-    }
-
-
-    @Override
-    public List<AvailableIndexMethod> getAvailableIndexMethods() {
-        return new ArrayList<>();
-    }
-
-
-    @Override
-    public AvailableIndexMethod getDefaultIndexMethod() {
-        throw new RuntimeException( "CSV adapter does not support adding indexes" );
-    }
-
-
-    @Override
-    public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
-        return ImmutableList.of();
     }
 
 

@@ -81,7 +81,7 @@ public class CsvSchema extends AbstractSchema {
     }
 
 
-    public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvStore csvStore ) {
+    public Table createCsvTable( CatalogTable catalogTable, List<CatalogColumnPlacement> columnPlacementsOnStore, CsvSource csvSource ) {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
@@ -93,14 +93,14 @@ public class CsvSchema extends AbstractSchema {
         }
 
         // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
-        String csvFileName = Catalog.getInstance().getColumnPlacementsOnAdapter( csvStore.getAdapterId(), catalogTable.id ).iterator().next().physicalTableName + ".csv";
+        String csvFileName = Catalog.getInstance().getColumnPlacementsOnAdapter( csvSource.getAdapterId(), catalogTable.id ).iterator().next().physicalTableName + ".csv";
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );
         } catch ( MalformedURLException e ) {
             throw new RuntimeException( e );
         }
-        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvStore );
+        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvSource );
         tableMap.put( catalogTable.name, table );
         return table;
     }
@@ -115,14 +115,14 @@ public class CsvSchema extends AbstractSchema {
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
+    private CsvTable createTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvSource csvSource ) {
         switch ( flavor ) {
             case TRANSLATABLE:
-                return new CsvTranslatableTable( source, protoRowType, fieldTypes, csvStore );
+                return new CsvTranslatableTable( source, protoRowType, fieldTypes, csvSource );
             case SCANNABLE:
-                return new CsvScannableTable( source, protoRowType, fieldTypes, csvStore );
+                return new CsvScannableTable( source, protoRowType, fieldTypes, csvSource );
             case FILTERABLE:
-                return new CsvFilterableTable( source, protoRowType, fieldTypes, csvStore );
+                return new CsvFilterableTable( source, protoRowType, fieldTypes, csvSource );
             default:
                 throw new AssertionError( "Unknown flavor " + this.flavor );
         }

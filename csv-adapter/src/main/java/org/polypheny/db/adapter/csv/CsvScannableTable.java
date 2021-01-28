@@ -55,8 +55,8 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
     /**
      * Creates a CsvScannableTable.
      */
-    protected CsvScannableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
-        super( source, protoRowType, fieldTypes, csvStore );
+    protected CsvScannableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvSource csvSource ) {
+        super( source, protoRowType, fieldTypes, csvSource );
     }
 
 
@@ -67,7 +67,7 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
 
     @Override
     public Enumerable<Object[]> scan( DataContext dataContext ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvStore );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object[]>() {

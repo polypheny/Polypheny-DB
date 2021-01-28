@@ -41,6 +41,7 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
@@ -323,22 +324,24 @@ public class CatalogImpl extends Catalog {
             if ( placements.size() == 0 ) {
                 // no placements shouldn't happen
             } else if ( placements.size() == 1 ) {
-                DataStore store = manager.getStore( placements.get( 0 ).adapterId );
-                if ( !store.isPersistent() ) {
-                    CatalogTable catalogTable = getTable( c.tableId );
-                    // TODO only full placements atm here
+                Adapter adapter = manager.getAdapter( placements.get( 0 ).adapterId );
+                if ( DataStore.class.isAssignableFrom( adapter.getClass() ) ) {
+                    DataStore store = (DataStore) adapter;
+                    if ( !store.isPersistent() ) {
+                        CatalogTable catalogTable = getTable( c.tableId );
+                        // TODO only full placements atm here
 
-                    if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
-                        store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                        restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
+                        if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
+                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                            restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
 
-                    } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
-                        store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                        List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
-                        ids.add( catalogTable.id );
-                        restoredTables.put( store.getAdapterId(), ids );
+                        } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
+                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                            List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
+                            ids.add( catalogTable.id );
+                            restoredTables.put( store.getAdapterId(), ids );
+                        }
                     }
-
                 }
             } else {
                 Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.adapterId, p -> manager.getStore( p.adapterId ).isPersistent() ) );
@@ -586,9 +589,8 @@ public class CatalogImpl extends Catalog {
         if ( !adapterNames.containsKey( "csv" ) ) {
             Map<String, String> csvSettings = new HashMap<>();
             csvSettings.put( "directory", "classpath://hr" );
-            csvSettings.put( "persistent", "true" );
 
-            addAdapter( "csv", "org.polypheny.db.adapter.csv.CsvStore", AdapterType.STORE, csvSettings );
+            addAdapter( "csv", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
         }
 
         //////////////
@@ -596,16 +598,16 @@ public class CatalogImpl extends Catalog {
         CatalogAdapter csv = getAdapter( "csv" );
         if ( !testMode ) {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-                addTable( "depts", schemaId, systemId, TableType.TABLE, null );
+                addTable( "depts", schemaId, systemId, TableType.SOURCE, null );
             }
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-                addTable( "emps", schemaId, systemId, TableType.TABLE, null );
+                addTable( "emps", schemaId, systemId, TableType.SOURCE, null );
             }
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
-                addTable( "emp", schemaId, systemId, TableType.TABLE, null );
+                addTable( "emp", schemaId, systemId, TableType.SOURCE, null );
             }
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
-                addTable( "work", schemaId, systemId, TableType.TABLE, null );
+                addTable( "work", schemaId, systemId, TableType.SOURCE, null );
             }
             addDefaultCsvColumns( csv );
         }
@@ -683,7 +685,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    private void addDefaultColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) throws GenericCatalogException, UnknownTableException {
+    private void addDefaultColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !checkIfExistsColumn( table.id, name ) ) {
             long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
             addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, table.name, name );
