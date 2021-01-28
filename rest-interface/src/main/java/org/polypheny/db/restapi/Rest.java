@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,15 @@ package org.polypheny.db.restapi;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import com.google.common.collect.ImmutableList;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -50,6 +47,7 @@ import org.polypheny.db.rel.core.JoinRelType;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.logical.LogicalTableModify;
+import org.polypheny.db.rel.logical.LogicalValues;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.restapi.RequestParser.Filters;
@@ -58,6 +56,7 @@ import org.polypheny.db.restapi.models.requests.ResourceDeleteRequest;
 import org.polypheny.db.restapi.models.requests.ResourceGetRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePatchRequest;
 import org.polypheny.db.restapi.models.requests.ResourcePostRequest;
+import org.polypheny.db.restapi.models.requests.ResourceValuesRequest;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -68,12 +67,16 @@ import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.tools.RelBuilder.GroupKey;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.TimeString;
+import org.polypheny.db.util.TimestampString;
 import spark.Request;
 import spark.Response;
 
@@ -93,7 +96,7 @@ public class Rest {
     }
 
 
-    Map<String, Object> processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
+    String processGetResource( final ResourceGetRequest resourceGetRequest, final Request req, final Response res ) throws RestException {
         log.debug( "Starting to process get resource request. Session ID: {}.", req.session().id() );
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -107,7 +110,7 @@ public class Rest {
         // Initial projection
         relBuilder = this.initialProjection( relBuilder, rexBuilder, resourceGetRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( relBuilder, rexBuilder, resourceGetRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, relBuilder, rexBuilder, resourceGetRequest.filters, req );
         if ( filters != null ) {
             relBuilder = relBuilder.filter( filters );
         }
@@ -135,15 +138,11 @@ public class Rest {
         RelRoot root = new RelRoot( relNode, relNode.getRowType(), SqlKind.SELECT, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
-
-        finalResult.put( "uri", req.uri() );
-        finalResult.put( "query", req.queryString() );
-        return finalResult;
+        return executeAndTransformRelAlg( root, statement, res );
     }
 
 
-    Map<String, Object> processPatchResource( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res ) throws RestException {
+    String processPatchResource( final ResourcePatchRequest resourcePatchRequest, final Request req, final Response res, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         RelBuilder relBuilder = RelBuilder.create( statement );
@@ -159,7 +158,7 @@ public class Rest {
         // Initial projection
         relBuilder = this.initialProjection( relBuilder, rexBuilder, resourcePatchRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( relBuilder, rexBuilder, resourcePatchRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, relBuilder, rexBuilder, resourcePatchRequest.filters, req );
         if ( filters != null ) {
             relBuilder = relBuilder.filter( filters );
         }
@@ -173,7 +172,7 @@ public class Rest {
         RelDataType tableRowType = table.getRowType();
         List<RelDataTypeField> tableRows = tableRowType.getFieldList();
         List<String> valueColumnNames = this.valuesColumnNames( resourcePatchRequest.values );
-        List<RexNode> rexValues = this.valuesNode( relBuilder, rexBuilder, resourcePatchRequest.values, tableRows ).get( 0 );
+        List<RexNode> rexValues = this.valuesNode( statement, relBuilder, rexBuilder, resourcePatchRequest, tableRows, inputStreams ).get( 0 );
 
         RelNode relNode = relBuilder.build();
         TableModify tableModify = new LogicalTableModify(
@@ -198,12 +197,11 @@ public class Rest {
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.UPDATE, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
-        return finalResult;
+        return executeAndTransformRelAlg( root, statement, res );
     }
 
 
-    Map<String, Object> processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Request req, final Response res ) throws RestException {
+    String processDeleteResource( final ResourceDeleteRequest resourceDeleteRequest, final Request req, final Response res ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         RelBuilder relBuilder = RelBuilder.create( statement );
@@ -219,7 +217,7 @@ public class Rest {
 //         Initial projection
         relBuilder = this.initialProjection( relBuilder, rexBuilder, resourceDeleteRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( relBuilder, rexBuilder, resourceDeleteRequest.filters, req );
+        List<RexNode> filters = this.filters( statement, relBuilder, rexBuilder, resourceDeleteRequest.filters, req );
         if ( filters != null ) {
             relBuilder = relBuilder.filter( filters );
         }
@@ -252,12 +250,11 @@ public class Rest {
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.DELETE, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
-        return finalResult;
+        return executeAndTransformRelAlg( root, statement, res );
     }
 
 
-    Map<String, Object> processPostResource( final ResourcePostRequest insertValueRequest, final Request req, final Response res ) throws RestException {
+    String processPostResource( final ResourcePostRequest insertValueRequest, final Request req, final Response res, Map<String, InputStream> inputStreams ) throws RestException {
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
         RelBuilder relBuilder = RelBuilder.create( statement );
@@ -272,14 +269,16 @@ public class Rest {
         List<RelDataTypeField> tableRows = tableRowType.getFieldList();
 
 //        List<String> valueColumnNames = this.valuesColumnNames( updateResourceRequest.values );
-        List<List<RexLiteral>> rexValues = this.valuesLiteral( relBuilder, rexBuilder, insertValueRequest.values, tableRows );
-        relBuilder = relBuilder.values( rexValues, tableRowType );
-
-        // Table Modify
 
         RelOptPlanner planner = statement.getQueryProcessor().getPlanner();
         RelOptCluster cluster = RelOptCluster.create( planner, rexBuilder );
 
+        List<String> valueColumnNames = this.valuesColumnNames( insertValueRequest.values );
+        List<RexNode> rexValues = this.valuesNode( statement, relBuilder, rexBuilder, insertValueRequest, tableRows, inputStreams ).get( 0 );
+        relBuilder.push( LogicalValues.createOneRow( cluster ) );
+        relBuilder.project( rexValues, valueColumnNames );
+
+        // Table Modify
         RelNode relNode = relBuilder.build();
         TableModify tableModify = new LogicalTableModify(
                 cluster,
@@ -303,9 +302,7 @@ public class Rest {
         RelRoot root = new RelRoot( tableModify, rowType, SqlKind.INSERT, fields, collation );
         log.debug( "RelRoot was built." );
 
-        Map<String, Object> finalResult = executeAndTransformRelAlg( root, statement );
-
-        return finalResult;
+        return executeAndTransformRelAlg( root, statement, res );
     }
 
 
@@ -327,30 +324,50 @@ public class Rest {
 
 
     @VisibleForTesting
-    List<RexNode> filters( RelBuilder relBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
+    List<RexNode> filters( Statement statement, RelBuilder relBuilder, RexBuilder rexBuilder, Filters filters, Request req ) {
         if ( filters.literalFilters != null ) {
-            log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
+            if ( req != null ) {
+                log.debug( "Starting to process filters. Session ID: {}.", req.session().id() );
+            }
             List<RexNode> filterNodes = new ArrayList<>();
             RelNode baseNodeForFilters = relBuilder.peek();
             RelDataType filtersRowType = baseNodeForFilters.getRowType();
             List<RelDataTypeField> filtersRows = filtersRowType.getFieldList();
+            Map<String, RelDataTypeField> filterMap = new HashMap<>();
+            filtersRows.forEach( ( r ) -> filterMap.put( r.getKey(), r ) );
+            int index = 0;
             for ( RequestColumn column : filters.literalFilters.keySet() ) {
                 for ( Pair<SqlOperator, Object> filterOperationPair : filters.literalFilters.get( column ) ) {
-                    int columnPosition = (int) column.getLogicalIndex();
-                    RelDataTypeField typeField = filtersRows.get( columnPosition );
-                    RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, columnPosition );
-                    RexNode rightHandSide = rexBuilder.makeLiteral( filterOperationPair.right, typeField.getType(), true );
+                    RelDataTypeField typeField = filterMap.get( column.getFullyQualifiedName() );
+                    RexNode inputRef = rexBuilder.makeInputRef( baseNodeForFilters, typeField.getIndex() );
+                    Object param = filterOperationPair.right;
+                    if ( param instanceof TimestampString ) {
+                        param = ((TimestampString) param).toCalendar();
+                    } else if ( param instanceof TimeString ) {
+                        param = ((TimeString) param).toCalendar();
+                    } else if ( param instanceof DateString ) {
+                        param = ((DateString) param).toCalendar();
+                    }
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( param ) );
+                    RexNode rightHandSide = rexBuilder.makeDynamicParam( typeField.getType(), index );
+                    index++;
                     RexNode call = rexBuilder.makeCall( filterOperationPair.left, inputRef, rightHandSide );
                     filterNodes.add( call );
                 }
             }
 
-            log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
+            if ( req != null ) {
+                log.debug( "Finished processing filters. Session ID: {}.", req.session().id() );
+            }
 //            relBuilder = relBuilder.filter( filterNodes );
-            log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
+            if ( req != null ) {
+                log.debug( "Added filters to relation. Session ID: {}.", req.session().id() );
+            }
             return filterNodes;
         } else {
-            log.debug( "No filters to add. Session ID: {}.", req.session().id() );
+            if ( req != null ) {
+                log.debug( "No filters to add. Session ID: {}.", req.session().id() );
+            }
             return null;
         }
     }
@@ -367,14 +384,22 @@ public class Rest {
     }
 
 
-    List<List<RexNode>> valuesNode( RelBuilder relBuilder, RexBuilder rexBuilder, List<List<Pair<RequestColumn, Object>>> values, List<RelDataTypeField> tableRows ) {
+    List<List<RexNode>> valuesNode( Statement statement, RelBuilder relBuilder, RexBuilder rexBuilder, ResourceValuesRequest request, List<RelDataTypeField> tableRows, Map<String, InputStream> inputStreams ) {
+        List<List<Pair<RequestColumn, Object>>> values = request.values;
         List<List<RexNode>> wrapperList = new ArrayList<>();
+        int index = 0;
         for ( List<Pair<RequestColumn, Object>> rowsToInsert : values ) {
             List<RexNode> rexValues = new ArrayList<>();
             for ( Pair<RequestColumn, Object> insertValue : rowsToInsert ) {
                 int columnPosition = insertValue.left.getLogicalIndex();
                 RelDataTypeField typeField = tableRows.get( columnPosition );
-                rexValues.add( rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
+                if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( inputStreams.get( insertValue.left.getColumn().name ) ) );
+                    rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
+                    index++;
+                } else {
+                    rexValues.add( rexBuilder.makeLiteral( insertValue.right, typeField.getType(), true ) );
+                }
             }
             wrapperList.add( rexValues );
         }
@@ -503,110 +528,37 @@ public class Rest {
 
     private Transaction getTransaction() {
         try {
-            return transactionManager.startTransaction( userName, databaseName, false, "REST Interface" );
+            return transactionManager.startTransaction( userName, databaseName, false, "REST Interface", MultimediaFlavor.FILE );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }
 
 
-    Map<String, Object> executeAndTransformRelAlg( RelRoot relRoot, final Statement statement ) {
+    String executeAndTransformRelAlg( RelRoot relRoot, final Statement statement, final Response res ) {
         // Prepare
         PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
         log.debug( "RelRoot was prepared." );
 
-        List<List<Object>> rows;
+        @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
+        Iterator<Object> iterator = iterable.iterator();
+        RestResult restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
+        restResult.transform();
+        if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
+            signature.getExecutionTimeMonitor().setExecutionTime( restResult.getExecutionTime() );
+        }
         try {
-            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
-            Iterator<Object> iterator = iterable.iterator();
-            if ( relRoot.kind.belongsTo( SqlKind.DML ) ) {
-                Object object;
-                int rowsChanged = -1;
-                while ( iterator.hasNext() ) {
-                    object = iterator.next();
-                    int num;
-                    if ( object != null && object.getClass().isArray() ) {
-                        Object[] o = (Object[]) object;
-                        num = ((Number) o[0]).intValue();
-                    } else if ( object != null ) {
-                        num = ((Number) object).intValue();
-                    } else {
-                        throw new RuntimeException( "Result is null" );
-                    }
-                    // Check if num is equal for all stores
-                    if ( rowsChanged != -1 && rowsChanged != num ) {
-                        throw new RuntimeException( "The number of changed rows is not equal for all stores!" );
-                    }
-                    rowsChanged = num;
-                }
-                rows = new LinkedList<>();
-                LinkedList<Object> result = new LinkedList<>();
-                result.add( rowsChanged );
-                rows.add( result );
-            } else {
-                StopWatch stopWatch = new StopWatch();
-                stopWatch.start();
-                rows = MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() );
-                stopWatch.stop();
-                signature.getExecutionTimeMonitor().setExecutionTime( stopWatch.getNanoTime() );
-            }
             statement.getTransaction().commit();
-        } catch ( Exception | TransactionException e ) {
-            log.error( "Caught exception while iterating the plan builder tree", e );
+        } catch ( TransactionException e ) {
+            log.error( "Could not commit", e );
             try {
                 statement.getTransaction().rollback();
             } catch ( TransactionException transactionException ) {
-                transactionException.printStackTrace();
+                log.error( "Could not rollback", e );
             }
             return null;
         }
-
-        return transformResultIterator( signature, rows );
+        return restResult.getResult( res );
     }
 
-
-    Map<String, Object> transformResultIterator( PolyphenyDbSignature<?> signature, List<List<Object>> rows ) {
-        List<Map<String, Object>> resultData = new ArrayList<>();
-
-        try {
-            /*CatalogTable catalogTable = null;
-            if ( request.tableId != null ) {
-                String[] t = request.tableId.split( "\\." );
-                try {
-                    catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    log.error( "Caught exception", e );
-                }
-            }*/
-            for ( List<Object> row : rows ) {
-                Map<String, Object> temp = new HashMap<>();
-                int counter = 0;
-                for ( Object o : row ) {
-                    if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIMESTAMP ) ) {
-                        Long nanoSeconds = (Long) o;
-                        LocalDateTime localDateTime = LocalDateTime.ofEpochSecond( nanoSeconds / 1000L, (int) ((nanoSeconds % 1000) * 1000), ZoneOffset.UTC );
-//                        localDateTime.toString();
-                        temp.put( signature.columns.get( counter ).columnName, localDateTime.toString() );
-                    } else if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIME ) ) {
-                        temp.put( signature.columns.get( counter ).columnName, o.toString() );
-                    } else if ( signature.rowType.getFieldList().get( counter ).getType().getPolyType().equals( PolyType.TIME ) ) {
-                        temp.put( signature.columns.get( counter ).columnName, o.toString() );
-                    } else {
-                        temp.put( signature.columns.get( counter ).columnName, o );
-                    }
-                    counter++;
-                }
-                resultData.add( temp );
-            }
-
-        } catch ( Exception e ) {
-            log.error( "Something went wrong with the transformation of the result iterator.", e );
-            throw new RestException( RestErrorCode.GENERIC );
-        }
-
-        Map<String, Object> finalResult = new HashMap<>();
-        finalResult.put( "result", resultData );
-        finalResult.put( "size", resultData.size() );
-        return finalResult;
-    }
 }

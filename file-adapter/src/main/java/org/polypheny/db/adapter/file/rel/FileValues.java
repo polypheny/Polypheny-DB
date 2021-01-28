@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.adapter.file.FileRel;
+import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptPlanner;
@@ -39,10 +40,12 @@ public class FileValues extends Values implements FileRel {
         super( cluster, rowType, tuples, traits );
     }
 
+
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
-        return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
+        return super.computeSelfCost( planner, mq );
     }
+
 
     @Override
     public void implement( final FileImplementor implementor ) {
@@ -58,13 +61,14 @@ public class FileValues extends Values implements FileRel {
         implementor.setColumnNames( columns );
 
         for ( ImmutableList<RexLiteral> literalList : tuples ) {
-            Object[] row = new Object[literalList.size()];
+            Value[] row = new Value[literalList.size()];
             int i = 0;
             for ( RexLiteral literal : literalList.asList() ) {
-                row[i] = literal.getValueForFileAdapter();
+                row[i] = new Value( i, literal.getValueForFileAdapter(), false );
                 i++;
             }
             implementor.addInsertValue( row );
         }
     }
+
 }

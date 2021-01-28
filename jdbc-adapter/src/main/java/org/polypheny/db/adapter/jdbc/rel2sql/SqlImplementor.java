@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -545,6 +545,8 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createTime( literal.getValueAs( TimeString.class ), literal.getType().getPrecision(), POS );
                         case TIMESTAMP:
                             return SqlLiteral.createTimestamp( literal.getValueAs( TimestampString.class ), literal.getType().getPrecision(), POS );
+                        case BINARY:
+                            return SqlLiteral.createBinaryString( literal.getValueAs( byte[].class ), POS );
                         case ANY:
                         case NULL:
                             switch ( literal.getTypeName() ) {
@@ -870,6 +872,7 @@ public abstract class SqlImplementor {
         public SqlImplementor implementor() {
             throw new UnsupportedOperationException();
         }
+
     }
 
 
@@ -894,6 +897,7 @@ public abstract class SqlImplementor {
         public SqlNode field( int ordinal ) {
             return field.apply( ordinal );
         }
+
     }
 
 
@@ -918,6 +922,7 @@ public abstract class SqlImplementor {
         public SqlImplementor implementor() {
             return SqlImplementor.this;
         }
+
     }
 
 
@@ -965,6 +970,7 @@ public abstract class SqlImplementor {
             }
             return super.toSql( program, rex );
         }
+
     }
 
 
@@ -1012,6 +1018,7 @@ public abstract class SqlImplementor {
             }
             throw new AssertionError( "field ordinal " + ordinal + " out of range " + aliases );
         }
+
     }
 
 
@@ -1042,6 +1049,7 @@ public abstract class SqlImplementor {
                 return rightContext.field( ordinal - leftContext.fieldCount );
             }
         }
+
     }
 
 
@@ -1260,6 +1268,7 @@ public abstract class SqlImplementor {
                 return new Result( node, clauses, neededAlias, neededType, ImmutableMap.of( neededAlias, neededType ) );
             }
         }
+
     }
 
 
@@ -1333,6 +1342,7 @@ public abstract class SqlImplementor {
         public Result result() {
             return SqlImplementor.this.result( select, clauses, rel, aliases );
         }
+
     }
 
 
@@ -1343,5 +1353,6 @@ public abstract class SqlImplementor {
     public enum Clause {
         FROM, WHERE, GROUP_BY, HAVING, SELECT, SET_OP, ORDER_BY, FETCH, OFFSET
     }
+
 }
 

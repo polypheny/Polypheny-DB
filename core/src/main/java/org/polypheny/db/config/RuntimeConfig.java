@@ -131,6 +131,13 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "planningGroup" ),
 
+    VALIDATE_MM_CONTENT_TYPE( "validation/validateMultimediaContentType",
+            "Validate multimedia data by checking its content-type.",
+            true,
+            ConfigType.BOOLEAN,
+            "validationGroup"
+    ),
+
     TWO_PC_MODE( "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
             false,
@@ -188,6 +195,22 @@ public enum RuntimeConfig {
             "Number of rows per page in the data view.",
             10,
             ConfigType.INTEGER,
+            "uiSettingsDataViewGroup" ),
+
+    UI_UPLOAD_SIZE_MB( "ui/uploadSizeMB",
+            "Maximum size of a file upload for multimedia data in the UI, in MB. "
+                    + "When creating a HSQLDB multimedia column, this size is applied as the max-size of the underlying HSQLDB BLOB column.",
+            10_000,
+            ConfigType.INTEGER,
+            "uiSettingsDataViewGroup" ),
+
+    UI_USE_HARDLINKS( "ui/useHardlinks",
+            "Whether or not to use hardlinks for temporal files in the UI. If false, softlinks are used. This config has only an effect when one or multiple file stores are deployed. "
+                    + "With hardlinks, the data you see is is the correct data that was selected during the transaction. "
+                    + "But with multiple file stores on different file systems, hardlinks won't work. "
+                    + "In this case you can use softlinks, but you might see data that is more recent.",
+            true,
+            ConfigType.BOOLEAN,
             "uiSettingsDataViewGroup" ),
 
     HUB_IMPORT_BATCH_SIZE( "hub/hubImportBatchSize",
@@ -303,6 +326,8 @@ public enum RuntimeConfig {
         constraintEnforcementGroup.withTitle( "Constraint Enforcement" );
         final WebUiGroup polystoreIndexGroup = new WebUiGroup( "polystoreIndexGroup", processingPage.getId() );
         polystoreIndexGroup.withTitle( "Polystore Indexes" );
+        final WebUiGroup validationGroup = new WebUiGroup( "validationGroup", processingPage.getId() );
+        validationGroup.withTitle( "Query Validation" );
         configManager.registerWebUiPage( processingPage );
         configManager.registerWebUiGroup( parsingGroup );
         configManager.registerWebUiGroup( planningGroup );
@@ -310,6 +335,7 @@ public enum RuntimeConfig {
         configManager.registerWebUiGroup( implementationCachingGroup );
         configManager.registerWebUiGroup( constraintEnforcementGroup );
         configManager.registerWebUiGroup( polystoreIndexGroup );
+        configManager.registerWebUiGroup( validationGroup );
 
         // Runtime settings
         final WebUiPage runtimePage = new WebUiPage(

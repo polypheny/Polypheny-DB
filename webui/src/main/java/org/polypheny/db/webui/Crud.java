@@ -18,6 +18,7 @@ package org.polypheny.db.webui;
 
 
 import au.com.bytecode.opencsv.CSVReader;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -27,6 +28,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializer;
 import com.google.gson.JsonSyntaxException;
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,7 +37,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PushbackInputStream;
+import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -44,6 +51,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Array;
+import java.sql.Blob;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.DateFormat;
@@ -55,7 +63,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -67,6 +74,10 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.Part;
 import kong.unirest.HttpResponse;
 import kong.unirest.Unirest;
 import lombok.extern.slf4j.Slf4j;
@@ -75,8 +86,8 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.adapter.Store;
 import org.polypheny.db.adapter.Store.AdapterSetting;
 import org.polypheny.db.adapter.Store.FunctionalIndexInfo;
@@ -133,6 +144,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
@@ -162,8 +174,9 @@ import org.polypheny.db.webui.models.SidebarElement;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.Status;
 import org.polypheny.db.webui.models.TableConstraint;
-import org.polypheny.db.webui.models.UIRelNode;
 import org.polypheny.db.webui.models.Uml;
+import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
+import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
 import org.polypheny.db.webui.models.requests.ClassifyAllData;
 import org.polypheny.db.webui.models.requests.ColumnRequest;
 import org.polypheny.db.webui.models.requests.ConstraintRequest;
@@ -173,10 +186,12 @@ import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.requests.RelAlgRequest;
 import org.polypheny.db.webui.models.requests.SchemaTreeRequest;
 import org.polypheny.db.webui.models.requests.UIRequest;
 import spark.Request;
 import spark.Response;
+import spark.utils.IOUtils;
 
 
 @Slf4j
@@ -234,8 +249,7 @@ public class Crud implements InformationObserver {
     /**
      * Returns the content of a table with a maximum of PAGESIZE elements.
      */
-    Result getTable( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+    Result getTable( final UIRequest request ) {
         Transaction transaction = getTransaction();
         Result result;
 
@@ -253,14 +267,17 @@ public class Crud implements InformationObserver {
         query.append( "SELECT * FROM " )
                 .append( tableId )
                 .append( where )
-                .append( orderBy )
-                .append( " LIMIT " )
-                .append( getPageSize() )
-                .append( " OFFSET " )
-                .append( (Math.max( 0, request.currentPage - 1 )) * getPageSize() );
+                .append( orderBy );
+        if ( !request.noLimit ) {
+            query.append( " LIMIT " )
+                    .append( getPageSize() )
+                    .append( " OFFSET " )
+                    .append( (Math.max( 0, request.currentPage - 1 )) * getPageSize() );
+        }
 
         try {
-            result = executeSqlSelect( transaction.createStatement(), request, query.toString() );
+            result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit );
+            result.setXid( transaction.getXid().toString() );
         } catch ( QueryExecutionException e ) {
             if ( request.filter != null ) {
                 result = new Result( "Error while filtering table " + request.tableId );
@@ -277,8 +294,9 @@ public class Crud implements InformationObserver {
         }
 
         // determine if it is a view or a table
+        CatalogTable catalogTable;
         try {
-            CatalogTable catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
+            catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
             if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
             } else if ( catalogTable.tableType == TableType.VIEW ) {
@@ -288,8 +306,37 @@ public class Crud implements InformationObserver {
             }
         } catch ( GenericCatalogException | UnknownTableException e ) {
             log.error( "Caught exception", e );
-            result.setError( "Could not retrieve type of Result (table/view)." );
+            return result.setError( "Could not retrieve type of Result (table/view)." );
         }
+
+        //get headers with default values
+        ArrayList<DbColumn> cols = new ArrayList<>();
+        ArrayList<String> primaryColumns;
+        if ( catalogTable.primaryKey != null ) {
+            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+            primaryColumns = new ArrayList<>( primaryKey.getColumnNames() );
+        } else {
+            primaryColumns = new ArrayList<>();
+        }
+        for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
+            String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
+            String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
+            cols.add(
+                    new DbColumn(
+                            catalogColumn.name,
+                            catalogColumn.type.getName(),
+                            collectionsType,
+                            catalogColumn.nullable,
+                            catalogColumn.length,
+                            catalogColumn.scale,
+                            catalogColumn.dimension,
+                            catalogColumn.cardinality,
+                            primaryColumns.contains( catalogColumn.name ),
+                            defaultValue,
+                            request.sortState == null ? new SortState() : request.sortState.get( catalogColumn.name ),
+                            request.filter == null || request.filter.get( catalogColumn.name ) == null ? "" : request.filter.get( catalogColumn.name ) ) );
+        }
+        result.setHeader( cols.toArray( new DbColumn[0] ) );
 
         result.setCurrentPage( request.currentPage ).setTable( request.tableId );
         int tableSize = 0;
@@ -412,9 +459,9 @@ public class Crud implements InformationObserver {
         Transaction transaction = getTransaction();
         Result result;
         StringBuilder query = new StringBuilder();
-        if ( request.action.toLowerCase().equals( "drop" ) ) {
+        if ( request.action.equalsIgnoreCase( "drop" ) ) {
             query.append( "DROP TABLE " );
-        } else if ( request.action.toLowerCase().equals( "truncate" ) ) {
+        } else if ( request.action.equalsIgnoreCase( "truncate" ) ) {
             query.append( "TRUNCATE TABLE " );
         }
         String tableId = String.format( "\"%s\".\"%s\"", request.schema, request.table );
@@ -490,7 +537,7 @@ public class Crud implements InformationObserver {
                 }
             }
             if ( col.primary ) {
-                primaryKeys.add( col.name );
+                primaryKeys.add( "\"" + col.name + "\"" );
                 primaryCounter++;
             }
             colJoiner.add( colBuilder.toString() );
@@ -522,70 +569,95 @@ public class Crud implements InformationObserver {
 
 
     /**
+     * Initialize a multipart request, so that the values can be fetched with request.raw().getPart( name )
+     *
+     * @param req Spark request
+     */
+    private void initMultipart( final Request req ) {
+        //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
+        String location = System.getProperty( "java.io.tmpdir" + File.separator + "Polypheny-DB" );
+        long maxSizeMB = RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger();
+        long maxFileSize = 1_000_000L * maxSizeMB;
+        long maxRequestSize = 1_000_000L * maxSizeMB;
+        int fileSizeThreshold = 1024;
+        MultipartConfigElement multipartConfigElement = new MultipartConfigElement( location, maxFileSize, maxRequestSize, fileSizeThreshold );
+        req.raw().setAttribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
+    }
+
+
+    /**
      * Insert data into a table
      */
     Result insertRow( final Request req, final Response res ) {
+        initMultipart( req );
+        String tableId;
+        try {
+            tableId = new BufferedReader( new InputStreamReader( req.raw().getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+        } catch ( IOException | ServletException e ) {
+            return new Result( e );
+        }
+        String[] split = tableId.split( "\\." );
+        tableId = String.format( "\"%s\".\"%s\"", split[0], split[1] );
+
         Transaction transaction = getTransaction();
-        int rowsAffected;
-        Result result;
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        StringJoiner cols = new StringJoiner( ",", "(", ")" );
-        StringBuilder query = new StringBuilder();
-        String[] t = request.tableId.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-        query.append( "INSERT INTO " ).append( tableId ).append( " " );
+        Statement statement = transaction.createStatement();
+        StringJoiner columns = new StringJoiner( ",", "(", ")" );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
-        Map<String, PolyType> dataTypes = getColumnTypes( t[0], t[1] );
-        for ( Map.Entry<String, String> entry : request.data.entrySet() ) {
-            cols.add( "\"" + entry.getKey() + "\"" );
-            String value = entry.getValue();
-            if ( value == null ) {
-                value = "NULL";
-            } else if ( dataTypes.get( entry.getKey() ).getFamily() == PolyTypeFamily.CHARACTER ) {
-                value = "'" + StringEscapeUtils.escapeSql( value ) + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolyType.DATE ) {
-                value = "DATE '" + value + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolyType.TIME ) {
-                value = "TIME '" + value + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolyType.TIMESTAMP ) {
-                value = "TIMESTAMP '" + value + "'";
-            } else if ( dataTypes.get( entry.getKey() ) == PolyType.ARRAY ) {
-                value = String.format( "ARRAY %s", value );
-            }
-            values.add( value );
-        }
-
-        if ( isActiveTracking ) {
-            transaction.addChangedTable( tableId );
-        }
-
-        query.append( cols.toString() );
-        query.append( " VALUES " ).append( values.toString() );
-
+        List<CatalogColumn> catalogColumns = catalog.getColumns( new Catalog.Pattern( "APP" ), new Catalog.Pattern( split[0] ), new Catalog.Pattern( split[1] ), null );
         try {
-            rowsAffected = executeSqlUpdate( transaction, query.toString() );
-            result = new Result( new Debug().setAffectedRows( rowsAffected ).setGeneratedQuery( query.toString() ) );
+            int i = 0;
+            for ( CatalogColumn catalogColumn : catalogColumns ) {
+                //part is null if it does not exist
+                Part part = req.raw().getPart( catalogColumn.name );
+                if ( part == null ) {
+                    //don't add if default value is set
+                    if ( catalogColumn.defaultValue == null ) {
+                        values.add( "NULL" );
+                        columns.add( "\"" + catalogColumn.name + "\"" );
+                    }
+                } else {
+                    columns.add( "\"" + catalogColumn.name + "\"" );
+                    if ( part.getSubmittedFileName() == null ) {
+                        String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                        values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
+                    } else {
+                        values.add( "?" );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( part.getInputStream() ) );
+                    }
+                }
+            }
+        } catch ( IOException | ServletException e ) {
+            log.error( "Could not generate INSERT statement", e );
+            return new Result( e );
+        }
+
+        String query = String.format( "INSERT INTO %s %s VALUES %s", tableId, columns.toString(), values.toString() );
+        try {
+            int numRows = executeSqlUpdate( statement, transaction, query );
             transaction.commit();
-        } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
-            log.error( "Caught exception while inserting a row", e );
-            result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query.toString() ) );
+            return new Result( new Debug().setAffectedRows( numRows ).setGeneratedQuery( query ) );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.info( "Generated query: {}", query );
+            log.error( "Could not insert row", e );
             try {
                 transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
+            } catch ( TransactionException e2 ) {
+                log.error( "Caught error while rolling back transaction", e2 );
             }
+            return new Result( e );
         }
-        return result;
     }
 
 
     /**
      * Run any query coming from the SQL console
      */
-    ArrayList<Result> anyQuery( final Request req, final Response res ) {
-        QueryRequest request = this.gson.fromJson( req.body(), QueryRequest.class );
+    ArrayList<Result> anyQuery( final QueryRequest request, final Session session ) {
         Transaction transaction = getTransaction( request.analyze );
+        if ( request.analyze ) {
+            transaction.getQueryAnalyzer().setSession( session );
+        }
 
         ArrayList<Result> results = new ArrayList<>();
         boolean autoCommit = true;
@@ -617,7 +689,7 @@ public class Crud implements InformationObserver {
         //remove whitespace at the end
         allQueries = allQueries.replaceAll( "(\\s*)$", "" );
         String[] queries = allQueries.split( ";", 0 );
-        boolean noLimit = false;
+        boolean noLimit;
         for ( String query : queries ) {
             Result result;
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
@@ -646,7 +718,7 @@ public class Crud implements InformationObserver {
             } else if ( Pattern.matches( "(?si:^[\\s]*[/(\\s]*SELECT.*)", query ) ) {
                 // Add limit if not specified
                 Pattern p2 = Pattern.compile( ".*?(?si:limit)[\\s\\S]*", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE | Pattern.DOTALL );
-                if ( !p2.matcher( query ).find() ) {
+                if ( !p2.matcher( query ).find() && !request.noLimit ) {
                     noLimit = false;
                 }
                 //If the user specifies a limit
@@ -667,7 +739,7 @@ public class Crud implements InformationObserver {
                 }*/
                 try {
                     temp = System.nanoTime();
-                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = executeSqlSelect( transaction.createStatement(), request, query, noLimit ).setInfo( new Debug().setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     executionTime += System.nanoTime() - temp;
                     results.add( result );
                     if ( autoCommit ) {
@@ -677,7 +749,7 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     try {
                         transaction.rollback();
@@ -690,7 +762,7 @@ public class Crud implements InformationObserver {
                     temp = System.nanoTime();
                     int numOfRows = executeSqlUpdate( transaction, query );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) );
+                    result = new Result( new Debug().setAffectedRows( numOfRows ).setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     if ( autoCommit ) {
                         transaction.commit();
@@ -699,7 +771,7 @@ public class Crud implements InformationObserver {
                 } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                     log.error( "Caught exception while executing a query from the console", e );
                     executionTime += System.nanoTime() - temp;
-                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+                    result = new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) ).setXid( transaction.getXid().toString() );
                     results.add( result );
                     try {
                         transaction.rollback();
@@ -732,6 +804,7 @@ public class Crud implements InformationObserver {
             } else {
                 long millis = TimeUnit.MILLISECONDS.convert( executionTime, TimeUnit.NANOSECONDS );
                 // format time: see: https://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java#answer-625444
+                //noinspection SuspiciousDateFormat
                 DateFormat df = new SimpleDateFormat( "m 'min' s 'sec' S 'ms'" );
                 String durationText = df.format( new Date( millis ) );
                 text = new InformationText( g1, String.format( "Execution time: %s", durationText ) );
@@ -967,9 +1040,65 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Delete a row from a table. The row is determined by the value of every column in that row (conjunction).
-     * The transaction is being rolled back, if more that one row would be deleted.
-     * TODO: This is not a nice solution
+     * Converts a String, such as "'12:00:00'" into a valid SQL statement, such as "TIME '12:00:00'"
+     */
+    public static String uiValueToSql( final String value, final PolyType type, final PolyType collectionsType ) {
+        if ( value == null ) {
+            return "NULL";
+        }
+        if ( collectionsType == PolyType.ARRAY ) {
+            return "ARRAY " + value;
+        }
+        switch ( type ) {
+            case TIME:
+                return String.format( "TIME '%s'", value );
+            case DATE:
+                return String.format( "DATE '%s'", value );
+            case TIMESTAMP:
+                return String.format( "TIMESTAMP '%s'", value );
+        }
+        if ( type.getFamily() == PolyTypeFamily.CHARACTER ) {
+            return String.format( "'%s'", value );
+        }
+        return value;
+    }
+
+
+    /**
+     * Compute a WHERE condition from a filter that only consists of the PK column WHERE clauses
+     * There WHERE clause contains a space at the beginning, for convenience
+     *
+     * @param tableName Table name
+     * @param columnName Column name
+     * @param filter Filter. Key: column name, value: the value of the entry, e.g. 1 or abc or [1,2,3] or {@code null}
+     */
+    private String computeWherePK( final String tableName, final String columnName, final Map<String, String> filter ) {
+        StringJoiner joiner = new StringJoiner( " AND ", "", "" );
+        Map<String, CatalogColumn> catalogColumns = getCatalogColumns( tableName, columnName );
+        CatalogTable catalogTable;
+        try {
+            catalogTable = catalog.getTable( databaseName, tableName, columnName );
+            CatalogPrimaryKey pk = catalog.getPrimaryKey( catalogTable.primaryKey );
+            for ( long colId : pk.columnIds ) {
+                String colName = catalog.getColumn( colId ).name;
+                String condition;
+                if ( filter.containsKey( colName ) ) {
+                    String val = filter.get( colName );
+                    CatalogColumn col = catalogColumns.get( colName );
+                    condition = uiValueToSql( val, col.type, col.collectionsType );
+                    condition = String.format( "\"%s\" = %s", colName, condition );
+                    joiner.add( condition );
+                }
+            }
+        } catch ( UnknownTableException | GenericCatalogException e ) {
+            throw new RuntimeException( "Error while deriving PK WHERE condition", e );
+        }
+        return " WHERE " + joiner.toString();
+    }
+
+
+    /**
+     * Delete a row from a table. The row is determined by the value of every PK column in that row (conjunction).
      */
     Result deleteRow( final Request req, final Response res ) {
         UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
@@ -978,41 +1107,16 @@ public class Crud implements InformationObserver {
         StringBuilder builder = new StringBuilder();
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-        builder.append( "DELETE FROM " ).append( tableId ).append( " WHERE " );
-        StringJoiner joiner = new StringJoiner( " AND ", "", "" );
-        Map<String, PolyType> dataTypes = getColumnTypes( t[0], t[1] );
-        String column = "";
-        for ( Entry<String, String> entry : request.data.entrySet() ) {
-            String condition;
-            if ( entry.getValue() == null ) {
-                condition = String.format( "\"%s\" IS NULL", entry.getKey() );
-            } else if ( dataTypes.get( entry.getKey() ) == PolyType.ARRAY ) {
-                condition = String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() );
-            } else if ( dataTypes.get( entry.getKey() ).getFamily() != PolyTypeFamily.CHARACTER ) {
-                condition = String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() );
-            } else {
-                condition = String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) );
-            }
-            column = entry.getKey();
-            joiner.add( condition );
-        }
-        builder.append( joiner.toString() );
 
+        builder.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( t[0], t[1], request.data ) );
         try {
             int numOfRows = executeSqlUpdate( transaction, builder.toString() );
-            // only commit if one row is deleted
-            if ( numOfRows == 1 ) {
-                if ( isActiveTracking ) {
-                    transaction.addChangedTable( tableId );
-                }
-
-                transaction.commit();
-                result = new Result( new Debug().setAffectedRows( numOfRows ) );
-            } else {
-                transaction.rollback();
-                result = new Result( "Attempt to delete " + numOfRows + " rows was blocked." );
-                result.setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
+            if ( isActiveTracking ) {
+                transaction.addChangedTable( tableId );
             }
+
+            transaction.commit();
+            result = new Result( new Debug().setAffectedRows( numOfRows ) );
         } catch ( TransactionException | Exception e ) {
             log.error( "Caught exception while deleting a row", e );
             result = new Result( e ).setInfo( new Debug().setGeneratedQuery( builder.toString() ) );
@@ -1026,44 +1130,59 @@ public class Crud implements InformationObserver {
     }
 
 
+    /**
+     * Update a row from a table. The row is determined by the value of every PK column in that row (conjunction).
+     */
     Result updateRow( final Request req, final Response res ) {
-        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
-        Transaction transaction = getTransaction();
-        Result result;
-        StringBuilder builder = new StringBuilder();
-        String[] t = request.tableId.split( "\\." );
-        String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
-        builder.append( "UPDATE " ).append( tableId ).append( " SET " );
-        StringJoiner setStatements = new StringJoiner( ",", "", "" );
-        String column = "";
-        for ( Entry<String, String> entry : request.data.entrySet() ) {
-            if ( entry.getValue() == null ) {
-                setStatements.add( String.format( "\"%s\" = NULL", entry.getKey() ) );
-            } else if ( entry.getValue().startsWith( "[" ) ) {
-                setStatements.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
-            } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
-                setStatements.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
-            } else {
-                setStatements.add( String.format( "\"%s\" = '%s'", entry.getKey(), StringEscapeUtils.escapeSql( entry.getValue() ) ) );
-            }
-            column = entry.getKey();
-        }
-        builder.append( setStatements.toString() );
-
-        StringJoiner where = new StringJoiner( " AND ", "", "" );
-        for ( Entry<String, String> entry : request.filter.entrySet() ) {
-            if ( entry.getValue().startsWith( "[" ) ) {
-                where.add( String.format( "\"%s\" = ARRAY %s", entry.getKey(), entry.getValue() ) );
-            } else if ( NumberUtils.isNumber( entry.getValue() ) ) {
-                where.add( String.format( "\"%s\" = %s", entry.getKey(), entry.getValue() ) );
-            } else {
-                where.add( String.format( "\"%s\" = '%s'", entry.getKey(), entry.getValue() ) );
-            }
-        }
-        builder.append( " WHERE " ).append( where.toString() );
-
+        initMultipart( req );
+        String tableId;
+        Map<String, String> oldValues;
         try {
-            int numOfRows = executeSqlUpdate( transaction, builder.toString() );
+            tableId = new BufferedReader( new InputStreamReader( req.raw().getPart( "tableId" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            String _oldValues = new BufferedReader( new InputStreamReader( req.raw().getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            oldValues = gson.fromJson( _oldValues, Map.class );
+        } catch ( IOException | ServletException e ) {
+            return new Result( e );
+        }
+
+        String[] split = tableId.split( "\\." );
+        tableId = String.format( "\"%s\".\"%s\"", split[0], split[1] );
+
+        Transaction transaction = getTransaction();
+        Statement statement = transaction.createStatement();
+        StringJoiner setStatements = new StringJoiner( ",", "", "" );
+
+        List<CatalogColumn> catalogColumns = catalog.getColumns( new Catalog.Pattern( "APP" ), new Catalog.Pattern( split[0] ), new Catalog.Pattern( split[1] ), null );
+        try {
+            int i = 0;
+            for ( CatalogColumn catalogColumn : catalogColumns ) {
+                Part part = req.raw().getPart( catalogColumn.name );
+                if ( part == null ) {
+                    continue;
+                }
+                if ( part.getSubmittedFileName() == null ) {
+                    String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                    String parsed = gson.fromJson( value, String.class );
+                    if ( parsed == null ) {
+                        setStatements.add( String.format( "\"%s\" = NULL", catalogColumn.name ) );
+                    } else {
+                        setStatements.add( String.format( "\"%s\" = %s", catalogColumn.name, uiValueToSql( parsed, catalogColumn.type, catalogColumn.collectionsType ) ) );
+                    }
+                } else {
+                    setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
+                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
+                }
+            }
+        } catch ( IOException | ServletException e ) {
+            return new Result( e );
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.append( "UPDATE " ).append( tableId ).append( " SET " ).append( setStatements.toString() ).append( computeWherePK( split[0], split[1], oldValues ) );
+
+        Result result;
+        try {
+            int numOfRows = executeSqlUpdate( statement, transaction, builder.toString() );
 
             if ( numOfRows == 1 ) {
                 if ( isActiveTracking ) {
@@ -1086,6 +1205,40 @@ public class Crud implements InformationObserver {
             }
         }
         return result;
+    }
+
+
+    Result batchUpdate( final Request req, final Response res ) {
+        initMultipart( req );
+        BatchUpdateRequest request;
+        try {
+            String jsonRequest = new BufferedReader( new InputStreamReader( req.raw().getPart( "request" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+            request = gson.fromJson( jsonRequest, BatchUpdateRequest.class );
+        } catch ( IOException | ServletException e ) {
+            log.error( "Could not parse batch update request", e );
+            return new Result( e );
+        }
+        Transaction transaction = getTransaction();
+        Statement statement;
+        int totalRows = 0;
+        try {
+            for ( Update update : request.updates ) {
+                statement = transaction.createStatement();
+                String query = update.getQuery( request.tableId, statement, req.raw() );
+                totalRows += executeSqlUpdate( statement, transaction, query );
+            }
+            transaction.commit();
+            return new Result( new Debug().setAffectedRows( totalRows ) );
+        } catch ( ServletException | IOException | QueryExecutionException | TransactionException e ) {
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Could not rollback", e );
+                return new Result( e );
+            }
+            log.error( "The batch update failed", e );
+            return new Result( e );
+        }
     }
 
 
@@ -1112,7 +1265,6 @@ public class Crud implements InformationObserver {
                 String defaultValue = catalogColumn.defaultValue == null ? null : catalogColumn.defaultValue.value;
                 String collectionsType = catalogColumn.collectionsType == null ? "" : catalogColumn.collectionsType.getName();
                 cols.add(
-                        //TODO NH extend DbColumn with dimension, cardinality
                         new DbColumn(
                                 catalogColumn.name,
                                 catalogColumn.type.getName(),
@@ -1280,7 +1432,8 @@ public class Crud implements InformationObserver {
             query = query + " NOT NULL";
         }
         if ( request.newColumn.defaultValue != null ) {
-            if ( request.newColumn.collectionsType != null ) {
+            query = query + " DEFAULT ";
+            if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.equals( "" ) ) {
                 //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
                 if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
                     query = query + request.newColumn.collectionsType;
@@ -1297,13 +1450,13 @@ public class Crud implements InformationObserver {
                     case "DECIMAL":
                         request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
                         BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                        query = query + " DEFAULT " + b.toString();
+                        query = query + b.toString();
                         break;
                     case "VARCHAR":
-                        query = query + String.format( " DEFAULT '%s'", request.newColumn.defaultValue );
+                        query = query + String.format( "'%s'", request.newColumn.defaultValue );
                         break;
                     default:
-                        query = query + " DEFAULT " + request.newColumn.defaultValue;
+                        query = query + request.newColumn.defaultValue;
                 }
             }
         }
@@ -1697,12 +1850,12 @@ public class Crud implements InformationObserver {
      */
     Result addDropPlacement( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
-        if ( !index.getMethod().toUpperCase().equals( "ADD" ) && !index.getMethod().toUpperCase().equals( "DROP" ) && !index.getMethod().toUpperCase().equals( "MODIFY" ) ) {
+        if ( !index.getMethod().equalsIgnoreCase( "ADD" ) && !index.getMethod().equalsIgnoreCase( "DROP" ) && !index.getMethod().equalsIgnoreCase( "MODIFY" ) ) {
             return new Result( "Invalid request" );
         }
         StringJoiner columnJoiner = new StringJoiner( ",", "(", ")" );
         int counter = 0;
-        if ( !index.getMethod().toUpperCase().equals( "DROP" ) ) {
+        if ( !index.getMethod().equalsIgnoreCase( "DROP" ) ) {
             for ( String col : index.getColumns() ) {
                 columnJoiner.add( "\"" + col + "\"" );
                 counter++;
@@ -2042,10 +2195,10 @@ public class Crud implements InformationObserver {
     /**
      * Execute a logical plan coming from the Web-Ui plan builder
      */
-    Result executeRelAlg( final Request req, final Response res ) {
-        UIRelNode topNode = gson.fromJson( req.body(), UIRelNode.class );
+    Result executeRelAlg( final RelAlgRequest request, Session session ) {
 
         Transaction transaction = getTransaction( true );
+        transaction.getQueryAnalyzer().setSession( session );
         Statement statement = transaction.createStatement();
 
         InformationManager im = transaction.getQueryAnalyzer().observe( this );
@@ -2053,7 +2206,7 @@ public class Crud implements InformationObserver {
 
         RelNode result;
         try {
-            result = QueryPlanBuilder.buildFromTree( topNode, statement );
+            result = QueryPlanBuilder.buildFromTree( request.topNode, statement );
         } catch ( Exception e ) {
             log.error( "Caught exception while building the plan builder tree", e );
             return new Result( e );
@@ -2096,7 +2249,7 @@ public class Crud implements InformationObserver {
                     null );
         }
 
-        ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ) );
+        ArrayList<String[]> data = computeResultData( rows, Arrays.asList( header ), statement.getTransaction() );
 
         try {
             transaction.commit();
@@ -2105,7 +2258,7 @@ public class Crud implements InformationObserver {
             throw new RuntimeException( e );
         }
 
-        return new Result( header, data.toArray( new String[0][] ) );
+        return new Result( header, data.toArray( new String[0][] ) ).setXid( transaction.getXid().toString() );
     }
 
 
@@ -2190,12 +2343,8 @@ public class Crud implements InformationObserver {
      * Send updates to the UI if Information objects in the query analyzer change.
      */
     @Override
-    public void observeInfos( final Information info ) {
-        try {
-            WebSocket.broadcast( info.asJson() );
-        } catch ( IOException e ) {
-            log.error( "Caught exception during WebSocket broadcast", e );
-        }
+    public void observeInfos( final Information info, final String analyzerId, final Session session ) {
+        WebSocket.sendMessage( session, info.asJson() );
     }
 
 
@@ -2203,18 +2352,12 @@ public class Crud implements InformationObserver {
      * Send an updated pageList of the query analyzer to the UI.
      */
     @Override
-    public void observePageList( final String analyzerId, final InformationPage[] pages ) {
+    public void observePageList( final InformationPage[] pages, final String analyzerId, final Session session ) {
         ArrayList<SidebarElement> nodes = new ArrayList<>();
-        int counter = 0;
         for ( InformationPage page : pages ) {
             nodes.add( new SidebarElement( page.getId(), page.getName(), analyzerId + "/", page.getIcon() ).setLabel( page.getLabel() ) );
-            counter++;
         }
-        try {
-            WebSocket.sendPageList( this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
-        } catch ( IOException e ) {
-            log.error( "Caught exception during WebSocket broadcast", e );
-        }
+        WebSocket.sendMessage( session, this.gson.toJson( nodes.toArray( new SidebarElement[0] ) ) );
     }
 
 
@@ -2224,16 +2367,6 @@ public class Crud implements InformationObserver {
     public String getAnalyzerPage( final Request req, final Response res ) {
         String[] params = this.gson.fromJson( req.body(), String[].class );
         return InformationManager.getInstance( params[0] ).getPage( params[1] ).asJson();
-    }
-
-
-    /**
-     * Close a query analyzer if not needed anymore.
-     */
-    public String closeAnalyzer( final Request req, final Response res ) {
-        String id = req.body();
-        InformationManager.close( id );
-        return "";
     }
 
 
@@ -2572,6 +2705,91 @@ public class Crud implements InformationObserver {
         }
     }
 
+
+    String getFile( final Request req, final Response res ) {
+        String fileName = req.params( "file" );
+        File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + fileName );
+        if ( !f.exists() ) {
+            res.status( 404 );
+            return "";
+        }
+        ContentInfoUtil util = new ContentInfoUtil();
+        ContentInfo info = null;
+        try {
+            info = util.findMatch( f );
+        } catch ( IOException ignored ) {
+        }
+        if ( info != null && info.getMimeType() != null ) {
+            res.header( "Content-Type", info.getMimeType() );
+        } else {
+            res.header( "Content-Type", "application/octet-stream" );
+        }
+        if ( info != null && info.getFileExtensions() != null ) {
+            res.header( "Content-Disposition", "attachment; filename=" + "file." + info.getFileExtensions()[0] );
+        } else {
+            res.header( "Content-Disposition", "attachment; filename=" + "file" );
+        }
+        String range = req.headers( "Range" );
+        if ( range != null ) {
+            long rangeStart;
+            long rangeEnd;
+            long fileLength = f.length();
+            Pattern pattern = Pattern.compile( "bytes=(\\d*)-(\\d*)" );
+            Matcher m = pattern.matcher( range );
+            if ( m.find() && m.groupCount() == 2 ) {
+                rangeStart = Long.parseLong( m.group( 1 ) );
+                String group2 = m.group( 2 );
+                //chrome and firefox send "bytes=0-"
+                //safari sends "bytes=0-1" to get the file length and then bytes=0-fileLength
+                if ( group2 != null && !group2.equals( "" ) ) {
+                    rangeEnd = Long.parseLong( group2 );
+                } else {
+                    rangeEnd = Math.min( rangeStart + 10_000_000L, fileLength - 1 );
+                }
+                if ( rangeEnd >= fileLength ) {
+                    res.status( 416 );//range not satisfiable
+                    return "";
+                }
+            } else {
+                res.status( 416 );//range not satisfiable
+                return "";
+            }
+            try {
+                //see https://github.com/dessalines/torrenttunes-client/blob/master/src/main/java/com/torrenttunes/client/webservice/Platform.java
+                res.header( "Accept-Ranges", "bytes" );
+                res.status( 206 );//partial content
+                int len = Long.valueOf( rangeEnd - rangeStart ).intValue() + 1;
+                res.header( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
+                res.header( "Content-Length", String.valueOf( len ) );
+
+                RandomAccessFile raf = new RandomAccessFile( f, "r" );
+                raf.seek( rangeStart );
+                ServletOutputStream os = res.raw().getOutputStream();
+                byte[] buf = new byte[256];
+                while ( len > 0 ) {
+                    int read = raf.read( buf, 0, Math.min( buf.length, len ) );
+                    os.write( buf, 0, read );
+                    len -= read;
+                }
+                os.flush();
+                os.close();
+                raf.close();
+            } catch ( IOException ignored ) {
+                res.status( 500 );
+            }
+        } else {
+            try ( FileInputStream fis = new FileInputStream( f ) ) {
+                ServletOutputStream os = res.raw().getOutputStream();
+                IOUtils.copyLarge( fis, os );
+                os.flush();
+                os.close();
+            } catch ( IOException ignored ) {
+                res.status( 500 );
+            }
+        }
+        return "";
+    }
+
     // -----------------------------------------------------------------------
     //                                Helper
     // -----------------------------------------------------------------------
@@ -2676,7 +2894,7 @@ public class Crud implements InformationObserver {
                 header.add( dbCol );
             }
 
-            ArrayList<String[]> data = computeResultData( rows, header );
+            ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setInfo( new Debug().setAffectedRows( data.size() ) ).setHasMoreRows( hasMoreRows );
         } finally {
@@ -2695,7 +2913,7 @@ public class Crud implements InformationObserver {
      * @param rows Rows from the enumerable iterator
      * @param header Header from the UI-ResultSet
      */
-    ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header ) {
+    ArrayList<String[]> computeResultData( final List<List<Object>> rows, final List<DbColumn> header, final Transaction transaction ) {
         ArrayList<String[]> data = new ArrayList<>();
         for ( List<Object> row : rows ) {
             String[] temp = new String[row.size()];
@@ -2726,6 +2944,83 @@ public class Crud implements InformationObserver {
                                 temp[counter] = o.toString();
                             }
                             break;
+                        case "FILE":
+                        case "IMAGE":
+                        case "SOUND":
+                        case "VIDEO":
+                            String columnName = String.valueOf( header.get( counter ).name.hashCode() );
+                            File mmFolder = new File( System.getProperty( "user.home" ), ".polypheny/tmp" );
+                            mmFolder.mkdirs();
+                            ContentInfoUtil util = new ContentInfoUtil();
+                            if ( o instanceof File ) {
+                                File f = ((File) o);
+                                try {
+                                    ContentInfo info = util.findMatch( f );
+                                    String extension = "";
+                                    if ( info != null && info.getFileExtensions() != null ) {
+                                        extension = "." + info.getFileExtensions()[0];
+                                    }
+                                    File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
+                                    newLink.delete();//delete to override
+                                    Path added;
+                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() ) {
+                                        added = Files.createLink( newLink.toPath(), f.toPath() );
+                                    } else {
+                                        added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
+                                    }
+                                    TemporalFileManager.addPath( transaction.getXid().toString(), added );
+                                    temp[counter] = newLink.getName();
+                                } catch ( IOException e ) {
+                                    throw new RuntimeException( "Could not create link to mm file", e );
+                                }
+                                break;
+                            } else if ( o instanceof InputStream || o instanceof Blob ) {
+                                InputStream is;
+                                if ( o instanceof Blob ) {
+                                    try {
+                                        is = ((Blob) o).getBinaryStream();
+                                    } catch ( SQLException e ) {
+                                        throw new RuntimeException( "Could not get inputStream from Blob column", e );
+                                    }
+                                } else {
+                                    is = (InputStream) o;
+                                }
+                                File f;
+                                try {
+                                    PushbackInputStream pbis = new PushbackInputStream( is, ContentInfoUtil.DEFAULT_READ_SIZE );
+                                    byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
+                                    pbis.read( buffer );
+                                    ContentInfo info = util.findMatch( buffer );
+                                    pbis.unread( buffer );
+                                    String extension = "";
+                                    if ( info != null && info.getFileExtensions() != null ) {
+                                        extension = "." + info.getFileExtensions()[0];
+                                    }
+                                    f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
+                                    IOUtils.copyLarge( pbis, new FileOutputStream( f.getPath() ) );
+                                    TemporalFileManager.addFile( transaction.getXid().toString(), f );
+                                } catch ( IOException e ) {
+                                    throw new RuntimeException( "Could not place file in mm folder", e );
+                                }
+                                temp[counter] = f.getName();
+                                break;
+                            } else if ( o instanceof byte[] ) {
+                                ContentInfo info = util.findMatch( (byte[]) o );
+                                String extension = "";
+                                if ( info != null && info.getFileExtensions() != null ) {
+                                    extension = "." + info.getFileExtensions()[0];
+                                }
+                                File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
+                                try ( FileOutputStream fos = new FileOutputStream( f ) ) {
+                                    fos.write( (byte[]) o );
+                                } catch ( IOException e ) {
+                                    throw new RuntimeException( "Could not place file in mm folder", e );
+                                }
+                                temp[counter] = f.getName();
+                                TemporalFileManager.addFile( transaction.getXid().toString(), f );
+                                break;
+                            }
+                            //fall through
                         default:
                             temp[counter] = o.toString();
                     }
@@ -2772,8 +3067,11 @@ public class Crud implements InformationObserver {
 
 
     private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
-        Statement statement = transaction.createStatement();
+        return executeSqlUpdate( transaction.createStatement(), transaction, sqlUpdate );
+    }
 
+
+    private int executeSqlUpdate( final Statement statement, final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
         PolyphenyDbSignature<?> signature;
         try {
             signature = processQuery( statement, sqlUpdate );
@@ -2867,7 +3165,7 @@ public class Crud implements InformationObserver {
         for ( Map.Entry<String, String> entry : filter.entrySet() ) {
             //special treatment for arrays
             if ( entry.getValue().startsWith( "[" ) ) {
-                joiner.add( entry.getKey() + " = ARRAY" + entry.getValue() );
+                joiner.add( "\"" + entry.getKey() + "\"" + " = ARRAY" + entry.getValue() );
                 counter++;
             }
             //default
@@ -2911,7 +3209,7 @@ public class Crud implements InformationObserver {
 
     private Transaction getTransaction( boolean analyze ) {
         try {
-            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI" );
+            return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
         } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
@@ -2925,17 +3223,13 @@ public class Crud implements InformationObserver {
      * @param tableName name of the table
      * @return HashMap containing the type of each column. The key is the name of the column and the value is the Sql Type (java.sql.Types).
      */
-    private Map<String, PolyType> getColumnTypes( String schemaName, String tableName ) {
-        Map<String, PolyType> dataTypes = new HashMap<>();
+    private Map<String, CatalogColumn> getCatalogColumns( String schemaName, String tableName ) {
+        Map<String, CatalogColumn> dataTypes = new HashMap<>();
         try {
             CatalogTable table = catalog.getTable( this.databaseName, schemaName, tableName );
             List<CatalogColumn> catalogColumns = catalog.getColumns( table.id );
             for ( CatalogColumn catalogColumn : catalogColumns ) {
-                if ( catalogColumn.collectionsType != null ) {
-                    dataTypes.put( catalogColumn.name, catalogColumn.collectionsType );
-                } else {
-                    dataTypes.put( catalogColumn.name, catalogColumn.type );
-                }
+                dataTypes.put( catalogColumn.name, catalogColumn );
             }
         } catch ( UnknownTableException | GenericCatalogException e ) {
             log.error( "Caught exception", e );

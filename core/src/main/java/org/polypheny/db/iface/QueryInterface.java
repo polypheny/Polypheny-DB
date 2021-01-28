@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public abstract class QueryInterface implements Runnable {
                 } else {
                     throw new RuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                 }
-            } else if ( s.required ) {
+            } else if ( s.required && s.modifiable ) {
                 throw new RuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }
@@ -129,6 +129,7 @@ public abstract class QueryInterface implements Runnable {
         public final boolean canBeNull;
         public final boolean required;
         public final boolean modifiable;
+
     }
 
 
@@ -141,6 +142,7 @@ public abstract class QueryInterface implements Runnable {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
+
     }
 
 
@@ -153,6 +155,7 @@ public abstract class QueryInterface implements Runnable {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
+
     }
 
 
@@ -165,6 +168,7 @@ public abstract class QueryInterface implements Runnable {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
+
     }
 
 
@@ -177,6 +181,7 @@ public abstract class QueryInterface implements Runnable {
             super( name, canBeNull, required, modifiable );
             this.options = options;
         }
+
     }
 
 
