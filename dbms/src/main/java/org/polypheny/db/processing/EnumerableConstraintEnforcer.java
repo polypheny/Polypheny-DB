@@ -388,7 +388,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     final CatalogColumn foreignColumn;
                     try {
                         foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( GenericCatalogException | UnknownColumnException e ) {
+                    } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
                     RexNode newValue;
@@ -464,7 +464,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     try {
                         column = Catalog.getInstance().getColumn( table.id, columnName );
                         foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( GenericCatalogException | UnknownColumnException e ) {
+                    } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
                     final RexNode inputRef = new RexInputRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );

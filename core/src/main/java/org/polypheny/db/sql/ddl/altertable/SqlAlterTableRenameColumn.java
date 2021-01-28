@@ -22,7 +22,6 @@ import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -74,14 +73,11 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnOldName );
-        try {
-            Catalog.getInstance().renameColumn( catalogColumn.id, columnNewName.getSimple() );
 
-            // Rest plan cache and implementation cache (not sure if required in this case)
-            statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+        Catalog.getInstance().renameColumn( catalogColumn.id, columnNewName.getSimple() );
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
     }
 
 }

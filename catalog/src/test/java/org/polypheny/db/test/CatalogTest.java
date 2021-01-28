@@ -131,7 +131,7 @@ public class CatalogTest {
 
 
     @Test
-    public void testSchema() throws UnknownUserException, GenericCatalogException, UnknownSchemaException {
+    public void testSchema() throws UnknownUserException, UnknownSchemaException {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
 

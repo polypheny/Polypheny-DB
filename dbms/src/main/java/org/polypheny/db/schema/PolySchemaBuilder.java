@@ -39,7 +39,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -153,7 +152,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     }
                 }
             }
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownDatabaseException e ) {
+        } catch ( GenericCatalogException | UnknownDatabaseException e ) {
             throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
         }
 

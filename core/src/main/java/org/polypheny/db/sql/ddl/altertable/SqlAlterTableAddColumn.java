@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -134,85 +133,75 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
         }
 
-        CatalogColumn addedColumn;
-        Long columnId = null;
-        try {
-            if ( Catalog.getInstance().checkIfExistsColumn( catalogTable.id, column.getSimple() ) ) {
-                throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
-            }
-
-            // Make sure that all adapters are of type store (and not source)
-            for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
-                getDataStoreInstance( storeId );
-            }
-
-            List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
-            int position = columns.size() + 1;
-            if ( beforeColumn != null || afterColumn != null ) {
-                if ( beforeColumn != null ) {
-                    position = beforeColumn.position;
-                } else {
-                    position = afterColumn.position + 1;
-                }
-                // Update position of the other columns
-                for ( int i = columns.size(); i >= position; i-- ) {
-                    Catalog.getInstance().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
-                }
-            }
-            final PolyType collectionsType = type.getCollectionsTypeName() == null ?
-                    null : PolyType.get( type.getCollectionsTypeName().getSimple() );
-            columnId = Catalog.getInstance().addColumn(
-                    column.getSimple(),
-                    catalogTable.id,
-                    position,
-                    PolyType.get( type.getTypeName().getSimple() ),
-                    collectionsType,
-                    type.getPrecision() == -1 ? null : type.getPrecision(),
-                    type.getScale() == -1 ? null : type.getScale(),
-                    type.getDimension() == -1 ? null : type.getDimension(),
-                    type.getCardinality() == -1 ? null : type.getCardinality(),
-                    nullable,
-                    Collation.CASE_INSENSITIVE
-            );
-            addedColumn = Catalog.getInstance().getColumn( columnId );
-
-            // Add default value
-            if ( defaultValue != null ) {
-                // TODO: String is only a temporal solution for default values
-                String v = defaultValue.toString();
-                if ( v.startsWith( "'" ) ) {
-                    v = v.substring( 1, v.length() - 1 );
-                }
-                Catalog.getInstance().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
-
-                // Update addedColumn variable
-                addedColumn = Catalog.getInstance().getColumn( columnId );
-            }
-
-            // Ask router on which stores this column shall be placed
-            List<DataStore> stores = statement.getRouter().addColumn( catalogTable, statement );
-
-            // Add column on underlying data stores and insert default value
-            for ( DataStore store : stores ) {
-                Catalog.getInstance().addColumnPlacement(
-                        store.getAdapterId(),
-                        addedColumn.id,
-                        PlacementType.AUTOMATIC,
-                        null, // Will be set later
-                        null, // Will be set later
-                        null ); // Will be set later
-                StoreManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
-            }
-
-            // Rest plan cache and implementation cache (not sure if required in this case)
-            statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException e ) {
-            if ( columnId != null ) {
-                Catalog.getInstance().deleteColumn( columnId );
-            }
-            throw new RuntimeException( e );
+        if ( Catalog.getInstance().checkIfExistsColumn( catalogTable.id, column.getSimple() ) ) {
+            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
         }
 
+        // Make sure that all adapters are of type store (and not source)
+        for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
+            getDataStoreInstance( storeId );
+        }
+
+        List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
+        int position = columns.size() + 1;
+        if ( beforeColumn != null || afterColumn != null ) {
+            if ( beforeColumn != null ) {
+                position = beforeColumn.position;
+            } else {
+                position = afterColumn.position + 1;
+            }
+            // Update position of the other columns
+            for ( int i = columns.size(); i >= position; i-- ) {
+                Catalog.getInstance().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
+            }
+        }
+        final PolyType collectionsType = type.getCollectionsTypeName() == null ?
+                null : PolyType.get( type.getCollectionsTypeName().getSimple() );
+        long columnId = Catalog.getInstance().addColumn(
+                column.getSimple(),
+                catalogTable.id,
+                position,
+                PolyType.get( type.getTypeName().getSimple() ),
+                collectionsType,
+                type.getPrecision() == -1 ? null : type.getPrecision(),
+                type.getScale() == -1 ? null : type.getScale(),
+                type.getDimension() == -1 ? null : type.getDimension(),
+                type.getCardinality() == -1 ? null : type.getCardinality(),
+                nullable,
+                Collation.CASE_INSENSITIVE
+        );
+        CatalogColumn addedColumn = Catalog.getInstance().getColumn( columnId );
+
+        // Add default value
+        if ( defaultValue != null ) {
+            // TODO: String is only a temporal solution for default values
+            String v = defaultValue.toString();
+            if ( v.startsWith( "'" ) ) {
+                v = v.substring( 1, v.length() - 1 );
+            }
+            Catalog.getInstance().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
+
+            // Update addedColumn variable
+            addedColumn = Catalog.getInstance().getColumn( columnId );
+        }
+
+        // Ask router on which stores this column shall be placed
+        List<DataStore> stores = statement.getRouter().addColumn( catalogTable, statement );
+
+        // Add column on underlying data stores and insert default value
+        for ( DataStore store : stores ) {
+            Catalog.getInstance().addColumnPlacement(
+                    store.getAdapterId(),
+                    addedColumn.id,
+                    PlacementType.AUTOMATIC,
+                    null, // Will be set later
+                    null, // Will be set later
+                    null ); // Will be set later
+            StoreManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
+        }
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
     }
 
 }

@@ -54,7 +54,6 @@ import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
@@ -153,8 +152,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
-        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
+        } catch ( UnknownDatabaseException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
         }
@@ -267,7 +266,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( DataStore store : stores ) {
                 store.createTable( context, catalogTable );
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownUserException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownUserException e ) {
             throw new RuntimeException( e );
         }
     }

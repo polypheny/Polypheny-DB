@@ -33,7 +33,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
@@ -155,7 +154,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                         getDefaultPhysicalSchemaName(),
                         physicalTableName,
                         getPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
+            } catch ( UnknownColumnPlacementException e ) {
                 throw new RuntimeException( e );
             }
         }
@@ -241,7 +240,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                     physicalSchemaName,
                     physicalTableName,
                     physicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
+        } catch ( UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
     }

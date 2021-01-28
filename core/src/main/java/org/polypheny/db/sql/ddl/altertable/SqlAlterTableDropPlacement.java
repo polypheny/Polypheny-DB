@@ -28,9 +28,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
@@ -93,22 +91,18 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
             }
         }
         // Drop all indexes on this store
-        try {
-            for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
-                if ( index.location == storeInstance.getAdapterId() ) {
-                    if ( index.location == 0 ) {
-                        // Delete polystore index
-                        IndexManager.getInstance().deleteIndex( index );
-                    } else {
-                        // Delete index on store
-                        StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
-                    }
-                    // Delete index in catalog
-                    Catalog.getInstance().deleteIndex( index.id );
+        for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
+            if ( index.location == storeInstance.getAdapterId() ) {
+                if ( index.location == 0 ) {
+                    // Delete polystore index
+                    IndexManager.getInstance().deleteIndex( index );
+                } else {
+                    // Delete index on store
+                    StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
                 }
+                // Delete index in catalog
+                Catalog.getInstance().deleteIndex( index.id );
             }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while dropping indexes on data store.", e );
         }
         // Physically delete the data from the store
         storeInstance.dropTable( context, catalogTable );
@@ -122,4 +116,3 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
     }
 
 }
-

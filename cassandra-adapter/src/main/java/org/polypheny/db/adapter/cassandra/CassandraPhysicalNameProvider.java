@@ -27,6 +27,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 
@@ -102,7 +104,7 @@ public class CassandraPhysicalNameProvider {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( "APP", schemaName, tableName );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
         return catalogTable.id;
@@ -113,7 +115,7 @@ public class CassandraPhysicalNameProvider {
         CatalogColumn catalogColumn;
         try {
             catalogColumn = catalog.getColumn( "APP", logicalSchemaName, logicalTableName, logicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( UnknownColumnException | UnknownSchemaException | UnknownDatabaseException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
         return catalogColumn.id;
@@ -124,7 +126,7 @@ public class CassandraPhysicalNameProvider {
         CatalogColumn catalogColumn;
         try {
             catalogColumn = catalog.getColumn( tableId, logicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
         return catalogColumn.id;

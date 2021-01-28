@@ -23,8 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -120,7 +118,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
             } );
-        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
+        } catch ( Exception e ) {
             log.error( "Exception while reset catalog information page", e );
         }
     }

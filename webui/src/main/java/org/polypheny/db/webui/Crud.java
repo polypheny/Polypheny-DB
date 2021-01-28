@@ -285,7 +285,7 @@ public class Crud implements InformationObserver {
             } else {
                 throw new RuntimeException( "Unknown table type: " + catalogTable.tableType );
             }
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
             result.setError( "Could not retrieve type of Result (table/view)." );
         }
@@ -353,7 +353,7 @@ public class Crud implements InformationObserver {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
@@ -371,20 +371,12 @@ public class Crud implements InformationObserver {
      */
     Result getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-
-        Result result;
-        try {
-            List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
-            ArrayList<String> tableNames = new ArrayList<>();
-            for ( CatalogTable catalogTable : tables ) {
-                tableNames.add( catalogTable.name );
-            }
-            result = new Result( new Debug().setAffectedRows( tableNames.size() ) ).setTables( tableNames );
-        } catch ( GenericCatalogException e ) {
-            log.error( "Caught exception while fetching tables", e );
-            result = new Result( e );
+        List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
+        ArrayList<String> tableNames = new ArrayList<>();
+        for ( CatalogTable catalogTable : tables ) {
+            tableNames.add( catalogTable.name );
         }
-        return result;
+        return new Result( new Debug().setAffectedRows( tableNames.size() ) ).setTables( tableNames );
     }
 
 
@@ -1125,7 +1117,7 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting a column", e );
             result = new Result( e );
         }
@@ -1420,7 +1412,7 @@ public class Crud implements InformationObserver {
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | GenericCatalogException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -1589,7 +1581,7 @@ public class Crud implements InformationObserver {
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -1682,7 +1674,7 @@ public class Crud implements InformationObserver {
                 p.addAdapter( new Placement.Store( adapter.getUniqueName(), adapter.getAdapterName(), placements ) );
             }
             return p;
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
         }
@@ -2628,7 +2620,7 @@ public class Crud implements InformationObserver {
                 String[] t = request.tableId.split( "\\." );
                 try {
                     catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
+                } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Caught exception", e );
                 }
             }
@@ -2666,7 +2658,7 @@ public class Crud implements InformationObserver {
                                 dbCol.defaultValue = catalogColumn.defaultValue.value;
                             }
                         }
-                    } catch ( UnknownColumnException | GenericCatalogException e ) {
+                    } catch ( UnknownColumnException e ) {
                         log.error( "Caught exception", e );
                     }
                 }
@@ -2934,7 +2926,7 @@ public class Crud implements InformationObserver {
                     dataTypes.put( catalogColumn.name, catalogColumn.type );
                 }
             }
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
         }
         return dataTypes;

@@ -25,7 +25,6 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -85,7 +84,7 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
             }
 
             catalog.deleteIndex( index.id );
-        } catch ( GenericCatalogException | UnknownIndexException e ) {
+        } catch ( UnknownIndexException e ) {
             throw new RuntimeException( e );
         }
     }

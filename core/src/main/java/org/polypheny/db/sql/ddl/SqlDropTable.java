@@ -112,20 +112,16 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         // Delete all indexes
-        try {
-            for ( CatalogIndex index : catalog.getIndexes( table.id, false ) ) {
-                if ( index.location == 0 ) {
-                    // Delete polystore index
-                    IndexManager.getInstance().deleteIndex( index );
-                } else {
-                    // Delete index on store
-                    StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
-                }
-                // Delete index in catalog
-                catalog.deleteIndex( index.id );
+        for ( CatalogIndex index : catalog.getIndexes( table.id, false ) ) {
+            if ( index.location == 0 ) {
+                // Delete polystore index
+                IndexManager.getInstance().deleteIndex( index );
+            } else {
+                // Delete index on store
+                StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
             }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while dropping indexes on data store.", e );
+            // Delete index in catalog
+            catalog.deleteIndex( index.id );
         }
 
         // Delete data from the stores and remove the column placement
@@ -152,14 +148,10 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         // Delete indexes of this table
-        try {
-            List<CatalogIndex> indexes = catalog.getIndexes( table.id, false );
-            for ( CatalogIndex index : indexes ) {
-                catalog.deleteIndex( index.id );
-                IndexManager.getInstance().deleteIndex( index );
-            }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
+        List<CatalogIndex> indexes = catalog.getIndexes( table.id, false );
+        for ( CatalogIndex index : indexes ) {
+            catalog.deleteIndex( index.id );
+            IndexManager.getInstance().deleteIndex( index );
         }
 
         // Delete keys and constraints

@@ -35,7 +35,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.iface.QueryInterface.QueryInterfaceSetting;
 import org.polypheny.db.transaction.TransactionManager;
@@ -136,7 +135,7 @@ public class QueryInterfaceManager {
                 interfaceById.put( instance.getQueryInterfaceId(), instance );
                 interfaceThreadById.put( instance.getQueryInterfaceId(), thread );
             }
-        } catch ( GenericCatalogException | NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
+        } catch ( NoSuchMethodException | ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException e ) {
             throw new RuntimeException( "Something went wrong while restoring query interfaces from the catalog.", e );
         }
     }
@@ -171,16 +170,16 @@ public class QueryInterfaceManager {
             if ( ifaceId != -1 ) {
                 try {
                     catalog.deleteQueryInterface( ifaceId );
-                } catch ( GenericCatalogException | UnknownQueryInterfaceException e1 ) {
+                } catch ( UnknownQueryInterfaceException e1 ) {
                     throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
                 }
             }
             throw new RuntimeException( "Something went wrong while adding a new query interface: " + e.getCause().getMessage(), e );
-        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException | GenericCatalogException e ) {
+        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException e ) {
             if ( ifaceId != -1 ) {
                 try {
                     catalog.deleteQueryInterface( ifaceId );
-                } catch ( GenericCatalogException | UnknownQueryInterfaceException e1 ) {
+                } catch ( UnknownQueryInterfaceException e1 ) {
                     throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
                 }
             }
@@ -210,7 +209,7 @@ public class QueryInterfaceManager {
 
             // Delete query interface from catalog
             catalog.deleteQueryInterface( catalogQueryInterface.id );
-        } catch ( GenericCatalogException | UnknownQueryInterfaceException e ) {
+        } catch ( UnknownQueryInterfaceException e ) {
             throw new RuntimeException( "Something went wrong while removing a query interface: " + e.getMessage(), e );
         }
     }

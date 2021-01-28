@@ -44,12 +44,9 @@ import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -106,8 +103,6 @@ public abstract class SqlDdl extends SqlCall {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.tableNotFound( tableName.toString() ) );
-        } catch ( UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
         return catalogTable;
     }
@@ -117,8 +112,6 @@ public abstract class SqlDdl extends SqlCall {
         CatalogColumn catalogColumn;
         try {
             catalogColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( columnName.getParserPosition(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
         }

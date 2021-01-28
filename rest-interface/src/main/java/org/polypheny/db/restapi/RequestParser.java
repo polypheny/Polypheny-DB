@@ -40,9 +40,10 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -238,14 +239,13 @@ public class RequestParser {
 
         try {
             CatalogTable table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
-            log.debug( "Finished parsing table \"{}\".", tableName );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Finished parsing table \"{}\".", tableName );
+            }
             return table;
-        } catch ( UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Unable to fetch table: {}.", tableName, e );
             throw new ParserException( ParserErrorCode.TABLE_LIST_UNKNOWN_TABLE, tableName );
-        } catch ( GenericCatalogException e ) {
-            log.error( "Unable to fetch table: {}.", tableName, e );
-            throw new ParserException( ParserErrorCode.TABLE_LIST_GENERIC, tableName );
         }
     }
 
@@ -316,10 +316,7 @@ public class RequestParser {
                 try {
                     catalogColumn = this.getCatalogColumnFromString( columnName );
                     log.debug( "Fetched catalog column for projection key: {}.", columnName );
-                } catch ( GenericCatalogException e ) {
-                    log.warn( "Unable to fetch column: {}.", columnName, e );
-                    throw new ParserException( ParserErrorCode.PROJECTION_GENERIC, columnName );
-                } catch ( UnknownColumnException e ) {
+                } catch ( UnknownColumnException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
                     log.warn( "Unable to fetch column: {}.", columnName, e );
                     throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, columnName );
                 }
@@ -400,7 +397,7 @@ public class RequestParser {
     }
 
 
-    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, GenericCatalogException, UnknownColumnException {
+    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownSchemaException, UnknownTableException {
         String[] splitString = name.split( "\\." );
         if ( splitString.length != 3 ) {
             log.warn( "Column name is not 3 fields long. Got: {}", name );

@@ -51,7 +51,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -261,7 +260,7 @@ public class CassandraStore extends DataStore {
                         this.dbKeyspace, // TODO MV: physical schema name
                         physicalTableName,
                         physicalNameProvider.generatePhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
+            } catch ( UnknownColumnPlacementException e ) {
                 throw new RuntimeException( e );
             }
         }
@@ -299,7 +298,7 @@ public class CassandraStore extends DataStore {
                     this.dbKeyspace,
                     physicalTableName,
                     physicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
+        } catch ( UnknownColumnPlacementException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -42,7 +42,6 @@ import java.util.List;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDrop;
@@ -121,7 +120,7 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
                     throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.getSimple() ) );
                 }
             }
-        } catch ( GenericCatalogException | UnknownSchemaException e ) {
+        } catch ( UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
     }

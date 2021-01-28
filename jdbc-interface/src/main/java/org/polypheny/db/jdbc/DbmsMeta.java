@@ -84,10 +84,8 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -266,36 +264,33 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getTables( ConnectionHandle {}, String {}, Pat {}, Pat {}, List<String> {} )", ch, database, schemaPattern, tablePattern, typeList );
             }
-            try {
-                final List<CatalogTable> tables = catalog.getTables(
-                        database == null ? null : new Pattern( database ),
-                        (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
-                        (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
-                );
-                StatementHandle statementHandle = createStatement( ch );
-                return createMetaResultSet(
-                        ch,
-                        statementHandle,
-                        toEnumerable( tables ),
-                        PrimitiveCatalogTable.class,
-                        // According to JDBC standard:
-                        "TABLE_CAT",            // The name of the database in which the specified table resides.
-                        "TABLE_SCHEM",                  // The name of the schema
-                        "TABLE_NAME",                   // The name of the table
-                        "TABLE_TYPE",                   // The type of the table (Table, View, ...)
-                        "REMARKS",                      // The description of the table. --> Not used, always null
-                        "TYPE_CAT",                     // Always null
-                        "TYPE_SCHEM",                   // Always null
-                        "TYPE_NAME",                    // Always null
-                        "SELF_REFERENCING_COL_NAME",    // Name of the designated "identifier" column of a typed table  --> currently always null
-                        "REF_GENERATION",               // How values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED".  --> currently always null
-                        // Polypheny-DB specific extensions:
-                        "OWNER",
-                        "DEFINITION"
-                );
-            } catch ( GenericCatalogException e ) {
-                throw propagate( e );
-            }
+
+            final List<CatalogTable> tables = catalog.getTables(
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s ),
+                    (tablePattern == null || tablePattern.s == null) ? null : new Pattern( tablePattern.s )
+            );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( tables ),
+                    PrimitiveCatalogTable.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",            // The name of the database in which the specified table resides.
+                    "TABLE_SCHEM",                  // The name of the schema
+                    "TABLE_NAME",                   // The name of the table
+                    "TABLE_TYPE",                   // The type of the table (Table, View, ...)
+                    "REMARKS",                      // The description of the table. --> Not used, always null
+                    "TYPE_CAT",                     // Always null
+                    "TYPE_SCHEM",                   // Always null
+                    "TYPE_NAME",                    // Always null
+                    "SELF_REFERENCING_COL_NAME",    // Name of the designated "identifier" column of a typed table  --> currently always null
+                    "REF_GENERATION",               // How values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED".  --> currently always null
+                    // Polypheny-DB specific extensions:
+                    "OWNER",
+                    "DEFINITION"
+            );
         }
     }
 
@@ -352,27 +347,23 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getSchemas( ConnectionHandle {}, String {}, Pat {} )", ch, database, schemaPattern );
             }
-            try {
-                final List<CatalogSchema> schemas = catalog.getSchemas(
-                        database == null ? null : new Pattern( database ),
-                        (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
-                );
-                StatementHandle statementHandle = createStatement( ch );
-                return createMetaResultSet(
-                        ch,
-                        statementHandle,
-                        toEnumerable( schemas ),
-                        PrimitiveCatalogSchema.class,
-                        // According to JDBC standard:
-                        "TABLE_SCHEM",
-                        "TABLE_CATALOG",
-                        // Polypheny-DB specific extensions:
-                        "OWNER",
-                        "SCHEMA_TYPE"
-                );
-            } catch ( GenericCatalogException | UnknownSchemaException e ) {
-                throw propagate( e );
-            }
+            final List<CatalogSchema> schemas = catalog.getSchemas(
+                    database == null ? null : new Pattern( database ),
+                    (schemaPattern == null || schemaPattern.s == null) ? null : new Pattern( schemaPattern.s )
+            );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( schemas ),
+                    PrimitiveCatalogSchema.class,
+                    // According to JDBC standard:
+                    "TABLE_SCHEM",
+                    "TABLE_CATALOG",
+                    // Polypheny-DB specific extensions:
+                    "OWNER",
+                    "SCHEMA_TYPE"
+            );
         }
     }
 
@@ -384,23 +375,19 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getCatalogs( ConnectionHandle {} )", ch );
             }
-            try {
-                final List<CatalogDatabase> databases = catalog.getDatabases( null );
-                StatementHandle statementHandle = createStatement( ch );
-                return createMetaResultSet(
-                        ch,
-                        statementHandle,
-                        toEnumerable( databases ),
-                        PrimitiveCatalogDatabase.class,
-                        // According to JDBC standard:
-                        "TABLE_CAT",
-                        // Polypheny-DB specific extensions:
-                        "OWNER",
-                        "DEFAULT_SCHEMA"
-                );
-            } catch ( GenericCatalogException e ) {
-                throw propagate( e );
-            }
+            final List<CatalogDatabase> databases = catalog.getDatabases( null );
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( databases ),
+                    PrimitiveCatalogDatabase.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",
+                    // Polypheny-DB specific extensions:
+                    "OWNER",
+                    "DEFAULT_SCHEMA"
+            );
         }
     }
 
@@ -524,35 +511,31 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getPrimaryKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
             }
-            try {
-                final Pattern tablePattern = table == null ? null : new Pattern( table );
-                final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-                final Pattern databasePattern = database == null ? null : new Pattern( database );
-                final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-                List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
-                for ( CatalogTable catalogTable : catalogTables ) {
-                    if ( catalogTable.primaryKey != null ) {
-                        final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                        primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
-                    }
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            List<CatalogPrimaryKeyColumn> primaryKeyColumns = new LinkedList<>();
+            for ( CatalogTable catalogTable : catalogTables ) {
+                if ( catalogTable.primaryKey != null ) {
+                    final CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                    primaryKeyColumns.addAll( primaryKey.getCatalogPrimaryKeyColumns() );
                 }
-                StatementHandle statementHandle = createStatement( ch );
-                return createMetaResultSet(
-                        ch,
-                        statementHandle,
-                        toEnumerable( primaryKeyColumns ),
-                        PrimitiveCatalogPrimaryKeyColumn.class,
-                        // According to JDBC standard:
-                        "TABLE_CAT",  // database name
-                        "TABLE_SCHEM",        // schema name
-                        "TABLE_NAME",         // table name
-                        "COLUMN_NAME",        // column name
-                        "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
-                        "PK_NAME"             // the name of the primary key --> always null (primary keys have no name in Polypheny-DB)
-                );
-            } catch ( GenericCatalogException e ) {
-                throw propagate( e );
             }
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( primaryKeyColumns ),
+                    PrimitiveCatalogPrimaryKeyColumn.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",  // database name
+                    "TABLE_SCHEM",        // schema name
+                    "TABLE_NAME",         // table name
+                    "COLUMN_NAME",        // column name
+                    "KEY_SEQ",            // Sequence number within primary key( a value of 1 represents the first column of the primary key, a value of 2 would represent the second column within the primary key).
+                    "PK_NAME"             // the name of the primary key --> always null (primary keys have no name in Polypheny-DB)
+            );
         }
     }
 
@@ -733,43 +716,39 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getIndexInfo( ConnectionHandle {}, String {}, String {}, String {}, boolean {}, boolean {} )", ch, database, schema, table, unique, approximate );
             }
-            try {
-                final Pattern tablePattern = table == null ? null : new Pattern( table );
-                final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-                final Pattern databasePattern = database == null ? null : new Pattern( database );
-                final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-                List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
-                for ( CatalogTable catalogTable : catalogTables ) {
-                    List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
-                    catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
-                }
-                StatementHandle statementHandle = createStatement( ch );
-                return createMetaResultSet(
-                        ch,
-                        statementHandle,
-                        toEnumerable( catalogIndexColumns ),
-                        PrimitiveCatalogIndexColumn.class,
-                        // According to JDBC standard:
-                        "TABLE_CAT",    // The name of the database in which the specified table resides.
-                        "TABLE_SCHEM",          // The name of the schema in which the specified table resides.
-                        "TABLE_NAME",           // The name of the table in which the index resides.
-                        "NON_UNIQUE",           // Indicates whether the index values can be non-unique.
-                        "INDEX_QUALIFIER",      // --> currently always returns null
-                        "INDEX_NAME",           // The name of the index.
-                        "TYPE",                 // The type of the index. (integer between 0 and 3) --> currently always returns 0
-                        "ORDINAL_POSITION",     // The ordinal position of the column in the index. The first column in the index is 1.
-                        "COLUMN_NAME",          // The name of the column.
-                        "ASC_OR_DESC",          // The order used in the collation of the index.--> currently always returns null
-                        "CARDINALITY",          // The number of rows in the table or unique values in the index. --> currently always returns -1
-                        "PAGES",                // The number of pages used to store the index or table. --> currently always returns null
-                        "FILTER_CONDITION",     // The filter condition. --> currently always returns null
-                        // Polypheny-DB specific extensions
-                        "LOCATION",             // On which store the index is located. NULL indicates a Polystore Index.
-                        "INDEX_TYPE"            // Polypheny-DB specific index type
-                );
-            } catch ( GenericCatalogException e ) {
-                throw propagate( e );
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            List<CatalogIndexColumn> catalogIndexColumns = new LinkedList<>();
+            for ( CatalogTable catalogTable : catalogTables ) {
+                List<CatalogIndex> catalogIndexInfos = catalog.getIndexes( catalogTable.id, unique );
+                catalogIndexInfos.forEach( info -> catalogIndexColumns.addAll( info.getCatalogIndexColumns() ) );
             }
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( catalogIndexColumns ),
+                    PrimitiveCatalogIndexColumn.class,
+                    // According to JDBC standard:
+                    "TABLE_CAT",    // The name of the database in which the specified table resides.
+                    "TABLE_SCHEM",          // The name of the schema in which the specified table resides.
+                    "TABLE_NAME",           // The name of the table in which the index resides.
+                    "NON_UNIQUE",           // Indicates whether the index values can be non-unique.
+                    "INDEX_QUALIFIER",      // --> currently always returns null
+                    "INDEX_NAME",           // The name of the index.
+                    "TYPE",                 // The type of the index. (integer between 0 and 3) --> currently always returns 0
+                    "ORDINAL_POSITION",     // The ordinal position of the column in the index. The first column in the index is 1.
+                    "COLUMN_NAME",          // The name of the column.
+                    "ASC_OR_DESC",          // The order used in the collation of the index.--> currently always returns null
+                    "CARDINALITY",          // The number of rows in the table or unique values in the index. --> currently always returns -1
+                    "PAGES",                // The number of pages used to store the index or table. --> currently always returns null
+                    "FILTER_CONDITION",     // The filter condition. --> currently always returns null
+                    // Polypheny-DB specific extensions
+                    "LOCATION",             // On which store the index is located. NULL indicates a Polystore Index.
+                    "INDEX_TYPE"            // Polypheny-DB specific index type
+            );
         }
     }
 
@@ -1445,7 +1424,7 @@ public class DbmsMeta implements ProtobufMeta {
         final CatalogSchema schema;
         try {
             schema = catalog.getSchema( database.name, defaultSchemaName );
-        } catch ( GenericCatalogException | UnknownSchemaException | UnknownCollationException | UnknownDatabaseException | UnknownSchemaTypeException e ) {
+        } catch ( UnknownSchemaException | UnknownDatabaseException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         assert schema != null;

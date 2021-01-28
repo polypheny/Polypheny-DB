@@ -40,8 +40,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -117,7 +116,7 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
                         context.getCurrentUserId(),
                         SchemaType.RELATIONAL );
             }
-        } catch ( GenericCatalogException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException e ) {
             throw new RuntimeException( e );
         }
     }

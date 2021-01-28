@@ -266,7 +266,7 @@ public abstract class AbstractRouter implements Router {
                                         updateColumnListIterator.remove();
                                         sourceExpressionListIterator.remove();
                                     }
-                                } catch ( GenericCatalogException | UnknownColumnException e ) {
+                                } catch ( UnknownColumnException e ) {
                                     throw new RuntimeException( e );
                                 }
                             }
@@ -404,7 +404,7 @@ public abstract class AbstractRouter implements Router {
                         CatalogColumn column;
                         try {
                             column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
-                        } catch ( GenericCatalogException | UnknownColumnException e ) {
+                        } catch ( UnknownColumnException e ) {
                             throw new RuntimeException( e );
                         }
                         if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
