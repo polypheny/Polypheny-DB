@@ -40,8 +40,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.StatUtils;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -294,7 +294,7 @@ public class IcarusRouter extends AbstractRouter {
     // Create table on all data stores (not on data sources)
     @Override
     public List<DataStore> createTable( long schemaId, Statement statement ) {
-        Map<String, DataStore> availableStores = StoreManager.getInstance().getStores();
+        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
         List<DataStore> result = new LinkedList<>( availableStores.values() );
         if ( result.size() == 0 ) {
             throw new RuntimeException( "No suitable data store found" );
@@ -307,7 +307,7 @@ public class IcarusRouter extends AbstractRouter {
     public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
         List<DataStore> result = new LinkedList<>();
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
-            result.add( StoreManager.getInstance().getStore( storeId ) );
+            result.add( AdapterManager.getInstance().getStore( storeId ) );
         }
         if ( result.size() == 0 ) {
             throw new RuntimeException( "No suitable data store found" );

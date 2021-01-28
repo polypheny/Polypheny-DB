@@ -916,7 +916,8 @@ public abstract class Catalog {
 
     public enum TableType {
         TABLE( 1 ),
-        VIEW( 2 );
+        SOURCE( 2 ),
+        VIEW( 3 );
         // STREAM, ...
 
         private final int id;

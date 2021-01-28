@@ -90,10 +90,10 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -1720,7 +1720,7 @@ public class Crud implements InformationObserver {
 
             // Get functional indexes
             for ( Integer storeId : catalogTable.placementsByAdapter.keySet() ) {
-                DataStore store = StoreManager.getInstance().getStore( storeId );
+                DataStore store = AdapterManager.getInstance().getStore( storeId );
                 for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
                     String[] arr = new String[5];
                     arr[0] = "";
@@ -1822,7 +1822,7 @@ public class Crud implements InformationObserver {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
             Placement p = new Placement();
             for ( CatalogAdapter catalogAdapter : catalog.getAdapters() ) {
-                Adapter adapter = StoreManager.getInstance().getAdapter( catalogAdapter.id );
+                Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
                 List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id );
                 p.addAdapter( new Placement.Store( adapter.getUniqueName(), adapter.getAdapterName(), placements ) );
             }
@@ -1876,7 +1876,7 @@ public class Crud implements InformationObserver {
      * Get deployed data stores
      */
     String getStores( final Request req, final Response res ) {
-        ImmutableMap<String, DataStore> stores = StoreManager.getInstance().getStores();
+        ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
         DataStore[] out = stores.values().toArray( new DataStore[0] );
         return storeSerializer().toJson( out, DataStore[].class );
     }
@@ -1915,7 +1915,7 @@ public class Crud implements InformationObserver {
     String getAvailableStoresForIndexes( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
         Placement dataPlacements = getPlacements( index );
-        ImmutableMap<String, DataStore> stores = StoreManager.getInstance().getStores();
+        ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
         List<DataStore> filteredStores = stores.values().stream().filter( ( s ) -> {
             if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
                 return false;
@@ -1954,7 +1954,7 @@ public class Crud implements InformationObserver {
         };
         Gson storeGson = new GsonBuilder().registerTypeAdapter( DataStore.class, storeDeserializer ).create();
         DataStore store = storeGson.fromJson( req.body(), DataStore.class );
-        StoreManager.getInstance().getStore( store.getAdapterId() ).updateSettings( store.getCurrentSettings() );
+        AdapterManager.getInstance().getStore( store.getAdapterId() ).updateSettings( store.getCurrentSettings() );
         return store;
     }
 
@@ -1973,7 +1973,7 @@ public class Crud implements InformationObserver {
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
 
-        List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableStoreAdapters();
+        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableStoreAdapters();
         AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
         return adapterGson.toJson( out, AdapterInformation[].class );
     }
@@ -1987,7 +1987,7 @@ public class Crud implements InformationObserver {
         org.polypheny.db.webui.models.Adapter a = this.gson.fromJson( body, org.polypheny.db.webui.models.Adapter.class );
 
         try {
-            StoreManager.getInstance().addStore( catalog, a.clazzName, a.uniqueName, a.settings );
+            AdapterManager.getInstance().addStore( catalog, a.clazzName, a.uniqueName, a.settings );
         } catch ( Exception e ) {
             log.error( "Could not deploy data store", e );
             return false;
@@ -2001,11 +2001,8 @@ public class Crud implements InformationObserver {
      */
     Result removeStore( final Request req, final Response res ) {
         String uniqueName = req.body();
-
         try {
-
-            StoreManager.getInstance().removeStore( catalog, uniqueName );
-
+            AdapterManager.getInstance().removeStore( catalog, uniqueName );
         } catch ( Exception e ) {
             log.error( "Could not remove store {}", req.body(), e );
             return new Result( e );

@@ -23,7 +23,7 @@ import com.github.rvesse.airline.annotations.Option;
 import java.io.Serializable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.CatalogImpl;
@@ -206,7 +206,7 @@ public class PolyphenyDb {
             Catalog.testMode = testMode;
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
-            StoreManager.getInstance().restoreAdapters( catalog );
+            AdapterManager.getInstance().restoreAdapters( catalog );
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );

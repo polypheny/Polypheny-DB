@@ -41,8 +41,8 @@ import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
 import org.mapdb.Serializer;
 import org.mapdb.serializer.SerializerArrayTuple;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -314,7 +314,7 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void restoreColumnPlacements( Transaction transaction ) {
-        StoreManager manager = StoreManager.getInstance();
+        AdapterManager manager = AdapterManager.getInstance();
 
         Map<Integer, List<Long>> restoredTables = new HashMap<>();
 

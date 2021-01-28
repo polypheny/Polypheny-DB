@@ -19,7 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -106,7 +106,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
         // Delete column from underlying data stores
         for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacementsByColumn( catalogColumn.id ) ) {
-            StoreManager.getInstance().getStore( dp.adapterId ).dropColumn( context, dp );
+            AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( context, dp );
             Catalog.getInstance().deleteColumnPlacement( dp.adapterId, dp.columnId );
         }
 

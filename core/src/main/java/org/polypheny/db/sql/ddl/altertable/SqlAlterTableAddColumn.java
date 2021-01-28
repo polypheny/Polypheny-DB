@@ -22,8 +22,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -197,7 +197,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     null, // Will be set later
                     null, // Will be set later
                     null ); // Will be set later
-            StoreManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
+            AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
         }
 
         // Rest plan cache and implementation cache (not sure if required in this case)

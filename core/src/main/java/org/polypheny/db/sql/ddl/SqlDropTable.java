@@ -36,7 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.LinkedList;
 import java.util.List;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -118,7 +118,7 @@ public class SqlDropTable extends SqlDropObject {
                 IndexManager.getInstance().deleteIndex( index );
             } else {
                 // Delete index on store
-                StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
+                AdapterManager.getInstance().getStore( index.location ).dropIndex( context, index );
             }
             // Delete index in catalog
             catalog.deleteIndex( index.id );
@@ -127,7 +127,7 @@ public class SqlDropTable extends SqlDropObject {
         // Delete data from the stores and remove the column placement
         for ( int storeId : table.placementsByAdapter.keySet() ) {
             // Delete table on store
-            StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
+            AdapterManager.getInstance().getStore( storeId ).dropTable( context, table );
             // Inform routing
             statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeId, table.id ) );
             // Delete column placement in catalog

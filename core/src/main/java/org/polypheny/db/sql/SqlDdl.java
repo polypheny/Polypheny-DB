@@ -38,9 +38,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.Objects;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -120,7 +120,7 @@ public abstract class SqlDdl extends SqlCall {
 
 
     protected DataStore getDataStoreInstance( SqlIdentifier storeName ) {
-        Adapter adapterInstance = StoreManager.getInstance().getAdapter( storeName.getSimple() );
+        Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
         if ( adapterInstance == null ) {
             throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
         }
@@ -136,7 +136,7 @@ public abstract class SqlDdl extends SqlCall {
 
 
     protected DataStore getDataStoreInstance( int storeId ) {
-        Adapter adapterInstance = StoreManager.getInstance().getAdapter( storeId );
+        Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
         if ( adapterInstance == null ) {
             throw new RuntimeException( "Unknown store id: " + storeId );
         }

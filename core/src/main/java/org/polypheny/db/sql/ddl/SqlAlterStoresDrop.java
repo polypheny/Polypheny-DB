@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
@@ -80,7 +80,7 @@ public class SqlAlterStoresDrop extends SqlAlter {
             storeNameStr = StringUtils.chop( storeNameStr );
         }
         try {
-            StoreManager.getInstance().removeStore( Catalog.getInstance(), storeNameStr );
+            AdapterManager.getInstance().removeStore( Catalog.getInstance(), storeNameStr );
         } catch ( Exception e ) {
             throw new RuntimeException( "Could not remove store " + storeNameStr, e );
         }

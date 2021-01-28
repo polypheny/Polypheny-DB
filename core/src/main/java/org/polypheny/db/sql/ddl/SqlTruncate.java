@@ -19,7 +19,7 @@ package org.polypheny.db.sql.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDdl;
@@ -73,7 +73,7 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
 
         //  Execute truncate on all placements
         table.placementsByAdapter.forEach( ( storeId, placements ) -> {
-            StoreManager.getInstance().getStore( storeId ).truncate( context, table );
+            AdapterManager.getInstance().getStore( storeId ).truncate( context, table );
         } );
     }
 }

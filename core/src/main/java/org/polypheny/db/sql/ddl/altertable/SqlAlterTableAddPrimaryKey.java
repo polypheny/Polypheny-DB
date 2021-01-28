@@ -20,7 +20,7 @@ package org.polypheny.db.sql.ddl.altertable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -101,7 +101,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
                                 null, // Will be set later
                                 null, // Will be set later
                                 null ); // Will be set later
-                        StoreManager.getInstance().getStore( ccp.adapterId ).addColumn(
+                        AdapterManager.getInstance().getStore( ccp.adapterId ).addColumn(
                                 context,
                                 Catalog.getInstance().getTable( ccp.tableId ),
                                 Catalog.getInstance().getColumn( columnId ) );

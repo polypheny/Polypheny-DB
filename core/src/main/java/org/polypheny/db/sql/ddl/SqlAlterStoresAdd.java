@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
@@ -86,7 +86,7 @@ public class SqlAlterStoresAdd extends SqlAlter {
         String adapterNameStr = removeQuotationMarks( adapterName.toString() );
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
         try {
-            StoreManager.getInstance().addStore( Catalog.getInstance(), adapterNameStr, storeNameStr, configMap );
+            AdapterManager.getInstance().addStore( Catalog.getInstance(), adapterNameStr, storeNameStr, configMap );
         } catch ( Exception e ) {
             throw new RuntimeException( "Could not deploy store", e );
         }

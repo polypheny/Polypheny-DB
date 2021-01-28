@@ -19,7 +19,7 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import lombok.NonNull;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -155,7 +155,7 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                         type.getDimension() == -1 ? null : type.getDimension(),
                         type.getCardinality() == -1 ? null : type.getCardinality());
                 for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
-                    StoreManager.getInstance().getStore( placement.adapterId ).updateColumnType(
+                    AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                             context,
                             placement,
                             getCatalogColumn( catalogTable.id, columnName ) );

@@ -21,8 +21,8 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -98,7 +98,7 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
                     IndexManager.getInstance().deleteIndex( index );
                 } else {
                     // Delete index on store
-                    StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
+                    AdapterManager.getInstance().getStore( index.location ).dropIndex( context, index );
                 }
                 // Delete index in catalog
                 Catalog.getInstance().deleteIndex( index.id );

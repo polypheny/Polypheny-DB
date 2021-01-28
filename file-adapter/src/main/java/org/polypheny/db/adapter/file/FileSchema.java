@@ -27,8 +27,8 @@ import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -122,7 +122,7 @@ public class FileSchema extends AbstractSchema {
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
     public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( StoreManager.getInstance().getStore( storeId ) );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( storeId ) );
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
@@ -138,7 +138,7 @@ public class FileSchema extends AbstractSchema {
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
     public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( StoreManager.getInstance().getStore( storeId ) );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( storeId ) );
         final Object[] insert;
 
         ArrayList<Object[]> rows = new ArrayList<>();

@@ -28,8 +28,8 @@ import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.adapter.StoreManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -134,7 +134,7 @@ public class PolySchemaBuilder implements PropertyChangeListener {
                     for ( String physicalSchemaName : tableIdsPerSchema.keySet() ) {
                         Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
                         Map<String, Table> physicalTables = new HashMap<>();
-                        Adapter adapter = StoreManager.getInstance().getAdapter( catalogAdapter.id );
+                        Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
                         final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
                         adapter.createNewSchema( rootSchema, schemaName );
                         SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
