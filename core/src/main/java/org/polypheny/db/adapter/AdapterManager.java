@@ -17,7 +17,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.reflections.Reflections;
 
 public class AdapterManager {
@@ -84,9 +83,45 @@ public class AdapterManager {
     }
 
 
-    public List<AdapterInformation> getAvailableStoreAdapters() {
+    public DataSource getSource( String uniqueName ) {
+        Adapter adapter = getAdapter( uniqueName );
+        if ( adapter instanceof DataSource ) {
+            return (DataSource) adapter;
+        }
+        return null;
+    }
+
+
+    public DataSource getSource( int id ) {
+        Adapter adapter = getAdapter( id );
+        if ( adapter instanceof DataSource ) {
+            return (DataSource) adapter;
+        }
+        return null;
+    }
+
+
+    public ImmutableMap<String, DataSource> getSources() {
+        Map<String, DataSource> map = new HashMap<>();
+        for ( Entry<String, Adapter> entry : getAdapters().entrySet() ) {
+            if ( entry.getValue() instanceof DataSource ) {
+                map.put( entry.getKey(), (DataSource) entry.getValue() );
+            }
+        }
+        return ImmutableMap.copyOf( map );
+    }
+
+
+    public List<AdapterInformation> getAvailableAdapters( AdapterType adapterType ) {
         Reflections reflections = new Reflections( "org.polypheny.db" );
-        Set<Class> classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataStore.class ) );
+        Set<Class> classes;
+        if ( adapterType == AdapterType.STORE ) {
+            classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataStore.class ) );
+        } else if ( adapterType == AdapterType.SOURCE ) {
+            classes = ImmutableSet.copyOf( reflections.getSubTypesOf( DataSource.class ) );
+        } else {
+            throw new RuntimeException( "Unknown adapter type: " + adapterType );
+        }
         List<AdapterInformation> result = new LinkedList<>();
         try {
             //noinspection unchecked
@@ -100,23 +135,31 @@ public class AdapterManager {
                 }
             }
         } catch ( NoSuchFieldException | IllegalAccessException e ) {
-            throw new RuntimeException( "Something went wrong while retrieving list of available adapters.", e );
+            throw new RuntimeException( "Something went wrong while retrieving list of available store adapters.", e );
         }
         return result;
     }
 
 
-    public DataStore addStore( Catalog catalog, String clazzName, String uniqueName, Map<String, String> settings ) {
+    public Adapter addAdapter( String clazzName, String uniqueName, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
         }
-        DataStore instance;
+        Adapter instance;
         try {
             Class<?> clazz = Class.forName( clazzName );
             Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
-            int storeId = catalog.addAdapter( uniqueName, clazzName, AdapterType.STORE, settings );
-            instance = (DataStore) ctor.newInstance( storeId, uniqueName, settings );
+            AdapterType adapterType;
+            if ( DataStore.class.isAssignableFrom( clazz ) ) {
+                adapterType = AdapterType.STORE;
+            } else if ( DataSource.class.isAssignableFrom( clazz ) ) {
+                adapterType = AdapterType.SOURCE;
+            } else {
+                throw new RuntimeException( "Unknown type of adapter! Specified class is neither implementing DataStore nor DataSource." );
+            }
+            int storeId = Catalog.getInstance().addAdapter( uniqueName, clazzName, adapterType, settings );
+            instance = (Adapter) ctor.newInstance( storeId, uniqueName, settings );
             adapterByName.put( instance.getUniqueName(), instance );
             adapterById.put( instance.getAdapterId(), instance );
         } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e ) {
@@ -126,42 +169,37 @@ public class AdapterManager {
     }
 
 
-    public void removeStore( Catalog catalog, String uniqueName ) {
-        uniqueName = uniqueName.toLowerCase();
-        DataStore storeInstance = getStore( uniqueName );
+    public void removeAdapter( int adapterId ) {
+        DataStore storeInstance = getStore( adapterId );
         if ( storeInstance == null ) {
-            throw new RuntimeException( "Unknown data store: " + uniqueName );
+            throw new RuntimeException( "Unknown data store with id: " + adapterId );
         }
-        try {
-            CatalogAdapter catalogAdapter = catalog.getAdapter( uniqueName );
+        CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( adapterId );
 
-            // Check if the store has any placements
-            List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( catalogAdapter.id );
-            if ( placements.size() != 0 ) {
-                throw new RuntimeException( "There is still data placed on this data store" );
-            }
-
-            // Shutdown store
-            storeInstance.shutdown();
-
-            // remove store from maps
-            adapterById.remove( storeInstance.getAdapterId() );
-            adapterByName.remove( storeInstance.getUniqueName() );
-
-            // delete store from catalog
-            catalog.deleteAdapter( catalogAdapter.id );
-        } catch ( UnknownAdapterException e ) {
-            throw new RuntimeException( "Something went wrong while removing a data store", e );
+        // Check if the store has any placements
+        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( catalogAdapter.id );
+        if ( placements.size() != 0 ) {
+            throw new RuntimeException( "There is still data placed on this data store" );
         }
+
+        // Shutdown store
+        storeInstance.shutdown();
+
+        // Remove store from maps
+        adapterById.remove( storeInstance.getAdapterId() );
+        adapterByName.remove( storeInstance.getUniqueName() );
+
+        // Delete store from catalog
+        Catalog.getInstance().deleteAdapter( catalogAdapter.id );
     }
 
 
     /**
      * Restores adapters from catalog
      */
-    public void restoreAdapters( Catalog catalog ) {
+    public void restoreAdapters() {
         try {
-            List<CatalogAdapter> adapters = catalog.getAdapters();
+            List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
             for ( CatalogAdapter adapter : adapters ) {
                 Class<?> clazz = Class.forName( adapter.adapterClazz );
                 Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );

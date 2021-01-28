@@ -206,7 +206,7 @@ public class PolyphenyDb {
             Catalog.testMode = testMode;
             catalog = Catalog.setAndGetInstance( new CatalogImpl() );
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );
-            AdapterManager.getInstance().restoreAdapters( catalog );
+            AdapterManager.getInstance().restoreAdapters();
             QueryInterfaceManager.getInstance().restoreInterfaces( catalog );
             trx.commit();
             trx = transactionManager.startTransaction( "pa", "APP", false, "Catalog Startup" );

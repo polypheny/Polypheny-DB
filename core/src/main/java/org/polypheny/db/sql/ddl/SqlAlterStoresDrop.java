@@ -23,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
@@ -79,8 +81,12 @@ public class SqlAlterStoresDrop extends SqlAlter {
         if ( storeNameStr.endsWith( "'" ) ) {
             storeNameStr = StringUtils.chop( storeNameStr );
         }
+
         try {
-            AdapterManager.getInstance().removeStore( Catalog.getInstance(), storeNameStr );
+            CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( storeNameStr );
+            AdapterManager.getInstance().removeAdapter( catalogAdapter.id );
+        } catch ( UnknownAdapterException e ) {
+            throw new RuntimeException( "There is no adapter with this name: " + storeNameStr, e );
         } catch ( Exception e ) {
             throw new RuntimeException( "Could not remove store " + storeNameStr, e );
         }

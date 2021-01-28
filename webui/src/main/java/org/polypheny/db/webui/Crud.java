@@ -101,6 +101,7 @@ import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -1973,7 +1974,7 @@ public class Crud implements InformationObserver {
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
 
-        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableStoreAdapters();
+        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableAdapters( AdapterType.STORE );
         AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
         return adapterGson.toJson( out, AdapterInformation[].class );
     }
@@ -1985,9 +1986,8 @@ public class Crud implements InformationObserver {
     boolean addStore( final Request req, final Response res ) {
         String body = req.body();
         org.polypheny.db.webui.models.Adapter a = this.gson.fromJson( body, org.polypheny.db.webui.models.Adapter.class );
-
         try {
-            AdapterManager.getInstance().addStore( catalog, a.clazzName, a.uniqueName, a.settings );
+            AdapterManager.getInstance().addAdapter( a.clazzName, a.uniqueName, a.settings );
         } catch ( Exception e ) {
             log.error( "Could not deploy data store", e );
             return false;
@@ -2002,7 +2002,8 @@ public class Crud implements InformationObserver {
     Result removeStore( final Request req, final Response res ) {
         String uniqueName = req.body();
         try {
-            AdapterManager.getInstance().removeStore( catalog, uniqueName );
+            CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( uniqueName.toLowerCase() );
+            AdapterManager.getInstance().removeAdapter( catalogAdapter.id );
         } catch ( Exception e ) {
             log.error( "Could not remove store {}", req.body(), e );
             return new Result( e );
