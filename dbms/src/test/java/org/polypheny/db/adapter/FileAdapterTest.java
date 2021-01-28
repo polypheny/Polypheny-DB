@@ -30,6 +30,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
@@ -44,7 +45,6 @@ public class FileAdapterTest {
         // Ensures that Polypheny-DB is running
         // noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
-        //todo check rollbacks
 
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
@@ -79,9 +79,11 @@ public class FileAdapterTest {
                     batchTest( connection );
 
                     // check inserts
-                    statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
+                    int insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a,b) VALUES (1,2),(3,4),(5,null)" );
+                    Assert.assertEquals( 3, insertCount );
                     // insert only into one column
-                    statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
+                    insertCount = statement.executeUpdate( "INSERT INTO preparedTest (a) VALUES (6)" );
+                    Assert.assertEquals( 1, insertCount );
 
                     // test conditions
                     ResultSet rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE a = 3" );
@@ -90,7 +92,9 @@ public class FileAdapterTest {
                     // test prepared select
                     PreparedStatement preparedStatement = connection.prepareStatement( "SELECT * FROM preparedTest  WHERE a = ?" );
                     preparedStatement.setInt( 1, 1 );
-                    preparedStatement.executeQuery();
+                    rs = preparedStatement.executeQuery();
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, 2 } ) );
+                    rs.close();
                     preparedStatement.close();
 
                     rs = statement.executeQuery( "SELECT * FROM preparedTest  WHERE b = 4" );
@@ -211,10 +215,95 @@ public class FileAdapterTest {
                             new Object[]{ 2, "hello".getBytes() }
                     ) );
                     rs.close();
+
+                    //retrieve a single multimedia item
+                    rs = statement.executeQuery( "SELECT blb FROM public.bin WHERE id = 1" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of(
+                            new Object[]{ "hi".getBytes() }
+                    ) );
+                    rs.close();
                 } finally {
                     statement.executeUpdate( "DROP TABLE public.bin" );
                     connection.commit();
                 }
+            }
+        }
+    }
+
+
+    @Test
+    public void verticalPartitioningTest() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "CREATE TABLE public.partitioned ( id INTEGER NOT NULL, username VARCHAR(20), pic FILE, PRIMARY KEY(id)) ON STORE \"mm\"" );
+                try {
+                    statement.executeUpdate( "ALTER TABLE public.partitioned ADD PLACEMENT (username) ON STORE \"hsqldb\"" );
+                    statement.executeUpdate( "ALTER TABLE public.partitioned MODIFY PLACEMENT (pic) ON STORE \"mm\"" );
+
+                    //TODO: fix: The number of changed rows is not equal for all stores
+                    /*
+                    PreparedStatement ps = connection.prepareStatement( "INSERT INTO public.partitioned (id, username, pic) VALUES(?,?,?)" );
+                    ps.setInt( 1, 1 );
+                    ps.setString( 2, "user1" );
+                    ps.setBytes( 3, "user1".getBytes() );
+                    ps.addBatch();
+                    ps.clearParameters();
+                    ps.setInt( 1, 2 );
+                    ps.setString( 2, "user2" );
+                    ps.setBytes( 3, "user2".getBytes() );
+                    ps.addBatch();
+                    ps.executeBatch();
+                    */
+
+                    statement.executeUpdate( "INSERT INTO public.partitioned (id, username, pic) VALUES(1, 'user1', x'6869')" );
+                    statement.executeUpdate( "INSERT INTO public.partitioned (id, username, pic) VALUES(2, 'user2', x'6869')" );
+
+                    ResultSet rs = statement.executeQuery( "SELECT username, pic FROM public.partitioned WHERE id = 1" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ "user1", "hi".getBytes() } ) );
+                    rs.close();
+                    rs = statement.executeQuery( "SELECT username, pic FROM public.partitioned WHERE id = 2" );
+                    TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ "user2", "hi".getBytes() } ) );
+                    rs.close();
+                } finally {
+                    statement.executeUpdate( "DROP TABLE public.partitioned" );
+                    connection.commit();
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testRollback() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            Statement statement = connection.createStatement();
+            try {
+                statement.executeUpdate( "CREATE TABLE testRollback (a INTEGER NOT NULL, b INTEGER NOT NULL, PRIMARY KEY(a)) ON STORE \"mm\"" );
+                statement.executeUpdate( "INSERT INTO testRollback (a,b) VALUES (1,2)" );
+                connection.commit();
+                statement.close();
+
+                connection = jdbcConnection.getConnection();
+                statement = connection.createStatement();
+                statement.executeUpdate( "INSERT INTO testRollback (a,b) VALUES (3,4)" );
+                connection.rollback();
+                statement.close();
+
+                connection = jdbcConnection.getConnection();
+                statement = connection.createStatement();
+                ResultSet rs = statement.executeQuery( "SELECT a,b FROM testRollback" );
+                TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, 2 } ) );
+                rs.close();
+                connection.commit();
+                statement.close();
+
+            } finally {
+                connection = jdbcConnection.getConnection();
+                statement = connection.createStatement();
+                statement.executeUpdate( "DROP TABLE testRollback" );
+                connection.commit();
             }
         }
     }
