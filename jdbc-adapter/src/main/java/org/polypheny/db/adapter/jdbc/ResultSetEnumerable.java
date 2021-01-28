@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import com.google.gson.Gson;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.Array;
@@ -305,6 +306,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setClob( i, (Clob) value );
         } else if ( value instanceof byte[] ) {
             preparedStatement.setBytes( i, (byte[]) value );
+        } else if ( value instanceof InputStream ) {
+            preparedStatement.setBinaryStream( i, (InputStream) value );
         } else if ( value instanceof Date ) {
             preparedStatement.setDate( i, (Date) value );
         } else if ( value instanceof Float ) {
@@ -519,6 +522,7 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 }
             }
         }
+
     }
 
 
@@ -566,6 +570,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         // returns true if this needs to be executed as batch
         boolean enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
+
     }
+
 }
 

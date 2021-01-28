@@ -117,7 +117,15 @@ public class TestHelper {
             int j = 0;
             while ( j < expectedRow.length ) {
                 if ( expectedRow.length >= j + 1 ) {
-                    if ( resultSet.getMetaData().getColumnType( j + 1 ) != Types.ARRAY ) {
+                    if ( resultSet.getMetaData().getColumnType( j + 1 ) == Types.BINARY ) {
+                        if ( expectedRow[j] == null ) {
+                            Assert.assertNull( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "': ", resultSet.getBytes( j + 1 ) );
+                        } else {
+                            Assert.assertEquals( "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
+                                    new String( (byte[]) expectedRow[j] ),
+                                    new String( resultSet.getBytes( j + 1 ) ) );
+                        }
+                    } else if ( resultSet.getMetaData().getColumnType( j + 1 ) != Types.ARRAY ) {
                         Assert.assertEquals(
                                 "Unexpected data in column '" + resultSet.getMetaData().getColumnName( j + 1 ) + "'",
                                 expectedRow[j],
@@ -182,6 +190,7 @@ public class TestHelper {
             conn.commit();
             conn.close();
         }
+
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.type.PolyType;
 
 public enum FileMethod {
 
-    EXECUTE( FileSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Update[].class ),
+    EXECUTE( FileSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class ),
     EXECUTE_MODIFY( FileSchema.class, "executeModify", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, Condition.class );
 
     public final Method method;
@@ -42,6 +42,7 @@ public enum FileMethod {
         }
         MAP = builder.build();
     }
+
 
     FileMethod( Class clazz, String methodName, Class... argumentTypes ) {
         this.method = Types.lookupMethod( clazz, methodName, argumentTypes );

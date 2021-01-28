@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,11 +195,10 @@ public class BitString {
         int bitCount = bytes.length * 8;
         StringBuilder sb = new StringBuilder( bitCount );
         for ( byte b : bytes ) {
-            for ( int i = 7; i >= 0; --i ) {
-                sb.append( ((b & 1) == 0) ? '0' : '1' );
-                b >>= 1;
-            }
+            //from https://stackoverflow.com/questions/12310017/how-to-convert-a-byte-to-its-binary-string-representation/12310078
+            sb.append( String.format( "%8s", Integer.toBinaryString( b & 0xFF ) ).replace( ' ', '0' ) );
         }
         return new BitString( sb.toString(), bitCount );
     }
+
 }

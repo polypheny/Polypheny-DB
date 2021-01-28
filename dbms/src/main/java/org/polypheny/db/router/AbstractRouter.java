@@ -398,26 +398,35 @@ public abstract class AbstractRouter implements Router {
             if ( catalogTable.columnIds.size() != placements.size() ) { // partitioned, check if there is a illegal condition
                 RexCall call = ((RexCall) ((LogicalFilter) node).getCondition());
                 for ( RexNode operand : call.operands ) {
-                    if ( operand instanceof RexInputRef ) {
-                        int index = ((RexInputRef) operand).getIndex();
-                        RelDataTypeField field = ((LogicalFilter) node).getInput().getRowType().getFieldList().get( index );
-                        CatalogColumn column;
-                        try {
-                            column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
-                        } catch ( UnknownColumnException e ) {
-                            throw new RuntimeException( e );
-                        }
-                        if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
-                            throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
-                            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            // TODO: Use indexes
-                        }
-                    }
+                    dmlConditionCheck( (LogicalFilter) node, catalogTable, placements, operand );
                 }
             }
             return handleGeneric( node, builder );
         } else {
             return handleGeneric( node, builder );
+        }
+    }
+
+
+    private void dmlConditionCheck( LogicalFilter node, CatalogTable catalogTable, List<CatalogColumnPlacement> placements, RexNode operand ) {
+        if ( operand instanceof RexInputRef ) {
+            int index = ((RexInputRef) operand).getIndex();
+            RelDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
+            CatalogColumn column;
+            try {
+                column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
+            } catch ( UnknownColumnException e ) {
+                throw new RuntimeException( e );
+            }
+            if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
+                throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // TODO: Use indexes
+            }
+        } else if ( operand instanceof RexCall ) {
+            for ( RexNode o : ((RexCall) operand).operands ) {
+                dmlConditionCheck( node, catalogTable, placements, o );
+            }
         }
     }
 

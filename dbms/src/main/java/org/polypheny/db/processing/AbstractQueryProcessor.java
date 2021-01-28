@@ -262,6 +262,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             routedRoot = logicalRoot;
         }
 
+        // Validate parameterValues
+        ParameterValueValidator pmValidator = new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() );
+        pmValidator.visit( routedRoot.rel );
+
         //
         // Implementation Caching
         if ( isAnalyze ) {
@@ -1242,6 +1246,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             final RelNode node = super.visit( other );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
+
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@ package org.polypheny.db.adapter.file;
 
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
@@ -30,6 +33,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
 
     private final Object[] insertValues;
     private boolean inserted = false;
+
 
     public FileModifier( final Operation operation,
             final String rootPath,
@@ -43,17 +47,19 @@ public class FileModifier<E> extends FileEnumerator<E> {
         this.insertValues = insertValues;
     }
 
+
     @Override
     public E current() {
         return current;
     }
+
 
     /**
      * First call during an insert:
      * insert all data, set current to the insertCount, return true
      * Second call:
      * return false
-     * see {@link org.polypheny.db.webui.Crud#executeSqlUpdate}
+     * see {@code org.polypheny.db.webui.Crud#executeSqlUpdate}
      */
     @Override
     public boolean moveNext() {
@@ -77,11 +83,22 @@ public class FileModifier<E> extends FileEnumerator<E> {
                         if ( !newFile.createNewFile() ) {
                             throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
                         }
-                        String writeString = value.toString();
-                        Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
+                        if ( value instanceof byte[] ) {
+                            Files.write( newFile.toPath(), (byte[]) value );
+                        } else if ( value instanceof InputStream ) {
+                            //see https://attacomsian.com/blog/java-convert-inputstream-to-outputstream
+                            IOUtils.copyLarge( (InputStream) value, new FileOutputStream( newFile ) );
+                        } else if ( FileHelper.isSqlDateOrTimeOrTS( value ) ) {
+                            Long l = FileHelper.sqlToLong( value );
+                            Files.write( newFile.toPath(), l.toString().getBytes( FileStore.CHARSET ) );
+                        } else {
+                            String writeString = value.toString();
+                            Files.write( newFile.toPath(), writeString.getBytes( FileStore.CHARSET ) );
+                        }
+
                     }
                 }
-                current = (E) new Long( insertPosition );
+                current = (E) Long.valueOf( insertPosition );
                 inserted = true;
                 return true;
             }
@@ -90,13 +107,16 @@ public class FileModifier<E> extends FileEnumerator<E> {
         }
     }
 
+
     @Override
     public void reset() {
         //insertPosition = 0;
     }
 
+
     @Override
     public void close() {
 
     }
+
 }

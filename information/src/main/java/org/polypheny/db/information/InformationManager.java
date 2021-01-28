@@ -26,7 +26,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
@@ -50,7 +52,13 @@ public class InformationManager {
     private ConcurrentLinkedQueue<InformationObserver> observers = new ConcurrentLinkedQueue<>();
 
     /**
-     * Identifier of this information manager. null for the main information manger.
+     * WebsocketConnection for notifications
+     */
+    @Setter
+    private Session session = null;
+
+    /**
+     * Identifier of this information manager.
      */
     private final String instanceId;
 
@@ -298,14 +306,14 @@ public class InformationManager {
      */
     public void notify( final Information i ) {
         for ( InformationObserver observer : this.observers ) {
-            observer.observeInfos( i );
+            observer.observeInfos( i, instanceId, session );
         }
     }
 
 
     private void notifyPageList() {
         for ( InformationObserver observer : this.observers ) {
-            observer.observePageList( instanceId, this.pages.values().toArray( new InformationPage[0] ) );
+            observer.observePageList( this.pages.values().toArray( new InformationPage[0] ), instanceId, session );
         }
     }
 

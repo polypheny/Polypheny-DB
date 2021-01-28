@@ -37,6 +37,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -49,9 +50,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database", false, true, false, "postgres" ),
-            new AdapterSettingString( "username", false, true, false, "postgres" ),
-            new AdapterSettingString( "password", false, true, false, "" ),
+            new AdapterSettingString( "database", false, true, false, "polypheny" ),
+            new AdapterSettingString( "username", false, true, false, "polypheny" ),
+            new AdapterSettingString( "password", false, true, false, "polypheny" ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
     );
 
@@ -237,6 +238,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     protected String getTypeString( PolyType type ) {
+        if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+            return "BYTEA";
+        }
         switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";

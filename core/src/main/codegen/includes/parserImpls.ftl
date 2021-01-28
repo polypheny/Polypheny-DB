@@ -128,6 +128,8 @@ SqlAlterTable SqlAlterTable(Span s) :
             <DEFAULT_>
             defaultValue = Literal()
         |
+            defaultValue = ArrayConstructor()
+        |
             { defaultValue = null; }
         )
         (

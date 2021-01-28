@@ -27,6 +27,11 @@ import org.polypheny.db.webui.models.SortState;
 public class UIRequest {
 
     /**
+     * Type of a request, e.g. QueryRequest or RelAlgRequest
+     */
+    public String requestType;
+
+    /**
      * The name of the table the data should be fetched from
      */
     public String tableId;
@@ -51,5 +56,10 @@ public class UIRequest {
      * For each column: If and how it should be sorted
      */
     public Map<String, SortState> sortState;
+
+    /**
+     * Request to fetch a result without a limit. Default false.
+     */
+    public boolean noLimit;
 
 }

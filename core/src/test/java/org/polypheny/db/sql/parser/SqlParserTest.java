@@ -267,6 +267,7 @@ public class SqlParserTest {
             "HOURS", "2011",
             "IDENTITY", "92", "99", "2003", "2011", "2014", "c",
             "IF", "92", "99", "2003", "c",
+            "IMAGE", "92", "99", "2003", "2011", "2014", "c",       // NH: added for Polypheny-MM
             "IMMEDIATE", "92", "99", "2003",
             "IMMEDIATELY",
             "IMPORT", "c",
@@ -464,6 +465,7 @@ public class SqlParserTest {
             "SKIP", "2014", "c",
             "SMALLINT", "92", "99", "2003", "2011", "2014", "c",
             "SOME", "92", "99", "2003", "2011", "2014", "c",
+            "SOUND", "92", "99", "2003", "2011", "2014", "c",      // NH: Added for Polypheny-MM
             "SPACE", "92", "99",
             "SPECIFIC", "92", "99", "2003", "2011", "2014", "c",
             "SPECIFICTYPE", "99", "2003", "2011", "2014", "c",
@@ -537,6 +539,7 @@ public class SqlParserTest {
             "VERSION", "2011",
             "VERSIONING", "2011", "2014", "c",
             "VERSIONS", "2011",
+            "VIDEO", "92", "99", "2003", "2011", "2014", "c",        // NH: Added for Polypheny-MM
             "VIEW", "92", "99",
             "VIRTUAL", "92", "99", "2003", "2011", "2014", "c",      // MV: Added for DDL Parser
             "WHEN", "92", "99", "2003", "2011", "2014", "c",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,12 @@ package org.polypheny.db.restapi;
 
 import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
@@ -26,6 +32,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
+import javax.servlet.http.Part;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.iface.Authenticator;
@@ -60,7 +70,8 @@ public class HttpRestServer extends QueryInterface {
     public static final String INTERFACE_DESCRIPTION = "REST-based query interface.";
     @SuppressWarnings("WeakerAccess")
     public static final List<QueryInterfaceSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new QueryInterfaceSettingInteger( "port", false, true, false, 8089 )
+            new QueryInterfaceSettingInteger( "port", false, true, false, 8089 ),
+            new QueryInterfaceSettingInteger( "maxUploadSizeMb", false, true, true, 10000 )
     );
 
     private final Gson gson = new Gson();
@@ -116,15 +127,16 @@ public class HttpRestServer extends QueryInterface {
                     restServer.halt( 401, e.getMessage() );
                 }
             } );
-            restServer.get( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName" ) ), gson::toJson );
-            restServer.post( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName" ) ), gson::toJson );
-            restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName" ) ), gson::toJson );
-            restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName" ) ), gson::toJson );
+            restServer.get( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.GET, q, a, q.params( ":resName" ) ) );
+            restServer.post( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.POST, q, a, q.params( ":resName" ) ) );
+            restServer.delete( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.DELETE, q, a, q.params( ":resName" ) ) );
+            restServer.patch( "/res/:resName", ( q, a ) -> this.processResourceRequest( rest, RequestType.PATCH, q, a, q.params( ":resName" ) ) );
+            restServer.post( "/multipart", "multipart/form-data", ( q, a ) -> this.processMultipart( rest, RequestType.POST, q, a ), gson::toJson );
         } );
     }
 
 
-    private Map<String, Object> processResourceRequest( Rest rest, RequestType type, Request request, Response response, String resourceName ) {
+    String processResourceRequest( Rest rest, RequestType type, Request request, Response response, String resourceName ) {
         try {
             switch ( type ) {
                 case DELETE:
@@ -138,13 +150,14 @@ public class HttpRestServer extends QueryInterface {
                 case PATCH:
                     patchCounter.incrementAndGet();
                     ResourcePatchRequest resourcePatchRequest = requestParser.parsePatchResourceRequest( request, resourceName, gson );
-                    return rest.processPatchResource( resourcePatchRequest, request, response );
+                    return rest.processPatchResource( resourcePatchRequest, request, response, null );
                 case POST:
                     postCounter.incrementAndGet();
                     ResourcePostRequest resourcePostRequest = requestParser.parsePostResourceRequest( request, resourceName, gson );
-                    return rest.processPostResource( resourcePostRequest, request, response );
+                    return rest.processPostResource( resourcePostRequest, request, response, null );
             }
         } catch ( ParserException e ) {
+            log.error( "ParserException", e );
             response.status( 400 );
             Map<String, Object> bodyReturn = new HashMap<>();
             bodyReturn.put( "system", "parser" );
@@ -153,8 +166,9 @@ public class HttpRestServer extends QueryInterface {
             bodyReturn.put( "error", e.getErrorCode().name );
             bodyReturn.put( "error_description", e.getErrorCode().description );
             bodyReturn.put( "violating_input", e.getViolatingInput() );
-            return bodyReturn;
+            return gson.toJson( bodyReturn );
         } catch ( RestException e ) {
+            log.error( "RestException", e );
             response.status( 400 );
             Map<String, Object> bodyReturn = new HashMap<>();
             bodyReturn.put( "system", "rest" );
@@ -162,11 +176,102 @@ public class HttpRestServer extends QueryInterface {
             bodyReturn.put( "error_code", e.getErrorCode().code );
             bodyReturn.put( "error", e.getErrorCode().name );
             bodyReturn.put( "error_description", e.getErrorCode().description );
-            return bodyReturn;
+            return gson.toJson( bodyReturn );
         }
 
         log.error( "processResourceRequest should never reach this point in the code!" );
         throw new RuntimeException( "processResourceRequest should never reach this point in the code!" );
+    }
+
+
+    /**
+     * Initialize a multipart request, so that the values can be fetched with request.raw().getPart( name )
+     *
+     * @param req Spark request
+     */
+    private void initMultipart( Request req ) {
+        //see https://stackoverflow.com/questions/34746900/sparkjava-upload-file-didt-work-in-spark-java-framework
+        String location = System.getProperty( "java.io.tmpdir" + File.separator + "Polypheny-DB" );
+        long maxSizeMB = Long.parseLong( settings.get( "maxUploadSizeMb" ) );
+        long maxFileSize = 1_000_000L * maxSizeMB;
+        long maxRequestSize = 1_000_000L * maxSizeMB;
+        int fileSizeThreshold = 1024;
+        MultipartConfigElement multipartConfigElement = new MultipartConfigElement( location, maxFileSize, maxRequestSize, fileSizeThreshold );
+        req.raw().setAttribute( "org.eclipse.jetty.multipartConfig", multipartConfigElement );
+    }
+
+
+    private String rawPartToString( Part part ) throws IOException, ServletException {
+        return new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+    }
+
+
+    String processMultipart( Rest rest, RequestType type, Request req, Response res ) {
+        Gson gson = new Gson();
+        initMultipart( req );
+
+        Map<String, String> params = new HashMap<>();
+        Map<String, InputStream> inputStreams = new HashMap<>();
+        try {
+
+            for ( Part part : req.raw().getParts() ) {
+                if ( part.getSubmittedFileName() != null ) {
+                    inputStreams.put( part.getName(), part.getInputStream() );
+                } else {
+                    params.put( part.getName(), rawPartToString( part ) );
+                }
+            }
+
+        } catch ( IOException | ServletException e ) {
+            throw new RuntimeException( "Could not process multipart request", e );
+        }
+
+        switch ( type ) {
+            case POST:
+                String resName = params.get( "resName" );
+                String[] projections = params.get( "_project" ) == null ? null : gson.fromJson( params.get( "_project" ), String[].class );
+                List<Object> insertValues = params.get( "data" ) == null ? null : gson.fromJson( params.get( "data" ), List.class );
+                Map<String, String[]> filterMap = new HashMap<>();
+                params.forEach( ( k, v ) -> {
+                    if ( !k.startsWith( "_" ) && !k.equals( "data" ) && !k.equals( "resName" ) ) {
+                        String[] filters;
+                        try {
+                            filters = gson.fromJson( v, String[].class );
+                        } catch ( Throwable t ) {
+                            filters = new String[]{ v };
+                        }
+                        filterMap.put( k, filters );
+                    }
+                } );
+                try {
+                    ResourcePostRequest resourcePatchRequest = requestParser.parsePostMultipartRequest( resName, projections, insertValues );
+                    resourcePatchRequest.useDynamicParams = true;
+                    return rest.processPostResource( resourcePatchRequest, null, null, inputStreams );
+                } catch ( ParserException e ) {
+                    log.error( "ParserException", e );
+                    res.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "parser" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    bodyReturn.put( "violating_input", e.getViolatingInput() );
+                    return gson.toJson( bodyReturn );
+                } catch ( RestException e ) {
+                    log.error( "RestException", e );
+                    res.status( 400 );
+                    Map<String, Object> bodyReturn = new HashMap<>();
+                    bodyReturn.put( "system", "rest" );
+                    bodyReturn.put( "subsystem", e.getErrorCode().subsystem );
+                    bodyReturn.put( "error_code", e.getErrorCode().code );
+                    bodyReturn.put( "error", e.getErrorCode().name );
+                    bodyReturn.put( "error_description", e.getErrorCode().description );
+                    return gson.toJson( bodyReturn );
+                }
+        }
+        log.error( "processMultipart should never reach this point in the code!" );
+        throw new RuntimeException( "processMultipart should never reach this point in the code!" );
     }
 
 
@@ -261,5 +366,7 @@ public class HttpRestServer extends QueryInterface {
             im.removeGroup( informationGroupRequests );
             im.removePage( informationPage );
         }
+
     }
+
 }

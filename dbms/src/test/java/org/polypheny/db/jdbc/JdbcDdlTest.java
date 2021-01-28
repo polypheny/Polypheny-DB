@@ -53,6 +53,7 @@ public class JdbcDdlTest {
             + "ttimestamp TIMESTAMP NOT NULL, "
             + "ttinyint TINYINT NOT NULL, "
             + "tvarchar VARCHAR(20) NOT NULL, "
+            + "tfile FILE NOT NULL, "
             + "PRIMARY KEY (tinteger) )";
 
     private final static String DDLTEST_DATA_SQL = "INSERT INTO ddltest VALUES ("
@@ -67,7 +68,8 @@ public class JdbcDdlTest {
             + "time '11:59:32',"
             + "timestamp '2021-01-01 10:11:15',"
             + "22,"
-            + "'hallo'"
+            + "'hallo',"
+            + "x'6869'"
             + ")";
 
     private final static Object[] DDLTEST_DATA = new Object[]{
@@ -82,7 +84,8 @@ public class JdbcDdlTest {
             Time.valueOf( "11:59:32" ),
             Timestamp.valueOf( "2021-01-01 10:11:15" ),
             (byte) 22,
-            "hallo" };
+            "hallo",
+            "hi".getBytes() };
 
 
     @BeforeClass
@@ -96,7 +99,7 @@ public class JdbcDdlTest {
     @Test
     public void testTypes() throws SQLException {
         // Check if there are new types missing in this test
-        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 12 );
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -160,7 +163,7 @@ public class JdbcDdlTest {
     @Test
     public void nullTest() throws SQLException {
         // Check if there are new types missing in this test
-        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 12 );
+        Assert.assertEquals( "Unexpected number of available types", PolyType.availableTypes().size(), 16 );
 
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -180,6 +183,7 @@ public class JdbcDdlTest {
                         + "ttimestamp TIMESTAMP NULL, "
                         + "ttinyint TINYINT NULL, "
                         + "tvarchar VARCHAR(20) NULL, "
+                        + "tfile FILE NULL, "
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
@@ -189,8 +193,8 @@ public class JdbcDdlTest {
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM ddltest ORDER BY tprimary" ),
                             ImmutableList.of(
-                                    new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null },
-                                    new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null } ) );
+                                    new Object[]{ 1, null, null, null, null, null, null, null, null, null, null, null, null, null },
+                                    new Object[]{ 2, null, null, null, null, null, null, null, null, null, null, null, null, null } ) );
                 } finally {
                     // Drop ddltest table
                     statement.executeUpdate( "DROP TABLE ddltest" );
@@ -334,6 +338,7 @@ public class JdbcDdlTest {
                     statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tbigint" );
                     statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tdate" );
                     statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tvarchar" );
+                    statement.executeUpdate( "ALTER TABLE ddltest DROP COLUMN tfile" );
 
                     // Check
                     TestHelper.checkResultSet(
@@ -371,7 +376,7 @@ public class JdbcDdlTest {
                     // Add columns
                     statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo1 INTEGER NOT NULL DEFAULT 5 BEFORE tbigint" );
                     statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo2 VARCHAR(10) NULL AFTER tinteger" );
-                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo3 BOOLEAN NOT NULL DEFAULT false AFTER tvarchar" );
+                    statement.executeUpdate( "ALTER TABLE ddltest ADD COLUMN foo3 BOOLEAN NOT NULL DEFAULT false AFTER tfile" );
 
                     // Check
                     TestHelper.checkResultSet(
@@ -391,6 +396,7 @@ public class JdbcDdlTest {
                                     DDLTEST_DATA[9],
                                     DDLTEST_DATA[10],
                                     DDLTEST_DATA[11],
+                                    DDLTEST_DATA[12],
                                     false
                             } ) );
 
@@ -441,7 +447,8 @@ public class JdbcDdlTest {
                                     null,
                                     DDLTEST_DATA[9],
                                     DDLTEST_DATA[10],
-                                    DDLTEST_DATA[11]
+                                    DDLTEST_DATA[11],
+                                    DDLTEST_DATA[12],
                             } ) );
                 } finally {
                     // Drop ddltest table
@@ -519,7 +526,7 @@ public class JdbcDdlTest {
                     // Reorder columns
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tbigint SET POSITION AFTER tboolean" );
                     statement.executeUpdate( "ALTER TABLE ddltest MODIFY COLUMN tdecimal SET POSITION BEFORE tdate" );
-                    statement.executeUpdate( "ALTER TABLE \"ddltest\" MODIFY COLUMN \"ttinyint\" SET POSITION AFTER \"tvarchar\"" );
+                    statement.executeUpdate( "ALTER TABLE \"ddltest\" MODIFY COLUMN \"ttinyint\" SET POSITION AFTER \"tfile\"" );
 
                     // Check
                     TestHelper.checkResultSet(
@@ -536,6 +543,7 @@ public class JdbcDdlTest {
                                     DDLTEST_DATA[8],
                                     DDLTEST_DATA[9],
                                     DDLTEST_DATA[11],
+                                    DDLTEST_DATA[12],
                                     DDLTEST_DATA[10],
                             } ) );
                 } finally {
