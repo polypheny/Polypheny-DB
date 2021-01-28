@@ -81,7 +81,7 @@ public class FileTableModify extends TableModify implements FileRel {
                 int i = 0;
                 for ( RexNode src : getSourceExpressionList() ) {
                     if ( src instanceof RexLiteral ) {
-                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), src, false ) );
+                        values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).getValueForFileCondition(), false ) );
                     } else if ( src instanceof RexDynamicParam ) {
                         values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexDynamicParam) src).getIndex(), true ) );
                     } else {

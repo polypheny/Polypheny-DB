@@ -105,10 +105,18 @@ public class Value {
 
     public static List<Value> getUpdates( final List<RexNode> exps, FileImplementor implementor ) {
         List<Value> valueList = new ArrayList<>();
-        int offset = implementor.getColumnNames().size();
-        for ( int i = 0; i < offset; i++ ) {
-            if ( exps.size() > i + offset ) {
-                RexNode lit = exps.get( i + offset );
+        int offset;
+        boolean noCheck;
+        if ( exps.size() == implementor.getColumnNames().size() ) {
+            noCheck = true;
+            offset = 0;
+        } else {
+            noCheck = false;
+            offset = implementor.getColumnNames().size();
+        }
+        for ( int i = offset; i < implementor.getColumnNames().size() + offset; i++ ) {
+            if ( noCheck || exps.size() > i ) {
+                RexNode lit = exps.get( i );
                 if ( lit instanceof RexLiteral ) {
                     valueList.add( new Value( null, ((RexLiteral) lit).getValueForFileCondition(), false ) );
                 } else if ( lit instanceof RexDynamicParam ) {
