@@ -215,6 +215,9 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
                 exportedColumn.physicalTableName,
                 exportedColumn.physicalColumnName );
 
+        // Set column position
+        catalog.updateColumnPlacementPhysicalPosition( adapterId, columnId, exportedColumn.physicalPosition );
+
         // Rest plan cache and implementation cache (not sure if required in this case)
         statement.getQueryProcessor().resetCaches();
     }
