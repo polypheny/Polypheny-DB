@@ -69,6 +69,7 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
@@ -79,6 +80,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -819,14 +821,13 @@ public class CatalogImpl extends Catalog {
      *
      * @param databaseId The id of the database
      * @return The database
-     * @throws UnknownDatabaseException If there is no database with this name.
      */
     @Override
-    public CatalogDatabase getDatabase( long databaseId ) throws UnknownDatabaseException {
+    public CatalogDatabase getDatabase( long databaseId ) {
         try {
             return Objects.requireNonNull( databases.get( databaseId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownDatabaseException( databaseId );
+            throw new UnknownDatabaseIdRuntimeException( databaseId );
         }
     }
 
@@ -946,7 +947,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted schema
      */
     @Override
-    public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws UnknownUserException {
+    public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) {
         CatalogUser owner = getUser( ownerId );
         long id = schemaIdBuilder.getAndIncrement();
         CatalogSchema schema = new CatalogSchema( id, name, databaseId, ownerId, owner.name, schemaType );
@@ -1210,7 +1211,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws UnknownUserException {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1312,7 +1313,7 @@ public class CatalogImpl extends Catalog {
      * @param ownerId Id of the new owner
      */
     @Override
-    public void setTableOwner( long tableId, int ownerId ) throws UnknownUserException {
+    public void setTableOwner( long tableId, int ownerId ) {
         CatalogTable old = getTable( tableId );
         CatalogUser user = getUser( ownerId );
         CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter );
@@ -1916,21 +1917,17 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setCollation( long columnId, Collation collation ) {
-        try {
-            CatalogColumn old = getColumn( columnId );
+        CatalogColumn old = getColumn( columnId );
 
-            if ( old.type.getFamily() != PolyTypeFamily.CHARACTER ) {
-                throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
-            }
-            CatalogColumn column = new CatalogColumn( old.id, old.name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, collation, old.defaultValue );
-            synchronized ( this ) {
-                columns.replace( columnId, column );
-                columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
-            }
-            listeners.firePropertyChange( "column", old, column );
-        } catch ( NullPointerException e ) {
-            throw new UnknownColumnIdRuntimeException( columnId );
+        if ( old.type.getFamily() != PolyTypeFamily.CHARACTER ) {
+            throw new RuntimeException( "Illegal attempt to set collation for a non-char column!" );
         }
+        CatalogColumn column = new CatalogColumn( old.id, old.name, old.tableId, old.schemaId, old.databaseId, old.position, old.type, old.collectionsType, old.length, old.scale, old.dimension, old.cardinality, old.nullable, collation, old.defaultValue );
+        synchronized ( this ) {
+            columns.replace( columnId, column );
+            columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
+        }
+        listeners.firePropertyChange( "column", old, column );
     }
 
 
@@ -1994,32 +1991,28 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void setDefaultValue( long columnId, PolyType type, String defaultValue ) {
-        try {
-            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
-            CatalogColumn column = new CatalogColumn(
-                    old.id,
-                    old.name,
-                    old.tableId,
-                    old.schemaId,
-                    old.databaseId,
-                    old.position,
-                    old.type,
-                    old.collectionsType,
-                    old.length,
-                    old.scale,
-                    old.dimension,
-                    old.cardinality,
-                    old.nullable,
-                    old.collation,
-                    new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) );
-            synchronized ( this ) {
-                columns.replace( columnId, column );
-                columnNames.replace( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name }, column );
-            }
-            listeners.firePropertyChange( "column", old, column );
-        } catch ( NullPointerException e ) {
-            throw new UnknownColumnIdRuntimeException( columnId );
+        CatalogColumn old = getColumn( columnId );
+        CatalogColumn column = new CatalogColumn(
+                old.id,
+                old.name,
+                old.tableId,
+                old.schemaId,
+                old.databaseId,
+                old.position,
+                old.type,
+                old.collectionsType,
+                old.length,
+                old.scale,
+                old.dimension,
+                old.cardinality,
+                old.nullable,
+                old.collation,
+                new CatalogDefaultValue( columnId, type, defaultValue, "defaultValue" ) );
+        synchronized ( this ) {
+            columns.replace( columnId, column );
+            columnNames.replace( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name }, column );
         }
+        listeners.firePropertyChange( "column", old, column );
     }
 
 
@@ -2030,33 +2023,29 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void deleteDefaultValue( long columnId ) {
-        try {
-            CatalogColumn old = Objects.requireNonNull( columns.get( columnId ) );
-            CatalogColumn column = new CatalogColumn(
-                    old.id,
-                    old.name,
-                    old.tableId,
-                    old.schemaId,
-                    old.databaseId,
-                    old.position,
-                    old.type,
-                    old.collectionsType,
-                    old.length,
-                    old.scale,
-                    old.dimension,
-                    old.cardinality,
-                    old.nullable,
-                    old.collation,
-                    null );
-            if ( column.defaultValue != null ) {
-                synchronized ( this ) {
-                    columns.replace( columnId, column );
-                    columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
-                }
-                listeners.firePropertyChange( "column", old, column );
+        CatalogColumn old = getColumn( columnId );
+        CatalogColumn column = new CatalogColumn(
+                old.id,
+                old.name,
+                old.tableId,
+                old.schemaId,
+                old.databaseId,
+                old.position,
+                old.type,
+                old.collectionsType,
+                old.length,
+                old.scale,
+                old.dimension,
+                old.cardinality,
+                old.nullable,
+                old.collation,
+                null );
+        if ( column.defaultValue != null ) {
+            synchronized ( this ) {
+                columns.replace( columnId, column );
+                columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
             }
-        } catch ( NullPointerException e ) {
-            throw new UnknownColumnIdRuntimeException( columnId );
+            listeners.firePropertyChange( "column", old, column );
         }
     }
 
@@ -2083,7 +2072,7 @@ public class CatalogImpl extends Catalog {
             Long primary = getTable( Objects.requireNonNull( keys.get( key ) ).tableId ).primaryKey;
             return primary != null && primary == key;
         } catch ( NullPointerException e ) {
-            throw new RuntimeException( "Unknown Key" );
+            throw new UnknownKeyIdRuntimeException( key );
         }
     }
 
@@ -2579,11 +2568,18 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    public CatalogUser getUser( int userId ) throws UnknownUserException {
+    /**
+     * Get the user with the specified id.
+     *
+     * @param userId The id of the user
+     * @return The user
+     */
+    @Override
+    public CatalogUser getUser( int userId ) {
         try {
             return Objects.requireNonNull( users.get( userId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownUserException( userId );
+            throw new UnknownUserIdRuntimeException( userId );
         }
     }
 

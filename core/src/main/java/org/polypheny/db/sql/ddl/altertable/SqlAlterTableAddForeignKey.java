@@ -109,6 +109,9 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         if ( catalogTable.tableType != TableType.TABLE ) {
             throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
+        if ( refTable.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( referencesTable.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
 
         try {
             List<Long> columnIds = new LinkedList<>();

@@ -17,15 +17,17 @@
 package org.polypheny.db.catalog.exceptions;
 
 
+import lombok.Getter;
+
 public class UnknownUserException extends CatalogException {
 
-    public UnknownUserException( String username ) {
-        super( "There is no user with the username '" + username + "'." );
-    }
+    @Getter
+    private final String userName;
 
 
-    public UnknownUserException( int userId ) {
-        super( "There is no user with the id '" + userId + "'." );
+    public UnknownUserException( String userName ) {
+        super( "There is no user with the username '" + userName + "'." );
+        this.userName = userName;
     }
 
 }

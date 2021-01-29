@@ -173,7 +173,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                 if ( storeInstance == null ) {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
-                            RESOURCE.unknownStoreName( storeName.getSimple() ) );
+                            RESOURCE.unknownAdapter( storeName.getSimple() ) );
                 }
 
                 // Check if there if all required columns are present on this store
@@ -218,7 +218,13 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
                 storeInstance.addIndex( context, Catalog.getInstance().getIndex( indexId ) );
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownSchemaException | UnknownTableException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
+        } catch ( UnknownColumnException e ) {
+            throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
+        } catch ( UnknownSchemaException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
+        } catch ( UnknownTableException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.tableNotFound( e.getTableName() ) );
+        } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );
         }
     }

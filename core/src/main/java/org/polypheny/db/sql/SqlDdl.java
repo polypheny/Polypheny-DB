@@ -122,7 +122,7 @@ public abstract class SqlDdl extends SqlCall {
     protected DataStore getDataStoreInstance( SqlIdentifier storeName ) {
         Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
         if ( adapterInstance == null ) {
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownStoreName( storeName.getSimple() ) );
+            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
         // Make sure it is a data store instance
         if ( adapterInstance instanceof DataStore ) {

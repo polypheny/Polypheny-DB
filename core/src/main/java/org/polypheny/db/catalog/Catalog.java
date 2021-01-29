@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.catalog.exceptions.UnknownCollationIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
@@ -150,16 +151,15 @@ public abstract class Catalog {
      * @return The database
      * @throws UnknownDatabaseException If there is no database with this name.
      */
-    public abstract CatalogDatabase getDatabase( String databaseName ) throws GenericCatalogException, UnknownDatabaseException;
+    public abstract CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException;
 
     /**
      * Returns the database with the given name.
      *
      * @param databaseId The id of the database
      * @return The database
-     * @throws UnknownDatabaseException If there is no database with this name.
      */
-    public abstract CatalogDatabase getDatabase( long databaseId ) throws UnknownDatabaseException;
+    public abstract CatalogDatabase getDatabase( long databaseId );
 
     /**
      * Get all schemas which fit to the specified filter pattern.
@@ -218,7 +218,7 @@ public abstract class Catalog {
      * @param schemaType The type of this schema
      * @return The id of the inserted schema
      */
-    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) throws UnknownUserException;
+    public abstract long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType );
 
     /**
      * Checks weather a schema with the specified name exists in a database.
@@ -335,7 +335,7 @@ public abstract class Catalog {
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) throws UnknownUserException;
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
@@ -367,7 +367,7 @@ public abstract class Catalog {
      * @param tableId The if of the table
      * @param ownerId Id of the new owner
      */
-    public abstract void setTableOwner( long tableId, int ownerId ) throws UnknownUserException;
+    public abstract void setTableOwner( long tableId, int ownerId );
 
     /**
      * Set the primary key of a table
@@ -835,6 +835,14 @@ public abstract class Catalog {
     public abstract CatalogUser getUser( String userName ) throws UnknownUserException;
 
     /**
+     * Get the user with the specified id.
+     *
+     * @param userId The id of the user
+     * @return The user
+     */
+    public abstract CatalogUser getUser( int userId );
+
+    /**
      * Get list of all adapters
      *
      * @return List of adapters
@@ -1038,7 +1046,7 @@ public abstract class Catalog {
                     return c;
                 }
             }
-            throw new UnknownCollationException( id );
+            throw new UnknownCollationIdRuntimeException( id );
         }
 
 

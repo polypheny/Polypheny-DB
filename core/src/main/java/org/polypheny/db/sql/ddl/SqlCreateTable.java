@@ -54,7 +54,6 @@ import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
@@ -266,7 +265,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             for ( DataStore store : stores ) {
                 store.createTable( context, catalogTable );
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownUserException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }

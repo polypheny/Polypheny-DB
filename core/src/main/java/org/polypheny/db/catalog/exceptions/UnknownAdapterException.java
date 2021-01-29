@@ -17,11 +17,17 @@
 package org.polypheny.db.catalog.exceptions;
 
 
+import lombok.Getter;
+
 public class UnknownAdapterException extends CatalogException {
+
+    @Getter
+    private final String adapterName;
 
 
     public UnknownAdapterException( String adapterName ) {
         super( "There is no adapter with name " + adapterName );
+        this.adapterName = adapterName;
     }
 
 }

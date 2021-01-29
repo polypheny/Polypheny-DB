@@ -17,17 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-import lombok.Getter;
+public class UnknownCollationIdRuntimeException extends CatalogRuntimeException {
 
-public class UnknownDatabaseException extends CatalogException {
-
-    @Getter
-    private final String databaseName;
-
-
-    public UnknownDatabaseException( String databaseName ) {
-        super( "There is no database with name " + databaseName );
-        this.databaseName = databaseName;
+    public UnknownCollationIdRuntimeException( int id ) {
+        super( "There is no Collation with id: " + id );
     }
 
 }

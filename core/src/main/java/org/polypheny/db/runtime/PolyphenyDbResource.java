@@ -886,9 +886,6 @@ public interface PolyphenyDbResource {
     @BaseMessage("There needs to be at least one placement per table")
     ExInst<PolyphenyDbException> onlyOnePlacementLeft();
 
-    @BaseMessage("The data store ''{0}'' does not support schema changes!")
-    ExInst<PolyphenyDbException> storeIsSchemaReadOnly( String storeName );
-
     @BaseMessage("The specified data store does not support the index method ''{0}''!")
     ExInst<PolyphenyDbException> unknownIndexMethod( String indexMethod );
 
@@ -906,6 +903,9 @@ public interface PolyphenyDbResource {
 
     @BaseMessage("DDL statements are not allowed for tables of type source!")
     ExInst<PolyphenyDbException> ddlOnSourceTable();
+
+    @BaseMessage("There is no adapter with this unique name: ''{0}''")
+    ExInst<PolyphenyDbException> unknownAdapter( String store );
 
 }
 

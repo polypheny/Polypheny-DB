@@ -17,20 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class CatalogConnectionException extends CatalogException {
+public class UnknownDatabaseIdRuntimeException extends CatalogRuntimeException {
 
-    private Exception exception;
-
-
-    public CatalogConnectionException( String message ) {
-        super( message );
-        exception = null;
-    }
-
-
-    public CatalogConnectionException( String message, Exception e ) {
-        super( message, e );
-        exception = e;
+    public UnknownDatabaseIdRuntimeException( long databaseId ) {
+        super( "There is no database with the id " + databaseId );
     }
 
 }

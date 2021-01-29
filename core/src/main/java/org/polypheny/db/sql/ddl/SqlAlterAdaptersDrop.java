@@ -17,8 +17,9 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -26,21 +27,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
-import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
@@ -104,28 +105,14 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
                 for ( Long tableId : tablesToDrop ) {
                     CatalogTable table = catalog.getTable( tableId );
 
-                    // Check if there are foreign keys referencing this table
-                    List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
-                    try {
-                        List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( tableId );
-                        if ( exportedKeys.size() > 0 ) {
-                            for ( CatalogForeignKey foreignKey : exportedKeys ) {
-                                if ( foreignKey.tableId == tableId ) {
-                                    // If this is a self-reference, drop it later.
-                                    selfRefsToDelete.add( foreignKey );
-                                } else {
-                                    throw new PolyphenyDbException( "Cannot drop table '" + table.getSchemaName() + "." + table.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
-                                }
-                            }
-
-                        }
-                    } catch ( GenericCatalogException e ) {
-                        throw new PolyphenyDbContextException( "Exception while retrieving list of exported keys.", e );
-                    }
-
                     // Make sure that there is only one adapter
                     if ( table.placementsByAdapter.keySet().size() != 1 ) {
-                        throw new RuntimeException( "The data source contains tables with more than one placement. This schould not happen!" );
+                        throw new RuntimeException( "The data source contains tables with more than one placement. This should not happen!" );
+                    }
+
+                    // Make sure table is of type source
+                    if ( table.tableType != TableType.SOURCE ) {
+                        throw new RuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
                     }
 
                     // Inform routing
@@ -160,9 +147,9 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
 
             AdapterManager.getInstance().removeAdapter( catalogAdapter.id );
         } catch ( UnknownAdapterException e ) {
-            throw new RuntimeException( "There is no adapter with this name: " + uniqueNameStr, e );
+            throw SqlUtil.newContextException( uniqueName.getParserPosition(), RESOURCE.unknownAdapter( e.getAdapterName() ) );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not remove data source " + uniqueNameStr, e );
+            throw new RuntimeException( "Could not remove data source from the adapter with the unique name '" + uniqueNameStr + "'!", e );
         }
     }
 

@@ -37,7 +37,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeImpl;
@@ -81,78 +80,74 @@ public class PolySchemaBuilder implements PropertyChangeListener {
 
         SchemaPlus rootSchema = polyphenyDbSchema.plus();
         Catalog catalog = Catalog.getInstance();
-        try {
-            //
-            // Build logical schema
-            CatalogDatabase catalogDatabase = catalog.getDatabase( 1 );
-            for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
-                Map<String, LogicalTable> tableMap = new HashMap<>();
-                SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name ).plus();
-                for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
-                    List<String> columnNames = new LinkedList<>();
-                    final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
-                    final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-                    for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
-                        columnNames.add( catalogColumn.name );
-                        fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
-                        fieldInfo.nullable( catalogColumn.nullable );
-                    }
-                    List<Long> columnIds = new LinkedList<>();
-                    catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
-                    LogicalTable table = new LogicalTable(
-                            catalogTable.id,
-                            catalogTable.getSchemaName(),
-                            catalogTable.name,
-                            columnIds,
-                            columnNames,
-                            RelDataTypeImpl.proto( fieldInfo.build() ) );
-                    s.add( catalogTable.name, table );
-                    tableMap.put( catalogTable.name, table );
+        //
+        // Build logical schema
+        CatalogDatabase catalogDatabase = catalog.getDatabase( 1 );
+        for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
+            Map<String, LogicalTable> tableMap = new HashMap<>();
+            SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, new AbstractSchema(), catalogSchema.name ).plus();
+            for ( CatalogTable catalogTable : catalog.getTables( catalogSchema.id, null ) ) {
+                List<String> columnNames = new LinkedList<>();
+                final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
+                final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+                for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
+                    columnNames.add( catalogColumn.name );
+                    fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
+                    fieldInfo.nullable( catalogColumn.nullable );
+                }
+                List<Long> columnIds = new LinkedList<>();
+                catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
+                LogicalTable table = new LogicalTable(
+                        catalogTable.id,
+                        catalogTable.getSchemaName(),
+                        catalogTable.name,
+                        columnIds,
+                        columnNames,
+                        RelDataTypeImpl.proto( fieldInfo.build() ) );
+                s.add( catalogTable.name, table );
+                tableMap.put( catalogTable.name, table );
 
-                }
-                rootSchema.add( catalogSchema.name, s );
-                tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
-                if ( catalogDatabase.defaultSchemaId != null && catalogSchema.id == catalogDatabase.defaultSchemaId ) {
-                    tableMap.forEach( rootSchema::add );
-                }
-                s.polyphenyDbSchema().setSchema( new LogicalSchema( catalogSchema.name, tableMap ) );
             }
+            rootSchema.add( catalogSchema.name, s );
+            tableMap.forEach( rootSchema.getSubSchema( catalogSchema.name )::add );
+            if ( catalogDatabase.defaultSchemaId != null && catalogSchema.id == catalogDatabase.defaultSchemaId ) {
+                tableMap.forEach( rootSchema::add );
+            }
+            s.polyphenyDbSchema().setSchema( new LogicalSchema( catalogSchema.name, tableMap ) );
+        }
 
-            //
-            // Build adapter schema (physical schema)
-            List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
-            for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
-                for ( CatalogAdapter catalogAdapter : adapters ) {
-                    // Get list of tables on this adapter
-                    Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
-                    for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnAdapterAndSchema( catalogAdapter.id, catalogSchema.id ) ) {
-                        tableIdsPerSchema.putIfAbsent( placement.physicalSchemaName, new HashSet<>() );
-                        tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
-                    }
+        //
+        // Build adapter schema (physical schema)
+        List<CatalogAdapter> adapters = Catalog.getInstance().getAdapters();
+        for ( CatalogSchema catalogSchema : catalog.getSchemas( catalogDatabase.id, null ) ) {
+            for ( CatalogAdapter catalogAdapter : adapters ) {
+                // Get list of tables on this adapter
+                Map<String, Set<Long>> tableIdsPerSchema = new HashMap<>();
+                for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnAdapterAndSchema( catalogAdapter.id, catalogSchema.id ) ) {
+                    tableIdsPerSchema.putIfAbsent( placement.physicalSchemaName, new HashSet<>() );
+                    tableIdsPerSchema.get( placement.physicalSchemaName ).add( placement.tableId );
+                }
 
-                    for ( String physicalSchemaName : tableIdsPerSchema.keySet() ) {
-                        Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
-                        Map<String, Table> physicalTables = new HashMap<>();
-                        Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
-                        final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
-                        adapter.createNewSchema( rootSchema, schemaName );
-                        SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
-                        for ( long tableId : tableIds ) {
-                            CatalogTable catalogTable = catalog.getTable( tableId );
-                            Table table = adapter.createTableSchema(
-                                    catalogTable,
-                                    Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ) );
-                            physicalTables.put( catalog.getTable( tableId ).name, table );
-                            s.add( catalog.getTable( tableId ).name, table );
-                        }
-                        rootSchema.add( schemaName, s );
-                        physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
-                        rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
+                for ( String physicalSchemaName : tableIdsPerSchema.keySet() ) {
+                    Set<Long> tableIds = tableIdsPerSchema.get( physicalSchemaName );
+                    Map<String, Table> physicalTables = new HashMap<>();
+                    Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
+                    final String schemaName = buildAdapterSchemaName( catalogAdapter.uniqueName, catalogSchema.name, physicalSchemaName );
+                    adapter.createNewSchema( rootSchema, schemaName );
+                    SchemaPlus s = new SimplePolyphenyDbSchema( polyphenyDbSchema, adapter.getCurrentSchema(), schemaName ).plus();
+                    for ( long tableId : tableIds ) {
+                        CatalogTable catalogTable = catalog.getTable( tableId );
+                        Table table = adapter.createTableSchema(
+                                catalogTable,
+                                Catalog.getInstance().getColumnPlacementsOnAdapterSortedByPhysicalPosition( adapter.getAdapterId(), catalogTable.id ) );
+                        physicalTables.put( catalog.getTable( tableId ).name, table );
+                        s.add( catalog.getTable( tableId ).name, table );
                     }
+                    rootSchema.add( schemaName, s );
+                    physicalTables.forEach( rootSchema.getSubSchema( schemaName )::add );
+                    rootSchema.getSubSchema( schemaName ).polyphenyDbSchema().setSchema( adapter.getCurrentSchema() );
                 }
             }
-        } catch ( UnknownDatabaseException e ) {
-            throw new RuntimeException( "Something went wrong while retrieving the current schema from the catalog.", e );
         }
 
         return polyphenyDbSchema;

@@ -23,8 +23,4 @@ public class UnknownCollationException extends CatalogException {
         super( "There is no Collation with name: " + name );
     }
 
-
-    public UnknownCollationException( int id ) {
-        super( "There is no Collation with id: " + id );
-    }
 }

@@ -17,17 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-import lombok.Getter;
+public class UnknownUserIdRuntimeException extends CatalogRuntimeException {
 
-public class UnknownDatabaseException extends CatalogException {
-
-    @Getter
-    private final String databaseName;
-
-
-    public UnknownDatabaseException( String databaseName ) {
-        super( "There is no database with name " + databaseName );
-        this.databaseName = databaseName;
+    public UnknownUserIdRuntimeException( int userId ) {
+        super( "There is no user with the id '" + userId + "'." );
     }
 
 }

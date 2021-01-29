@@ -131,7 +131,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
                 }
             }
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not deploy store", e );
+            throw new RuntimeException( "Could not deploy adapter", e );
         }
     }
 

@@ -1413,7 +1413,7 @@ public class DbmsMeta implements ProtobufMeta {
         final CatalogDatabase database;
         try {
             database = catalog.getDatabase( databaseName );
-        } catch ( GenericCatalogException | UnknownDatabaseException e ) {
+        } catch ( UnknownDatabaseException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         assert database != null;
@@ -1423,8 +1423,8 @@ public class DbmsMeta implements ProtobufMeta {
         // Check schema access
         final CatalogSchema schema;
         try {
-            schema = catalog.getSchema( database.name, defaultSchemaName );
-        } catch ( UnknownSchemaException | UnknownDatabaseException e ) {
+            schema = catalog.getSchema( database.id, defaultSchemaName );
+        } catch ( UnknownSchemaException e ) {
             throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
         }
         assert schema != null;

@@ -17,20 +17,23 @@
 package org.polypheny.db.catalog.exceptions;
 
 
+import lombok.Getter;
+
 public class UnknownSchemaException extends CatalogException {
+
+    @Getter
+    private final String schemaName;
+
 
     public UnknownSchemaException( String databaseName, String schemaName ) {
         super( "There is no schema with name '" + schemaName + "' in the database '" + databaseName + "'" );
+        this.schemaName = schemaName;
     }
 
 
     public UnknownSchemaException( long databaseId, String schemaName ) {
         super( "There is no schema with name '" + schemaName + "' in the database with the id '" + databaseId + "'" );
-    }
-
-
-    public UnknownSchemaException( long schemaId ) {
-        super( "There is no schema with the id '" + schemaId + "'" );
+        this.schemaName = schemaName;
     }
 
 }

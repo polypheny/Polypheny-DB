@@ -87,7 +87,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
-                    RESOURCE.unknownStoreName( storeName.getSimple() ) );
+                    RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
         // Check whether this placement already exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
