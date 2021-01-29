@@ -43,7 +43,6 @@ import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -405,9 +404,8 @@ public abstract class Catalog {
      * @param adapterId The id of the adapter
      * @param columnId The id of the column
      * @return The specific column placement
-     * @throws GenericCatalogException A generic catalog exception
      */
-    public abstract CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId ) throws GenericCatalogException;
+    public abstract CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId );
 
 
     /**
@@ -461,7 +459,7 @@ public abstract class Catalog {
      * @param schemaId The id of the schema
      * @return List of column placements on this adapter and schema
      */
-    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId ) throws GenericCatalogException;
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
 
 
     /**
@@ -471,7 +469,17 @@ public abstract class Catalog {
      * @param columnId The id of the column
      * @param placementType The new type of placement
      */
-    public abstract void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType ) throws UnknownColumnPlacementException;
+    public abstract void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType );
+
+
+    /**
+     * Update physical position of a column placement on a specified adapter.
+     *
+     * @param adapterId The id of the adapter
+     * @param columnId The id of the column
+     * @param position The physical position to set
+     */
+    public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position );
 
 
     /**
@@ -483,7 +491,7 @@ public abstract class Catalog {
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
      */
-    public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws UnknownColumnPlacementException;
+    public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName );
 
 
     /**
@@ -1165,7 +1173,8 @@ public abstract class Catalog {
 
     public enum PlacementType {
         MANUAL( 1 ),
-        AUTOMATIC( 2 );
+        AUTOMATIC( 2 ),
+        STATIC( 3 );
 
         private final int id;
 

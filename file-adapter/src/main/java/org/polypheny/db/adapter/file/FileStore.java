@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -119,7 +119,7 @@ public class FileStore extends DataStore {
             for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
                 catalog.updateColumnPlacementPhysicalNames( getAdapterId(), placement.columnId, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ), getPhysicalColumnName( placement.columnId ) );
             }
-        } catch ( UnknownColumnPlacementException e ) {
+        } catch ( UnknownColumnPlacementRuntimeException e ) {
             throw new RuntimeException( "Could not create table", e );
         }
         for ( Long colId : catalogTable.columnIds ) {
@@ -160,7 +160,7 @@ public class FileStore extends DataStore {
                     currentSchema.getSchemaName(),
                     getPhysicalTableName( catalogTable.id ),
                     getPhysicalColumnName( catalogColumn.id ) );
-        } catch ( UnknownColumnPlacementException e ) {
+        } catch ( UnknownColumnPlacementRuntimeException e ) {
             throw new RuntimeException( e );
         }
     }

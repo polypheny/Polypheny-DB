@@ -38,57 +38,57 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER STORES DROP storeName} statement.
+ * Parse tree for {@code ALTER ADAPTERS DROP uniqueName} statement.
  */
 @Slf4j
-public class SqlAlterStoresDrop extends SqlAlter {
+public class SqlAlterAdaptersDrop extends SqlAlter {
 
-    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER STORES DROP", SqlKind.OTHER_DDL );
+    private static final SqlOperator OPERATOR = new SqlSpecialOperator( "ALTER ADAPTERS DROP", SqlKind.OTHER_DDL );
 
-    private final SqlNode storeName;
+    private final SqlNode uniqueName;
 
 
     /**
      * Creates a SqlAlterSchemaOwner.
      */
-    public SqlAlterStoresDrop( SqlParserPos pos, SqlNode storeName ) {
+    public SqlAlterAdaptersDrop( SqlParserPos pos, SqlNode uniqueName ) {
         super( OPERATOR, pos );
-        this.storeName = Objects.requireNonNull( storeName );
+        this.uniqueName = Objects.requireNonNull( uniqueName );
     }
 
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( storeName );
+        return ImmutableNullableList.of( uniqueName );
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "STORES" );
+        writer.keyword( "ADAPTERS" );
         writer.keyword( "DROP" );
-        storeName.unparse( writer, leftPrec, rightPrec );
+        uniqueName.unparse( writer, leftPrec, rightPrec );
     }
 
 
     @Override
     public void execute( Context context, Statement statement ) {
-        String storeNameStr = storeName.toString();
-        if ( storeNameStr.startsWith( "'" ) ) {
-            storeNameStr = storeNameStr.substring( 1 );
+        String uniqueNameStr = uniqueName.toString();
+        if ( uniqueNameStr.startsWith( "'" ) ) {
+            uniqueNameStr = uniqueNameStr.substring( 1 );
         }
-        if ( storeNameStr.endsWith( "'" ) ) {
-            storeNameStr = StringUtils.chop( storeNameStr );
+        if ( uniqueNameStr.endsWith( "'" ) ) {
+            uniqueNameStr = StringUtils.chop( uniqueNameStr );
         }
 
         try {
-            CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( storeNameStr );
+            CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( uniqueNameStr );
             AdapterManager.getInstance().removeAdapter( catalogAdapter.id );
         } catch ( UnknownAdapterException e ) {
-            throw new RuntimeException( "There is no adapter with this name: " + storeNameStr, e );
+            throw new RuntimeException( "There is no adapter with this name: " + uniqueNameStr, e );
         } catch ( Exception e ) {
-            throw new RuntimeException( "Could not remove store " + storeNameStr, e );
+            throw new RuntimeException( "Could not remove data source " + uniqueNameStr, e );
         }
     }
 

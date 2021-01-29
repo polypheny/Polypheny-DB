@@ -51,7 +51,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -253,16 +253,12 @@ public class CassandraStore extends DataStore {
         this.session.execute( createTable.build() );
 
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
-            try {
-                catalog.updateColumnPlacementPhysicalNames(
-                        getAdapterId(),
-                        placement.columnId,
-                        this.dbKeyspace, // TODO MV: physical schema name
-                        physicalTableName,
-                        physicalNameProvider.generatePhysicalColumnName( placement.columnId ) );
-            } catch ( UnknownColumnPlacementException e ) {
-                throw new RuntimeException( e );
-            }
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    placement.columnId,
+                    this.dbKeyspace, // TODO MV: physical schema name
+                    physicalTableName,
+                    physicalNameProvider.generatePhysicalColumnName( placement.columnId ) );
         }
     }
 
@@ -298,7 +294,7 @@ public class CassandraStore extends DataStore {
                     this.dbKeyspace,
                     physicalTableName,
                     physicalColumnName );
-        } catch ( UnknownColumnPlacementException e ) {
+        } catch ( UnknownColumnPlacementRuntimeException e ) {
             throw new RuntimeException( e );
         }
     }

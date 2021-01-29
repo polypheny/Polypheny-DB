@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownColumnPlacementException extends CatalogException {
+public class UnknownColumnPlacementRuntimeException extends CatalogRuntimeException {
 
 
-    public UnknownColumnPlacementException( long adapterId, long columnId ) {
+    public UnknownColumnPlacementRuntimeException( long adapterId, long columnId ) {
         super( "There is no column placement for column id '" + columnId + "' on adapter with id '" + adapterId + "'" );
     }
 

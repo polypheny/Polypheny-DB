@@ -34,7 +34,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptCluster;
@@ -71,12 +70,8 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Check Lists
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
-        try {
-            for ( CatalogColumn catalogColumn : columns ) {
-                columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
-            }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
+        for ( CatalogColumn catalogColumn : columns ) {
+            columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
         }
 
         List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
@@ -212,22 +207,18 @@ public class DataMigratorImpl implements DataMigrator {
         RexNode condition = null;
         CatalogTable catalogTable = Catalog.getInstance().getTable( to.get( 0 ).tableId );
         CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-        try {
-            for ( long cid : primaryKey.columnIds ) {
-                CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( to.get( 0 ).adapterId, cid );
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
-                RexNode c = builder.equals(
-                        builder.field( ccp.getLogicalColumnName() ),
-                        new RexDynamicParam( catalogColumn.getRelDataType( typeFactory ), (int) catalogColumn.id )
-                );
-                if ( condition == null ) {
-                    condition = c;
-                } else {
-                    condition = builder.and( condition, c );
-                }
+        for ( long cid : primaryKey.columnIds ) {
+            CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( to.get( 0 ).adapterId, cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            RexNode c = builder.equals(
+                    builder.field( ccp.getLogicalColumnName() ),
+                    new RexDynamicParam( catalogColumn.getRelDataType( typeFactory ), (int) catalogColumn.id )
+            );
+            if ( condition == null ) {
+                condition = c;
+            } else {
+                condition = builder.and( condition, c );
             }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
         builder = builder.filter( condition );
 
@@ -297,23 +288,19 @@ public class DataMigratorImpl implements DataMigrator {
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        try {
-            for ( long cid : table.columnIds ) {
-                if ( columnIds.contains( cid ) ) {
-                    if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                        placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
-                    } else {
-                        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacements( cid ) ) {
-                            if ( placement.adapterId != excludingAdapterId ) {
-                                placementList.add( placement );
-                                break;
-                            }
+        for ( long cid : table.columnIds ) {
+            if ( columnIds.contains( cid ) ) {
+                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
+                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+                } else {
+                    for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacements( cid ) ) {
+                        if ( placement.adapterId != excludingAdapterId ) {
+                            placementList.add( placement );
+                            break;
                         }
                     }
                 }
             }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
 
         return placementList;

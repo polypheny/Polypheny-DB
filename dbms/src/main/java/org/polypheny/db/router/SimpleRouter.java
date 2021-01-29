@@ -27,7 +27,6 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -68,16 +67,12 @@ public class SimpleRouter extends AbstractRouter {
 
         // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        try {
-            for ( long cid : table.columnIds ) {
-                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
-                } else {
-                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
-                }
+        for ( long cid : table.columnIds ) {
+            if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
+                placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+            } else {
+                placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
             }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
 
         return placementList;

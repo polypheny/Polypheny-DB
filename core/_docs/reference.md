@@ -108,8 +108,8 @@ alterStatement:
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT '(' columnName [ , columnName ]* ')' ON STORE storeUniqueName 
      | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT ON STORE storeUniqueName
      | ALTER CONFIG key SET value
-     | ALTER STORES ADD storeName USING adapterClass WITH config 
-     | ALTER STORES DROP storeName
+     | ALTER ADAPTERS ADD uniqueName USING adapterClass WITH config 
+     | ALTER ADAPTERS DROP uniqueName
      | ALTER INTERFACES ADD uniqueName USING clazzName WITH config 
      | ALTER INTERFACES DROP uniqueName
 
@@ -312,6 +312,7 @@ ABSENT,
 ABSOLUTE,
 ACTION,
 ADA,
+ADAPTERS,
 ADD,
 ADMIN,
 AFTER,
@@ -886,7 +887,6 @@ STATEMENT,
 **STDDEV_SAMP**,
 STORE,
 **STORED**,
-STORES,
 **STREAM**,
 STRUCTURE,
 STYLE,

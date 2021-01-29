@@ -35,7 +35,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
@@ -482,17 +481,13 @@ public abstract class AbstractRouter implements Router {
             }
 
             // Add primary key
-            try {
-                for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
-                    for ( CatalogColumn pkColumn : pkColumns ) {
-                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
-                        if ( !entry.getValue().contains( pkPlacement ) ) {
-                            entry.getValue().add( pkPlacement );
-                        }
+            for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
+                for ( CatalogColumn pkColumn : pkColumns ) {
+                    CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
+                    if ( !entry.getValue().contains( pkPlacement ) ) {
+                        entry.getValue().add( pkPlacement );
                     }
                 }
-            } catch ( GenericCatalogException e ) {
-                throw new RuntimeException( e );
             }
 
             Deque<String> queue = new LinkedList<>();

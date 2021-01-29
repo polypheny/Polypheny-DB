@@ -16,8 +16,11 @@
 
 package org.polypheny.db.adapter;
 
+import java.util.List;
 import java.util.Map;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.polypheny.db.type.PolyType;
 
 public abstract class DataSource extends Adapter {
 
@@ -30,8 +33,27 @@ public abstract class DataSource extends Adapter {
         this.dataReadOnly = dataReadOnly;
     }
 
-    public Map<String, String> getCurrentSettings() {
-        return settings;
+
+    public abstract Map<String, List<ExportedColumn>> getExportedColumns();
+
+
+    @AllArgsConstructor
+    public static class ExportedColumn {
+
+        public final String name;
+        public final PolyType type;
+        public final PolyType collectionsType;
+        public final Integer length;
+        public final Integer scale;
+        public final Integer dimension;
+        public final Integer cardinality;
+        public final boolean nullable;
+        public final String physicalSchemaName;
+        public final String physicalTableName;
+        public final String physicalColumnName;
+        public final int physicalPosition;
+        public final boolean primary;
+
     }
 
 }

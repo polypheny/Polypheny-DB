@@ -66,7 +66,7 @@ import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
@@ -586,6 +586,7 @@ public class CatalogImpl extends Catalog {
 
             addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
         }
+        /*
         if ( !adapterNames.containsKey( "csv" ) ) {
             Map<String, String> csvSettings = new HashMap<>();
             csvSettings.put( "directory", "classpath://hr" );
@@ -610,7 +611,7 @@ public class CatalogImpl extends Catalog {
                 addTable( "work", schemaId, systemId, TableType.SOURCE, null );
             }
             addDefaultCsvColumns( csv );
-        }
+        }*/
 
         ////////////////////////
         // init query interfaces
@@ -1422,18 +1423,20 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public CatalogColumnPlacement getColumnPlacement( int storeId, long columnId ) throws GenericCatalogException {
+    public CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId ) {
         try {
-            return Objects.requireNonNull( columnPlacements.get( new Object[]{ storeId, columnId } ) );
+            return Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
         } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+            getAdapter( adapterId );
+            getColumn( columnId );
+            throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
 
 
     @Override
-    public boolean checkIfExistsColumnPlacement( int storeId, long columnId ) {
-        CatalogColumnPlacement placement = columnPlacements.get( new Object[]{ storeId, columnId } );
+    public boolean checkIfExistsColumnPlacement( int adapterId, long columnId ) {
+        CatalogColumnPlacement placement = columnPlacements.get( new Object[]{ adapterId, columnId } );
         return placement != null;
     }
 
@@ -1496,11 +1499,13 @@ public class CatalogImpl extends Catalog {
      * @return List of column placements on this adapter and schema
      */
     @Override
-    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId ) throws GenericCatalogException {
+    public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId ) {
         try {
             return getColumnPlacementsOnAdapter( adapterId ).stream().filter( p -> Objects.requireNonNull( columns.get( p.columnId ) ).schemaId == schemaId ).collect( Collectors.toList() );
         } catch ( NullPointerException e ) {
-            throw new GenericCatalogException( e );
+            getAdapter( adapterId );
+            getSchema( schemaId );
+            return new ArrayList<>();
         }
     }
 
@@ -1513,7 +1518,7 @@ public class CatalogImpl extends Catalog {
      * @param placementType The new type of placement
      */
     @Override
-    public void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType ) throws UnknownColumnPlacementException {
+    public void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType ) {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
@@ -1525,13 +1530,48 @@ public class CatalogImpl extends Catalog {
                     old.physicalSchemaName,
                     old.physicalTableName,
                     old.physicalColumnName,
-                    physicalPositionBuilder.getAndIncrement() );
+                    old.physicalPosition );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnPlacementException( adapterId, columnId );
+            getAdapter( adapterId );
+            getColumn( columnId );
+            throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
+        }
+    }
+
+
+    /**
+     * Update physical position of a column placement on a specified adapter.
+     *
+     * @param adapterId The id of the adapter
+     * @param columnId The id of the column
+     * @param position The physical position to set
+     */
+    @Override
+    public void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position ) {
+        try {
+            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
+            CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.tableId,
+                    old.columnId,
+                    old.adapterId,
+                    old.adapterUniqueName,
+                    old.placementType,
+                    old.physicalSchemaName,
+                    old.physicalTableName,
+                    old.physicalColumnName,
+                    position );
+            synchronized ( this ) {
+                columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
+            }
+            listeners.firePropertyChange( "columnPlacement", old, placement );
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getColumn( columnId );
+            throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
 
@@ -1546,7 +1586,7 @@ public class CatalogImpl extends Catalog {
      * @param physicalColumnName The physical column name
      */
     @Override
-    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) throws UnknownColumnPlacementException {
+    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(
@@ -1564,7 +1604,9 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "columnPlacement", old, placement );
         } catch ( NullPointerException e ) {
-            throw new UnknownColumnPlacementException( adapterId, columnId );
+            getAdapter( adapterId );
+            getColumn( columnId );
+            throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
         }
     }
 
