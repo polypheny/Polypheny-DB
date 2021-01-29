@@ -23,14 +23,17 @@ import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
@@ -43,34 +46,31 @@ import org.polypheny.db.util.ImmutableNullableList;
 
 
 /**
- * Parse tree for {@code ALTER TABLE name ADD COLUMN name} statement.
+ * Parse tree for {@code ALTER TABLE name ADD COLUMN columnPhysical AS columnLogical} statement.
  */
 @Slf4j
-public class SqlAlterTableAddColumn extends SqlAlterTable {
+public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
 
     private final SqlIdentifier table;
-    private final SqlIdentifier column;
-    private final SqlDataTypeSpec type;
-    private final boolean nullable;
+    private final SqlIdentifier columnPhysical;
+    private final SqlIdentifier columnLogical;
     private final SqlNode defaultValue; // Can be null
     private final SqlIdentifier beforeColumnName; // Can be null
     private final SqlIdentifier afterColumnName; // Can be null
 
 
-    public SqlAlterTableAddColumn(
+    public SqlAlterSourceTableAddColumn(
             SqlParserPos pos,
             SqlIdentifier table,
-            SqlIdentifier column,
-            SqlDataTypeSpec type,
-            boolean nullable,
+            SqlIdentifier columnPhysical,
+            SqlIdentifier columnLogical,
             SqlNode defaultValue,
             SqlIdentifier beforeColumnName,
             SqlIdentifier afterColumnName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
-        this.column = Objects.requireNonNull( column );
-        this.type = Objects.requireNonNull( type );
-        this.nullable = nullable;
+        this.columnPhysical = Objects.requireNonNull( columnPhysical );
+        this.columnLogical = Objects.requireNonNull( columnLogical );
         this.defaultValue = defaultValue;
         this.beforeColumnName = beforeColumnName;
         this.afterColumnName = afterColumnName;
@@ -79,7 +79,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( table, column, type );
+        return ImmutableNullableList.of( table, columnPhysical, columnLogical );
     }
 
 
@@ -90,13 +90,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         table.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "ADD" );
         writer.keyword( "COLUMN" );
-        column.unparse( writer, leftPrec, rightPrec );
-        type.unparse( writer, leftPrec, rightPrec );
-        if ( nullable ) {
-            writer.keyword( "NULL" );
-        } else {
-            writer.keyword( "NOT NULL" );
-        }
+        columnPhysical.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "AS" );
+        columnLogical.unparse( writer, leftPrec, rightPrec );
         if ( defaultValue != null ) {
             writer.keyword( "DEFAULT" );
             defaultValue.unparse( writer, leftPrec, rightPrec );
@@ -113,10 +109,11 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
 
     @Override
     public void execute( Context context, Statement statement ) {
+        Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( column.names.size() != 1 ) {
-            throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
+        if ( columnLogical.names.size() != 1 ) {
+            throw new RuntimeException( "No FQDN allowed here: " + columnLogical.toString() );
         }
 
         CatalogColumn beforeColumn = null;
@@ -128,21 +125,46 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
         }
 
-        // Check if the column either allows null values or has a default value defined.
-        if ( defaultValue == null && !nullable ) {
-            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
+        if ( catalog.checkIfExistsColumn( catalogTable.id, columnLogical.getSimple() ) ) {
+            throw SqlUtil.newContextException( columnLogical.getParserPosition(), RESOURCE.columnExists( columnLogical.getSimple() ) );
         }
 
-        if ( Catalog.getInstance().checkIfExistsColumn( catalogTable.id, column.getSimple() ) ) {
-            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
+        // Make sure that the table is of table type SOURCE
+        if ( catalogTable.tableType != TableType.SOURCE ) {
+            throw new RuntimeException( "Table '" + catalogTable.name + "' is not of type SOURCE!" );
         }
 
-        // Make sure that all adapters are of type store (and not source)
-        for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
-            getDataStoreInstance( storeId );
+        // Make sure there is only one adapter
+        if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+            throw new RuntimeException( "The table has an unexpected number of placements!" );
         }
 
-        List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
+        int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+        CatalogAdapter catalogAdapter = catalog.getAdapter( adapterId );
+        DataSource dataSource = (DataSource) AdapterManager.getInstance().getAdapter( adapterId );
+
+        String physicalTableName = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).physicalTableName;
+        List<ExportedColumn> exportedColumns = dataSource.getExportedColumns().get( physicalTableName );
+
+        // Check if physicalColumnName is valid
+        ExportedColumn exportedColumn = null;
+        for ( ExportedColumn ec : exportedColumns ) {
+            if ( ec.physicalColumnName.equalsIgnoreCase( columnPhysical.getSimple() ) ) {
+                exportedColumn = ec;
+            }
+        }
+        if ( exportedColumn == null ) {
+            throw new RuntimeException( "Invalid physical column name '" + columnPhysical.getSimple() + "'!" );
+        }
+
+        // Make sure this physical column has not already been added to this table
+        for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+            if ( ccp.physicalColumnName.equalsIgnoreCase( columnPhysical.getSimple() ) ) {
+                throw new RuntimeException( "The physical column '" + columnPhysical.getSimple() + "' has already been added to this table!" );
+            }
+        }
+
+        List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
         int position = columns.size() + 1;
         if ( beforeColumn != null || afterColumn != null ) {
             if ( beforeColumn != null ) {
@@ -152,25 +174,24 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             }
             // Update position of the other columns
             for ( int i = columns.size(); i >= position; i-- ) {
-                Catalog.getInstance().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
+                catalog.setColumnPosition( columns.get( i - 1 ).id, i + 1 );
             }
         }
-        final PolyType collectionsType = type.getCollectionsTypeName() == null ?
-                null : PolyType.get( type.getCollectionsTypeName().getSimple() );
-        long columnId = Catalog.getInstance().addColumn(
-                column.getSimple(),
+
+        long columnId = catalog.addColumn(
+                columnLogical.getSimple(),
                 catalogTable.id,
                 position,
-                PolyType.get( type.getTypeName().getSimple() ),
-                collectionsType,
-                type.getPrecision() == -1 ? null : type.getPrecision(),
-                type.getScale() == -1 ? null : type.getScale(),
-                type.getDimension() == -1 ? null : type.getDimension(),
-                type.getCardinality() == -1 ? null : type.getCardinality(),
-                nullable,
+                exportedColumn.type,
+                exportedColumn.collectionsType,
+                exportedColumn.length,
+                exportedColumn.scale,
+                exportedColumn.dimension,
+                exportedColumn.cardinality,
+                exportedColumn.nullable,
                 Collation.CASE_INSENSITIVE
         );
-        CatalogColumn addedColumn = Catalog.getInstance().getColumn( columnId );
+        CatalogColumn addedColumn = catalog.getColumn( columnId );
 
         // Add default value
         if ( defaultValue != null ) {
@@ -179,26 +200,20 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             if ( v.startsWith( "'" ) ) {
                 v = v.substring( 1, v.length() - 1 );
             }
-            Catalog.getInstance().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
+            catalog.setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
 
             // Update addedColumn variable
-            addedColumn = Catalog.getInstance().getColumn( columnId );
+            addedColumn = catalog.getColumn( columnId );
         }
 
-        // Ask router on which stores this column shall be placed
-        List<DataStore> stores = statement.getRouter().addColumn( catalogTable, statement );
-
-        // Add column on underlying data stores and insert default value
-        for ( DataStore store : stores ) {
-            Catalog.getInstance().addColumnPlacement(
-                    store.getAdapterId(),
-                    addedColumn.id,
-                    PlacementType.AUTOMATIC,
-                    null, // Will be set later
-                    null, // Will be set later
-                    null ); // Will be set later
-            AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
-        }
+        // Add column placement
+        catalog.addColumnPlacement(
+                adapterId,
+                addedColumn.id,
+                PlacementType.STATIC,
+                exportedColumn.physicalSchemaName,
+                exportedColumn.physicalTableName,
+                exportedColumn.physicalColumnName );
 
         // Rest plan cache and implementation cache (not sure if required in this case)
         statement.getQueryProcessor().resetCaches();

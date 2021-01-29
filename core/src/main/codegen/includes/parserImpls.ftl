@@ -89,6 +89,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final String onUpdate;
     final String onDelete;
     final boolean unique;
+    final SqlIdentifier physicalName;
 }
 {
     <TABLE>
@@ -116,32 +117,55 @@ SqlAlterTable SqlAlterTable(Span s) :
     |
         <ADD> <COLUMN>
         name = SimpleIdentifier()
-        type = DataType()
         (
-            <NULL> { nullable = true; }
+            type = DataType()
+            (
+                <NULL> { nullable = true; }
+            |
+                <NOT> <NULL> { nullable = false; }
+            |
+                { nullable = true; }
+            )
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
+            (
+                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+            |
+                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+            |
+                { afterColumn = null; beforeColumn = null; }
+            )
+            {
+                return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
+            }
         |
-            <NOT> <NULL> { nullable = false; }
-        |
-            { nullable = true; }
+            <AS>
+            physicalName = SimpleIdentifier()
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
+            (
+                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+            |
+                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+            |
+                { afterColumn = null; beforeColumn = null; }
+            )
+            {
+                return new SqlAlterSourceTableAddColumn(s.end(this), table, name, physicalName, defaultValue, beforeColumn, afterColumn);
+            }
         )
-        (
-            <DEFAULT_>
-            defaultValue = Literal()
-        |
-            defaultValue = ArrayConstructor()
-        |
-            { defaultValue = null; }
-        )
-        (
-            <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
-        |
-            <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
-        |
-            { afterColumn = null; beforeColumn = null; }
-        )
-        {
-            return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
-        }
     |
         <DROP> <COLUMN>
         column = SimpleIdentifier()
