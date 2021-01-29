@@ -30,4 +30,8 @@ public abstract class DataSource extends Adapter {
         this.dataReadOnly = dataReadOnly;
     }
 
+    public Map<String, String> getCurrentSettings() {
+        return settings;
+    }
+
 }

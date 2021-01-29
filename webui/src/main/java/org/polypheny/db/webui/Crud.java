@@ -92,6 +92,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AdapterSetting;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -299,6 +300,8 @@ public class Crud implements InformationObserver {
             catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
             if ( catalogTable.tableType == TableType.TABLE ) {
                 result.setType( ResultType.TABLE );
+            } else if ( catalogTable.tableType == TableType.SOURCE ) {
+                result.setType( ResultType.VIEW );
             } else if ( catalogTable.tableType == TableType.VIEW ) {
                 result.setType( ResultType.VIEW );
             } else {
@@ -375,7 +378,13 @@ public class Crud implements InformationObserver {
                     ArrayList<SidebarElement> viewTree = new ArrayList<>();
                     List<CatalogTable> tables = catalog.getTables( schema.id, null );
                     for ( CatalogTable table : tables ) {
-                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, "fa fa-table" );
+                        String icon = "fa fa-table";
+                        if ( table.tableType == TableType.SOURCE ) {
+                            icon = "fa fa-plug";
+                        } else if ( table.tableType == TableType.VIEW ) {
+                            icon = "icon-eye";
+                        }
+                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
 
                         if ( request.depth > 2 ) {
                             List<CatalogColumn> columns = catalog.getColumns( table.id );
@@ -383,7 +392,7 @@ public class Crud implements InformationObserver {
                                 tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
-                        if ( table.tableType == TableType.TABLE ) {
+                        if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
                             tableTree.add( tableElement );
                         } else if ( request.views && table.tableType == TableType.VIEW ) {
                             viewTree.add( tableElement );
@@ -1721,7 +1730,13 @@ public class Crud implements InformationObserver {
 
             // Get functional indexes
             for ( Integer storeId : catalogTable.placementsByAdapter.keySet() ) {
-                DataStore store = AdapterManager.getInstance().getStore( storeId );
+                Adapter adapter = AdapterManager.getInstance().getAdapter( storeId );
+                DataStore store;
+                if ( adapter instanceof DataStore ) {
+                    store = (DataStore) adapter;
+                } else {
+                    break;
+                }
                 for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
                     String[] arr = new String[5];
                     arr[0] = "";
@@ -1879,11 +1894,11 @@ public class Crud implements InformationObserver {
     String getStores( final Request req, final Response res ) {
         ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
         DataStore[] out = stores.values().toArray( new DataStore[0] );
-        return storeSerializer().toJson( out, DataStore[].class );
+        return adapterSerializer().toJson( out, DataStore[].class );
     }
 
 
-    private Gson storeSerializer() {
+    private Gson adapterSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<DataStore> storeSerializer = ( src, typeOfSrc, context ) -> {
             List<AdapterSetting> adapterSettings = new ArrayList<>();
@@ -1896,7 +1911,7 @@ public class Crud implements InformationObserver {
             }
 
             JsonObject jsonStore = new JsonObject();
-            jsonStore.addProperty( "storeId", src.getAdapterId() );
+            jsonStore.addProperty( "adapterId", src.getAdapterId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
             jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
@@ -1906,7 +1921,26 @@ public class Crud implements InformationObserver {
             jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
-        return new GsonBuilder().registerTypeAdapter( DataStore.class, storeSerializer ).create();
+        JsonSerializer<DataSource> sourceSerializer = ( src, typeOfSrc, context ) -> {
+            List<AdapterSetting> adapterSettings = new ArrayList<>();
+            for ( AdapterSetting s : src.getAvailableSettings() ) {
+                for ( String current : src.getCurrentSettings().keySet() ) {
+                    if ( s.name.equals( current ) ) {
+                        adapterSettings.add( s );
+                    }
+                }
+            }
+
+            JsonObject jsonSource = new JsonObject();
+            jsonSource.addProperty( "adapterId", src.getAdapterId() );
+            jsonSource.addProperty( "uniqueName", src.getUniqueName() );
+            jsonSource.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonSource.addProperty( "adapterName", src.getAdapterName() );
+            jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
+            return jsonSource;
+        };
+        return new GsonBuilder().registerTypeAdapter( DataStore.class, storeSerializer ).registerTypeAdapter( DataSource.class, sourceSerializer ).create();
     }
 
 
@@ -1927,7 +1961,7 @@ public class Crud implements InformationObserver {
             return true;
         } ).collect( Collectors.toList() );
         //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
-        Gson storeSerializer = storeSerializer();
+        Gson storeSerializer = adapterSerializer();
         JsonArray jsonArray = storeSerializer.toJsonTree( filteredStores.toArray( new DataStore[0] ) ).getAsJsonArray();
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
             JsonObject pdbFakeStore = new JsonObject();
@@ -1940,11 +1974,11 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Update the settings of a store
+     * Update the settings of an adapter
      */
-    DataStore updateStoreSettings( final Request req, final Response res ) {
+    Adapter updateAdapterSettings( final Request req, final Response res ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
-        JsonDeserializer<DataStore> storeDeserializer = ( json, typeOfT, context ) -> {
+        JsonDeserializer<Adapter> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
             String type = jsonObject.get( "type" ).getAsString();
             try {
@@ -1953,17 +1987,20 @@ public class Crud implements InformationObserver {
                 throw new JsonParseException( "Unknown element type: " + type, cnfe );
             }
         };
-        Gson storeGson = new GsonBuilder().registerTypeAdapter( DataStore.class, storeDeserializer ).create();
-        DataStore store = storeGson.fromJson( req.body(), DataStore.class );
-        AdapterManager.getInstance().getStore( store.getAdapterId() ).updateSettings( store.getCurrentSettings() );
-        return store;
+        Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
+        Adapter adapter = adapterGson.fromJson( req.body(), Adapter.class );
+        if ( adapter instanceof DataStore ) {
+            AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+        } else if ( adapter instanceof DataSource ) {
+            AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+        }
+        return adapter;
     }
 
-    // TODO NH: Rename getAvailableStores
     /**
      * Get available adapters
      */
-    String getAdapters( final Request req, final Response res ) {
+    private String getAvailableAdapters( AdapterType adapterType ) {
         JsonSerializer<AdapterInformation> adapterSerializer = ( src, typeOfSrc, context ) -> {
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "name", src.name );
@@ -1974,9 +2011,29 @@ public class Crud implements InformationObserver {
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
 
-        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableAdapters( AdapterType.STORE );
+        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableAdapters( adapterType );
         AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
         return adapterGson.toJson( out, AdapterInformation[].class );
+    }
+
+
+    String getAvailableStores( final Request req, final Response res ) {
+        return getAvailableAdapters( AdapterType.STORE );
+    }
+
+
+    String getAvailableSources( final Request req, final Response res ) {
+        return getAvailableAdapters( AdapterType.SOURCE );
+    }
+
+
+    /**
+     * Get deployed data sources
+     */
+    String getSources( final Request req, final Response res ) {
+        ImmutableMap<String, DataSource> sources = AdapterManager.getInstance().getSources();
+        DataSource[] out = sources.values().toArray( new DataSource[0] );
+        return adapterSerializer().toJson( out, DataSource[].class );
     }
 
 
@@ -1997,9 +2054,9 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Remove an existing store
+     * Remove an existing store or source
      */
-    Result removeStore( final Request req, final Response res ) {
+    Result removeAdapter( final Request req, final Response res ) {
         String uniqueName = req.body();
         try {
             CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( uniqueName.toLowerCase() );

@@ -170,9 +170,9 @@ public class AdapterManager {
 
 
     public void removeAdapter( int adapterId ) {
-        DataStore storeInstance = getStore( adapterId );
-        if ( storeInstance == null ) {
-            throw new RuntimeException( "Unknown data store with id: " + adapterId );
+        Adapter adapterInstance = getAdapter( adapterId );
+        if ( adapterInstance == null ) {
+            throw new RuntimeException( "Unknown adapter instance with id: " + adapterId );
         }
         CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( adapterId );
 
@@ -183,11 +183,11 @@ public class AdapterManager {
         }
 
         // Shutdown store
-        storeInstance.shutdown();
+        adapterInstance.shutdown();
 
         // Remove store from maps
-        adapterById.remove( storeInstance.getAdapterId() );
-        adapterByName.remove( storeInstance.getUniqueName() );
+        adapterById.remove( adapterInstance.getAdapterId() );
+        adapterByName.remove( adapterInstance.getUniqueName() );
 
         // Delete store from catalog
         Catalog.getInstance().deleteAdapter( catalogAdapter.id );
