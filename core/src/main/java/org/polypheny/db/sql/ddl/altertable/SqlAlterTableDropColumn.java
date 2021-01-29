@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogKey;
@@ -83,10 +84,6 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, column );
 
-        // Make sure that all adapters are of type store (and not source)
-        for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacements( catalogColumn.id ) ) {
-            getDataStoreInstance( dp.adapterId );
-        }
         Catalog catalog = Catalog.getInstance();
         // Check if column is part of an key
         for ( CatalogKey key : catalog.getTableKeys( catalogTable.id ) ) {
@@ -106,7 +103,9 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
 
         // Delete column from underlying data stores
         for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacementsByColumn( catalogColumn.id ) ) {
-            AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( context, dp );
+            if ( catalogTable.tableType == TableType.TABLE ) {
+                AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( context, dp );
+            }
             Catalog.getInstance().deleteColumnPlacement( dp.adapterId, dp.columnId );
         }
 

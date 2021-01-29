@@ -34,11 +34,14 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.LinkedList;
 import java.util.List;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
@@ -51,6 +54,7 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 
@@ -85,6 +89,11 @@ public class SqlDropTable extends SqlDropObject {
             } else {
                 throw e;
             }
+        }
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( table.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
 
         // Check if there are foreign keys referencing this table

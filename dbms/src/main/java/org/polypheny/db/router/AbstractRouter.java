@@ -31,7 +31,10 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -105,6 +108,7 @@ public abstract class AbstractRouter implements Router {
         RelNode routed;
         analyze( statement, logicalRoot );
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
+
             routed = routeDml( logicalRoot.rel, statement );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
             routed = handleConditionalExecute( logicalRoot.rel, statement );
@@ -225,6 +229,21 @@ public abstract class AbstractRouter implements Router {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 // Get placements of this table
                 CatalogTable catalogTable = catalog.getTable( t.getTableId() );
+
+                // Make sure that this table can be modified
+                if ( catalogTable.tableType == TableType.TABLE ) {
+                    // Everything fine. Nothing to check
+                } else if ( catalogTable.tableType == TableType.SOURCE ) {
+                    for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsByColumn( catalogTable.columnIds.get( 0 ) ) ) {
+                        if ( ((DataSource) AdapterManager.getInstance().getAdapter( ccp.adapterId )).isDataReadOnly() ) {
+                            throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
+                        }
+                    }
+                    throw new RuntimeException();
+                } else if ( catalogTable.tableType == TableType.VIEW ) {
+                    throw new RuntimeException( "Polypheny-DB does not support modifying views." );
+                }
+
                 long pkid = catalogTable.primaryKey;
                 List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
                 CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );

@@ -2280,7 +2280,7 @@ public class CatalogImpl extends Catalog {
                     }
                 }
             }
-        } catch ( NullPointerException | UnknownColumnIdRuntimeException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }

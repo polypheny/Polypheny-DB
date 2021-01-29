@@ -904,5 +904,8 @@ public interface PolyphenyDbResource {
     @BaseMessage("The adapter name ''{0}'' refers to a data source. DDL statements are not allowed for data sources!")
     ExInst<PolyphenyDbException> ddlOnDataSource( String uniqueName );
 
+    @BaseMessage("DDL statements are not allowed for tables of type source!")
+    ExInst<PolyphenyDbException> ddlOnSourceTable();
+
 }
 

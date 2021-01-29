@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -124,7 +125,12 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
             IndexType type = IndexType.MANUAL;
 
-            // Check if there is already a index with this name for this table
+            // Make sure that this is a table of type TABLE (and not SOURCE)
+            if ( catalogTable.tableType != TableType.TABLE ) {
+                throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            }
+
+            // Check if there is already an index with this name for this table
             if ( Catalog.getInstance().checkIfExistsIndex( catalogTable.id, indexName.getSimple() ) ) {
                 throw SqlUtil.newContextException( indexName.getParserPosition(), RESOURCE.indexExists( indexName.getSimple() ) );
             }

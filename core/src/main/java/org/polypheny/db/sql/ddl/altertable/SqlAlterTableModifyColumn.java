@@ -17,11 +17,14 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -31,6 +34,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -139,9 +143,9 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
         try {
             if ( type != null ) {
-                // Make sure that all adapters are of type store (and not source)
-                for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
-                    getDataStoreInstance( storeId );
+                // Make sure that this is a table of type TABLE (and not SOURCE)
+                if ( catalogTable.tableType != TableType.TABLE ) {
+                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
                 }
                 PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
                 final PolyType collectionsType = type.getCollectionsTypeName() == null ?
@@ -161,6 +165,10 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                             getCatalogColumn( catalogTable.id, columnName ) );
                 }
             } else if ( nullable != null ) {
+                // Make sure that this is a table of type TABLE (and not SOURCE)
+                if ( catalogTable.tableType != TableType.TABLE ) {
+                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+                }
                 catalog.setNullable( catalogColumn.id, nullable );
             } else if ( beforeColumn != null || afterColumn != null ) {
                 int targetPosition;
@@ -203,6 +211,10 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                     // Do nothing
                 }
             } else if ( collation != null ) {
+                // Make sure that this is a table of type TABLE (and not SOURCE)
+                if ( catalogTable.tableType != TableType.TABLE ) {
+                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+                }
                 Collation col = Collation.parse( collation );
                 catalog.setCollation( catalogColumn.id, col );
             } else if ( defaultValue != null ) {

@@ -17,9 +17,12 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDdl;
@@ -29,6 +32,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
@@ -70,6 +74,11 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable table = getCatalogTable( context, name );
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( table.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
 
         //  Execute truncate on all placements
         table.placementsByAdapter.forEach( ( storeId, placements ) -> {

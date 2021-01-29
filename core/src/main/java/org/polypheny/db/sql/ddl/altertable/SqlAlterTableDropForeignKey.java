@@ -17,9 +17,12 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -27,6 +30,7 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -71,6 +75,12 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
+
         try {
             Catalog catalog = Catalog.getInstance();
             CatalogForeignKey foreignKey = catalog.getForeignKey( catalogTable.id, foreignKeyName.getSimple() );
