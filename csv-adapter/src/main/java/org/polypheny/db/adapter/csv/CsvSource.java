@@ -103,7 +103,7 @@ public class CsvSource extends DataSource {
                     .file()
                     .listFiles( ( d, name ) -> name.endsWith( ".csv" ) ) )
                     .sequential()
-                    .map( Object::toString )
+                    .map( File::getName )
                     .collect( Collectors.toSet() );
         }
         for ( String fileName : fileNames ) {
