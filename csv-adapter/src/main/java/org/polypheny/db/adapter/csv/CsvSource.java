@@ -157,6 +157,7 @@ public class CsvSource extends DataSource {
                             name,
                             position,
                             position == 1 ) ); // TODO
+                    position++;
                 }
             } catch ( IOException e ) {
                 throw new RuntimeException( e );

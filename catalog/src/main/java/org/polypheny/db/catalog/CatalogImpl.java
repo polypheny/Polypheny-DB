@@ -586,17 +586,17 @@ public class CatalogImpl extends Catalog {
 
             addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
         }
-        /*
-        if ( !adapterNames.containsKey( "csv" ) ) {
+
+        if ( !adapterNames.containsKey( "hr" ) ) {
             Map<String, String> csvSettings = new HashMap<>();
             csvSettings.put( "directory", "classpath://hr" );
 
-            addAdapter( "csv", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
+            addAdapter( "hr", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
         }
 
         //////////////
         // init schema
-        CatalogAdapter csv = getAdapter( "csv" );
+        CatalogAdapter csv = getAdapter( "hr" );
         if ( !testMode ) {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
                 addTable( "depts", schemaId, systemId, TableType.SOURCE, null );
@@ -611,7 +611,7 @@ public class CatalogImpl extends Catalog {
                 addTable( "work", schemaId, systemId, TableType.SOURCE, null );
             }
             addDefaultCsvColumns( csv );
-        }*/
+        }
 
         ////////////////////////
         // init query interfaces
