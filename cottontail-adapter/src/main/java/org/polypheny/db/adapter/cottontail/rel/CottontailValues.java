@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.NewExpression;
@@ -77,7 +76,6 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
             builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
             for ( Pair<Pair<String, PolyType>, RexLiteral> pair : Pair.zip( physicalColumnNames, tuple ) ) {
-//              if ( !pair.getValue().isNull() ) {
                 builder.add(
                         Expressions.statement(
                                 Expressions.call( valuesMap_,
@@ -93,20 +91,4 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
         context.blockBuilder = builder;
         context.valuesHashMapList = valuesMapList_;
     }
-
-
-    static class Translator {
-
-        private final RelDataType rowType;
-        private final List<String> fieldNames;
-
-
-        public Translator( RelDataType rowType ) {
-            this.rowType = rowType;
-            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
-            this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
-        }
-
-    }
-
 }

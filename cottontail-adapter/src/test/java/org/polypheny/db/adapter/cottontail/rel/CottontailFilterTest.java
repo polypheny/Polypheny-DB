@@ -45,24 +45,4 @@ public class CottontailFilterTest {
         Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.left).op );
         Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.right).op );
     }
-
-
-    @Ignore
-    @Test
-    public void simpleCnfTest2() {
-        BooleanPredicate testPredicate = new CompoundPredicate( Op.ROOT,
-                new CompoundPredicate( Op.OR,
-                        new AtomicPredicate( null, false ),
-                        new AtomicPredicate( null, false )
-                ), null );
-
-        while ( testPredicate.simplify() );
-
-        CompoundPredicate result = (CompoundPredicate) ((CompoundPredicate) testPredicate).left;
-
-        Assert.assertEquals( "Highest up predicate should be AND.", Op.AND, result.op );
-        Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.left).op );
-        Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.right).op );
-    }
-
 }
