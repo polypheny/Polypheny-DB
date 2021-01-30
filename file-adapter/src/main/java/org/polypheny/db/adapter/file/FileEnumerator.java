@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,25 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.io.FileUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
 @Slf4j
@@ -51,8 +58,9 @@ public class FileEnumerator<E> implements Enumerator<E> {
     final Integer[] projectionMapping;
     final PolyType[] columnTypes;
     final Gson gson;
-    final Map<Integer, Update> updates = new HashMap<>();
+    final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
+
 
     /**
      * FileEnumerator
@@ -75,7 +83,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
             final Integer[] projectionMapping,
             final DataContext dataContext,
             final Condition condition,
-            final Update[] updates ) {
+            final Value[] updates ) {
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
@@ -87,13 +95,13 @@ public class FileEnumerator<E> implements Enumerator<E> {
         this.projectionMapping = projectionMapping;
 
         if ( updates != null ) {
-            //in case of an UPDATE, the projectionMapping represent the indexes of the columns that will be updated
-            for ( Update update : updates ) {
+            // In case of an UPDATE, the projectionMapping represent the indexes of the columns that will be updated
+            for ( Value update : updates ) {
                 this.updates.put( update.getColumnReference(), update );
             }
         }
 
-        //pkMapping
+        // pkMapping
         Integer[] pkMapping = new Integer[pkIds.size()];
         int ii = 0;
         List<Long> colIdsAsList = Arrays.asList( columnIds.clone() );
@@ -120,7 +128,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
         } else {
             this.columnTypes = columnTypes;
         }
-        //We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
+        // We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
         @SuppressWarnings("UnstableApiUsage")
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
         FileFilter fileFilter = file -> !file.isHidden() && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
@@ -129,19 +137,21 @@ public class FileEnumerator<E> implements Enumerator<E> {
             columnFolders.add( columnFolder );
         }
         if ( columnsToIterate.length == 1 ) {
-            //if we go over a single column, we can iterate it, even if null values are not present as files
+            // If we go over a single column, we can iterate it, even if null values are not present as files
             this.fileList = FileStore.getColumnFolder( rootPath, columnsToIterate[0] ).listFiles( fileFilter );
         } else {
-            //iterate over a PK-column, because they are always NOT NULL
+            // Iterate over a PK-column, because they are always NOT NULL
             this.fileList = FileStore.getColumnFolder( rootPath, pkIds.get( 0 ) ).listFiles( fileFilter );
         }
         numOfCols = columnFolders.size();
     }
 
+
     @Override
     public E current() {
         return current;
     }
+
 
     @Override
     public boolean moveNext() {
@@ -165,56 +175,65 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         return false;
                     }
                 }
-                File currentFile = fileList[fileListPosition];
-                String[] strings = new String[numOfCols];
-                Comparable[] curr = new Comparable[numOfCols];
-                int i = 0;
-                for ( File colFolder : columnFolders ) {
-                    File f = new File( colFolder, currentFile.getName() );
-                    String s;
-                    if ( !f.exists() ) {
-                        s = null;
+                //if there was a PK lookup
+                else if ( fileListPosition < 0 ) {
+                    if ( (operation == Operation.DELETE || operation == Operation.UPDATE) && !updatedOrDeleted ) {
+                        updatedOrDeleted = true;
+                        return true;
                     } else {
-                        byte[] encoded = Files.readAllBytes( f.toPath() );
-                        s = new String( encoded, FileStore.CHARSET );
+                        return false;
                     }
-                    strings[i] = s;
-                    if ( s == null || s.equals( "" ) ) {
-                        curr[i] = null;
+                }
+                File currentFile = fileList[fileListPosition];
+                Object[] curr;
+
+                if ( condition != null ) {
+                    Object[] pkLookup = condition.getPKLookup( new HashSet<>( Arrays.asList( pkMapping ) ), columnTypes, numOfCols, dataContext );
+                    if ( pkLookup != null ) {
+                        int hash = hashRow( pkLookup );
+                        File lookupFile = new File( FileStore.SHA.hashString( String.valueOf( hash ), FileStore.CHARSET ).toString() );
+                        curr = fileToRow( lookupFile );
+                        //set -2, as a flag, so the enumerator knows that it doesn't have to continue
+                        //the flag will be increased to -1 in the select/update/delete operation below
+                        fileListPosition = -2;
+                        //if the first attempt did not match, check if there is an _ins_xid_hash file
+                        if ( curr == null ) {
+                            lookupFile = new File( getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
+                            curr = fileToRow( lookupFile );
+                        }
+                        //if a PK lookup did not match at all
+                        if ( curr == null ) {
+                            if ( operation != Operation.SELECT ) {
+                                current = (E) Long.valueOf( 0 );
+                                return true;
+                            }
+                            return false;
+                        }
+                        currentFile = lookupFile;
+                        current = (E) Long.valueOf( 1 );
                     } else {
-                        switch ( columnTypes[i] ) {
-                            //todo add support for more types
-                            case BOOLEAN:
-                                curr[i] = gson.fromJson( s, Boolean.class );
-                                break;
-                            case INTEGER:
-                            case TIME:
-                            case DATE:
-                                curr[i] = Integer.parseInt( s );
-                                break;
-                            case TIMESTAMP:
-                            case BIGINT:
-                                curr[i] = Long.parseLong( s );
-                                break;
-                            case DOUBLE:
-                                curr[i] = Double.parseDouble( s );
-                                break;
-                            case FLOAT:
-                                curr[i] = Float.parseFloat( s );
-                                break;
-                            //case ARRAY:
-                            default:
-                                curr[i] = s;
+                        curr = fileToRow( currentFile );
+                        //todo
+                        if ( curr == null ) {
+                            if ( operation != Operation.SELECT ) {
+                                current = (E) Long.valueOf( updateDeleteCount );
+                                return true;
+                            }
+                            return false;
+                        }
+                        if ( !condition.matches( curr, columnTypes, dataContext ) ) {
+                            fileListPosition++;
+                            continue;
                         }
                     }
-                    i++;
-                }
-                if ( condition != null ) {
-                    if ( !condition.matches( curr, columnTypes, dataContext ) ) {
+                } else {
+                    curr = fileToRow( currentFile );
+                    if ( curr == null ) {
                         fileListPosition++;
                         continue;
                     }
                 }
+
                 if ( operation == Operation.SELECT ) {
                     //project only if necessary (if a projection and condition is given)
                     if ( projectionMapping != null && condition != null ) {
@@ -223,9 +242,9 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     if ( curr.length == 1 ) {
                         current = (E) curr[0];
                     } else {
-                        //if all values are null: continue
+                        // If all values are null: continue
                         //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
-                        if ( Arrays.stream( curr ).allMatch( Objects::isNull ) ) {
+                        if ( curr == null ) {
                             fileListPosition++;
                             continue;
                         }
@@ -247,10 +266,13 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     //continue;
                 } else if ( operation == Operation.UPDATE ) {
                     Object[] updateObj = new Object[columnFolders.size()];
+                    Set<Integer> updatedColumns = new HashSet<>();
                     for ( int c = 0; c < columnFolders.size(); c++ ) {
                         if ( updates.containsKey( c ) ) {
-                            updateObj[c] = updates.get( c ).getValue( dataContext );
+                            updateObj[c] = updates.get( c ).getValue( dataContext, 0 );
+                            updatedColumns.add( c );
                         } else {
+                            //needed for the hash
                             updateObj[c] = curr[c];
                         }
                     }
@@ -260,18 +282,30 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     int j = 0;
                     for ( File colFolder : columnFolders ) {
                         File source = new File( colFolder, oldFileName );
-                        File target = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
-                        if ( source.exists() ) {
-                            Files.move( source.toPath(), target.toPath() );
-                        }
 
-                        //write new file
+                        // write new file
                         if ( updateObj[j] != null ) {
-                            File newFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
+                            File insertFile = new File( colFolder, getNewFileName( Operation.INSERT, String.valueOf( newHash ) ) );
                             /*if( newFile.exists() ) {
                                 throw new RuntimeException("This update would lead to a primary key conflict, " + newFile.getAbsolutePath());
                             }*/
-                            Files.write( newFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
+
+                            //if column has not been updated: just copy the old file to the new one with the PK in the new fileName
+                            if ( !updatedColumns.contains( j ) && source.exists() ) {
+                                Files.copy( source.toPath(), insertFile.toPath() );
+                            } else {
+                                //Write updated value. Overrides file if it exists (if you have a double update on the same item)
+                                if ( updateObj[j] instanceof InputStream ) {
+                                    FileUtils.copyInputStreamToFile( ((InputStream) updateObj[j]), insertFile );
+                                } else {
+                                    Files.write( insertFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
+                                }
+                            }
+                        }
+
+                        File deleteFile = new File( colFolder, getNewFileName( Operation.DELETE, String.valueOf( hashRow( curr ) ) ) );
+                        if ( source.exists() ) {
+                            Files.move( source.toPath(), deleteFile.toPath() );
                         }
                         j++;
                     }
@@ -289,24 +323,77 @@ public class FileEnumerator<E> implements Enumerator<E> {
         }
     }
 
-    private Comparable[] project( final Comparable[] o ) {
+
+    /**
+     * Convert files to a row
+     *
+     * @param currentFile The filename of the {@code currentFile} is used to find the files in the respective column folders
+     * @return Null if the file does not exists (in case of a PK lookup) or the row as an array of objects.
+     */
+    @Nullable
+    private Object[] fileToRow( final File currentFile ) throws IOException {
+        Object[] curr = new Object[numOfCols];
+        int i = 0;
+        boolean allNull = true;
+        for ( File colFolder : columnFolders ) {
+            File f = new File( colFolder, currentFile.getName() );
+            String s = null;
+            byte[] encoded = null;
+            if ( f.exists() ) {
+                if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                    if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
+                        encoded = Files.readAllBytes( f.toPath() );
+                    }
+                } else {
+                    s = new String( Files.readAllBytes( f.toPath() ), FileStore.CHARSET );
+                    if ( s.equals( "" ) ) {
+                        curr[i] = null;
+                        i++;
+                        continue;
+                    }
+                }
+            } else {
+                curr[i] = null;
+                i++;
+                continue;
+            }
+            allNull = false;
+            if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.FILE ) {
+                    curr[i] = f;
+                } else {
+                    curr[i] = encoded;
+                }
+            } else {
+                curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
+            }
+            i++;
+        }
+        return allNull ? null : curr;
+    }
+
+
+    private Object[] project( final Object[] o ) {
         assert (projectionMapping != null);
-        Comparable[] out = new Comparable[projectionMapping.length];
+        Object[] out = new Object[projectionMapping.length];
         for ( int i = 0; i < projectionMapping.length; i++ ) {
             out[i] = o[projectionMapping[i]];
         }
         return out;
     }
 
+
     @Override
     public void reset() {
         fileListPosition = 0;
     }
 
+
     @Override
     public void close() {
 
     }
+
 
     /**
      * Hash only the elements of a row that are part of the primary key

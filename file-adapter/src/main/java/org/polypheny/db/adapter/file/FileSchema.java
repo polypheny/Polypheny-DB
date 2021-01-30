@@ -17,10 +17,8 @@
 package org.polypheny.db.adapter.file;
 
 
-import java.sql.Date;
-import java.sql.Time;
-import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +79,7 @@ public class FileSchema extends AbstractSchema {
         ArrayList<Long> columnIds = new ArrayList<>();
         ArrayList<PolyType> columnTypes = new ArrayList<>();
         ArrayList<String> columnNames = new ArrayList<>();
+        columnPlacementsOnStore.sort( Comparator.comparingLong( p -> p.columnId ) );
         for ( CatalogColumnPlacement p : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn;
             catalogColumn = Catalog.getInstance().getColumn( p.columnId );
@@ -119,10 +118,10 @@ public class FileSchema extends AbstractSchema {
 
     /**
      * Called from generated code
-     * Executes SELECT and DELETE operations
+     * Executes SELECT, UPDATE and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Update[] updates ) {
+    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
         return new AbstractEnumerable<Object[]>() {
             @Override
@@ -135,35 +134,39 @@ public class FileSchema extends AbstractSchema {
 
     /**
      * Called from generated code
+     * Executes INSERT operations
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
     public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
         dataContext.getStatement().getTransaction().registerInvolvedStore( StoreManager.getInstance().getStore( storeId ) );
         final Object[] insert;
-        //if it is a batch insert
+
+        ArrayList<Object[]> rows = new ArrayList<>();
+        ArrayList<Object> row = new ArrayList<>();
+        int i = 0;
         if ( dataContext.getParameterValues().size() > 0 ) {
-            ArrayList<Object[]> rows = new ArrayList<>();
             for ( Map<Long, Object> map : dataContext.getParameterValues() ) {
-                ArrayList<Object> row = new ArrayList<>();
-                for ( int i = 0; i < columnIds.length; i++ ) {
-                    Object o = map.get( (long) i );
-                    if ( columnTypes[i] == PolyType.TIMESTAMP ) {
-                        if ( o instanceof Timestamp ) {
-                            o = ((Timestamp) o).toInstant().toEpochMilli();
-                        }
-                    } else if ( columnTypes[i] == PolyType.DATE ) {
-                        o = ((Date) o).toLocalDate().toEpochDay();
-                    } else if ( columnTypes[i] == PolyType.TIME ) {
-                        o = ((Time) o).getTime();
-                    }
-                    row.add( o );
+                row.clear();
+                //insertValues[] has length 1 if the dataContext is set
+                for ( Value values : ((Value[]) insertValues[0]) ) {
+                    row.add( values.getValue( dataContext, i ) );
                 }
                 rows.add( row.toArray( new Object[0] ) );
+                i++;
             }
-            insert = rows.toArray( new Object[0] );
         } else {
-            insert = insertValues;
+            for ( Object insertRow : insertValues ) {
+                row.clear();
+                Value[] values = (Value[]) insertRow;
+                for ( Value value : values ) {
+                    row.add( value.getValue( dataContext, i ) );
+                }
+                rows.add( row.toArray( new Object[0] ) );
+                i++;
+            }
         }
+        insert = rows.toArray( new Object[0] );
+
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {

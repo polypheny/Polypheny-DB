@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -336,7 +336,35 @@ public enum PolyType {
             PrecScale.NO_NO,
             true,
             ExtraPolyTypes.GEOMETRY,
-            PolyTypeFamily.GEO );
+            PolyTypeFamily.GEO ),
+
+    FILE(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
+    ),
+
+    IMAGE(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
+    ),
+
+    VIDEO(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
+    ),
+
+    SOUND(
+            PrecScale.NO_NO,
+            true,
+            Types.BINARY,
+            PolyTypeFamily.MULTIMEDIA
+    );
 
 
     public static final int MAX_DATETIME_PRECISION = 3;
@@ -1141,7 +1169,7 @@ public enum PolyType {
 
 
     public static Set<PolyType> availableTypes() {
-        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR );
+        return ImmutableSet.of( BOOLEAN, TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, DOUBLE, DATE, TIME, TIMESTAMP, VARCHAR, FILE, IMAGE, VIDEO, SOUND );
     }
 
 
@@ -1191,7 +1219,9 @@ public enum PolyType {
         int NO_NO = 1;
         int YES_NO = 2;
         int YES_YES = 4;
+
     }
+
 
     public static JsonSerializer<PolyType> serializer = ( src, typeOfSrc, context ) -> {
         JsonObject jsonObject = new JsonObject();

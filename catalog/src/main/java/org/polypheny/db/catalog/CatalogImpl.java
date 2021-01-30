@@ -187,7 +187,7 @@ public class CatalogImpl extends Catalog {
                 File folder = FileSystemManager.getInstance().registerNewFolder( "catalog" );
 
                 if ( Catalog.resetCatalog ) {
-                    log.info( "Reseting catalog on startup." );
+                    log.info( "Resetting catalog on startup." );
                     if ( new File( folder, fileName ).exists() ) {
                         //noinspection ResultOfMethodCallIgnored
                         new File( folder, fileName ).delete();
@@ -630,6 +630,7 @@ public class CatalogImpl extends Catalog {
         if ( !queryInterfaceNames.containsKey( "rest" ) ) {
             Map<String, String> restSettings = new HashMap<>();
             restSettings.put( "port", "8089" );
+            restSettings.put( "maxUploadSizeMb", "10000" );
             addQueryInterface( "rest", "org.polypheny.db.restapi.HttpRestServer", restSettings );
         }
 

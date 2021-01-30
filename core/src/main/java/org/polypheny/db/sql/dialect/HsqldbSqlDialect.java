@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,10 @@ import org.polypheny.db.sql.parser.SqlParserPos;
 @Slf4j
 public class HsqldbSqlDialect extends SqlDialect {
 
-    public static final SqlDialect DEFAULT = new HsqldbSqlDialect( EMPTY_CONTEXT.withDatabaseProduct( DatabaseProduct.HSQLDB ) );
+    public static final SqlDialect DEFAULT = new HsqldbSqlDialect(
+            EMPTY_CONTEXT
+                    .withDatabaseProduct( DatabaseProduct.HSQLDB )
+                    .withIdentifierQuoteString( "\"" ) );
 
 
     /**
@@ -156,5 +159,6 @@ public class HsqldbSqlDialect extends SqlDialect {
                 throw new AssertionError( "could not convert time unit to HSQLDB equivalent: " + unit );
         }
     }
+
 }
 

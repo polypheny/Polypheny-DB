@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.transaction.PUID.ConnectionId;
 import org.polypheny.db.transaction.PUID.NodeId;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PUID.UserId;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 
 
 @Slf4j
@@ -71,30 +72,42 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
+    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin, MultimediaFlavor flavor ) {
         final NodeId nodeId = (NodeId) PUID.randomPUID( Type.NODE ); // TODO: get real node id -- configuration.get("nodeid")
         final UserId userId = (UserId) PUID.randomPUID( Type.USER ); // TODO: use real user id
         final ConnectionId connectionId = (ConnectionId) PUID.randomPUID( Type.CONNECTION ); // TODO
         PolyXid xid = generateNewTransactionId( nodeId, userId, connectionId );
-        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database, analyze, origin ) );
+        transactions.put( xid, new TransactionImpl( xid, this, user, defaultSchema, database, analyze, origin, flavor ) );
         return transactions.get( xid );
     }
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( CatalogUser user, CatalogSchema defaultSchema, CatalogDatabase database, boolean analyze, String origin ) {
+        return startTransaction( user, defaultSchema, database, analyze, origin, MultimediaFlavor.DEFAULT );
+    }
+
+
+    @Override
+    public Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
         Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( user );
         CatalogDatabase catalogDatabase = catalog.getDatabase( database );
         CatalogSchema catalogSchema = catalog.getSchema( catalogDatabase.id, catalogDatabase.defaultSchemaName );
-        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin );
+        return startTransaction( catalogUser, catalogSchema, catalogDatabase, analyze, origin, flavor );
+    }
+
+
+    @Override
+    public Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+        return startTransaction( user, database, analyze, origin, MultimediaFlavor.DEFAULT );
     }
 
 
     @Override
     public void removeTransaction( PolyXid xid ) throws TransactionException {
         if ( !transactions.containsKey( xid ) ) {
-            log.warn( "Unknown transaction id: " + xid );
+            log.warn( "Unknown transaction id: {}", xid );
         } else {
             transactions.remove( xid );
         }

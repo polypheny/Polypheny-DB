@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,6 +86,26 @@ public class DbColumn {
         this.cardinality = cardinality;
         this.primary = primary;
         this.defaultValue = defaultValue;
+    }
+
+
+    public DbColumn(
+            final String name,
+            final String dataType,
+            final String collectionsType,
+            final boolean nullable,
+            final Integer precision,
+            final Integer scale,
+            final Integer dimension,
+            final Integer cardinality,
+            final boolean primary,
+            final String defaultValue,
+            final SortState sort,
+            final String filter
+    ) {
+        this( name, dataType, collectionsType, nullable, precision, scale, dimension, cardinality, primary, defaultValue );
+        this.sort = sort;
+        this.filter = filter;
     }
 
 }

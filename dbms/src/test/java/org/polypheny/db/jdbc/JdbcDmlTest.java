@@ -58,7 +58,7 @@ public class JdbcDmlTest {
 
                     // Checks
                     TestHelper.checkResultSet(
-                            statement.executeQuery( "SELECT * FROM multiinserttest" ),
+                            statement.executeQuery( "SELECT * FROM multiinserttest ORDER BY tprimary" ),
                             ImmutableList.of(
                                     new Object[]{ 1, 1, "foo" },
                                     new Object[]{ 2, 5, "bar" },
