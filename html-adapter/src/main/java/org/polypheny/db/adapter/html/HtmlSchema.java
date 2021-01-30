@@ -41,7 +41,6 @@ import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.csv.CsvFilterableTable;
-import org.polypheny.db.adapter.csv.JsonTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;

@@ -92,8 +92,10 @@ public class CsvSchema extends AbstractSchema {
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
         }
 
-        // TODO MV: This assumes that all physical columns of a logical table are in the same csv file
-        String csvFileName = Catalog.getInstance().getColumnPlacementsOnAdapter( csvSource.getAdapterId(), catalogTable.id ).iterator().next().physicalTableName + ".csv";
+        String csvFileName = Catalog
+                .getInstance()
+                .getColumnPlacementsOnAdapter( csvSource.getAdapterId(), catalogTable.id ).iterator().next()
+                .physicalSchemaName;
         Source source;
         try {
             source = Sources.of( new URL( directoryUrl, csvFileName ) );

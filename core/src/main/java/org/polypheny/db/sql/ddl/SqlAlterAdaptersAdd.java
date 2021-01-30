@@ -98,8 +98,20 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
             if ( adapter instanceof DataSource ) {
                 Catalog catalog = Catalog.getInstance();
                 Map<String, List<ExportedColumn>> exportedColumns = ((DataSource) adapter).getExportedColumns();
+
+                // Create table, columns etc.
                 for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
-                    long tableId = catalog.addTable( entry.getKey(), 1, 1, TableType.SOURCE, null );
+                    // Make sure the table name is unique
+                    String tableName = entry.getKey();
+                    if ( catalog.checkIfExistsTable( 1, tableName ) ) {
+                        int i = 0;
+                        while ( catalog.checkIfExistsTable( 1, tableName + i ) ) {
+                            i++;
+                        }
+                        tableName += i;
+                    }
+
+                    long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, null );
                     List<Long> primaryKeyColIds = new ArrayList<>();
                     int colPos = 1;
                     for ( ExportedColumn exportedColumn : entry.getValue() ) {

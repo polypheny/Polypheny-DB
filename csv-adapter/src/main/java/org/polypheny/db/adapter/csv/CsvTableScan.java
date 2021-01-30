@@ -122,9 +122,9 @@ public class CsvTableScan extends TableScan implements EnumerableRel {
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
 
-        if ( table instanceof JsonTable ) {
+        /*if ( table instanceof JsonTable ) {
             return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( JsonTable.class ), "enumerable" ) ) );
-        }
+        }*/
         return implementor.result( physType, Blocks.toBlock( Expressions.call( table.getExpression( CsvTranslatableTable.class ), "project", implementor.getRootExpression(), Expressions.constant( fields ) ) ) );
     }
 }

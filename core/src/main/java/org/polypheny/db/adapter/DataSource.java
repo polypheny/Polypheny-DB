@@ -54,6 +54,26 @@ public abstract class DataSource extends Adapter {
         public final int physicalPosition;
         public final boolean primary;
 
+
+        public String getDisplayType() {
+            String typeStr = type.getName();
+            if ( scale != null ) {
+                typeStr += "(" + length + "," + scale + ")";
+            } else if ( length != null ) {
+                typeStr += "(" + length + ")";
+            }
+
+            if ( collectionsType != null ) {
+                typeStr += " " + collectionsType.getName();
+                if ( cardinality != null ) {
+                    typeStr += "(" + dimension + "," + cardinality + ")";
+                } else if ( dimension != null ) {
+                    typeStr += "(" + dimension + ")";
+                }
+            }
+            return typeStr;
+        }
+
     }
 
 }

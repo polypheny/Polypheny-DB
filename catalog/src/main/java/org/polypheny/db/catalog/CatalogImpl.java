@@ -592,6 +592,7 @@ public class CatalogImpl extends Catalog {
         if ( !adapterNames.containsKey( "hr" ) ) {
             Map<String, String> csvSettings = new HashMap<>();
             csvSettings.put( "directory", "classpath://hr" );
+            csvSettings.put( "maxStringLength", "255" );
 
             addAdapter( "hr", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
         }
@@ -691,7 +692,11 @@ public class CatalogImpl extends Catalog {
     private void addDefaultColumn( CatalogAdapter csv, CatalogTable table, String name, PolyType type, Collation collation, int position, Integer length ) {
         if ( !checkIfExistsColumn( table.id, name ) ) {
             long colId = addColumn( name, table.id, position, type, null, length, null, null, null, false, collation );
-            addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, null, table.name, name );
+            String filename = table.name + ".csv";
+            if ( table.name.equals( "emp" ) || table.name.equals( "work" ) ) {
+                filename += ".gz";
+            }
+            addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, filename, table.name, name );
         }
     }
 

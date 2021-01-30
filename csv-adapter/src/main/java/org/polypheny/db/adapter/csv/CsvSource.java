@@ -21,6 +21,11 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -41,16 +46,30 @@ public class CsvSource extends DataSource {
     public static final String DESCRIPTION = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "directory", false, true, false, "test" )
+            new AdapterSettingString( "directory", false, true, false, "test" ),
+            new AdapterSettingInteger( "maxStringLength", false, true, false, 22 )
     );
 
     private URL csvDir;
     private CsvSchema currentSchema;
+    private final int maxStringLength;
+
+    private InformationPage informationPage;
+    private final List<InformationGroup> informationGroups = new ArrayList<>();
+    private final List<Information> informationElements = new ArrayList<>();
 
 
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
+
+        // Validate maxStringLength setting
+        maxStringLength = Integer.parseInt( settings.get( "maxStringLength" ) );
+        if ( maxStringLength < 1 ) {
+            throw new RuntimeException( "Invalid value for maxStringLength: " + maxStringLength );
+        }
+
         setCsvDir( settings );
+        registerInformationPage( uniqueName );
     }
 
 
@@ -92,7 +111,7 @@ public class CsvSource extends DataSource {
         Set<String> fileNames;
         if ( csvDir.getProtocol().equals( "jar" ) ) {
             Reflections reflections = new Reflections( "hr", new ResourcesScanner() );
-            Set<String> fileNamesSet = reflections.getResources( Pattern.compile( ".*\\.csv" ) );
+            Set<String> fileNamesSet = reflections.getResources( Pattern.compile( ".*\\.(csv|csv\\.gz)$" ) );
             fileNames = new HashSet<>();
             for ( String fileName : fileNamesSet ) {
                 String[] fileNameSplit = fileName.split( "/" );
@@ -101,12 +120,22 @@ public class CsvSource extends DataSource {
         } else {
             fileNames = Arrays.stream( Sources.of( csvDir )
                     .file()
-                    .listFiles( ( d, name ) -> name.endsWith( ".csv" ) ) )
+                    .listFiles( ( d, name ) -> name.endsWith( ".csv" ) || name.endsWith( ".csv.gz" ) ) )
                     .sequential()
                     .map( File::getName )
                     .collect( Collectors.toSet() );
         }
         for ( String fileName : fileNames ) {
+            // Compute physical table name
+            String physicalTableName = fileName.toLowerCase();
+            if ( physicalTableName.endsWith( ".gz" ) ) {
+                physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
+            }
+            physicalTableName = physicalTableName
+                    .substring( 0, physicalTableName.length() - ".csv".length() )
+                    .trim()
+                    .replaceAll( "[^a-z0-9_]+", "" );
+
             List<ExportedColumn> list = new ArrayList<>();
             int position = 1;
             try {
@@ -115,33 +144,50 @@ public class CsvSource extends DataSource {
                 String firstLine = reader.readLine();
                 for ( String col : firstLine.split( "," ) ) {
                     String[] colSplit = col.split( ":" );
-                    String name = colSplit[0].toLowerCase().trim();
+                    String name = colSplit[0]
+                            .toLowerCase()
+                            .trim()
+                            .replaceAll( "[^a-z0-9_]+", "" );
                     String typeStr = colSplit[1].toLowerCase().trim();
                     PolyType type;
-                    PolyType collectionsType;
-                    Integer length;
-                    Integer scale;
-                    Integer dimension;
-                    Integer cardinality;
-                    switch ( typeStr ) {
+                    PolyType collectionsType = null;
+                    Integer length = null;
+                    Integer scale = null;
+                    Integer dimension = null;
+                    Integer cardinality = null;
+                    switch ( typeStr.toLowerCase() ) {
                         case "int":
                             type = PolyType.INTEGER;
-                            collectionsType = null;
-                            length = null;
-                            scale = null;
-                            dimension = null;
-                            cardinality = null;
                             break;
                         case "string":
                             type = PolyType.VARCHAR;
-                            collectionsType = null;
-                            length = 255; // TODO
-                            scale = null;
-                            dimension = null;
-                            cardinality = null;
+                            length = maxStringLength;
+                            break;
+                        case "boolean":
+                            type = PolyType.BOOLEAN;
+                            break;
+                        case "long":
+                            type = PolyType.BIGINT;
+                            break;
+                        case "float":
+                            type = PolyType.REAL;
+                            break;
+                        case "double":
+                            type = PolyType.DOUBLE;
+                            break;
+                        case "date":
+                            type = PolyType.DATE;
+                            break;
+                        case "time":
+                            type = PolyType.TIME;
+                            length = 0;
+                            break;
+                        case "timestamp":
+                            type = PolyType.TIMESTAMP;
+                            length = 0;
                             break;
                         default:
-                            throw new RuntimeException( "Unknown type: " + typeStr );
+                            throw new RuntimeException( "Unknown type: " + typeStr.toLowerCase() );
                     }
                     list.add( new ExportedColumn(
                             name,
@@ -152,8 +198,8 @@ public class CsvSource extends DataSource {
                             dimension,
                             cardinality,
                             false,
-                            null,
-                            fileName.substring( 0, fileName.length() - 4 ),
+                            fileName,
+                            physicalTableName,
                             name,
                             position,
                             position == 1 ) ); // TODO
@@ -162,7 +208,8 @@ public class CsvSource extends DataSource {
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }
-            map.put( fileName.substring( 0, fileName.length() - 4 ), list );
+
+            map.put( physicalTableName, list );
         }
         return map;
     }
@@ -201,7 +248,14 @@ public class CsvSource extends DataSource {
 
     @Override
     public void shutdown() {
-        // Nothing to do
+        InformationManager im = InformationManager.getInstance();
+        if ( informationElements.size() > 0 ) {
+            im.removeInformation( informationElements.toArray( new Information[0] ) );
+        }
+        if ( informationGroups.size() > 0 ) {
+            im.removeGroup( informationGroups.toArray( new InformationGroup[0] ) );
+        }
+        im.removePage( informationPage );
     }
 
 
@@ -209,6 +263,35 @@ public class CsvSource extends DataSource {
     protected void reloadSettings( List<String> updatedSettings ) {
         if ( updatedSettings.contains( "directory" ) ) {
             setCsvDir( settings );
+        }
+    }
+
+
+    protected void registerInformationPage( String uniqueName ) {
+        InformationManager im = InformationManager.getInstance();
+        informationPage = new InformationPage( uniqueName, "CSV Data Source" ).setLabel( "Sources" );
+        im.addPage( informationPage );
+
+        for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
+            im.addGroup( group );
+            informationGroups.add( group );
+
+            InformationTable table = new InformationTable(
+                    group,
+                    Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
+            for ( ExportedColumn exportedColumn : entry.getValue() ) {
+                table.addRow(
+                        exportedColumn.physicalPosition,
+                        exportedColumn.name,
+                        exportedColumn.getDisplayType(),
+                        exportedColumn.nullable ? "✔" : "",
+                        exportedColumn.physicalSchemaName,
+                        exportedColumn.primary ? "✔" : ""
+                );
+            }
+            im.registerInformation( table );
+            informationElements.add( table );
         }
     }
 

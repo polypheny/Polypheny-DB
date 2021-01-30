@@ -94,13 +94,11 @@ enum CsvFieldType {
             case INTEGER:
                 return CsvFieldType.INT;
             case BIGINT:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+                return CsvFieldType.LONG;
             case REAL:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
+                return CsvFieldType.FLOAT;
             case DOUBLE:
                 return CsvFieldType.DOUBLE;
-            case DECIMAL:
-                throw new RuntimeException( "Unsupported datatype: " + type.name() );
             case VARCHAR:
                 return CsvFieldType.STRING;
             case DATE:
