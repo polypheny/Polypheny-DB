@@ -33,7 +33,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
@@ -147,16 +146,13 @@ public abstract class AbstractJdbcStore extends DataStore {
         executeUpdate( query, context );
         // Add physical names to placements
         for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
-            try {
-                catalog.updateColumnPlacementPhysicalNames(
-                        getAdapterId(),
-                        placement.columnId,
-                        getDefaultPhysicalSchemaName(),
-                        physicalTableName,
-                        getPhysicalColumnName( placement.columnId ) );
-            } catch ( UnknownColumnPlacementRuntimeException e ) {
-                throw new RuntimeException( e );
-            }
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    placement.columnId,
+                    getDefaultPhysicalSchemaName(),
+                    physicalTableName,
+                    getPhysicalColumnName( placement.columnId ),
+                    false );
         }
 
     }
@@ -233,16 +229,13 @@ public abstract class AbstractJdbcStore extends DataStore {
             executeUpdate( query, context );
         }
         // Add physical name to placement
-        try {
-            catalog.updateColumnPlacementPhysicalNames(
-                    getAdapterId(),
-                    catalogColumn.id,
-                    physicalSchemaName,
-                    physicalTableName,
-                    physicalColumnName );
-        } catch ( UnknownColumnPlacementRuntimeException e ) {
-            throw new RuntimeException( e );
-        }
+        catalog.updateColumnPlacementPhysicalNames(
+                getAdapterId(),
+                catalogColumn.id,
+                physicalSchemaName,
+                physicalTableName,
+                physicalColumnName,
+                false );
     }
 
 

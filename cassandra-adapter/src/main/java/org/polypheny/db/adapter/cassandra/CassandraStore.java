@@ -51,7 +51,6 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -258,7 +257,8 @@ public class CassandraStore extends DataStore {
                     placement.columnId,
                     this.dbKeyspace, // TODO MV: physical schema name
                     physicalTableName,
-                    physicalNameProvider.generatePhysicalColumnName( placement.columnId ) );
+                    physicalNameProvider.generatePhysicalColumnName( placement.columnId ),
+                    false );
         }
     }
 
@@ -287,16 +287,13 @@ public class CassandraStore extends DataStore {
         // TODO JS: Wrap with error handling to check whether successful, if not, try iterative revision names to find one that works.
         this.session.execute( addColumn );
 
-        try {
-            catalog.updateColumnPlacementPhysicalNames(
-                    getAdapterId(),
-                    catalogColumn.id,
-                    this.dbKeyspace,
-                    physicalTableName,
-                    physicalColumnName );
-        } catch ( UnknownColumnPlacementRuntimeException e ) {
-            throw new RuntimeException( e );
-        }
+        catalog.updateColumnPlacementPhysicalNames(
+                getAdapterId(),
+                catalogColumn.id,
+                this.dbKeyspace,
+                physicalTableName,
+                physicalColumnName,
+                false );
     }
 
 
@@ -431,7 +428,7 @@ public class CassandraStore extends DataStore {
         session.execute( SchemaBuilder.alterTable( this.dbKeyspace, physicalTableName )
                 .dropColumn( physicalColumnName ).build() );
 
-        physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName );
+        physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName, true );
     }
 
 

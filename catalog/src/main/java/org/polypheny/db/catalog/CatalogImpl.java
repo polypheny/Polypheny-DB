@@ -1590,9 +1590,10 @@ public class CatalogImpl extends Catalog {
      * @param physicalSchemaName The physical schema name
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
+     * @param updatePhysicalColumnPosition Whether to reset the column position (highst number in the table; represents that the column is now at the last position)
      */
     @Override
-    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName ) {
+    public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
         try {
             CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
             CatalogColumnPlacement placement = new CatalogColumnPlacement(

@@ -490,8 +490,9 @@ public abstract class Catalog {
      * @param physicalSchemaName The physical schema name
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
+     * @param updatePhysicalColumnPosition Whether to reset the column position (highst number in the table; represents that the column is now at the last position)
      */
-    public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName );
+    public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition );
 
 
     /**

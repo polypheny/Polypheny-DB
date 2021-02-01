@@ -28,7 +28,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -115,12 +114,14 @@ public class FileStore extends DataStore {
     @Override
     public void createTable( Context context, CatalogTable catalogTable ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
-        try {
-            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
-                catalog.updateColumnPlacementPhysicalNames( getAdapterId(), placement.columnId, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ), getPhysicalColumnName( placement.columnId ) );
-            }
-        } catch ( UnknownColumnPlacementRuntimeException e ) {
-            throw new RuntimeException( "Could not create table", e );
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    placement.columnId,
+                    currentSchema.getSchemaName(),
+                    getPhysicalTableName( catalogTable.id ),
+                    getPhysicalColumnName( placement.columnId ),
+                    false );
         }
         for ( Long colId : catalogTable.columnIds ) {
             File newColumnFolder = getColumnFolder( colId );
@@ -153,16 +154,13 @@ public class FileStore extends DataStore {
         if ( !newColumnFolder.mkdir() ) {
             throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
         }
-        try {
-            catalog.updateColumnPlacementPhysicalNames(
-                    getAdapterId(),
-                    catalogColumn.id,
-                    currentSchema.getSchemaName(),
-                    getPhysicalTableName( catalogTable.id ),
-                    getPhysicalColumnName( catalogColumn.id ) );
-        } catch ( UnknownColumnPlacementRuntimeException e ) {
-            throw new RuntimeException( e );
-        }
+        catalog.updateColumnPlacementPhysicalNames(
+                getAdapterId(),
+                catalogColumn.id,
+                currentSchema.getSchemaName(),
+                getPhysicalTableName( catalogTable.id ),
+                getPhysicalColumnName( catalogColumn.id ),
+                false );
     }
 
 
