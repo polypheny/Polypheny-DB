@@ -134,7 +134,7 @@ public abstract class Catalog {
 
     public abstract long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName );
 
-    public abstract void deleteDatabase( long databaseId ) throws UnknownDatabaseException;
+    public abstract void deleteDatabase( long databaseId );
 
     /**
      * Get all databases
@@ -332,10 +332,11 @@ public abstract class Catalog {
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
      * @param tableType The table type
+     * @param modifiable Whether the content of the table can be modified
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition );
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.
@@ -667,7 +668,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of foreign keys
      */
-    public abstract List<CatalogForeignKey> getForeignKeys( long tableId ) throws GenericCatalogException;
+    public abstract List<CatalogForeignKey> getForeignKeys( long tableId );
 
     /**
      * Returns all foreign keys that reference the specified table (exported keys).
@@ -675,7 +676,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of foreign keys
      */
-    public abstract List<CatalogForeignKey> getExportedKeys( long tableId ) throws GenericCatalogException;
+    public abstract List<CatalogForeignKey> getExportedKeys( long tableId );
 
     /**
      * Get all constraints of the specified table
@@ -683,7 +684,7 @@ public abstract class Catalog {
      * @param tableId The id of the table
      * @return List of constraints
      */
-    public abstract List<CatalogConstraint> getConstraints( long tableId ) throws GenericCatalogException;
+    public abstract List<CatalogConstraint> getConstraints( long tableId );
 
 
     public abstract List<CatalogIndex> getIndexes( CatalogKey key );
@@ -1041,7 +1042,7 @@ public abstract class Catalog {
         }
 
 
-        public static Collation getById( int id ) throws UnknownCollationException {
+        public static Collation getById( int id ) {
             for ( Collation c : values() ) {
                 if ( c.id == id ) {
                     return c;

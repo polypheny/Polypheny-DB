@@ -25,9 +25,6 @@ import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
 

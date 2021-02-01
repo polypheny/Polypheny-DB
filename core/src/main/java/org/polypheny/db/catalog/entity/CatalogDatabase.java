@@ -23,9 +23,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public final class CatalogDatabase implements CatalogEntity, Comparable<CatalogDatabase> {
 

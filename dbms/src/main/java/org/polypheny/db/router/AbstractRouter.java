@@ -31,8 +31,6 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -231,16 +229,15 @@ public abstract class AbstractRouter implements Router {
                 CatalogTable catalogTable = catalog.getTable( t.getTableId() );
 
                 // Make sure that this table can be modified
-                if ( catalogTable.tableType == TableType.TABLE ) {
-                    // Everything fine. Nothing to check
-                } else if ( catalogTable.tableType == TableType.SOURCE ) {
-                    for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsByColumn( catalogTable.columnIds.get( 0 ) ) ) {
-                        if ( ((DataSource) AdapterManager.getInstance().getAdapter( ccp.adapterId )).isDataReadOnly() ) {
-                            throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
-                        }
+                if ( !catalogTable.modifiable ) {
+                    if ( catalogTable.tableType == TableType.TABLE ) {
+                        throw new RuntimeException( "Unable to modify a table marked as read-only!" );
+                    } else if ( catalogTable.tableType == TableType.SOURCE ) {
+                        throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
+                    } else if ( catalogTable.tableType == TableType.VIEW ) {
+                        throw new RuntimeException( "Polypheny-DB does not support modifying views." );
                     }
-                } else if ( catalogTable.tableType == TableType.VIEW ) {
-                    throw new RuntimeException( "Polypheny-DB does not support modifying views." );
+                    throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                 }
 
                 long pkid = catalogTable.primaryKey;

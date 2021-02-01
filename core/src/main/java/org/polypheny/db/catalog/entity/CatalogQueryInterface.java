@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
+
 @EqualsAndHashCode
 public class CatalogQueryInterface implements CatalogEntity {
 

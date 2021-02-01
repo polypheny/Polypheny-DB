@@ -83,7 +83,6 @@ import org.polypheny.db.catalog.entity.CatalogSchema.PrimitiveCatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogTable.PrimitiveCatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -548,41 +547,37 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getImportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
             }
-            try {
-                final Pattern tablePattern = table == null ? null : new Pattern( table );
-                final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-                final Pattern databasePattern = database == null ? null : new Pattern( database );
-                final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-                List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-                for ( CatalogTable catalogTable : catalogTables ) {
-                    List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
-                    importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
-                }
-                StatementHandle statementHandle = createStatement( ch );
-                return createMetaResultSet(
-                        ch,
-                        statementHandle,
-                        toEnumerable( foreignKeyColumns ),
-                        PrimitiveCatalogForeignKeyColumn.class,
-                        // According to JDBC standard:
-                        "PKTABLE_CAT",    // The name of the database that contains the table with the referenced primary key.
-                        "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
-                        "PKTABLE_NAME",           // The name of the table with the referenced primary key.
-                        "PKCOLUMN_NAME",          // The column name of the primary key being imported.
-                        "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
-                        "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
-                        "FKTABLE_NAME",          // The name of the table containing the foreign key.
-                        "FKCOLUMN_NAME",          // The column name of the foreign key.
-                        "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
-                        "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
-                        "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
-                        "FK_NAME",                // The name of the foreign key.
-                        "PK_NAME",                // The name of the primary key.
-                        "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit. --> always null
-                );
-            } catch ( GenericCatalogException e ) {
-                throw propagate( e );
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            for ( CatalogTable catalogTable : catalogTables ) {
+                List<CatalogForeignKey> importedKeys = catalog.getForeignKeys( catalogTable.id );
+                importedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( foreignKeyColumns ),
+                    PrimitiveCatalogForeignKeyColumn.class,
+                    // According to JDBC standard:
+                    "PKTABLE_CAT",    // The name of the database that contains the table with the referenced primary key.
+                    "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
+                    "PKTABLE_NAME",           // The name of the table with the referenced primary key.
+                    "PKCOLUMN_NAME",          // The column name of the primary key being imported.
+                    "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
+                    "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
+                    "FKTABLE_NAME",          // The name of the table containing the foreign key.
+                    "FKCOLUMN_NAME",          // The column name of the foreign key.
+                    "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
+                    "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
+                    "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
+                    "FK_NAME",                // The name of the foreign key.
+                    "PK_NAME",                // The name of the primary key.
+                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit. --> always null
+            );
         }
     }
 
@@ -595,41 +590,37 @@ public class DbmsMeta implements ProtobufMeta {
             if ( log.isTraceEnabled() ) {
                 log.trace( "getExportedKeys( ConnectionHandle {}, String {}, String {}, String {} )", ch, database, schema, table );
             }
-            try {
-                final Pattern tablePattern = table == null ? null : new Pattern( table );
-                final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
-                final Pattern databasePattern = database == null ? null : new Pattern( database );
-                final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
-                List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
-                for ( CatalogTable catalogTable : catalogTables ) {
-                    List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
-                    exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
-                }
-                StatementHandle statementHandle = createStatement( ch );
-                return createMetaResultSet(
-                        ch,
-                        statementHandle,
-                        toEnumerable( foreignKeyColumns ),
-                        PrimitiveCatalogForeignKeyColumn.class,
-                        // According to JDBC standard:
-                        "PKTABLE_CAT",            // The name of the database that contains the table with the referenced primary key.
-                        "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
-                        "PKTABLE_NAME",           // The name of the table with the referenced primary key.
-                        "PKCOLUMN_NAME",          // The column name of the primary key being imported.
-                        "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
-                        "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
-                        "FKTABLE_NAME",           // The name of the table containing the foreign key.
-                        "FKCOLUMN_NAME",          // The column name of the foreign key.
-                        "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
-                        "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
-                        "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
-                        "FK_NAME",                // The name of the foreign key.
-                        "PK_NAME",                // The name of the primary key. --> always null
-                        "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
-                );
-            } catch ( GenericCatalogException e ) {
-                throw propagate( e );
+            final Pattern tablePattern = table == null ? null : new Pattern( table );
+            final Pattern schemaPattern = schema == null ? null : new Pattern( schema );
+            final Pattern databasePattern = database == null ? null : new Pattern( database );
+            final List<CatalogTable> catalogTables = catalog.getTables( databasePattern, schemaPattern, tablePattern );
+            List<CatalogForeignKeyColumn> foreignKeyColumns = new LinkedList<>();
+            for ( CatalogTable catalogTable : catalogTables ) {
+                List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( catalogTable.id );
+                exportedKeys.forEach( catalogForeignKey -> foreignKeyColumns.addAll( catalogForeignKey.getCatalogForeignKeyColumns() ) );
             }
+            StatementHandle statementHandle = createStatement( ch );
+            return createMetaResultSet(
+                    ch,
+                    statementHandle,
+                    toEnumerable( foreignKeyColumns ),
+                    PrimitiveCatalogForeignKeyColumn.class,
+                    // According to JDBC standard:
+                    "PKTABLE_CAT",            // The name of the database that contains the table with the referenced primary key.
+                    "PKTABLE_SCHEM",          // The name of the schema that contains the table with the referenced primary key.
+                    "PKTABLE_NAME",           // The name of the table with the referenced primary key.
+                    "PKCOLUMN_NAME",          // The column name of the primary key being imported.
+                    "FKTABLE_CAT",            // The name of the database that contains the table with the foreign key.
+                    "FKTABLE_SCHEM",          // The name of the schema that contains the table with the foreign key.
+                    "FKTABLE_NAME",           // The name of the table containing the foreign key.
+                    "FKCOLUMN_NAME",          // The column name of the foreign key.
+                    "KEY_SEQ",                // The sequence number of the column in a multi-column primary key.
+                    "UPDATE_RULE",            // What happens to a foreign key when the primary key is updated.
+                    "DELETE_RULE",            // What happens to a foreign key when the primary key is deleted.
+                    "FK_NAME",                // The name of the foreign key.
+                    "PK_NAME",                // The name of the primary key. --> always null
+                    "DEFERRABILITY"           // Indicates if the evaluation of the foreign key constraint can be deferred until a commit.
+            );
         }
     }
 

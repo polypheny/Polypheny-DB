@@ -28,9 +28,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 
 
-/**
- *
- */
 @EqualsAndHashCode(callSuper = true)
 public final class CatalogForeignKey extends CatalogKey {
 

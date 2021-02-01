@@ -63,7 +63,6 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterIdRuntimeException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementRuntimeException;
@@ -234,7 +233,7 @@ public class CatalogImpl extends Catalog {
                     insertDefaultData();
                 }
 
-            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownAdapterException | UnknownQueryInterfaceException | UnknownColumnException e ) {
+            } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownTableException | UnknownSchemaException | UnknownAdapterException | UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
             if ( doInitInformationPage ) {
@@ -542,7 +541,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownAdapterException, UnknownQueryInterfaceException, UnknownColumnException {
+    private void insertDefaultData() throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownTableException, UnknownSchemaException, UnknownAdapterException, UnknownColumnException {
 
         //////////////
         // init users
@@ -602,16 +601,16 @@ public class CatalogImpl extends Catalog {
         CatalogAdapter csv = getAdapter( "hr" );
         if ( !testMode ) {
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-                addTable( "depts", schemaId, systemId, TableType.SOURCE, null );
+                addTable( "depts", schemaId, systemId, TableType.SOURCE, false, null );
             }
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-                addTable( "emps", schemaId, systemId, TableType.SOURCE, null );
+                addTable( "emps", schemaId, systemId, TableType.SOURCE, false, null );
             }
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
-                addTable( "emp", schemaId, systemId, TableType.SOURCE, null );
+                addTable( "emp", schemaId, systemId, TableType.SOURCE, false, null );
             }
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
-                addTable( "work", schemaId, systemId, TableType.SOURCE, null );
+                addTable( "work", schemaId, systemId, TableType.SOURCE, false, null );
                 addDefaultCsvColumns( csv );
             }
         }
@@ -749,7 +748,7 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public void deleteDatabase( long databaseId ) throws UnknownDatabaseException {
+    public void deleteDatabase( long databaseId ) {
         CatalogDatabase database = getDatabase( databaseId );
         if ( database != null ) {
             synchronized ( this ) {
@@ -1213,11 +1212,12 @@ public class CatalogImpl extends Catalog {
      * @param schemaId The id of the schema
      * @param ownerId The if of the owner
      * @param tableType The table type
+     * @param modifiable Whether the content of the table can be modified
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, String definition ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1232,7 +1232,8 @@ public class CatalogImpl extends Catalog {
                 tableType,
                 definition,
                 null,
-                ImmutableMap.of() );
+                ImmutableMap.of(),
+                modifiable );
 
         synchronized ( this ) {
             tables.put( id, table );
@@ -1272,7 +1273,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameTable( long tableId, String name ) {
         CatalogTable old = getTable( tableId );
-        CatalogTable table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter );
+        CatalogTable table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
@@ -1322,7 +1323,7 @@ public class CatalogImpl extends Catalog {
     public void setTableOwner( long tableId, int ownerId ) {
         CatalogTable old = getTable( tableId );
         CatalogUser user = getUser( ownerId );
-        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter );
+        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, ownerId, user.name, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1340,7 +1341,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) {
         CatalogTable old = getTable( tableId );
-        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByAdapter );
+        CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, keyId, old.placementsByAdapter, old.modifiable );
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1393,7 +1394,7 @@ public class CatalogImpl extends Catalog {
                 } else {
                     placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
                 }
-                CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
+                CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ), old.modifiable );
 
                 tables.replace( column.tableId, table );
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1419,7 +1420,7 @@ public class CatalogImpl extends Catalog {
         } else {
             placementsByStore.remove( adapterId );
         }
-        CatalogTable table = new CatalogTable( oldTable.id, oldTable.name, oldTable.columnIds, oldTable.schemaId, oldTable.databaseId, oldTable.ownerId, oldTable.ownerName, oldTable.tableType, oldTable.definition, oldTable.primaryKey, ImmutableMap.copyOf( placementsByStore ) );
+        CatalogTable table = new CatalogTable( oldTable.id, oldTable.name, oldTable.columnIds, oldTable.schemaId, oldTable.databaseId, oldTable.ownerId, oldTable.ownerName, oldTable.tableType, oldTable.definition, oldTable.primaryKey, ImmutableMap.copyOf( placementsByStore ), oldTable.modifiable );
         synchronized ( this ) {
             tables.replace( table.id, table );
             tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
@@ -1770,7 +1771,7 @@ public class CatalogImpl extends Catalog {
 
             List<Long> columnIds = new ArrayList<>( table.columnIds );
             columnIds.add( id );
-            CatalogTable updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter );
+            CatalogTable updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
 
             tables.replace( tableId, updatedTable );
             tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
@@ -1859,7 +1860,7 @@ public class CatalogImpl extends Catalog {
                 columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );
             }
             listeners.firePropertyChange( "column", old, column );
-        } catch ( NullPointerException | UnknownCollationException e ) {
+        } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
     }
@@ -1968,7 +1969,7 @@ public class CatalogImpl extends Catalog {
         CatalogTable old = getTable( column.tableId );
         List<Long> columnIds = new ArrayList<>( old.columnIds );
         columnIds.remove( columnId );
-        CatalogTable table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter );
+        CatalogTable table = new CatalogTable( old.id, old.name, ImmutableList.copyOf( columnIds ), old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
 
         synchronized ( this ) {
             columnNames.remove( new Object[]{ column.databaseId, column.schemaId, column.tableId, column.name } );

@@ -114,7 +114,6 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -1671,7 +1670,7 @@ public class Crud implements InformationObserver {
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | GenericCatalogException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -2234,72 +2233,68 @@ public class Crud implements InformationObserver {
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
-        try {
-            List<CatalogTable> catalogTables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
-            for ( CatalogTable catalogTable : catalogTables ) {
-                if ( catalogTable.tableType == TableType.TABLE ) {
-                    // get foreign keys
-                    List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
-                    for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                        for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
-                            fKeys.add( ForeignKey.builder()
-                                    .pkTableSchema( catalogForeignKey.getReferencedKeySchemaName() )
-                                    .pkTableName( catalogForeignKey.getReferencedKeyTableName() )
-                                    .pkColumnName( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
-                                    .fkTableSchema( catalogForeignKey.getSchemaName() )
-                                    .fkTableName( catalogForeignKey.getTableName() )
-                                    .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
-                                    .fkName( catalogForeignKey.name )
-                                    .pkName( "" ) // TODO
-                                    .build() );
-                        }
+        List<CatalogTable> catalogTables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
+        for ( CatalogTable catalogTable : catalogTables ) {
+            if ( catalogTable.tableType == TableType.TABLE ) {
+                // get foreign keys
+                List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
+                for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
+                    for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
+                        fKeys.add( ForeignKey.builder()
+                                .pkTableSchema( catalogForeignKey.getReferencedKeySchemaName() )
+                                .pkTableName( catalogForeignKey.getReferencedKeyTableName() )
+                                .pkColumnName( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                .fkTableSchema( catalogForeignKey.getSchemaName() )
+                                .fkTableName( catalogForeignKey.getTableName() )
+                                .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
+                                .fkName( catalogForeignKey.name )
+                                .pkName( "" ) // TODO
+                                .build() );
                     }
-
-                    // get tables with its columns
-                    DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName() );
-                    for ( String columnName : catalogTable.getColumnNames() ) {
-                        table.addColumn( new DbColumn( columnName ) );
-                    }
-
-                    // get primary key with its columns
-                    if ( catalogTable.primaryKey != null ) {
-                        CatalogPrimaryKey catalogPrimaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                        for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
-                            table.addPrimaryKeyField( columnName );
-                        }
-                    }
-
-                    // get unique constraints
-                    List<CatalogConstraint> catalogConstraints = catalog.getConstraints( catalogTable.id );
-                    for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
-                        if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
-                            // TODO: unique constraints can be over multiple columns.
-                            if ( catalogConstraint.key.getColumnNames().size() == 1 &&
-                                    catalogConstraint.key.getSchemaName().equals( table.getSchema() ) &&
-                                    catalogConstraint.key.getTableName().equals( table.getTableName() ) ) {
-                                table.addUniqueColumn( catalogConstraint.key.getColumnNames().get( 0 ) );
-                            }
-                            // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
-                        }
-                    }
-
-                    // get unique indexes
-                    List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, true );
-                    for ( CatalogIndex catalogIndex : catalogIndexes ) {
-                        // TODO: unique indexes can be over multiple columns.
-                        if ( catalogIndex.key.getColumnNames().size() == 1 &&
-                                catalogIndex.key.getSchemaName().equals( table.getSchema() ) &&
-                                catalogIndex.key.getTableName().equals( table.getTableName() ) ) {
-                            table.addUniqueColumn( catalogIndex.key.getColumnNames().get( 0 ) );
-                        }
-                        // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
-                    }
-
-                    tables.add( table );
                 }
+
+                // get tables with its columns
+                DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName() );
+                for ( String columnName : catalogTable.getColumnNames() ) {
+                    table.addColumn( new DbColumn( columnName ) );
+                }
+
+                // get primary key with its columns
+                if ( catalogTable.primaryKey != null ) {
+                    CatalogPrimaryKey catalogPrimaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                    for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
+                        table.addPrimaryKeyField( columnName );
+                    }
+                }
+
+                // get unique constraints
+                List<CatalogConstraint> catalogConstraints = catalog.getConstraints( catalogTable.id );
+                for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
+                    if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
+                        // TODO: unique constraints can be over multiple columns.
+                        if ( catalogConstraint.key.getColumnNames().size() == 1 &&
+                                catalogConstraint.key.getSchemaName().equals( table.getSchema() ) &&
+                                catalogConstraint.key.getTableName().equals( table.getTableName() ) ) {
+                            table.addUniqueColumn( catalogConstraint.key.getColumnNames().get( 0 ) );
+                        }
+                        // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
+                    }
+                }
+
+                // get unique indexes
+                List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, true );
+                for ( CatalogIndex catalogIndex : catalogIndexes ) {
+                    // TODO: unique indexes can be over multiple columns.
+                    if ( catalogIndex.key.getColumnNames().size() == 1 &&
+                            catalogIndex.key.getSchemaName().equals( table.getSchema() ) &&
+                            catalogIndex.key.getTableName().equals( table.getTableName() ) ) {
+                        table.addUniqueColumn( catalogIndex.key.getColumnNames().get( 0 ) );
+                    }
+                    // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
+                }
+
+                tables.add( table );
             }
-        } catch ( GenericCatalogException e ) {
-            log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
         }
 
         return new Uml( tables, fKeys );
@@ -2614,16 +2609,6 @@ public class Crud implements InformationObserver {
                 }
             }
             //} catch ( CsvValidationException | GenericCatalogException e ) {
-        } catch ( GenericCatalogException e ) {
-            log.error( "Could not export csv file", e );
-            error = "Could not export csv file" + e.getMessage();
-            if ( transaction != null ) {
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rolling back transaction", e );
-                }
-            }
         } finally {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
@@ -2639,7 +2624,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws GenericCatalogException, QueryExecutionException {
+    private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws QueryExecutionException {
         // create table from .json file
         List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
@@ -3356,7 +3341,7 @@ public class Crud implements InformationObserver {
     private Transaction getTransaction( boolean analyze ) {
         try {
             return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

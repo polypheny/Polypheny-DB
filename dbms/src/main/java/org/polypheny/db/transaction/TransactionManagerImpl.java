@@ -89,7 +89,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
+    public Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException {
         Catalog catalog = Catalog.getInstance();
         CatalogUser catalogUser = catalog.getUser( user );
         CatalogDatabase catalogDatabase = catalog.getDatabase( database );
@@ -105,7 +105,7 @@ public class TransactionManagerImpl implements TransactionManager {
 
 
     @Override
-    public void removeTransaction( PolyXid xid ) throws TransactionException {
+    public void removeTransaction( PolyXid xid ) {
         if ( !transactions.containsKey( xid ) ) {
             log.warn( "Unknown transaction id: {}", xid );
         } else {

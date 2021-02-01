@@ -37,7 +37,6 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -110,7 +109,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             final CatalogConstraint pkc = new CatalogConstraint(
                     0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception", e );
             return logicalRoot;
         }

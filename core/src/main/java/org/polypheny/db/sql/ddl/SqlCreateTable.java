@@ -186,6 +186,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     schemaId,
                     context.getCurrentUserId(),
                     TableType.TABLE,
+                    true,
                     null );
 
             List<SqlNode> columnList = this.columnList.getList();

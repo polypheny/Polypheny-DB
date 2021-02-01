@@ -26,9 +26,6 @@ import lombok.RequiredArgsConstructor;
 import org.polypheny.db.catalog.Catalog.IndexType;
 
 
-/**
- *
- */
 @EqualsAndHashCode(callSuper = false)
 public final class CatalogIndex implements Serializable {
 

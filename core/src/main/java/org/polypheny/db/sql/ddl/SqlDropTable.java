@@ -98,21 +98,17 @@ public class SqlDropTable extends SqlDropObject {
 
         // Check if there are foreign keys referencing this table
         List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
-        try {
-            List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( table.id );
-            if ( exportedKeys.size() > 0 ) {
-                for ( CatalogForeignKey foreignKey : exportedKeys ) {
-                    if ( foreignKey.tableId == table.id ) {
-                        // If this is a self-reference, drop it later.
-                        selfRefsToDelete.add( foreignKey );
-                    } else {
-                        throw new PolyphenyDbException( "Cannot drop table '" + table.getSchemaName() + "." + table.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
-                    }
+        List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( table.id );
+        if ( exportedKeys.size() > 0 ) {
+            for ( CatalogForeignKey foreignKey : exportedKeys ) {
+                if ( foreignKey.tableId == table.id ) {
+                    // If this is a self-reference, drop it later.
+                    selfRefsToDelete.add( foreignKey );
+                } else {
+                    throw new PolyphenyDbException( "Cannot drop table '" + table.getSchemaName() + "." + table.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
                 }
-
             }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while retrieving list of exported keys.", e );
+
         }
 
         // Make sure that all adapters are of type store (and not source)

@@ -23,9 +23,6 @@ import lombok.NonNull;
 import org.polypheny.db.type.PolyType;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public class CatalogDefaultValue implements Serializable {
 

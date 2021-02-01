@@ -242,19 +242,19 @@ public class CsvTest {
      * Reads from a table.
      */
     @Test
-    public void testSelect() throws SQLException {
+    public void testSelect() {
         sql( "model", "select * from EMPS" ).ok();
     }
 
 
     @Test
-    public void testSelectSingleProjectGz() throws SQLException {
+    public void testSelectSingleProjectGz() {
         sql( "smart", "select name from EMPS" ).ok();
     }
 
 
     @Test
-    public void testSelectSingleProject() throws SQLException {
+    public void testSelectSingleProject() {
         sql( "smart", "select name from DEPTS" ).ok();
     }
 
@@ -263,7 +263,7 @@ public class CsvTest {
      * Test case for "Type inference multiplying Java long by SQL INTEGER".
      */
     @Test
-    public void testSelectLongMultiplyInteger() throws SQLException {
+    public void testSelectLongMultiplyInteger() {
         final String sql = "select empno * 3 as e3\n" + "from long_emps where empno = 100";
 
         sql( "bug", sql ).checking( resultSet -> {
@@ -280,13 +280,13 @@ public class CsvTest {
 
 
     @Test
-    public void testCustomTable() throws SQLException {
+    public void testCustomTable() {
         sql( "model-with-custom-table", "select * from CUSTOM_TABLE.EMPS" ).ok();
     }
 
 
     @Test
-    public void testPushDownProjectDumb() throws SQLException {
+    public void testPushDownProjectDumb() {
         // rule does not fire, because we're using 'dumb' tables in simple model
         final String sql = "explain plan for select * from EMPS";
         final String expected = "PLAN=EnumerableInterpreter\n  BindableTableScan(table=[[SALES, EMPS]])\n";
@@ -295,7 +295,7 @@ public class CsvTest {
 
 
     @Test
-    public void testPushDownProject() throws SQLException {
+    public void testPushDownProject() {
         final String sql = "explain plan for select * from EMPS";
         final String expected = "PLAN=CsvTableScan(table=[[SALES, EMPS]], fields=[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]])\n";
         sql( "smart", sql ).returns( expected ).ok();
@@ -303,7 +303,7 @@ public class CsvTest {
 
 
     @Test
-    public void testPushDownProject2() throws SQLException {
+    public void testPushDownProject2() {
         sql( "smart", "explain plan for select name, empno from EMPS" )
                 .returns( "PLAN=CsvTableScan(table=[[SALES, EMPS]], fields=[[1, 0]])\n" )
                 .ok();
@@ -315,7 +315,7 @@ public class CsvTest {
 
 
     @Test
-    public void testPushDownProjectAggregate() throws SQLException {
+    public void testPushDownProjectAggregate() {
         final String sql = "explain plan for\n" + "select gender, count(*) from EMPS group by gender";
         final String expected = "PLAN=" + "EnumerableAggregate(group=[{0}], EXPR$1=[COUNT()])\n" + "  CsvTableScan(table=[[SALES, EMPS]], fields=[[3]])\n";
         sql( "smart", sql ).returns( expected ).ok();
@@ -323,7 +323,7 @@ public class CsvTest {
 
 
     @Test
-    public void testPushDownProjectAggregateWithFilter() throws SQLException {
+    public void testPushDownProjectAggregateWithFilter() {
         final String sql = "explain plan for\n" + "select max(empno) from EMPS where gender='F'";
         final String expected = "PLAN=" + "EnumerableAggregate(group=[{}], EXPR$0=[MAX($0)])\n"
                 + "  EnumerableCalc(expr#0..1=[{inputs}], expr#2=['F':VARCHAR], "
@@ -334,7 +334,7 @@ public class CsvTest {
 
 
     @Test
-    public void testPushDownProjectAggregateNested() throws SQLException {
+    public void testPushDownProjectAggregateNested() {
         final String sql = "explain plan for\n"
                 + "select gender, max(qty)\n"
                 + "from (\n"
@@ -351,13 +351,13 @@ public class CsvTest {
 
 
     @Test
-    public void testFilterableSelect() throws SQLException {
+    public void testFilterableSelect() {
         sql( "filterable-model", "select name from EMPS" ).ok();
     }
 
 
     @Test
-    public void testFilterableSelectStar() throws SQLException {
+    public void testFilterableSelectStar() {
         sql( "filterable-model", "select * from EMPS" ).ok();
     }
 
@@ -366,7 +366,7 @@ public class CsvTest {
      * Filter that can be fully handled by CsvFilterableTable.
      */
     @Test
-    public void testFilterableWhere() throws SQLException {
+    public void testFilterableWhere() {
         final String sql = "select empno, gender, name from EMPS where name = 'John'";
         sql( "filterable-model", sql ).returns( "EMPNO=110; GENDER=M; NAME=John" ).ok();
     }
@@ -376,14 +376,14 @@ public class CsvTest {
      * Filter that can be partly handled by CsvFilterableTable.
      */
     @Test
-    public void testFilterableWhere2() throws SQLException {
+    public void testFilterableWhere2() {
         final String sql = "select empno, gender, name from EMPS\n" + " where gender = 'F' and empno > 125";
         sql( "filterable-model", sql ).returns( "EMPNO=130; GENDER=F; NAME=Alice" ).ok();
     }
 
 
     @Test
-    public void testJson() throws SQLException {
+    public void testJson() {
         final String sql = "select _MAP['id'] as id,\n"
                 + " _MAP['title'] as title,\n"
                 + " CHAR_LENGTH(CAST(_MAP['title'] AS VARCHAR(30))) as len\n"
@@ -443,14 +443,14 @@ public class CsvTest {
 
 
     @Test
-    public void testJoinOnString() throws SQLException {
+    public void testJoinOnString() {
         final String sql = "select * from emps\n" + "join depts on emps.name = depts.name";
         sql( "smart", sql ).ok();
     }
 
 
     @Test
-    public void testWackyColumns() throws SQLException {
+    public void testWackyColumns() {
         final String sql = "select * from wacky_column_names where false";
         sql( "bug", sql ).returns().ok();
 
@@ -467,7 +467,7 @@ public class CsvTest {
      * Test case for "In Csv adapter, convert DATE and TIME values to int, and TIMESTAMP values to long".
      */
     @Test
-    public void testGroupByTimestampAdd() throws SQLException {
+    public void testGroupByTimestampAdd() {
         final String sql = "select count(*) as c,\n"
                 + "  {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT) } as t\n"
                 + "from EMPS group by {fn timestampadd(SQL_TSI_DAY, 1, JOINEDAT ) } ";
@@ -508,7 +508,7 @@ public class CsvTest {
 
 
     @Test
-    public void testReadme() throws SQLException {
+    public void testReadme() {
         final String sql = "SELECT d.name, COUNT(*) cnt"
                 + " FROM emps AS e"
                 + " JOIN depts AS d ON e.deptno = d.deptno"
@@ -521,7 +521,7 @@ public class CsvTest {
      * Test case for "Type inference when converting IN clause to semijoin".
      */
     @Test
-    public void testInToSemiJoinWithCast() throws SQLException {
+    public void testInToSemiJoinWithCast() {
         // Note that the IN list needs at least 20 values to trigger the rewrite to a semijoin. Try it both ways.
         final String sql = "SELECT e.name\n"
                 + "FROM emps AS e\n"
@@ -537,7 +537,7 @@ public class CsvTest {
      * Test case for "Underflow exception due to scaling IN clause literals".
      */
     @Test
-    public void testInToSemiJoinWithoutCast() throws SQLException {
+    public void testInToSemiJoinWithoutCast() {
         final String sql = "SELECT e.name\n"
                 + "FROM emps AS e\n"
                 + "WHERE e.empno in "

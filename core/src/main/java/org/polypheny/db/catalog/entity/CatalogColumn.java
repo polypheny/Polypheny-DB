@@ -29,9 +29,6 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.type.PolyType;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public final class CatalogColumn implements CatalogEntity, Comparable<CatalogColumn> {
 

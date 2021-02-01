@@ -26,9 +26,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSchema> {
 

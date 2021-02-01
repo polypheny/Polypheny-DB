@@ -167,7 +167,7 @@ public class IndexManager {
     }
 
 
-    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownTableException, UnknownKeyException, UnknownDatabaseException, UnknownUserException, TransactionException {
+    protected void addIndex( final long id, final String name, final CatalogKey key, final String method, final Boolean unique, final Boolean persistent, final Statement statement ) throws UnknownSchemaException, GenericCatalogException, UnknownDatabaseException, UnknownUserException, TransactionException {
         final IndexFactory factory = INDEX_FACTORIES.stream()
                 .filter( it -> it.canProvide( method, unique, persistent ) )
                 .findFirst()

@@ -23,9 +23,6 @@ import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public class CatalogConstraint implements Serializable {
 
