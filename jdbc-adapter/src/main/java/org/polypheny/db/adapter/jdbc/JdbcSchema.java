@@ -49,11 +49,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
-import org.polypheny.db.adapter.jdbc.stores.AbstractJdbcStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -93,7 +93,7 @@ public class JdbcSchema implements Schema {
     private final Map<String, JdbcTable> tableMap;
     private final Map<String, String> physicalToLogicalTableNameMap;
 
-    private final AbstractJdbcStore jdbcStore;
+    private final Adapter adapter;
 
 
     private JdbcSchema(
@@ -102,14 +102,14 @@ public class JdbcSchema implements Schema {
             JdbcConvention convention,
             Map<String, JdbcTable> tableMap,
             Map<String, String> physicalToLogicalTableNameMap,
-            AbstractJdbcStore jdbcStore ) {
+            Adapter adapter ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         this.convention = convention;
         this.tableMap = tableMap;
         this.physicalToLogicalTableNameMap = physicalToLogicalTableNameMap;
-        this.jdbcStore = jdbcStore;
+        this.adapter = adapter;
     }
 
 
@@ -124,7 +124,7 @@ public class JdbcSchema implements Schema {
             @NonNull ConnectionFactory connectionFactory,
             @NonNull SqlDialect dialect,
             JdbcConvention convention,
-            AbstractJdbcStore jdbcStore ) {
+            Adapter adapter ) {
         super();
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
@@ -132,7 +132,7 @@ public class JdbcSchema implements Schema {
         this.convention = convention;
         this.tableMap = new HashMap<>();
         this.physicalToLogicalTableNameMap = new HashMap<>();
-        this.jdbcStore = jdbcStore;
+        this.adapter = adapter;
     }
 
 
@@ -179,10 +179,10 @@ public class JdbcSchema implements Schema {
             String name,
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
-            AbstractJdbcStore jdbcStore ) {
+            Adapter adapter ) {
         final Expression expression = Schemas.subSchemaExpression( parentSchema, name, JdbcSchema.class );
         final JdbcConvention convention = JdbcConvention.of( dialect, expression, name );
-        return new JdbcSchema( connectionFactory, dialect, convention, jdbcStore );
+        return new JdbcSchema( connectionFactory, dialect, convention, adapter );
     }
 
 
@@ -208,14 +208,14 @@ public class JdbcSchema implements Schema {
                 convention,
                 tableMap,
                 physicalToLogicalTableNameMap,
-                jdbcStore );
+                adapter );
     }
 
 
     // Used by generated code (see class JdbcToEnumerableConverter).
     public ConnectionHandler getConnectionHandler( DataContext dataContext ) {
         try {
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( jdbcStore );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( adapter );
             return connectionFactory.getOrCreateConnectionHandler( dataContext.getStatement().getTransaction().getXid() );
         } catch ( ConnectionHandlerException e ) {
             throw new RuntimeException( e );

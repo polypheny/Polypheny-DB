@@ -61,8 +61,8 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvSource csvSource ) {
-        super( source, protoRowType, fieldTypes, csvSource );
+    CsvTranslatableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
 
@@ -109,8 +109,6 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         // Request all fields.
-        final int fieldCount = relOptTable.getRowType().getFieldCount();
-        final int[] fields = CsvEnumerator.identityList( fieldCount );
         return new CsvTableScan( context.getCluster(), relOptTable, this, fields );
     }
 }

@@ -612,8 +612,8 @@ public class CatalogImpl extends Catalog {
             }
             if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
                 addTable( "work", schemaId, systemId, TableType.SOURCE, null );
+                addDefaultCsvColumns( csv );
             }
-            addDefaultCsvColumns( csv );
         }
 
         ////////////////////////
@@ -697,6 +697,7 @@ public class CatalogImpl extends Catalog {
                 filename += ".gz";
             }
             addColumnPlacement( csv.id, colId, PlacementType.AUTOMATIC, filename, table.name, name );
+            updateColumnPlacementPhysicalPosition( csv.id, colId, position );
         }
     }
 

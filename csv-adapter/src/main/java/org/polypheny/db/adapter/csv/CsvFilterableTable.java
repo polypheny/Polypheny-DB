@@ -60,8 +60,8 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvSource csvSource ) {
-        super( source, protoRowType, fieldTypes, csvSource );
+    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
 
@@ -75,7 +75,6 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
-        final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object[]>() {
             @Override

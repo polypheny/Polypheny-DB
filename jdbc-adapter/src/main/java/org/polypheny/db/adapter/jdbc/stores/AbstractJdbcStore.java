@@ -18,8 +18,6 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +25,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
+import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.Catalog;
@@ -34,13 +33,9 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.Information;
-import org.polypheny.db.information.InformationGraph;
-import org.polypheny.db.information.InformationGraph.GraphData;
-import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.SchemaPlus;
@@ -55,7 +50,7 @@ import org.polypheny.db.type.PolyType;
 public abstract class AbstractJdbcStore extends DataStore {
 
     private InformationPage informationPage;
-    private InformationGroup informationGroupConnectionPool;
+    private InformationGroup informationGroup;
     private List<Information> informationElements;
 
     protected SqlDialect dialect;
@@ -81,51 +76,21 @@ public abstract class AbstractJdbcStore extends DataStore {
 
     protected void registerJdbcPoolSizeInformation( String uniqueName ) {
         informationPage = new InformationPage( uniqueName ).setLabel( "Stores" );
-        informationGroupConnectionPool = new InformationGroup( informationPage, "JDBC Connection Pool" );
-
-        informationElements = new ArrayList<>();
+        informationGroup = new InformationGroup( informationPage, "JDBC Connection Pool" );
+        informationElements = JdbcUtils.buildInformationPoolSize( informationPage, informationGroup, connectionFactory, getUniqueName() );
 
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
-        im.addGroup( informationGroupConnectionPool );
+        im.addGroup( informationGroup );
 
-        InformationGraph connectionPoolSizeGraph = new InformationGraph(
-                informationGroupConnectionPool,
-                GraphType.DOUGHNUT,
-                new String[]{ "Active", "Available", "Idle" }
-        );
-        im.registerInformation( connectionPoolSizeGraph );
-        informationElements.add( connectionPoolSizeGraph );
-
-        InformationTable connectionPoolSizeTable = new InformationTable(
-                informationGroupConnectionPool,
-                Arrays.asList( "Attribute", "Value" ) );
-        im.registerInformation( connectionPoolSizeTable );
-        informationElements.add( connectionPoolSizeTable );
-
-        informationGroupConnectionPool.setRefreshFunction( () -> {
-            int idle = connectionFactory.getNumIdle();
-            int active = connectionFactory.getNumActive();
-            int max = connectionFactory.getMaxTotal();
-            int available = max - idle - active;
-
-            connectionPoolSizeGraph.updateGraph(
-                    new String[]{ "Active", "Available", "Idle" },
-                    new GraphData<>( getUniqueName() + "-connection-pool-data", new Integer[]{ active, available, idle } )
-            );
-
-            connectionPoolSizeTable.reset();
-            connectionPoolSizeTable.addRow( "Active", active );
-            connectionPoolSizeTable.addRow( "Idle", idle );
-            connectionPoolSizeTable.addRow( "Max", max );
-        } );
+        for ( Information information : informationElements ) {
+            im.registerInformation( information );
+        }
     }
 
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
-        // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
         currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, this );
     }
 
@@ -154,7 +119,6 @@ public abstract class AbstractJdbcStore extends DataStore {
                     getPhysicalColumnName( placement.columnId ),
                     false );
         }
-
     }
 
 
@@ -198,7 +162,6 @@ public abstract class AbstractJdbcStore extends DataStore {
                     }*/
                 }
             }
-
         }
         builder.append( " )" );
         return builder;
@@ -439,7 +402,7 @@ public abstract class AbstractJdbcStore extends DataStore {
         if ( informationElements.size() > 0 ) {
             InformationManager im = InformationManager.getInstance();
             im.removeInformation( informationElements.toArray( new Information[0] ) );
-            im.removeGroup( informationGroupConnectionPool );
+            im.removeGroup( informationGroup );
             im.removePage( informationPage );
         }
     }

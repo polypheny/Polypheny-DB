@@ -161,7 +161,7 @@ class HtmlSchema extends AbstractSchema {
             //
             // TODO: MV: This three nulls most properly introduce trouble. Fix to have the correct row details at this point.
             //
-            final Table table = new CsvFilterableTable( source, null, null, null );
+            final Table table = new CsvFilterableTable( source, null, null, null, null );
             builder.put( Util.first( tableName, sourceSansCsv.path() ), table );
             return true;
         }

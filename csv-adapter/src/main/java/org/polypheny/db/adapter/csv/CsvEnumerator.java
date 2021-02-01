@@ -391,7 +391,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
             final Object[] objects = new Object[fields.length];
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i] = convert( fieldTypes[field], strings[field] );
+                objects[i] = convert( fieldTypes[i], strings[field - 1] );
             }
             return objects;
         }
@@ -402,7 +402,7 @@ class CsvEnumerator<E> implements Enumerator<E> {
             objects[0] = System.currentTimeMillis();
             for ( int i = 0; i < fields.length; i++ ) {
                 int field = fields[i];
-                objects[i + 1] = convert( fieldTypes[field], strings[field] );
+                objects[i + 1] = convert( fieldTypes[i], strings[field - 1] );
             }
             return objects;
         }

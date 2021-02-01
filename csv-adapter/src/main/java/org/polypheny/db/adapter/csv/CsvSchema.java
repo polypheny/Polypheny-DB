@@ -36,6 +36,7 @@ package org.polypheny.db.adapter.csv;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -85,11 +86,13 @@ public class CsvSchema extends AbstractSchema {
         final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         List<CsvFieldType> fieldTypes = new LinkedList<>();
+        List<Integer> fieldIds = new ArrayList<>( columnPlacementsOnStore.size() );
         for ( CatalogColumnPlacement placement : columnPlacementsOnStore ) {
             CatalogColumn catalogColumn = Catalog.getInstance().getColumn( placement.columnId );
             RelDataType sqlType = sqlType( typeFactory, catalogColumn.type, catalogColumn.length, catalogColumn.scale, null );
             fieldInfo.add( catalogColumn.name, placement.physicalColumnName, sqlType ).nullable( catalogColumn.nullable );
             fieldTypes.add( CsvFieldType.getCsvFieldType( catalogColumn.type ) );
+            fieldIds.add( (int) placement.physicalPosition );
         }
 
         String csvFileName = Catalog
@@ -102,7 +105,8 @@ public class CsvSchema extends AbstractSchema {
         } catch ( MalformedURLException e ) {
             throw new RuntimeException( e );
         }
-        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, csvSource );
+        int[] fields = fieldIds.stream().mapToInt( i -> i ).toArray();
+        CsvTable table = createTable( source, RelDataTypeImpl.proto( fieldInfo.build() ), fieldTypes, fields, csvSource );
         tableMap.put( catalogTable.name, table );
         return table;
     }
@@ -117,14 +121,14 @@ public class CsvSchema extends AbstractSchema {
     /**
      * Creates different sub-type of table based on the "flavor" attribute.
      */
-    private CsvTable createTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvSource csvSource ) {
+    private CsvTable createTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         switch ( flavor ) {
             case TRANSLATABLE:
-                return new CsvTranslatableTable( source, protoRowType, fieldTypes, csvSource );
+                return new CsvTranslatableTable( source, protoRowType, fieldTypes, fields, csvSource );
             case SCANNABLE:
-                return new CsvScannableTable( source, protoRowType, fieldTypes, csvSource );
+                return new CsvScannableTable( source, protoRowType, fieldTypes, fields, csvSource );
             case FILTERABLE:
-                return new CsvFilterableTable( source, protoRowType, fieldTypes, csvSource );
+                return new CsvFilterableTable( source, protoRowType, fieldTypes, fields, csvSource );
             default:
                 throw new AssertionError( "Unknown flavor " + this.flavor );
         }
