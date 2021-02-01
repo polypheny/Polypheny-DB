@@ -163,7 +163,7 @@ public class JdbcSchema implements Schema {
                 catalogTable.getSchemaName(),
                 catalogTable.name,
                 logicalColumnNames,
-                TableType.valueOf( catalogTable.tableType.name() ),
+                TableType.TABLE,
                 RelDataTypeImpl.proto( fieldInfo.build() ),
                 physicalSchemaName,
                 physicalTableName,

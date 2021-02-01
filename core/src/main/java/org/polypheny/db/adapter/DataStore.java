@@ -56,8 +56,6 @@ public abstract class DataStore extends Adapter {
 
     public abstract void dropIndex( Context context, CatalogIndex catalogIndex );
 
-    public abstract void truncate( Context context, CatalogTable table );
-
     public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn );
 
     public abstract List<AvailableIndexMethod> getAvailableIndexMethods();

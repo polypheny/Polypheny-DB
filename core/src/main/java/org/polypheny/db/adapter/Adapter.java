@@ -25,6 +25,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -56,6 +57,8 @@ public abstract class Adapter {
     public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore );
 
     public abstract Schema getCurrentSchema();
+
+    public abstract void truncate( Context context, CatalogTable table );
 
     public abstract boolean prepare( PolyXid xid );
 
