@@ -2139,13 +2139,17 @@ public class Crud implements InformationObserver {
     boolean addStore( final Request req, final Response res ) {
         String body = req.body();
         org.polypheny.db.webui.models.Adapter a = this.gson.fromJson( body, org.polypheny.db.webui.models.Adapter.class );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, gson.toJson( a.settings ) );
+        System.out.println( query );
+        Transaction transaction = getTransaction();
         try {
-            AdapterManager.getInstance().addAdapter( a.clazzName, a.uniqueName, a.settings );
-        } catch ( Exception e ) {
+            executeSqlUpdate( transaction, query );
+            transaction.commit();
+            return true;
+        } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not deploy data store", e );
             return false;
         }
-        return true;
     }
 
 
@@ -2154,14 +2158,16 @@ public class Crud implements InformationObserver {
      */
     Result removeAdapter( final Request req, final Response res ) {
         String uniqueName = req.body();
+        String query = String.format( "ALTER ADAPTERS DROP \"%s\"", uniqueName );
+        Transaction transaction = getTransaction();
         try {
-            CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( uniqueName.toLowerCase() );
-            AdapterManager.getInstance().removeAdapter( catalogAdapter.id );
-        } catch ( Exception e ) {
+            int a = executeSqlUpdate( transaction, query );
+            transaction.commit();
+            return new Result( new Debug().setAffectedRows( a ) );
+        } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not remove store {}", req.body(), e );
             return new Result( e );
         }
-        return new Result( new Debug().setAffectedRows( 1 ) );
     }
 
 
