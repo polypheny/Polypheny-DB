@@ -428,14 +428,14 @@ public class Crud implements InformationObserver {
     /**
      * Get all tables of a schema
      */
-    Result getTables( final Request req, final Response res ) {
+    List<DbTable> getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
         List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
-        ArrayList<String> tableNames = new ArrayList<>();
-        for ( CatalogTable catalogTable : tables ) {
-            tableNames.add( catalogTable.name );
+        ArrayList<DbTable> result = new ArrayList<>();
+        for ( CatalogTable t : tables ) {
+            result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
         }
-        return new Result( new Debug().setAffectedRows( tableNames.size() ) ).setTables( tableNames );
+        return result;
     }
 
 
@@ -2133,13 +2133,12 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Deploy a new data store
+     * Deploy a new adapter
      */
-    boolean addStore( final Request req, final Response res ) {
+    boolean addAdapter( final Request req, final Response res ) {
         String body = req.body();
         org.polypheny.db.webui.models.Adapter a = this.gson.fromJson( body, org.polypheny.db.webui.models.Adapter.class );
         String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, gson.toJson( a.settings ) );
-        System.out.println( query );
         Transaction transaction = getTransaction();
         try {
             executeSqlUpdate( transaction, query );
@@ -2254,7 +2253,7 @@ public class Crud implements InformationObserver {
                 }
 
                 // get tables with its columns
-                DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName() );
+                DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName(), catalogTable.modifiable, catalogTable.tableType );
                 for ( String columnName : catalogTable.getColumnNames() ) {
                     table.addColumn( new DbColumn( columnName ) );
                 }

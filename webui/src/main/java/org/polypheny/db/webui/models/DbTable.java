@@ -19,6 +19,7 @@ package org.polypheny.db.webui.models;
 
 import java.util.ArrayList;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.TableType;
 
 
 /**
@@ -27,12 +28,14 @@ import lombok.Getter;
 public class DbTable {
 
     @Getter
-    private String tableName;
+    private final String tableName;
     @Getter
-    private String schema;
-    private ArrayList<DbColumn> columns = new ArrayList<>();
-    private ArrayList<String> primaryKeyFields = new ArrayList<>();
-    private ArrayList<String> uniqueColumns = new ArrayList<>();
+    private final String schema;
+    private final ArrayList<DbColumn> columns = new ArrayList<>();
+    private final ArrayList<String> primaryKeyFields = new ArrayList<>();
+    private final ArrayList<String> uniqueColumns = new ArrayList<>();
+    private final boolean modifiable;
+    private final String tableType;
 
 
     /**
@@ -40,10 +43,14 @@ public class DbTable {
      *
      * @param tableName name of the table
      * @param schema name of the schema this table belongs to
+     * @param modifiable If the table is modifiable
+     * @param tableType TableType (see Catalog)
      */
-    public DbTable( final String tableName, final String schema ) {
+    public DbTable( final String tableName, final String schema, final boolean modifiable, final TableType tableType ) {
         this.tableName = tableName;
         this.schema = schema;
+        this.modifiable = modifiable;
+        this.tableType = tableType.toString();
     }
 
 
