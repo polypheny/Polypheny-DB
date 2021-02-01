@@ -63,7 +63,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -93,6 +95,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSetting;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -1279,12 +1282,95 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
+            if ( catalogTable.tableType == TableType.TABLE ) {
+                result.setType( ResultType.TABLE );
+            } else {
+                result.setType( ResultType.VIEW );
+            }
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting a column", e );
             result = new Result( e );
         }
 
         return result;
+    }
+
+
+    Result getDataSourceColumns( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        try {
+            CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+            if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                throw new RuntimeException( "The table has an unexpected number of placements!" );
+            }
+            int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+            List<String> pkColumnNames = primaryKey.getColumnNames();
+            List<DbColumn> columns = new ArrayList<>();
+            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+                CatalogColumn col = catalog.getColumn( ccp.columnId );
+                columns.add( new DbColumn(
+                        col.name,
+                        col.type.getName(),
+                        col.collectionsType == null ? "" : col.collectionsType.getName(),
+                        col.nullable,
+                        col.length,
+                        col.scale,
+                        col.dimension,
+                        col.cardinality,
+                        pkColumnNames.contains( col.name ),
+                        col.defaultValue == null ? null : col.defaultValue.value
+                ).setPhysicalName( ccp.physicalColumnName ) );
+            }
+            return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
+        } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
+            return new Result( e );
+        }
+    }
+
+
+    /**
+     * Get the exported tables of a DataSource that a table originates from
+     */
+    Result[] getExportedColumns( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        try {
+            ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
+            Set<Integer> adapterIds = placements.keySet();
+            if ( adapterIds.size() > 1 ) {
+                log.warn( "The number of DataSources of a Table should not be > 1." );
+            }
+            List<Result> exportedColumns = new ArrayList<>();
+            for ( int adapterId : adapterIds ) {
+                Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+                if ( adapter instanceof DataSource ) {
+                    DataSource dataSource = (DataSource) adapter;
+                    for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
+                        List<DbColumn> columnList = new ArrayList<>();
+                        for ( ExportedColumn col : entry.getValue() ) {
+                            DbColumn dbCol = new DbColumn(
+                                    col.name,
+                                    col.type.getName(),
+                                    col.collectionsType == null ? "" : col.collectionsType.getName(),
+                                    col.nullable, col.length,
+                                    col.scale, col.dimension,
+                                    col.cardinality,
+                                    col.primary,
+                                    null ).setPhysicalName( col.physicalColumnName );
+                            columnList.add( dbCol );
+                        }
+                        exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( entry.getKey() ) );
+                        columnList.clear();
+                    }
+                    return exportedColumns.toArray( new Result[0] );
+                } else {
+                    log.warn( "This method should only be called for tables that originate from a DataSource" );
+                }
+            }
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+            return new Result[]{ new Result( e ) };
+        }
+        return new Result[]{ new Result( "Could not retrieve exported Columns." ) };
     }
 
 
@@ -1307,78 +1393,80 @@ public class Crud implements InformationObserver {
             queries.add( query );
         }
 
-        // change type + length
-        // TODO: cast if needed
-        if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
-                !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
-                !Objects.equals( oldColumn.precision, newColumn.precision ) ||
-                !Objects.equals( oldColumn.scale, newColumn.scale ) ||
-                !oldColumn.dimension.equals( newColumn.dimension ) ||
-                !oldColumn.cardinality.equals( newColumn.cardinality ) ) {
-            // TODO: drop maxlength if requested
-            String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
-            if ( newColumn.precision != null ) {
-                query = query + "(" + newColumn.precision;
-                if ( newColumn.scale != null ) {
-                    query = query + "," + newColumn.scale;
-                }
-                query = query + ")";
-            }
-            //collectionType
-            if ( !newColumn.collectionsType.equals( "" ) ) {
-                query = query + " " + request.newColumn.collectionsType;
-                int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
-                int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
-                query = query + String.format( "(%d,%d)", dimension, cardinality );
-            }
-            queries.add( query );
-        }
-
-        // set/drop nullable
-        if ( oldColumn.nullable != newColumn.nullable ) {
-            String nullable = "SET";
-            if ( newColumn.nullable ) {
-                nullable = "DROP";
-            }
-            String query = "ALTER TABLE " + tableId + " MODIFY COLUMN \"" + newColumn.name + "\" " + nullable + " NOT NULL";
-            queries.add( query );
-        }
-
-        // change default value
-        if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
-            String query;
-            if ( newColumn.defaultValue == null ) {
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
-            } else {
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
-                if ( newColumn.collectionsType != null ) {
-                    //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
-                    if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
-                        query = query + request.newColumn.collectionsType;
+        if ( !request.renameOnly ) {
+            // change type + length
+            // TODO: cast if needed
+            if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
+                    !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
+                    !Objects.equals( oldColumn.precision, newColumn.precision ) ||
+                    !Objects.equals( oldColumn.scale, newColumn.scale ) ||
+                    !oldColumn.dimension.equals( newColumn.dimension ) ||
+                    !oldColumn.cardinality.equals( newColumn.cardinality ) ) {
+                // TODO: drop maxlength if requested
+                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
+                if ( newColumn.precision != null ) {
+                    query = query + "(" + newColumn.precision;
+                    if ( newColumn.scale != null ) {
+                        query = query + "," + newColumn.scale;
                     }
-                    query = query + request.newColumn.defaultValue;
+                    query = query + ")";
+                }
+                //collectionType
+                if ( !newColumn.collectionsType.equals( "" ) ) {
+                    query = query + " " + request.newColumn.collectionsType;
+                    int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
+                    int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
+                    query = query + String.format( "(%d,%d)", dimension, cardinality );
+                }
+                queries.add( query );
+            }
+
+            // set/drop nullable
+            if ( oldColumn.nullable != newColumn.nullable ) {
+                String nullable = "SET";
+                if ( newColumn.nullable ) {
+                    nullable = "DROP";
+                }
+                String query = "ALTER TABLE " + tableId + " MODIFY COLUMN \"" + newColumn.name + "\" " + nullable + " NOT NULL";
+                queries.add( query );
+            }
+
+            // change default value
+            if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
+                String query;
+                if ( newColumn.defaultValue == null ) {
+                    query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
                 } else {
-                    switch ( newColumn.dataType ) {
-                        case "BIGINT":
-                        case "INTEGER":
-                        case "DECIMAL":
-                        case "DOUBLE":
-                        case "FLOAT":
-                        case "SMALLINT":
-                        case "TINYINT":
-                            request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                            BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                            query = query + b.toString();
-                            break;
-                        case "VARCHAR":
-                            query = query + String.format( "'%s'", request.newColumn.defaultValue );
-                            break;
-                        default:
-                            query = query + request.newColumn.defaultValue;
+                    query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
+                    if ( newColumn.collectionsType != null ) {
+                        //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
+                        if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
+                            query = query + request.newColumn.collectionsType;
+                        }
+                        query = query + request.newColumn.defaultValue;
+                    } else {
+                        switch ( newColumn.dataType ) {
+                            case "BIGINT":
+                            case "INTEGER":
+                            case "DECIMAL":
+                            case "DOUBLE":
+                            case "FLOAT":
+                            case "SMALLINT":
+                            case "TINYINT":
+                                request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                                BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                                query = query + b.toString();
+                                break;
+                            case "VARCHAR":
+                                query = query + String.format( "'%s'", request.newColumn.defaultValue );
+                                break;
+                            default:
+                                query = query + request.newColumn.defaultValue;
+                        }
                     }
                 }
+                queries.add( query );
             }
-            queries.add( query );
         }
 
         result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( queries.toString() ) );
@@ -1413,8 +1501,16 @@ public class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
-        String query = String.format( "ALTER TABLE %s ADD COLUMN \"%s\" %s", tableId, request.newColumn.name, request.newColumn.dataType );
-        if ( request.newColumn.precision != null ) {
+        String as = "";
+        String dataType = request.newColumn.dataType;
+        if ( request.newColumn.as != null ) {
+            //for data sources
+            as = "AS \"" + request.newColumn.as + "\"";
+            dataType = "";
+        }
+        String query = String.format( "ALTER TABLE %s ADD COLUMN \"%s\" %s %s", tableId, request.newColumn.name, as, dataType );
+        //we don't want precision, scale etc. for source columns
+        if ( request.newColumn.as == null ) {
             if ( request.newColumn.precision != null ) {
                 query = query + "(" + request.newColumn.precision;
                 if ( request.newColumn.scale != null ) {
@@ -1422,17 +1518,17 @@ public class Crud implements InformationObserver {
                 }
                 query = query + ")";
             }
+            if ( !request.newColumn.collectionsType.equals( "" ) ) {
+                query = query + " " + request.newColumn.collectionsType;
+                int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
+                int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
+                query = query + String.format( "(%d,%d)", dimension, cardinality );
+            }
+            if ( !request.newColumn.nullable ) {
+                query = query + " NOT NULL";
+            }
         }
-        if ( !request.newColumn.collectionsType.equals( "" ) ) {
-            query = query + " " + request.newColumn.collectionsType;
-            int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
-            int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
-            query = query + String.format( "(%d,%d)", dimension, cardinality );
-        }
-        if ( !request.newColumn.nullable ) {
-            query = query + " NOT NULL";
-        }
-        if ( request.newColumn.defaultValue != null ) {
+        if ( request.newColumn.defaultValue != null && !request.newColumn.defaultValue.equals( "" ) ) {
             query = query + " DEFAULT ";
             if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.equals( "" ) ) {
                 //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
