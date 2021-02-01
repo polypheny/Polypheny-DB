@@ -26,6 +26,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
@@ -102,6 +103,12 @@ public class CsvSource extends DataSource {
     @Override
     public Schema getCurrentSchema() {
         return currentSchema;
+    }
+
+
+    @Override
+    public void truncate( Context context, CatalogTable table ) {
+        throw new RuntimeException( "CSV adapter does not support truncate" );
     }
 
 
