@@ -117,7 +117,7 @@ public abstract class AbstractJdbcStore extends DataStore {
                     getDefaultPhysicalSchemaName(),
                     physicalTableName,
                     getPhysicalColumnName( placement.columnId ),
-                    false );
+                    true );
         }
     }
 

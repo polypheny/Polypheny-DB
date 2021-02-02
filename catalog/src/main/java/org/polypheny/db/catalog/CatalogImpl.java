@@ -1585,6 +1585,38 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
+     *
+     * @param adapterId The id of the adapter
+     * @param columnId The id of the column
+     */
+    @Override
+    public void updateColumnPlacementPhysicalPosition( int adapterId, long columnId ) {
+        try {
+            CatalogColumnPlacement old = Objects.requireNonNull( columnPlacements.get( new Object[]{ adapterId, columnId } ) );
+            CatalogColumnPlacement placement = new CatalogColumnPlacement(
+                    old.tableId,
+                    old.columnId,
+                    old.adapterId,
+                    old.adapterUniqueName,
+                    old.placementType,
+                    old.physicalSchemaName,
+                    old.physicalTableName,
+                    old.physicalColumnName,
+                    physicalPositionBuilder.getAndIncrement() );
+            synchronized ( this ) {
+                columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
+            }
+            listeners.firePropertyChange( "columnPlacement", old, placement );
+        } catch ( NullPointerException e ) {
+            getAdapter( adapterId );
+            getColumn( columnId );
+            throw new UnknownColumnPlacementRuntimeException( adapterId, columnId );
+        }
+    }
+
+
+    /**
      * Change physical names of a placement.
      *
      * @param adapterId The id of the adapter
@@ -1592,7 +1624,7 @@ public class CatalogImpl extends Catalog {
      * @param physicalSchemaName The physical schema name
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (highst number in the table; represents that the column is now at the last position)
+     * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
      */
     @Override
     public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
@@ -1607,7 +1639,7 @@ public class CatalogImpl extends Catalog {
                     physicalSchemaName,
                     physicalTableName,
                     physicalColumnName,
-                    physicalPositionBuilder.getAndIncrement() );
+                    updatePhysicalColumnPosition ? physicalPositionBuilder.getAndIncrement() : old.physicalPosition );
             synchronized ( this ) {
                 columnPlacements.replace( new Object[]{ adapterId, columnId }, placement );
             }

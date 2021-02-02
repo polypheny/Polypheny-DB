@@ -19,10 +19,6 @@ package org.polypheny.db.adapter;
 import com.google.gson.Gson;
 import io.zonky.test.db.postgres.junit.EmbeddedPostgresRules;
 import io.zonky.test.db.postgres.junit.SingleInstancePostgresRule;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -47,26 +43,12 @@ public class PostgresSourceTest extends AbstractSourceTest {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
 
-        // Start embedded Postgres and add default schema and data
+        // Add default schema and data to postgres database
         try ( Connection conn = pg.getEmbeddedPostgres().getPostgresDatabase().getConnection() ) {
-            InputStream file = ClassLoader.getSystemResourceAsStream( "org/polypheny/db/adapter/postgres-schema.sql" );
-            // Check if file != null
-            if ( file == null ) {
-                throw new RuntimeException( "Unable to load schema definition file" );
-            }
-            Statement statement = conn.createStatement();
-            try ( BufferedReader bf = new BufferedReader( new InputStreamReader( file ) ) ) {
-                String line = bf.readLine();
-                while ( line != null ) {
-                    statement.executeUpdate( line );
-                    line = bf.readLine();
-                }
-            } catch ( IOException e ) {
-                throw new RuntimeException( "Exception while creating schema", e );
-            }
+            executeScript( conn, "org/polypheny/db/adapter/postgres-schema.sql" );
         }
 
-        // Add adapter
+        // Add adapter to Polypheny-DB
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {

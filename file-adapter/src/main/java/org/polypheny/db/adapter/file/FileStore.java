@@ -121,7 +121,7 @@ public class FileStore extends DataStore {
                     currentSchema.getSchemaName(),
                     getPhysicalTableName( catalogTable.id ),
                     getPhysicalColumnName( placement.columnId ),
-                    false );
+                    true );
         }
         for ( Long colId : catalogTable.columnIds ) {
             File newColumnFolder = getColumnFolder( colId );

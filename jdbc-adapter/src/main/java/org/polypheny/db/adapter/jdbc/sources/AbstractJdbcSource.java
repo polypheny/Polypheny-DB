@@ -93,7 +93,7 @@ public abstract class AbstractJdbcSource extends DataSource {
     }
 
 
-    public ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect, String driverClass ) {
+    protected ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect, String driverClass ) {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( driverClass );
 

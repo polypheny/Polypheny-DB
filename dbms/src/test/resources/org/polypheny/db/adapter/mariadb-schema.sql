@@ -1,3 +1,4 @@
+-- @formatter:off
 CREATE TABLE `auction`
 (
     `id`          int                            NOT NULL AUTO_INCREMENT,
@@ -9,6 +10,7 @@ CREATE TABLE `auction`
     `user`        int                            NOT NULL,
     PRIMARY KEY (`id`)
 );
+
 CREATE TABLE `bid`
 (
     `id`        int      NOT NULL AUTO_INCREMENT,
@@ -18,12 +20,14 @@ CREATE TABLE `bid`
     `auction`   int      NOT NULL,
     PRIMARY KEY (`id`)
 );
+
 CREATE TABLE `category`
 (
     `id`   int                           NOT NULL AUTO_INCREMENT,
     `name` varchar(100) COLLATE utf8_bin NOT NULL,
     PRIMARY KEY (`id`)
 );
+
 CREATE TABLE `picture`
 (
     `filename` varchar(50) COLLATE utf8_bin NOT NULL,
@@ -32,6 +36,7 @@ CREATE TABLE `picture`
     `auction`  int                          NOT NULL,
     PRIMARY KEY (`filename`)
 );
+
 CREATE TABLE `user`
 (
     `id`         int                           NOT NULL AUTO_INCREMENT,
@@ -46,5 +51,5 @@ CREATE TABLE `user`
     `country`    varchar(50) COLLATE utf8_bin  NOT NULL,
     PRIMARY KEY (`id`)
 );
-INSERT INTO `auction`
-VALUES (1, 'Atari 2600', 'The Atari 2600 is a home video game console developed and produced by Atari, Inc.', '2021-02-02 12:11:02', '2021-03-02 11:11:02', 1, 1);
+
+INSERT INTO `auction` VALUES (1, 'Atari 2600', 'The Atari 2600 is a home video game console developed and produced by Atari, Inc.', '2021-02-02 12:11:02', '2021-03-02 11:11:02', 1, 1);

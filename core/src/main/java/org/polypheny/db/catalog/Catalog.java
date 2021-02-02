@@ -484,6 +484,15 @@ public abstract class Catalog {
 
 
     /**
+     * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
+     *
+     * @param adapterId The id of the adapter
+     * @param columnId The id of the column
+     */
+    public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
+
+
+    /**
      * Change physical names of a placement.
      *
      * @param adapterId The id of the adapter

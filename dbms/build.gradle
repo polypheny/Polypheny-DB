@@ -67,6 +67,7 @@ dependencies {
 
     testImplementation group: "com.wix", name: "wix-embedded-mysql", version: embedded_mysql_version
     testImplementation group: "io.zonky.test", name: "embedded-postgres", version: embedded_postgres_version
+    testImplementation group: "monetdb", name: "monetdb-java-lite", version: embedded_monetdb_version
 
     //testImplementation group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
     //testImplementation group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version

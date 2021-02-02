@@ -17,6 +17,10 @@
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableList;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -25,6 +29,7 @@ import java.sql.Timestamp;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+
 
 @SuppressWarnings("SqlDialectInspection")
 public abstract class AbstractSourceTest {
@@ -66,8 +71,7 @@ public abstract class AbstractSourceTest {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "INSERT INTO picture VALUES ('/a/a101.jpg', 'JPG', 15204, 1 )" );
-                statement.executeUpdate( "INSERT INTO picture VALUES ('/b/b009.png', 'PNG', 5260, 3 )" );
+                statement.executeUpdate( "INSERT INTO picture VALUES ('/a/a101.jpg', 'JPG', 15204, 1 ), ('/b/b009.png', 'PNG', 5260, 3 )" );
 
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM picture ORDER BY filename" ),
@@ -132,6 +136,29 @@ public abstract class AbstractSourceTest {
                         statement.executeQuery( "SELECT * FROM public.\"user\" ORDER BY id" ),
                         ImmutableList.of() );
             }
+        }
+    }
+
+    // --- Helpers ---
+
+
+    protected static void executeScript( Connection conn, String fileName ) throws SQLException {
+        InputStream file = ClassLoader.getSystemResourceAsStream( fileName );
+        // Check if file != null
+        if ( file == null ) {
+            throw new RuntimeException( "Unable to load schema definition file" );
+        }
+        Statement statement = conn.createStatement();
+        try ( BufferedReader bf = new BufferedReader( new InputStreamReader( file ) ) ) {
+            String line = bf.readLine();
+            while ( line != null ) {
+                if ( !line.startsWith( "--" ) ) {
+                    statement.executeUpdate( line );
+                }
+                line = bf.readLine();
+            }
+        } catch ( IOException e ) {
+            throw new RuntimeException( "Exception while creating schema", e );
         }
     }
 

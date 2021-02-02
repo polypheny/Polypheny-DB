@@ -17,24 +17,23 @@
 package org.polypheny.db.adapter;
 
 import com.google.gson.Gson;
-import com.wix.mysql.EmbeddedMysql;
-import com.wix.mysql.ScriptResolver;
-import com.wix.mysql.distribution.Version;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
+
 @SuppressWarnings("SqlDialectInspection")
-public class MysqlSourceTest extends AbstractSourceTest {
-
-    private static EmbeddedMysql server;
-
+@Ignore
+public class MonetdbSourceTest extends AbstractSourceTest {
 
     @BeforeClass
     public static void start() throws SQLException {
@@ -42,26 +41,27 @@ public class MysqlSourceTest extends AbstractSourceTest {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
 
-        // Start MariaDB and add default schema and data
-        server = EmbeddedMysql.anEmbeddedMysql( Version.v5_7_latest )
-                .addSchema( "test", ScriptResolver.classPathScript( "org/polypheny/db/adapter/mariadb-schema.sql" ) )
-                .start();
+        // Start embedded Monetdb and add default schema and data
+        MonetDBEmbeddedDatabase.startDatabase( null ); //in-memory mode
+        MonetDBEmbeddedDatabase.createConnection();
+        try ( Connection conn = DriverManager.getConnection( "jdbc:monetdb:embedded::memory:" ) ) {
+            executeScript( conn, "org/polypheny/db/adapter/monetdb-schema.sql" );
+        }
 
-        // Add adapter
+        // Add adapter to Polypheny-DB
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 Map<String, String> settings = new HashMap<>();
-                settings.put( "database", "test" );
-                settings.put( "host", "localhost" );
+                settings.put( "database", "" );
+                settings.put( "host", "running-embedded" );
                 settings.put( "maxConnections", "25" );
                 settings.put( "password", "" );
-                settings.put( "username", "root" );
-                settings.put( "port", "" + server.getConfig().getPort() );
-                settings.put( "transactionIsolation", "SERIALIZABLE" );
-                settings.put( "tables", "auction,bid,category,picture,user" );
+                settings.put( "username", "" );
+                settings.put( "port", "" );
+                settings.put( "tables", "public.auction,public.bid,public.category,public.picture,public.user" );
                 Gson gson = new Gson();
-                statement.executeUpdate( "ALTER ADAPTERS ADD mariadbunit USING 'org.polypheny.db.adapter.jdbc.sources.MysqlSource' WITH '" + gson.toJson( settings ) + "'" );
+                statement.executeUpdate( "ALTER ADAPTERS ADD monetdbunit USING 'org.polypheny.db.adapter.jdbc.sources.MonetdbSource' WITH '" + gson.toJson( settings ) + "'" );
             }
         }
     }
@@ -69,13 +69,13 @@ public class MysqlSourceTest extends AbstractSourceTest {
 
     @AfterClass
     public static void end() throws SQLException {
+        MonetDBEmbeddedDatabase.stopDatabase();
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER ADAPTERS DROP mariadbunit" );
+                statement.executeUpdate( "ALTER ADAPTERS DROP monetdbunit" );
             }
         }
-        server.stop();
     }
 
 }

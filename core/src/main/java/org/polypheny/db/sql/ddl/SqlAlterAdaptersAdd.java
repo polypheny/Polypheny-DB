@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
@@ -142,7 +143,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
                     catalog.addPrimaryKey( tableId, primaryKeyColIds );
                 }
             }
-        } catch ( Exception e ) {
+        } catch ( GenericCatalogException e ) {
             throw new RuntimeException( "Could not deploy adapter", e );
         }
     }

@@ -166,6 +166,8 @@ public class MonetdbStore extends AbstractJdbcStore {
         builder.append( " DROP COLUMN " )
                 .append( dialect.quoteIdentifier( tmpColName ) );
         executeUpdate( builder, context );
+
+        Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
     }
 
 

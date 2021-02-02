@@ -258,7 +258,7 @@ public class CassandraStore extends DataStore {
                     this.dbKeyspace, // TODO MV: physical schema name
                     physicalTableName,
                     physicalNameProvider.generatePhysicalColumnName( placement.columnId ),
-                    false );
+                    true );
         }
     }
 
