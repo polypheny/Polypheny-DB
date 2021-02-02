@@ -16,13 +16,25 @@
 
 package org.polypheny.db.adapter;
 
+
+import com.google.gson.Gson;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
@@ -114,7 +126,7 @@ public abstract class Adapter {
                 } else {
                     throw new RuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
                 }
-            } else if ( s.required ) {
+            } else if ( s.required && initialSetup ) {
                 throw new RuntimeException( "Setting \"" + s.name + "\" must be present." );
             }
         }
@@ -129,11 +141,14 @@ public abstract class Adapter {
         public final boolean required;
         public final boolean modifiable;
 
+        public abstract String getValue();
+
     }
 
 
     public static class AdapterSettingInteger extends AdapterSetting {
 
+        private final String type = "Integer";
         public final Integer defaultValue;
 
 
@@ -142,11 +157,16 @@ public abstract class Adapter {
             this.defaultValue = defaultValue;
         }
 
+        public String getValue() {
+            return defaultValue.toString();
+        }
+
     }
 
 
     public static class AdapterSettingString extends AdapterSetting {
 
+        private final String type = "String";
         public final String defaultValue;
 
 
@@ -155,11 +175,16 @@ public abstract class Adapter {
             this.defaultValue = defaultValue;
         }
 
+        public String getValue() {
+            return defaultValue;
+        }
+
     }
 
 
     public static class AdapterSettingBoolean extends AdapterSetting {
 
+        private final String type = "Boolean";
         public final boolean defaultValue;
 
 
@@ -168,11 +193,16 @@ public abstract class Adapter {
             this.defaultValue = defaultValue;
         }
 
+        public String getValue() {
+            return Boolean.toString( defaultValue );
+        }
+
     }
 
 
     public static class AdapterSettingList extends AdapterSetting {
 
+        private final String type = "List";
         public final List<String> options;
 
 
@@ -181,6 +211,66 @@ public abstract class Adapter {
             this.options = options;
         }
 
+        public String getValue() {
+            return new Gson().toJson( options );
+        }
+
+    }
+
+
+    @Accessors(chain = true)
+    public static class AdapterSettingFiles extends AdapterSetting {
+
+        private final String type = "Files";
+        @Setter
+        public String[] fileNames;
+        public transient final Map<String, InputStream> inputStreams;
+
+        public AdapterSettingFiles( String name, boolean canBeNull, boolean required, boolean modifiable ) {
+            super( name, canBeNull, required, modifiable );
+            //so it will be serialized
+            this.fileNames = new String[]{ "" };
+            this.inputStreams = new HashMap<>();
+        }
+
+        public String getValue() {
+            return new Gson().toJson( fileNames );
+        }
+
+    }
+
+
+    //see https://stackoverflow.com/questions/19588020/gson-serialize-a-list-of-polymorphic-objects/22081826#22081826
+    public static class AdapterSettingDeserializer implements JsonDeserializer<AdapterSetting> {
+
+        public AdapterSetting deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+            JsonObject jsonObject = json.getAsJsonObject();
+            String type = jsonObject.get( "type" ).getAsString();
+            String name = jsonObject.get( "name" ).getAsString();
+            boolean canBeNull = jsonObject.get( "canBeNull" ).getAsBoolean();
+            boolean required = jsonObject.get( "required" ).getAsBoolean();
+            boolean modifiable = jsonObject.get( "modifiable" ).getAsBoolean();
+
+            switch ( type ) {
+                case "Integer":
+                    Integer integer = jsonObject.get( "defaultValue" ).getAsInt();
+                    return new AdapterSettingInteger( name, canBeNull, required, modifiable, integer );
+                case "String":
+                    String string = jsonObject.get( "defaultValue" ).getAsString();
+                    return new AdapterSettingString( name, canBeNull, required, modifiable, string );
+                case "Boolean":
+                    boolean bool = jsonObject.get( "defaultValue" ).getAsBoolean();
+                    return new AdapterSettingBoolean( name, canBeNull, required, modifiable, bool );
+                case "List":
+                    List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
+                    return new AdapterSettingList( name, canBeNull, required, modifiable, options );
+                case "Files":
+                    String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
+                    return new AdapterSettingFiles( name, canBeNull, required, modifiable ).setFileNames( fileNames );
+                default:
+                    throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );
+            }
+        }
     }
 
 }

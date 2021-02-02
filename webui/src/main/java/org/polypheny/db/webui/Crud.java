@@ -92,6 +92,8 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
+import org.polypheny.db.adapter.Adapter.AdapterSettingFiles;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataSource;
@@ -159,6 +161,7 @@ import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
+import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.Debug;
@@ -2136,9 +2139,34 @@ public class Crud implements InformationObserver {
      * Deploy a new adapter
      */
     boolean addAdapter( final Request req, final Response res ) {
-        String body = req.body();
-        org.polypheny.db.webui.models.Adapter a = this.gson.fromJson( body, org.polypheny.db.webui.models.Adapter.class );
-        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, gson.toJson( a.settings ) );
+        initMultipart( req );
+        String body = "";
+        Map<String, InputStream> inputStreams = new HashMap<>();
+        try {
+            for ( Part part : req.raw().getParts() ) {
+                if ( part.getName().equals( "body" ) ) {
+                    body = new BufferedReader( new InputStreamReader( req.raw().getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                } else {
+                    inputStreams.put( part.getName(), part.getInputStream() );
+                }
+            }
+        } catch ( ServletException | IOException e ) {
+            log.error( "Could not get form data to add a new Adapter", e );
+            return false;
+        }
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( AdapterSetting.class, new AdapterSettingDeserializer() );
+        AdapterModel a = gsonBuilder.create().fromJson( body, AdapterModel.class );
+        Map<String, String> settings = new HashMap<>();
+        for ( Entry<String, AdapterSetting> entry : a.settings.entrySet() ) {
+            if ( entry.getValue() instanceof AdapterSettingFiles ) {
+                settings.put( entry.getKey(), entry.getValue().getValue() );
+                //todo do something with the inputStreams
+            } else {
+                settings.put( entry.getKey(), entry.getValue().getValue() );
+            }
+        }
+
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, gson.toJson( settings ) );
         Transaction transaction = getTransaction();
         try {
             executeSqlUpdate( transaction, query );
