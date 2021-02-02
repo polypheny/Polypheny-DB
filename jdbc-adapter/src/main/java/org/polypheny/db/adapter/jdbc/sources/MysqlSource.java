@@ -26,36 +26,30 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.sql.dialect.MysqlSqlDialect;
 
 
 @Slf4j
-public class PostgresqlSource extends AbstractJdbcSource {
+public class MysqlSource extends AbstractJdbcSource {
 
-    public static final String ADAPTER_NAME = "PostgreSQL";
+    public static final String ADAPTER_NAME = "MySQL";
 
-    public static final String DESCRIPTION = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.";
+    public static final String DESCRIPTION = "Data source adapter for the relational database systems MariaDB and MySQL.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database", false, true, false, "postgres" ),
-            new AdapterSettingString( "username", false, true, false, "postgres" ),
+            new AdapterSettingInteger( "port", false, true, false, 3306 ),
+            new AdapterSettingString( "database", false, true, false, "polypheny" ),
+            new AdapterSettingString( "username", false, true, false, "polypheny" ),
             new AdapterSettingString( "password", false, true, false, "polypheny" ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
             new AdapterSettingList( "transactionIsolation", false, true, false, ImmutableList.of( "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" ) ),
-            new AdapterSettingString( "tables", false, true, false, "public.foo,public.bar" )
+            new AdapterSettingString( "tables", false, true, false, "foo,bar" )
     );
 
 
-    public PostgresqlSource( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super(
-                storeId,
-                uniqueName,
-                settings,
-                "org.postgresql.Driver",
-                PostgresqlSqlDialect.DEFAULT,
-                false );
+    public MysqlSource( int storeId, String uniqueName, final Map<String, String> settings ) {
+        super( storeId, uniqueName, settings, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
     }
 
 
@@ -102,13 +96,13 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
     @Override
     protected String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+        return String.format( "jdbc:mysql://%s:%d/%s", dbHostname, dbPort, dbName );
     }
 
 
     @Override
     protected boolean requiresSchema() {
-        return true;
+        return false;
     }
 
 }

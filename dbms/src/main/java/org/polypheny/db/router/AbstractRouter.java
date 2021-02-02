@@ -484,7 +484,7 @@ public abstract class AbstractRouter implements Router {
                 rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
             }
             builder.project( rexNodes );
-        } else {
+        } else if ( placementsByAdapter.size() > 1 ) {
             // We need to join placements on different adapters
 
             // Get primary key
@@ -550,6 +550,8 @@ public abstract class AbstractRouter implements Router {
                 rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
             }
             builder.project( rexNodes );
+        } else {
+            throw new RuntimeException( "The table '" + placements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
         }
         RelNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {

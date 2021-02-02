@@ -27,12 +27,14 @@ import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.Information;
@@ -42,6 +44,7 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlDialect;
+import org.polypheny.db.sql.dialect.MysqlSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
@@ -64,11 +67,11 @@ public abstract class AbstractJdbcSource extends DataSource {
             int storeId,
             String uniqueName,
             Map<String, String> settings,
-            ConnectionFactory connectionFactory,
+            String diverClass,
             SqlDialect dialect,
             boolean readOnly ) {
         super( storeId, uniqueName, settings, readOnly );
-        this.connectionFactory = connectionFactory;
+        this.connectionFactory = createConnectionFactory( settings, MysqlSqlDialect.DEFAULT, diverClass );
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager
         registerJdbcPoolSizeInformation( uniqueName );
@@ -88,6 +91,39 @@ public abstract class AbstractJdbcSource extends DataSource {
             im.registerInformation( information );
         }
     }
+
+
+    public ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect, String driverClass ) {
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName( driverClass );
+
+        final String connectionUrl = getConnectionUrl( settings.get( "host" ), Integer.parseInt( settings.get( "port" ) ), settings.get( "database" ) );
+        dataSource.setUrl( connectionUrl );
+        if ( log.isDebugEnabled() ) {
+            log.debug( "JDBC Connection URL: {}", connectionUrl );
+        }
+        dataSource.setUsername( settings.get( "username" ) );
+        dataSource.setPassword( settings.get( "password" ) );
+        dataSource.setDefaultAutoCommit( false );
+        switch ( settings.get( "transactionIsolation" ) ) {
+            case "SERIALIZABLE":
+                dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_SERIALIZABLE );
+                break;
+            case "READ_UNCOMMITTED":
+                dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );
+                break;
+            case "READ_COMMITTED":
+                dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
+                break;
+            case "REPEATABLE_READ":
+                dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_REPEATABLE_READ );
+                break;
+        }
+        return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
+    }
+
+
+    protected abstract String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName );
 
 
     @Override
@@ -166,6 +202,9 @@ public abstract class AbstractJdbcSource extends DataSource {
     }
 
 
+    protected abstract boolean requiresSchema();
+
+
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         Map<String, List<ExportedColumn>> map = new HashMap<>();
@@ -179,16 +218,25 @@ public abstract class AbstractJdbcSource extends DataSource {
             String[] tables = settings.get( "tables" ).split( "," );
             for ( String str : tables ) {
                 String[] names = str.split( "\\." );
-                if ( names.length != 2 ) {
+                if ( names.length == 0 || names.length > 2 || (requiresSchema() && names.length == 1) ) {
                     throw new RuntimeException( "Invalid table name: " + str );
                 }
+                String tableName;
+                String schemaPattern;
+                if ( requiresSchema() ) {
+                    schemaPattern = names[0];
+                    tableName = names[1];
+                } else {
+                    schemaPattern = null;
+                    tableName = names[0];
+                }
                 List<String> primaryKeyColumns = new ArrayList<>();
-                try ( ResultSet row = dbmd.getPrimaryKeys( settings.get( "database" ), names[0], names[1] ) ) {
+                try ( ResultSet row = dbmd.getPrimaryKeys( settings.get( "database" ), schemaPattern, tableName ) ) {
                     while ( row.next() ) {
                         primaryKeyColumns.add( row.getString( "COLUMN_NAME" ) );
                     }
                 }
-                try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), names[0], names[1], "%" ) ) {
+                try ( ResultSet row = dbmd.getColumns( settings.get( "database" ), schemaPattern, tableName, "%" ) ) {
                     List<ExportedColumn> list = new ArrayList<>();
                     while ( row.next() ) {
                         PolyType type = PolyType.getNameForJdbcType( row.getInt( "DATA_TYPE" ) );
@@ -248,15 +296,15 @@ public abstract class AbstractJdbcSource extends DataSource {
                                 scale,
                                 dimension,
                                 cardinality,
-                                row.getBoolean( "IS_NULLABLE" ),
-                                row.getString( "TABLE_SCHEM" ),
+                                row.getString( "IS_NULLABLE" ).equalsIgnoreCase( "YES" ),
+                                requiresSchema() ? row.getString( "TABLE_SCHEM" ) : row.getString( "TABLE_CAT" ),
                                 row.getString( "TABLE_NAME" ),
                                 row.getString( "COLUMN_NAME" ),
                                 row.getInt( "ORDINAL_POSITION" ),
                                 primaryKeyColumns.contains( row.getString( "COLUMN_NAME" ) )
                         ) );
                     }
-                    map.put( names[1].toLowerCase(), list );
+                    map.put( tableName, list );
                 }
             }
         } catch ( SQLException | ConnectionHandlerException e ) {
