@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 
@@ -46,13 +45,6 @@ public class InformationWebSocket {
     public void closed( final Session session, final int statusCode, final String reason ) {
         log.debug( "UI disconnected from websocket" );
         sessions.remove( session );
-    }
-
-
-    @OnWebSocketMessage
-    public void configWebSocket( final Session session, final String message ) throws IOException {
-        log.debug( "Received: {}", message ); // Log message
-        session.getRemote().sendString( message ); // and send it back
     }
 
 

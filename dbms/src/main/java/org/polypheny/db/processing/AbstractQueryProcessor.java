@@ -55,11 +55,8 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
@@ -265,6 +262,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             routedRoot = logicalRoot;
         }
 
+        // Validate parameterValues
+        ParameterValueValidator pmValidator = new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() );
+        pmValidator.visit( routedRoot.rel );
+
         //
         // Implementation Caching
         if ( isAnalyze ) {
@@ -396,7 +397,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                                 tableName = ltm.getTable().getQualifiedName().get( 0 );
                             }
                             table = catalog.getTable( schema.id, tableName );
-                        } catch ( UnknownTableException | GenericCatalogException | UnknownDatabaseException | UnknownCollationException | UnknownSchemaException | UnknownSchemaTypeException e ) {
+                        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                             // This really should not happen
                             log.error( "Table not found: {}", ltm.getTable().getQualifiedName().get( 0 ), e );
                             throw new RuntimeException( e );
@@ -700,7 +701,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     final CatalogTable ctable;
                     try {
                         ctable = Catalog.getInstance().getTable( schema.id, table );
-                    } catch ( UnknownTableException | GenericCatalogException e ) {
+                    } catch ( UnknownTableException e ) {
                         log.error( "Could not fetch table", e );
                         IndexManager.getInstance().incrementNoIndex();
                         return super.visit( project );
@@ -1245,6 +1246,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             final RelNode node = super.visit( other );
             return node.copy( copy( node.getTraitSet() ), node.getInputs() );
         }
+
     }
 
 

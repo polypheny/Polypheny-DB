@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,8 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
     /**
      * Creates a CsvScannableTable.
      */
-    protected CsvScannableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
-        super( source, protoRowType, fieldTypes, csvStore );
+    protected CsvScannableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
 
@@ -67,8 +67,7 @@ public class CsvScannableTable extends CsvTable implements ScannableTable {
 
     @Override
     public Enumerable<Object[]> scan( DataContext dataContext ) {
-        dataContext.getStatement().getTransaction().registerInvolvedStore( csvStore );
-        final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object[]>() {
             @Override

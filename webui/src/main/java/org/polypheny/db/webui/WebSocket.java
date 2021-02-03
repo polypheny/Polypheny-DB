@@ -17,13 +17,24 @@
 package org.polypheny.db.webui;
 
 
+import com.google.gson.Gson;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.webui.models.Result;
+import org.polypheny.db.webui.models.requests.QueryRequest;
+import org.polypheny.db.webui.models.requests.RelAlgRequest;
+import org.polypheny.db.webui.models.requests.UIRequest;
 
 
 @org.eclipse.jetty.websocket.api.annotations.WebSocket
@@ -31,6 +42,14 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 public class WebSocket {
 
     private static final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    private final Crud crud;
+    private final HashMap<Session, Set<String>> queryAnalyzers = new HashMap<>();
+    private static final Gson gson = new Gson();
+
+
+    WebSocket( Crud crud ) {
+        this.crud = crud;
+    }
 
 
     @OnWebSocketConnect
@@ -44,16 +63,7 @@ public class WebSocket {
     public void closed( final Session session, final int statusCode, final String reason ) {
         log.debug( "UI disconnected from websocket" );
         sessions.remove( session );
-    }
-
-
-    /**
-     * Send updated pageList.
-     */
-    public static synchronized void sendPageList( final String pageList ) throws IOException {
-        for ( Session s : sessions ) {
-            s.getRemote().sendString( pageList );
-        }
+        cleanup( session );
     }
 
 
@@ -66,5 +76,93 @@ public class WebSocket {
         }
     }
 
+
+    public static void sendMessage( Session session, String message ) {
+        try {
+            session.getRemote().sendString( message );
+        } catch ( IOException e ) {
+            log.error( "Could not send websocket message to UI", e );
+        }
+    }
+
+
+    public static void sendMessage( final Session session, final Object message ) {
+        sendMessage( session, gson.toJson( message ) );
+    }
+
+
+    @OnWebSocketMessage
+    public void onMessage( Session session, String message ) {
+        if ( message.equals( "\"keepalive\"" ) ) {
+            return;
+        }
+        //close analyzers of a previous query that was sent over the same socket.
+        cleanup( session );
+
+        Gson gson = new Gson();
+        UIRequest request = gson.fromJson( message, UIRequest.class );
+        Set<String> xIds = new HashSet<>();
+        switch ( request.requestType ) {
+            case "QueryRequest":
+                QueryRequest queryRequest = gson.fromJson( message, QueryRequest.class );
+                ArrayList<Result> results;
+                try {
+                    results = crud.anyQuery( queryRequest, session );
+                } catch ( Throwable t ) {
+                    sendMessage( session, new Result[]{ new Result( t ) } );
+                    return;
+                }
+                for ( Result result : results ) {
+                    if ( result.getXid() != null ) {
+                        xIds.add( result.getXid() );
+                    }
+                }
+                sendMessage( session, results );
+                break;
+            case "RelAlgRequest":
+            case "TableRequest":
+                Result result;
+                if ( request.requestType.equals( "RelAlgRequest" ) ) {
+                    RelAlgRequest relAlgRequest = gson.fromJson( message, RelAlgRequest.class );
+                    try {
+                        result = crud.executeRelAlg( relAlgRequest, session );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result( t ) );
+                        return;
+                    }
+                } else {//TableRequest, is equal to UIRequest
+                    UIRequest uiRequest = gson.fromJson( message, UIRequest.class );
+                    try {
+                        result = crud.getTable( uiRequest );
+                    } catch ( Throwable t ) {
+                        sendMessage( session, new Result( t ) );
+                        return;
+                    }
+                }
+                if ( result.getXid() != null ) {
+                    xIds.add( result.getXid() );
+                }
+                sendMessage( session, result );
+                break;
+            default:
+                throw new RuntimeException( "Unexpected websocket request: " + request.requestType );
+        }
+        queryAnalyzers.put( session, xIds );
+    }
+
+
+    /**
+     * Closes queryAnalyzers and deletes temporary files.
+     */
+    private void cleanup( final Session session ) {
+        Set<String> xIds = queryAnalyzers.remove( session );
+        if ( xIds == null || xIds.size() == 0 ) {
+            return;
+        }
+        for ( String xId : xIds ) {
+            InformationManager.close( xId );
+            TemporalFileManager.deleteFilesOfTransaction( xId );
+        }
+    }
 
 }

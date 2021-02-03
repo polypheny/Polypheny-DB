@@ -26,6 +26,7 @@ import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.FileSystemManager;
 
 
@@ -94,7 +95,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogIndex.key.tableId );
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogIndex.key.tableId );
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
         if ( catalogIndex.unique ) {
@@ -187,6 +188,9 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     protected String getTypeString( PolyType type ) {
+        if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+            return "BLOB(" + RuntimeConfig.UI_UPLOAD_SIZE_MB.getInteger() + "M)";
+        }
         switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";
@@ -223,7 +227,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     protected String getDefaultPhysicalSchemaName() {
-        return "public";
+        return "PUBLIC";
     }
 
 }

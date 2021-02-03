@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package org.polypheny.db.transaction;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.information.InformationManager;
@@ -41,9 +41,9 @@ public interface Transaction {
 
     void rollback() throws TransactionException;
 
-    void registerInvolvedStore( Store store );
+    void registerInvolvedAdapter( Adapter adapter );
 
-    List<Store> getInvolvedStores();
+    List<Adapter> getInvolvedAdapters();
 
     PolyphenyDbSchema getSchema();
 
@@ -65,7 +65,17 @@ public interface Transaction {
 
     String getOrigin();
 
+    MultimediaFlavor getFlavor();
+
     long getNumberOfStatements();
 
     DataMigrator getDataMigrator();
+
+    /**
+     * Flavor, how multimedia results should be returned from a store.
+     */
+    enum MultimediaFlavor {
+        DEFAULT, FILE
+    }
+
 }

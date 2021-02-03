@@ -78,7 +78,7 @@ sourceSets {
 
 
 /**
- * Compile Pipline
+ * Compile Pipeline
  */
 task generateParser (type: CompileJavaccTask) {
     getConventionMapping().map("classpath", { configurations.javacc })
@@ -123,7 +123,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        //attributes "Version": "$version"
+        attributes "Version": "$project.version"
     }
 }
 java {

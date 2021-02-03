@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -49,9 +50,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database", false, true, false, "postgres" ),
-            new AdapterSettingString( "username", false, true, false, "postgres" ),
-            new AdapterSettingString( "password", false, true, false, "" ),
+            new AdapterSettingString( "database", false, true, false, "polypheny" ),
+            new AdapterSettingString( "username", false, true, false, "polypheny" ),
+            new AdapterSettingString( "password", false, true, false, "polypheny" ),
             new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
     );
 
@@ -123,7 +124,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogIndex.key.tableId );
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogIndex.key.tableId );
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
         if ( catalogIndex.unique ) {
@@ -237,6 +238,9 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     protected String getTypeString( PolyType type ) {
+        if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+            return "BYTEA";
+        }
         switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";

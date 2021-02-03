@@ -96,7 +96,7 @@ public class CottontailSchema extends AbstractSchema {
 
 
     public void registerStore( DataContext dataContext ) {
-        dataContext.getStatement().getTransaction().registerInvolvedStore( this.cottontailStore );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( this.cottontailStore );
     }
 
 

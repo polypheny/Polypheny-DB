@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,31 +18,24 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
+import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.information.Information;
-import org.polypheny.db.information.InformationGraph;
-import org.polypheny.db.information.InformationGraph.GraphData;
-import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.SchemaPlus;
@@ -54,10 +47,10 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-public abstract class AbstractJdbcStore extends Store {
+public abstract class AbstractJdbcStore extends DataStore {
 
     private InformationPage informationPage;
-    private InformationGroup informationGroupConnectionPool;
+    private InformationGroup informationGroup;
     private List<Information> informationElements;
 
     protected SqlDialect dialect;
@@ -73,7 +66,7 @@ public abstract class AbstractJdbcStore extends Store {
             ConnectionFactory connectionFactory,
             SqlDialect dialect,
             boolean persistent ) {
-        super( storeId, uniqueName, settings, false, false, persistent );
+        super( storeId, uniqueName, settings, persistent );
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
         // Register the JDBC Pool Size as information in the information manager
@@ -83,51 +76,21 @@ public abstract class AbstractJdbcStore extends Store {
 
     protected void registerJdbcPoolSizeInformation( String uniqueName ) {
         informationPage = new InformationPage( uniqueName ).setLabel( "Stores" );
-        informationGroupConnectionPool = new InformationGroup( informationPage, "JDBC Connection Pool" );
-
-        informationElements = new ArrayList<>();
+        informationGroup = new InformationGroup( informationPage, "JDBC Connection Pool" );
+        informationElements = JdbcUtils.buildInformationPoolSize( informationPage, informationGroup, connectionFactory, getUniqueName() );
 
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
-        im.addGroup( informationGroupConnectionPool );
+        im.addGroup( informationGroup );
 
-        InformationGraph connectionPoolSizeGraph = new InformationGraph(
-                informationGroupConnectionPool,
-                GraphType.DOUGHNUT,
-                new String[]{ "Active", "Available", "Idle" }
-        );
-        im.registerInformation( connectionPoolSizeGraph );
-        informationElements.add( connectionPoolSizeGraph );
-
-        InformationTable connectionPoolSizeTable = new InformationTable(
-                informationGroupConnectionPool,
-                Arrays.asList( "Attribute", "Value" ) );
-        im.registerInformation( connectionPoolSizeTable );
-        informationElements.add( connectionPoolSizeTable );
-
-        informationGroupConnectionPool.setRefreshFunction( () -> {
-            int idle = connectionFactory.getNumIdle();
-            int active = connectionFactory.getNumActive();
-            int max = connectionFactory.getMaxTotal();
-            int available = max - idle - active;
-
-            connectionPoolSizeGraph.updateGraph(
-                    new String[]{ "Active", "Available", "Idle" },
-                    new GraphData<>( getUniqueName() + "-connection-pool-data", new Integer[]{ active, available, idle } )
-            );
-
-            connectionPoolSizeTable.reset();
-            connectionPoolSizeTable.addRow( "Active", active );
-            connectionPoolSizeTable.addRow( "Idle", idle );
-            connectionPoolSizeTable.addRow( "Max", max );
-        } );
+        for ( Information information : informationElements ) {
+            im.registerInformation( information );
+        }
     }
 
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
-        //return new JdbcSchema( dataSource, DatabaseProduct.HSQLDB.getDialect(), new JdbcConvention( DatabaseProduct.HSQLDB.getDialect(), expression, "myjdbcconvention" ), "testdb", null, combinedSchema );
-        // TODO MV: Potential bug! This only works as long as we do not cache the schema between multiple transactions
         currentJdbcSchema = JdbcSchema.create( rootSchema, name, connectionFactory, dialect, this );
     }
 
@@ -147,19 +110,15 @@ public abstract class AbstractJdbcStore extends Store {
         StringBuilder query = buildCreateTableQuery( getDefaultPhysicalSchemaName(), physicalTableName, catalogTable );
         executeUpdate( query, context );
         // Add physical names to placements
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
-            try {
-                catalog.updateColumnPlacementPhysicalNames(
-                        getStoreId(),
-                        placement.columnId,
-                        getDefaultPhysicalSchemaName(),
-                        physicalTableName,
-                        getPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-                throw new RuntimeException( e );
-            }
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    placement.columnId,
+                    getDefaultPhysicalSchemaName(),
+                    physicalTableName,
+                    getPhysicalColumnName( placement.columnId ),
+                    true );
         }
-
     }
 
 
@@ -171,7 +130,7 @@ public abstract class AbstractJdbcStore extends Store {
                 .append( dialect.quoteIdentifier( physicalTableName ) )
                 .append( " ( " );
         boolean first = true;
-        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
             CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             if ( !first ) {
                 builder.append( ", " );
@@ -203,7 +162,6 @@ public abstract class AbstractJdbcStore extends Store {
                     }*/
                 }
             }
-
         }
         builder.append( " )" );
         return builder;
@@ -217,7 +175,7 @@ public abstract class AbstractJdbcStore extends Store {
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows adding columns to linked tables.
         CatalogColumnPlacement ccp = null;
-        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
+        for ( CatalogColumnPlacement p : Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
             // The for loop is required to avoid using the names of the column which we are currently adding (which are null)
             if ( p.columnId != catalogColumn.id ) {
                 ccp = p;
@@ -234,16 +192,13 @@ public abstract class AbstractJdbcStore extends Store {
             executeUpdate( query, context );
         }
         // Add physical name to placement
-        try {
-            catalog.updateColumnPlacementPhysicalNames(
-                    getStoreId(),
-                    catalogColumn.id,
-                    physicalSchemaName,
-                    physicalTableName,
-                    physicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-            throw new RuntimeException( e );
-        }
+        catalog.updateColumnPlacementPhysicalNames(
+                getAdapterId(),
+                catalogColumn.id,
+                physicalSchemaName,
+                physicalTableName,
+                physicalColumnName,
+                false );
     }
 
 
@@ -342,8 +297,8 @@ public abstract class AbstractJdbcStore extends Store {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows dropping linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
         builder.append( "DROP TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
@@ -370,8 +325,8 @@ public abstract class AbstractJdbcStore extends Store {
         // We get the physical schema / table name by checking existing column placements of the same logical table placed on this store.
         // This works because there is only one physical table for each logical table on JDBC stores. The reason for choosing this
         // approach rather than using the default physical schema / table names is that this approach allows truncating linked tables.
-        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalTableName;
-        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogTable.id ).get( 0 ).physicalSchemaName;
+        String physicalTableName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalTableName;
+        String physicalSchemaName = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ).get( 0 ).physicalSchemaName;
         StringBuilder builder = new StringBuilder();
         builder.append( "TRUNCATE TABLE " )
                 .append( dialect.quoteIdentifier( physicalSchemaName ) )
@@ -383,7 +338,7 @@ public abstract class AbstractJdbcStore extends Store {
 
     protected void executeUpdate( StringBuilder builder, Context context ) {
         try {
-            context.getStatement().getTransaction().registerInvolvedStore( this );
+            context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( SQLException | ConnectionHandlerException e ) {
             throw new RuntimeException( e );
@@ -447,7 +402,7 @@ public abstract class AbstractJdbcStore extends Store {
         if ( informationElements.size() > 0 ) {
             InformationManager im = InformationManager.getInstance();
             im.removeInformation( informationElements.toArray( new Information[0] ) );
-            im.removeGroup( informationGroupConnectionPool );
+            im.removeGroup( informationGroup );
             im.removePage( informationPage );
         }
     }

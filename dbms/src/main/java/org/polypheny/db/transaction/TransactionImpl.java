@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.Catalog;
@@ -75,6 +75,9 @@ public class TransactionImpl implements Transaction, Comparable {
     private final String origin;
 
     @Getter
+    private final MultimediaFlavor flavor;
+
+    @Getter
     private final boolean analyze;
 
     private final AtomicLong statementCounter = new AtomicLong();
@@ -82,7 +85,7 @@ public class TransactionImpl implements Transaction, Comparable {
     private final List<String> changedTables = new ArrayList<>();
 
     @Getter
-    private final List<Store> involvedStores = new CopyOnWriteArrayList<>();
+    private final List<Adapter> involvedAdapters = new CopyOnWriteArrayList<>();
 
     private final Set<Lock> lockList = new HashSet<>();
 
@@ -94,7 +97,8 @@ public class TransactionImpl implements Transaction, Comparable {
             CatalogSchema defaultSchema,
             CatalogDatabase database,
             boolean analyze,
-            String origin ) {
+            String origin,
+            MultimediaFlavor flavor ) {
         this.id = TRANSACTION_COUNTER.getAndIncrement();
         this.xid = xid;
         this.transactionManager = transactionManager;
@@ -103,6 +107,7 @@ public class TransactionImpl implements Transaction, Comparable {
         this.database = database;
         this.analyze = analyze;
         this.origin = origin;
+        this.flavor = flavor;
     }
 
 
@@ -119,27 +124,27 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public void registerInvolvedStore( Store store ) {
-        if ( !involvedStores.contains( store ) ) {
-            involvedStores.add( store );
+    public void registerInvolvedAdapter( Adapter adapter ) {
+        if ( !involvedAdapters.contains( adapter ) ) {
+            involvedAdapters.add( adapter );
         }
     }
 
 
     @Override
     public void commit() throws TransactionException {
-        // Prepare to commit changes on all involved stores and the catalog
+        // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
-            for ( Store store : involvedStores ) {
-                okToCommit &= store.prepare( xid );
+            for ( Adapter adapter : involvedAdapters ) {
+                okToCommit &= adapter.prepare( xid );
             }
         }
 
         if ( okToCommit ) {
             // Commit changes
-            for ( Store store : involvedStores ) {
-                store.commit( xid );
+            for ( Adapter adapter : involvedAdapters ) {
+                adapter.commit( xid );
             }
 
             if ( changedTables.size() > 0 ) {
@@ -163,9 +168,9 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public void rollback() throws TransactionException {
         try {
-            //  Rollback changes to the stores
-            for ( Store store : involvedStores ) {
-                store.rollback( xid );
+            //  Rollback changes to the adapters
+            for ( Adapter adapter : involvedAdapters ) {
+                adapter.rollback( xid );
             }
             IndexManager.getInstance().rollback( this.xid );
             Catalog.getInstance().rollback();

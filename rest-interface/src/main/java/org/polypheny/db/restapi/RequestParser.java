@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,9 +41,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnIdRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.iface.Authenticator;
@@ -58,6 +58,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateString;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.TimeString;
@@ -139,7 +140,7 @@ public class RequestParser {
     public ResourceGetRequest parseGetResourceRequest( Request request, String resourceName ) throws ParserException {
 
         List<CatalogTable> tables = this.parseTables( resourceName );
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
@@ -150,7 +151,7 @@ public class RequestParser {
 
         List<Pair<RequestColumn, Boolean>> sorting = this.parseSorting( request, nameMapping );
 
-        Filters filters = this.parseFilters( request, nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
 
         return new ResourceGetRequest( tables, requestColumns, nameMapping, groupings, limit, offset, sorting, filters );
     }
@@ -158,11 +159,21 @@ public class RequestParser {
 
     public ResourcePostRequest parsePostResourceRequest( Request request, String resourceName, Gson gson ) throws ParserException {
         List<CatalogTable> tables = this.parseTables( resourceName );
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
 
-        return new ResourcePostRequest( tables, requestColumns, nameMapping, values );
+        return new ResourcePostRequest( tables, requestColumns, nameMapping, values, false );
+    }
+
+
+    public ResourcePostRequest parsePostMultipartRequest( String resourceName, String[] projections, List<Object> insertValues ) throws ParserException {
+        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
+        Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
+        List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
+
+        return new ResourcePostRequest( tables, requestColumns, nameMapping, values, true );
     }
 
 
@@ -170,14 +181,24 @@ public class RequestParser {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
         // TODO js: make sure there are no actual projections
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-        Filters filters = this.parseFilters( request, nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
 
         List<List<Pair<RequestColumn, Object>>> values = this.parseValues( request, gson, nameMapping );
 
-        return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters );
+        return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters, false );
+    }
+
+
+    public ResourcePatchRequest parsePatchMultipartRequest( String resourceName, String[] projections, Map<String, String[]> filterMap, List<Object> insertValues ) {
+        List<CatalogTable> tables = this.parseTables( resourceName );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( projections, tables );
+        Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
+        Filters filters = this.parseFilters( filterMap, nameMapping );
+        List<List<Pair<RequestColumn, Object>>> values = parseInsertStatementBody( insertValues, nameMapping );
+        return new ResourcePatchRequest( tables, requestColumns, values, nameMapping, filters, true );
     }
 
 
@@ -185,11 +206,11 @@ public class RequestParser {
         // TODO js: make sure it's only a single resource
         List<CatalogTable> tables = this.parseTables( resourceName );
 
-        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( request, tables );
+        List<RequestColumn> requestColumns = this.newParseProjectionsAndAggregations( getProjectionsValues( request ), tables );
 
         Map<String, RequestColumn> nameMapping = this.newGenerateNameMapping( requestColumns );
 
-        Filters filters = this.parseFilters( request, nameMapping );
+        Filters filters = this.parseFilters( getFilterMap( request ), nameMapping );
 
         return new ResourceDeleteRequest( tables, requestColumns, nameMapping, filters );
     }
@@ -239,20 +260,19 @@ public class RequestParser {
 
         try {
             CatalogTable table = this.catalog.getTable( this.databaseName, tableElements[0], tableElements[1] );
-            log.debug( "Finished parsing table \"{}\".", tableName );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Finished parsing table \"{}\".", tableName );
+            }
             return table;
-        } catch ( UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Unable to fetch table: {}.", tableName, e );
             throw new ParserException( ParserErrorCode.TABLE_LIST_UNKNOWN_TABLE, tableName );
-        } catch ( GenericCatalogException e ) {
-            log.error( "Unable to fetch table: {}.", tableName, e );
-            throw new ParserException( ParserErrorCode.TABLE_LIST_GENERIC, tableName );
         }
     }
 
 
     @VisibleForTesting
-    List<RequestColumn> newParseProjectionsAndAggregations( Request request, List<CatalogTable> tables ) throws ParserException {
+    List<RequestColumn> newParseProjectionsAndAggregations( String[] possibleProjectionValues, List<CatalogTable> tables ) throws ParserException {
         // Helper structures & data
         Map<Long, Integer> tableOffsets = new HashMap<>();
         Set<Long> validColumns = new HashSet<>();
@@ -264,16 +284,23 @@ public class RequestParser {
         }
 
         List<RequestColumn> columns;
-        if ( !request.queryMap().hasKey( "_project" ) ) {
+        if ( possibleProjectionValues == null ) {
             columns = this.generateRequestColumnsWithoutProject( tables, tableOffsets );
         } else {
-            QueryParamsMap projectionMap = request.queryMap().get( "_project" );
-            String[] possibleProjectionValues = projectionMap.values();
             String possibleProjectionsString = possibleProjectionValues[0];
             columns = this.generateRequestColumnsWithProject( possibleProjectionsString, tableOffsets, validColumns );
         }
 
         return columns;
+    }
+
+
+    private String[] getProjectionsValues( Request request ) {
+        if ( !request.queryMap().hasKey( "_project" ) ) {
+            return null;
+        }
+        QueryParamsMap projectionMap = request.queryMap().get( "_project" );
+        return projectionMap.values();
     }
 
 
@@ -283,16 +310,10 @@ public class RequestParser {
         long internalPosition = 0L;
         for ( CatalogTable table : tables ) {
             for ( long columnId : table.columnIds ) {
-                try {
-                    CatalogColumn column = this.catalog.getColumn( columnId );
-                    int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
-                    RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );
-                    columns.add( requestColumn );
-                } catch ( UnknownColumnIdRuntimeException e ) {
-                    // These exceptions should never be thrown! If this gets thrown please report to Marco Vogt and Jan Schönholz.
-                    log.error( "Catalog failed to fetch columns by id, with the id provided by the catalog. This is bad! Report immediately.", e );
-                    throw new ParserException( ParserErrorCode.PROJECTION_INTERNAL, "" + columnId );
-                }
+                CatalogColumn column = this.catalog.getColumn( columnId );
+                int calculatedPosition = tableOffsets.get( table.id ) + column.position - 1;
+                RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, true );
+                columns.add( requestColumn );
             }
         }
 
@@ -317,10 +338,7 @@ public class RequestParser {
                 try {
                     catalogColumn = this.getCatalogColumnFromString( columnName );
                     log.debug( "Fetched catalog column for projection key: {}.", columnName );
-                } catch ( GenericCatalogException e ) {
-                    log.warn( "Unable to fetch column: {}.", columnName, e );
-                    throw new ParserException( ParserErrorCode.PROJECTION_GENERIC, columnName );
-                } catch ( UnknownColumnException e ) {
+                } catch ( UnknownColumnException | UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
                     log.warn( "Unable to fetch column: {}.", columnName, e );
                     throw new ParserException( ParserErrorCode.PROJECTION_MALFORMED, columnName );
                 }
@@ -345,16 +363,10 @@ public class RequestParser {
         Set<Long> notYetAdded = new HashSet<>( validColumns );
         notYetAdded.removeAll( projectedColumns );
         for ( long columnId : notYetAdded ) {
-            try {
-                CatalogColumn column = this.catalog.getColumn( columnId );
-                int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
-                RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
-                columns.add( requestColumn );
-            } catch ( UnknownColumnIdRuntimeException e ) {
-                // These exceptions should never be thrown! If this gets thrown please report to Marco Vogt and Jan Schönholz.
-                log.error( "Catalog failed to fetch columns by id, with the id provided by the catalog. This is bad! Report immediately.", e );
-                throw new ParserException( ParserErrorCode.PROJECTION_INTERNAL, "" + columnId );
-            }
+            CatalogColumn column = this.catalog.getColumn( columnId );
+            int calculatedPosition = tableOffsets.get( column.tableId ) + column.position - 1;
+            RequestColumn requestColumn = new RequestColumn( column, calculatedPosition, calculatedPosition, null, null, false );
+            columns.add( requestColumn );
         }
 
         return columns;
@@ -401,7 +413,7 @@ public class RequestParser {
     }
 
 
-    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, GenericCatalogException, UnknownColumnException {
+    private CatalogColumn getCatalogColumnFromString( String name ) throws ParserException, UnknownColumnException, UnknownDatabaseException, UnknownSchemaException, UnknownTableException {
         String[] splitString = name.split( "\\." );
         if ( splitString.length != 3 ) {
             log.warn( "Column name is not 3 fields long. Got: {}", name );
@@ -528,11 +540,11 @@ public class RequestParser {
 
 
     @VisibleForTesting
-    Filters parseFilters( Request request, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
+    Filters parseFilters( Map<String, String[]> filterMap, Map<String, RequestColumn> nameAndAliasMapping ) throws ParserException {
         Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters = new HashMap<>();
         Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters = new HashMap<>();
 
-        for ( String possibleFilterKey : request.queryMap().toMap().keySet() ) {
+        for ( String possibleFilterKey : filterMap.keySet() ) {
             if ( possibleFilterKey.startsWith( "_" ) ) {
                 log.debug( "Not a filter: {}", possibleFilterKey );
                 continue;
@@ -553,7 +565,7 @@ public class RequestParser {
             List<Pair<SqlOperator, Object>> literalFilterOperators = new ArrayList<>();
             List<Pair<SqlOperator, RequestColumn>> columnFilterOperators = new ArrayList<>();
 
-            for ( String filterString : request.queryMap().get( possibleFilterKey ).values() ) {
+            for ( String filterString : filterMap.get( possibleFilterKey ) ) {
                 Pair<SqlOperator, String> rightHandSide = this.parseFilterOperation( filterString );
                 Object literal = this.parseLiteralValue( catalogColumn.getColumn().type, rightHandSide.right );
                 // TODO: add column filters here
@@ -572,6 +584,15 @@ public class RequestParser {
         }
 
         return new Filters( literalFilters, columnFilters );
+    }
+
+
+    private Map<String, String[]> getFilterMap( Request request ) {
+        HashMap<String, String[]> filterMap = new HashMap<>();
+        for ( String filterKey : request.queryMap().toMap().keySet() ) {
+            filterMap.put( filterKey, request.queryMap().get( filterKey ).values() );
+        }
+        return filterMap;
     }
 
 
@@ -655,6 +676,9 @@ public class RequestParser {
                     default:
                         return null;
                 }
+            } else if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                //the binary data will be fetched later
+                return null;
             } else {
                 // TODO js: error handling.
                 log.warn( "Unable to convert literal value. Returning null. Type: {}, Value: {}.", type, literal );
@@ -741,6 +765,7 @@ public class RequestParser {
 
         public final Map<RequestColumn, List<Pair<SqlOperator, Object>>> literalFilters;
         public final Map<RequestColumn, List<Pair<SqlOperator, RequestColumn>>> columnFilters;
+
     }
 
 

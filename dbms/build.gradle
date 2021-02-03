@@ -53,6 +53,8 @@ dependencies {
 
     implementation group: 'org.apache.commons', name: 'commons-math3', version: commons_math_version  // Apache 2.0
 
+    implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
+
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
@@ -62,7 +64,11 @@ dependencies {
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
 
-    testImplementation group: 'com.konghq', name: 'unirest-java', version: unirest_version
+    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version
+
+    testImplementation group: "com.wix", name: "wix-embedded-mysql", version: embedded_mysql_version
+    testImplementation group: "io.zonky.test", name: "embedded-postgres", version: embedded_postgres_version
+    testImplementation group: "monetdb", name: "monetdb-java-lite", version: embedded_monetdb_version
 
     //testImplementation group: "net.hydromatic", name: "foodmart-data-hsqldb", version: foodmart_data_hsqldb_version
     //testImplementation group: "net.hydromatic", name: "foodmart-queries", version: foodmart_queries_version
@@ -117,7 +123,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        //attributes "Version": "$version"
+        attributes "Version": "$project.version"
         attributes "Main-Class": "org.polypheny.db.PolyphenyDb"
     }
 }

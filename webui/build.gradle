@@ -33,6 +33,8 @@ dependencies {
     implementation project(":statistic")
     implementation project(":explore-by-example")
 
+    implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
+
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
@@ -42,6 +44,8 @@ dependencies {
     implementation group: 'com.konghq', name: 'unirest-java', version: unirest_version  // MIT
 
     implementation group: "net.sf.opencsv", name: "opencsv", version: opencsv_version  // Apache 2.0
+
+    implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
 
 
     // --- Test Compile ---
@@ -110,7 +114,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        //attributes "Version": "$version"
+        attributes "Version": "$project.version"
     }
     from("$buildDir/webapp") // include webapp files
 }

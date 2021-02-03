@@ -29,6 +29,7 @@ import org.apache.calcite.linq4j.Queryable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.rel.FileTableScan;
 import org.polypheny.db.adapter.java.AbstractQueryableTable;
+import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptTable.ToRelContext;
@@ -119,7 +120,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         fileSchema.getConvention().register( cluster.getPlanner() );
-        return new LogicalTableModify( cluster, cluster.traitSetOf( fileSchema.getConvention() ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
+        return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
     @Override

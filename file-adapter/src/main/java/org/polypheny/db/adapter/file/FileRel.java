@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,9 @@ public interface FileRel extends RelNode {
         @Getter
         private final List<String> columnNames = new ArrayList<>();
         private final List<String> project = new ArrayList<>();
+        private List<Integer> projectionMapping;
         @Getter
-        private final List<Object[]> insertValues = new ArrayList<>();
+        private final List<Value[]> insertValues = new ArrayList<>();
         @Getter
         @Setter
         private boolean batchInsert;
@@ -60,11 +61,13 @@ public interface FileRel extends RelNode {
         Condition condition;
         @Getter
         @Setter
-        List<Update> updates;
+        List<Value> updates;
+
 
         public FileImplementor() {
             //intentionally empty
         }
+
 
         public void setFileTable( final FileTranslatableTable fileTable ) {
             this.fileTable = fileTable;
@@ -72,12 +75,22 @@ public interface FileRel extends RelNode {
             this.columnNames.addAll( fileTable.getColumnNames() );
         }
 
+
         public void setColumnNames( final List<String> columnNames ) {
             this.columnNames.clear();
             this.columnNames.addAll( columnNames );
         }
 
-        public void project( final List<String> columnNames ) {
+
+        /**
+         * A FileProject can directly provide the projectionMapping, a FileModify will provide the columnNames only
+         */
+        public void project( final List<String> columnNames, final List<Integer> projectionMapping ) {
+            if ( projectionMapping != null ) {
+                this.projectionMapping = projectionMapping;
+                projectInsertValues( projectionMapping );
+                return;
+            }
             //a normal project
             if ( updates == null ) {
                 this.project.clear();
@@ -86,35 +99,68 @@ public interface FileRel extends RelNode {
             //in case of an update, assign the columnReferences in the updates
             else if ( operation == Operation.UPDATE ) {
                 if ( columnNames.size() != updates.size() ) {
-                    throw new RuntimeException( "This should not happen" );
+                    //the mapping will be derived later, in the FileTableModify
+                    return;
                 }
                 int i = 0;
-                for ( Update update : updates ) {
-                    update.setColumnReference( getFileTable().getColumnNames().indexOf( columnNames.get( i ) ) );
+                List<Integer> mapping = new ArrayList<>();
+                for ( Value update : updates ) {
+                    int index = getFileTable().getColumnNames().indexOf( columnNames.get( i ) );
+                    update.setColumnReference( index );
+                    mapping.add( index );
                     i++;
+                }
+                this.projectionMapping = mapping;
+            }
+        }
+
+
+        /**
+         * For multi-store inserts, it may be necessary to project the insert values
+         */
+        private void projectInsertValues( final List<Integer> mapping ) {
+            if ( insertValues.size() > 0 && insertValues.get( 0 ).length > mapping.size() ) {
+                for ( int i = 0; i < insertValues.size(); i++ ) {
+                    Value[] values = insertValues.get( i );
+                    Value[] projected = new Value[mapping.size()];
+                    int j = 0;
+                    for ( Integer m : mapping ) {
+                        projected[j++] = values[m];
+                    }
+                    insertValues.set( i, projected );
                 }
             }
         }
 
+
         public Integer[] getProjectionMapping() {
+            if ( projectionMapping != null ) {
+                return projectionMapping.toArray( new Integer[0] );
+            }
             if ( project.size() == 0 ) {
                 return null;
             } else {
                 Integer[] projectionMapping = new Integer[project.size()];
                 for ( int i = 0; i < project.size(); i++ ) {
-                    projectionMapping[i] = columnNames.indexOf( project.get( i ) );
+                    String ithProject = project.get( i );
+                    if ( ithProject.contains( "." ) ) {
+                        ithProject = ithProject.substring( ithProject.lastIndexOf( "." ) + 1 );
+                    }
+                    int indexOf = columnNames.indexOf( ithProject );
+                    if ( indexOf == -1 ) {
+                        throw new RuntimeException( "Could not perform the projection." );
+                    }
+                    projectionMapping[i] = indexOf;
                 }
                 return projectionMapping;
             }
         }
 
-        public void addInsertValue( final Object... row ) {
+
+        public void addInsertValue( final Value... row ) {
             insertValues.add( row );
         }
 
-        public void addInsertValues( final List<Object[]> rows ) {
-            insertValues.addAll( rows );
-        }
 
         /**
          * Has to be called in every implement method of all FileRel instances

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -41,7 +39,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
-    private final InformationTable storeInformation;
+    private final InformationTable adapterInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -51,7 +49,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
 
-        this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name" ) );
+        this.adapterInformation = addCatalogInformationTable( page, "Adapters", Arrays.asList( "ID", "Name", "Type" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
@@ -95,17 +93,16 @@ public class CatalogInfoPage implements PropertyChangeListener {
         schemaInformation.reset();
         tableInformation.reset();
         columnInformation.reset();
-        storeInformation.reset();
+        adapterInformation.reset();
         indexInformation.reset();
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
         }
         try {
-            catalog.getStores().forEach( s -> {
-                storeInformation.addRow( s.id, s.uniqueName );
+            catalog.getAdapters().forEach( s -> {
+                adapterInformation.addRow( s.id, s.uniqueName, s.type );
             } );
-
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
             } );
@@ -121,7 +118,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
             } );
-        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
+        } catch ( Exception e ) {
             log.error( "Exception while reset catalog information page", e );
         }
     }

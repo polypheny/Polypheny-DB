@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,10 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import lombok.NonNull;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -142,13 +143,9 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
         try {
             if ( type != null ) {
-                // Check whether all stores support schema changes
-                for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-                    if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
-                        throw SqlUtil.newContextException(
-                                SqlParserPos.ZERO,
-                                RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
-                    }
+                // Make sure that this is a table of type TABLE (and not SOURCE)
+                if ( catalogTable.tableType != TableType.TABLE ) {
+                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
                 }
                 PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
                 final PolyType collectionsType = type.getCollectionsTypeName() == null ?
@@ -162,12 +159,16 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                         type.getDimension() == -1 ? null : type.getDimension(),
                         type.getCardinality() == -1 ? null : type.getCardinality());
                 for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
-                    StoreManager.getInstance().getStore( placement.storeId ).updateColumnType(
+                    AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                             context,
                             placement,
                             getCatalogColumn( catalogTable.id, columnName ) );
                 }
             } else if ( nullable != null ) {
+                // Make sure that this is a table of type TABLE (and not SOURCE)
+                if ( catalogTable.tableType != TableType.TABLE ) {
+                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+                }
                 catalog.setNullable( catalogColumn.id, nullable );
             } else if ( beforeColumn != null || afterColumn != null ) {
                 int targetPosition;
@@ -210,6 +211,10 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                     // Do nothing
                 }
             } else if ( collation != null ) {
+                // Make sure that this is a table of type TABLE (and not SOURCE)
+                if ( catalogTable.tableType != TableType.TABLE ) {
+                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+                }
                 Collation col = Collation.parse( collation );
                 catalog.setCollation( catalogColumn.id, col );
             } else if ( defaultValue != null ) {

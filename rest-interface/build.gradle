@@ -23,6 +23,7 @@ dependencies {
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version
     implementation group: "org.apache.commons", name: "commons-lang3", version: commons_lang3_version
     implementation group: 'commons-codec', name: 'commons-codec', version: commons_codec_version
+    implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
 
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
@@ -80,7 +81,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        //attributes "Version": "$version"
+        attributes "Version": "$project.version"
     }
 }
 java {

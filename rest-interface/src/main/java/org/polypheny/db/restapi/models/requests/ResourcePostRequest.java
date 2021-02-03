@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,17 +19,19 @@ package org.polypheny.db.restapi.models.requests;
 
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.restapi.RequestColumn;
 import org.polypheny.db.util.Pair;
 
 
-@AllArgsConstructor
-public class ResourcePostRequest {
+public class ResourcePostRequest extends ResourceValuesRequest {
 
-    public final List<CatalogTable> tables;
-    public final List<RequestColumn> requestColumns;
     public final Map<String, RequestColumn> nameMapping;
-    public final List<List<Pair<RequestColumn, Object>>> values;
+
+
+    public ResourcePostRequest( List<CatalogTable> tables, List<RequestColumn> requestColumns, Map<String, RequestColumn> nameMapping, List<List<Pair<RequestColumn, Object>>> values, boolean useDynamicParams ) {
+        super( tables, requestColumns, values, useDynamicParams );
+        this.nameMapping = nameMapping;
+    }
+
 }

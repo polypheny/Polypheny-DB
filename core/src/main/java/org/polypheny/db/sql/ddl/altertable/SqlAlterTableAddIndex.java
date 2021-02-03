@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,12 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.Store.AvailableIndexMethod;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataStore.AvailableIndexMethod;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.IndexType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -125,7 +125,12 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
             IndexType type = IndexType.MANUAL;
 
-            // Check if there is already a index with this name for this table
+            // Make sure that this is a table of type TABLE (and not SOURCE)
+            if ( catalogTable.tableType != TableType.TABLE ) {
+                throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+            }
+
+            // Check if there is already an index with this name for this table
             if ( Catalog.getInstance().checkIfExistsIndex( catalogTable.id, indexName.getSimple() ) ) {
                 throw SqlUtil.newContextException( indexName.getParserPosition(), RESOURCE.indexExists( indexName.getSimple() ) );
             }
@@ -142,7 +147,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                     }
                     if ( aim == null ) {
                         throw SqlUtil.newContextException(
-                                storeName.getParserPosition(),
+                                indexMethod.getParserPosition(),
                                 RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
                     }
                     method = aim.name;
@@ -164,23 +169,16 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
                 IndexManager.getInstance().addIndex( Catalog.getInstance().getIndex( indexId ), statement );
             } else { // Store Index
-                Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
+                DataStore storeInstance = getDataStoreInstance( storeName );
                 if ( storeInstance == null ) {
                     throw SqlUtil.newContextException(
                             storeName.getParserPosition(),
-                            RESOURCE.unknownStoreName( storeName.getSimple() ) );
-                }
-
-                // Check whether the store supports schema changes
-                if ( storeInstance.isSchemaReadOnly() ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
+                            RESOURCE.unknownAdapter( storeName.getSimple() ) );
                 }
 
                 // Check if there if all required columns are present on this store
                 for ( long columnId : columnIds ) {
-                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), columnId ) ) {
+                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), columnId ) ) {
                         throw SqlUtil.newContextException(
                                 storeName.getParserPosition(),
                                 RESOURCE.missingColumnPlacement( Catalog.getInstance().getColumn( columnId ).name, storeInstance.getUniqueName() ) );
@@ -198,7 +196,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                     }
                     if ( aim == null ) {
                         throw SqlUtil.newContextException(
-                                storeName.getParserPosition(),
+                                indexMethod.getParserPosition(),
                                 RESOURCE.unknownIndexMethod( indexMethod.getSimple() ) );
                     }
                     method = aim.name;
@@ -214,13 +212,19 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
                         unique,
                         method,
                         methodDisplayName,
-                        storeInstance.getStoreId(),
+                        storeInstance.getAdapterId(),
                         type,
                         indexName.getSimple() );
 
                 storeInstance.addIndex( context, Catalog.getInstance().getIndex( indexId ) );
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownSchemaException | UnknownTableException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
+        } catch ( UnknownColumnException e ) {
+            throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
+        } catch ( UnknownSchemaException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.schemaNotFound( e.getSchemaName() ) );
+        } catch ( UnknownTableException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.tableNotFound( e.getTableName() ) );
+        } catch ( GenericCatalogException | UnknownKeyException | UnknownUserException | UnknownDatabaseException | TransactionException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public final class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
@@ -48,7 +45,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final TableType tableType;
     public final String definition;
     public final Long primaryKey;
-    public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
+    public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
+    public final boolean modifiable;
 
 
     public CatalogTable(
@@ -62,7 +60,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             @NonNull final TableType type,
             final String definition,
             final Long primaryKey,
-            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore ) {
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter, boolean modifiable ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -73,7 +71,12 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.tableType = type;
         this.definition = definition;
         this.primaryKey = primaryKey;
-        this.placementsByStore = placementsByStore;
+        this.placementsByAdapter = placementsByAdapter;
+        this.modifiable = modifiable;
+
+        if ( type == TableType.TABLE && !modifiable ) {
+            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+        }
     }
 
 

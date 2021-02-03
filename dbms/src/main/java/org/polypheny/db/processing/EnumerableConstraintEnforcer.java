@@ -37,7 +37,6 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -110,7 +109,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
             final CatalogConstraint pkc = new CatalogConstraint(
                     0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException e ) {
             log.error( "Caught exception", e );
             return logicalRoot;
         }
@@ -380,12 +379,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 RelNode input = root.getInput().accept( new RelDeepCopyShuttle() );
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable;
-                try {
-                    foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
+                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.referencedKeyTableId );
                 builder.push( input );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getColumnNames().get( i );
@@ -393,7 +387,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     final CatalogColumn foreignColumn;
                     try {
                         foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( GenericCatalogException | UnknownColumnException e ) {
+                    } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
                     RexNode newValue;
@@ -461,12 +455,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                 }
                 final List<RexNode> projects = new ArrayList<>( foreignKey.columnIds.size() );
                 final List<RexNode> foreignProjects = new ArrayList<>( foreignKey.columnIds.size() );
-                final CatalogTable foreignTable;
-                try {
-                    foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
+                final CatalogTable foreignTable = Catalog.getInstance().getTable( foreignKey.tableId );
                 for ( int i = 0; i < foreignKey.columnIds.size(); ++i ) {
                     final String columnName = foreignKey.getReferencedKeyColumnNames().get( i );
                     final String foreignColumnName = foreignKey.getColumnNames().get( i );
@@ -474,7 +463,7 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
                     try {
                         column = Catalog.getInstance().getColumn( table.id, columnName );
                         foreignColumn = Catalog.getInstance().getColumn( foreignTable.id, foreignColumnName );
-                    } catch ( GenericCatalogException | UnknownColumnException e ) {
+                    } catch ( UnknownColumnException e ) {
                         throw new RuntimeException( e );
                     }
                     final RexNode inputRef = new RexInputRef( column.position - 1, rexBuilder.getTypeFactory().createPolyType( column.type ) );

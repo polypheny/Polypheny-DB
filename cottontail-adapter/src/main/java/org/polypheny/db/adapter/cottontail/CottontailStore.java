@@ -31,7 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.cottontail.util.CottontailNameUtil;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.catalog.Catalog;
@@ -39,8 +39,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -70,7 +68,7 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 
 
 @Slf4j
-public class CottontailStore extends Store {
+public class CottontailStore extends DataStore {
 
     public static final String ADAPTER_NAME = "Cottontail-DB";
 
@@ -98,13 +96,13 @@ public class CottontailStore extends Store {
 
 
     public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, false, false, true );
+        super( storeId, uniqueName, settings, true );
         this.dbName = settings.get( "database" );
         this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
 
         if ( this.isEmbedded ) {
             File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/cottontaildb-store" );
-            File embeddedDir = new File( adapterRoot, "store" + getStoreId() );
+            File embeddedDir = new File( adapterRoot, "store" + getAdapterId() );
 
             if ( !embeddedDir.exists() ) {
                 if ( !embeddedDir.mkdirs() ) {
@@ -216,7 +214,7 @@ public class CottontailStore extends Store {
             columns.add( columnBuilder.build() );
         }*/
 
-        List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnStore( this.getStoreId(), combinedTable.id ) );
+        List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), combinedTable.id ) );
 
         String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id );
         Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
@@ -229,17 +227,14 @@ public class CottontailStore extends Store {
             throw new RuntimeException( "Unable to create table." );
         }
 
-        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnStore( this.getStoreId(), combinedTable.id ) ) {
-            try {
-                this.catalog.updateColumnPlacementPhysicalNames(
-                        this.getStoreId(),
-                        placement.columnId,
-                        this.dbName,
-                        physicalTableName,
-                        CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-                throw new RuntimeException( e );
-            }
+        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), combinedTable.id ) ) {
+            this.catalog.updateColumnPlacementPhysicalNames(
+                    this.getAdapterId(),
+                    placement.columnId,
+                    this.dbName,
+                    physicalTableName,
+                    CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
+                    true );
         }
     }
 
@@ -273,7 +268,7 @@ public class CottontailStore extends Store {
 
     @Override
     public void dropTable( Context context, CatalogTable combinedTable ) {
-        String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getStoreId(), combinedTable.id );
+        String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), combinedTable.id );
         Entity tableEntity = Entity.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( physicalTableName )
@@ -286,7 +281,7 @@ public class CottontailStore extends Store {
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
         // TODO js(ct): Add addColumn to cottontail
-        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnStore( this.getStoreId(), catalogTable.id );
+        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogTable.id );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
 
         final String currentPhysicalTableName;
@@ -342,17 +337,14 @@ public class CottontailStore extends Store {
         }
 
         // Update column placement physical table names
-        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnStore( this.getStoreId(), catalogTable.id ) ) {
-            try {
-                this.catalog.updateColumnPlacementPhysicalNames(
-                        this.getStoreId(),
-                        placement.columnId,
-                        this.dbName,
-                        newPhysicalTableName,
-                        CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-                throw new RuntimeException( e );
-            }
+        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
+            this.catalog.updateColumnPlacementPhysicalNames(
+                    this.getAdapterId(),
+                    placement.columnId,
+                    this.dbName,
+                    newPhysicalTableName,
+                    CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
+                    true );
         }
 
         // Delete old table
@@ -364,7 +356,7 @@ public class CottontailStore extends Store {
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         // TODO js(ct): Add dropColumn to cottontail
-        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnStore( this.getStoreId(), columnPlacement.tableId );
+        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId );
         placements.removeIf( it -> it.columnId == columnPlacement.columnId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
 
@@ -406,17 +398,14 @@ public class CottontailStore extends Store {
         }
 
         // Update column placement physical table names
-        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnStore( this.getStoreId(), columnPlacement.tableId ) ) {
-            try {
-                this.catalog.updateColumnPlacementPhysicalNames(
-                        this.getStoreId(),
-                        placement.columnId,
-                        this.dbName,
-                        newPhysicalTableName,
-                        CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-                throw new RuntimeException( e );
-            }
+        for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId ) ) {
+            this.catalog.updateColumnPlacementPhysicalNames(
+                    this.getAdapterId(),
+                    placement.columnId,
+                    this.dbName,
+                    newPhysicalTableName,
+                    CottontailNameUtil.createPhysicalColumnName( placement.columnId ),
+                    true );
         }
 
         // Delete old table
@@ -457,7 +446,7 @@ public class CottontailStore extends Store {
 
     @Override
     public void truncate( Context context, CatalogTable table ) {
-        String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getStoreId(), table.id );
+        String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), table.id );
         Entity tableEntity = Entity.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( physicalTableName )
@@ -471,7 +460,7 @@ public class CottontailStore extends Store {
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
         // TODO js(ct): Add updateColumnType to cottontail
         log.error( "UPDATE COLUMN TYPE IS NOT SUPPORTED YET!" );
-        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnStore( this.getStoreId(), catalogColumn.tableId );
+        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogColumn.tableId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
         final CatalogColumn newColumn = this.catalog.getColumn( catalogColumn.id );
 

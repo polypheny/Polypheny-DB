@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.restapi.models.requests;
 
 
-public class UnknownStoreException extends CatalogException {
+import java.util.List;
+import lombok.AllArgsConstructor;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.restapi.RequestColumn;
+import org.polypheny.db.util.Pair;
 
 
-    public UnknownStoreException( String storeName ) {
-        super( "There is no store with name " + storeName );
-    }
+@AllArgsConstructor
+public abstract class ResourceValuesRequest {
 
+    public final List<CatalogTable> tables;
+    public final List<RequestColumn> requestColumns;
+    public final List<List<Pair<RequestColumn, Object>>> values;
+    public boolean useDynamicParams;
 
-    public UnknownStoreException( int storeId ) {
-        super( "There is no store with the id " + storeId );
-    }
 }

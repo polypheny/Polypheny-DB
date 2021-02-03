@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
@@ -43,6 +41,7 @@ import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -96,12 +95,7 @@ public class MonetdbStore extends AbstractJdbcStore {
             return;
         }
         // MonetDB does not support updating the column type directly. We need to do a work-around
-        CatalogTable catalogTable;
-        try {
-            catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
-        } catch ( UnknownTableException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+        CatalogTable catalogTable = Catalog.getInstance().getTable( catalogColumn.tableId );
         String tmpColName = columnPlacement.physicalColumnName + "tmp";
         StringBuilder builder;
 
@@ -172,6 +166,8 @@ public class MonetdbStore extends AbstractJdbcStore {
         builder.append( " DROP COLUMN " )
                 .append( dialect.quoteIdentifier( tmpColName ) );
         executeUpdate( builder, context );
+
+        Catalog.getInstance().updateColumnPlacementPhysicalPosition( getAdapterId(), catalogColumn.id );
     }
 
 
@@ -251,6 +247,9 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     @Override
     protected String getTypeString( PolyType type ) {
+        if ( type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+            return "BLOB";
+        }
         switch ( type ) {
             case BOOLEAN:
                 return "BOOLEAN";

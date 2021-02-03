@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,8 +55,10 @@ public class HttpServer implements Runnable {
     public void run() {
         final Service server = Service.ignite();
         server.port( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        Crud crud = new Crud( transactionManager, "pa", "APP" );
 
-        webSockets( server );
+        WebSocket webSocketHandler = new WebSocket( crud );
+        webSockets( server, webSocketHandler );
 
         server.staticFiles.location( "webapp/" );
 
@@ -74,7 +76,7 @@ public class HttpServer implements Runnable {
             }
         } );
 
-        crudRoutes( server, new Crud( transactionManager, "pa", "APP" ) );
+        crudRoutes( server, crud );
 
         log.info( "Polypheny-UI started and is listening on port {}.", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
     }
@@ -84,30 +86,31 @@ public class HttpServer implements Runnable {
      * Defines the routes for this Server
      */
     private void crudRoutes( Service webuiServer, Crud crud ) {
-
-        webuiServer.post( "/getTable", crud::getTable, gson::toJson );
-
         webuiServer.post( "/getSchemaTree", crud::getSchemaTree, gson::toJson );
 
-        webuiServer.post( "/insertRow", crud::insertRow, gson::toJson );
+        webuiServer.post( "/insertRow", "multipart/form-data", crud::insertRow, gson::toJson );
 
         webuiServer.post( "/deleteRow", crud::deleteRow, gson::toJson );
 
-        webuiServer.post( "/updateRow", crud::updateRow, gson::toJson );
+        webuiServer.post( "/updateRow", "multipart/form-data", crud::updateRow, gson::toJson );
 
-        webuiServer.post( "/anyQuery", crud::anyQuery, gson::toJson );
+        webuiServer.post( "/batchUpdate", "multipart/form-data", crud::batchUpdate, gson::toJson );
 
-        webuiServer.post("/classifyData", crud::classifyData, gson::toJson);
+        webuiServer.post( "/classifyData", crud::classifyData, gson::toJson );
 
-        webuiServer.post("/getExploreTables", crud::getExploreTables, gson::toJson);
+        webuiServer.post( "/getExploreTables", crud::getExploreTables, gson::toJson );
 
-        webuiServer.post("/createInitialExploreQuery", crud::createInitialExploreQuery, gson::toJson);
+        webuiServer.post( "/createInitialExploreQuery", crud::createInitialExploreQuery, gson::toJson );
 
-        webuiServer.post("/exploration", crud::exploration, gson::toJson);
+        webuiServer.post( "/exploration", crud::exploration, gson::toJson );
 
         webuiServer.post( "/allStatistics", crud::getStatistics, gsonExpose::toJson );
 
         webuiServer.post( "/getColumns", crud::getColumns, gson::toJson );
+
+        webuiServer.post( "/getDataSourceColumns", crud::getDataSourceColumns, gson::toJson );
+
+        webuiServer.post( "/getExportedColumns", crud::getExportedColumns, gson::toJson );
 
         webuiServer.post( "/updateColumn", crud::updateColumn, gson::toJson );
 
@@ -149,10 +152,6 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getAnalyzerPage", crud::getAnalyzerPage );
 
-        webuiServer.post( "/closeAnalyzer", crud::closeAnalyzer );
-
-        webuiServer.post( "/executeRelAlg", crud::executeRelAlg, gson::toJson );
-
         webuiServer.post( "/schemaRequest", crud::schemaRequest, gson::toJson );
 
         webuiServer.get( "/getTypeInfo", crud::getTypeInfo );
@@ -165,15 +164,19 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getStores", crud::getStores );
 
+        webuiServer.get( "/getSources", crud::getSources );
+
         webuiServer.post( "/getAvailableStoresForIndexes", crud::getAvailableStoresForIndexes );
 
-        webuiServer.post( "/removeStore", crud::removeStore, gson::toJson );
+        webuiServer.post( "/removeAdapter", crud::removeAdapter, gson::toJson );
 
-        webuiServer.post( "/updateStoreSettings", crud::updateStoreSettings, gson::toJson );
+        webuiServer.post( "/updateAdapterSettings", crud::updateAdapterSettings, gson::toJson );
 
-        webuiServer.get( "/getAdapters", crud::getAdapters );
+        webuiServer.get( "/getAvailableStores", crud::getAvailableStores );
 
-        webuiServer.post( "/addStore", crud::addStore, gson::toJson );
+        webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
+
+        webuiServer.post( "/addAdapter", crud::addAdapter, gson::toJson );
 
         webuiServer.get( "/getQueryInterfaces", crud::getQueryInterfaces );
 
@@ -184,6 +187,8 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/updateQueryInterfaceSettings", crud::updateQueryInterfaceSettings, gson::toJson );
 
         webuiServer.post( "/removeQueryInterface", crud::removeQueryInterface, gson::toJson );
+
+        webuiServer.get( "/getFile/:file", crud::getFile );
 
     }
 
@@ -216,8 +221,8 @@ public class HttpServer implements Runnable {
     /**
      * Define websocket paths
      */
-    private void webSockets( Service webuiServer ) {
-        webuiServer.webSocket( "/queryAnalyzer", WebSocket.class );
+    private void webSockets( Service webuiServer, WebSocket webSocketHandler ) {
+        webuiServer.webSocket( "/webSocket", webSocketHandler );
     }
 
 

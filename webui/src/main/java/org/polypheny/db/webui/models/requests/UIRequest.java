@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,11 @@ import org.polypheny.db.webui.models.SortState;
 public class UIRequest {
 
     /**
+     * Type of a request, e.g. QueryRequest or RelAlgRequest
+     */
+    public String requestType;
+
+    /**
      * The name of the table the data should be fetched from
      */
     public String tableId;
@@ -51,5 +56,24 @@ public class UIRequest {
      * For each column: If and how it should be sorted
      */
     public Map<String, SortState> sortState;
+
+    /**
+     * Request to fetch a result without a limit. Default false.
+     */
+    public boolean noLimit;
+
+    public String getSchemaName() {
+        if ( tableId != null ) {
+            return tableId.split( "\\." )[0];
+        }
+        return null;
+    }
+
+    public String getTableName() {
+        if ( tableId != null ) {
+            return tableId.split( "\\." )[1];
+        }
+        return null;
+    }
 
 }

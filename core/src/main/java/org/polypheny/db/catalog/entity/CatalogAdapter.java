@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,20 +24,30 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @EqualsAndHashCode
-public class CatalogStore implements CatalogEntity {
+public class CatalogAdapter implements CatalogEntity {
 
     private static final long serialVersionUID = -5837600302561930044L;
 
     public final int id;
     public final String uniqueName;
     public final String adapterClazz;
+    public final AdapterType type;
     public final Map<String, String> settings;
 
 
-    public CatalogStore( final int id, @NonNull final String uniqueName, @NonNull final String adapterClazz, @NonNull final Map<String, String> settings ) {
+    public enum AdapterType {STORE, SOURCE}
+
+
+    public CatalogAdapter(
+            final int id,
+            @NonNull final String uniqueName,
+            @NonNull final String adapterClazz,
+            @NonNull final AdapterType adapterType,
+            @NonNull final Map<String, String> settings ) {
         this.id = id;
         this.uniqueName = uniqueName;
         this.adapterClazz = adapterClazz;
+        this.type = adapterType;
         this.settings = settings;
     }
 
@@ -50,8 +60,9 @@ public class CatalogStore implements CatalogEntity {
 
 
     @RequiredArgsConstructor
-    public static class PrimitiveCatalogStore {
+    public static class PrimitiveCatalogAdapter {
 
         public final String name;
+
     }
 }

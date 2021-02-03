@@ -17,19 +17,22 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -73,6 +76,12 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
+
         try {
             Catalog catalog = Catalog.getInstance();
             CatalogIndex index = catalog.getIndex( catalogTable.id, indexName.getSimple() );
@@ -80,12 +89,12 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
             if ( index.location == 0 ) {
                 IndexManager.getInstance().deleteIndex( index );
             } else {
-                Store storeInstance = StoreManager.getInstance().getStore( index.location );
+                DataStore storeInstance = AdapterManager.getInstance().getStore( index.location );
                 storeInstance.dropIndex( context, index );
             }
 
             catalog.deleteIndex( index.id );
-        } catch ( GenericCatalogException | UnknownIndexException e ) {
+        } catch ( UnknownIndexException e ) {
             throw new RuntimeException( e );
         }
     }

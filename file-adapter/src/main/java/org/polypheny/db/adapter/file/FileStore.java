@@ -22,14 +22,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -39,7 +37,7 @@ import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
-public class FileStore extends Store {
+public class FileStore extends DataStore {
 
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "File";
@@ -67,28 +65,20 @@ public class FileStore extends Store {
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, false, false, true );
+        super( storeId, uniqueName, settings, true );
         setRootDir();
         trxRecovery();
     }
 
 
     private void setRootDir() {
-        File adapterRoot;
-        if ( Catalog.memoryCatalog ) {
-            adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/temp-file-store" );
-        } else {
-            adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
-        }
-        rootDir = new File( adapterRoot, "store" + getStoreId() );
+        File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
+        rootDir = new File( adapterRoot, "store" + getAdapterId() );
 
         if ( !rootDir.exists() ) {
             if ( !rootDir.mkdirs() ) {
                 throw new RuntimeException( "Could not create root directory" );
             }
-        }
-        if ( Catalog.memoryCatalog ) {
-            FileSystemManager.getInstance().recursiveDeleteFolderOnExit( "data/temp-file-store" );
         }
         //subfolder for the write ahead log
         this.WAL = new File( rootDir, "WAL" );
@@ -123,13 +113,15 @@ public class FileStore extends Store {
 
     @Override
     public void createTable( Context context, CatalogTable catalogTable ) {
-        context.getStatement().getTransaction().registerInvolvedStore( this );
-        try {
-            for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnStore( getStoreId(), catalogTable.id ) ) {
-                catalog.updateColumnPlacementPhysicalNames( getStoreId(), placement.columnId, currentSchema.getSchemaName(), getPhysicalTableName( catalogTable.id ), getPhysicalColumnName( placement.columnId ) );
-            }
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-            throw new RuntimeException( "Could not create table", e );
+        context.getStatement().getTransaction().registerInvolvedAdapter( this );
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacementsOnAdapter( getAdapterId(), catalogTable.id ) ) {
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    placement.columnId,
+                    currentSchema.getSchemaName(),
+                    getPhysicalTableName( catalogTable.id ),
+                    getPhysicalColumnName( placement.columnId ),
+                    true );
         }
         for ( Long colId : catalogTable.columnIds ) {
             File newColumnFolder = getColumnFolder( colId );
@@ -142,7 +134,7 @@ public class FileStore extends Store {
 
     @Override
     public void dropTable( Context context, CatalogTable catalogTable ) {
-        context.getStatement().getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedAdapter( this );
         //todo check if it is on this store?
         for ( Long colId : catalogTable.columnIds ) {
             File f = getColumnFolder( colId );
@@ -157,27 +149,24 @@ public class FileStore extends Store {
 
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
-        context.getStatement().getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedAdapter( this );
         File newColumnFolder = getColumnFolder( catalogColumn.id );
         if ( !newColumnFolder.mkdir() ) {
-            throw new RuntimeException( "Could not create column folder" );
+            throw new RuntimeException( "Could not create column folder " + newColumnFolder.getName() );
         }
-        try {
-            catalog.updateColumnPlacementPhysicalNames(
-                    getStoreId(),
-                    catalogColumn.id,
-                    currentSchema.getSchemaName(),
-                    getPhysicalTableName( catalogTable.id ),
-                    getPhysicalColumnName( catalogColumn.id ) );
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-            throw new RuntimeException( e );
-        }
+        catalog.updateColumnPlacementPhysicalNames(
+                getAdapterId(),
+                catalogColumn.id,
+                currentSchema.getSchemaName(),
+                getPhysicalTableName( catalogTable.id ),
+                getPhysicalColumnName( catalogColumn.id ),
+                false );
     }
 
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-        context.getStatement().getTransaction().registerInvolvedStore( this );
+        context.getStatement().getTransaction().registerInvolvedAdapter( this );
         File columnFile = getColumnFolder( columnPlacement.columnId );
         try {
             FileUtils.deleteDirectory( columnFile );

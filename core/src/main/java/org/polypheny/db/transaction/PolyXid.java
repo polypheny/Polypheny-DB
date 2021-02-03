@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ public class PolyXid implements javax.transaction.xa.Xid, Serializable {
      *
      *
      * PolyXid:  |- formatId (4 Bytes) -|   |----------------- globalTransactionId (64 Bytes) --------------------------------------------------------|   |----------------- branchQualifier (64 Bytes) ------------------------------------------------------------|
-     *                                      |- PUID: nodeId ---------| |- PUID: userId ---------| |- PUID: connectionId ---| |- PUID: transactionId --|   |- PUID: nodeId ---------| |- PUID: storeId --------| |- PUID: reserved -------| |- PUID: custom ---------|
+     *                                      |- PUID: nodeId ---------| |- PUID: userId ---------| |- PUID: connectionId ---| |- PUID: transactionId --|   |- PUID: nodeId ---------| |- PUID: adapterId --------| |- PUID: reserved -------| |- PUID: custom ---------|
      *                                      |- 8 Bytes -||- 8 Bytes -| |- 8 Bytes -||- 8 Bytes -| |- 8 Bytes -||- 8 Bytes -| |- 8 Bytes -||- 8 Bytes -|   |- 8 Bytes -||- 8 Bytes -| |- 8 Bytes -||- 8 Bytes -| |- 8 Bytes -||- 8 Bytes -| |- 8 Bytes -||- 8 Bytes -|
      *                                      most sig         least sig
      */

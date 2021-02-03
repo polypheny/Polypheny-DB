@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,13 @@
 package org.polypheny.db.information;
 
 
+import org.eclipse.jetty.websocket.api.Session;
+
+
 public interface InformationObserver {
 
-    void observeInfos( final Information info );
+    void observeInfos( final Information info, final String informationManagerId, final Session session );
 
-    void observePageList( final String debugId, final InformationPage[] pages );
+    void observePageList( final InformationPage[] pages, final String informationManagerId, final Session session );
+
 }

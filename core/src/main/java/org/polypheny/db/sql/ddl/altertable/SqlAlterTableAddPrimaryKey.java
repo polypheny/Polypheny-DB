@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,23 +17,26 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -78,6 +81,12 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
+
         try {
             CatalogPrimaryKey oldPk = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
 
@@ -94,22 +103,22 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
             List<CatalogColumnPlacement> oldPkPlacements = Catalog.getInstance().getColumnPlacements( pkColumnId );
             for ( CatalogColumnPlacement ccp : oldPkPlacements ) {
                 for ( long columnId : columnIds ) {
-                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( ccp.storeId, columnId ) ) {
+                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( ccp.adapterId, columnId ) ) {
                         Catalog.getInstance().addColumnPlacement(
-                                ccp.storeId,
+                                ccp.adapterId,
                                 columnId,
                                 PlacementType.AUTOMATIC,
                                 null, // Will be set later
                                 null, // Will be set later
                                 null ); // Will be set later
-                        StoreManager.getInstance().getStore( ccp.storeId ).addColumn(
+                        AdapterManager.getInstance().getStore( ccp.adapterId ).addColumn(
                                 context,
                                 Catalog.getInstance().getTable( ccp.tableId ),
                                 Catalog.getInstance().getColumn( columnId ) );
                     }
                 }
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }

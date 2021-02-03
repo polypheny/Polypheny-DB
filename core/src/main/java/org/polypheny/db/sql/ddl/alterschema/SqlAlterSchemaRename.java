@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -78,8 +77,6 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
             }
             CatalogSchema catalogSchema = catalog.getSchema( context.getDatabaseId(), oldName.getSimple() );
             catalog.renameSchema( catalogSchema.id, newName.getSimple() );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         } catch ( UnknownSchemaException e ) {
             throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaNotFound( oldName.getSimple() ) );
         }

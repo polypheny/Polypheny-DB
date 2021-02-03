@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.file.rel;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Blocks;
@@ -32,7 +33,7 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
-import org.polypheny.db.adapter.file.Update;
+import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -50,15 +51,18 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
     }
 
+
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         return new FileToEnumerableConverter( getCluster(), traitSet, sole( inputs ) );
     }
 
+
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
+
 
     @Override
     public Result implement( EnumerableRelImplementor implementor, Prefer pref ) {
@@ -78,22 +82,16 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
         Expression _insertValues = Expressions.constant( null );
         if ( fileImplementor.getOperation() != Operation.SELECT ) {
-            if ( !fileImplementor.isBatchInsert() ) {
-                ArrayList<Expression> rowExpressions = new ArrayList<>();
-                for ( Object[] row : fileImplementor.getInsertValues() ) {
-                    ArrayList<Expression> valuesExpression = new ArrayList<>();
-                    for ( Object value : row ) {
-                        valuesExpression.add( Expressions.constant( value, String.class ) );
-                    }
-                    rowExpressions.add( Expressions.newArrayInit( Object[].class, valuesExpression ) );
-                }
-                _insertValues = Expressions.newArrayInit( Object[].class, rowExpressions );
+            ArrayList<Expression> rowExpressions = new ArrayList<>();
+            for ( Value[] row : fileImplementor.getInsertValues() ) {
+                rowExpressions.add( Value.getValuesExpression( Arrays.asList( row ) ) );
             }
+            _insertValues = Expressions.newArrayInit( Object[].class, rowExpressions );
         }
 
         Expression _updates;
         if ( fileImplementor.getUpdates() != null ) {
-            _updates = Update.getUpdatesExpression( fileImplementor.getUpdates() );
+            _updates = Value.getValuesExpression( fileImplementor.getUpdates() );
         } else {
             _updates = Expressions.constant( null );
         }
@@ -113,7 +111,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expressions.call(
                             FileMethod.EXECUTE.method,
                             Expressions.constant( fileImplementor.getOperation() ),
-                            Expressions.constant( fileImplementor.getFileTable().getStore().getStoreId() ),
+                            Expressions.constant( fileImplementor.getFileTable().getStore().getAdapterId() ),
                             DataContext.ROOT,
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
@@ -129,7 +127,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expressions.call(
                             FileMethod.EXECUTE_MODIFY.method,
                             Expressions.constant( fileImplementor.getOperation() ),
-                            Expressions.constant( fileImplementor.getFileTable().getStore().getStoreId() ),
+                            Expressions.constant( fileImplementor.getFileTable().getStore().getAdapterId() ),
                             DataContext.ROOT,
                             Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
@@ -145,4 +143,5 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
 
         return implementor.result( physType, Blocks.toBlock( list.toBlock() ) );
     }
+
 }

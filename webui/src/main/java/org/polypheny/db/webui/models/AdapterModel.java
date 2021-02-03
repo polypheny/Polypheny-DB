@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.webui.models;
 
 
-public class CatalogConnectionException extends CatalogException {
-
-    private Exception exception;
-
-
-    public CatalogConnectionException( String message ) {
-        super( message );
-        exception = null;
-    }
+import java.util.Map;
+import org.polypheny.db.adapter.Adapter.AdapterSetting;
 
 
-    public CatalogConnectionException( String message, Exception e ) {
-        super( message, e );
-        exception = e;
-    }
+public class AdapterModel {
+
+    public String uniqueName;
+    public String clazzName;
+    public Map<String, AdapterSetting> settings;
 
 }
