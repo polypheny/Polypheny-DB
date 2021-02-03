@@ -223,18 +223,18 @@ public abstract class Adapter {
 
         private final String type = "Files";
         @Setter
-        public String[] fileNames;
+        public String directory;
         public transient final Map<String, InputStream> inputStreams;
 
         public AdapterSettingFiles( String name, boolean canBeNull, boolean required, boolean modifiable ) {
             super( name, canBeNull, required, modifiable );
             //so it will be serialized
-            this.fileNames = new String[]{ "" };
+            this.directory = "";
             this.inputStreams = new HashMap<>();
         }
 
         public String getValue() {
-            return new Gson().toJson( fileNames );
+            return directory;
         }
 
     }
@@ -265,8 +265,8 @@ public abstract class Adapter {
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
                     return new AdapterSettingList( name, canBeNull, required, modifiable, options );
                 case "Files":
-                    String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
-                    return new AdapterSettingFiles( name, canBeNull, required, modifiable ).setFileNames( fileNames );
+                    String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
+                    return new AdapterSettingFiles( name, canBeNull, required, modifiable ).setDirectory( directory );
                 default:
                     throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );
             }

@@ -87,6 +87,7 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
@@ -156,6 +157,7 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateTimeStringUtils;
+import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
@@ -2159,8 +2161,18 @@ public class Crud implements InformationObserver {
         Map<String, String> settings = new HashMap<>();
         for ( Entry<String, AdapterSetting> entry : a.settings.entrySet() ) {
             if ( entry.getValue() instanceof AdapterSettingFiles ) {
+                AdapterSettingFiles setting = ((AdapterSettingFiles) entry.getValue());
+                File path = FileSystemManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
+                for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
+                    try {
+                        File file = new File( path, is.getKey() );
+                        FileUtils.copyInputStreamToFile( is.getValue(), file );
+                    } catch ( IOException e ) {
+                        throw new RuntimeException( e );
+                    }
+                }
+                setting.setDirectory( path.getAbsolutePath() );
                 settings.put( entry.getKey(), entry.getValue().getValue() );
-                //todo do something with the inputStreams
             } else {
                 settings.put( entry.getKey(), entry.getValue().getValue() );
             }

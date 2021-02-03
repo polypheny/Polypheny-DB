@@ -33,6 +33,8 @@ dependencies {
     implementation project(":statistic")
     implementation project(":explore-by-example")
 
+    implementation group: "commons-io", name: "commons-io", version: commons_io_version  // Apache 2.0
+
     uiFiles group: "org.polypheny", name: "polypheny-ui", version: polypheny_ui_version
 
     implementation group: "com.sparkjava", name: "spark-core", version: spark_core_version  // Apache 2.0
