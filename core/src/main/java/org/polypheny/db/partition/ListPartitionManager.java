@@ -88,7 +88,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
         /* try {
             int thresholdCounter = 0;
             boolean validDistribution = false;
-            //check for every partition if the column in question has still all partition somewher even when columnId on Store would be removed
+            //check for every partition if the column in question has still all partition somewhere even when columnId on Store would be removed
             for (long partitionId : catalogTable.partitionIds) {
 
                 //check if a column is dropped from a store if this column has still other placements with all partitions
@@ -109,7 +109,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
          }*/
 
         // TODO can be removed if upper codeblock is enabled
-        // change is only critical if there is only one column left with the charecteristics
+        // change is only critical if there is only one column left with the characteristics
         int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).size();
         if ( numberOfFullPlacements <= 1 ) {
             //Check if this one column is the column we are about to delete

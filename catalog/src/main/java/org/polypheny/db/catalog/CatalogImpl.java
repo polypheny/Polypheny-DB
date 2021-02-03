@@ -3131,7 +3131,7 @@ public class CatalogImpl extends Catalog {
 
     //TODO: Data Migrate
     @Override
-    public void mergeTable( long tableId ) throws UnknownKeyIdRuntimeException, UnknownPartitionIdRuntimeException {
+    public void mergeTable( long tableId ) {
         if ( log.isDebugEnabled() ) {
             log.debug( "Merging table {} has been started", getTable( tableId ).name );
         }

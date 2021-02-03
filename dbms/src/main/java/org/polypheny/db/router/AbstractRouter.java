@@ -171,7 +171,7 @@ public abstract class AbstractRouter implements Router {
 
     protected RelBuilder buildSelect( RelNode node, RelBuilder builder, Statement statement, RelOptCluster cluster ) {
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            // Check if partition used in general to reduce overhead if not for unpartitioned
+            // Check if partition used in general to reduce overhead if not for un-partitioned
             if ( node instanceof LogicalFilter && ((LogicalFilter) node).getInput().getTable() != null ) {
 
                 RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
@@ -507,6 +507,7 @@ public abstract class AbstractRouter implements Router {
                                 for ( i = 0; i < fieldNames.size(); i++ ) {
                                     String columnName = fieldNames.get( i );
                                     if ( partitionColumnName.equals( columnName ) ) {
+                                        // TODO @Hennlo equals between objects of inconvertible types
                                         if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).equals( SqlKind.DYNAMIC_PARAM ) ) {
                                             worstCaseRouting = true;
                                         } else {

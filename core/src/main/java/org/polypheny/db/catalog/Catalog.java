@@ -52,8 +52,6 @@ import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
@@ -505,7 +503,7 @@ public abstract class Catalog {
      * @param physicalSchemaName The physical schema name
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (highst number in the table; represents that the column is now at the last position)
+     * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition );
 
@@ -938,7 +936,7 @@ public abstract class Catalog {
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
      * @param ownerId the partitionId to be deleted
-     * @param partitionType partition Type of the added partiiton
+     * @param partitionType partition Type of the added partition
      */
     public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
 
@@ -957,7 +955,7 @@ public abstract class Catalog {
      *
      * @return partition
      */
-    public abstract CatalogPartition getPartition( long partitionId ) throws UnknownPartitionIdRuntimeException;
+    public abstract CatalogPartition getPartition( long partitionId );
 
     /**
      * Effectively partitions a table with the specified partitionType
@@ -969,7 +967,7 @@ public abstract class Catalog {
      * @param partitionQualifiers qualifiers which are directly associated with a partition
      * @param partitionNames (optional)
      */
-    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws UnknownTableException, UnknownPartitionIdRuntimeException, GenericCatalogException;
+    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException;
 
     /**
      * Merges a  partitioned table
@@ -977,7 +975,7 @@ public abstract class Catalog {
      *
      * @param tableId Table to be merged
      */
-    public abstract void mergeTable( long tableId ) throws UnknownKeyException, UnknownPartitionIdRuntimeException;
+    public abstract void mergeTable( long tableId );
 
     /**
      * Get a List of all partitions belonging to a specific table

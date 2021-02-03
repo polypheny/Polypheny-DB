@@ -82,7 +82,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
     public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
         Catalog catalog = Catalog.getInstance();
 
-        // change is only critical if there is only one column left with the charecteristics
+        // change is only critical if there is only one column left with the characteristics
         int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).size();
         if ( numberOfFullPlacements <= 1 ) {
             //Check if this one column is the column we are about to delete

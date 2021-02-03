@@ -58,7 +58,6 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
@@ -115,7 +114,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             int numPartitions,
             List<SqlIdentifier> partitionNamesList,
             List<List<SqlNode>> partitionQualifierList ) {
-
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
@@ -314,10 +312,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     log.debug( "Creating partitions for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
                 }
 
-                List<String> partitionValue = new ArrayList<>();
                 List<List<String>> partitionQualifierStringList = new ArrayList<>();
                 for ( List<SqlNode> partitionValueList : partitionQualifierList ) {
-
                     partitionQualifierStringList.add( partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ) );
                 }
 
@@ -330,12 +326,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                         //partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
                         partitionQualifierStringList,
                         partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
-
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Table: '{}' has been partitioned on columnId '{}' ", catalogTable.name, catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) );
                 }
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownPartitionTypeException | UnknownTableException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }
 

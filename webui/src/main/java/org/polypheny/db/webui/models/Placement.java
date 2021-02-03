@@ -54,6 +54,7 @@ public class Placement {
     }
 
 
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
     public static class Store {
 
         public final String uniqueName;
@@ -82,6 +83,7 @@ public class Placement {
     }
 
 
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
     private static class ColumnPlacement {
 
         private final long tableId;

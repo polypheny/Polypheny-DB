@@ -108,7 +108,7 @@ public class CatalogTest {
 
 
     @Test
-    public void testDatabase() throws UnknownDatabaseException {
+    public void testDatabase() {
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );
 
@@ -211,11 +211,8 @@ public class CatalogTest {
         CatalogPrimaryKey key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
         assertEquals( key.columnIds.get( 0 ), columnId );
 
-        /*
-        catalog.deletePrimaryKey( tableId );
-        assertNull( catalog.getTable( tableId ).primaryKey );
-
-         */
+        //catalog.deletePrimaryKey( tableId );
+        //assertNull( catalog.getTable( tableId ).primaryKey );
 
         catalog.addPrimaryKey( tableId, columnIds );
         key = catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey );
@@ -307,11 +304,11 @@ public class CatalogTest {
 
         catalog.addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
 
-        Map<String, String> csvSetttings = new HashMap<>();
-        csvSetttings.put( "directory", "classpath://hr" );
-        csvSetttings.put( "persistent", "true" );
+        Map<String, String> csvSettings = new HashMap<>();
+        csvSettings.put( "directory", "classpath://hr" );
+        csvSettings.put( "persistent", "true" );
 
-        catalog.addAdapter( "csv", "org.polypheny.db.adapter.csv.CsvStore", AdapterType.STORE, csvSetttings );
+        catalog.addAdapter( "csv", "org.polypheny.db.adapter.csv.CsvStore", AdapterType.STORE, csvSettings );
 
     }
 
@@ -446,7 +443,7 @@ public class CatalogTest {
 
 
     @Test
-    public void performanceTests() throws UnknownDatabaseException {
+    public void performanceTests() {
         int iterations = 1000;
         int userId = catalog.addUser( "tester", "" );
         CatalogUser user = catalog.getUser( userId );

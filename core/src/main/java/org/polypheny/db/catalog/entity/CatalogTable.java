@@ -97,7 +97,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         }
     }
 
-    // numPartitons can be empty and calculated based on the partition key
+
+    // numPartitions can be empty and calculated based on the partition key
     // Only used when explicitly working with partitions to not alter existing call stack and logic
     public CatalogTable(
             final long id,

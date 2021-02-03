@@ -946,8 +946,7 @@ public class Crud implements InformationObserver {
         }
         result.setExplorerId( explore.getId() );
         result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
-        int tableSize = 0;
-        tableSize = explore.getTableSize();
+        int tableSize = explore.getTableSize();
 
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
 
@@ -960,7 +959,7 @@ public class Crud implements InformationObserver {
 
         if ( explore.isDataAfterClassification ) {
             int tablesize = explore.getDataAfterClassification().size();
-            List<String[]> paginationDataList = new ArrayList<>();
+            List<String[]> paginationDataList;
             if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
                 paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
             } else {

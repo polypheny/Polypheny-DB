@@ -99,7 +99,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
             Catalog.getInstance().addPrimaryKey( catalogTable.id, columnIds );
 
             // Add new column placements
-            long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficent to check for one because all get replicated on all stores
+            long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficient to check for one because all get replicated on all stores
             List<CatalogColumnPlacement> oldPkPlacements = Catalog.getInstance().getColumnPlacements( pkColumnId );
             for ( CatalogColumnPlacement ccp : oldPkPlacements ) {
                 for ( long columnId : columnIds ) {

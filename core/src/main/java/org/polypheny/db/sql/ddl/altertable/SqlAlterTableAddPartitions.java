@@ -28,7 +28,6 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -128,7 +127,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
             }
-        } catch ( UnknownPartitionTypeException | UnknownColumnException | UnknownTableException | UnknownPartitionIdRuntimeException | GenericCatalogException e ) {
+        } catch ( UnknownPartitionTypeException | UnknownColumnException | UnknownPartitionIdRuntimeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

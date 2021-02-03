@@ -226,7 +226,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         null,
                         null,
                         null,
-                        tempPartitionList);
+                        tempPartitionList );
                 // Add column on store
                 storeInstance.addColumn( context, catalogTable, Catalog.getInstance().getColumn( cid ) );
                 // Add to list of columns for which we need to copy data

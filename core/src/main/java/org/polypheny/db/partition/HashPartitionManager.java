@@ -69,7 +69,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
         // Find stores with full placements (partitions)
-        // Pick for each column the column placemnt which has full partitioning //SELECT WORST-CASE ergo Fallback
+        // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
         for ( long columnId : catalogTable.columnIds ) {
             // Take the first column placement
             relevantCcps.add( getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).get( 0 ) );

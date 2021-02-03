@@ -22,7 +22,6 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -69,26 +68,22 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        try {
-            // Check if table is even partitioned
-            if ( catalogTable.partitionType != Catalog.PartitionType.NONE ) {
-                long tableId = catalogTable.id;
+        // Check if table is even partitioned
+        if ( catalogTable.partitionType != Catalog.PartitionType.NONE ) {
+            long tableId = catalogTable.id;
 
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName() );
-                }
-
-                // TODO Create partitions multithreaded
-                catalog.mergeTable( tableId );
-
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Table: '{}' has been merged", catalogTable.name );
-                }
-            } else {
-                throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned at all" );
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName() );
             }
-        } catch ( UnknownKeyException e ) {
-            throw new RuntimeException( e );
+
+            // TODO Create partitions multithreaded
+            catalog.mergeTable( tableId );
+
+            if ( log.isDebugEnabled() ) {
+                log.debug( "Table: '{}' has been merged", catalogTable.name );
+            }
+        } else {
+            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned at all" );
         }
     }
 
