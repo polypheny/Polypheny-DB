@@ -44,8 +44,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.PlacementType;
@@ -57,10 +56,8 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
@@ -192,8 +189,8 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
                 tableName = name.names.get( 0 );
             }
-        } catch ( UnknownDatabaseException | UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
+        } catch ( UnknownDatabaseException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.databaseNotFound( name.toString() ) );
         } catch ( UnknownSchemaException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
         }
@@ -214,19 +211,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                 throw SqlUtil.newContextException( SqlParserPos.ZERO, RESOURCE.createTableRequiresColumnList() );
             }
 
-            List<Store> stores;
+            List<DataStore> stores;
             if ( this.store != null ) {
-                Store storeInstance = StoreManager.getInstance().getStore( this.store.getSimple() );
-                if ( storeInstance == null ) {
-                    throw SqlUtil.newContextException( store.getParserPosition(), RESOURCE.unknownStoreName( store.getSimple() ) );
-                }
-                // Check whether the store supports schema changes
-                if ( storeInstance.isSchemaReadOnly() ) {
-                    throw SqlUtil.newContextException(
-                            store.getParserPosition(),
-                            RESOURCE.storeIsSchemaReadOnly( store.getSimple() ) );
-                }
-                stores = ImmutableList.of( storeInstance );
+                stores = ImmutableList.of( getDataStoreInstance( store ) );
             } else {
                 // Ask router on which store(s) the table should be placed
                 stores = statement.getRouter().createTable( schemaId, statement );
@@ -237,6 +224,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     schemaId,
                     context.getCurrentUserId(),
                     TableType.TABLE,
+                    true,
                     null );
 
             List<SqlNode> columnList = this.columnList.getList();
@@ -269,9 +257,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                             collation
                     );
 
-                    for ( Store s : stores ) {
+                    for ( DataStore s : stores ) {
                         catalog.addColumnPlacement(
-                                s.getStoreId(),
+                                s.getAdapterId(),
                                 addedColumnId,
                                 store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL,
                                 null,
@@ -314,7 +302,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
             CatalogTable catalogTable = catalog.getTable( tableId );
-            for ( Store store : stores ) {
+            for ( DataStore store : stores ) {
                 store.createTable( context, catalogTable );
             }
 
@@ -347,7 +335,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     log.debug( "Table: '{}' has been partitioned on columnId '{}' ", catalogTable.name, catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) );
                 }
             }
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException | UnknownCollationException | UnknownSchemaException | UnknownPartitionIdRuntimeException | UnknownPartitionTypeException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownPartitionTypeException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
 

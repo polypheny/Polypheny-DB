@@ -26,17 +26,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -115,27 +111,15 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             columnIds.add( catalogColumn.id );
         }
         List<CatalogColumn> addedColumns = new LinkedList<>();
-        Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
-        if ( storeInstance == null ) {
-            throw SqlUtil.newContextException(
-                    storeName.getParserPosition(),
-                    RESOURCE.unknownStoreName( storeName.getSimple() ) );
-        }
-        try {
-            // Check whether this placement already exists
-            for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-                if ( storeId == storeInstance.getStoreId() ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
-                }
-            }
-            // Check whether the store supports schema changes
-            if ( storeInstance.isSchemaReadOnly() ) {
+        DataStore storeInstance = getDataStoreInstance( storeName );
+        // Check whether this placement already exists
+        for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
+            if ( storeId == storeInstance.getAdapterId() ) {
                 throw SqlUtil.newContextException(
                         storeName.getParserPosition(),
-                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
+                        RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
             }
+        }
             // Check whether the list is empty (this is a short hand for a full placement)
             if ( columnIds.size() == 0 ) {
                 columnIds = ImmutableList.copyOf( catalogTable.columnIds );
@@ -150,7 +134,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                 // Check if this column placement is the first on the data placement
                 // If this returns null this means that this is the first placement and partition list can therefore be specified
                 List<Long> currentPartList = new ArrayList<>();
-                currentPartList = catalog.getPartitionsOnDataPlacement( storeInstance.getStoreId(), catalogTable.id );
+                currentPartList = catalog.getPartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
 
                 if ( !currentPartList.isEmpty() ) {
                     isDataPlacementPartitioned = true;
@@ -218,7 +202,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             // Create column placements
             for ( long cid : columnIds ) {
                 Catalog.getInstance().addColumnPlacement(
-                        storeInstance.getStoreId(),
+                        storeInstance.getAdapterId(),
                         cid,
                         PlacementType.MANUAL,
                         null,
@@ -233,7 +217,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
             for ( long cid : primaryKey.columnIds ) {
                 if ( !columnIds.contains( cid ) ) {
                     Catalog.getInstance().addColumnPlacement(
-                            storeInstance.getStoreId(),
+                            storeInstance.getAdapterId(),
                             cid,
                             PlacementType.AUTOMATIC,
                             null,
@@ -249,10 +233,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
             // Copy data to the newly added placements
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-            dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
-        } catch ( GenericCatalogException | UnknownStoreException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
+            dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getAdapter( storeInstance.getAdapterId() ), addedColumns );
     }
 
 }

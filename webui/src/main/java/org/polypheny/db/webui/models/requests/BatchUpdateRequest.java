@@ -29,8 +29,9 @@ import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -64,7 +65,7 @@ public class BatchUpdateRequest {
                 CatalogColumn catalogColumn;
                 try {
                     catalogColumn = catalog.getColumn( catalog.getTable( "APP", split[0], split[1] ).id, entry.getKey() );
-                } catch ( GenericCatalogException | UnknownColumnException | UnknownTableException e ) {
+                } catch ( UnknownColumnException | UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Could not determine column type", e );
                     return null;
                 }

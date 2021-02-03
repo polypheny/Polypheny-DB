@@ -17,24 +17,23 @@
 package org.polypheny.db.catalog.exceptions;
 
 
+import lombok.Getter;
+
 public class UnknownColumnException extends CatalogException {
+
+    @Getter
+    private final String columnName;
+
 
     public UnknownColumnException( String databaseName, String schemaName, String tableName, String columnName ) {
         super( "There is no column with name '" + columnName + "' in table '" + tableName + "' of schema '" + schemaName + "' in database '" + databaseName + "'" );
+        this.columnName = columnName;
     }
 
 
     public UnknownColumnException( long tableId, String columnName ) {
         super( "There is no column with name '" + columnName + "' in the table with the id '" + tableId + "'" );
-    }
-
-
-    public static class UnknownColumnIdRuntimeException extends CatalogRuntimeException {
-
-        public UnknownColumnIdRuntimeException( long columnId ) {
-            super( "There is no column with id '" + columnId + "';" );
-        }
-
+        this.columnName = columnName;
     }
 
 }

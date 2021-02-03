@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownColumnPlacementException extends CatalogException {
+public class UnknownUserIdRuntimeException extends CatalogRuntimeException {
 
-
-    public UnknownColumnPlacementException( long storeId, long columnId ) {
-        super( "There is no column placement for column id '" + columnId + "' on store id '" + storeId + "'" );
+    public UnknownUserIdRuntimeException( int userId ) {
+        super( "There is no user with the id '" + userId + "'." );
     }
+
 }

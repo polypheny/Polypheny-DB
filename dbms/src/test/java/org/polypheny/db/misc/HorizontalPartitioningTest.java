@@ -51,12 +51,12 @@ public class HorizontalPartitioningTest {
                         + "PRIMARY KEY (tprimary) )" );
 
                 try {
-                    //Partition table after creation
+                    // Partition table after creation
                     statement.executeUpdate( "ALTER TABLE horizontalparttest "
                             + "PARTITION BY HASH (tinteger) "
                             + "PARTITIONS 4" );
 
-                    //Cannot partition a table that has already been partitioned
+                    // Cannot partition a table that has already been partitioned
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE horizontalparttest "
@@ -67,7 +67,7 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    //check assert False. Wrong partition column
+                    // check assert False. Wrong partition column
                     failed = false;
                     try {
                         statement.executeUpdate( "CREATE TABLE horizontalparttestfalsepartition( "
@@ -106,7 +106,7 @@ public class HorizontalPartitioningTest {
 
                 try {
                     // Deploy additional store
-                    statement.executeUpdate( "ALTER STORES ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store3\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
                     // Add placement
@@ -135,13 +135,13 @@ public class HorizontalPartitioningTest {
                             + "PARTITIONS 3" );
 
                     // Deploy additional store
-                    statement.executeUpdate( "ALTER STORES ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
-                    //Merge partiton
+                    // Merge partition
                     statement.executeUpdate( "ALTER TABLE horizontalparttestextension MERGE PARTITIONs" );
 
-                    //Add placement for seconf table
+                    // Add placement for second table
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" ADD PLACEMENT (tvarchar) ON STORE \"store2\"" );
 
                     // Partition by name
@@ -149,13 +149,13 @@ public class HorizontalPartitioningTest {
                             + "PARTITION BY HASH (tinteger) "
                             + " WITH (name1, name2, name3)" );
 
-                    //name partitioning can be modified with index
+                    // name partitioning can be modified with index
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (1) ON STORE \"store2\" " );
 
-                    //name partitioning can be modified with name
+                    // name partitioning can be modified with name
                     statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (name2, name3) ON STORE \"store2\" " );
 
-                    //check assert False. modify with false name no partition exists with name22
+                    // check assert False. modify with false name no partition exists with name22
                     failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE \"horizontalparttestextension\" MODIFY PARTITIONS (name22) ON STORE \"store2\" " );
@@ -167,22 +167,22 @@ public class HorizontalPartitioningTest {
                     // Drop tables and stores
                     statement.executeUpdate( "DROP TABLE horizontalparttestextension" );
                     statement.executeUpdate( "DROP TABLE horizontalparttest" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store3\"" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store2\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store3\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store2\"" );
                 }
             }
         }
     }
 
 
-    //Check if partitions have enough partitions
+    // Check if partitions have enough partitions
     @Test
     public void partitionNumberTest() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
 
-                //invalid partitionsize
+                // invalid partition size
                 boolean failed = false;
                 try {
                     statement.executeUpdate( "CREATE TABLE horizontalparttestfalseNEW( "
@@ -197,7 +197,7 @@ public class HorizontalPartitioningTest {
                 }
                 Assert.assertTrue( failed );
 
-                //assert false partitioning only with partiotn name is not allowed
+                // assert false partitioning only with partition name is not allowed
                 failed = false;
                 try {
                     statement.executeUpdate( "CREATE TABLE horizontal2( "
@@ -251,18 +251,18 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    //ADD store
-                    statement.executeUpdate( "ALTER STORES ADD \"storehash\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    // ADD adapter
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"storehash\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",path:., trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
-                    //ADD FullPlacement
+                    // ADD FullPlacement
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" ADD PLACEMENT ON STORE \"storehash\"" );
 
                     // Change placement on second store
                     statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (0,1) ON STORE \"storehash\"" );
 
                     // Change placement on second store
-                    //check partition distribution violation
+                    // Check partition distribution violation
                     failed = false;
                     try {
                         statement.executeUpdate( "ALTER TABLE \"hashpartition\" MODIFY PARTITIONS (2) ON STORE \"hsqldb\"" );
@@ -271,7 +271,7 @@ public class HorizontalPartitioningTest {
                     }
                     Assert.assertTrue( failed );
 
-                    //You can't change the distribution unless there exists at least one full partition placement of each column as a fallback
+                    // You can't change the distribution unless there exists at least one full partition placement of each column as a fallback
                     failed = false;
                     try {
                         statement.executeUpdate( "CREATE TABLE hashpartitioningValidate( "
@@ -290,7 +290,7 @@ public class HorizontalPartitioningTest {
                     statement.executeUpdate( "DROP TABLE hashpartitioning" );
                     statement.executeUpdate( "DROP TABLE hashpartition" );
                     statement.executeUpdate( "DROP TABLE hashpartitioningValidate" );
-                    statement.executeUpdate( "ALTER STORES DROP \"storehash\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"storehash\"" );
                 }
             }
         }
@@ -325,7 +325,7 @@ public class HorizontalPartitioningTest {
                             + "PARTITION BY LIST (tvarchar) "
                             + "( PARTITION parta VALUES('abc','def') )" );
 
-                    //LIST partitoining can't be created with only empty lists
+                    //LIST partitioning can't be created with only empty lists
                     boolean failed = false;
                     try {
                         statement.executeUpdate( "CREATE TABLE listpartitioning2( "

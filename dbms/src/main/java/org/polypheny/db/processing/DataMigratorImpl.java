@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,11 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
-import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.plan.RelOptCluster;
@@ -65,42 +63,32 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     @Override
-    public void copyData( Transaction transaction, CatalogStore store, List<CatalogColumn> columns ) {
+    public void copyData( Transaction transaction, CatalogAdapter store, List<CatalogColumn> columns ) {
 
         Statement sourceStatement = transaction.createStatement();
         Statement targetStatement = transaction.createStatement();
 
         // Check Lists
         List<CatalogColumnPlacement> columnPlacements = new LinkedList<>();
-        try {
-            for ( CatalogColumn catalogColumn : columns ) {
-                columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
-            }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
+        for ( CatalogColumn catalogColumn : columns ) {
+            columnPlacements.add( Catalog.getInstance().getColumnPlacement( store.id, catalogColumn.id ) );
         }
 
-        CatalogTable table;
-        CatalogPrimaryKey primaryKey;
         List<CatalogColumn> selectColumnList = new LinkedList<>( columns );
-        try {
-            table = Catalog.getInstance().getTable( columnPlacements.get( 0 ).tableId );
-            primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
+        CatalogTable table = Catalog.getInstance().getTable( columnPlacements.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( table.primaryKey );
 
-            // Add primary keys to select column list
-            for ( long cid : primaryKey.columnIds ) {
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
-                if ( !selectColumnList.contains( catalogColumn ) ) {
-                    selectColumnList.add( catalogColumn );
-                }
+        // Add primary keys to select column list
+        for ( long cid : primaryKey.columnIds ) {
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            if ( !selectColumnList.contains( catalogColumn ) ) {
+                selectColumnList.add( catalogColumn );
             }
-        } catch ( UnknownTableException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
 
-        RelRoot sourceRel = getSourceIterator( sourceStatement, selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).storeId ) );
+        RelRoot sourceRel = getSourceIterator( sourceStatement, selectSourcePlacements( table, selectColumnList, columnPlacements.get( 0 ).adapterId ) );
         RelRoot targetRel;
-        if ( Catalog.getInstance().getColumnPlacementsOnStore( store.id, table.id ).size() == columns.size() ) {
+        if ( Catalog.getInstance().getColumnPlacementsOnAdapter( store.id, table.id ).size() == columns.size() ) {
             // There have been no placements for this table on this store before. Build insert statement
             targetRel = buildInsertStatement( targetStatement, columnPlacements );
         } else {
@@ -159,8 +147,8 @@ public class DataMigratorImpl implements DataMigrator {
 
     private RelRoot buildInsertStatement( Statement statement, List<CatalogColumnPlacement> to ) {
         List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildStoreSchemaName(
-                        to.get( 0 ).storeUniqueName,
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        to.get( 0 ).adapterUniqueName,
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() );
@@ -199,8 +187,8 @@ public class DataMigratorImpl implements DataMigrator {
 
     private RelRoot buildUpdateStatement( Statement statement, List<CatalogColumnPlacement> to ) {
         List<String> qualifiedTableName = ImmutableList.of(
-                PolySchemaBuilder.buildStoreSchemaName(
-                        to.get( 0 ).storeUniqueName,
+                PolySchemaBuilder.buildAdapterSchemaName(
+                        to.get( 0 ).adapterUniqueName,
                         to.get( 0 ).getLogicalSchemaName(),
                         to.get( 0 ).physicalSchemaName ),
                 to.get( 0 ).getLogicalTableName() );
@@ -217,30 +205,20 @@ public class DataMigratorImpl implements DataMigrator {
 
         // build condition
         RexNode condition = null;
-        CatalogTable catalogTable;
-        CatalogPrimaryKey primaryKey;
-        try {
-            catalogTable = Catalog.getInstance().getTable( to.get( 0 ).tableId );
-            primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new RuntimeException( e );
-        }
-        try {
-            for ( long cid : primaryKey.columnIds ) {
-                CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( to.get( 0 ).storeId, cid );
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
-                RexNode c = builder.equals(
-                        builder.field( ccp.getLogicalColumnName() ),
-                        new RexDynamicParam( catalogColumn.getRelDataType( typeFactory ), (int) catalogColumn.id )
-                );
-                if ( condition == null ) {
-                    condition = c;
-                } else {
-                    condition = builder.and( condition, c );
-                }
+        CatalogTable catalogTable = Catalog.getInstance().getTable( to.get( 0 ).tableId );
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        for ( long cid : primaryKey.columnIds ) {
+            CatalogColumnPlacement ccp = Catalog.getInstance().getColumnPlacement( to.get( 0 ).adapterId, cid );
+            CatalogColumn catalogColumn = Catalog.getInstance().getColumn( cid );
+            RexNode c = builder.equals(
+                    builder.field( ccp.getLogicalColumnName() ),
+                    new RexDynamicParam( catalogColumn.getRelDataType( typeFactory ), (int) catalogColumn.id )
+            );
+            if ( condition == null ) {
+                condition = c;
+            } else {
+                condition = builder.and( condition, c );
             }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
         builder = builder.filter( condition );
 
@@ -275,11 +253,11 @@ public class DataMigratorImpl implements DataMigrator {
 
 
     private RelRoot getSourceIterator( Statement statement, List<CatalogColumnPlacement> placements ) {
-        // Get map of placements by store
-        Map<String, List<CatalogColumnPlacement>> placementsByStore = new HashMap<>();
+        // Get map of placements by adapter
+        Map<String, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
         for ( CatalogColumnPlacement p : placements ) {
-            placementsByStore.putIfAbsent( p.getStoreUniqueName(), new LinkedList<>() );
-            placementsByStore.get( p.getStoreUniqueName() ).add( p );
+            placementsByAdapter.putIfAbsent( p.getAdapterUniqueName(), new LinkedList<>() );
+            placementsByAdapter.get( p.getAdapterUniqueName() ).add( p );
         }
 
         // Build Query
@@ -292,13 +270,13 @@ public class DataMigratorImpl implements DataMigrator {
     }
 
 
-    private List<CatalogColumnPlacement> selectSourcePlacements( CatalogTable table, List<CatalogColumn> columns, long excludingStoreId ) {
-        // Find the store with the most column placements
-        int storeIdWithMostPlacements = -1;
+    private List<CatalogColumnPlacement> selectSourcePlacements( CatalogTable table, List<CatalogColumn> columns, int excludingAdapterId ) {
+        // Find the adapter with the most column placements
+        int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet() ) {
-            if ( entry.getKey() != excludingStoreId && entry.getValue().size() > numOfPlacements ) {
-                storeIdWithMostPlacements = entry.getKey();
+        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
+            if ( entry.getKey() != excludingAdapterId && entry.getValue().size() > numOfPlacements ) {
+                adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
             }
         }
@@ -308,25 +286,21 @@ public class DataMigratorImpl implements DataMigrator {
             columnIds.add( catalogColumn.id );
         }
 
-        // Take the store with most placements as base and add missing column placements
+        // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        try {
-            for ( long cid : table.columnIds ) {
-                if ( columnIds.contains( cid ) ) {
-                    if ( table.placementsByStore.get( storeIdWithMostPlacements ).contains( cid ) ) {
-                        placementList.add( Catalog.getInstance().getColumnPlacement( storeIdWithMostPlacements, cid ) );
-                    } else {
-                        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacements( cid ) ) {
-                            if ( placement.storeId != excludingStoreId ) {
-                                placementList.add( placement );
-                                break;
-                            }
+        for ( long cid : table.columnIds ) {
+            if ( columnIds.contains( cid ) ) {
+                if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
+                    placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+                } else {
+                    for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacements( cid ) ) {
+                        if ( placement.adapterId != excludingAdapterId ) {
+                            placementList.add( placement );
+                            break;
                         }
                     }
                 }
             }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
 
         return placementList;

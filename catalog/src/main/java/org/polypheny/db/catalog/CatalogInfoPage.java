@@ -23,8 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
@@ -41,7 +39,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable tableInformation;
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
-    private final InformationTable storeInformation;
+    private final InformationTable adapterInformation;
     private final InformationTable partitionInformation;
 
 
@@ -52,7 +50,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         InformationPage page = new InformationPage( "Catalog" );
         infoManager.addPage( page );
 
-        this.storeInformation = addCatalogInformationTable( page, "Stores", Arrays.asList( "ID", "Name" ) );
+        this.adapterInformation = addCatalogInformationTable( page, "Adapters", Arrays.asList( "ID", "Name", "Type" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "PartitionType", "Partitions" ) );
@@ -97,7 +95,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         schemaInformation.reset();
         tableInformation.reset();
         columnInformation.reset();
-        storeInformation.reset();
+        adapterInformation.reset();
         indexInformation.reset();
         partitionInformation.reset();
 
@@ -106,10 +104,9 @@ public class CatalogInfoPage implements PropertyChangeListener {
             return;
         }
         try {
-            catalog.getStores().forEach( s -> {
-                storeInformation.addRow( s.id, s.uniqueName );
+            catalog.getAdapters().forEach( s -> {
+                adapterInformation.addRow( s.id, s.uniqueName, s.type );
             } );
-
             catalog.getDatabases( null ).forEach( d -> {
                 databaseInformation.addRow( d.id, d.name, d.defaultSchemaId );
             } );
@@ -128,7 +125,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
             catalog.getPartitions( null, null, null ).forEach( p -> {
                 partitionInformation.addRow( p.id, p.partitionName, p.tableId, p.partitionQualifiers );
             } );
-        } catch ( NullPointerException | GenericCatalogException | UnknownSchemaException e ) {
+        } catch ( Exception e ) {
             log.error( "Exception while reset catalog information page", e );
         }
     }

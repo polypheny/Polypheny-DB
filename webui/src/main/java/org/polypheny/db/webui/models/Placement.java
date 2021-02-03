@@ -46,8 +46,7 @@ public class Placement {
         this.exception = exception;
     }
 
-
-    public Placement addStore( final Store s ) {
+    public Placement addAdapter( final Store s ) {
         if ( s.columnPlacements.size() > 0 ) {
             this.stores.add( s );
         }
@@ -59,8 +58,6 @@ public class Placement {
 
         public final String uniqueName;
         private final String adapterName;
-        private final boolean dataReadOnly;
-        private final boolean schemaReadOnly;
         private final List<ColumnPlacement> columnPlacements;
         private final List<Long> partitionKeys;
         private final long numPartitions;
@@ -68,15 +65,14 @@ public class Placement {
 
 
         public Store(
-                final org.polypheny.db.adapter.Store store,
-                final List<CatalogColumnPlacement> columnPlacements,
+                String uniqueName,
+                String adapterName,
+                List<CatalogColumnPlacement> columnPlacements,
                 final List<Long> partitionKeys,
                 final long numPartitions,
                 final PartitionType partitionType ) {
-            this.uniqueName = store.getUniqueName();
-            this.adapterName = store.getAdapterName();
-            this.dataReadOnly = store.isDataReadOnly();
-            this.schemaReadOnly = store.isSchemaReadOnly();
+            this.uniqueName = uniqueName;
+            this.adapterName = adapterName;
             this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
             this.partitionKeys = partitionKeys;
             this.numPartitions = numPartitions;
@@ -105,8 +101,8 @@ public class Placement {
             this.tableName = catalogColumnPlacement.getLogicalTableName();
             this.columnId = catalogColumnPlacement.columnId;
             this.columnName = catalogColumnPlacement.getLogicalColumnName();
-            this.storeId = catalogColumnPlacement.storeId;
-            this.storeUniqueName = catalogColumnPlacement.storeUniqueName;
+            this.storeId = catalogColumnPlacement.adapterId;
+            this.storeUniqueName = catalogColumnPlacement.adapterUniqueName;
             this.placementType = catalogColumnPlacement.placementType;
             this.physicalSchemaName = catalogColumnPlacement.physicalSchemaName;
             this.physicalTableName = catalogColumnPlacement.physicalTableName;

@@ -33,9 +33,6 @@ import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
 
 
-/**
- *
- */
 @EqualsAndHashCode
 public final class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
@@ -51,7 +48,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final TableType tableType;
     public final String definition;
     public final Long primaryKey;
-    public final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore;
+    public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
+    public final boolean modifiable;
 
     @Getter
     public boolean isPartitioned = false;
@@ -79,7 +77,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             @NonNull final TableType type,
             final String definition,
             final Long primaryKey,
-            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore ) {
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable ) {
         this.id = id;
         this.name = name;
         this.columnIds = columnIds;
@@ -90,10 +89,13 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.tableType = type;
         this.definition = definition;
         this.primaryKey = primaryKey;
-        this.placementsByStore = placementsByStore;
+        this.placementsByAdapter = placementsByAdapter;
+        this.modifiable = modifiable;
 
+        if ( type == TableType.TABLE && !modifiable ) {
+            throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
+        }
     }
-
 
     // numPartitons can be empty and calculated based on the partition key
     // Only used when explicitly working with partitions to not alter existing call stack and logic
@@ -108,7 +110,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             @NonNull final TableType type,
             final String definition,
             final Long primaryKey,
-            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByStore,
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable,
             final long numPartitions,
             final PartitionType partitionType,
             final ImmutableList<Long> partitionIds,
@@ -123,8 +126,8 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.tableType = type;
         this.definition = definition;
         this.primaryKey = primaryKey;
-        this.placementsByStore = placementsByStore;
-
+        this.placementsByAdapter = placementsByAdapter;
+        this.modifiable = modifiable;
         this.partitionType = partitionType;
         this.partitionIds = partitionIds;
         this.partitionColumnId = partitionColumnId;

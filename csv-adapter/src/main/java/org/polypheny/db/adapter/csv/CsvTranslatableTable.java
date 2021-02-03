@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,8 +61,8 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     /**
      * Creates a CsvTable.
      */
-    CsvTranslatableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
-        super( source, protoRowType, fieldTypes, csvStore );
+    CsvTranslatableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
 
@@ -77,7 +77,7 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
      * Called from generated code.
      */
     public Enumerable<Object> project( final DataContext dataContext, final int[] fields ) {
-        dataContext.getStatement().getTransaction().registerInvolvedStore( csvStore );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object>() {
             @Override
@@ -109,8 +109,6 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
     @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         // Request all fields.
-        final int fieldCount = relOptTable.getRowType().getFieldCount();
-        final int[] fields = CsvEnumerator.identityList( fieldCount );
         return new CsvTableScan( context.getCluster(), relOptTable, this, fields );
     }
 }

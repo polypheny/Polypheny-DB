@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogIndex.key.tableId );
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogIndex.key.tableId );
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
         if ( catalogIndex.unique ) {

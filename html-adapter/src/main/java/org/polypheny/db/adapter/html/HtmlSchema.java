@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import java.net.MalformedURLException;
 import java.util.List;
 import java.util.Map;
 import org.polypheny.db.adapter.csv.CsvFilterableTable;
-import org.polypheny.db.adapter.csv.JsonTable;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.schema.impl.AbstractSchema;
@@ -162,7 +161,7 @@ class HtmlSchema extends AbstractSchema {
             //
             // TODO: MV: This three nulls most properly introduce trouble. Fix to have the correct row details at this point.
             //
-            final Table table = new CsvFilterableTable( source, null, null, null );
+            final Table table = new CsvFilterableTable( source, null, null, null, null );
             builder.put( Util.first( tableName, sourceSansCsv.path() ), table );
             return true;
         }

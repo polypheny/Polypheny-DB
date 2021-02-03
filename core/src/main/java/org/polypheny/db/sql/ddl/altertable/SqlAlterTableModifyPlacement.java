@@ -25,8 +25,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -35,10 +34,6 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
@@ -118,146 +113,132 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
             columnIds.add( catalogColumn.id );
         }
-        Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
-        if ( storeInstance == null ) {
+        DataStore storeInstance = getDataStoreInstance( storeName );
+        // Check whether this placement already exists
+        if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
-                    RESOURCE.unknownStoreName( storeName.getSimple() ) );
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         }
-        try {
-            // Check whether this placement already exists
-            if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
-            }
-            // Check whether the store supports schema changes
-            if ( storeInstance.isSchemaReadOnly() ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-            }
-            // Which columns to remove
-            for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnStore( storeInstance.getStoreId(), catalogTable.id ) ) {
-                if ( !columnIds.contains( placement.columnId ) ) {
-                    // Check whether there are any indexes located on the store requiring this column
-                    for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
-                        if ( index.location == storeInstance.getStoreId() && index.key.columnIds.contains( placement.columnId ) ) {
-                            throw SqlUtil.newContextException(
-                                    storeName.getParserPosition(),
-                                    RESOURCE.indexPreventsRemovalOfPlacement( index.name, Catalog.getInstance().getColumn( placement.columnId ).name ) );
-                        }
-                    }
-                    // Check whether the column is a primary key column
-                    CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-                    if ( primaryKey.columnIds.contains( placement.columnId ) ) {
-                        // Check if the placement type is manual. If so, change to automatic
-                        if ( placement.placementType == PlacementType.MANUAL ) {
-                            // Make placement manual
-                            Catalog.getInstance().updateColumnPlacementType(
-                                    storeInstance.getStoreId(),
-                                    placement.columnId,
-                                    PlacementType.AUTOMATIC );
-                        }
-                    } else {
-                        // It is not a primary key. Remove the column
-                        // Check if there are is another placement for this column
-                        List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( placement.columnId );
-                        if ( existingPlacements.size() < 2 ) {
-                            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
-                        }
-                        // Check if this placement would be the last columnPlacement with all partitions
-                        if ( catalogTable.isPartitioned ) {
-                            PartitionManagerFactory managerFactory = new PartitionManagerFactory();
-                            PartitionManager partitionManager = managerFactory.getInstance( catalogTable.partitionType );
 
-                            if ( !partitionManager.probePartitionDistributionChange( catalogTable, placement.storeId, placement.columnId ) ) {
-                                throw new RuntimeException( "Validation of partition distribution failed. Placement: '"
-                                        + placement.storeUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions" );
-                            }
-                        }
-                        // Drop Column on store
-                        storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), placement.columnId ) );
-                        // Drop column placement
-                        Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), placement.columnId );
+        // Which columns to remove
+        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
+            if ( !columnIds.contains( placement.columnId ) ) {
+                // Check whether there are any indexes located on the store requiring this column
+                for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
+                    if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( placement.columnId ) ) {
+                        throw SqlUtil.newContextException(
+                                storeName.getParserPosition(),
+                                RESOURCE.indexPreventsRemovalOfPlacement( index.name, Catalog.getInstance().getColumn( placement.columnId ).name ) );
                     }
                 }
-            }
-
-            List<Long> tempPartitionList = new ArrayList<>();
-            // Select partitions to create on this placement
-            if ( catalogTable.isPartitioned ) {
-                long tableId = catalogTable.id;
-                // If index partitions are specified
-                if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
-                    // First convert specified index to correct partitionId
-                    for ( int partitionId : partitionList ) {
-                        // Check if specified partition index is even part of table and if so get corresponding uniquePartId
-                        try {
-                            tempPartitionList.add( catalogTable.partitionIds.get( partitionId ) );
-                        } catch ( IndexOutOfBoundsException e ) {
-                            throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
-                                    + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions" );
-                        }
-                    }
-                    catalog.updatePartitionsOnDataPlacement( storeInstance.getStoreId(), catalogTable.id, tempPartitionList );
-                }
-                // If name partitions are specified
-                else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty() ) {
-                    List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
-                    for ( String partitionName : partitionNamesList.stream().map( Object::toString )
-                            .collect( Collectors.toList() ) ) {
-                        boolean isPartOfTable = false;
-                        for ( CatalogPartition catalogPartition : catalogPartitions ) {
-                            if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
-                                tempPartitionList.add( catalogPartition.id );
-                                isPartOfTable = true;
-                                break;
-                            }
-                        }
-                        if ( !isPartOfTable ) {
-                            throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                                    + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
-                        }
-                    }
-                    catalog.updatePartitionsOnDataPlacement( storeInstance.getStoreId(), catalogTable.id, tempPartitionList );
-                }
-            }
-
-            // Which columns to add
-            List<CatalogColumn> addedColumns = new LinkedList<>();
-            for ( long cid : columnIds ) {
-                if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), cid ) ) {
-                    CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), cid );
-                    if ( placement.placementType == PlacementType.AUTOMATIC ) {
+                // Check whether the column is a primary key column
+                CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+                if ( primaryKey.columnIds.contains( placement.columnId ) ) {
+                    // Check if the placement type is manual. If so, change to automatic
+                    if ( placement.placementType == PlacementType.MANUAL ) {
                         // Make placement manual
-                        Catalog.getInstance().updateColumnPlacementType( storeInstance.getStoreId(), cid, PlacementType.MANUAL );
+                        Catalog.getInstance().updateColumnPlacementType(
+                                storeInstance.getAdapterId(),
+                                placement.columnId,
+                                PlacementType.AUTOMATIC );
                     }
                 } else {
-                    // Create column placement
-                    Catalog.getInstance().addColumnPlacement(
-                            storeInstance.getStoreId(),
-                            cid,
-                            PlacementType.MANUAL,
-                            null,
-                            null,
-                            null,
-                            tempPartitionList );
-                    // Add column on store
-                    storeInstance.addColumn( context, catalogTable, Catalog.getInstance().getColumn( cid ) );
-                    // Add to list of columns for which we need to copy data
-                    addedColumns.add( Catalog.getInstance().getColumn( cid ) );
+                    // It is not a primary key. Remove the column
+                    // Check if there are is another placement for this column
+                    List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( placement.columnId );
+                    if ( existingPlacements.size() < 2 ) {
+                        throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+                    }
+                    // Check if this placement would be the last columnPlacement with all partitions
+                    if ( catalogTable.isPartitioned ) {
+                        PartitionManagerFactory managerFactory = new PartitionManagerFactory();
+                        PartitionManager partitionManager = managerFactory.getInstance( catalogTable.partitionType );
+
+                        if ( !partitionManager.probePartitionDistributionChange( catalogTable, placement.adapterId, placement.columnId ) ) {
+                            throw new RuntimeException( "Validation of partition distribution failed. Placement: '"
+                                    + placement.adapterUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions" );
+                        }
+                    }
+                    // Drop Column on store
+                    storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getAdapterId(), placement.columnId ) );
+                    // Drop column placement
+                    Catalog.getInstance().deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
                 }
             }
-
-            // Copy the data to the newly added column placements
-            DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-            if ( addedColumns.size() > 0 ) {
-                dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getStore( storeInstance.getStoreId() ), addedColumns );
-            }
-        } catch ( GenericCatalogException | UnknownColumnPlacementException | UnknownStoreException | UnknownTableException e ) {
-            throw new RuntimeException( e );
         }
+
+        List<Long> tempPartitionList = new ArrayList<>();
+        // Select partitions to create on this placement
+        if ( catalogTable.isPartitioned ) {
+            long tableId = catalogTable.id;
+            // If index partitions are specified
+            if ( !partitionList.isEmpty() && partitionNamesList.isEmpty() ) {
+                // First convert specified index to correct partitionId
+                for ( int partitionId : partitionList ) {
+                    // Check if specified partition index is even part of table and if so get corresponding uniquePartId
+                    try {
+                        tempPartitionList.add( catalogTable.partitionIds.get( partitionId ) );
+                    } catch ( IndexOutOfBoundsException e ) {
+                        throw new RuntimeException( "Specified Partition-Index: '" + partitionId + "' is not part of table '"
+                                + catalogTable.name + "', has only " + catalogTable.numPartitions + " partitions" );
+                    }
+                }
+                catalog.updatePartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
+            }
+            // If name partitions are specified
+            else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty() ) {
+                List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
+                for ( String partitionName : partitionNamesList.stream().map( Object::toString )
+                        .collect( Collectors.toList() ) ) {
+                    boolean isPartOfTable = false;
+                    for ( CatalogPartition catalogPartition : catalogPartitions ) {
+                        if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
+                            tempPartitionList.add( catalogPartition.id );
+                            isPartOfTable = true;
+                            break;
+                        }
+                    }
+                    if ( !isPartOfTable ) {
+                        throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
+                                + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
+                    }
+                }
+                catalog.updatePartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
+            }
+        }
+
+        // Which columns to add
+        List<CatalogColumn> addedColumns = new LinkedList<>();
+        for ( long cid : columnIds ) {
+            if ( Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), cid ) ) {
+                CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( storeInstance.getAdapterId(), cid );
+                if ( placement.placementType == PlacementType.AUTOMATIC ) {
+                    // Make placement manual
+                    Catalog.getInstance().updateColumnPlacementType( storeInstance.getAdapterId(), cid, PlacementType.MANUAL );
+                }
+            } else {
+                // Create column placement
+                Catalog.getInstance().addColumnPlacement(
+                        storeInstance.getAdapterId(),
+                        cid,
+                        PlacementType.MANUAL,
+                        null,
+                        null,
+                        null,
+                        tempPartitionList);
+                // Add column on store
+                storeInstance.addColumn( context, catalogTable, Catalog.getInstance().getColumn( cid ) );
+                // Add to list of columns for which we need to copy data
+                addedColumns.add( Catalog.getInstance().getColumn( cid ) );
+            }
+        }
+        // Copy the data to the newly added column placements
+        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
+        if ( addedColumns.size() > 0 ) {
+            dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getAdapter( storeInstance.getAdapterId() ), addedColumns );
+        }
+
     }
 
 }

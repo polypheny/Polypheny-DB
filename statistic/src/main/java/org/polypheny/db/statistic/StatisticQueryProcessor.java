@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.iface.Authenticator;
@@ -106,28 +107,23 @@ public class StatisticQueryProcessor {
      */
     public List<List<String>> getSchemaTree() {
         List<List<String>> result = new ArrayList<>();
-
-        try {
-            List<String> schemaTree = new ArrayList<>();
-            List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
-            for ( CatalogSchema schema : schemas ) {
-                List<String> tables = new ArrayList<>();
-                List<CatalogTable> childTables = catalog.getTables( schema.id, null );
-                for ( CatalogTable childTable : childTables ) {
-                    List<String> table = new ArrayList<>();
-                    List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
-                    for ( CatalogColumn catalogColumn : childColumns ) {
-                        table.add( schema.name + "." + childTable.name + "." + catalogColumn.name );
-                    }
-                    if ( childTable.tableType == TableType.TABLE ) {
-                        tables.addAll( table );
-                    }
+        List<String> schemaTree = new ArrayList<>();
+        List<CatalogSchema> schemas = catalog.getSchemas( new Pattern( databaseName ), null );
+        for ( CatalogSchema schema : schemas ) {
+            List<String> tables = new ArrayList<>();
+            List<CatalogTable> childTables = catalog.getTables( schema.id, null );
+            for ( CatalogTable childTable : childTables ) {
+                List<String> table = new ArrayList<>();
+                List<CatalogColumn> childColumns = catalog.getColumns( childTable.id );
+                for ( CatalogColumn catalogColumn : childColumns ) {
+                    table.add( schema.name + "." + childTable.name + "." + catalogColumn.name );
                 }
-                schemaTree.addAll( tables );
-                result.add( schemaTree );
+                if ( childTable.tableType == TableType.TABLE ) {
+                    tables.addAll( table );
+                }
             }
-        } catch ( GenericCatalogException | UnknownSchemaException e ) {
-            log.error( "Caught exception", e );
+            schemaTree.addAll( tables );
+            result.add( schemaTree );
         }
         return result;
     }
@@ -194,7 +190,7 @@ public class StatisticQueryProcessor {
 
         try {
             type = catalog.getColumn( databaseName, schema, table, column ).type;
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( UnknownColumnException | UnknownSchemaException | UnknownDatabaseException | UnknownTableException e ) {
             log.error( "Caught exception", e );
         }
         return type;

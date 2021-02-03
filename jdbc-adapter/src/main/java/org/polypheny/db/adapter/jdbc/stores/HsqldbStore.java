@@ -95,7 +95,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnStore( getStoreId(), catalogIndex.key.tableId );
+        List<CatalogColumnPlacement> ccps = Catalog.getInstance().getColumnPlacementsOnAdapter( getAdapterId(), catalogIndex.key.tableId );
         StringBuilder builder = new StringBuilder();
         builder.append( "CREATE " );
         if ( catalogIndex.unique ) {

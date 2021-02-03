@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2019-2020 The Polypheny Project
  *
@@ -14,16 +15,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.catalog.exceptions;
 
 
-import java.util.Map;
+public class UnknownColumnIdRuntimeException extends CatalogRuntimeException {
 
-
-public class Adapter {
-
-    public String uniqueName;
-    public String clazzName;
-    public Map<String, String> settings;
+    public UnknownColumnIdRuntimeException( long columnId ) {
+        super( "There is no column with id '" + columnId + "';" );
+    }
 
 }

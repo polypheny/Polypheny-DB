@@ -29,7 +29,6 @@ import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -529,7 +528,7 @@ public class Rest {
     private Transaction getTransaction() {
         try {
             return transactionManager.startTransaction( userName, databaseName, false, "REST Interface", MultimediaFlavor.FILE );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }

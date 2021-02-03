@@ -258,7 +258,7 @@ public class JdbcMetaTest {
             Assert.assertEquals( "Wrong column name", "TABLE_TYPE", rsmd.getColumnName( 1 ) );
 
             // Check data
-            final List<Object[]> tableTypeTable = ImmutableList.of( new Object[]{ "TABLE" }, new Object[]{ "VIEW" } );
+            final List<Object[]> tableTypeTable = ImmutableList.of( new Object[]{ "TABLE" }, new Object[]{ "SOURCE" }, new Object[]{ "VIEW" } );
 
             TestHelper.checkResultSet(
                     connection.getMetaData().getTableTypes(),

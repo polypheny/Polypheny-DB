@@ -33,12 +33,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -100,13 +99,13 @@ public abstract class AbstractRouter implements Router {
 
 
     // For reporting purposes
-    protected Map<Long, SelectedStoreInfo> selectedStores;
+    protected Map<Long, SelectedAdapterInfo> selectedAdapter;
 
 
     @Override
     public RelRoot route( RelRoot logicalRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor ) {
         this.executionTimeMonitor = executionTimeMonitor;
-        this.selectedStores = new HashMap<>();
+        this.selectedAdapter = new HashMap<>();
 
         if ( statement.getTransaction().isAnalyze() ) {
             InformationManager queryAnalyzer = statement.getTransaction().getQueryAnalyzer();
@@ -118,6 +117,7 @@ public abstract class AbstractRouter implements Router {
         RelNode routed;
         analyze( statement, logicalRoot );
         if ( logicalRoot.rel instanceof LogicalTableModify ) {
+
             routed = routeDml( logicalRoot.rel, statement );
         } else if ( logicalRoot.rel instanceof ConditionalExecute ) {
             routed = handleConditionalExecute( logicalRoot.rel, statement );
@@ -131,16 +131,14 @@ public abstract class AbstractRouter implements Router {
 
         // Add information to query analyzer
         if ( statement.getTransaction().isAnalyze() ) {
-            InformationGroup group = new InformationGroup( page, "Selected Stores" );
+            InformationGroup group = new InformationGroup( page, "Selected Adapters" );
             statement.getTransaction().getQueryAnalyzer().addGroup( group );
-            InformationTable table = new InformationTable( group, ImmutableList.of( "Table", "Store", "Physical Name" ) );
-            selectedStores.forEach( ( k, v ) -> {
-                try {
-                    CatalogTable catalogTable = Catalog.getInstance().getTable( k );
-                    table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.storeName, v.physicalSchemaName + "." + v.physicalTableName );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    throw new RuntimeException( e );
-                }
+            InformationTable table = new InformationTable(
+                    group,
+                    ImmutableList.of( "Table", "Adapter", "Physical Name" ) );
+            selectedAdapter.forEach( ( k, v ) -> {
+                CatalogTable catalogTable = Catalog.getInstance().getTable( k );
+                table.addRow( catalogTable.getSchemaName() + "." + catalogTable.name, v.uniqueName, v.physicalSchemaName + "." + v.physicalTableName );
             } );
             statement.getTransaction().getQueryAnalyzer().registerInformation( table );
         }
@@ -181,11 +179,7 @@ public abstract class AbstractRouter implements Router {
                 if ( table.getTable() instanceof LogicalTable ) {
                     LogicalTable t = ((LogicalTable) table.getTable());
                     CatalogTable catalogTable;
-                    try {
-                        catalogTable = Catalog.getInstance().getTable( t.getTableId() );
-                    } catch ( UnknownTableException | GenericCatalogException e ) {
-                        throw new RuntimeException( "Unknown table" );
-                    }
+                    catalogTable = Catalog.getInstance().getTable( t.getTableId() );
                     if ( catalogTable.isPartitioned ) {
                         WhereClauseVisitor whereClauseVisitor = new WhereClauseVisitor( statement, catalogTable.columnIds.indexOf( catalogTable.partitionColumnId ) );
                         node.accept( new RelShuttleImpl() {
@@ -229,50 +223,45 @@ public abstract class AbstractRouter implements Router {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 CatalogTable catalogTable;
                 List<CatalogColumnPlacement> placements;
-                try {
-                    catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+                catalogTable = Catalog.getInstance().getTable( t.getTableId() );
 
-                    // Check if table is even partitioned
-                    if ( catalogTable.isPartitioned ) {
+                // Check if table is even partitioned
+                if ( catalogTable.isPartitioned ) {
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
+                    }
+                    List<String> partitionValues = filterMap.get( node.getId() );
+
+                    PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+                    PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
+                    if ( partitionValues != null ) {
                         if ( log.isDebugEnabled() ) {
-                            log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
+                            log.debug( "TableID: {} is partitioned on column: {} - {}",
+                                    t.getTableId(),
+                                    catalogTable.partitionColumnId,
+                                    catalog.getColumn( catalogTable.partitionColumnId ).name );
                         }
-                        List<String> partitionValues = filterMap.get( node.getId() );
-
-                        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-                        PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
-                        if ( partitionValues != null ) {
-                            if ( log.isDebugEnabled() ) {
-                                log.debug( "TableID: {} is partitioned on column: {} - {}",
-                                        t.getTableId(),
-                                        catalogTable.partitionColumnId,
-                                        catalog.getColumn( catalogTable.partitionColumnId ).name );
+                        if ( partitionValues.size() == 1 ) {
+                            List<Long> identPartitions = new ArrayList<>();
+                            for ( String partitionValue : partitionValues ) {
+                                log.debug( "Extracted PartitionValue: {}", partitionValue );
+                                long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
+                                identPartitions.add( identPart );
+                                log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
                             }
-                            if ( partitionValues.size() == 1 ) {
-                                List<Long> identPartitions = new ArrayList<>();
-                                for ( String partitionValue : partitionValues ) {
-                                    log.debug( "Extracted PartitionValue: {}", partitionValue );
-                                    long identPart = partitionManager.getTargetPartitionId( catalogTable, partitionValue );
-                                    identPartitions.add( identPart );
-                                    log.debug( "Identified PartitionId: {} for value: {}", identPart, partitionValue );
-                                }
-                                placements = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
-                            } else {
-                                placements = partitionManager.getRelevantPlacements( catalogTable, null );
-                            }
+                            placements = partitionManager.getRelevantPlacements( catalogTable, identPartitions );
                         } else {
-                            // TODO Change to worst-case
                             placements = partitionManager.getRelevantPlacements( catalogTable, null );
-                            //placements = selectPlacement( node, catalogTable );
                         }
-
                     } else {
-                        log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
-                        placements = selectPlacement( node, catalogTable );
+                        // TODO Change to worst-case
+                        placements = partitionManager.getRelevantPlacements( catalogTable, null );
+                        //placements = selectPlacement( node, catalogTable );
                     }
 
-                } catch ( UnknownTableException | GenericCatalogException e ) {
-                    throw new RuntimeException( "Unknown table" );
+                } else {
+                    log.debug( "{} is NOT partitioned - Routing will be easy", catalogTable.name );
+                    placements = selectPlacement( node, catalogTable );
                 }
 
                 return builder.push( buildJoinedTableScan( statement, cluster, placements ) );
@@ -335,26 +324,32 @@ public abstract class AbstractRouter implements Router {
             if ( table.getTable() instanceof LogicalTable ) {
                 LogicalTable t = ((LogicalTable) table.getTable());
                 // Get placements of this table
-                CatalogTable catalogTable;
-                List<CatalogColumnPlacement> pkPlacements;
-                try {
-                    catalogTable = catalog.getTable( t.getTableId() );
-                    long pkid = catalogTable.primaryKey;
+                CatalogTable catalogTable = catalog.getTable( t.getTableId() );
 
-                    List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-                    CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
-                    pkPlacements = catalog.getColumnPlacements( pkColumn.id );
-                } catch ( GenericCatalogException | UnknownTableException e ) {
-                    throw new RuntimeException( e );
+                // Make sure that this table can be modified
+                if ( !catalogTable.modifiable ) {
+                    if ( catalogTable.tableType == TableType.TABLE ) {
+                        throw new RuntimeException( "Unable to modify a table marked as read-only!" );
+                    } else if ( catalogTable.tableType == TableType.SOURCE ) {
+                        throw new RuntimeException( "The table '" + catalogTable.name + "' is provided by a data source which does not support data modification." );
+                    } else if ( catalogTable.tableType == TableType.VIEW ) {
+                        throw new RuntimeException( "Polypheny-DB does not support modifying views." );
+                    }
+                    throw new RuntimeException( "Unknown table type: " + catalogTable.tableType.name() );
                 }
+
+                long pkid = catalogTable.primaryKey;
+                List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+                CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+                List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
 
                 if ( catalogTable.isPartitioned && log.isDebugEnabled() ) {
                     log.debug( "\nListing all relevant stores for table: '{}' and all partitions: {}", catalogTable.name, catalogTable.partitionIds );
                     for ( CatalogColumnPlacement dataPlacement : pkPlacements ) {
                         log.debug( "\t\t -> '{}' {}\t{}",
-                                dataPlacement.storeUniqueName,
-                                catalog.getPartitionsOnDataPlacement( dataPlacement.storeId, dataPlacement.tableId ),
-                                catalog.getPartitionsIndexOnDataPlacement( dataPlacement.storeId, dataPlacement.tableId ) );
+                                dataPlacement.adapterUniqueName,
+                                catalog.getPartitionsOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ),
+                                catalog.getPartitionsIndexOnDataPlacement( dataPlacement.adapterId, dataPlacement.tableId ) );
                     }
                 }
 
@@ -364,8 +359,8 @@ public abstract class AbstractRouter implements Router {
                     CatalogReader catalogReader = statement.getTransaction().getCatalogReader();
 
                     List<String> qualifiedTableName = ImmutableList.of(
-                            PolySchemaBuilder.buildStoreSchemaName(
-                                    pkPlacement.storeUniqueName,
+                            PolySchemaBuilder.buildAdapterSchemaName(
+                                    pkPlacement.adapterUniqueName,
                                     catalogTable.getSchemaName(),
                                     pkPlacement.physicalSchemaName ),
                             t.getLogicalTableName() );
@@ -373,11 +368,12 @@ public abstract class AbstractRouter implements Router {
                     ModifiableTable modifiableTable = physical.unwrap( ModifiableTable.class );
 
                     // Get placements on store
-                    List<CatalogColumnPlacement> placementsOnStore = catalog.getColumnPlacementsOnStore( pkPlacement.storeId, catalogTable.id );
+                    List<CatalogColumnPlacement> placementsOnAdapter = catalog.getColumnPlacementsOnAdapter( pkPlacement.adapterId, catalogTable.id );
+
                     // If this is a update, check whether we need to execute on this store at all
                     List<String> updateColumnList = ((LogicalTableModify) node).getUpdateColumnList();
                     List<RexNode> sourceExpressionList = ((LogicalTableModify) node).getSourceExpressionList();
-                    if ( placementsOnStore.size() != catalogTable.columnIds.size() ) {
+                    if ( placementsOnAdapter.size() != catalogTable.columnIds.size() ) {
                         if ( ((LogicalTableModify) node).getOperation() == Operation.UPDATE ) {
                             updateColumnList = new LinkedList<>( ((LogicalTableModify) node).getUpdateColumnList() );
                             sourceExpressionList = new LinkedList<>( ((LogicalTableModify) node).getSourceExpressionList() );
@@ -388,11 +384,11 @@ public abstract class AbstractRouter implements Router {
                                 sourceExpressionListIterator.next();
                                 try {
                                     CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
-                                    if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.storeId, catalogColumn.id ) ) {
+                                    if ( !catalog.checkIfExistsColumnPlacement( pkPlacement.adapterId, catalogColumn.id ) ) {
                                         updateColumnListIterator.remove();
                                         sourceExpressionListIterator.remove();
                                     }
-                                } catch ( GenericCatalogException | UnknownColumnException e ) {
+                                } catch ( UnknownColumnException e ) {
                                     throw new RuntimeException( e );
                                 }
                             }
@@ -457,7 +453,7 @@ public abstract class AbstractRouter implements Router {
                                         identPart = (int) partitionManager.getTargetPartitionId( catalogTable, partitionValue );
                                         break;
                                     }
-                                } catch ( GenericCatalogException | UnknownColumnException e ) {
+                                } catch ( UnknownColumnException e ) {
                                     throw new RuntimeException( e );
                                 }
                                 index++;
@@ -544,22 +540,22 @@ public abstract class AbstractRouter implements Router {
 
                         if ( !worstCaseRouting ) {
                             log.debug( "Get all Placements by identified Partition: {}", identPart );
-                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ).contains( identPart ) ) {
+                            if ( !catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ).contains( identPart ) ) {
                                 if ( log.isDebugEnabled() ) {
                                     log.debug( "DataPlacement: {}.{} SKIPPING since it does NOT contain identified partition: '{}' {}",
-                                            pkPlacement.storeUniqueName,
+                                            pkPlacement.adapterUniqueName,
                                             pkPlacement.physicalTableName,
                                             identPart,
-                                            catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ) );
+                                            catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ) );
                                 }
                                 continue;
                             } else {
                                 if ( log.isDebugEnabled() ) {
                                     log.debug( "DataPlacement: {}.{} contains identified partition: '{}' {}",
-                                            pkPlacement.storeUniqueName,
+                                            pkPlacement.adapterUniqueName,
                                             pkPlacement.physicalTableName,
                                             identPart,
-                                            catalog.getPartitionsOnDataPlacement( pkPlacement.storeId, pkPlacement.tableId ) );
+                                            catalog.getPartitionsOnDataPlacement( pkPlacement.adapterId, pkPlacement.tableId ) );
                                 }
                             }
                         } else {
@@ -573,7 +569,7 @@ public abstract class AbstractRouter implements Router {
                             recursiveCopy( node.getInput( 0 ) ),
                             RelBuilder.create( statement, cluster ),
                             catalogTable,
-                            placementsOnStore,
+                            placementsOnAdapter,
                             statement,
                             cluster ).build();
                     if ( modifiableTable != null && modifiableTable == physical.unwrap( Table.class ) ) {
@@ -632,7 +628,7 @@ public abstract class AbstractRouter implements Router {
         if ( log.isDebugEnabled() ) {
             log.debug( "List of Store specific ColumnPlacements: " );
             for ( CatalogColumnPlacement ccp : placements ) {
-                log.debug( "{}.{}.{}", ccp.storeUniqueName, ccp.physicalTableName, ccp.getLogicalColumnName() );
+                log.debug( "{}.{}.{}", ccp.adapterUniqueName, ccp.physicalTableName, ccp.getLogicalColumnName() );
             }
         }
 
@@ -646,7 +642,7 @@ public abstract class AbstractRouter implements Router {
                 builder = handleTableScan(
                         builder,
                         placements.get( 0 ).tableId,
-                        placements.get( 0 ).storeUniqueName,
+                        placements.get( 0 ).adapterUniqueName,
                         catalogTable.getSchemaName(),
                         catalogTable.name,
                         placements.get( 0 ).physicalSchemaName,
@@ -715,10 +711,10 @@ public abstract class AbstractRouter implements Router {
             CatalogColumn column;
             try {
                 column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
-            } catch ( GenericCatalogException | UnknownColumnException e ) {
+            } catch ( UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }
-            if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).storeId, column.id ) ) {
+            if ( !Catalog.getInstance().checkIfExistsColumnPlacement( placements.get( 0 ).adapterId, column.id ) ) {
                 throw new RuntimeException( "Current implementation of vertical partitioning does not allow conditions on partitioned columns. " );
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // TODO: Use indexes
@@ -742,21 +738,21 @@ public abstract class AbstractRouter implements Router {
             }
         }
 
-        // Sort by store
-        Map<Integer, List<CatalogColumnPlacement>> placementsByStore = new HashMap<>();
+        // Sort by adapter
+        Map<Integer, List<CatalogColumnPlacement>> placementsByAdapter = new HashMap<>();
         for ( CatalogColumnPlacement placement : placements ) {
-            if ( !placementsByStore.containsKey( placement.storeId ) ) {
-                placementsByStore.put( placement.storeId, new LinkedList<>() );
+            if ( !placementsByAdapter.containsKey( placement.adapterId ) ) {
+                placementsByAdapter.put( placement.adapterId, new LinkedList<>() );
             }
-            placementsByStore.get( placement.storeId ).add( placement );
+            placementsByAdapter.get( placement.adapterId ).add( placement );
         }
 
-        if ( placementsByStore.size() == 1 ) {
-            List<CatalogColumnPlacement> ccp = placementsByStore.values().iterator().next();
+        if ( placementsByAdapter.size() == 1 ) {
+            List<CatalogColumnPlacement> ccp = placementsByAdapter.values().iterator().next();
             builder = handleTableScan(
                     builder,
                     ccp.get( 0 ).tableId,
-                    ccp.get( 0 ).storeUniqueName,
+                    ccp.get( 0 ).adapterUniqueName,
                     ccp.get( 0 ).getLogicalSchemaName(),
                     ccp.get( 0 ).getLogicalTableName(),
                     ccp.get( 0 ).physicalSchemaName,
@@ -770,43 +766,34 @@ public abstract class AbstractRouter implements Router {
                 rexNodes.add( builder.field( catalogColumnPlacement.getLogicalColumnName() ) );
             }
             builder.project( rexNodes );
-        } else {
-            // We need to join placements on different stores
+        } else if ( placementsByAdapter.size() > 1 ) {
+            // We need to join placements on different adapters
 
             // Get primary key
+            long pkid = catalog.getTable( placements.get( 0 ).tableId ).primaryKey;
+            List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
             List<CatalogColumn> pkColumns = new LinkedList<>();
-            List<Long> pkColumnIds;
-            try {
-                long pkid = catalog.getTable( placements.get( 0 ).tableId ).primaryKey;
-                pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
-                for ( long pkColumnId : pkColumnIds ) {
-                    pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
-                }
-            } catch ( GenericCatalogException | UnknownTableException e ) {
-                throw new RuntimeException( e );
+            for ( long pkColumnId : pkColumnIds ) {
+                pkColumns.add( Catalog.getInstance().getColumn( pkColumnId ) );
             }
 
             // Add primary key
-            try {
-                for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByStore.entrySet() ) {
-                    for ( CatalogColumn pkColumn : pkColumns ) {
-                        CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
-                        if ( !entry.getValue().contains( pkPlacement ) ) {
-                            entry.getValue().add( pkPlacement );
-                        }
+            for ( Entry<Integer, List<CatalogColumnPlacement>> entry : placementsByAdapter.entrySet() ) {
+                for ( CatalogColumn pkColumn : pkColumns ) {
+                    CatalogColumnPlacement pkPlacement = Catalog.getInstance().getColumnPlacement( entry.getKey(), pkColumn.id );
+                    if ( !entry.getValue().contains( pkPlacement ) ) {
+                        entry.getValue().add( pkPlacement );
                     }
                 }
-            } catch ( GenericCatalogException e ) {
-                throw new RuntimeException( e );
             }
 
             Deque<String> queue = new LinkedList<>();
             boolean first = true;
-            for ( List<CatalogColumnPlacement> ccps : placementsByStore.values() ) {
+            for ( List<CatalogColumnPlacement> ccps : placementsByAdapter.values() ) {
                 handleTableScan(
                         builder,
                         ccps.get( 0 ).tableId,
-                        ccps.get( 0 ).storeUniqueName,
+                        ccps.get( 0 ).adapterUniqueName,
                         ccps.get( 0 ).getLogicalSchemaName(),
                         ccps.get( 0 ).getLogicalTableName(),
                         ccps.get( 0 ).physicalSchemaName,
@@ -817,7 +804,7 @@ public abstract class AbstractRouter implements Router {
                     ArrayList<RexNode> rexNodes = new ArrayList<>();
                     for ( CatalogColumnPlacement p : ccps ) {
                         if ( pkColumnIds.contains( p.columnId ) ) {
-                            String alias = ccps.get( 0 ).storeUniqueName + "_" + p.getLogicalColumnName();
+                            String alias = ccps.get( 0 ).adapterUniqueName + "_" + p.getLogicalColumnName();
                             rexNodes.add( builder.alias( builder.field( p.getLogicalColumnName() ), alias ) );
                             queue.addFirst( alias );
                             queue.addFirst( p.getLogicalColumnName() );
@@ -846,6 +833,8 @@ public abstract class AbstractRouter implements Router {
                 rexNodes.add( builder.field( ccp.getLogicalColumnName() ) );
             }
             builder.project( rexNodes );
+        } else {
+            throw new RuntimeException( "The table '" + placements.get( 0 ).getLogicalTableName() + "' seems to have no placement. This should not happen!" );
         }
         RelNode node = builder.build();
         if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
@@ -863,11 +852,11 @@ public abstract class AbstractRouter implements Router {
             String logicalTableName,
             String physicalSchemaName,
             String physicalTableName ) {
-        if ( selectedStores != null ) {
-            selectedStores.put( tableId, new SelectedStoreInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
+        if ( selectedAdapter != null ) {
+            selectedAdapter.put( tableId, new SelectedAdapterInfo( storeUniqueName, physicalSchemaName, physicalTableName ) );
         }
         return builder.scan( ImmutableList.of(
-                PolySchemaBuilder.buildStoreSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
+                PolySchemaBuilder.buildAdapterSchemaName( storeUniqueName, logicalSchemaName, physicalSchemaName ),
                 logicalTableName ) );
     }
 
@@ -897,9 +886,9 @@ public abstract class AbstractRouter implements Router {
 
     @AllArgsConstructor
     @Getter
-    private static class SelectedStoreInfo {
+    private static class SelectedAdapterInfo {
 
-        private final String storeName;
+        private final String uniqueName;
         private final String physicalSchemaName;
         private final String physicalTableName;
 

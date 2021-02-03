@@ -90,6 +90,7 @@ SqlAlterTable SqlAlterTable(Span s) :
     final String onUpdate;
     final String onDelete;
     final boolean unique;
+    final SqlIdentifier physicalName;
     final SqlIdentifier partitionType;
     final SqlIdentifier partitionColumn;
     List<Integer> partitionList = new ArrayList<Integer>();
@@ -100,7 +101,6 @@ SqlAlterTable SqlAlterTable(Span s) :
     List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
     List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
     SqlNode partitionValues = null;
-
 }
 {
     <TABLE>
@@ -128,32 +128,55 @@ SqlAlterTable SqlAlterTable(Span s) :
     |
         <ADD> <COLUMN>
         name = SimpleIdentifier()
-        type = DataType()
         (
-            <NULL> { nullable = true; }
+            type = DataType()
+            (
+                <NULL> { nullable = true; }
+            |
+                <NOT> <NULL> { nullable = false; }
+            |
+                { nullable = true; }
+            )
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
+            (
+                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+            |
+                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+            |
+                { afterColumn = null; beforeColumn = null; }
+            )
+            {
+                return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
+            }
         |
-            <NOT> <NULL> { nullable = false; }
-        |
-            { nullable = true; }
+            <AS>
+            physicalName = SimpleIdentifier()
+            (
+                <DEFAULT_>
+                defaultValue = Literal()
+            |
+                defaultValue = ArrayConstructor()
+            |
+                { defaultValue = null; }
+            )
+            (
+                <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
+            |
+                <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
+            |
+                { afterColumn = null; beforeColumn = null; }
+            )
+            {
+                return new SqlAlterSourceTableAddColumn(s.end(this), table, name, physicalName, defaultValue, beforeColumn, afterColumn);
+            }
         )
-        (
-            <DEFAULT_>
-            defaultValue = Literal()
-        |
-            defaultValue = ArrayConstructor()
-        |
-            { defaultValue = null; }
-        )
-        (
-            <BEFORE> { beforeColumn = SimpleIdentifier(); afterColumn = null; }
-        |
-            <AFTER> { afterColumn = SimpleIdentifier(); beforeColumn = null; }
-        |
-            { afterColumn = null; beforeColumn = null; }
-        )
-        {
-            return new SqlAlterTableAddColumn(s.end(this), table, name, type, nullable, defaultValue, beforeColumn, afterColumn);
-        }
     |
         <DROP> <COLUMN>
         column = SimpleIdentifier()
@@ -536,30 +559,30 @@ SqlAlterConfig SqlAlterConfig(Span s) :
 }
 
 
-SqlAlterStoresAdd SqlAlterStoresAdd(Span s) :
+SqlAlterAdaptersAdd SqlAlterAdaptersAdd(Span s) :
 {
-    final SqlNode storeName;
+    final SqlNode uniqueName;
     final SqlNode adapterName;
     final SqlNode config;
 }
 {
-    <STORES> <ADD> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <ADAPTERS> <ADD> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
     <USING> adapterName = Expression(ExprContext.ACCEPT_NONCURSOR)
     <WITH> config = Expression(ExprContext.ACCEPT_NONCURSOR)
     {
-        return new SqlAlterStoresAdd(s.end(this), storeName, adapterName, config);
+        return new SqlAlterAdaptersAdd(s.end(this), uniqueName, adapterName, config);
     }
 }
 
 
-SqlAlterStoresDrop SqlAlterStoresDrop(Span s) :
+SqlAlterAdaptersDrop SqlAlterAdaptersDrop(Span s) :
 {
-    final SqlNode storeName;
+    final SqlNode uniqueName;
 }
 {
-    <STORES> <DROP> storeName = Expression(ExprContext.ACCEPT_NONCURSOR)
+    <ADAPTERS> <DROP> uniqueName = Expression(ExprContext.ACCEPT_NONCURSOR)
     {
-        return new SqlAlterStoresDrop(s.end(this), storeName);
+        return new SqlAlterAdaptersDrop(s.end(this), uniqueName);
     }
 }
 

@@ -98,7 +98,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         int placementCounter = 0;
         for ( CatalogColumnPlacement ccp : tempCcps ) {
             // If the DataPlacement has stored all partitions and therefore all partitions for this placement
-            if ( catalog.getPartitionsOnDataPlacement( ccp.storeId, ccp.tableId ).size() == numPartitions ) {
+            if ( catalog.getPartitionsOnDataPlacement( ccp.adapterId, ccp.tableId ).size() == numPartitions ) {
                 returnCcps.add( ccp );
                 placementCounter++;
             }

@@ -17,12 +17,19 @@
 package org.polypheny.db.webui.models;
 
 
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
+
 /**
  * Information about a column of a table for the header of a table in the UI
  */
+@Accessors(chain = true)
 public class DbColumn {
 
     public String name;
+    @Setter
+    public String physicalName;
 
     // for both
     public String dataType; //varchar/int/etc
@@ -40,6 +47,9 @@ public class DbColumn {
     public String defaultValue;
     public Integer dimension;
     public Integer cardinality;
+
+    //for data source columns
+    public String as;
 
 
     public DbColumn( final String name ) {

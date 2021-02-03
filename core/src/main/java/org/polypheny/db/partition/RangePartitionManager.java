@@ -111,7 +111,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                             //get first column placement which contains partition
                             relevantCcps.add( ccps.get( 0 ) );
                             if ( log.isDebugEnabled() ) {
-                                log.debug( "{} {} with part. {}", ccps.get( 0 ).storeUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
+                                log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
                             }
                         }
                     }
