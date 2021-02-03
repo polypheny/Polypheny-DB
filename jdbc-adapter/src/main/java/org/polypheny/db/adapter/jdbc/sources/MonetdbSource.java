@@ -41,13 +41,20 @@ public class MonetdbSource extends AbstractJdbcSource {
     public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 50000 ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" ),
-            new AdapterSettingString( "password", false, true, false, "polypheny" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
+            new AdapterSettingString( "host", false, true, false, "localhost" )
+                    .setDescription( "Hostname or IP address of the remote MonetDB instance." ),
+            new AdapterSettingInteger( "port", false, true, false, 50000 )
+                    .setDescription( "JDBC port number on the remote MonetDB instance." ),
+            new AdapterSettingString( "database", false, true, false, "polypheny" )
+                    .setDescription( "Name of the database to connect to." ),
+            new AdapterSettingString( "username", false, true, false, "polypheny" )
+                    .setDescription( "Username to be used for authenticating at the remote instance" ),
+            new AdapterSettingString( "password", false, true, false, "polypheny" )
+                    .setDescription( "Password to be used for authenticating at the remote instance" ),
+            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
+                    .setDescription( "Maximum number of concurrent JDBC connections." ),
             new AdapterSettingString( "tables", false, true, false, "public.foo,public.bar" )
+                    .setDescription( "List of tables which should be imported. The names must to be in the format schemaName.tableName and separated by a comma." )
     );
 
 

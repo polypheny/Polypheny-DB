@@ -37,14 +37,22 @@ public class MysqlSource extends AbstractJdbcSource {
     public static final String DESCRIPTION = "Data source adapter for the relational database systems MariaDB and MySQL.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 3306 ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" ),
-            new AdapterSettingString( "password", false, true, false, "polypheny" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
-            new AdapterSettingList( "transactionIsolation", false, true, false, ImmutableList.of( "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" ) ),
+            new AdapterSettingString( "host", false, true, false, "localhost" )
+                    .setDescription( "Hostname or IP address of the remote MariaDB / MySQL instance." ),
+            new AdapterSettingInteger( "port", false, true, false, 3306 )
+                    .setDescription( "JDBC port number on the remote MariaDB / MySQL instance." ),
+            new AdapterSettingString( "database", false, true, false, "polypheny" )
+                    .setDescription( "Name of the database to connect to." ),
+            new AdapterSettingString( "username", false, true, false, "polypheny" )
+                    .setDescription( "Username to be used for authenticating at the remote instance" ),
+            new AdapterSettingString( "password", false, true, false, "polypheny" )
+                    .setDescription( "Password to be used for authenticating at the remote instance" ),
+            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
+                    .setDescription( "Maximum number of concurrent JDBC connections." ),
+            new AdapterSettingList( "transactionIsolation", false, true, false, ImmutableList.of( "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" ) )
+                    .setDescription( "Which level of transaction isolation should be used." ),
             new AdapterSettingString( "tables", false, true, false, "foo,bar" )
+                    .setDescription( "List of tables which should be imported. The names must to be separated by a comma." )
     );
 
 

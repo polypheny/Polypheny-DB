@@ -37,14 +37,22 @@ public class PostgresqlSource extends AbstractJdbcSource {
     public static final String DESCRIPTION = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database", false, true, false, "postgres" ),
-            new AdapterSettingString( "username", false, true, false, "postgres" ),
-            new AdapterSettingString( "password", false, true, false, "polypheny" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
-            new AdapterSettingList( "transactionIsolation", false, true, false, ImmutableList.of( "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" ) ),
+            new AdapterSettingString( "host", false, true, false, "localhost" )
+                    .setDescription( "Hostname or IP address of the remote PostgreSQL instance." ),
+            new AdapterSettingInteger( "port", false, true, false, 5432 )
+                    .setDescription( "JDBC port number on the remote PostgreSQL instance." ),
+            new AdapterSettingString( "database", false, true, false, "postgres" )
+                    .setDescription( "Name of the database to connect to." ),
+            new AdapterSettingString( "username", false, true, false, "postgres" )
+                    .setDescription( "Username to be used for authenticating at the remote instance" ),
+            new AdapterSettingString( "password", false, true, false, "polypheny" )
+                    .setDescription( "Password to be used for authenticating at the remote instance" ),
+            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
+                    .setDescription( "Maximum number of concurrent JDBC connections." ),
+            new AdapterSettingList( "transactionIsolation", false, true, false, ImmutableList.of( "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" ) )
+                    .setDescription( "Which level of transaction isolation should be used." ),
             new AdapterSettingString( "tables", false, true, false, "public.foo,public.bar" )
+                    .setDescription( "List of tables which should be imported. The names must to be separated by a comma." )
     );
 
 

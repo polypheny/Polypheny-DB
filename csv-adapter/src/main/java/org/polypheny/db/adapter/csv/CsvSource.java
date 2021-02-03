@@ -47,8 +47,11 @@ public class CsvSource extends DataSource {
     public static final String DESCRIPTION = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingDirectory( "directory", false, true, false ),
+            new AdapterSettingDirectory( "directory", false, true, false )
+                    .setDescription( "You can upload one or multiple .csv or .csv.gz files." ),
             new AdapterSettingInteger( "maxStringLength", false, true, false, 255 )
+                    .setDescription( "Which length (number of characters including whitespace) should be used for the varchar "
+                            + "columns. Make sure this is equal or larger than the longest string in any of the columns." )
     );
 
     private URL csvDir;
