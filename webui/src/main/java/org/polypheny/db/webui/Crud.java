@@ -94,7 +94,7 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.Adapter.AdapterSetting;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
-import org.polypheny.db.adapter.Adapter.AdapterSettingFiles;
+import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataSource;
@@ -305,14 +305,10 @@ public class Crud implements InformationObserver {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-            if ( catalogTable.tableType == TableType.TABLE ) {
+            if ( catalogTable.modifiable ) {
                 result.setType( ResultType.TABLE );
-            } else if ( catalogTable.tableType == TableType.SOURCE ) {
-                result.setType( ResultType.VIEW );
-            } else if ( catalogTable.tableType == TableType.VIEW ) {
-                result.setType( ResultType.VIEW );
             } else {
-                throw new RuntimeException( "Unknown table type: " + catalogTable.tableType );
+                result.setType( ResultType.VIEW );
             }
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
@@ -1368,7 +1364,7 @@ public class Crud implements InformationObserver {
                     }
                     return exportedColumns.toArray( new Result[0] );
                 } else {
-                    log.warn( "This method should only be called for tables that originate from a DataSource" );
+                    //log.warn( "This method should only be called for tables that originate from a DataSource" );
                 }
             }
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -2160,8 +2156,11 @@ public class Crud implements InformationObserver {
         AdapterModel a = gsonBuilder.create().fromJson( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
         for ( Entry<String, AdapterSetting> entry : a.settings.entrySet() ) {
-            if ( entry.getValue() instanceof AdapterSettingFiles ) {
-                AdapterSettingFiles setting = ((AdapterSettingFiles) entry.getValue());
+            if ( entry.getValue() instanceof AdapterSettingDirectory ) {
+                AdapterSettingDirectory setting = ((AdapterSettingDirectory) entry.getValue());
+                for ( String fileName : setting.fileNames ) {
+                    setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
+                }
                 File path = FileSystemManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
                 for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
                     try {

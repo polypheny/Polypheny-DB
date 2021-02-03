@@ -47,7 +47,7 @@ public class CsvSource extends DataSource {
     public static final String DESCRIPTION = "An adapter for querying CSV files. The location of the directory containing the CSV files can be specified. Currently, this adapter only supports read operations.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingFiles( "directory", false, true, false ),
+            new AdapterSettingDirectory( "directory", false, true, false ),
             new AdapterSettingInteger( "maxStringLength", false, true, false, 255 )
     );
 

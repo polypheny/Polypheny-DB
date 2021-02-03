@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -133,13 +132,22 @@ public abstract class Adapter {
     }
 
 
-    @AllArgsConstructor
+    @Accessors(chain = true)
     public static abstract class AdapterSetting {
 
         public final String name;
         public final boolean canBeNull;
         public final boolean required;
         public final boolean modifiable;
+        @Setter
+        public String description;
+
+        public AdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable ) {
+            this.name = name;
+            this.canBeNull = canBeNull;
+            this.required = required;
+            this.modifiable = modifiable;
+        }
 
         public abstract String getValue();
 
@@ -219,14 +227,17 @@ public abstract class Adapter {
 
 
     @Accessors(chain = true)
-    public static class AdapterSettingFiles extends AdapterSetting {
+    public static class AdapterSettingDirectory extends AdapterSetting {
 
-        private final String type = "Files";
+        private final String type = "Directory";
         @Setter
         public String directory;
+        //This field is necessary for the the UI and needs to be initialized to be serialized to JSON.
+        @Setter
+        public String[] fileNames = new String[]{ "" };
         public transient final Map<String, InputStream> inputStreams;
 
-        public AdapterSettingFiles( String name, boolean canBeNull, boolean required, boolean modifiable ) {
+        public AdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable ) {
             super( name, canBeNull, required, modifiable );
             //so it will be serialized
             this.directory = "";
@@ -250,26 +261,39 @@ public abstract class Adapter {
             boolean canBeNull = jsonObject.get( "canBeNull" ).getAsBoolean();
             boolean required = jsonObject.get( "required" ).getAsBoolean();
             boolean modifiable = jsonObject.get( "modifiable" ).getAsBoolean();
+            String description = null;
+            if ( jsonObject.get( "description" ) != null ) {
+                description = jsonObject.get( "description" ).getAsString();
+            }
 
+            AdapterSetting out;
             switch ( type ) {
                 case "Integer":
                     Integer integer = jsonObject.get( "defaultValue" ).getAsInt();
-                    return new AdapterSettingInteger( name, canBeNull, required, modifiable, integer );
+                    out = new AdapterSettingInteger( name, canBeNull, required, modifiable, integer );
+                    break;
                 case "String":
                     String string = jsonObject.get( "defaultValue" ).getAsString();
-                    return new AdapterSettingString( name, canBeNull, required, modifiable, string );
+                    out = new AdapterSettingString( name, canBeNull, required, modifiable, string );
+                    break;
                 case "Boolean":
                     boolean bool = jsonObject.get( "defaultValue" ).getAsBoolean();
-                    return new AdapterSettingBoolean( name, canBeNull, required, modifiable, bool );
+                    out = new AdapterSettingBoolean( name, canBeNull, required, modifiable, bool );
+                    break;
                 case "List":
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
-                    return new AdapterSettingList( name, canBeNull, required, modifiable, options );
-                case "Files":
+                    out = new AdapterSettingList( name, canBeNull, required, modifiable, options );
+                    break;
+                case "Directory":
                     String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
-                    return new AdapterSettingFiles( name, canBeNull, required, modifiable ).setDirectory( directory );
+                    String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
+                    out = new AdapterSettingDirectory( name, canBeNull, required, modifiable ).setDirectory( directory ).setFileNames( fileNames );
+                    break;
                 default:
                     throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );
             }
+            out.setDescription( description );
+            return out;
         }
     }
 
