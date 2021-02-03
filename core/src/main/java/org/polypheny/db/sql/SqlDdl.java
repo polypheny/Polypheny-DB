@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,15 +37,16 @@ package org.polypheny.db.sql;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.Objects;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -102,8 +103,6 @@ public abstract class SqlDdl extends SqlCall {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.schemaNotFound( tableName.toString() ) );
         } catch ( UnknownTableException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.tableNotFound( tableName.toString() ) );
-        } catch ( UnknownCollationException | UnknownSchemaTypeException | GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
         return catalogTable;
     }
@@ -113,11 +112,42 @@ public abstract class SqlDdl extends SqlCall {
         CatalogColumn catalogColumn;
         try {
             catalogColumn = Catalog.getInstance().getColumn( tableId, columnName.getSimple() );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         } catch ( UnknownColumnException e ) {
-            throw SqlUtil.newContextException( columnName.getParserPosition(), RESOURCE.columnNotFound( columnName.getSimple() ) );
+            throw SqlUtil.newContextException( columnName.getParserPosition(), RESOURCE.columnNotFoundInTable( columnName.getSimple(), tableId + "" ) );
         }
         return catalogColumn;
     }
+
+
+    protected DataStore getDataStoreInstance( SqlIdentifier storeName ) {
+        Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeName.getSimple() );
+        if ( adapterInstance == null ) {
+            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.unknownAdapter( storeName.getSimple() ) );
+        }
+        // Make sure it is a data store instance
+        if ( adapterInstance instanceof DataStore ) {
+            return (DataStore) adapterInstance;
+        } else if ( adapterInstance instanceof DataSource ) {
+            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
+        } else {
+            throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
+        }
+    }
+
+
+    protected DataStore getDataStoreInstance( int storeId ) {
+        Adapter adapterInstance = AdapterManager.getInstance().getAdapter( storeId );
+        if ( adapterInstance == null ) {
+            throw new RuntimeException( "Unknown store id: " + storeId );
+        }
+        // Make sure it is a data store instance
+        if ( adapterInstance instanceof DataStore ) {
+            return (DataStore) adapterInstance;
+        } else if ( adapterInstance instanceof DataSource ) {
+            throw SqlUtil.newContextException( pos, RESOURCE.ddlOnDataSource( adapterInstance.getUniqueName() ) );
+        } else {
+            throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
+        }
+    }
+
 }

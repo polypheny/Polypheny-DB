@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,8 +60,8 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
     /**
      * Creates a CsvFilterableTable.
      */
-    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
-        super( source, protoRowType, fieldTypes, csvStore );
+    public CsvFilterableTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
+        super( source, protoRowType, fieldTypes, fields, csvSource );
     }
 
 
@@ -72,10 +72,9 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
 
     @Override
     public Enumerable<Object[]> scan( DataContext dataContext, List<RexNode> filters ) {
-        dataContext.getStatement().getTransaction().registerInvolvedStore( csvStore );
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( csvSource );
         final String[] filterValues = new String[fieldTypes.size()];
         filters.removeIf( filter -> addFilter( filter, filterValues ) );
-        final int[] fields = CsvEnumerator.identityList( fieldTypes.size() );
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get( dataContext );
         return new AbstractEnumerable<Object[]>() {
             @Override

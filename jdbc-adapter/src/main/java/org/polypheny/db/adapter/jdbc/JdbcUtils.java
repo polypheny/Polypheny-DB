@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,8 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -59,6 +61,14 @@ import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGraph;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.SqlDialectFactory;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -259,6 +269,44 @@ public final class JdbcUtils {
             final List<String> key = ImmutableNullableList.of( url, username, password, driverClassName );
             return cache.getUnchecked( key );
         }
+
     }
+
+
+    public static List<Information> buildInformationPoolSize( InformationPage page, InformationGroup group, ConnectionFactory connectionFactory, String uniqueName ) {
+        List<Information> informationElements = new ArrayList<>();
+
+        InformationGraph connectionPoolSizeGraph = new InformationGraph(
+                group,
+                GraphType.DOUGHNUT,
+                new String[]{ "Active", "Available", "Idle" }
+        );
+        informationElements.add( connectionPoolSizeGraph );
+
+        InformationTable connectionPoolSizeTable = new InformationTable(
+                group,
+                Arrays.asList( "Attribute", "Value" ) );
+        informationElements.add( connectionPoolSizeTable );
+
+        group.setRefreshFunction( () -> {
+            int idle = connectionFactory.getNumIdle();
+            int active = connectionFactory.getNumActive();
+            int max = connectionFactory.getMaxTotal();
+            int available = max - idle - active;
+
+            connectionPoolSizeGraph.updateGraph(
+                    new String[]{ "Active", "Available", "Idle" },
+                    new GraphData<>( uniqueName + "-connection-pool-data", new Integer[]{ active, available, idle } )
+            );
+
+            connectionPoolSizeTable.reset();
+            connectionPoolSizeTable.addRow( "Active", active );
+            connectionPoolSizeTable.addRow( "Idle", idle );
+            connectionPoolSizeTable.addRow( "Max", max );
+        } );
+
+        return informationElements;
+    }
+
 }
 

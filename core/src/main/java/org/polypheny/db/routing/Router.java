@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.routing;
 
 import java.util.List;
-import org.polypheny.db.adapter.Store;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.plan.RelOptCluster;
@@ -29,9 +29,9 @@ public interface Router {
 
     RelRoot route( RelRoot relRoot, Statement statement, ExecutionTimeMonitor executionTimeMonitor );
 
-    List<Store> createTable( long schemaId, Statement statement );
+    List<DataStore> createTable( long schemaId, Statement statement );
 
-    List<Store> addColumn( CatalogTable catalogTable, Statement statement );
+    List<DataStore> addColumn( CatalogTable catalogTable, Statement statement );
 
     void dropPlacements( List<CatalogColumnPlacement> placements );
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,17 +52,19 @@ public abstract class CsvTable extends AbstractTable {
     protected final Source source;
     protected final RelProtoDataType protoRowType;
     protected List<CsvFieldType> fieldTypes;
-    protected final CsvStore csvStore;
+    protected final int[] fields;
+    protected final CsvSource csvSource;
 
 
     /**
      * Creates a CsvTable.
      */
-    CsvTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, CsvStore csvStore ) {
+    CsvTable( Source source, RelProtoDataType protoRowType, List<CsvFieldType> fieldTypes, int[] fields, CsvSource csvSource ) {
         this.source = source;
         this.protoRowType = protoRowType;
         this.fieldTypes = fieldTypes;
-        this.csvStore = csvStore;
+        this.fields = fields;
+        this.csvSource = csvSource;
     }
 
 

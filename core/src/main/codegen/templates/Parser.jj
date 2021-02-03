@@ -6073,6 +6073,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < ABSOLUTE: "ABSOLUTE" >
 |   < ACTION: "ACTION" >
 |   < ADA: "ADA" >
+|   < ADAPTERS: "ADAPTERS" >
 |   < ADD: "ADD" >
 |   < ADMIN: "ADMIN" >
 |   < AFTER: "AFTER" >
@@ -6642,7 +6643,6 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < STDDEV_POP: "STDDEV_POP" >
 |   < STDDEV_SAMP: "STDDEV_SAMP" >
 |   < STORE: "STORE" >
-|   < STORES: "STORES" >
 |   < STREAM: "STREAM" >
 |   < STRUCTURE: "STRUCTURE" >
 |   < STYLE: "STYLE" >

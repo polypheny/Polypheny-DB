@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.catalog.exceptions;
 
 
-import java.util.Map;
+public class UnknownDatabaseIdRuntimeException extends CatalogRuntimeException {
 
-
-public class Adapter {
-
-    public String uniqueName;
-    public String clazzName;
-    public Map<String, String> settings;
+    public UnknownDatabaseIdRuntimeException( long databaseId ) {
+        super( "There is no database with the id " + databaseId );
+    }
 
 }

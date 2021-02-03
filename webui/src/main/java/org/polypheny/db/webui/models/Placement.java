@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,8 @@ public class Placement {
         this.exception = exception;
     }
 
-    public Placement addStore ( final Store s ) {
-        if( s.columnPlacements.size() > 0 ){
+    public Placement addAdapter( final Store s ) {
+        if ( s.columnPlacements.size() > 0 ) {
             this.stores.add( s );
         }
         return this;
@@ -50,21 +50,15 @@ public class Placement {
 
         public final String uniqueName;
         private final String adapterName;
-        private final boolean dataReadOnly;
-        private final boolean schemaReadOnly;
         private final List<ColumnPlacement> columnPlacements;
 
 
         public Store(
                 String uniqueName,
                 String adapterName,
-                boolean dataReadOnly,
-                boolean schemaReadOnly,
                 List<CatalogColumnPlacement> columnPlacements ) {
             this.uniqueName = uniqueName;
             this.adapterName = adapterName;
-            this.dataReadOnly = dataReadOnly;
-            this.schemaReadOnly = schemaReadOnly;
             this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
         }
     }
@@ -89,8 +83,8 @@ public class Placement {
             this.tableName = catalogColumnPlacement.getLogicalTableName();
             this.columnId = catalogColumnPlacement.columnId;
             this.columnName = catalogColumnPlacement.getLogicalColumnName();
-            this.storeId = catalogColumnPlacement.storeId;
-            this.storeUniqueName = catalogColumnPlacement.storeUniqueName;
+            this.storeId = catalogColumnPlacement.adapterId;
+            this.storeUniqueName = catalogColumnPlacement.adapterUniqueName;
             this.placementType = catalogColumnPlacement.placementType;
             this.physicalSchemaName = catalogColumnPlacement.physicalSchemaName;
             this.physicalTableName = catalogColumnPlacement.physicalTableName;

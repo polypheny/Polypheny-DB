@@ -35,8 +35,8 @@ public interface TransactionManager {
 
     Transaction startTransaction( String user, String database, boolean analyze, String origin ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
 
-    Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws GenericCatalogException, UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
+    Transaction startTransaction( String user, String database, boolean analyze, String origin, MultimediaFlavor flavor ) throws UnknownUserException, UnknownDatabaseException, UnknownSchemaException;
 
-    void removeTransaction( PolyXid xid ) throws TransactionException;
+    void removeTransaction( PolyXid xid );
 
 }

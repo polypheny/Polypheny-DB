@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,14 +40,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.math3.stat.StatUtils;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.config.ConfigBoolean;
 import org.polypheny.db.config.ConfigEnum;
 import org.polypheny.db.config.ConfigInteger;
@@ -98,11 +96,11 @@ public class IcarusRouter extends AbstractRouter {
             25 );
     private static final ConfigInteger SHORT_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
             "icarusRouting/shortRunningSimilarThreshold",
-            "The amount of time (specified as percentage of the fastest time) a store can be slower than the fastest store in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest store.",
+            "The amount of time (specified as percentage of the fastest time) an adapter can be slower than the fastest adapter in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest adapter.",
             0 );
     private static final ConfigInteger LONG_RUNNING_SIMILAR_THRESHOLD = new ConfigInteger(
             "icarusRouting/longRunningSimilarThreshold",
-            "The amount of time (specified as percentage of the fastest time) a store can be slower than the fastest store in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest store.",
+            "The amount of time (specified as percentage of the fastest time) an adapter can be slower than the fastest adapter in order to be still considered for executing queries of a certain query class. Setting this to zero results in only considering the fastest adapter.",
             0 );
     private static final ConfigInteger SHORT_RUNNING_LONG_RUNNING_THRESHOLD = new ConfigInteger(
             "icarusRouting/shortRunningLongRunningThreshold",
@@ -121,7 +119,7 @@ public class IcarusRouter extends AbstractRouter {
 
     private static final IcarusRoutingTable routingTable = new IcarusRoutingTable();
 
-    private int selectedStoreId = -2; // Is set in analyze
+    private int selectedAdapterId = -2; // Is set in analyze
     private String queryClassString;
 
 
@@ -146,18 +144,18 @@ public class IcarusRouter extends AbstractRouter {
             }
 
             if ( routingTable.contains( queryClassString ) && routingTable.get( queryClassString ).size() > 0 ) {
-                selectedStoreId = routeQuery( routingTable.get( queryClassString ) );
+                selectedAdapterId = routeQuery( routingTable.get( queryClassString ) );
 
                 // In case the query class is known but the table has been dropped and than recreated with the same name,
-                // the query class is known but only contains information for the stores with no placement. To handle this
-                // special case (selectedStoreId == -2) we have to set it to -1.
-                if ( selectedStoreId == -2 ) {
-                    selectedStoreId = -1;
+                // the query class is known but only contains information for the adapters with no placement. To handle this
+                // special case (selectedAdapterId == -2) we have to set it to -1.
+                if ( selectedAdapterId == -2 ) {
+                    selectedAdapterId = -1;
                 }
                 if ( statement.getTransaction().isAnalyze() ) {
                     InformationGroup group = new InformationGroup( page, "Routing Table Entry" );
                     statement.getTransaction().getQueryAnalyzer().addGroup( group );
-                    InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownStores.values() ) );
+                    InformationTable table = new InformationTable( group, ImmutableList.copyOf( routingTable.knownAdapters.values() ) );
                     Map<Integer, Integer> entry = routingTable.get( queryClassString );
                     Map<Integer, CircularFifoQueue<Double>> timesEntry = routingTable.times.get( queryClassString );
                     List<String> row1 = new LinkedList<>();
@@ -189,7 +187,7 @@ public class IcarusRouter extends AbstractRouter {
                     InformationHtml html = new InformationHtml( group, "Unknown query class" );
                     statement.getTransaction().getQueryAnalyzer().registerInformation( html );
                 }
-                selectedStoreId = -1;
+                selectedAdapterId = -1;
             }
         }
         if ( statement.getTransaction().isAnalyze() ) {
@@ -197,7 +195,7 @@ public class IcarusRouter extends AbstractRouter {
             statement.getTransaction().getQueryAnalyzer().addGroup( group );
             InformationHtml informationHtml = new InformationHtml(
                     group,
-                    "<p><b>Selected Store ID:</b> " + selectedStoreId + "</p>"
+                    "<p><b>Selected Store ID:</b> " + selectedAdapterId + "</p>"
                             + "<p><b>Query Class:</b> " + queryClassString + "</p>" );
             statement.getTransaction().getQueryAnalyzer().registerInformation( informationHtml );
         }
@@ -205,10 +203,10 @@ public class IcarusRouter extends AbstractRouter {
 
 
     private int routeQuery( Map<Integer, Integer> routingTableRow ) {
-        // Check if there is a store for which we do not have a execution time
+        // Check if there is an adapter for which we do not have a execution time
         for ( Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
             if ( entry.getValue() == IcarusRoutingTable.MISSING_VALUE ) {
-                // We have no execution time for this store.
+                // We have no execution time for this adapter.
                 return entry.getKey();
             }
         }
@@ -217,7 +215,7 @@ public class IcarusRouter extends AbstractRouter {
             // There should only be exactly one entry in the routing table > 0
             for ( Entry<Integer, Integer> entry : routingTable.get( queryClassString ).entrySet() ) {
                 if ( entry.getValue() == 100 ) {
-                    // We have no execution time for this store.
+                    // We have no execution time for this adapter.
                     return entry.getKey();
                 }
             }
@@ -238,7 +236,7 @@ public class IcarusRouter extends AbstractRouter {
     @Override
     protected void wrapUp( Statement statement, RelNode routed ) {
         if ( TRAINING.getBoolean() ) {
-            executionTimeMonitor.subscribe( routingTable, selectedStoreId + "-" + queryClassString );
+            executionTimeMonitor.subscribe( routingTable, selectedAdapterId + "-" + queryClassString );
         }
         if ( statement.getTransaction().isAnalyze() ) {
             InformationGroup executionTimeGroup = new InformationGroup( page, "Execution Time" );
@@ -248,80 +246,71 @@ public class IcarusRouter extends AbstractRouter {
                         InformationHtml html = new InformationHtml( executionTimeGroup, nanoTime / 1000000.0 + " ms" );
                         statement.getTransaction().getQueryAnalyzer().registerInformation( html );
                     },
-                    selectedStoreId + "-" + queryClassString );
+                    selectedAdapterId + "-" + queryClassString );
         }
     }
 
 
-    // Execute the table scan on the store select in the analysis (in Icarus routing all tables are replicated to all stores)
+    // Execute the table scan on the adapter selected in the analysis (in Icarus routing all tables are expected to be
+    // replicated to all adapters)
     //
-    // Icarus routing is based on a full replication of data to all underlying data stores. This implementation
-    // therefore assumes that there is either no placement of a table on a store or a full placement.
+    // Icarus routing is based on a full replication of data to all underlying adapters (data stores). This implementation
+    // therefore assumes that there is either no placement of a table on a adapter or a full placement.
     //
     @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
-        // Update known stores
-        updateKnownStores( table.placementsByStore.keySet() );
+        // Update known adapters
+        updateKnownAdapters( table.placementsByAdapter.keySet() );
 
         // Route
-        if ( selectedStoreId == -1 ) {
-            routingTable.initializeRow( queryClassString, table.placementsByStore.keySet() );
-            selectedStoreId = table.placementsByStore.keySet().asList().get( 0 );
+        if ( selectedAdapterId == -1 ) {
+            routingTable.initializeRow( queryClassString, table.placementsByAdapter.keySet() );
+            selectedAdapterId = table.placementsByAdapter.keySet().asList().get( 0 );
         }
-        if ( table.placementsByStore.containsKey( selectedStoreId ) ) {
-            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnStore( selectedStoreId, table.id );
+        if ( table.placementsByAdapter.containsKey( selectedAdapterId ) ) {
+            List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( selectedAdapterId, table.id );
             if ( placements.size() != table.columnIds.size() ) {
-                throw new RuntimeException( "The data store '" + selectedStoreId + "' does not contain a full table placement!" );
+                throw new RuntimeException( "The data store '" + selectedAdapterId + "' does not contain a full table placement!" );
             }
             return placements;
         }
-        throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedStoreId );
+        throw new RuntimeException( "The previously selected store does not contain a placement of this table. Store ID: " + selectedAdapterId );
     }
 
 
-    public void updateKnownStores( ImmutableSet<Integer> stores ) {
-        for ( Integer storeId : stores ) {
-            if ( !routingTable.knownStores.containsKey( storeId ) ) {
-                CatalogStore catalogStore;
-                try {
-                    catalogStore = Catalog.getInstance().getStore( storeId );
-                } catch ( GenericCatalogException | UnknownStoreException e ) {
-                    throw new RuntimeException( e );
-                }
-                routingTable.knownStores.put( storeId, catalogStore.uniqueName );
-                if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( storeId ) ) {
-                    routingTable.routingTable.get( queryClassString ).put( storeId, IcarusRoutingTable.MISSING_VALUE );
+    public void updateKnownAdapters( ImmutableSet<Integer> stores ) {
+        for ( Integer adapterId : stores ) {
+            if ( !routingTable.knownAdapters.containsKey( adapterId ) ) {
+                CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( adapterId );
+                routingTable.knownAdapters.put( adapterId, catalogAdapter.uniqueName );
+                if ( routingTable.routingTable.get( queryClassString ) != null && !routingTable.routingTable.get( queryClassString ).containsKey( adapterId ) ) {
+                    routingTable.routingTable.get( queryClassString ).put( adapterId, IcarusRoutingTable.MISSING_VALUE );
                 }
             }
         }
     }
 
 
-    // Create table on all stores supporting schema changes
+    // Create table on all data stores (not on data sources)
     @Override
-    public List<Store> createTable( long schemaId, Statement statement ) {
-        List<Store> result = new LinkedList<>();
-        Map<String, Store> availableStores = StoreManager.getInstance().getStores();
-        for ( Store store : availableStores.values() ) {
-            if ( !store.isSchemaReadOnly() ) {
-                result.add( store );
-            }
-        }
+    public List<DataStore> createTable( long schemaId, Statement statement ) {
+        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
+        List<DataStore> result = new LinkedList<>( availableStores.values() );
         if ( result.size() == 0 ) {
-            throw new RuntimeException( "No suitable store found" );
+            throw new RuntimeException( "No suitable data store found" );
         }
         return ImmutableList.copyOf( result );
     }
 
 
     @Override
-    public List<Store> addColumn( CatalogTable catalogTable, Statement statement ) {
-        List<Store> result = new LinkedList<>();
-        for ( int storeId : catalogTable.placementsByStore.keySet() ) {
-            result.add( StoreManager.getInstance().getStore( storeId ) );
+    public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
+        List<DataStore> result = new LinkedList<>();
+        for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
+            result.add( AdapterManager.getInstance().getStore( storeId ) );
         }
         if ( result.size() == 0 ) {
-            throw new RuntimeException( "No suitable store found" );
+            throw new RuntimeException( "No suitable data store found" );
         }
         return ImmutableList.copyOf( result );
     }
@@ -338,10 +327,10 @@ public class IcarusRouter extends AbstractRouter {
         public static final int MISSING_VALUE = -1;
         public static final int NO_PLACEMENT = -2;
 
-        private final Map<String, Map<Integer, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Percentage)
-        private final Map<String, Map<Integer, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Store -> Time)
+        private final Map<String, Map<Integer, Integer>> routingTable = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Percentage)
+        private final Map<String, Map<Integer, CircularFifoQueue<Double>>> times = new ConcurrentHashMap<>();  // QueryClassStr -> (Adapter -> Time)
 
-        private final Map<Integer, String> knownStores = new HashMap<>(); // Store ID -> Store Name
+        private final Map<Integer, String> knownAdapters = new HashMap<>(); // Adapter Id -> Adapter Name
 
         private final Queue<ExecutionTime> processingQueue = new ConcurrentLinkedQueue<>();
         private final Lock processingQueueLock = new ReentrantLock();
@@ -373,7 +362,7 @@ public class IcarusRouter extends AbstractRouter {
                 if ( routingTable.size() > 0 ) {
                     LinkedList<String> labels = new LinkedList<>();
                     labels.add( "Query Class" );
-                    labels.addAll( knownStores.values() );
+                    labels.addAll( knownAdapters.values() );
                     routingTableElement.updateLabels( labels );
                 }
                 // Update rows
@@ -422,12 +411,12 @@ public class IcarusRouter extends AbstractRouter {
             while ( processingQueue.size() > 0 ) {
                 ExecutionTime executionTime = processingQueue.poll();
                 Map<Integer, CircularFifoQueue<Double>> row = times.get( executionTime.queryClassString );
-                if ( row.containsKey( executionTime.storeId ) ) {
-                    row.get( executionTime.storeId ).offer( (double) executionTime.nanoTime );
+                if ( row.containsKey( executionTime.adapterId ) ) {
+                    row.get( executionTime.adapterId ).offer( (double) executionTime.nanoTime );
                 } else {
                     CircularFifoQueue<Double> queue = new CircularFifoQueue<>( WINDOW_SIZE.getInt() );
                     queue.offer( (double) executionTime.nanoTime );
-                    row.put( executionTime.storeId, queue );
+                    row.put( executionTime.adapterId, queue );
                 }
             }
 
@@ -443,8 +432,8 @@ public class IcarusRouter extends AbstractRouter {
                 }
 
                 Map<Integer, Integer> newRow = new HashMap<>();
-                for ( Integer storeId : knownStores.keySet() ) {
-                    newRow.put( storeId, IcarusRoutingTable.NO_PLACEMENT );
+                for ( Integer adapterId : knownAdapters.keySet() ) {
+                    newRow.put( adapterId, IcarusRoutingTable.NO_PLACEMENT );
                 }
                 Map<Integer, Integer> calculatedRow = generateRow( meanTimeRow );
                 for ( Map.Entry<Integer, Integer> oldEntry : routingTable.get( queryClass ).entrySet() ) {
@@ -465,14 +454,14 @@ public class IcarusRouter extends AbstractRouter {
         // called by execution monitor to inform about execution time
         @Override
         public void executionTime( String reference, long nanoTime ) {
-            String storeIdStr = reference.split( "-" )[0]; // Reference starts with "STORE_ID-..."
-            if ( storeIdStr.equals( "" ) ) {
-                // No storeIdStr string. This happens if a query contains no table (e.g. select 1 )
+            String adapterIdStr = reference.split( "-" )[0]; // Reference starts with "ADAPTER_ID-..."
+            if ( adapterIdStr.equals( "" ) ) {
+                // No adapterIdStr string. This happens if a query contains no table (e.g. select 1 )
                 return;
             }
-            int storeId = Integer.parseInt( storeIdStr );
-            String queryClassString = reference.substring( storeIdStr.length() + 1 );
-            processingQueue.add( new ExecutionTime( queryClassString, storeId, nanoTime ) );
+            int adapterId = Integer.parseInt( adapterIdStr );
+            String queryClassString = reference.substring( adapterIdStr.length() + 1 );
+            processingQueue.add( new ExecutionTime( queryClassString, adapterId, nanoTime ) );
         }
 
 
@@ -480,12 +469,12 @@ public class IcarusRouter extends AbstractRouter {
             process();// empty processing queue
             processingQueueLock.lock();
             for ( CatalogColumnPlacement placement : placements ) {
-                knownStores.remove( placement.storeId );
+                knownAdapters.remove( placement.adapterId );
                 for ( Map<Integer, CircularFifoQueue<Double>> entry : times.values() ) {
-                    entry.remove( placement.storeId );
+                    entry.remove( placement.adapterId );
                 }
                 for ( Map<Integer, Integer> entry : routingTable.values() ) {
-                    entry.remove( placement.storeId );
+                    entry.remove( placement.adapterId );
                 }
             }
             processingQueueLock.unlock();
@@ -493,15 +482,15 @@ public class IcarusRouter extends AbstractRouter {
         }
 
 
-        public void initializeRow( String queryClassString, ImmutableSet<Integer> stores ) {
+        public void initializeRow( String queryClassString, ImmutableSet<Integer> adapters ) {
             Map<Integer, Integer> row = new HashMap<>();
             // Initialize with NO_PLACEMENT
-            for ( int storeId : knownStores.keySet() ) {
-                row.put( storeId, NO_PLACEMENT );
+            for ( int adapterId : knownAdapters.keySet() ) {
+                row.put( adapterId, NO_PLACEMENT );
             }
             // Set missing values entry
-            for ( int storeId : stores ) {
-                row.replace( storeId, MISSING_VALUE );
+            for ( int adapterId : adapters ) {
+                row.replace( adapterId, MISSING_VALUE );
             }
             routingTable.put( queryClassString, row );
             times.put( queryClassString, new HashMap<>() );
@@ -511,27 +500,27 @@ public class IcarusRouter extends AbstractRouter {
         protected Map<Integer, Integer> generateRow( Map<Integer, Double> map ) {
             Map<Integer, Integer> row;
             // find fastest
-            int fastestStore = -1;
+            int fastestAdapter = -1;
             double fastestTime = Double.MAX_VALUE;
             for ( Map.Entry<Integer, Double> entry : map.entrySet() ) {
                 if ( fastestTime > entry.getValue() ) {
-                    fastestStore = entry.getKey();
+                    fastestAdapter = entry.getKey();
                     fastestTime = entry.getValue();
                 }
             }
-            long shortRunningLongRunningThreshold = SHORT_RUNNING_LONG_RUNNING_THRESHOLD.getInt() * 1_000_000; // multiply with 1000000 to get nanoseconds
+            long shortRunningLongRunningThreshold = SHORT_RUNNING_LONG_RUNNING_THRESHOLD.getInt() * 1_000_000L; // multiply with 1000000 to get nanoseconds
             if ( fastestTime < shortRunningLongRunningThreshold && SHORT_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
-                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestStore );
+                row = calc( map, SHORT_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapter );
             } else if ( fastestTime > shortRunningLongRunningThreshold && LONG_RUNNING_SIMILAR_THRESHOLD.getInt() != 0 ) {
-                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestStore );
+                row = calc( map, LONG_RUNNING_SIMILAR_THRESHOLD.getInt(), fastestTime, fastestAdapter );
             } else {
                 row = new HashMap<>();
                 // init row with 0
-                for ( Integer storeId : map.keySet() ) {
-                    row.put( storeId, 0 );
+                for ( Integer adapterId : map.keySet() ) {
+                    row.put( adapterId, 0 );
                 }
-                if ( fastestStore != -1 && fastestTime > 0 ) {
-                    row.put( fastestStore, 100 );
+                if ( fastestAdapter != -1 && fastestTime > 0 ) {
+                    row.put( fastestAdapter, 100 );
                 }
             }
             return row;
@@ -609,7 +598,7 @@ public class IcarusRouter extends AbstractRouter {
     private static class ExecutionTime {
 
         private final String queryClassString;
-        private final int storeId;
+        private final int adapterId;
         private final long nanoTime;
     }
 

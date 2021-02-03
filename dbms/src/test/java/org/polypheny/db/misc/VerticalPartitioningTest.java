@@ -51,7 +51,7 @@ public class VerticalPartitioningTest {
 
                 try {
                     // Deploy additional store
-                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
                     // Add placement
@@ -80,7 +80,7 @@ public class VerticalPartitioningTest {
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE partitioningtest" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
             }
         }
@@ -100,7 +100,7 @@ public class VerticalPartitioningTest {
 
                 try {
                     // Deploy additional store
-                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
                     // Add placement
@@ -136,7 +136,7 @@ public class VerticalPartitioningTest {
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE partitioningtest" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
             }
         }

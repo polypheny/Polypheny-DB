@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -85,20 +87,28 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.Store.AdapterSetting;
-import org.polypheny.db.adapter.Store.FunctionalIndexInfo;
-import org.polypheny.db.adapter.StoreManager;
-import org.polypheny.db.adapter.StoreManager.AdapterInformation;
+import org.polypheny.db.adapter.Adapter;
+import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
+import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
+import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DataSource.ExportedColumn;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
+import org.polypheny.db.catalog.entity.CatalogAdapter;
+import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
@@ -106,13 +116,10 @@ import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogStore;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownStoreException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.Config;
@@ -150,12 +157,13 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateTimeStringUtils;
+import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
-import org.polypheny.db.webui.models.Adapter;
+import org.polypheny.db.webui.models.AdapterModel;
 import org.polypheny.db.webui.models.DbColumn;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.Debug;
@@ -297,14 +305,12 @@ public class Crud implements InformationObserver {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-            if ( catalogTable.tableType == TableType.TABLE ) {
+            if ( catalogTable.modifiable ) {
                 result.setType( ResultType.TABLE );
-            } else if ( catalogTable.tableType == TableType.VIEW ) {
-                result.setType( ResultType.VIEW );
             } else {
-                throw new RuntimeException( "Unknown table type: " + catalogTable.tableType );
+                result.setType( ResultType.VIEW );
             }
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
             return result.setError( "Could not retrieve type of Result (table/view)." );
         }
@@ -375,7 +381,13 @@ public class Crud implements InformationObserver {
                     ArrayList<SidebarElement> viewTree = new ArrayList<>();
                     List<CatalogTable> tables = catalog.getTables( schema.id, null );
                     for ( CatalogTable table : tables ) {
-                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, "fa fa-table" );
+                        String icon = "fa fa-table";
+                        if ( table.tableType == TableType.SOURCE ) {
+                            icon = "fa fa-plug";
+                        } else if ( table.tableType == TableType.VIEW ) {
+                            icon = "icon-eye";
+                        }
+                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
 
                         if ( request.depth > 2 ) {
                             List<CatalogColumn> columns = catalog.getColumns( table.id );
@@ -383,7 +395,7 @@ public class Crud implements InformationObserver {
                                 tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
-                        if ( table.tableType == TableType.TABLE ) {
+                        if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
                             tableTree.add( tableElement );
                         } else if ( request.views && table.tableType == TableType.VIEW ) {
                             viewTree.add( tableElement );
@@ -401,7 +413,7 @@ public class Crud implements InformationObserver {
                 result.add( schemaTree );
             }
             transaction.commit();
-        } catch ( UnknownSchemaException | GenericCatalogException | TransactionException e ) {
+        } catch ( TransactionException e ) {
             log.error( "Caught exception", e );
             try {
                 transaction.rollback();
@@ -417,20 +429,12 @@ public class Crud implements InformationObserver {
     /**
      * Get all tables of a schema
      */
-    Result getTables( final Request req, final Response res ) {
+    List<DbTable> getTables( final Request req, final Response res ) {
         EditTableRequest request = this.gson.fromJson( req.body(), EditTableRequest.class );
-
-        Result result;
-        try {
-            List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
-            ArrayList<String> tableNames = new ArrayList<>();
-            for ( CatalogTable catalogTable : tables ) {
-                tableNames.add( catalogTable.name );
-            }
-            result = new Result( new Debug().setAffectedRows( tableNames.size() ) ).setTables( tableNames );
-        } catch ( GenericCatalogException e ) {
-            log.error( "Caught exception while fetching tables", e );
-            result = new Result( e );
+        List<CatalogTable> tables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
+        ArrayList<DbTable> result = new ArrayList<>();
+        for ( CatalogTable t : tables ) {
+            result.add( new DbTable( t.name, t.getSchemaName(), t.modifiable, t.tableType ) );
         }
         return result;
     }
@@ -1090,7 +1094,7 @@ public class Crud implements InformationObserver {
                     joiner.add( condition );
                 }
             }
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while deriving PK WHERE condition", e );
         }
         return " WHERE " + joiner.toString();
@@ -1278,12 +1282,97 @@ public class Crud implements InformationObserver {
                                 defaultValue ) );
             }
             result = new Result( cols.toArray( new DbColumn[0] ), null );
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+            if ( catalogTable.tableType == TableType.TABLE ) {
+                result.setType( ResultType.TABLE );
+            } else {
+                result.setType( ResultType.VIEW );
+            }
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting a column", e );
             result = new Result( e );
         }
 
         return result;
+    }
+
+
+    Result getDataSourceColumns( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        try {
+            CatalogTable catalogTable = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() );
+            if ( catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).size() != 1 ) {
+                throw new RuntimeException( "The table has an unexpected number of placements!" );
+            }
+            int adapterId = catalog.getColumnPlacements( catalogTable.columnIds.get( 0 ) ).get( 0 ).adapterId;
+            CatalogPrimaryKey primaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+            List<String> pkColumnNames = primaryKey.getColumnNames();
+            List<DbColumn> columns = new ArrayList<>();
+            for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( adapterId, catalogTable.id ) ) {
+                CatalogColumn col = catalog.getColumn( ccp.columnId );
+                columns.add( new DbColumn(
+                        col.name,
+                        col.type.getName(),
+                        col.collectionsType == null ? "" : col.collectionsType.getName(),
+                        col.nullable,
+                        col.length,
+                        col.scale,
+                        col.dimension,
+                        col.cardinality,
+                        pkColumnNames.contains( col.name ),
+                        col.defaultValue == null ? null : col.defaultValue.value
+                ).setPhysicalName( ccp.physicalColumnName ) );
+            }
+            return new Result( columns.toArray( new DbColumn[0] ), null ).setType( ResultType.VIEW );
+        } catch ( UnknownDatabaseException | UnknownSchemaException | UnknownTableException e ) {
+            return new Result( e );
+        }
+    }
+
+
+    /**
+     * Get the exported tables of a DataSource that a table originates from
+     */
+    Result[] getExportedColumns( final Request req, final Response res ) {
+        UIRequest request = this.gson.fromJson( req.body(), UIRequest.class );
+        try {
+            ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
+            Set<Integer> adapterIds = placements.keySet();
+            if ( adapterIds.size() > 1 ) {
+                log.warn( "The number of DataSources of a Table should not be > 1." );
+            }
+            List<Result> exportedColumns = new ArrayList<>();
+            for ( int adapterId : adapterIds ) {
+                Adapter adapter = AdapterManager.getInstance().getAdapter( adapterId );
+                if ( adapter instanceof DataSource ) {
+                    DataSource dataSource = (DataSource) adapter;
+                    for ( Entry<String, List<ExportedColumn>> entry : dataSource.getExportedColumns().entrySet() ) {
+                        List<DbColumn> columnList = new ArrayList<>();
+                        for ( ExportedColumn col : entry.getValue() ) {
+                            DbColumn dbCol = new DbColumn(
+                                    col.name,
+                                    col.type.getName(),
+                                    col.collectionsType == null ? "" : col.collectionsType.getName(),
+                                    col.nullable,
+                                    col.length,
+                                    col.scale,
+                                    col.dimension,
+                                    col.cardinality,
+                                    col.primary,
+                                    null ).setPhysicalName( col.physicalColumnName );
+                            columnList.add( dbCol );
+                        }
+                        exportedColumns.add( new Result( columnList.toArray( new DbColumn[0] ), null ).setTable( entry.getKey() ) );
+                        columnList.clear();
+                    }
+                    return exportedColumns.toArray( new Result[0] );
+                } else {
+                    //log.warn( "This method should only be called for tables that originate from a DataSource" );
+                }
+            }
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+            return new Result[]{ new Result( e ) };
+        }
+        return new Result[]{ new Result( "Could not retrieve exported Columns." ) };
     }
 
 
@@ -1306,78 +1395,80 @@ public class Crud implements InformationObserver {
             queries.add( query );
         }
 
-        // change type + length
-        // TODO: cast if needed
-        if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
-                !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
-                !Objects.equals( oldColumn.precision, newColumn.precision ) ||
-                !Objects.equals( oldColumn.scale, newColumn.scale ) ||
-                !oldColumn.dimension.equals( newColumn.dimension ) ||
-                !oldColumn.cardinality.equals( newColumn.cardinality ) ) {
-            // TODO: drop maxlength if requested
-            String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
-            if ( newColumn.precision != null ) {
-                query = query + "(" + newColumn.precision;
-                if ( newColumn.scale != null ) {
-                    query = query + "," + newColumn.scale;
-                }
-                query = query + ")";
-            }
-            //collectionType
-            if ( !newColumn.collectionsType.equals( "" ) ) {
-                query = query + " " + request.newColumn.collectionsType;
-                int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
-                int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
-                query = query + String.format( "(%d,%d)", dimension, cardinality );
-            }
-            queries.add( query );
-        }
-
-        // set/drop nullable
-        if ( oldColumn.nullable != newColumn.nullable ) {
-            String nullable = "SET";
-            if ( newColumn.nullable ) {
-                nullable = "DROP";
-            }
-            String query = "ALTER TABLE " + tableId + " MODIFY COLUMN \"" + newColumn.name + "\" " + nullable + " NOT NULL";
-            queries.add( query );
-        }
-
-        // change default value
-        if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
-            String query;
-            if ( newColumn.defaultValue == null ) {
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
-            } else {
-                query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
-                if ( newColumn.collectionsType != null ) {
-                    //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
-                    if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
-                        query = query + request.newColumn.collectionsType;
+        if ( !request.renameOnly ) {
+            // change type + length
+            // TODO: cast if needed
+            if ( !oldColumn.dataType.equals( newColumn.dataType ) ||
+                    !oldColumn.collectionsType.equals( newColumn.collectionsType ) ||
+                    !Objects.equals( oldColumn.precision, newColumn.precision ) ||
+                    !Objects.equals( oldColumn.scale, newColumn.scale ) ||
+                    !oldColumn.dimension.equals( newColumn.dimension ) ||
+                    !oldColumn.cardinality.equals( newColumn.cardinality ) ) {
+                // TODO: drop maxlength if requested
+                String query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET TYPE %s", tableId, newColumn.name, newColumn.dataType );
+                if ( newColumn.precision != null ) {
+                    query = query + "(" + newColumn.precision;
+                    if ( newColumn.scale != null ) {
+                        query = query + "," + newColumn.scale;
                     }
-                    query = query + request.newColumn.defaultValue;
+                    query = query + ")";
+                }
+                //collectionType
+                if ( !newColumn.collectionsType.equals( "" ) ) {
+                    query = query + " " + request.newColumn.collectionsType;
+                    int dimension = newColumn.dimension == null ? -1 : newColumn.dimension;
+                    int cardinality = newColumn.cardinality == null ? -1 : newColumn.cardinality;
+                    query = query + String.format( "(%d,%d)", dimension, cardinality );
+                }
+                queries.add( query );
+            }
+
+            // set/drop nullable
+            if ( oldColumn.nullable != newColumn.nullable ) {
+                String nullable = "SET";
+                if ( newColumn.nullable ) {
+                    nullable = "DROP";
+                }
+                String query = "ALTER TABLE " + tableId + " MODIFY COLUMN \"" + newColumn.name + "\" " + nullable + " NOT NULL";
+                queries.add( query );
+            }
+
+            // change default value
+            if ( oldColumn.defaultValue == null || newColumn.defaultValue == null || !oldColumn.defaultValue.equals( newColumn.defaultValue ) ) {
+                String query;
+                if ( newColumn.defaultValue == null ) {
+                    query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" DROP DEFAULT", tableId, newColumn.name );
                 } else {
-                    switch ( newColumn.dataType ) {
-                        case "BIGINT":
-                        case "INTEGER":
-                        case "DECIMAL":
-                        case "DOUBLE":
-                        case "FLOAT":
-                        case "SMALLINT":
-                        case "TINYINT":
-                            request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
-                            BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
-                            query = query + b.toString();
-                            break;
-                        case "VARCHAR":
-                            query = query + String.format( "'%s'", request.newColumn.defaultValue );
-                            break;
-                        default:
-                            query = query + request.newColumn.defaultValue;
+                    query = String.format( "ALTER TABLE %s MODIFY COLUMN \"%s\" SET DEFAULT ", tableId, newColumn.name );
+                    if ( newColumn.collectionsType != null ) {
+                        //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
+                        if ( !request.newColumn.defaultValue.startsWith( request.newColumn.collectionsType ) ) {
+                            query = query + request.newColumn.collectionsType;
+                        }
+                        query = query + request.newColumn.defaultValue;
+                    } else {
+                        switch ( newColumn.dataType ) {
+                            case "BIGINT":
+                            case "INTEGER":
+                            case "DECIMAL":
+                            case "DOUBLE":
+                            case "FLOAT":
+                            case "SMALLINT":
+                            case "TINYINT":
+                                request.newColumn.defaultValue = request.newColumn.defaultValue.replace( ",", "." );
+                                BigDecimal b = new BigDecimal( request.newColumn.defaultValue );
+                                query = query + b.toString();
+                                break;
+                            case "VARCHAR":
+                                query = query + String.format( "'%s'", request.newColumn.defaultValue );
+                                break;
+                            default:
+                                query = query + request.newColumn.defaultValue;
+                        }
                     }
                 }
+                queries.add( query );
             }
-            queries.add( query );
         }
 
         result = new Result( new Debug().setAffectedRows( 1 ).setGeneratedQuery( queries.toString() ) );
@@ -1412,8 +1503,16 @@ public class Crud implements InformationObserver {
         String[] t = request.tableId.split( "\\." );
         String tableId = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
-        String query = String.format( "ALTER TABLE %s ADD COLUMN \"%s\" %s", tableId, request.newColumn.name, request.newColumn.dataType );
-        if ( request.newColumn.precision != null ) {
+        String as = "";
+        String dataType = request.newColumn.dataType;
+        if ( request.newColumn.as != null ) {
+            //for data sources
+            as = "AS \"" + request.newColumn.as + "\"";
+            dataType = "";
+        }
+        String query = String.format( "ALTER TABLE %s ADD COLUMN \"%s\" %s %s", tableId, request.newColumn.name, as, dataType );
+        //we don't want precision, scale etc. for source columns
+        if ( request.newColumn.as == null ) {
             if ( request.newColumn.precision != null ) {
                 query = query + "(" + request.newColumn.precision;
                 if ( request.newColumn.scale != null ) {
@@ -1421,17 +1520,17 @@ public class Crud implements InformationObserver {
                 }
                 query = query + ")";
             }
+            if ( !request.newColumn.collectionsType.equals( "" ) ) {
+                query = query + " " + request.newColumn.collectionsType;
+                int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
+                int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
+                query = query + String.format( "(%d,%d)", dimension, cardinality );
+            }
+            if ( !request.newColumn.nullable ) {
+                query = query + " NOT NULL";
+            }
         }
-        if ( !request.newColumn.collectionsType.equals( "" ) ) {
-            query = query + " " + request.newColumn.collectionsType;
-            int dimension = request.newColumn.dimension == null ? -1 : request.newColumn.dimension;
-            int cardinality = request.newColumn.cardinality == null ? -1 : request.newColumn.cardinality;
-            query = query + String.format( "(%d,%d)", dimension, cardinality );
-        }
-        if ( !request.newColumn.nullable ) {
-            query = query + " NOT NULL";
-        }
-        if ( request.newColumn.defaultValue != null ) {
+        if ( request.newColumn.defaultValue != null && !request.newColumn.defaultValue.equals( "" ) ) {
             query = query + " DEFAULT ";
             if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.equals( "" ) ) {
                 //handle the case if the user says "ARRAY[1,2,3]" or "[1,2,3]"
@@ -1574,7 +1673,7 @@ public class Crud implements InformationObserver {
             resultList.forEach( c -> data.add( c.asRow() ) );
 
             result = new Result( header, data.toArray( new String[0][2] ) );
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while fetching constraints", e );
             result = new Result( e );
         }
@@ -1714,10 +1813,10 @@ public class Crud implements InformationObserver {
                 String[] arr = new String[5];
                 String storeUniqueName;
                 if ( catalogIndex.location == 0 ) {
-                    //a polystore index
+                    // a polystore index
                     storeUniqueName = "Polypheny-DB";
                 } else {
-                    storeUniqueName = catalog.getStore( catalogIndex.location ).uniqueName;
+                    storeUniqueName = catalog.getAdapter( catalogIndex.location ).uniqueName;
                 }
                 arr[0] = catalogIndex.name;
                 arr[1] = String.join( ", ", catalogIndex.key.getColumnNames() );
@@ -1728,8 +1827,14 @@ public class Crud implements InformationObserver {
             }
 
             // Get functional indexes
-            for ( Integer storeId : catalogTable.placementsByStore.keySet() ) {
-                Store store = StoreManager.getInstance().getStore( storeId );
+            for ( Integer storeId : catalogTable.placementsByAdapter.keySet() ) {
+                Adapter adapter = AdapterManager.getInstance().getAdapter( storeId );
+                DataStore store;
+                if ( adapter instanceof DataStore ) {
+                    store = (DataStore) adapter;
+                } else {
+                    break;
+                }
                 for ( FunctionalIndexInfo fif : store.getFunctionalIndexes( catalogTable ) ) {
                     String[] arr = new String[5];
                     arr[0] = "";
@@ -1743,7 +1848,7 @@ public class Crud implements InformationObserver {
 
             result = new Result( header, data.toArray( new String[0][2] ) );
 
-        } catch ( UnknownTableException | GenericCatalogException | UnknownStoreException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while fetching indexes", e );
             result = new Result( e );
         }
@@ -1830,13 +1935,13 @@ public class Crud implements InformationObserver {
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
             Placement p = new Placement();
-            for ( CatalogStore catalogStore : catalog.getStores() ) {
-                Store store = StoreManager.getInstance().getStore( catalogStore.id );
-                List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnStore( catalogStore.id, table.id );
-                p.addStore( new Placement.Store( store.getUniqueName(), store.getAdapterName(), store.isDataReadOnly(), store.isSchemaReadOnly(), placements ) );
+            for ( CatalogAdapter catalogAdapter : catalog.getAdapters() ) {
+                Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
+                List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id );
+                p.addAdapter( new Placement.Store( adapter.getUniqueName(), adapter.getAdapterName(), placements ) );
             }
             return p;
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception while getting placements", e );
             return new Placement( e );
         }
@@ -1882,18 +1987,18 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Get current stores
+     * Get deployed data stores
      */
     String getStores( final Request req, final Response res ) {
-        ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
-        Store[] out = stores.values().toArray( new Store[0] );
-        return storeSerializer().toJson( out, Store[].class );
+        ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
+        DataStore[] out = stores.values().toArray( new DataStore[0] );
+        return adapterSerializer().toJson( out, DataStore[].class );
     }
 
 
-    private Gson storeSerializer() {
+    private Gson adapterSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
-        JsonSerializer<Store> storeSerializer = ( src, typeOfSrc, context ) -> {
+        JsonSerializer<DataStore> storeSerializer = ( src, typeOfSrc, context ) -> {
             List<AdapterSetting> adapterSettings = new ArrayList<>();
             for ( AdapterSetting s : src.getAvailableSettings() ) {
                 for ( String current : src.getCurrentSettings().keySet() ) {
@@ -1904,19 +2009,37 @@ public class Crud implements InformationObserver {
             }
 
             JsonObject jsonStore = new JsonObject();
-            jsonStore.addProperty( "storeId", src.getStoreId() );
+            jsonStore.addProperty( "adapterId", src.getAdapterId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
             jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
-            jsonStore.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
-            jsonStore.add( "schemaReadOnly", context.serialize( src.isSchemaReadOnly() ) );
             jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
             jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
             return jsonStore;
         };
-        return new GsonBuilder().registerTypeAdapter( Store.class, storeSerializer ).create();
+        JsonSerializer<DataSource> sourceSerializer = ( src, typeOfSrc, context ) -> {
+            List<AdapterSetting> adapterSettings = new ArrayList<>();
+            for ( AdapterSetting s : src.getAvailableSettings() ) {
+                for ( String current : src.getCurrentSettings().keySet() ) {
+                    if ( s.name.equals( current ) ) {
+                        adapterSettings.add( s );
+                    }
+                }
+            }
+
+            JsonObject jsonSource = new JsonObject();
+            jsonSource.addProperty( "adapterId", src.getAdapterId() );
+            jsonSource.addProperty( "uniqueName", src.getUniqueName() );
+            jsonSource.addProperty( "adapterName", src.getAdapterName() );
+            jsonSource.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
+            jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
+            jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
+            return jsonSource;
+        };
+        return new GsonBuilder().registerTypeAdapter( DataStore.class, storeSerializer ).registerTypeAdapter( DataSource.class, sourceSerializer ).create();
     }
 
 
@@ -1926,9 +2049,9 @@ public class Crud implements InformationObserver {
     String getAvailableStoresForIndexes( final Request req, final Response res ) {
         Index index = gson.fromJson( req.body(), Index.class );
         Placement dataPlacements = getPlacements( index );
-        ImmutableMap<String, Store> stores = StoreManager.getInstance().getStores();
-        List<Store> filteredStores = stores.values().stream().filter( ( s ) -> {
-            if ( s.isSchemaReadOnly() || s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
+        ImmutableMap<String, DataStore> stores = AdapterManager.getInstance().getStores();
+        List<DataStore> filteredStores = stores.values().stream().filter( ( s ) -> {
+            if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().size() == 0 ) {
                 return false;
             }
             if ( dataPlacements.stores.stream().noneMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) ) ) {
@@ -1937,8 +2060,8 @@ public class Crud implements InformationObserver {
             return true;
         } ).collect( Collectors.toList() );
         //see https://stackoverflow.com/questions/18857884/how-to-convert-arraylist-of-custom-class-to-jsonarray-in-java
-        Gson storeSerializer = storeSerializer();
-        JsonArray jsonArray = storeSerializer.toJsonTree( filteredStores.toArray( new Store[0] ) ).getAsJsonArray();
+        Gson storeSerializer = adapterSerializer();
+        JsonArray jsonArray = storeSerializer.toJsonTree( filteredStores.toArray( new DataStore[0] ) ).getAsJsonArray();
         if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
             JsonObject pdbFakeStore = new JsonObject();
             pdbFakeStore.addProperty( "uniqueName", "Polypheny-DB" );
@@ -1950,11 +2073,11 @@ public class Crud implements InformationObserver {
 
 
     /**
-     * Update the settings of a store
+     * Update the settings of an adapter
      */
-    Store updateStoreSettings( final Request req, final Response res ) {
+    Adapter updateAdapterSettings( final Request req, final Response res ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
-        JsonDeserializer<Store> storeDeserializer = ( json, typeOfT, context ) -> {
+        JsonDeserializer<Adapter> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
             String type = jsonObject.get( "type" ).getAsString();
             try {
@@ -1963,17 +2086,20 @@ public class Crud implements InformationObserver {
                 throw new JsonParseException( "Unknown element type: " + type, cnfe );
             }
         };
-        Gson storeGson = new GsonBuilder().registerTypeAdapter( Store.class, storeDeserializer ).create();
-        Store store = storeGson.fromJson( req.body(), Store.class );
-        StoreManager.getInstance().getStore( store.getStoreId() ).updateSettings( store.getCurrentSettings() );
-        return store;
+        Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
+        Adapter adapter = adapterGson.fromJson( req.body(), Adapter.class );
+        if ( adapter instanceof DataStore ) {
+            AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+        } else if ( adapter instanceof DataSource ) {
+            AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+        }
+        return adapter;
     }
-
 
     /**
      * Get available adapters
      */
-    String getAdapters( final Request req, final Response res ) {
+    private String getAvailableAdapters( AdapterType adapterType ) {
         JsonSerializer<AdapterInformation> adapterSerializer = ( src, typeOfSrc, context ) -> {
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "name", src.name );
@@ -1984,44 +2110,104 @@ public class Crud implements InformationObserver {
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( AdapterInformation.class, adapterSerializer ).create();
 
-        List<AdapterInformation> adapters = StoreManager.getInstance().getAvailableAdapters();
+        List<AdapterInformation> adapters = AdapterManager.getInstance().getAvailableAdapters( adapterType );
         AdapterInformation[] out = adapters.toArray( new AdapterInformation[0] );
         return adapterGson.toJson( out, AdapterInformation[].class );
     }
 
 
-    /**
-     * Deploy a new store
-     */
-    boolean addStore( final Request req, final Response res ) {
-        String body = req.body();
-        Adapter a = this.gson.fromJson( body, Adapter.class );
+    String getAvailableStores( final Request req, final Response res ) {
+        return getAvailableAdapters( AdapterType.STORE );
+    }
 
-        try {
-            StoreManager.getInstance().addStore( catalog, a.clazzName, a.uniqueName, a.settings );
-        } catch ( Exception e ) {
-            log.error( "Could not deploy store", e );
-            return false;
-        }
-        return true;
+
+    String getAvailableSources( final Request req, final Response res ) {
+        return getAvailableAdapters( AdapterType.SOURCE );
     }
 
 
     /**
-     * Remove an existing store
+     * Get deployed data sources
      */
-    Result removeStore( final Request req, final Response res ) {
-        String uniqueName = req.body();
+    String getSources( final Request req, final Response res ) {
+        ImmutableMap<String, DataSource> sources = AdapterManager.getInstance().getSources();
+        DataSource[] out = sources.values().toArray( new DataSource[0] );
+        return adapterSerializer().toJson( out, DataSource[].class );
+    }
 
+
+    /**
+     * Deploy a new adapter
+     */
+    boolean addAdapter( final Request req, final Response res ) {
+        initMultipart( req );
+        String body = "";
+        Map<String, InputStream> inputStreams = new HashMap<>();
         try {
+            for ( Part part : req.raw().getParts() ) {
+                if ( part.getName().equals( "body" ) ) {
+                    body = new BufferedReader( new InputStreamReader( req.raw().getPart( "body" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
+                } else {
+                    inputStreams.put( part.getName(), part.getInputStream() );
+                }
+            }
+        } catch ( ServletException | IOException e ) {
+            log.error( "Could not get form data to add a new Adapter", e );
+            return false;
+        }
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( AdapterSetting.class, new AdapterSettingDeserializer() );
+        AdapterModel a = gsonBuilder.create().fromJson( body, AdapterModel.class );
+        Map<String, String> settings = new HashMap<>();
+        for ( Entry<String, AdapterSetting> entry : a.settings.entrySet() ) {
+            if ( entry.getValue() instanceof AdapterSettingDirectory ) {
+                AdapterSettingDirectory setting = ((AdapterSettingDirectory) entry.getValue());
+                for ( String fileName : setting.fileNames ) {
+                    setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
+                }
+                File path = FileSystemManager.getInstance().registerNewFolder( "data/csv/" + a.uniqueName );
+                for ( Entry<String, InputStream> is : setting.inputStreams.entrySet() ) {
+                    try {
+                        File file = new File( path, is.getKey() );
+                        FileUtils.copyInputStreamToFile( is.getValue(), file );
+                    } catch ( IOException e ) {
+                        throw new RuntimeException( e );
+                    }
+                }
+                setting.setDirectory( path.getAbsolutePath() );
+                settings.put( entry.getKey(), entry.getValue().getValue() );
+            } else {
+                settings.put( entry.getKey(), entry.getValue().getValue() );
+            }
+        }
 
-            StoreManager.getInstance().removeStore( catalog, uniqueName );
+        String query = String.format( "ALTER ADAPTERS ADD \"%s\" USING '%s' WITH '%s'", a.uniqueName, a.clazzName, gson.toJson( settings ) );
+        Transaction transaction = getTransaction();
+        try {
+            executeSqlUpdate( transaction, query );
+            transaction.commit();
+            return true;
+        } catch ( TransactionException | QueryExecutionException e ) {
+            log.error( "Could not deploy data store", e );
+            return false;
+        }
+    }
 
-        } catch ( Exception e ) {
+
+    /**
+     * Remove an existing store or source
+     */
+    Result removeAdapter( final Request req, final Response res ) {
+        String uniqueName = req.body();
+        String query = String.format( "ALTER ADAPTERS DROP \"%s\"", uniqueName );
+        Transaction transaction = getTransaction();
+        try {
+            int a = executeSqlUpdate( transaction, query );
+            transaction.commit();
+            return new Result( new Debug().setAffectedRows( a ) );
+        } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not remove store {}", req.body(), e );
             return new Result( e );
         }
-        return new Result( new Debug().setAffectedRows( 1 ) );
     }
 
 
@@ -2088,72 +2274,68 @@ public class Crud implements InformationObserver {
         ArrayList<ForeignKey> fKeys = new ArrayList<>();
         ArrayList<DbTable> tables = new ArrayList<>();
 
-        try {
-            List<CatalogTable> catalogTables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
-            for ( CatalogTable catalogTable : catalogTables ) {
-                if ( catalogTable.tableType == TableType.TABLE ) {
-                    // get foreign keys
-                    List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
-                    for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                        for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
-                            fKeys.add( ForeignKey.builder()
-                                    .pkTableSchema( catalogForeignKey.getReferencedKeySchemaName() )
-                                    .pkTableName( catalogForeignKey.getReferencedKeyTableName() )
-                                    .pkColumnName( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
-                                    .fkTableSchema( catalogForeignKey.getSchemaName() )
-                                    .fkTableName( catalogForeignKey.getTableName() )
-                                    .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
-                                    .fkName( catalogForeignKey.name )
-                                    .pkName( "" ) // TODO
-                                    .build() );
-                        }
+        List<CatalogTable> catalogTables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
+        for ( CatalogTable catalogTable : catalogTables ) {
+            if ( catalogTable.tableType == TableType.TABLE ) {
+                // get foreign keys
+                List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
+                for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
+                    for ( int i = 0; i < catalogForeignKey.getReferencedKeyColumnNames().size(); i++ ) {
+                        fKeys.add( ForeignKey.builder()
+                                .pkTableSchema( catalogForeignKey.getReferencedKeySchemaName() )
+                                .pkTableName( catalogForeignKey.getReferencedKeyTableName() )
+                                .pkColumnName( catalogForeignKey.getReferencedKeyColumnNames().get( i ) )
+                                .fkTableSchema( catalogForeignKey.getSchemaName() )
+                                .fkTableName( catalogForeignKey.getTableName() )
+                                .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
+                                .fkName( catalogForeignKey.name )
+                                .pkName( "" ) // TODO
+                                .build() );
                     }
-
-                    // get tables with its columns
-                    DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName() );
-                    for ( String columnName : catalogTable.getColumnNames() ) {
-                        table.addColumn( new DbColumn( columnName ) );
-                    }
-
-                    // get primary key with its columns
-                    if ( catalogTable.primaryKey != null ) {
-                        CatalogPrimaryKey catalogPrimaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
-                        for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
-                            table.addPrimaryKeyField( columnName );
-                        }
-                    }
-
-                    // get unique constraints
-                    List<CatalogConstraint> catalogConstraints = catalog.getConstraints( catalogTable.id );
-                    for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
-                        if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
-                            // TODO: unique constraints can be over multiple columns.
-                            if ( catalogConstraint.key.getColumnNames().size() == 1 &&
-                                    catalogConstraint.key.getSchemaName().equals( table.getSchema() ) &&
-                                    catalogConstraint.key.getTableName().equals( table.getTableName() ) ) {
-                                table.addUniqueColumn( catalogConstraint.key.getColumnNames().get( 0 ) );
-                            }
-                            // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
-                        }
-                    }
-
-                    // get unique indexes
-                    List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, true );
-                    for ( CatalogIndex catalogIndex : catalogIndexes ) {
-                        // TODO: unique indexes can be over multiple columns.
-                        if ( catalogIndex.key.getColumnNames().size() == 1 &&
-                                catalogIndex.key.getSchemaName().equals( table.getSchema() ) &&
-                                catalogIndex.key.getTableName().equals( table.getTableName() ) ) {
-                            table.addUniqueColumn( catalogIndex.key.getColumnNames().get( 0 ) );
-                        }
-                        // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
-                    }
-
-                    tables.add( table );
                 }
+
+                // get tables with its columns
+                DbTable table = new DbTable( catalogTable.name, catalogTable.getSchemaName(), catalogTable.modifiable, catalogTable.tableType );
+                for ( String columnName : catalogTable.getColumnNames() ) {
+                    table.addColumn( new DbColumn( columnName ) );
+                }
+
+                // get primary key with its columns
+                if ( catalogTable.primaryKey != null ) {
+                    CatalogPrimaryKey catalogPrimaryKey = catalog.getPrimaryKey( catalogTable.primaryKey );
+                    for ( String columnName : catalogPrimaryKey.getColumnNames() ) {
+                        table.addPrimaryKeyField( columnName );
+                    }
+                }
+
+                // get unique constraints
+                List<CatalogConstraint> catalogConstraints = catalog.getConstraints( catalogTable.id );
+                for ( CatalogConstraint catalogConstraint : catalogConstraints ) {
+                    if ( catalogConstraint.type == ConstraintType.UNIQUE ) {
+                        // TODO: unique constraints can be over multiple columns.
+                        if ( catalogConstraint.key.getColumnNames().size() == 1 &&
+                                catalogConstraint.key.getSchemaName().equals( table.getSchema() ) &&
+                                catalogConstraint.key.getTableName().equals( table.getTableName() ) ) {
+                            table.addUniqueColumn( catalogConstraint.key.getColumnNames().get( 0 ) );
+                        }
+                        // table.addUnique( new ArrayList<>( catalogConstraint.key.columnNames ));
+                    }
+                }
+
+                // get unique indexes
+                List<CatalogIndex> catalogIndexes = catalog.getIndexes( catalogTable.id, true );
+                for ( CatalogIndex catalogIndex : catalogIndexes ) {
+                    // TODO: unique indexes can be over multiple columns.
+                    if ( catalogIndex.key.getColumnNames().size() == 1 &&
+                            catalogIndex.key.getSchemaName().equals( table.getSchema() ) &&
+                            catalogIndex.key.getTableName().equals( table.getTableName() ) ) {
+                        table.addUniqueColumn( catalogIndex.key.getColumnNames().get( 0 ) );
+                    }
+                    // table.addUnique( new ArrayList<>( catalogIndex.key.columnNames ));
+                }
+
+                tables.add( table );
             }
-        } catch ( GenericCatalogException e ) {
-            log.error( "Could not fetch foreign keys of the schema {}", request.schema, e );
         }
 
         return new Uml( tables, fKeys );
@@ -2468,16 +2650,6 @@ public class Crud implements InformationObserver {
                 }
             }
             //} catch ( CsvValidationException | GenericCatalogException e ) {
-        } catch ( GenericCatalogException e ) {
-            log.error( "Could not export csv file", e );
-            error = "Could not export csv file" + e.getMessage();
-            if ( transaction != null ) {
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rolling back transaction", e );
-                }
-            }
         } finally {
             // delete temp folder
             if ( !deleteDirectory( tempDir ) ) {
@@ -2493,7 +2665,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws GenericCatalogException, QueryExecutionException {
+    private HubResult createTableFromJson( final String json, final String newName, final HubRequest request, final Transaction transaction ) throws QueryExecutionException {
         // create table from .json file
         List<CatalogTable> tablesInSchema = catalog.getTables( new Catalog.Pattern( this.databaseName ), new Catalog.Pattern( request.schema ), null );
         int tableAlreadyExists = (int) tablesInSchema.stream().filter( t -> t.name.equals( newName ) ).count();
@@ -2849,7 +3021,7 @@ public class Crud implements InformationObserver {
                 String[] t = request.tableId.split( "\\." );
                 try {
                     catalogTable = catalog.getTable( this.databaseName, t[0], t[1] );
-                } catch ( UnknownTableException | GenericCatalogException e ) {
+                } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     log.error( "Caught exception", e );
                 }
             }
@@ -2887,7 +3059,7 @@ public class Crud implements InformationObserver {
                                 dbCol.defaultValue = catalogColumn.defaultValue.value;
                             }
                         }
-                    } catch ( UnknownColumnException | GenericCatalogException | UnknownTableException e ) {
+                    } catch ( UnknownColumnException e ) {
                         log.error( "Caught exception", e );
                     }
                 }
@@ -3106,7 +3278,7 @@ public class Crud implements InformationObserver {
                     } else {
                         throw new QueryExecutionException( "Result is null" );
                     }
-                    // Check if num is equal for all stores
+                    // Check if num is equal for all adapters
                     if ( rowsChanged != -1 && rowsChanged != num ) {
                         throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
                     }
@@ -3210,7 +3382,7 @@ public class Crud implements InformationObserver {
     private Transaction getTransaction( boolean analyze ) {
         try {
             return transactionManager.startTransaction( userName, databaseName, analyze, "Polypheny-UI", MultimediaFlavor.FILE );
-        } catch ( GenericCatalogException | UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
+        } catch ( UnknownUserException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( "Error while starting transaction", e );
         }
     }
@@ -3231,7 +3403,7 @@ public class Crud implements InformationObserver {
             for ( CatalogColumn catalogColumn : catalogColumns ) {
                 dataTypes.put( catalogColumn.name, catalogColumn );
             }
-        } catch ( UnknownTableException | GenericCatalogException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             log.error( "Caught exception", e );
         }
         return dataTypes;

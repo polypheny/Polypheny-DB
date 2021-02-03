@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -31,6 +34,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -100,6 +104,15 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogTable refTable = getCatalogTable( context, referencesTable );
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( catalogTable.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
+        if ( refTable.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( referencesTable.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        }
+
         try {
             List<Long> columnIds = new LinkedList<>();
             for ( SqlNode node : columnList.getList() ) {
@@ -114,7 +127,9 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
                 referencesIds.add( catalogColumn.id );
             }
             Catalog.getInstance().addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName.getSimple(), onUpdate, onDelete );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( UnknownColumnException e ) {
+            throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
+        } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

@@ -25,7 +25,8 @@ dependencies {
     // JDBC Drivers
     implementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version  // HSQLDB License (BSD-style)
     implementation group: "org.postgresql", name: "postgresql", version: postgresql_version  // BSD 2-clause
-    implementation group: "monetdb", name: "monetdb-jdbc", version: monetdb_version
+    implementation group: "monetdb", name: "monetdb-jdbc-new", version: monetdb_version
+    implementation group: "org.mariadb.jdbc", name: "mariadb-java-client", version: mariadb_version // LGPL 2.1
 
 
     // --- Test Compile ---
@@ -82,7 +83,7 @@ jar {
     manifest {
         attributes "Manifest-Version": "1.0"
         attributes "Copyright": "The Polypheny Project (polypheny.org)"
-        //attributes "Version": "$version"
+        attributes "Version": "$project.version"
     }
 }
 java {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,13 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -85,58 +83,48 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
-        Store storeInstance = StoreManager.getInstance().getStore( storeName.getSimple() );
+        DataStore storeInstance = getDataStoreInstance( storeName );
         if ( storeInstance == null ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
-                    RESOURCE.unknownStoreName( storeName.getSimple() ) );
+                    RESOURCE.unknownAdapter( storeName.getSimple() ) );
         }
-        try {
-            // Check whether this placement already exists
-            if ( !catalogTable.placementsByStore.containsKey( storeInstance.getStoreId() ) ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
-            }
-            // Check whether the store supports schema changes
-            if ( storeInstance.isSchemaReadOnly() ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.storeIsSchemaReadOnly( storeName.getSimple() ) );
-            }
-            // Check whether this store actually contains a placement of this column
-            if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
-            }
-            // Check whether there are any indexes located on the store requiring this column
-            for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
-                if ( index.location == storeInstance.getStoreId() && index.key.columnIds.contains( catalogColumn.id ) ) {
-                    throw SqlUtil.newContextException(
-                            storeName.getParserPosition(),
-                            RESOURCE.indexPreventsRemovalOfPlacement( index.name, catalogColumn.name ) );
-                }
-            }
-            // Check if there are is another placement for this column
-            List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( catalogColumn.id );
-            if ( existingPlacements.size() < 2 ) {
-                throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
-            }
-            // Check whether the column to drop is a primary key
-            CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-            if ( primaryKey.columnIds.contains( catalogColumn.id ) ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.placementIsPrimaryKey( catalogColumn.name ) );
-            }
-            // Drop Column on store
-            storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getStoreId(), catalogColumn.id ) );
-            // Drop column placement
-            Catalog.getInstance().deleteColumnPlacement( storeInstance.getStoreId(), catalogColumn.id );
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
+        // Check whether this placement already exists
+        if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
         }
+        // Check whether this store actually contains a placement of this column
+        if ( !Catalog.getInstance().checkIfExistsColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) ) {
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.placementDoesNotExist( storeName.getSimple(), catalogTable.name ) );
+        }
+        // Check whether there are any indexes located on the store requiring this column
+        for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
+            if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( catalogColumn.id ) ) {
+                throw SqlUtil.newContextException(
+                        storeName.getParserPosition(),
+                        RESOURCE.indexPreventsRemovalOfPlacement( index.name, catalogColumn.name ) );
+            }
+        }
+        // Check if there are is another placement for this column
+        List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( catalogColumn.id );
+        if ( existingPlacements.size() < 2 ) {
+            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+        }
+        // Check whether the column to drop is a primary key
+        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+        if ( primaryKey.columnIds.contains( catalogColumn.id ) ) {
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.placementIsPrimaryKey( catalogColumn.name ) );
+        }
+        // Drop Column on store
+        storeInstance.dropColumn( context, Catalog.getInstance().getColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) );
+        // Drop column placement
+        Catalog.getInstance().deleteColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id );
     }
 
 }

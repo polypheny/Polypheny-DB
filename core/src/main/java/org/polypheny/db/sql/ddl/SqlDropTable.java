@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,15 +38,15 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.LinkedList;
 import java.util.List;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -91,67 +91,56 @@ public class SqlDropTable extends SqlDropObject {
             }
         }
 
-        // Check if there are foreign keys referencing this table
-        List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
-        try {
-            List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( table.id );
-            if ( exportedKeys.size() > 0 ) {
-                for ( CatalogForeignKey foreignKey : exportedKeys ) {
-                    if ( foreignKey.tableId == table.id ) {
-                        // If this is a self-reference, drop it later.
-                        selfRefsToDelete.add( foreignKey );
-                    } else {
-                        throw new PolyphenyDbException( "Cannot drop table '" + table.getSchemaName() + "." + table.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
-                    }
-                }
-
-            }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while retrieving list of exported keys.", e );
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        if ( table.tableType != TableType.TABLE ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
 
-        // Check whether all stores support schema changes
-        for ( int storeId : table.placementsByStore.keySet() ) {
-            if ( StoreManager.getInstance().getStore( storeId ).isSchemaReadOnly() ) {
-                throw SqlUtil.newContextException(
-                        SqlParserPos.ZERO,
-                        RESOURCE.storeIsSchemaReadOnly( StoreManager.getInstance().getStore( storeId ).getUniqueName() ) );
+        // Check if there are foreign keys referencing this table
+        List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();
+        List<CatalogForeignKey> exportedKeys = catalog.getExportedKeys( table.id );
+        if ( exportedKeys.size() > 0 ) {
+            for ( CatalogForeignKey foreignKey : exportedKeys ) {
+                if ( foreignKey.tableId == table.id ) {
+                    // If this is a self-reference, drop it later.
+                    selfRefsToDelete.add( foreignKey );
+                } else {
+                    throw new PolyphenyDbException( "Cannot drop table '" + table.getSchemaName() + "." + table.name + "' because it is being referenced by '" + exportedKeys.get( 0 ).getSchemaName() + "." + exportedKeys.get( 0 ).getTableName() + "'." );
+                }
             }
+
+        }
+
+        // Make sure that all adapters are of type store (and not source)
+        for ( int storeId : table.placementsByAdapter.keySet() ) {
+            getDataStoreInstance( storeId );
         }
 
         // Delete all indexes
-        try {
-            for ( CatalogIndex index : catalog.getIndexes( table.id, false ) ) {
-                if ( index.location == 0 ) {
-                    // Delete polystore index
-                    IndexManager.getInstance().deleteIndex( index );
-                } else {
-                    // Delete index on store
-                    StoreManager.getInstance().getStore( index.location ).dropIndex( context, index );
-                }
-                // Delete index in catalog
-                catalog.deleteIndex( index.id );
+        for ( CatalogIndex index : catalog.getIndexes( table.id, false ) ) {
+            if ( index.location == 0 ) {
+                // Delete polystore index
+                IndexManager.getInstance().deleteIndex( index );
+            } else {
+                // Delete index on store
+                AdapterManager.getInstance().getStore( index.location ).dropIndex( context, index );
             }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while dropping indexes on data store.", e );
+            // Delete index in catalog
+            catalog.deleteIndex( index.id );
         }
 
         // Delete data from the stores and remove the column placement
-        try {
-            for ( int storeId : table.placementsByStore.keySet() ) {
-                // Delete table on store
-                StoreManager.getInstance().getStore( storeId ).dropTable( context, table );
-                // Inform routing
-                statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnStore( storeId, table.id ) );
-                // Delete column placement in catalog
-                for ( Long columnId : table.columnIds ) {
-                    if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {
-                        catalog.deleteColumnPlacement( storeId, columnId );
-                    }
+        for ( int storeId : table.placementsByAdapter.keySet() ) {
+            // Delete table on store
+            AdapterManager.getInstance().getStore( storeId ).dropTable( context, table );
+            // Inform routing
+            statement.getRouter().dropPlacements( catalog.getColumnPlacementsOnAdapter( storeId, table.id ) );
+            // Delete column placement in catalog
+            for ( Long columnId : table.columnIds ) {
+                if ( catalog.checkIfExistsColumnPlacement( storeId, columnId ) ) {
+                    catalog.deleteColumnPlacement( storeId, columnId );
                 }
             }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while deleting data from stores.", e );
         }
 
         // Delete the self-referencing foreign keys
@@ -164,14 +153,10 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         // Delete indexes of this table
-        try {
-            List<CatalogIndex> indexes = catalog.getIndexes( table.id, false );
-            for ( CatalogIndex index : indexes ) {
-                catalog.deleteIndex( index.id );
-                IndexManager.getInstance().deleteIndex( index );
-            }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while dropping indexes.", e );
+        List<CatalogIndex> indexes = catalog.getIndexes( table.id, false );
+        for ( CatalogIndex index : indexes ) {
+            catalog.deleteIndex( index.id );
+            IndexManager.getInstance().deleteIndex( index );
         }
 
         // Delete keys and constraints
@@ -192,20 +177,12 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         // Delete columns
-        try {
-            for ( Long columnId : table.columnIds ) {
-                catalog.deleteColumn( columnId );
-            }
-        } catch ( GenericCatalogException e ) {
-            throw new PolyphenyDbContextException( "Exception while dropping columns.", e );
+        for ( Long columnId : table.columnIds ) {
+            catalog.deleteColumn( columnId );
         }
 
         // Delete the table
-        try {
-            catalog.deleteTable( table.id );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
-            throw new PolyphenyDbContextException( "Exception while dropping the table.", e );
-        }
+        catalog.deleteTable( table.id );
 
         // Rest plan cache and implementation cache
         statement.getQueryProcessor().resetCaches();

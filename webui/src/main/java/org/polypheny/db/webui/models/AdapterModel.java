@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.webui.models;
 
 
-public class UnknownStoreException extends CatalogException {
+import java.util.Map;
+import org.polypheny.db.adapter.Adapter.AdapterSetting;
 
 
-    public UnknownStoreException( String storeName ) {
-        super( "There is no store with name " + storeName );
-    }
+public class AdapterModel {
 
+    public String uniqueName;
+    public String clazzName;
+    public Map<String, AdapterSetting> settings;
 
-    public UnknownStoreException( int storeId ) {
-        super( "There is no store with the id " + storeId );
-    }
 }

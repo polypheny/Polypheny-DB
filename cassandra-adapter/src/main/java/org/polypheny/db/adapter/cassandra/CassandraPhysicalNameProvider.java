@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnPlacementException;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 
 
@@ -76,7 +76,7 @@ public class CassandraPhysicalNameProvider {
     public String getPhysicalColumnName( long columnId ) throws RuntimeException {
         // TODO JS: This really should be a direct call to the catalog!
         List<CatalogColumnPlacement> placements;
-        placements = catalog.getColumnPlacementsOnStore( this.storeId );
+        placements = catalog.getColumnPlacementsOnAdapter( this.storeId );
 
         for ( CatalogColumnPlacement placement : placements ) {
             if ( placement.columnId == columnId ) {
@@ -84,7 +84,7 @@ public class CassandraPhysicalNameProvider {
             }
         }
 
-        throw new RuntimeException( "Column placement not found for store " + this.storeId + " and column " + columnId );
+        throw new RuntimeException( "Column placement not found for data store " + this.storeId + " and column " + columnId );
     }
 
 
@@ -102,7 +102,7 @@ public class CassandraPhysicalNameProvider {
         CatalogTable catalogTable;
         try {
             catalogTable = catalog.getTable( "APP", schemaName, tableName );
-        } catch ( GenericCatalogException | UnknownTableException e ) {
+        } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
             throw new RuntimeException( e );
         }
         return catalogTable.id;
@@ -113,7 +113,7 @@ public class CassandraPhysicalNameProvider {
         CatalogColumn catalogColumn;
         try {
             catalogColumn = catalog.getColumn( "APP", logicalSchemaName, logicalTableName, logicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( UnknownColumnException | UnknownSchemaException | UnknownDatabaseException | UnknownTableException e ) {
             throw new RuntimeException( e );
         }
         return catalogColumn.id;
@@ -124,7 +124,7 @@ public class CassandraPhysicalNameProvider {
         CatalogColumn catalogColumn;
         try {
             catalogColumn = catalog.getColumn( tableId, logicalColumnName );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
         return catalogColumn.id;
@@ -133,33 +133,20 @@ public class CassandraPhysicalNameProvider {
 
     public String getPhysicalColumnName( long tableId, String logicalColumnName ) {
         long catalogColumnId = columnId( tableId, logicalColumnName );
-        try {
-            return this.catalog.getColumnPlacement( this.storeId, catalogColumnId ).physicalColumnName;
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+        return this.catalog.getColumnPlacement( this.storeId, catalogColumnId ).physicalColumnName;
     }
 
 
     public String getPhysicalColumnName( String tableName, String logicalColumnName ) {
         long tableId = tableId( this.DEFAULT_SCHEMA, tableName );
         long catalogColumnId = columnId( tableId, logicalColumnName );
-        try {
-            return this.catalog.getColumnPlacement( this.storeId, catalogColumnId ).physicalColumnName;
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
-        }
+        return this.catalog.getColumnPlacement( this.storeId, catalogColumnId ).physicalColumnName;
     }
 
 
-    public void updatePhysicalColumnName( long columnId, String updatedName ) {
-        CatalogColumnPlacement placement;
-        try {
-            placement = this.catalog.getColumnPlacement( this.storeId, columnId );
-            this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId, placement.physicalTableName, placement.physicalTableName, updatedName );
-        } catch ( GenericCatalogException | UnknownColumnPlacementException e ) {
-            throw new RuntimeException( e );
-        }
+    public void updatePhysicalColumnName( long columnId, String updatedName, boolean updatePosition ) {
+        CatalogColumnPlacement placement = this.catalog.getColumnPlacement( this.storeId, columnId );
+        this.catalog.updateColumnPlacementPhysicalNames( this.storeId, columnId, placement.physicalTableName, placement.physicalTableName, updatedName, updatePosition );
     }
 
 

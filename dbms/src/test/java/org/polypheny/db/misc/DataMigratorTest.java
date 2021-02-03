@@ -52,7 +52,7 @@ public class DataMigratorTest {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
                     // Add data store
-                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT ON STORE \"store1\"" );
@@ -68,7 +68,7 @@ public class DataMigratorTest {
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
             }
         }
@@ -90,7 +90,7 @@ public class DataMigratorTest {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
                     // Add data store
-                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
                     // Add placement
@@ -120,7 +120,7 @@ public class DataMigratorTest {
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
             }
         }
@@ -142,7 +142,7 @@ public class DataMigratorTest {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo')" );
 
                     // Add data store
-                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
 
                     // Add placement
@@ -172,7 +172,7 @@ public class DataMigratorTest {
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
                 }
             }
         }
@@ -195,7 +195,7 @@ public class DataMigratorTest {
                     statement.executeUpdate( "INSERT INTO datamigratortest VALUES (1,5,'foo',true)" );
 
                     // Add data store 1
-                    statement.executeUpdate( "ALTER STORES ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store1\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT (tvarchar) ON STORE \"store1\"" );
@@ -205,7 +205,7 @@ public class DataMigratorTest {
                                     new Object[]{ 1, 5, "foo", true } ) );
 
                     // Add data store 2
-                    statement.executeUpdate( "ALTER STORES ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
+                    statement.executeUpdate( "ALTER ADAPTERS ADD \"store2\" USING 'org.polypheny.db.adapter.jdbc.stores.HsqldbStore'"
                             + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory}'" );
                     // Add placement
                     statement.executeUpdate( "ALTER TABLE \"datamigratortest\" ADD PLACEMENT (tboolean) ON STORE \"store2\"" );
@@ -253,8 +253,8 @@ public class DataMigratorTest {
                 } finally {
                     // Drop table and store
                     statement.executeUpdate( "DROP TABLE datamigratortest" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store1\"" );
-                    statement.executeUpdate( "ALTER STORES DROP \"store2\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store1\"" );
+                    statement.executeUpdate( "ALTER ADAPTERS DROP \"store2\"" );
                 }
             }
         }

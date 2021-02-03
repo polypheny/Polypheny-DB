@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,10 @@ package org.polypheny.db.webui;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.SocketException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.config.RuntimeConfig;
@@ -65,10 +63,6 @@ public class HttpServer implements Runnable {
         server.staticFiles.location( "webapp/" );
 
         enableCORS( server );
-
-        URL url = this.getClass().getClassLoader().getResource( "webapp/" );
-        File mmFolder = new File( url.getPath(), "mm-files" );
-        mmFolder.mkdirs();
 
         // get modified index.html
         server.get( "/", ( req, res ) -> {
@@ -113,6 +107,10 @@ public class HttpServer implements Runnable {
         webuiServer.post( "/allStatistics", crud::getStatistics, gsonExpose::toJson );
 
         webuiServer.post( "/getColumns", crud::getColumns, gson::toJson );
+
+        webuiServer.post( "/getDataSourceColumns", crud::getDataSourceColumns, gson::toJson );
+
+        webuiServer.post( "/getExportedColumns", crud::getExportedColumns, gson::toJson );
 
         webuiServer.post( "/updateColumn", crud::updateColumn, gson::toJson );
 
@@ -166,15 +164,19 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/getStores", crud::getStores );
 
+        webuiServer.get( "/getSources", crud::getSources );
+
         webuiServer.post( "/getAvailableStoresForIndexes", crud::getAvailableStoresForIndexes );
 
-        webuiServer.post( "/removeStore", crud::removeStore, gson::toJson );
+        webuiServer.post( "/removeAdapter", crud::removeAdapter, gson::toJson );
 
-        webuiServer.post( "/updateStoreSettings", crud::updateStoreSettings, gson::toJson );
+        webuiServer.post( "/updateAdapterSettings", crud::updateAdapterSettings, gson::toJson );
 
-        webuiServer.get( "/getAdapters", crud::getAdapters );
+        webuiServer.get( "/getAvailableStores", crud::getAvailableStores );
 
-        webuiServer.post( "/addStore", crud::addStore, gson::toJson );
+        webuiServer.get( "/getAvailableSources", crud::getAvailableSources );
+
+        webuiServer.post( "/addAdapter", crud::addAdapter, gson::toJson );
 
         webuiServer.get( "/getQueryInterfaces", crud::getQueryInterfaces );
 

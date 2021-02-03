@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.polypheny.db.adapter.Store;
-import org.polypheny.db.adapter.StoreManager;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.routing.Router;
@@ -56,51 +55,45 @@ public class SimpleRouter extends AbstractRouter {
     // Execute the table scan on the first placement of a table
     @Override
     protected List<CatalogColumnPlacement> selectPlacement( RelNode node, CatalogTable table ) {
-        // Find the store with the most column placements
-        int storeIdWithMostPlacements = -1;
+        // Find the adapter with the most column placements
+        int adapterIdWithMostPlacements = -1;
         int numOfPlacements = 0;
-        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByStore.entrySet() ) {
+        for ( Entry<Integer, ImmutableList<Long>> entry : table.placementsByAdapter.entrySet() ) {
             if ( entry.getValue().size() > numOfPlacements ) {
-                storeIdWithMostPlacements = entry.getKey();
+                adapterIdWithMostPlacements = entry.getKey();
                 numOfPlacements = entry.getValue().size();
             }
         }
 
-        // Take the store with most placements as base and add missing column placements
+        // Take the adapter with most placements as base and add missing column placements
         List<CatalogColumnPlacement> placementList = new LinkedList<>();
-        try {
-            for ( long cid : table.columnIds ) {
-                if ( table.placementsByStore.get( storeIdWithMostPlacements ).contains( cid ) ) {
-                    placementList.add( Catalog.getInstance().getColumnPlacement( storeIdWithMostPlacements, cid ) );
-                } else {
-                    placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
-                }
+        for ( long cid : table.columnIds ) {
+            if ( table.placementsByAdapter.get( adapterIdWithMostPlacements ).contains( cid ) ) {
+                placementList.add( Catalog.getInstance().getColumnPlacement( adapterIdWithMostPlacements, cid ) );
+            } else {
+                placementList.add( Catalog.getInstance().getColumnPlacements( cid ).get( 0 ) );
             }
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
         }
 
         return placementList;
     }
 
 
-    // Create table on the first store in the list that supports schema changes
+    // Create table on the first store in the list
     @Override
-    public List<Store> createTable( long schemaId, Statement statement ) {
-        Map<String, Store> availableStores = StoreManager.getInstance().getStores();
-        for ( Store store : availableStores.values() ) {
-            if ( !store.isSchemaReadOnly() ) {
-                return ImmutableList.of( store );
-            }
+    public List<DataStore> createTable( long schemaId, Statement statement ) {
+        Map<String, DataStore> availableStores = AdapterManager.getInstance().getStores();
+        for ( DataStore store : availableStores.values() ) {
+            return ImmutableList.of( store );
         }
-        throw new RuntimeException( "No suitable store found" );
+        throw new RuntimeException( "No suitable data store found" );
     }
 
 
-    // Add column on the first store holding a placement of this table that supports schema changes
+    // Add column on the first store holding a placement of this table
     @Override
-    public List<Store> addColumn( CatalogTable catalogTable, Statement statement ) {
-        return ImmutableList.of( StoreManager.getInstance().getStore( catalogTable.placementsByStore.keySet().asList().get( 0 ) ) );
+    public List<DataStore> addColumn( CatalogTable catalogTable, Statement statement ) {
+        return ImmutableList.of( AdapterManager.getInstance().getStore( catalogTable.placementsByAdapter.keySet().asList().get( 0 ) ) );
     }
 
 
