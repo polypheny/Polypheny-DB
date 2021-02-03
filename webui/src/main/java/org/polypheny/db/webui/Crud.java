@@ -1352,8 +1352,10 @@ public class Crud implements InformationObserver {
                                     col.name,
                                     col.type.getName(),
                                     col.collectionsType == null ? "" : col.collectionsType.getName(),
-                                    col.nullable, col.length,
-                                    col.scale, col.dimension,
+                                    col.nullable,
+                                    col.length,
+                                    col.scale,
+                                    col.dimension,
                                     col.cardinality,
                                     col.primary,
                                     null ).setPhysicalName( col.physicalColumnName );
@@ -2030,9 +2032,10 @@ public class Crud implements InformationObserver {
             JsonObject jsonSource = new JsonObject();
             jsonSource.addProperty( "adapterId", src.getAdapterId() );
             jsonSource.addProperty( "uniqueName", src.getUniqueName() );
+            jsonSource.addProperty( "adapterName", src.getAdapterName() );
             jsonSource.add( "adapterSettings", context.serialize( adapterSettings ) );
             jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
-            jsonSource.addProperty( "adapterName", src.getAdapterName() );
+            jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
             return jsonSource;
         };
