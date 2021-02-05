@@ -88,6 +88,7 @@ import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
@@ -3176,15 +3177,21 @@ public class Crud implements InformationObserver {
                                 }
                                 temp[counter] = f.getName();
                                 break;
-                            } else if ( o instanceof byte[] ) {
-                                ContentInfo info = util.findMatch( (byte[]) o );
+                            } else if ( o instanceof byte[] || o instanceof Byte[] ) {
+                                byte[] bytes;
+                                if ( o instanceof byte[] ) {
+                                    bytes = (byte[]) o;
+                                } else {
+                                    bytes = ArrayUtils.toPrimitive( (Byte[]) o );
+                                }
+                                ContentInfo info = util.findMatch( bytes );
                                 String extension = "";
                                 if ( info != null && info.getFileExtensions() != null ) {
                                     extension = "." + info.getFileExtensions()[0];
                                 }
                                 File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
                                 try ( FileOutputStream fos = new FileOutputStream( f ) ) {
-                                    fos.write( (byte[]) o );
+                                    fos.write( bytes );
                                 } catch ( IOException e ) {
                                     throw new RuntimeException( "Could not place file in mm folder", e );
                                 }

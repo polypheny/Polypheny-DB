@@ -70,7 +70,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
         FileConvention convention = (FileConvention) getInput().getConvention();
         PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getRowType(), pref.preferArray() );
 
-        FileImplementor fileImplementor = new FileImplementor();
+        FileImplementor fileImplementor = new FileImplementor( convention.isContainsFunction() );
         fileImplementor.visitChild( 0, getInput() );
 
         ArrayList<Expression> columnIds = new ArrayList<>();
@@ -119,7 +119,8 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
                             Expressions.constant( fileImplementor.getProjectionMapping() ),
                             conditionExpression,
-                            _updates
+                            _updates,
+                            Expressions.constant( fileImplementor.containsFunction )
                     ) );
         } else { //INSERT
             enumerable = list.append(

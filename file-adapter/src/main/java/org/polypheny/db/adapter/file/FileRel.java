@@ -62,10 +62,11 @@ public interface FileRel extends RelNode {
         @Getter
         @Setter
         List<Value> updates;
+        public final boolean containsFunction;
 
 
-        public FileImplementor() {
-            //intentionally empty
+        public FileImplementor( boolean containsFunction ) {
+            this.containsFunction = containsFunction;
         }
 
 

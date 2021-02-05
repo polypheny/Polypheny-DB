@@ -36,8 +36,11 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.Union;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
@@ -145,7 +148,19 @@ public class FileRules {
         public boolean matches( RelOptRuleCall call ) {
             if ( call.rel( 0 ) instanceof LogicalProject && ((LogicalProject) call.rel( 0 )).getProjects().size() > 0 ) {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
-                if ( !(((LogicalProject) call.rel( 0 )).getProjects().get( 0 ) instanceof RexInputRef) ) {
+                boolean isSelect = true;
+                for ( RexNode node : ((LogicalProject) call.rel( 0 )).getProjects() ) {
+                    if ( node instanceof RexInputRef ) {
+                        continue;
+                    } else if ( node instanceof RexCall && ((RexCall) node).getOperator().kind == SqlKind.OTHER_FUNCTION ) {
+                        //don't match at all if there is a function
+                        convention.setContainsFunction( true );
+                        return false;
+                    }
+                    isSelect = false;
+                    break;
+                }
+                if ( !isSelect ) {
                     convention.setModification( true );
                 }
             }

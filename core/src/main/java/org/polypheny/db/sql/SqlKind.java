@@ -125,6 +125,11 @@ public enum SqlKind {
     KNN,
 
     /**
+     * Function to get metadata of multimedia data
+     */
+    META,
+
+    /**
      * POSITION Function
      */
     POSITION,

@@ -39,6 +39,9 @@ public class FileConvention extends Convention.Impl {
     @Getter
     @Setter
     boolean isModification = false;
+    @Getter
+    @Setter
+    boolean containsFunction = false;
 
     public FileConvention( String name, Expression fileSchemaExpression, FileSchema fileSchema ) {
         super( "FileConvention." + name, FileRel.class );

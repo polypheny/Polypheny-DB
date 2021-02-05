@@ -34,6 +34,11 @@
 package org.polypheny.db.runtime;
 
 
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.imaging.ImageProcessingException;
+import com.drew.metadata.Directory;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -42,11 +47,16 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
@@ -82,6 +92,7 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
+import org.apache.commons.lang.ArrayUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.interpreter.Row;
@@ -193,6 +204,77 @@ public class SqlFunctions {
         } else {
             return 0.0;
         }
+    }
+
+
+    /**
+     * Get metadata of multimedia files
+     */
+    public static String meta( byte[] value, String apply ) {
+        System.out.println( "byte[]" );
+        return "byte[]";
+    }
+
+    public static String meta( Blob value, String apply ) {
+        System.out.println( "blob" );
+        return "blob";
+    }
+
+    public static String meta( Object value, String apply ) {
+        System.out.println( "Object" );
+        return "Object";
+    }
+
+    public static String meta( Object[] binary ) {
+        byte[] bytes = ArrayUtils.toPrimitive( (Byte[]) binary );
+        StringBuilder sb = new StringBuilder();
+        try {
+            Metadata metadata = ImageMetadataReader.readMetadata( new ByteArrayInputStream( bytes ) );
+            for ( Directory dir : metadata.getDirectories() ) {
+                for ( Tag tag : dir.getTags() ) {
+                    sb.append( tag.toString() ).append( "\n" );
+                }
+            }
+        } catch ( ImageProcessingException | IOException e ) {
+            e.printStackTrace();
+        }
+        //System.out.println("Object[]" + binary.length);
+        return sb.toString();
+    }
+
+    public static String meta( Object obj ) {
+        System.out.println( "Object" );
+        return "Object";
+    }
+
+    public static String meta( List<File> value, String apply ) {
+        System.out.println( "List<File>" );
+        return "List<File>";
+    }
+
+    public static String meta( File f, String param ) {
+        System.out.println( "File" );
+        return "File";
+    }
+
+    public static String meta( File[] f, String param ) {
+        System.out.println( "File[]" );
+        return "File[]";
+    }
+
+    public static String meta( InputStream value, String apply ) {
+        System.out.println( "InputStream" );
+        return "InputStream";
+    }
+
+    public static String meta( long value, String apply ) {
+        System.out.println( "long" );
+        return "long";
+    }
+
+    public static String meta( int value, String apply ) {
+        System.out.println( "int" );
+        return "int";
     }
 
 

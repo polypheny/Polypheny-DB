@@ -80,7 +80,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             final List<String> columnNames,
             final List<Long> pkIds,
             final RelProtoDataType protoRowType ) {
-        super( Object[].class );
+        super( Object.class );
         this.rootDir = fileSchema.getStore().getRootDir();
         this.tableName = tableName;
         this.tableId = tableId;

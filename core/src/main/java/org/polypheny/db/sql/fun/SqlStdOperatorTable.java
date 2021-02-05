@@ -1274,6 +1274,11 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     public static final SqlFunction KNN = new SqlKnnFunction();
 
     /**
+     * Get metadata of multimedia files
+     */
+    public static final SqlFunction META = new SqlMetaFunction();
+
+    /**
      * The character substring function: <code>SUBSTRING(string FROM start [FOR length])</code>.
      *
      * If the length parameter is a constant, the length of the result is the minimum of the length of the input and that length. Otherwise it is the length of the input.

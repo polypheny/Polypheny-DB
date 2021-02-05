@@ -29,7 +29,7 @@ import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
 
 
-public class FileModifier<E> extends FileEnumerator<E> {
+public class FileModifier extends FileEnumerator {
 
     private final Object[] insertValues;
     private boolean inserted = false;
@@ -43,13 +43,13 @@ public class FileModifier<E> extends FileEnumerator<E> {
             final DataContext dataContext,
             final Object[] insertValues,
             final Condition condition ) {
-        super( operation, rootPath, columnIds, columnTypes, pkIds, null, dataContext, condition, null );
+        super( operation, rootPath, columnIds, columnTypes, pkIds, null, dataContext, condition, null, false );
         this.insertValues = insertValues;
     }
 
 
     @Override
-    public E current() {
+    public Object current() {
         return current;
     }
 
@@ -98,7 +98,7 @@ public class FileModifier<E> extends FileEnumerator<E> {
 
                     }
                 }
-                current = (E) Long.valueOf( insertPosition );
+                current = Long.valueOf( insertPosition );
                 inserted = true;
                 return true;
             }
