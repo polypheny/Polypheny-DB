@@ -64,9 +64,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
+
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;

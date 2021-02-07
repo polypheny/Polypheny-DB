@@ -20,6 +20,7 @@ package org.polypheny.db.catalog;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
@@ -58,6 +59,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -554,6 +557,19 @@ public abstract class Catalog {
      * @return A CatalogColumn
      */
     public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
+
+
+    HashMap<String, SqlNode> view = new HashMap<String, SqlNode>();
+    public void addView(String name, SqlNode query){
+        view.put(name, query);
+    }
+
+    public SqlNode getVeiw(String name){
+        return view.getOrDefault(name, null);
+
+    }
+
+
 
     /**
      * Adds a column.

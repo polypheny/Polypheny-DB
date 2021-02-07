@@ -174,7 +174,6 @@ public class SqlSelect extends SqlCall {
         return from;
     }
 
-
     public void setFrom( SqlNode from ) {
         this.from = from;
     }

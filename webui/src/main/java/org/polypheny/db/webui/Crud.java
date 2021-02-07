@@ -146,8 +146,10 @@ import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Sort;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -3222,11 +3224,21 @@ public class Crud implements InformationObserver {
     private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
         PolyphenyDbSignature signature;
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
-
         SqlNode parsed = sqlProcessor.parse( sql );
+
+        if(parsed.getKind().equals(SqlKind.SELECT)){
+            SqlSelect select = (SqlSelect) parsed;
+            SqlNode from = select.getFrom();
+            if (from.toString().split(".").length == 0 && catalog.getVeiw(from.toString()) != null){
+                parsed = catalog.getVeiw(from.toString());
+            }
+        }
+
+
 
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
+
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
             RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );

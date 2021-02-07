@@ -36,6 +36,8 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import java.util.Objects;
+
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -82,7 +84,11 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        throw new RuntimeException( "Not supported yet" );
+        System.out.println(this);
+        Catalog catalog = Catalog.getInstance();
+        catalog.addView(name.toString(), query);
+
+        //throw new RuntimeException( "Not supported yet" );
     }
 
 
