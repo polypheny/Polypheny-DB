@@ -75,8 +75,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
             List<String> partitionNames,
             CatalogColumn partitionColumn ) {
         if ( numPartitions == 0 && partitionNames.size() < 2 ) {
-            // TODO @Hennlo: This is a strange message...
-            throw new RuntimeException( "Partitioning of table failed! Can't specify partition names with less than 2 names" );
+            throw new RuntimeException( "Partitioning of table failed! Can't partition table with less than 2 partitions/names" );
         }
         return true;
     }

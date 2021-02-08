@@ -1436,10 +1436,6 @@ public class CatalogImpl extends Catalog {
                     partitionIds = table.partitionIds;
                 }
 
-                // TODO @Hennlo: According to the following comment the addPartitionsToColumn... is required. But it is commented out...
-                // Add placement to list of placements containing a partition otherwise this partition will not be part of a partition lookup
-                // addPartitionsToColumnPlacement(placement, partitionIds);
-
                 // Only executed if this is the first placement on the store
                 if ( !dataPartitionPlacement.containsKey( new Object[]{ adapterId, column.tableId } ) ) {
                     if ( log.isDebugEnabled() ) {
@@ -3029,7 +3025,7 @@ public class CatalogImpl extends Catalog {
     //TODO: Data Migrate when table already exists and has data. Distribute the data
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException {
-        try {
+
             CatalogTable old = Objects.requireNonNull( tables.get( tableId ) );
             log.debug( "Start partitioning on columnId '{}' with partition type {}", partitionColumnId, partitionType );
 
@@ -3122,10 +3118,7 @@ public class CatalogImpl extends Catalog {
             }
 
             listeners.firePropertyChange( "table", old, table );
-        } catch ( NullPointerException e ) {
-            // TODO @HENNLO
-            throw new GenericCatalogException( e );
-        }
+
     }
 
 

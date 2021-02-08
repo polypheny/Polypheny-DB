@@ -61,7 +61,11 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
 
     public long numPartitions;
 
-    // TODO @Hennlo: Please add documentation for this flag
+    /*
+        Variable flaggedForDeletion is used to detect a table where a drop of table is currently in progress.
+        This is needed to ensure that we don't have any constraints when recursively removing a table and all placements and partitions.
+        Otherwise **validatePartitionDistribution()** inside the Catalog would render an error.
+     */
     @Setter
     public boolean flaggedForDeletion = false;
 

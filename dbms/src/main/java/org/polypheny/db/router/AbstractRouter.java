@@ -81,6 +81,8 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.slf4j.Logger;
+
 
 @Slf4j
 public abstract class AbstractRouter implements Router {
@@ -507,8 +509,7 @@ public abstract class AbstractRouter implements Router {
                                 for ( i = 0; i < fieldNames.size(); i++ ) {
                                     String columnName = fieldNames.get( i );
                                     if ( partitionColumnName.equals( columnName ) ) {
-                                        // TODO @Hennlo equals between objects of inconvertible types
-                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).equals( SqlKind.DYNAMIC_PARAM ) ) {
+                                        if ( ((LogicalTableModify) node).getInput().getChildExps().get( i ).getKind().equals( SqlKind.DYNAMIC_PARAM ) ) {
                                             worstCaseRouting = true;
                                         } else {
                                             partitionColumnIdentified = true;
@@ -521,8 +522,14 @@ public abstract class AbstractRouter implements Router {
                             } else {
                                 worstCaseRouting = true;
                             }
-                            // TODO @Hennlo Get the value of partitionColumnId ---  but first find of partitionColumn inside table
-                            log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {}", partitionValue, identPart );
+
+                            if ( log.isDebugEnabled() ){
+                                String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
+                                String partitionName = catalog.getPartition( identPart ).partitionName;
+                                log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column",
+                                        partitionValue, identPart, partitionName, partitionColumnName );
+                            }
+
 
                         } else if ( ((LogicalTableModify) node).getOperation() == Operation.DELETE ) {
                             if ( whereClauseValue == null ) {

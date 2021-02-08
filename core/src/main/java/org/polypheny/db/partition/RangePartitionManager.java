@@ -41,37 +41,33 @@ public class RangePartitionManager extends AbstractPartitionManager {
         Catalog catalog = Catalog.getInstance();
         long selectedPartitionId = -1;
         long unboundPartitionId = -1;
-        try {
-            for ( long partitionID : catalogTable.partitionIds ) {
 
-                CatalogPartition catalogPartition = catalog.getPartition( partitionID );
+        for ( long partitionID : catalogTable.partitionIds ) {
 
-                if ( catalogPartition.isUnbound ) {
-                    unboundPartitionId = catalogPartition.id;
-                    continue;
-                }
+            CatalogPartition catalogPartition = catalog.getPartition( partitionID );
 
-                if ( isValueInRange( columnValue, catalogPartition ) ) {
-                    if ( log.isDebugEnabled() ) {
-                        log.debug( "Found column value: {} on partitionID {} in range: [{} - {}]",
-                                columnValue,
-                                partitionID,
-                                catalogPartition.partitionQualifiers.get( 0 ),
-                                catalogPartition.partitionQualifiers.get( 1 ) );
-                    }
-                    selectedPartitionId = catalogPartition.id;
-                    return selectedPartitionId;
-                }
-            }
-            // If no concrete partition could be identified, report back the unbound/default partition
-            if ( selectedPartitionId == -1 ) {
-                selectedPartitionId = unboundPartitionId;
+            if ( catalogPartition.isUnbound ) {
+                unboundPartitionId = catalogPartition.id;
+                continue;
             }
 
-        } catch ( UnknownPartitionIdRuntimeException e ) {
-            // TODO Hennlo: Why catching this runtime exception?
-            log.error( "Caught exception", e );
+            if ( isValueInRange( columnValue, catalogPartition ) ) {
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Found column value: {} on partitionID {} in range: [{} - {}]",
+                            columnValue,
+                            partitionID,
+                            catalogPartition.partitionQualifiers.get( 0 ),
+                            catalogPartition.partitionQualifiers.get( 1 ) );
+                }
+                selectedPartitionId = catalogPartition.id;
+                return selectedPartitionId;
+            }
         }
+        // If no concrete partition could be identified, report back the unbound/default partition
+        if ( selectedPartitionId == -1 ) {
+            selectedPartitionId = unboundPartitionId;
+        }
+
 
         return selectedPartitionId;
     }
@@ -101,25 +97,20 @@ public class RangePartitionManager extends AbstractPartitionManager {
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
         if ( partitionIds != null ) {
-            try {
-                for ( long partitionId : partitionIds ) {
-                    // Find stores with full placements (partitions)
-                    // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
-                    for ( long columnId : catalogTable.columnIds ) {
-                        List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition( catalogTable.id, partitionId, columnId );
-                        if ( !ccps.isEmpty() ) {
-                            //get first column placement which contains partition
-                            relevantCcps.add( ccps.get( 0 ) );
-                            if ( log.isDebugEnabled() ) {
-                                log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
-                            }
+
+            for ( long partitionId : partitionIds ) {
+                // Find stores with full placements (partitions)
+                // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
+                for ( long columnId : catalogTable.columnIds ) {
+                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition( catalogTable.id, partitionId, columnId );
+                    if ( !ccps.isEmpty() ) {
+                        //get first column placement which contains partition
+                        relevantCcps.add( ccps.get( 0 ) );
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
                         }
                     }
                 }
-
-            } catch ( UnknownPartitionIdRuntimeException e ) {
-                // TODO Hennlo: Why catching this runtime exception?
-                log.error( "Caught exception", e );
             }
         } else {
             // Take the first column placement

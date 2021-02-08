@@ -40,37 +40,32 @@ public class ListPartitionManager extends AbstractPartitionManager {
         Catalog catalog = Catalog.getInstance();
         long selectedPartitionId = -1;
         long unboundPartitionId = -1;
-        try {
-            for ( long partitionID : catalogTable.partitionIds ) {
 
-                CatalogPartition catalogPartition = catalog.getPartition( partitionID );
+        for ( long partitionID : catalogTable.partitionIds ) {
 
-                if ( catalogPartition.isUnbound ) {
-                    unboundPartitionId = catalogPartition.id;
-                }
-                for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
-                    //Could be int
-                    if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
-                        if ( log.isDebugEnabled() ) {
-                            log.debug( "Found column value: {} on partitionID {} with qualifiers: {}",
-                                    columnValue,
-                                    partitionID,
-                                    catalogPartition.partitionQualifiers );
-                        }
-                        selectedPartitionId = catalogPartition.id;
-                        break;
+            CatalogPartition catalogPartition = catalog.getPartition( partitionID );
+
+            if ( catalogPartition.isUnbound ) {
+                unboundPartitionId = catalogPartition.id;
+            }
+            for ( int i = 0; i < catalogPartition.partitionQualifiers.size(); i++ ) {
+                //Could be int
+                if ( catalogPartition.partitionQualifiers.get( i ).equals( columnValue ) ) {
+                    if ( log.isDebugEnabled() ) {
+                        log.debug( "Found column value: {} on partitionID {} with qualifiers: {}",
+                                columnValue,
+                                partitionID,
+                                catalogPartition.partitionQualifiers );
                     }
+                    selectedPartitionId = catalogPartition.id;
+                    break;
                 }
-
-            }
-            // If no concrete partition could be identified, report back the unbound/default partition
-            if ( selectedPartitionId == -1 ) {
-                selectedPartitionId = unboundPartitionId;
             }
 
-        } catch ( UnknownPartitionIdRuntimeException e ) {
-            // TODO Hennlo: Why catching this runtime exception?
-            log.error( "Caught exception", e );
+        }
+        // If no concrete partition could be identified, report back the unbound/default partition
+        if ( selectedPartitionId == -1 ) {
+            selectedPartitionId = unboundPartitionId;
         }
 
         return selectedPartitionId;
@@ -130,7 +125,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
         if ( partitionIds != null ) {
-            try {
+
 
                 for ( long partitionId : partitionIds ) {
 
@@ -149,10 +144,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                     }
                 }
 
-            } catch ( UnknownPartitionIdRuntimeException e ) {
-                // TODO Hennlo: Why catching this runtime exception?
-                log.error( "Caught exception", e );
-            }
+
         } else {
             // Take the first column placement
             // Worst-case
