@@ -289,5 +289,6 @@ public class SqlSelect extends SqlCall {
     public boolean isKeywordPresent( SqlSelectKeyword targetKeyWord ) {
         return getModifierNode( targetKeyWord ) != null;
     }
+
 }
 

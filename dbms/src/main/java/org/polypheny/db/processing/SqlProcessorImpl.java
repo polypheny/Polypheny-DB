@@ -59,10 +59,12 @@ import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlInsert;
+import org.polypheny.db.sql.SqlJoin;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
@@ -117,6 +119,23 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
+
+            if(parsed instanceof SqlSelect ){
+                Catalog catalog = Catalog.getInstance();
+                SqlSelect select = (SqlSelect) parsed;
+                SqlNode from = select.getFrom();
+
+                /*
+                ToDo Isabel: what if there are two vies or if there are normal tables selected, replace part of from with whole Select statement
+                 */
+                if(extractView( from ) != null){
+                    System.out.println(catalog.getView(from.toString()));
+                    parsed = catalog.getView(from.toString());
+                }
+
+            }
+
+
         } catch ( SqlParseException e ) {
             log.error( "Caught exception", e );
             throw new RuntimeException( e );
@@ -130,6 +149,23 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         return parsed;
     }
+
+    public String extractView(SqlNode from){
+
+        if(from instanceof SqlJoin) {
+            extractView( ((SqlJoin) from).getLeft() );
+            extractView( ((SqlJoin) from).getRight() );
+        }
+        if(from instanceof SqlIdentifier){
+            if(((SqlIdentifier) from).names.size() == 1) {
+                //ToDo Isabel: what if there are two views, create some kind of list for all views
+                return String.valueOf( ((SqlIdentifier) from).names );
+            }
+        }
+        return null;
+    }
+
+
 
 
     @Override
@@ -193,6 +229,9 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         .withConvertTableAccess( false )
                         .build();
         final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
+        /*
+        hier müsste der convertQuery mit false aufgerufen werden
+         */
         RelRoot logicalRoot = sqlToRelConverter.convertQuery( sql, false, true );
 
         if ( statement.getTransaction().isAnalyze() ) {

@@ -191,7 +191,8 @@ public class ExploreQueryProcessor {
             signature = sqlProcessor.prepareDdl( statement, parsed );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
+            RelRoot logicalRoot = sqlProcessor.
+                    translate( statement, validated.left );
 
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

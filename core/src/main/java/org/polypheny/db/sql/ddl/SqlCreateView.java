@@ -84,9 +84,12 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        System.out.println(this);
+        /*
+        View Implementation test
+         */
         Catalog catalog = Catalog.getInstance();
         catalog.addView(name.toString(), query);
+
 
         //throw new RuntimeException( "Not supported yet" );
     }

@@ -559,16 +559,20 @@ public abstract class Catalog {
     public abstract CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException;
 
 
+    /*
+    Views
+     */
     HashMap<String, SqlNode> view = new HashMap<String, SqlNode>();
-    public void addView(String name, SqlNode query){
-        view.put(name, query);
+
+
+    public void addView( String name, SqlNode query ) {
+        view.put( name, query );
     }
 
-    public SqlNode getVeiw(String name){
-        return view.getOrDefault(name, null);
 
+    public SqlNode getView( String name ) {
+        return view.getOrDefault( name, null );
     }
-
 
 
     /**
