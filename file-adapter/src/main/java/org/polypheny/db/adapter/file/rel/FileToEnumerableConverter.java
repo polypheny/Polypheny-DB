@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.file.rel;
 
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.polypheny.db.adapter.file.FileConvention;
 import org.polypheny.db.adapter.file.FileMethod;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.Value;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
@@ -47,14 +49,19 @@ import org.polypheny.db.type.PolyType;
 
 public class FileToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
-    protected FileToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input ) {
+    final Method enumeratorMethod;
+    final FileSchema fileSchema;
+
+    public FileToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input, Method enumeratorMethod, FileSchema fileSchema ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
+        this.enumeratorMethod = enumeratorMethod;
+        this.fileSchema = fileSchema;
     }
 
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
-        return new FileToEnumerableConverter( getCluster(), traitSet, sole( inputs ) );
+        return new FileToEnumerableConverter( getCluster(), traitSet, sole( inputs ), enumeratorMethod, fileSchema );
     }
 
 
@@ -109,11 +116,11 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
             enumerable = list.append(
                     "enumerable",
                     Expressions.call(
-                            FileMethod.EXECUTE.method,
+                            enumeratorMethod,
                             Expressions.constant( fileImplementor.getOperation() ),
-                            Expressions.constant( fileImplementor.getFileTable().getStore().getAdapterId() ),
+                            Expressions.constant( fileImplementor.getFileTable().getAdapterId() ),
                             DataContext.ROOT,
-                            Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
+                            Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
                             Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),
@@ -127,9 +134,9 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expressions.call(
                             FileMethod.EXECUTE_MODIFY.method,
                             Expressions.constant( fileImplementor.getOperation() ),
-                            Expressions.constant( fileImplementor.getFileTable().getStore().getAdapterId() ),
+                            Expressions.constant( fileImplementor.getFileTable().getAdapterId() ),
                             DataContext.ROOT,
-                            Expressions.constant( convention.getFileSchema().getStore().getRootDir().getAbsolutePath() ),
+                            Expressions.constant( fileSchema.getRootDir().getAbsolutePath() ),
                             Expressions.newArrayInit( Long.class, columnIds.toArray( new Expression[0] ) ),
                             Expressions.newArrayInit( PolyType.class, columnTypes.toArray( new Expression[0] ) ),
                             Expressions.constant( fileImplementor.getFileTable().getPkIds() ),

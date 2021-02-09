@@ -67,12 +67,12 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     @Getter
     final List<Long> pkIds;
     @Getter
-    FileStore store;
+    final int adapterId;
     @Getter
     FileSchema fileSchema;
     RelProtoDataType protoRowType;
 
-    protected FileTranslatableTable( final FileSchema fileSchema,
+    public FileTranslatableTable( final FileSchema fileSchema,
             final String tableName,
             final long tableId,
             final List<Long> columnIds,
@@ -81,11 +81,11 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             final List<Long> pkIds,
             final RelProtoDataType protoRowType ) {
         super( Object[].class );
-        this.rootDir = fileSchema.getStore().getRootDir();
+        this.fileSchema = fileSchema;
+        this.rootDir = fileSchema.getRootDir();
         this.tableName = tableName;
         this.tableId = tableId;
-        this.store = fileSchema.getStore();
-        this.fileSchema = fileSchema;
+        this.adapterId = fileSchema.getAdapterId();
         this.pkIds = pkIds;
         this.protoRowType = protoRowType;
 

@@ -39,6 +39,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PushbackInputStream;
 import java.io.RandomAccessFile;
@@ -2884,6 +2885,8 @@ public class Crud implements InformationObserver {
         if ( !f.exists() ) {
             res.status( 404 );
             return "";
+        } else if ( f.isDirectory() ) {
+            return getDirectory( f, res );
         }
         ContentInfoUtil util = new ContentInfoUtil();
         ContentInfo info = null;
@@ -2959,6 +2962,27 @@ public class Crud implements InformationObserver {
                 res.status( 500 );
             }
         }
+        return "";
+    }
+
+    String getDirectory( File dir, Response res ) {
+        res.header( "Content-Type", "application/octet-stream" );
+        res.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
+        String zipFileName = UUID.randomUUID().toString() + ".zip";
+        File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
+        try ( ZipOutputStream zipOut = new ZipOutputStream( Files.newOutputStream( zipFile.toPath() ) ) ) {
+            zipDirectory( "", dir, zipOut );
+        } catch ( IOException e ) {
+            res.status( 500 );
+            log.error( "Could not zip directory", e );
+        }
+        try ( OutputStream os = res.raw().getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
+            IOUtils.copy( is, os );
+        } catch ( IOException e ) {
+            log.error( "Could not write zipOutputStream to response", e );
+            res.status( 500 );
+        }
+        zipFile.delete();
         return "";
     }
 
@@ -3127,7 +3151,10 @@ public class Crud implements InformationObserver {
                             if ( o instanceof File ) {
                                 File f = ((File) o);
                                 try {
-                                    ContentInfo info = util.findMatch( f );
+                                    ContentInfo info = null;
+                                    if ( !f.isDirectory() ) {
+                                        info = util.findMatch( f );
+                                    }
                                     String extension = "";
                                     if ( info != null && info.getFileExtensions() != null ) {
                                         extension = "." + info.getFileExtensions()[0];
@@ -3135,7 +3162,7 @@ public class Crud implements InformationObserver {
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added;
-                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() ) {
+                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );
                                     } else {
                                         added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
@@ -3422,6 +3449,33 @@ public class Crud implements InformationObserver {
             }
         }
         return directoryToBeDeleted.delete();
+    }
+
+
+    /**
+     * Helper method to zip a directory
+     * from https://stackoverflow.com/questions/2403830
+     */
+    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
+        byte[] buffer = new byte[4096];
+        File[] files = dir.listFiles();
+        for ( File file : files ) {
+            if ( file.isDirectory() ) {
+                String path = basePath + file.getName() + "/";
+                zipOut.putNextEntry( new ZipEntry( path ) );
+                zipDirectory( path, file, zipOut );
+                zipOut.closeEntry();
+            } else {
+                FileInputStream fin = new FileInputStream( file );
+                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
+                int length;
+                while ( (length = fin.read( buffer )) > 0 ) {
+                    zipOut.write( buffer, 0, length );
+                }
+                zipOut.closeEntry();
+                fin.close();
+            }
+        }
     }
 
 

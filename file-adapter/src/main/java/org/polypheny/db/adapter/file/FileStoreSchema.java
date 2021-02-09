@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.file;
 
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 
 
-public class FileSchema extends AbstractSchema {
+public class FileStoreSchema extends AbstractSchema implements FileSchema {
 
     @Getter
     private final String schemaName;
@@ -58,14 +59,24 @@ public class FileSchema extends AbstractSchema {
     private final FileConvention convention;
 
 
-    public FileSchema( SchemaPlus parentSchema, String schemaName, FileStore store ) {
+    public FileStoreSchema( SchemaPlus parentSchema, String schemaName, FileStore store ) {
         super();
         this.schemaName = schemaName;
         this.store = store;
-        final Expression expression = Schemas.subSchemaExpression( parentSchema, schemaName, FileSchema.class );
+        final Expression expression = Schemas.subSchemaExpression( parentSchema, schemaName, FileStoreSchema.class );
         this.convention = new FileConvention( schemaName, expression, this );
     }
 
+
+    @Override
+    public File getRootDir() {
+        return store.getRootDir();
+    }
+
+    @Override
+    public int getAdapterId() {
+        return store.getAdapterId();
+    }
 
     @Override
     protected Map<String, Table> getTableMap() {
@@ -121,8 +132,8 @@ public class FileSchema extends AbstractSchema {
      * Executes SELECT, UPDATE and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( storeId ) );
+    public static Enumerable<Object[]> execute( final Operation operation, final Integer adapterId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
         return new AbstractEnumerable<Object[]>() {
             @Override
             public Enumerator<Object[]> enumerator() {
@@ -137,8 +148,8 @@ public class FileSchema extends AbstractSchema {
      * Executes INSERT operations
      * see {@link FileMethod#EXECUTE_MODIFY} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object[]> executeModify( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
-        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( storeId ) );
+    public static Enumerable<Object[]> executeModify( final Operation operation, final Integer adapterId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Boolean isBatch, final Object[] insertValues, final Condition condition ) {
+        dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
         final Object[] insert;
 
         ArrayList<Object[]> rows = new ArrayList<>();

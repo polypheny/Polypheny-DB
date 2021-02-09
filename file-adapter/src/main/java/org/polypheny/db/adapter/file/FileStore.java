@@ -48,7 +48,7 @@ public class FileStore extends DataStore {
 
     @Getter
     private File rootDir;
-    private FileSchema currentSchema;
+    private FileStoreSchema currentSchema;
     /**
      * A folder containing the write ahead log
      */
@@ -94,7 +94,7 @@ public class FileStore extends DataStore {
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         // it might be worth it to check why createNewSchema is called multiple times with different names
         if ( currentSchema == null ) {
-            currentSchema = new FileSchema( rootSchema, name, this );
+            currentSchema = new FileStoreSchema( rootSchema, name, this );
         }
     }
 

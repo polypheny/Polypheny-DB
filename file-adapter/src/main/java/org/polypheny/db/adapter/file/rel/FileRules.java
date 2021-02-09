@@ -18,10 +18,12 @@ package org.polypheny.db.adapter.file.rel;
 
 
 import com.google.common.collect.ImmutableList;
+import java.lang.reflect.Method;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.enumerable.EnumerableConvention;
 import org.polypheny.db.adapter.file.FileConvention;
+import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.FileTranslatableTable;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptRule;
@@ -44,9 +46,9 @@ import org.polypheny.db.tools.RelBuilderFactory;
 @Slf4j
 public class FileRules {
 
-    public static List<RelOptRule> rules( FileConvention out ) {
+    public static List<RelOptRule> rules( FileConvention out, Method enumeratorMethod, FileSchema fileSchema ) {
         return ImmutableList.of(
-                new FileToEnumerableConverterRule( out, RelFactories.LOGICAL_BUILDER ),
+                new FileToEnumerableConverterRule( out, RelFactories.LOGICAL_BUILDER, enumeratorMethod, fileSchema ),
                 new FileProjectRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileValuesRule( out, RelFactories.LOGICAL_BUILDER ),
                 new FileTableModificationRule( out, RelFactories.LOGICAL_BUILDER ),
@@ -74,9 +76,9 @@ public class FileRules {
                 return false;
             }
             FileTranslatableTable table = tableModify.getTable().unwrap( FileTranslatableTable.class );
-            if ( convention.getFileSchema() != table.getFileSchema() ) {
+            /*if ( convention.getFileSchema() != table.getFileSchema() ) {
                 return false;
-            }
+            }*/
             convention.setModification( true );
             return true;
         }
@@ -110,15 +112,20 @@ public class FileRules {
 
     static class FileToEnumerableConverterRule extends ConverterRule {
 
-        public FileToEnumerableConverterRule( FileConvention convention, RelBuilderFactory relBuilderFactory ) {
+        private final Method enumeratorMethod;
+        private final FileSchema fileSchema;
+
+        public FileToEnumerableConverterRule( FileConvention convention, RelBuilderFactory relBuilderFactory, Method enumeratorMethod, FileSchema fileSchema ) {
             super( RelNode.class, r -> true, convention, EnumerableConvention.INSTANCE, relBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
+            this.enumeratorMethod = enumeratorMethod;
+            this.fileSchema = fileSchema;
         }
 
 
         @Override
         public RelNode convert( RelNode rel ) {
             RelTraitSet newTraitSet = rel.getTraitSet().replace( getOutTrait() );
-            return new FileToEnumerableConverter( rel.getCluster(), newTraitSet, rel );
+            return new FileToEnumerableConverter( rel.getCluster(), newTraitSet, rel, enumeratorMethod, fileSchema );
         }
 
     }

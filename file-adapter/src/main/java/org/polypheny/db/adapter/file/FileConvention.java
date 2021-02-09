@@ -31,7 +31,7 @@ public class FileConvention extends Convention.Impl {
     @Getter
     final Expression fileSchemaExpression;
     @Getter
-    FileSchema fileSchema;
+    final FileSchema fileSchema;
     /**
      * Whether the query is a modification (insert, update, delete) or a select query.
      * Needed for the {@link org.polypheny.db.adapter.file.rel.FileRules.FileUnionRule}
@@ -48,7 +48,7 @@ public class FileConvention extends Convention.Impl {
 
     @Override
     public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : FileRules.rules( this ) ) {
+        for ( RelOptRule rule : FileRules.rules( this, FileMethod.EXECUTE.method, fileSchema ) ) {
             planner.addRule( rule );
         }
     }
