@@ -34,7 +34,6 @@ import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.ArrayUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
@@ -61,7 +60,6 @@ public class FileEnumerator implements Enumerator<Object> {
     final Gson gson;
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
-    final boolean containsFunction;
 
 
     /**
@@ -85,8 +83,7 @@ public class FileEnumerator implements Enumerator<Object> {
             final Integer[] projectionMapping,
             final DataContext dataContext,
             final Condition condition,
-            final Value[] updates,
-            final boolean containsFunction ) {
+            final Value[] updates ) {
 
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
@@ -96,7 +93,6 @@ public class FileEnumerator implements Enumerator<Object> {
         this.dataContext = dataContext;
         this.condition = condition;
         this.projectionMapping = projectionMapping;
-        this.containsFunction = containsFunction;
 
         if ( updates != null ) {
             // In case of an UPDATE, the projectionMapping represent the indexes of the columns that will be updated
@@ -347,9 +343,7 @@ public class FileEnumerator implements Enumerator<Object> {
             Byte[] encoded2 = null;
             if ( f.exists() ) {
                 if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    if ( containsFunction ) {
-                        encoded2 = ArrayUtils.toObject( Files.readAllBytes( f.toPath() ) );
-                    } else if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
+                    if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
                         encoded = Files.readAllBytes( f.toPath() );
                     }
                 } else {
@@ -367,9 +361,7 @@ public class FileEnumerator implements Enumerator<Object> {
             }
             allNull = false;
             if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                if ( containsFunction ) {
-                    curr[i] = encoded2;
-                } else if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
+                if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
                     curr[i] = encoded;
                 } else {
                     curr[i] = f;

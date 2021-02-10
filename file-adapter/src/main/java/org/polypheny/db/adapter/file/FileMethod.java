@@ -28,7 +28,7 @@ import org.polypheny.db.type.PolyType;
 
 public enum FileMethod {
 
-    EXECUTE( FileSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class, Boolean.class ),
+    EXECUTE( FileSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class ),
     EXECUTE_MODIFY( FileSchema.class, "executeModify", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, Condition.class );
 
     public final Method method;

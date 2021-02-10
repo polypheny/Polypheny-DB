@@ -225,6 +225,10 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return GeoFunctions.Geom.class;
                 case SYMBOL:
                     return Enum.class;
+                case FILE:
+                case IMAGE:
+                case VIDEO:
+                case SOUND:
                 case ANY:
                     return Object.class;
             }

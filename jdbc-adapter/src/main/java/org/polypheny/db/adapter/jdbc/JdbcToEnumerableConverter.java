@@ -52,7 +52,6 @@ import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
-import org.apache.commons.lang.ArrayUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
@@ -80,6 +79,7 @@ import org.polypheny.db.sql.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.util.SqlString;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -354,14 +354,9 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expression getFlavor = Expressions.call( getTransaction, Types.lookupMethod( Transaction.class, "getFlavor" ) );
                     Expression getBinaryStream = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBINARYSTREAM.method, Expressions.constant( i + 1 ) );
                     Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
-                    /*builder.add( Expressions.ifThenElse( Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
+                    builder.add( Expressions.ifThenElse( Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
                             Expressions.statement( Expressions.assign( target, getBytes ) ),
-                            Expressions.statement( Expressions.assign( target, getBinaryStream ) ) ) );*/
-                    ////////builder.add( Expressions.statement( Expressions.assign( target, getBytes )) );
-                    //inputStream / byte[] cannot be cast to Object[]
-
-                    Expression byteFixer = Expressions.call( byteFixer(), resultSet_, Expressions.constant( i + 1 ) );
-                    builder.add( Expressions.statement( Expressions.assign( target, byteFixer ) ) );
+                            Expressions.statement( Expressions.assign( target, getBinaryStream ) ) ) );
                     source = null;
                 } else {
                     source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
@@ -379,20 +374,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                             Expressions.call( resultSet_, "wasNull" ),
                             Expressions.statement( Expressions.assign( target, Expressions.constant( null ) ) ) ) );
         }
-    }
-
-
-    public static class BinaryFixer {
-
-        public static Object getBytes( ResultSet rs, Integer i ) throws SQLException {
-            byte[] b = rs.getBytes( i );
-            return ArrayUtils.toObject( b );
-        }
-    }
-
-
-    private Method byteFixer() {
-        return Types.lookupMethod( BinaryFixer.class, "getBytes", ResultSet.class, Integer.class );
     }
 
 

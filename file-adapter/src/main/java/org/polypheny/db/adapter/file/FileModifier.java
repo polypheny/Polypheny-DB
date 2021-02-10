@@ -43,7 +43,7 @@ public class FileModifier extends FileEnumerator {
             final DataContext dataContext,
             final Object[] insertValues,
             final Condition condition ) {
-        super( operation, rootPath, columnIds, columnTypes, pkIds, null, dataContext, condition, null, false );
+        super( operation, rootPath, columnIds, columnTypes, pkIds, null, dataContext, condition, null );
         this.insertValues = insertValues;
     }
 

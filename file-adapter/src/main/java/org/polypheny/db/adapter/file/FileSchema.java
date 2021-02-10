@@ -121,12 +121,12 @@ public class FileSchema extends AbstractSchema {
      * Executes SELECT, UPDATE and DELETE operations
      * see {@link FileMethod#EXECUTE} and {@link org.polypheny.db.adapter.file.rel.FileToEnumerableConverter#implement}
      */
-    public static Enumerable<Object> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates, Boolean containsFunction ) {
+    public static Enumerable<Object> execute( final Operation operation, final Integer storeId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( storeId ) );
         return new AbstractEnumerable<Object>() {
             @Override
             public Enumerator<Object> enumerator() {
-                return new FileEnumerator( operation, path, columnIds, columnTypes, pkIds, projectionMapping, dataContext, condition, updates, containsFunction );
+                return new FileEnumerator( operation, path, columnIds, columnTypes, pkIds, projectionMapping, dataContext, condition, updates );
             }
         };
     }

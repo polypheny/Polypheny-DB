@@ -177,6 +177,13 @@ public class PolyTypeAssignmentRules {
         rule.add( PolyType.VARBINARY );
         rules.add( PolyType.BINARY, rule );
 
+        // FILE is assignable from...
+        rule.clear();
+        rule.add( PolyType.IMAGE );
+        rule.add( PolyType.VIDEO );
+        rule.add( PolyType.SOUND );
+        rules.add( PolyType.FILE, rule );
+
         // DATE is assignable from...
         rule.clear();
         rule.add( PolyType.DATE );

@@ -78,6 +78,7 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
@@ -92,7 +93,6 @@ import org.apache.calcite.linq4j.function.Experimental;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.function.NonDeterministic;
 import org.apache.calcite.linq4j.tree.Primitive;
-import org.apache.commons.lang.ArrayUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.enumerable.JavaRowFormat;
 import org.polypheny.db.interpreter.Row;
@@ -119,6 +119,7 @@ import org.polypheny.db.util.TimestampWithTimeZoneString;
  */
 @SuppressWarnings("UnnecessaryUnboxing")
 @Deterministic
+@Slf4j
 public class SqlFunctions {
 
     private static final DecimalFormat DOUBLE_FORMAT = NumberUtil.decimalFormat( "0.0E0" );
@@ -208,73 +209,103 @@ public class SqlFunctions {
 
 
     /**
-     * Get metadata of multimedia files
+     * @param mm Multimedia object
+     * @param dirName Name of the metadata directory
+     * @return All available tags within the directory, or null
      */
-    public static String meta( byte[] value, String apply ) {
-        System.out.println( "byte[]" );
-        return "byte[]";
-    }
-
-    public static String meta( Blob value, String apply ) {
-        System.out.println( "blob" );
-        return "blob";
-    }
-
-    public static String meta( Object value, String apply ) {
-        System.out.println( "Object" );
-        return "Object";
-    }
-
-    public static String meta( Object[] binary ) {
-        byte[] bytes = ArrayUtils.toPrimitive( (Byte[]) binary );
-        StringBuilder sb = new StringBuilder();
-        try {
-            Metadata metadata = ImageMetadataReader.readMetadata( new ByteArrayInputStream( bytes ) );
-            for ( Directory dir : metadata.getDirectories() ) {
-                for ( Tag tag : dir.getTags() ) {
-                    sb.append( tag.toString() ).append( "\n" );
+    public static String meta( final Object mm, final String dirName, final String tagName ) {
+        Metadata metadata = getMetaData( mm );
+        if ( metadata == null ) {
+            return null;
+        }
+        String dirNameLower = dirName.toLowerCase( Locale.ROOT );
+        String tagNameLower = tagName.toLowerCase( Locale.ROOT );
+        for ( Directory dir : metadata.getDirectories() ) {
+            if ( !dir.getName().toLowerCase( Locale.ROOT ).equals( dirNameLower ) ) {
+                continue;
+            }
+            for ( Tag tag : dir.getTags() ) {
+                if ( tag.getTagName().toLowerCase( Locale.ROOT ).equals( tagNameLower ) ) {
+                    return tag.getDescription();
                 }
             }
-        } catch ( ImageProcessingException | IOException e ) {
-            e.printStackTrace();
         }
-        //System.out.println("Object[]" + binary.length);
+        return null;
+    }
+
+
+    /**
+     * @param mm Multimedia object
+     * @param dirName Name of the metadata directory
+     * @return All available tags within the directory, or null
+     */
+    public static String meta( final Object mm, final String dirName ) {
+        String dirNameLower = dirName.toLowerCase( Locale.ROOT );
+        Metadata metadata = getMetaData( mm );
+        if ( metadata == null ) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for ( Directory dir : metadata.getDirectories() ) {
+            if ( !dir.getName().toLowerCase( Locale.ROOT ).equals( dirNameLower ) ) {
+                continue;
+            }
+            for ( Tag tag : dir.getTags() ) {
+                sb.append( tag.toString() ).append( "\n" );
+            }
+        }
+        return sb.length() == 0 ? null : sb.toString();
+    }
+
+
+    /**
+     * @param mm Multimedia object
+     * @return All available metadata of a multimedia object,
+     * or null if the metadata cannot be derived
+     */
+    public static String meta( final Object mm ) {
+        Metadata metadata = getMetaData( mm );
+        if ( metadata == null ) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+
+        for ( Directory dir : metadata.getDirectories() ) {
+            for ( Tag tag : dir.getTags() ) {
+                sb.append( tag.toString() ).append( "\n" );
+            }
+        }
+
         return sb.toString();
     }
 
-    public static String meta( Object obj ) {
-        System.out.println( "Object" );
-        return "Object";
-    }
 
-    public static String meta( List<File> value, String apply ) {
-        System.out.println( "List<File>" );
-        return "List<File>";
-    }
-
-    public static String meta( File f, String param ) {
-        System.out.println( "File" );
-        return "File";
-    }
-
-    public static String meta( File[] f, String param ) {
-        System.out.println( "File[]" );
-        return "File[]";
-    }
-
-    public static String meta( InputStream value, String apply ) {
-        System.out.println( "InputStream" );
-        return "InputStream";
-    }
-
-    public static String meta( long value, String apply ) {
-        System.out.println( "long" );
-        return "long";
-    }
-
-    public static String meta( int value, String apply ) {
-        System.out.println( "int" );
-        return "int";
+    /**
+     * @param mm Multimedia object that is of one of the following types:
+     * byte[], InputStream, Blob, File
+     * @return Derived metadata or null
+     */
+    private static Metadata getMetaData( final Object mm ) {
+        try {
+            if ( mm instanceof byte[] ) {
+                return ImageMetadataReader.readMetadata( new ByteArrayInputStream( (byte[]) mm ) );
+            } else if ( mm instanceof Blob || mm instanceof InputStream ) {
+                InputStream is;
+                if ( mm instanceof Blob ) {
+                    is = ((Blob) mm).getBinaryStream();
+                } else {
+                    is = (InputStream) mm;
+                }
+                return ImageMetadataReader.readMetadata( is );
+            } else if ( mm instanceof File ) {
+                return ImageMetadataReader.readMetadata( (File) mm );
+            } else {
+                throw new RuntimeException( "Multimedia data in unexpected format " + mm.getClass().getSimpleName() );
+            }
+        } catch ( IOException | ImageProcessingException | SQLException e ) {
+            log.error( "Could not determine metadata of mm object", e );
+            return null;
+        }
     }
 
 

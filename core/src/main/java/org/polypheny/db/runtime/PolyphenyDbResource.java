@@ -251,6 +251,9 @@ public interface PolyphenyDbResource {
     @BaseMessage("Expected a character type")
     ExInst<SqlValidatorException> expectedCharacter();
 
+    @BaseMessage("Expected a multimedia type")
+    ExInst<SqlValidatorException> expectedMultimedia();
+
     @BaseMessage("ELSE clause or at least one THEN clause must be non-NULL")
     ExInst<SqlValidatorException> mustNotNullInElse();
 
