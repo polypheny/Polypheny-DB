@@ -3226,7 +3226,7 @@ public class Crud implements InformationObserver {
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         SqlNode parsed = sqlProcessor.parse( sql );
 
-        /* View Implementation test1
+        /* View Implementation Version1
         if(parsed.getKind().equals(SqlKind.SELECT)){
             SqlSelect select = (SqlSelect) parsed;
             SqlNode from = select.getFrom();

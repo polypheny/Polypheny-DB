@@ -119,20 +119,13 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
-
-            if(parsed instanceof SqlSelect ){
+            /*
+             Views Verison 2
+            */
+            if ( parsed instanceof SqlSelect ) {
                 Catalog catalog = Catalog.getInstance();
                 SqlSelect select = (SqlSelect) parsed;
-                SqlNode from = select.getFrom();
-
-                /*
-                ToDo Isabel: what if there are two vies or if there are normal tables selected, replace part of from with whole Select statement
-                 */
-                if(extractView( from ) != null){
-                    System.out.println(catalog.getView(from.toString()));
-                    parsed = catalog.getView(from.toString());
-                }
-
+                ((SqlSelect) parsed).setFrom(normaliseFrom( select.getFrom() ) );
             }
 
 
@@ -150,22 +143,24 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         return parsed;
     }
 
-    public String extractView(SqlNode from){
 
-        if(from instanceof SqlJoin) {
-            extractView( ((SqlJoin) from).getLeft() );
-            extractView( ((SqlJoin) from).getRight() );
-        }
-        if(from instanceof SqlIdentifier){
-            if(((SqlIdentifier) from).names.size() == 1) {
-                //ToDo Isabel: what if there are two views, create some kind of list for all views
-                return String.valueOf( ((SqlIdentifier) from).names );
+    /*
+    Views Verison 2
+     */
+    public SqlNode normaliseFrom( SqlNode from ) {
+        if ( from instanceof SqlJoin ) {
+            ((SqlJoin) from).setLeft( normaliseFrom( ((SqlJoin) from).getLeft() ) );
+            ((SqlJoin) from).setRight( normaliseFrom( ((SqlJoin) from).getRight() ) );
+        } else if ( from instanceof SqlIdentifier ) {
+            if ( ((SqlIdentifier) from).names.size() == 1 ) {
+                Catalog catalog = Catalog.getInstance();
+                return catalog.getView( (((SqlIdentifier) from).names.get( 0 ) ) );
+            }else{
+                return from;
             }
         }
-        return null;
+        return from;
     }
-
-
 
 
     @Override
