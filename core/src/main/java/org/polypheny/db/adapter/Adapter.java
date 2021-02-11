@@ -34,6 +34,7 @@ import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
@@ -104,6 +105,7 @@ public abstract class Adapter {
 
     public void updateSettings( Map<String, String> newSettings ) {
         this.validateSettings( newSettings, false );
+        Catalog.getInstance().updateAdapterSettings( getAdapterId(), newSettings );
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
     }

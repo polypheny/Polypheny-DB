@@ -2093,6 +2093,17 @@ public class Crud implements InformationObserver {
         } else if ( adapter instanceof DataSource ) {
             AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
         }
+
+        // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
+        // currently seams to be the best option). When migrating this to a DDL manager, make sure to find a better approach.
+        try {
+            Transaction transaction = getTransaction();
+            transaction.createStatement().getQueryProcessor().resetCaches();
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            throw new RuntimeException( "Error while resetting caches", e );
+        }
+
         return adapter;
     }
 

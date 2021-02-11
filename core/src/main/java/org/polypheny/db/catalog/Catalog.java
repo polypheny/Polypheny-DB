@@ -885,6 +885,13 @@ public abstract class Catalog {
      */
     public abstract int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings );
 
+    /**
+     * Update settings of an adapter
+     *
+     * @param adapterId The id of the adapter
+     * @param newSettings The new settings for the adapter
+     */
+    public abstract void updateAdapterSettings( int adapterId, Map<String, String> newSettings );
 
     /**
      * Delete an adapter

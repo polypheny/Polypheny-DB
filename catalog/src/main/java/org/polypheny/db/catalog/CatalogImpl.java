@@ -2698,6 +2698,26 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * Update settings of an adapter
+     *
+     * @param adapterId The id of the adapter
+     * @param newSettings The new settings for the adapter
+     */
+    @Override
+    public void updateAdapterSettings( int adapterId, Map<String, String> newSettings ) {
+        CatalogAdapter old = getAdapter( adapterId );
+        Map<String, String> temp = new HashMap<>();
+        newSettings.forEach( temp::put );
+        CatalogAdapter adapter = new CatalogAdapter( old.id, old.uniqueName, old.adapterClazz, old.type, temp );
+        synchronized ( this ) {
+            adapters.put( adapter.id, adapter );
+            adapterNames.put( adapter.uniqueName, adapter );
+        }
+        listeners.firePropertyChange( "adapter", old, adapter );
+    }
+
+
+    /**
      * Delete an adapter
      *
      * @param adapterId The id of the adapter to delete
