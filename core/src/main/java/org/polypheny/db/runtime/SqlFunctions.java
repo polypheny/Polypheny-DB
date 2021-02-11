@@ -258,14 +258,12 @@ public class SqlFunctions {
         if ( metadata == null ) {
             return null;
         }
-        String dirNameLower = dirName.toLowerCase( Locale.ROOT );
-        String tagNameLower = tagName.toLowerCase( Locale.ROOT );
         for ( Directory dir : metadata.getDirectories() ) {
-            if ( !dir.getName().toLowerCase( Locale.ROOT ).equals( dirNameLower ) ) {
+            if ( !dir.getName().equalsIgnoreCase( dirName ) ) {
                 continue;
             }
             for ( Tag tag : dir.getTags() ) {
-                if ( tag.getTagName().toLowerCase( Locale.ROOT ).equals( tagNameLower ) ) {
+                if ( tag.getTagName().equalsIgnoreCase( tagName ) ) {
                     return new MetadataModel( tag ).toJson();
                 }
             }
@@ -280,14 +278,13 @@ public class SqlFunctions {
      * @return All available tags within the directory, or null
      */
     public static String meta( final Object mm, final String dirName ) {
-        String dirNameLower = dirName.toLowerCase( Locale.ROOT );
         Metadata metadata = getMetaData( mm );
         if ( metadata == null ) {
             return null;
         }
         List<MetadataModel> tags = new ArrayList<>();
         for ( Directory dir : metadata.getDirectories() ) {
-            if ( !dir.getName().toLowerCase( Locale.ROOT ).equals( dirNameLower ) ) {
+            if ( !dir.getName().equalsIgnoreCase( dirName ) ) {
                 continue;
             }
             for ( Tag tag : dir.getTags() ) {
