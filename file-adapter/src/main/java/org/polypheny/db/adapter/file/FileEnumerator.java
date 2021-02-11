@@ -43,9 +43,9 @@ import org.polypheny.db.type.PolyTypeUtil;
 
 
 @Slf4j
-public class FileEnumerator<E> implements Enumerator<E> {
+public class FileEnumerator implements Enumerator<Object> {
 
-    E current;
+    Object current;
     final Operation operation;
     final List<File> columnFolders = new ArrayList<>();
     final File[] fileList;
@@ -88,7 +88,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
         this.operation = operation;
         if ( operation == Operation.DELETE || operation == Operation.UPDATE ) {
             //fix to make sure current is never null
-            current = (E) Long.valueOf( 0L );
+            current = Long.valueOf( 0L );
         }
         this.dataContext = dataContext;
         this.condition = condition;
@@ -148,7 +148,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
 
 
     @Override
-    public E current() {
+    public Object current() {
         return current;
     }
 
@@ -185,10 +185,10 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     }
                 }
                 File currentFile = fileList[fileListPosition];
-                Object[] curr;
+                Object curr;
 
                 if ( condition != null ) {
-                    Object[] pkLookup = condition.getPKLookup( new HashSet<>( Arrays.asList( pkMapping ) ), columnTypes, numOfCols, dataContext );
+                    Object pkLookup = condition.getPKLookup( new HashSet<>( Arrays.asList( pkMapping ) ), columnTypes, numOfCols, dataContext );
                     if ( pkLookup != null ) {
                         int hash = hashRow( pkLookup );
                         File lookupFile = new File( FileStore.SHA.hashString( String.valueOf( hash ), FileStore.CHARSET ).toString() );
@@ -204,24 +204,24 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         //if a PK lookup did not match at all
                         if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
-                                current = (E) Long.valueOf( 0 );
+                                current = Long.valueOf( 0L );
                                 return true;
                             }
                             return false;
                         }
                         currentFile = lookupFile;
-                        current = (E) Long.valueOf( 1 );
+                        current = Long.valueOf( 1L );
                     } else {
                         curr = fileToRow( currentFile );
                         //todo
                         if ( curr == null ) {
                             if ( operation != Operation.SELECT ) {
-                                current = (E) Long.valueOf( updateDeleteCount );
+                                current = Long.valueOf( updateDeleteCount );
                                 return true;
                             }
                             return false;
                         }
-                        if ( !condition.matches( curr, columnTypes, dataContext ) ) {
+                        if ( !condition.matches( (Object[]) curr, columnTypes, dataContext ) ) {
                             fileListPosition++;
                             continue;
                         }
@@ -239,8 +239,9 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     if ( projectionMapping != null && condition != null ) {
                         curr = project( curr );
                     }
-                    if ( curr.length == 1 ) {
-                        current = (E) curr[0];
+                    Object[] o = (Object[]) curr;
+                    if ( o.length == 1 ) {
+                        current = o[0];
                     } else {
                         // If all values are null: continue
                         //this can happen, if we iterate over multiple nullable columns, because the fileList comes from a PK-column that is NOT NULL
@@ -248,7 +249,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                             fileListPosition++;
                             continue;
                         }
-                        current = (E) curr;
+                        current = curr;
                     }
                     fileListPosition++;
                     return true;
@@ -261,7 +262,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                         }
                     }
                     updateDeleteCount++;
-                    current = (E) updateDeleteCount;
+                    current = Long.valueOf( updateDeleteCount );
                     fileListPosition++;
                     //continue;
                 } else if ( operation == Operation.UPDATE ) {
@@ -273,7 +274,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                             updatedColumns.add( c );
                         } else {
                             //needed for the hash
-                            updateObj[c] = curr[c];
+                            updateObj[c] = ((Object[]) curr)[c];
                         }
                     }
                     int newHash = hashRow( updateObj );
@@ -311,7 +312,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
                     }
 
                     updateDeleteCount++;
-                    current = (E) updateDeleteCount;
+                    current = Long.valueOf( updateDeleteCount );
                     fileListPosition++;
                     //continue;
                 } else {
@@ -331,7 +332,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
      * @return Null if the file does not exists (in case of a PK lookup) or the row as an array of objects.
      */
     @Nullable
-    private Object[] fileToRow( final File currentFile ) throws IOException {
+    private Object fileToRow( final File currentFile ) throws IOException {
         Object[] curr = new Object[numOfCols];
         int i = 0;
         boolean allNull = true;
@@ -339,6 +340,7 @@ public class FileEnumerator<E> implements Enumerator<E> {
             File f = new File( colFolder, currentFile.getName() );
             String s = null;
             byte[] encoded = null;
+            Byte[] encoded2 = null;
             if ( f.exists() ) {
                 if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
@@ -359,10 +361,10 @@ public class FileEnumerator<E> implements Enumerator<E> {
             }
             allNull = false;
             if ( columnTypes[i].getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.FILE ) {
-                    curr[i] = f;
-                } else {
+                if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
                     curr[i] = encoded;
+                } else {
+                    curr[i] = f;
                 }
             } else {
                 curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
@@ -373,7 +375,8 @@ public class FileEnumerator<E> implements Enumerator<E> {
     }
 
 
-    private Object[] project( final Object[] o ) {
+    private Object project( final Object o1 ) {
+        Object[] o = (Object[]) o1;
         assert (projectionMapping != null);
         Object[] out = new Object[projectionMapping.length];
         for ( int i = 0; i < projectionMapping.length; i++ ) {
@@ -398,10 +401,10 @@ public class FileEnumerator<E> implements Enumerator<E> {
     /**
      * Hash only the elements of a row that are part of the primary key
      */
-    int hashRow( final Object[] row ) {
+    int hashRow( final Object row ) {
         Object[] toHash = new Object[pkMapping.length];
         for ( int i = 0; i < pkMapping.length; i++ ) {
-            toHash[i] = row[pkMapping[i]].toString();
+            toHash[i] = ((Object[]) row)[pkMapping[i]].toString();
         }
         return Arrays.hashCode( toHash );
     }
