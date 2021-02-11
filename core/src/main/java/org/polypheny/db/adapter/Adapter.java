@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter;
 
 
-import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -151,6 +150,9 @@ public abstract class Adapter {
             this.modifiable = modifiable;
         }
 
+        /**
+         * In most subclasses, this method returns the defaultValue, because the UI overrides the defaultValue when a new value is set.
+         */
         public abstract String getValue();
 
     }
@@ -210,19 +212,25 @@ public abstract class Adapter {
     }
 
 
+    @Accessors(chain = true)
     public static class AdapterSettingList extends AdapterSetting {
 
         private final String type = "List";
         public final List<String> options;
+        @Setter
+        public String defaultValue;
 
 
         public AdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
             super( name, canBeNull, required, modifiable );
             this.options = options;
+            if ( options.size() > 0 ) {
+                this.defaultValue = options.get( 0 );
+            }
         }
 
         public String getValue() {
-            return new Gson().toJson( options );
+            return defaultValue;
         }
 
     }
@@ -284,7 +292,8 @@ public abstract class Adapter {
                     break;
                 case "List":
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
-                    out = new AdapterSettingList( name, canBeNull, required, modifiable, options );
+                    String defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
+                    out = new AdapterSettingList( name, canBeNull, required, modifiable, options ).setDefaultValue( defaultValue );
                     break;
                 case "Directory":
                     String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
