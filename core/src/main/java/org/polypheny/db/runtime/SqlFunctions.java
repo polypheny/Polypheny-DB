@@ -39,6 +39,7 @@ import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
+import com.google.gson.Gson;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -208,6 +209,37 @@ public class SqlFunctions {
     }
 
 
+    private static class MetadataModel {
+
+        String name;
+        String value;
+        List<MetadataModel> tags = new ArrayList<>();
+
+        MetadataModel( final Directory dir ) {
+            this.name = dir.getName();
+        }
+
+        MetadataModel( final Tag tag ) {
+            this.name = tag.getTagName();
+            this.value = tag.getDescription();
+        }
+
+        MetadataModel addTag( Directory dir ) {
+            tags.add( new MetadataModel( dir ) );
+            return this;
+        }
+
+        MetadataModel addTag( Tag tag ) {
+            tags.add( new MetadataModel( tag ) );
+            return this;
+        }
+
+        String toJson() {
+            return new Gson().toJson( this );
+        }
+    }
+
+
     /**
      * @param mm Multimedia object
      * @param dirName Name of the metadata directory
@@ -226,7 +258,7 @@ public class SqlFunctions {
             }
             for ( Tag tag : dir.getTags() ) {
                 if ( tag.getTagName().toLowerCase( Locale.ROOT ).equals( tagNameLower ) ) {
-                    return tag.getDescription();
+                    return new MetadataModel( tag ).toJson();
                 }
             }
         }
@@ -245,16 +277,16 @@ public class SqlFunctions {
         if ( metadata == null ) {
             return null;
         }
-        StringBuilder sb = new StringBuilder();
+        List<MetadataModel> tags = new ArrayList<>();
         for ( Directory dir : metadata.getDirectories() ) {
             if ( !dir.getName().toLowerCase( Locale.ROOT ).equals( dirNameLower ) ) {
                 continue;
             }
             for ( Tag tag : dir.getTags() ) {
-                sb.append( tag.toString() ).append( "\n" );
+                tags.add( new MetadataModel( tag ) );
             }
         }
-        return sb.length() == 0 ? null : sb.toString();
+        return new Gson().toJson( tags );
     }
 
 
@@ -268,15 +300,17 @@ public class SqlFunctions {
         if ( metadata == null ) {
             return null;
         }
-        StringBuilder sb = new StringBuilder();
+        List<MetadataModel> tags = new ArrayList<>();
 
         for ( Directory dir : metadata.getDirectories() ) {
+            MetadataModel dirModel = new MetadataModel( dir );
             for ( Tag tag : dir.getTags() ) {
-                sb.append( tag.toString() ).append( "\n" );
+                dirModel.addTag( tag );
             }
+            tags.add( dirModel );
         }
 
-        return sb.toString();
+        return new Gson().toJson( tags );
     }
 
 
@@ -303,7 +337,7 @@ public class SqlFunctions {
                 throw new RuntimeException( "Multimedia data in unexpected format " + mm.getClass().getSimpleName() );
             }
         } catch ( IOException | ImageProcessingException | SQLException e ) {
-            log.error( "Could not determine metadata of mm object", e );
+            log.debug( "Could not determine metadata of mm object", e );
             return null;
         }
     }
