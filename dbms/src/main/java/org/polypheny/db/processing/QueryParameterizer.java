@@ -42,6 +42,7 @@ import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexTableInputRef;
 import org.polypheny.db.rex.RexVisitor;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.type.PolyType;
 
 public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<RexNode> {
 
@@ -124,7 +125,12 @@ public class QueryParameterizer extends RelShuttleImpl implements RexVisitor<Rex
         } else {
             List<RexNode> newOperands = new LinkedList<>();
             for ( RexNode operand : call.operands ) {
-                newOperands.add( operand.accept( this ) );
+                if ( operand instanceof RexLiteral && ((RexLiteral) operand).getTypeName() == PolyType.SYMBOL ) {
+                    // Do not replace with dynamic param
+                    newOperands.add( operand );
+                } else {
+                    newOperands.add( operand.accept( this ) );
+                }
             }
             return new RexCall( call.type, call.op, newOperands );
         }
