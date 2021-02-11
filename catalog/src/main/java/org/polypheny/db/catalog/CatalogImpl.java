@@ -1382,24 +1382,24 @@ public class CatalogImpl extends Catalog {
                 physicalColumnName,
                 physicalPositionBuilder.getAndIncrement() );
 
-            synchronized ( this ) {
-                columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
+        synchronized ( this ) {
+            columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
 
-                CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
-                Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
-                if ( placementsByStore.containsKey( adapterId ) ) {
-                    List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
-                    placements.add( columnId );
-                    placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
-                } else {
-                    placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
-                }
-                CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ), old.modifiable );
-
-                tables.replace( column.tableId, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
+            Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
+            if ( placementsByStore.containsKey( adapterId ) ) {
+                List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
+                placements.add( columnId );
+                placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
+            } else {
+                placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
             }
-            listeners.firePropertyChange( "columnPlacement", null, placement );
+            CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ), old.modifiable );
+
+            tables.replace( column.tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+        }
+        listeners.firePropertyChange( "columnPlacement", null, placement );
     }
 
 

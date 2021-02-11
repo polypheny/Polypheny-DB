@@ -105,9 +105,9 @@ public abstract class Adapter {
 
     public void updateSettings( Map<String, String> newSettings ) {
         this.validateSettings( newSettings, false );
-        Catalog.getInstance().updateAdapterSettings( getAdapterId(), newSettings );
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
+        Catalog.getInstance().updateAdapterSettings( getAdapterId(), newSettings );
     }
 
 

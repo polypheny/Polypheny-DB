@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ public class SqlMetaFunction extends SqlFunction {
                 SqlFunctionCategory.MULTIMEDIA );
     }
 
+
     @Override
     public String getSignatureTemplate( int operandsCount ) {
         if ( operandsCount == 3 ) {
@@ -71,20 +72,24 @@ public class SqlMetaFunction extends SqlFunction {
             return true;
         }
 
+
         @Override
         public SqlOperandCountRange getOperandCountRange() {
             return PolyOperandCountRanges.between( 1, 3 );
         }
+
 
         @Override
         public String getAllowedSignatures( SqlOperator op, String opName ) {
             return "'META(<MULTIMEDIA>)'\n'META(<MULTIMEDIA>, <STRING>)'\n'META(<MULTIMEDIA>, <STRING>, <STRING>)'";
         }
 
+
         @Override
         public Consistency getConsistency() {
             return Consistency.NONE;
         }
+
 
         @Override
         public boolean isOptional( int i ) {

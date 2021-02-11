@@ -179,10 +179,12 @@ public class SqlFunctions {
         }
     }
 
+
     @SuppressWarnings("rawtypes")
     public static double knn( List value, List target, String metric, List weights, @SuppressWarnings("unused") int optimisationFactor ) {
         return knn( value, target, metric, weights );
     }
+
 
     @SuppressWarnings("rawtypes")
     public static double knn( List value, List target, String metric, @SuppressWarnings("unused") int optimisationFactor ) {
@@ -215,28 +217,34 @@ public class SqlFunctions {
         String value;
         List<MetadataModel> tags = new ArrayList<>();
 
+
         MetadataModel( final Directory dir ) {
             this.name = dir.getName();
         }
+
 
         MetadataModel( final Tag tag ) {
             this.name = tag.getTagName();
             this.value = tag.getDescription();
         }
 
+
         MetadataModel addTag( Directory dir ) {
             tags.add( new MetadataModel( dir ) );
             return this;
         }
+
 
         MetadataModel addTag( Tag tag ) {
             tags.add( new MetadataModel( tag ) );
             return this;
         }
 
+
         String toJson() {
             return new Gson().toJson( this );
         }
+
     }
 
 

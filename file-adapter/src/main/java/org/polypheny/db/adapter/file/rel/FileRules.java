@@ -278,6 +278,7 @@ public class FileRules {
             return new FileFilter( filter.getCluster(), traitSet, filter.getInput(), filter.getCondition() );
         }
 
+
         private static boolean functionInFilter( Filter filter ) {
             CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
             for ( RexNode node : filter.getChildExps() ) {

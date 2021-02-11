@@ -2107,6 +2107,7 @@ public class Crud implements InformationObserver {
         return adapter;
     }
 
+
     /**
      * Get available adapters
      */
