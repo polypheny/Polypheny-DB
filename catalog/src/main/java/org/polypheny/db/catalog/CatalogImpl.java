@@ -418,6 +418,17 @@ public class CatalogImpl extends Catalog {
         restoreIdBuilder( queryInterfaces, queryInterfaceIdBuilder );
         restoreIdBuilder( foreignKeys, foreignKeyIdBuilder );
         restoreIdBuilder( partitions, partitionIdBuilder );
+
+        // Restore physical position builder
+        if ( columnPlacements.size() > 0 ) {
+            long highestPosition = 0;
+            for ( CatalogColumnPlacement placement : columnPlacements.values() ) {
+                if ( placement.physicalPosition > highestPosition ) {
+                    highestPosition = placement.physicalPosition;
+                }
+            }
+            physicalPositionBuilder.set( highestPosition + 1 );
+        }
     }
 
 
