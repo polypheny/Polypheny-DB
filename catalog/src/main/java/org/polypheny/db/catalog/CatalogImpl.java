@@ -510,7 +510,7 @@ public class CatalogImpl extends Catalog {
                 .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
                 .valueSerializer( Serializer.JAVA )
                 .createOrOpen();
-        partitions = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen(); // TODO @HENNLO
+        partitions = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         dataPartitionPlacement = db.hashMap( "dataPartitionPlacement" )
                 .keySerializer( new SerializerArrayTuple( Serializer.INTEGER, Serializer.LONG ) )
                 .valueSerializer( new GenericSerializer<ImmutableList<Long>>() )
