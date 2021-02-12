@@ -187,6 +187,8 @@ public enum PolyTypeFamily implements RelDataTypeFamily {
                 return ImmutableList.of( PolyType.CURSOR );
             case COLUMN_LIST:
                 return ImmutableList.of( PolyType.COLUMN_LIST );
+            case MULTIMEDIA:
+                return ImmutableList.of( PolyType.FILE, PolyType.IMAGE, PolyType.VIDEO, PolyType.SOUND );
             default:
                 throw new IllegalArgumentException();
         }

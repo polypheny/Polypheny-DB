@@ -5762,6 +5762,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <LOCALTIMESTAMP>
     |   <LOWER>
     |   <MAX>
+    |   <META>
     |   <MIN>
     |   <MINUTE>
     |   <MOD>
@@ -6389,6 +6390,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < MESSAGE_LENGTH: "MESSAGE_LENGTH" >
 |   < MESSAGE_OCTET_LENGTH: "MESSAGE_OCTET_LENGTH" >
 |   < MESSAGE_TEXT: "MESSAGE_TEXT" >
+|   < META: "META" >
 |   < METHOD: "METHOD" >
 |   < MICROSECOND: "MICROSECOND" >
 |   < MILLISECOND: "MILLISECOND" >

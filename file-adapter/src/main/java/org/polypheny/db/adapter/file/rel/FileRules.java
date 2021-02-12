@@ -36,8 +36,13 @@ import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.core.Union;
 import org.polypheny.db.rel.core.Values;
 import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.ModifiableTable;
+import org.polypheny.db.sql.SqlFunction;
+import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.tools.RelBuilderFactory;
 
 
@@ -130,7 +135,7 @@ public class FileRules {
 
 
         public FileProjectRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Project.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileProjectRule:" + out.getName() );
+            super( Project.class, p -> !functionInProject( p ), Convention.NONE, out, relBuilderFactory, "FileProjectRule:" + out.getName() );
             this.convention = out;
         }
 
@@ -145,7 +150,15 @@ public class FileRules {
         public boolean matches( RelOptRuleCall call ) {
             if ( call.rel( 0 ) instanceof LogicalProject && ((LogicalProject) call.rel( 0 )).getProjects().size() > 0 ) {
                 //RexInputRef occurs in a select query, RexLiteral/RexCall/RexDynamicParam occur in insert/update/delete queries
-                if ( !(((LogicalProject) call.rel( 0 )).getProjects().get( 0 ) instanceof RexInputRef) ) {
+                boolean isSelect = true;
+                for ( RexNode node : ((LogicalProject) call.rel( 0 )).getProjects() ) {
+                    if ( node instanceof RexInputRef ) {
+                        continue;
+                    }
+                    isSelect = false;
+                    break;
+                }
+                if ( !isSelect ) {
                     convention.setModification( true );
                 }
             }
@@ -165,6 +178,18 @@ public class FileRules {
                     project.getProjects(),
                     project.getRowType()
             );
+        }
+
+
+        private static boolean functionInProject( Project project ) {
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsFunction() ) {
+                    return true;
+                }
+            }
+            return false;
         }
 
     }
@@ -231,7 +256,7 @@ public class FileRules {
 
 
         public FileFilterRule( FileConvention out, RelBuilderFactory relBuilderFactory ) {
-            super( Filter.class, r -> true, Convention.NONE, out, relBuilderFactory, "FileFilterRule:" + out.getName() );
+            super( Filter.class, f -> !functionInFilter( f ), Convention.NONE, out, relBuilderFactory, "FileFilterRule:" + out.getName() );
             this.convention = out;
         }
 
@@ -251,6 +276,45 @@ public class FileRules {
             final Filter filter = (Filter) rel;
             final RelTraitSet traitSet = filter.getTraitSet().replace( convention );
             return new FileFilter( filter.getCluster(), traitSet, filter.getInput(), filter.getCondition() );
+        }
+
+
+        private static boolean functionInFilter( Filter filter ) {
+            CheckingFunctionVisitor visitor = new CheckingFunctionVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+    }
+
+
+    private static class CheckingFunctionVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsFunction = false;
+
+
+        CheckingFunctionVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsFunction() {
+            return containsFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator instanceof SqlFunction ) {
+                containsFunction = true;
+            }
+            return super.visitCall( call );
         }
 
     }

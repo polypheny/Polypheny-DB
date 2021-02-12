@@ -71,10 +71,19 @@ public class Result {
      * Exception with additional information
      */
     private Throwable exception;
+
     /**
-     * Info about a query
+     * Number of affected rows
      */
-    private Debug info;
+    @Setter
+    private int affectedRows;
+
+    /**
+     * The query that was generated
+     */
+    @Setter
+    private String generatedQuery;
+
     /**
      * Type of the result: if the data is from a table/view/arbitrary query
      */
@@ -161,8 +170,13 @@ public class Result {
     }
 
 
-    public Result( Debug info ) {
-        this.info = info;
+    public Result() {
+        //intentionally empty
+    }
+
+
+    public Result( int affectedRows ) {
+        this.affectedRows = affectedRows;
     }
 
 
@@ -186,16 +200,6 @@ public class Result {
 
     public Result setTable( String table ) {
         this.table = table;
-        return this;
-    }
-
-
-    public Result setInfo( Debug info ) {
-        if ( this.info == null ) {
-            this.info = info;
-        } else {
-            this.info.update( info );
-        }
         return this;
     }
 
