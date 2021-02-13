@@ -2013,7 +2013,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            return new Result( new Debug().setAffectedRows( i ) );
+            return new Result( i ).setGeneratedQuery( query );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not partition table", e );
             try {
@@ -2021,7 +2021,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+            return new Result( e ).setGeneratedQuery( query );
         }
     }
 
@@ -2033,7 +2033,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            return new Result( new Debug().setAffectedRows( i ) );
+            return new Result( i ).setGeneratedQuery( query );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not merge partitions", e );
             try {
@@ -2041,7 +2041,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+            return new Result( e ).setGeneratedQuery( query );
         }
     }
 
@@ -2057,7 +2057,7 @@ public class Crud implements InformationObserver {
         try {
             int i = executeSqlUpdate( trx, query );
             trx.commit();
-            return new Result( new Debug().setAffectedRows( i ).setGeneratedQuery( query ) );
+            return new Result( i ).setGeneratedQuery( query );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Could not modify partitions", e );
             try {
@@ -2065,7 +2065,7 @@ public class Crud implements InformationObserver {
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
             }
-            return new Result( e ).setInfo( new Debug().setGeneratedQuery( query ) );
+            return new Result( e ).setGeneratedQuery( query );
         }
     }
 
