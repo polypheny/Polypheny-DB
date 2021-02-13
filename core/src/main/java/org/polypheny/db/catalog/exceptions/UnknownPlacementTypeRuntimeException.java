@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownKeyException extends CatalogException {
+public class UnknownPlacementTypeRuntimeException extends CatalogRuntimeException {
 
-    public UnknownKeyException( String keyName ) {
-        super( "There is no key with this name: '" + keyName + "'." );
+    public UnknownPlacementTypeRuntimeException( int id ) {
+        super( "There is no Foreign Key Option with id: " + id );
     }
 
 }

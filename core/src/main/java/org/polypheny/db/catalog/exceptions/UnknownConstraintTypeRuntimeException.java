@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownKeyException extends CatalogException {
+public class UnknownConstraintTypeRuntimeException extends CatalogRuntimeException {
 
-    public UnknownKeyException( String keyName ) {
-        super( "There is no key with this name: '" + keyName + "'." );
+    public UnknownConstraintTypeRuntimeException( int id ) {
+        super( "There is no constraint type with id: " + id );
     }
 
 }

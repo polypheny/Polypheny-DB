@@ -120,6 +120,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -2358,7 +2359,8 @@ public class Crud implements InformationObserver {
         try {
             qim.removeQueryInterface( catalog, uniqueName );
             return new Result( 1 ).setGeneratedQuery( generatedQuery );
-        } catch ( RuntimeException e ) {
+        } catch ( RuntimeException | UnknownQueryInterfaceException e ) {
+            log.error( "Could not remove query interface {}", req.body(), e );
             return new Result( e ).setGeneratedQuery( generatedQuery );
         }
     }

@@ -294,7 +294,6 @@ public class CatalogTest {
 
 
     public void addStores() {
-
         Map<String, String> hsqldbSettings = new HashMap<>();
         hsqldbSettings.put( "type", "Memory" );
         hsqldbSettings.put( "path", "maxConnections" );
@@ -302,14 +301,8 @@ public class CatalogTest {
         hsqldbSettings.put( "trxControlMode", "mvcc" );
         hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
 
-        catalog.addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
-
-        Map<String, String> csvSettings = new HashMap<>();
-        csvSettings.put( "directory", "classpath://hr" );
-        csvSettings.put( "persistent", "true" );
-
-        catalog.addAdapter( "csv", "org.polypheny.db.adapter.csv.CsvStore", AdapterType.STORE, csvSettings );
-
+        catalog.addAdapter( "store1", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
+        catalog.addAdapter( "store2", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
     }
 
 
@@ -327,23 +320,22 @@ public class CatalogTest {
         long columnId = catalog.addColumn( "column1", tableId, 0, PolyType.BIGINT, null, null, null, null, null, false, null );
         CatalogColumn column = catalog.getColumn( columnId );
 
-        CatalogAdapter csv = catalog.getAdapter( "csv" );
-        CatalogAdapter hsqldb = catalog.getAdapter( "hsqldb" );
+        CatalogAdapter store1 = catalog.getAdapter( "store1" );
+        CatalogAdapter store2 = catalog.getAdapter( "store2" );
 
-        catalog.addColumnPlacement( csv.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
+        catalog.addColumnPlacement( store1.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
 
         assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
         assertEquals( columnId, catalog.getColumnPlacements( columnId ).get( 0 ).columnId );
 
-        catalog.addColumnPlacement( hsqldb.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
+        catalog.addColumnPlacement( store2.id, columnId, PlacementType.AUTOMATIC, null, "table1", column.name, null );
 
         assertEquals( 2, catalog.getColumnPlacements( columnId ).size() );
-        assertTrue( catalog.getColumnPlacements( columnId ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).containsAll( Arrays.asList( hsqldb.id, csv.id ) ) );
+        assertTrue( catalog.getColumnPlacements( columnId ).stream().map( p -> p.adapterId ).collect( Collectors.toList() ).containsAll( Arrays.asList( store2.id, store1.id ) ) );
 
-        catalog.deleteColumnPlacement( csv.id, columnId );
+        catalog.deleteColumnPlacement( store1.id, columnId );
         assertEquals( 1, catalog.getColumnPlacements( columnId ).size() );
-        assertEquals( hsqldb.id, catalog.getColumnPlacements( columnId ).get( 0 ).adapterId );
-
+        assertEquals( store2.id, catalog.getColumnPlacements( columnId ).get( 0 ).adapterId );
     }
 
 
@@ -367,11 +359,8 @@ public class CatalogTest {
         assertEquals( 1, catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.size() );
         assertTrue( catalog.getPrimaryKey( catalog.getTable( tableId ).primaryKey ).columnIds.contains( columnId1 ) );
 
-        /* TODO DL
-        catalog.deletePrimaryKey( tableId );
-
-        assertNull( catalog.getTable( tableId ).primaryKey );
-         */
+        //catalog.deletePrimaryKey( tableId );
+        //assertNull( catalog.getTable( tableId ).primaryKey );
 
         catalog.addPrimaryKey( tableId, Arrays.asList( columnId1, columnId2 ) );
 
@@ -463,6 +452,5 @@ public class CatalogTest {
     public void close() {
         catalog.close();
     }
-
 
 }

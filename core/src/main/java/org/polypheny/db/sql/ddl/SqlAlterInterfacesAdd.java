@@ -50,9 +50,6 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
     private final SqlNode config;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterInterfacesAdd( SqlParserPos pos, SqlNode uniqueName, SqlNode clazzName, SqlNode config ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );

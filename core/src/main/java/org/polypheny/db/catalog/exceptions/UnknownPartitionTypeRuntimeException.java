@@ -17,10 +17,11 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class UnknownKeyException extends CatalogException {
+public class UnknownPartitionTypeRuntimeException extends CatalogRuntimeException {
 
-    public UnknownKeyException( String keyName ) {
-        super( "There is no key with this name: '" + keyName + "'." );
+    public UnknownPartitionTypeRuntimeException( final int id ) {
+        super( "There is no PartitionType with id: " + id );
     }
 
 }
+

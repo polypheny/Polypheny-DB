@@ -47,18 +47,25 @@ import org.polypheny.db.catalog.exceptions.UnknownCollationIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
+import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -918,7 +925,7 @@ public abstract class Catalog {
     /**
      * Get a query interface by its id
      */
-    public abstract CatalogQueryInterface getQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException;
+    public abstract CatalogQueryInterface getQueryInterface( int ifaceId );
 
     /**
      * Add a query interface
@@ -935,7 +942,7 @@ public abstract class Catalog {
      *
      * @param ifaceId The id of the query interface to delete
      */
-    public abstract void deleteQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException;
+    public abstract void deleteQueryInterface( int ifaceId );
 
     /**
      * Adds a partition to the catalog
@@ -998,7 +1005,7 @@ public abstract class Catalog {
      *
      * @param databaseNamePattern Pattern for the database name. null returns all.
      * @param schemaNamePattern Pattern for the schema name. null returns all.
-     * @param tableNamePattern Pattern for the table name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
@@ -1106,13 +1113,13 @@ public abstract class Catalog {
         }
 
 
-        public static TableType getById( final int id ) throws UnknownTableTypeException {
+        public static TableType getById( final int id ) {
             for ( TableType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
             }
-            throw new UnknownTableTypeException( id );
+            throw new UnknownTableTypeRuntimeException( id );
         }
 
 
@@ -1159,13 +1166,13 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getById( final int id ) throws UnknownSchemaTypeException {
+        public static SchemaType getById( final int id ) {
             for ( SchemaType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
             }
-            throw new UnknownSchemaTypeException( id );
+            throw new UnknownSchemaTypeRuntimeException( id );
         }
 
 
@@ -1235,13 +1242,13 @@ public abstract class Catalog {
         }
 
 
-        public static Catalog.IndexType getById( int id ) throws UnknownIndexTypeException {
+        public static Catalog.IndexType getById( int id ) {
             for ( Catalog.IndexType e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownIndexTypeException( id );
+            throw new UnknownIndexTypeRuntimeException( id );
         }
 
 
@@ -1272,13 +1279,13 @@ public abstract class Catalog {
         }
 
 
-        public static ConstraintType getById( int id ) throws UnknownConstraintTypeException {
+        public static ConstraintType getById( int id ) {
             for ( ConstraintType e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownConstraintTypeException( id );
+            throw new UnknownConstraintTypeRuntimeException( id );
         }
 
 
@@ -1311,13 +1318,13 @@ public abstract class Catalog {
         }
 
 
-        public static ForeignKeyOption getById( int id ) throws UnknownForeignKeyOptionException {
+        public static ForeignKeyOption getById( int id ) {
             for ( ForeignKeyOption e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownForeignKeyOptionException( id );
+            throw new UnknownForeignKeyOptionRuntimeException( id );
         }
 
 
@@ -1354,13 +1361,13 @@ public abstract class Catalog {
         }
 
 
-        public static PlacementType getById( int id ) throws UnknownPlacementTypeException {
+        public static PlacementType getById( int id ) {
             for ( PlacementType e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownPlacementTypeException( id );
+            throw new UnknownPlacementTypeRuntimeException( id );
         }
 
 
@@ -1396,14 +1403,13 @@ public abstract class Catalog {
         }
 
 
-        //New ExceptionType
-        public static PartitionType getById( final int id ) throws UnknownPartitionTypeException {
+        public static PartitionType getById( final int id ) {
             for ( PartitionType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
             }
-            throw new UnknownPartitionTypeException( id );
+            throw new UnknownPartitionTypeRuntimeException( id );
         }
 
 

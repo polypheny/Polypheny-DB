@@ -58,9 +58,6 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
     private final SqlNode config;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterAdaptersAdd( SqlParserPos pos, SqlNode uniqueName, SqlNode adapterName, SqlNode config ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );

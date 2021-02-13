@@ -76,6 +76,7 @@ import org.polypheny.db.catalog.exceptions.UnknownIndexIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -2932,11 +2933,11 @@ public class CatalogImpl extends Catalog {
      * Get a query interface by its id
      */
     @Override
-    public CatalogQueryInterface getQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException {
+    public CatalogQueryInterface getQueryInterface( int ifaceId ) {
         try {
             return Objects.requireNonNull( queryInterfaces.get( ifaceId ) );
         } catch ( NullPointerException e ) {
-            throw new UnknownQueryInterfaceException( ifaceId );
+            throw new UnknownQueryInterfaceRuntimeException( ifaceId );
         }
     }
 
@@ -2977,7 +2978,7 @@ public class CatalogImpl extends Catalog {
      * @param ifaceId The id of the query interface to delete
      */
     @Override
-    public void deleteQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException {
+    public void deleteQueryInterface( int ifaceId ) {
         try {
             CatalogQueryInterface queryInterface = Objects.requireNonNull( queryInterfaces.get( ifaceId ) );
             synchronized ( this ) {
@@ -2991,7 +2992,7 @@ public class CatalogImpl extends Catalog {
             }
             listeners.firePropertyChange( "queryInterface", queryInterface, null );
         } catch ( NullPointerException e ) {
-            throw new UnknownQueryInterfaceException( ifaceId );
+            throw new UnknownQueryInterfaceRuntimeException( ifaceId );
         }
     }
 

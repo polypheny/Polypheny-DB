@@ -19,11 +19,6 @@ package org.polypheny.db.catalog.exceptions;
 
 public class UnknownPartitionTypeException extends CatalogException {
 
-    public UnknownPartitionTypeException( final int id ) {
-        super( "There is no PartitionType with id: " + id );
-    }
-
-
     public UnknownPartitionTypeException( final String name ) {
         super( "There is no PartitionType with name: '" + name + "'" );
     }

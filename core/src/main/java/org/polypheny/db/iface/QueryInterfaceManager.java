@@ -168,20 +168,12 @@ public class QueryInterfaceManager {
             interfaceThreadById.put( instance.getQueryInterfaceId(), thread );
         } catch ( InvocationTargetException e ) {
             if ( ifaceId != -1 ) {
-                try {
-                    catalog.deleteQueryInterface( ifaceId );
-                } catch ( UnknownQueryInterfaceException e1 ) {
-                    throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
-                }
+                catalog.deleteQueryInterface( ifaceId );
             }
             throw new RuntimeException( "Something went wrong while adding a new query interface: " + e.getCause().getMessage(), e );
         } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException e ) {
             if ( ifaceId != -1 ) {
-                try {
-                    catalog.deleteQueryInterface( ifaceId );
-                } catch ( UnknownQueryInterfaceException e1 ) {
-                    throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
-                }
+                catalog.deleteQueryInterface( ifaceId );
             }
             throw new RuntimeException( "Something went wrong while adding a new query interface!", e );
         }
@@ -189,29 +181,23 @@ public class QueryInterfaceManager {
     }
 
 
-    public void removeQueryInterface( Catalog catalog, String uniqueName ) {
+    public void removeQueryInterface( Catalog catalog, String uniqueName ) throws UnknownQueryInterfaceException {
         uniqueName = uniqueName.toLowerCase();
         if ( !interfaceByName.containsKey( uniqueName ) ) {
             throw new RuntimeException( "Unknown query interface: " + uniqueName );
         }
-        try {
-            CatalogQueryInterface catalogQueryInterface = catalog.getQueryInterface( uniqueName );
+        CatalogQueryInterface catalogQueryInterface = catalog.getQueryInterface( uniqueName );
 
-            // TODO: Check if the query interface has any running transactions
+        // Shutdown interface
+        interfaceByName.get( uniqueName ).shutdown();
 
-            // Shutdown interface
-            interfaceByName.get( uniqueName ).shutdown();
+        // Remove interfaces from maps
+        interfaceById.remove( catalogQueryInterface.id );
+        interfaceByName.remove( uniqueName );
+        interfaceThreadById.remove( catalogQueryInterface.id );
 
-            // Remove interfaces from maps
-            interfaceById.remove( catalogQueryInterface.id );
-            interfaceByName.remove( uniqueName );
-            interfaceThreadById.remove( catalogQueryInterface.id );
-
-            // Delete query interface from catalog
-            catalog.deleteQueryInterface( catalogQueryInterface.id );
-        } catch ( UnknownQueryInterfaceException e ) {
-            throw new RuntimeException( "Something went wrong while removing a query interface: " + e.getMessage(), e );
-        }
+        // Delete query interface from catalog
+        catalog.deleteQueryInterface( catalogQueryInterface.id );
     }
 
 

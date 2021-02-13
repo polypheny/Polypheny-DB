@@ -59,9 +59,6 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
     private final SqlNode uniqueName;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterAdaptersDrop( SqlParserPos pos, SqlNode uniqueName ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
