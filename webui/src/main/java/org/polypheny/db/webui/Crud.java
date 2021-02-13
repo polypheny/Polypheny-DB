@@ -1936,7 +1936,7 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement( table.isPartitioned(), catalog.getPartitionNames( table.id ) );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ) );
             long pkid = table.primaryKey;
             List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
             CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );

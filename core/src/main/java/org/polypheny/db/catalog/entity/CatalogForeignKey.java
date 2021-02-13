@@ -38,7 +38,7 @@ public final class CatalogForeignKey extends CatalogKey {
     public final long referencedKeyTableId;
     public final ForeignKeyOption updateRule;
     public final ForeignKeyOption deleteRule;
-    public List<Long> referencedKeyColumnIds;
+    public final List<Long> referencedKeyColumnIds;
 
 
     public CatalogForeignKey(

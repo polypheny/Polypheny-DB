@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -51,22 +50,18 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
     public final boolean modifiable;
 
-    @Getter
-    public boolean isPartitioned = false;
-    @Getter
-    public Catalog.PartitionType partitionType = PartitionType.NONE;
-    @Getter
-    public ImmutableList<Long> partitionIds;
-    public long partitionColumnId;
+    public final boolean isPartitioned;
+    public final Catalog.PartitionType partitionType;
+    public final ImmutableList<Long> partitionIds;
+    public final long partitionColumnId;
 
-    public long numPartitions;
+    public final long numPartitions;
 
-    /*
-        Variable flaggedForDeletion is used to detect a table where a drop of table is currently in progress.
-        This is needed to ensure that we don't have any constraints when recursively removing a table and all placements and partitions.
-        Otherwise **validatePartitionDistribution()** inside the Catalog would render an error.
-     */
-    @Setter
+
+    // Variable flaggedForDeletion is used to detect a table where a drop of table is currently in progress.
+    // This is needed to ensure that we don't have any constraints when recursively removing a table and all placements and partitions.
+    // Otherwise **validatePartitionDistribution()** inside the Catalog would render an error.
+    @Setter // TODO @HENNLO: Catalog entities must be immutable
     public boolean flaggedForDeletion = false;
 
 
@@ -95,6 +90,12 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.primaryKey = primaryKey;
         this.placementsByAdapter = placementsByAdapter;
         this.modifiable = modifiable;
+
+        this.isPartitioned = false;
+        this.partitionType = PartitionType.NONE;
+        this.partitionIds = null;
+        this.partitionColumnId = 0;
+        this.numPartitions = 0;
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
@@ -137,7 +138,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
         this.partitionIds = partitionIds;
         this.partitionColumnId = partitionColumnId;
         this.numPartitions = numPartitions;
-        isPartitioned = true;
+        this.isPartitioned = true;
 
     }
 

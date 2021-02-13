@@ -32,7 +32,7 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
     public final long tableId;
     public final long schemaId;
     public final long databaseId;
-    public List<Long> columnIds;
+    public final List<Long> columnIds;
 
 
     public CatalogKey(

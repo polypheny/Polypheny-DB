@@ -25,7 +25,6 @@ import org.polypheny.db.catalog.Catalog;
 @EqualsAndHashCode
 public final class CatalogPartition implements CatalogEntity {
 
-
     private static final long serialVersionUID = 2312903632511266177L;
 
     // Possibly a hash code to uniquely identify a partition

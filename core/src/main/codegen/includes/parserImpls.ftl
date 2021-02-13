@@ -313,7 +313,7 @@ SqlAlterTable SqlAlterTable(Span s) :
                 <RPAREN>
             ]
         {
-            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList,partitionNamesList);
+            return new SqlAlterTableAddPlacement(s.end(this), table, columnList, store, partitionList, partitionNamesList);
         }
     |
         <DROP>
