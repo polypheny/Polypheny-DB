@@ -59,6 +59,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -106,6 +107,8 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
 
+    private static BTreeMap<Long, CatalogView> views;
+    private static BTreeMap<Object[], CatalogView> viewNames;
 
     private static BTreeMap<Long, CatalogTable> tables;
     private static BTreeMap<Object[], CatalogTable> tableNames;
@@ -140,6 +143,7 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong schemaIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong tableIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong columnIdBuilder = new AtomicLong( 1 );
+    private static final AtomicLong viewIdBuilder = new AtomicLong( 1 );
 
     private static final AtomicLong keyIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong constraintIdBuilder = new AtomicLong( 1 );
@@ -298,6 +302,7 @@ public class CatalogImpl extends Catalog {
             initDatabaseInfo( db );
             initSchemaInfo( db );
             initTableInfo( db );
+            initView( db );
             initColumnInfo( db );
             initKeysAndConstraintsInfo( db );
             initAdapterInfo( db );
@@ -500,6 +505,17 @@ public class CatalogImpl extends Catalog {
         tableChildren = db.hashMap( "tableChildren", Serializer.LONG, new GenericSerializer<ImmutableList<Long>>() ).createOrOpen();
         //noinspection unchecked
         tableNames = db.treeMap( "tableNames" )
+                .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
+                .valueSerializer( Serializer.JAVA )
+                .createOrOpen();
+    }
+
+
+    private void initView( DB db ) {
+        //noinspection unchecked
+        views = db.treeMap( "views", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+        //noinspection unchecked
+        viewNames = db.treeMap( "viewNames" )
                 .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
                 .valueSerializer( Serializer.JAVA )
                 .createOrOpen();
@@ -1205,6 +1221,34 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public CatalogView getView( long viewId ) {
+        try {
+            return Objects.requireNonNull( views.get( viewId ) );
+        } catch ( NullPointerException e ) {
+            throw new UnknownTableIdRuntimeException( viewId );
+        }
+    }
+
+
+    @Override
+    public long addView( String name, long schemaId, int ownerId, boolean modifiable, String definition ) {
+        long id = addTable( name, schemaId, ownerId, TableType.VIEW, modifiable, definition );
+        CatalogSchema schema = getSchema( schemaId );
+        CatalogUser owner = getUser( ownerId );
+        CatalogView view = new CatalogView( id, name, schemaId, schema.databaseId, ownerId, owner.name, modifiable, definition );
+
+        synchronized ( this ) {
+            views.put( id, view );
+            viewNames.put( new Object[]{ schema.databaseId, schemaId, name }, view );
+        }
+
+        listeners.firePropertyChange( "view", null, view );
+        return id;
+
+    }
+
+
     /**
      * Adds a table to a specified schema.
      *
@@ -1244,7 +1288,9 @@ public class CatalogImpl extends Catalog {
             children.add( id );
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
         }
-        openTable = id;
+        if ( tableType != TableType.VIEW ) {
+            openTable = id;
+        }
         listeners.firePropertyChange( "table", null, table );
         return id;
     }
@@ -1382,24 +1428,24 @@ public class CatalogImpl extends Catalog {
                 physicalColumnName,
                 physicalPositionBuilder.getAndIncrement() );
 
-            synchronized ( this ) {
-                columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
+        synchronized ( this ) {
+            columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
 
-                CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
-                Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
-                if ( placementsByStore.containsKey( adapterId ) ) {
-                    List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
-                    placements.add( columnId );
-                    placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
-                } else {
-                    placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
-                }
-                CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ), old.modifiable );
-
-                tables.replace( column.tableId, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
+            Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
+            if ( placementsByStore.containsKey( adapterId ) ) {
+                List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
+                placements.add( columnId );
+                placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
+            } else {
+                placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
             }
-            listeners.firePropertyChange( "columnPlacement", null, placement );
+            CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ), old.modifiable );
+
+            tables.replace( column.tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+        }
+        listeners.firePropertyChange( "columnPlacement", null, placement );
     }
 
 

@@ -121,13 +121,14 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             parsed = parser.parseStmt();
             /*
              Views Verison 2
-            */
+
             if ( parsed instanceof SqlSelect ) {
                 Catalog catalog = Catalog.getInstance();
                 SqlSelect select = (SqlSelect) parsed;
                 ((SqlSelect) parsed).setFrom(normaliseFrom( select.getFrom() ) );
             }
 
+             */
 
         } catch ( SqlParseException e ) {
             log.error( "Caught exception", e );
@@ -146,7 +147,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
 
     /*
     Views Verison 2
-     */
+
     public SqlNode normaliseFrom( SqlNode from ) {
         if ( from instanceof SqlJoin ) {
             ((SqlJoin) from).setLeft( normaliseFrom( ((SqlJoin) from).getLeft() ) );
@@ -161,6 +162,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         return from;
     }
+
+     */
 
 
     @Override
@@ -270,7 +273,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 // Acquire global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 // Execute statement
-                ((SqlExecutableStatement) parsed).execute( statement.getPrepareContext(), statement );
+                ((SqlExecutableStatement) parsed).
+                        execute( statement.getPrepareContext(), statement );
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
                         parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),

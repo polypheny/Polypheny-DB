@@ -34,10 +34,16 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import java.util.Objects;
 
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -47,6 +53,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
@@ -84,13 +91,55 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement ) {
+        Catalog catalog = Catalog.getInstance();
+        String viewName;
+        long schemaId;
+
+        try {
+            if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
+                schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
+                viewName = name.names.get( 2 );
+            } else if ( name.names.size() == 2 ) { // SchemaName.TableName
+                schemaId = catalog.getSchema( context.getDatabaseId(), name.names.get( 0 ) ).id;
+                viewName = name.names.get( 1 );
+            } else { // TableName
+                schemaId = catalog.getSchema( context.getDatabaseId(), context.getDefaultSchemaName() ).id;
+                viewName = name.names.get( 0 );
+            }
+        } catch ( UnknownDatabaseException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.databaseNotFound( name.toString() ) );
+        } catch ( UnknownSchemaException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
+        }
+
+        try {
+
+            long viewId = catalog.addView(
+                    viewName,
+                    schemaId,
+                    context.getCurrentUserId(),
+                    false,
+                    null
+            );
+
+            CatalogView catalogView = catalog.getView(viewId);
+
+
+            System.out.println(catalogView.id);
+
+        } catch ( Exception e ) {
+            e.printStackTrace();
+        }
+
+
+
+
         /*
-        View Implementation test
-         */
+        View Implementation test (Version 1 & 2)
+
         Catalog catalog = Catalog.getInstance();
         catalog.addView(name.toString(), query);
-
-
+         */
         //throw new RuntimeException( "Not supported yet" );
     }
 

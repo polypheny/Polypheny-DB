@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -341,6 +342,12 @@ public abstract class Catalog {
      */
     public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition );
 
+
+    public abstract long addView(String name, long schemaId, int ownerId, boolean modifiable, String definition );
+
+    public abstract CatalogView getView(long viewId);
+
+
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
@@ -560,8 +567,8 @@ public abstract class Catalog {
 
 
     /*
-    Views
-     */
+    Views Version 1 & 2
+
     HashMap<String, SqlNode> view = new HashMap<String, SqlNode>();
 
 
@@ -573,6 +580,8 @@ public abstract class Catalog {
     public SqlNode getView( String name ) {
         return view.getOrDefault( name, null );
     }
+
+     */
 
 
     /**
