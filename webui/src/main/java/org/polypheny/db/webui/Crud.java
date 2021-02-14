@@ -2376,7 +2376,7 @@ public class Crud implements InformationObserver {
 
         List<CatalogTable> catalogTables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
         for ( CatalogTable catalogTable : catalogTables ) {
-            if ( catalogTable.tableType == TableType.TABLE ) {
+            if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE ) {
                 // get foreign keys
                 List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
                 for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {

@@ -709,6 +709,23 @@ public class CatalogImpl extends Catalog {
         addPrimaryKey( emp.id, Collections.singletonList( getColumn( emp.id, "employeeno" ).id ) );
         addPrimaryKey( work.id, Collections.singletonList( getColumn( work.id, "employeeno" ).id ) );
 
+        // set foreign keys
+        addForeignKey(
+                emps.id,
+                ImmutableList.of( getColumn( emps.id, "deptno" ).id ),
+                depts.id,
+                ImmutableList.of( getColumn( depts.id, "deptno" ).id ),
+                "fk_emps_depts",
+                ForeignKeyOption.RESTRICT,
+                ForeignKeyOption.RESTRICT );
+        addForeignKey(
+                work.id,
+                ImmutableList.of( getColumn( work.id, "employeeno" ).id ),
+                emp.id,
+                ImmutableList.of( getColumn( emp.id, "employeeno" ).id ),
+                "fk_work_emp",
+                ForeignKeyOption.RESTRICT,
+                ForeignKeyOption.RESTRICT );
     }
 
 
@@ -2460,7 +2477,6 @@ public class CatalogImpl extends Catalog {
                                 onDelete );
                         synchronized ( this ) {
                             foreignKeys.put( keyId, key );
-
                         }
                         listeners.firePropertyChange( "foreignKey", null, key );
                         return;
