@@ -1527,7 +1527,7 @@ public class CatalogImpl extends Catalog {
 
         CatalogTable table;
         synchronized ( this ) {
-            // Needed because otherwise a already partitioned table would be reset to a regular table due to the different constructors.
+            // Needed because otherwise an already partitioned table would be reset to a regular table due to the different constructors.
             if ( oldTable.isPartitioned ) {
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Is flagged for deletion {}", oldTable.flaggedForDeletion );
@@ -3055,7 +3055,7 @@ public class CatalogImpl extends Catalog {
         synchronized ( this ) {
             partitions.remove( partitionId );
 
-            // TODO Redistribute data
+            // TODO @HENNLO Redistribute data
         }
     }
 
@@ -3070,7 +3070,7 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    //TODO: Data Migrate when table already exists and has data. Distribute the data
+    //TODO @HENNLO: Data Migrate when table already exists and has data. Distribute the data
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException {
 
@@ -3166,11 +3166,10 @@ public class CatalogImpl extends Catalog {
             }
 
             listeners.firePropertyChange( "table", old, table );
-
     }
 
 
-    //TODO: Data Migrate
+    //TODO @HENNLO: Data Migrate
     @Override
     public void mergeTable( long tableId ) {
         if ( log.isDebugEnabled() ) {
@@ -3203,8 +3202,8 @@ public class CatalogImpl extends Catalog {
             tableNames.put( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
             tableNames.put( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
 
-            // TODO Get all data placements and remove key
-            // Copy Data
+            // TODO @HENNLO Get all data placements and remove key
+            // TODO @HENNLO Copy Data
 
             // Get primary key of table and use PK to find all DataPlacements of table
             long pkid = table.primaryKey;
@@ -3422,13 +3421,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    // TODO move
-    @Override
-    public List<CatalogKey> getKeys() {
-        return new ArrayList<>( keys.values() );
-    }
-
-
     @Override
     public List<CatalogKey> getTableKeys( long tableId ) {
         return keys.values().stream().filter( k -> k.tableId == tableId ).collect( Collectors.toList() );
@@ -3531,6 +3523,12 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
+    }
+
+
+    @Override
+    public List<CatalogKey> getKeys() {
+        return new ArrayList<>( keys.values() );
     }
 
 

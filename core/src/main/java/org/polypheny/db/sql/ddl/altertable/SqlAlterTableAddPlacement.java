@@ -102,7 +102,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         Catalog catalog = Catalog.getInstance();
         // You can't partition placements if the table is not partitioned
         if ( !catalogTable.isPartitioned && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
-            throw new RuntimeException( " Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
+            throw new RuntimeException( "Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 
         List<Long> columnIds = new LinkedList<>();
