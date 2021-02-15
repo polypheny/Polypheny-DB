@@ -1082,6 +1082,27 @@ public abstract class Catalog {
      */
     public abstract boolean validatePartitionDistribution( int storeId, long tableId, long columnId );
 
+    /**
+     * Flags the table for deletion.
+     * This method should be executed on a partitioned table before we run a DROP TABLE statement.
+     *
+     * @param tableId table to be flagged for deletion
+     * @param flag true if it should be flagged, fallse if flag should be removed
+     */
+    public abstract void flagTableForDeletion( long tableId, boolean flag );
+
+
+    /**
+     * Is used to detect if a table is flagged for deletion.
+     * Effectively checks if a drop of this table is currently in progress.
+     * This is needed to ensure that there aren't any constraints when recursively removing a table and all placements and partitions.
+     *
+     * @param tableId table to be checked
+     * @return If table is flagged for deletion or not
+     */
+    public abstract boolean isTableFlaggedForDeletion(long tableId);
+
+
     /*
      *
      */

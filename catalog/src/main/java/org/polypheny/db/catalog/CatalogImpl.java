@@ -150,6 +150,9 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, CatalogPartition> partitions;
     private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionPlacement; // <Store.Table, List of partitionIds>
 
+    //Keeps a list of all table IDs which where currently a DROP TABLE is in progress
+    private static List<Long> tablesFlaggedForDeletion = new ArrayList<>();
+
     private static final AtomicLong keyIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong constraintIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong indexIdBuilder = new AtomicLong( 1 );
@@ -1343,6 +1346,7 @@ public class CatalogImpl extends Catalog {
             tableChildren.remove( tableId );
             tables.remove( tableId );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, table.name } );
+            flagTableForDeletion( table.id, false);
             // primary key was deleted and open table has to be closed
             if ( openTable != null && openTable == tableId ) {
                 openTable = null;
@@ -1530,9 +1534,9 @@ public class CatalogImpl extends Catalog {
             // Needed because otherwise an already partitioned table would be reset to a regular table due to the different constructors.
             if ( oldTable.isPartitioned ) {
                 if ( log.isDebugEnabled() ) {
-                    log.debug( "Is flagged for deletion {}", oldTable.flaggedForDeletion );
+                    log.debug( "Is flagged for deletion {}", isTableFlaggedForDeletion( oldTable.id ) );
                 }
-                if ( oldTable.flaggedForDeletion ) {
+                if ( isTableFlaggedForDeletion( oldTable.id ) ) {
                     if ( !validatePartitionDistribution( adapterId, oldTable.id, columnId ) ) {
                         throw new RuntimeException( "Partition Distribution failed" );
                     }
@@ -3409,13 +3413,50 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean validatePartitionDistribution( int adapterId, long tableId, long columnId ) {
         CatalogTable catalogTable = getTable( tableId );
-        if ( catalogTable.flaggedForDeletion ) {
+        if ( isTableFlaggedForDeletion( tableId ) ) {
             return true;
         }
         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
         PartitionManager partitionManager = partitionManagerFactory.getInstance( catalogTable.partitionType );
 
         return partitionManager.probePartitionDistributionChange( catalogTable, adapterId, columnId );
+    }
+
+
+    /**
+     * Flags the table for deletion.
+     * This method should be executed on a partitioned table before we run a DROP TABLE statement.
+     *
+     * @param tableId table to be flagged for deletion
+     * @param flag true if it should be flagged, fallse if flag should be removed
+     */
+    @Override
+    public void flagTableForDeletion( long tableId, boolean flag ) {
+        System.out.println("------> IS flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ));
+
+        if ( flag &&  !tablesFlaggedForDeletion.contains( tableId )) {
+            tablesFlaggedForDeletion.add( tableId );
+        }
+        else if ( !flag &&  tablesFlaggedForDeletion.contains( tableId ) ){
+            tablesFlaggedForDeletion.remove( tableId );
+        }
+    }
+
+
+    /**
+     * Is used to detect if a table is flagged for deletion.
+     * Effectively checks if a drop of this table is currently in progress.
+     * This is needed to ensure that there aren't any constraints when recursively removing a table and all placements and partitions.
+     *
+     * @param tableId table to be checked
+     * @return If table is flagged for deletion or not
+     */
+    @Override
+    public boolean isTableFlaggedForDeletion( long tableId ) {
+
+        System.out.println("------> IS flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ));
+
+        return tablesFlaggedForDeletion.contains( tableId );
     }
 
 
