@@ -27,9 +27,6 @@ public final class CatalogPartition implements CatalogEntity {
 
     private static final long serialVersionUID = 2312903632511266177L;
 
-    // Possibly a hash code to uniquely identify a partition
-    // for a schema_table_column_type_argument
-    // e.g. mySchema_testTable_sales_RANGE_100
     public final long id;
     public final String partitionName;
 
@@ -39,7 +36,6 @@ public final class CatalogPartition implements CatalogEntity {
     public final List<String> partitionQualifiers;
     public final boolean isUnbound;
 
-    // Technically a compound between primary key and partition column (+range/list)
     public final long partitionKey;
 
 

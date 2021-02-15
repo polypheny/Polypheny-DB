@@ -94,7 +94,6 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
 
-        // Check if table is already partitioned
 
         long tableId = catalogTable.id;
 

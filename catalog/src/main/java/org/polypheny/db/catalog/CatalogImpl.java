@@ -3054,8 +3054,6 @@ public class CatalogImpl extends Catalog {
         CatalogPartition partition = getPartition( partitionId );
         synchronized ( this ) {
             partitions.remove( partitionId );
-
-            // TODO @HENNLO Redistribute data
         }
     }
 
@@ -3070,7 +3068,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    //TODO @HENNLO: Data Migrate when table already exists and has data. Distribute the data
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException {
 
@@ -3169,7 +3166,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    //TODO @HENNLO: Data Migrate
+    //TODO : Data Migrate needed.
+    // We have partitioned data throughout many stores. And now want to merge all partitions.
+    // Currently although the table isn't partitioned anymore, the old data stays partitioned on the store.
+    // Therefore we need to make sure(maybe with migrator?) to gather all data from all partitions, and stores. That at the end of mergeTable()
+    // there aren't any partitioned chunks of data left on a single store.
     @Override
     public void mergeTable( long tableId ) {
         if ( log.isDebugEnabled() ) {
@@ -3201,9 +3202,6 @@ public class CatalogImpl extends Catalog {
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
             tableNames.put( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
             tableNames.put( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
-
-            // TODO @HENNLO Get all data placements and remove key
-            // TODO @HENNLO Copy Data
 
             // Get primary key of table and use PK to find all DataPlacements of table
             long pkid = table.primaryKey;
