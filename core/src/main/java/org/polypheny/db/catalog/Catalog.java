@@ -112,7 +112,6 @@ public abstract class Catalog {
         listeners.addPropertyChangeListener( listener );
     }
 
-
     /**
      * Removes a registered observer
      *
@@ -121,7 +120,6 @@ public abstract class Catalog {
     public void removeObserver( PropertyChangeListener listener ) {
         listeners.removePropertyChangeListener( listener );
     }
-
 
     /**
      * Validates that all columns have a valid placement,
@@ -141,8 +139,23 @@ public abstract class Catalog {
     }
 
 
+    /**
+     * Adds a database
+     *
+     * @param name The name of the database
+     * @param ownerId The owner of this database
+     * @param ownerName The name of the owner
+     * @param defaultSchemaId The id of the default schema of this database
+     * @param defaultSchemaName The name of the default schema of this database
+     * @return the id of the newly inserted database
+     */
     public abstract long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName );
 
+    /**
+     * Delete a database from the catalog
+     *
+     * @param databaseId The id of the database to delete
+     */
     public abstract void deleteDatabase( long databaseId );
 
     /**
@@ -257,10 +270,9 @@ public abstract class Catalog {
     /**
      * Delete a schema from the catalog
      *
-     * @param schemaId The if of the schema to delete
+     * @param schemaId The id of the schema to delete
      */
     public abstract void deleteSchema( long schemaId );
-
 
     /**
      * Get all tables of the specified schema which fit to the specified filters.
@@ -311,7 +323,6 @@ public abstract class Catalog {
      * @return The table
      */
     public abstract CatalogTable getTable( long tableId );
-
 
     /**
      * Returns the table with the given name in the specified schema.
@@ -408,7 +419,6 @@ public abstract class Catalog {
      */
     public abstract void deleteColumnPlacement( int adapterId, long columnId );
 
-
     /**
      * Get a specific column placement.
      *
@@ -417,7 +427,6 @@ public abstract class Catalog {
      * @return The specific column placement
      */
     public abstract CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId );
-
 
     /**
      * Checks if there is a column with the specified name in the specified table.
@@ -428,12 +437,11 @@ public abstract class Catalog {
      */
     public abstract boolean checkIfExistsColumnPlacement( int adapterId, long columnId );
 
-
     /**
-     * Get all placements of a column
+     * Get all column placements of a column
      *
-     * @param columnId The id of the column
-     * @return List of placements
+     * @param columnId the id of the specific column
+     * @return List of column placements of specific column
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
 
@@ -446,7 +454,6 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId );
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
-
 
     /**
      * Get column placements on a adapter
@@ -462,7 +469,6 @@ public abstract class Catalog {
 
     public abstract List<CatalogKey> getTableKeys( long tableId );
 
-
     /**
      * Get column placements in a specific schema on a specific adapter
      *
@@ -471,7 +477,6 @@ public abstract class Catalog {
      * @return List of column placements on this adapter and schema
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
-
 
     /**
      * Update type of a placement.
@@ -482,7 +487,6 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType );
 
-
     /**
      * Update physical position of a column placement on a specified adapter.
      *
@@ -492,7 +496,6 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position );
 
-
     /**
      * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
      *
@@ -500,7 +503,6 @@ public abstract class Catalog {
      * @param columnId The id of the column
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
-
 
     /**
      * Change physical names of a placement.
@@ -514,7 +516,6 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition );
 
-
     /**
      * Get all columns of the specified table.
      *
@@ -522,7 +523,6 @@ public abstract class Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogColumn> getColumns( long tableId );
-
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
@@ -644,10 +644,7 @@ public abstract class Catalog {
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-
-
     public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue );
-
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.
@@ -664,13 +661,36 @@ public abstract class Catalog {
      */
     public abstract CatalogPrimaryKey getPrimaryKey( long key );
 
+    /**
+     * Check whether a key is a primary key
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a primary key
+     */
+    public abstract boolean isPrimaryKey( long keyId );
 
-    public abstract boolean isPrimaryKey( long key );
-
+    /**
+     * Check whether a key is a foreign key
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a foreign key
+     */
     public abstract boolean isForeignKey( long keyId );
 
+    /**
+     * Check whether a key is a index
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a index
+     */
     public abstract boolean isIndex( long keyId );
 
+    /**
+     * Check whether a key is a constraint
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a constraint
+     */
     public abstract boolean isConstraint( long keyId );
 
     /**
@@ -1039,31 +1059,31 @@ public abstract class Catalog {
     public abstract List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId );
 
     /**
-     * Updates the reference which partitions reside on which DataPlacement (Adapter/Table)
+     * Updates the reference which partitions reside on which DataPlacement (identified by adapterId and tableId)
      *
-     * @param storeId The unique id of the partition
-     * @param tableId The unique Id of the table
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
      * @param partitionIds List of partitionsIds to be updated
      */
-    public abstract void updatePartitionsOnDataPlacement( int storeId, long tableId, List<Long> partitionIds );
+    public abstract void updatePartitionsOnDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
 
     /**
-     * Get all partitions residing on a DataPlacement (Store/Table)
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
      *
-     * @param storeId The unique id of the partition
+     * @param adapterId The unique id of the adapter
      * @param tableId The unique id of the table
      * @return List of partitionIds
      */
-    public abstract List<Long> getPartitionsOnDataPlacement( int storeId, long tableId );
+    public abstract List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId );
 
     /**
      * Returns list with the index of the partitions on this store from  0..numPartitions
      *
-     * @param storeId The unique id of the partition
+     * @param adapterId The unique id of the adapter
      * @param tableId The unique id of the table
      * @return List of partitionId Indices
      */
-    public abstract List<Long> getPartitionsIndexOnDataPlacement( int storeId, long tableId );
+    public abstract List<Long> getPartitionsIndexOnDataPlacement( int adapterId, long tableId );
 
     /**
      * Mostly needed if a placement is dropped from a store.
@@ -1075,7 +1095,7 @@ public abstract class Catalog {
 
     /**
      * Checks depending on the current partition distribution and partitionType
-     * If this would be sufficient. Basically a passthrough method to simplify the code
+     * If this would be sufficient. Basically a passthrough method to simplify the code.
      *
      * @param tableId table to be checked
      * @return If its correctly distributed or not
@@ -1087,10 +1107,9 @@ public abstract class Catalog {
      * This method should be executed on a partitioned table before we run a DROP TABLE statement.
      *
      * @param tableId table to be flagged for deletion
-     * @param flag true if it should be flagged, fallse if flag should be removed
+     * @param flag true if it should be flagged, false if flag should be removed
      */
     public abstract void flagTableForDeletion( long tableId, boolean flag );
-
 
     /**
      * Is used to detect if a table is flagged for deletion.
@@ -1106,8 +1125,6 @@ public abstract class Catalog {
     /*
      *
      */
-
-    // public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
 
     public abstract void close();

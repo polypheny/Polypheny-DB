@@ -95,7 +95,6 @@ import org.polypheny.db.util.FileSystemManager;
 @Slf4j
 public class CatalogImpl extends Catalog {
 
-
     private static final String FILE_PATH = "mapDB";
     private static DB db;
 
@@ -148,10 +147,11 @@ public class CatalogImpl extends Catalog {
 
     private static final AtomicLong partitionIdBuilder = new AtomicLong();
     private static BTreeMap<Long, CatalogPartition> partitions;
-    private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionPlacement; // <Store.Table, List of partitionIds>
+    private static HTreeMap<Object[], ImmutableList<Long>> dataPartitionPlacement; // <AdapterId.TableId, List of partitionIds>
 
-    //Keeps a list of all table IDs which where currently a DROP TABLE is in progress
-    private static List<Long> tablesFlaggedForDeletion = new ArrayList<>();
+    // Keeps a list of all tableIDs which are going to be deleted. This is required to avoid constraints when recursively
+    // removing a table and all placements and partitions. Otherwise **validatePartitionDistribution()** inside the Catalog would throw an error.
+    private static final List<Long> tablesFlaggedForDeletion = new ArrayList<>();
 
     private static final AtomicLong keyIdBuilder = new AtomicLong( 1 );
     private static final AtomicLong constraintIdBuilder = new AtomicLong( 1 );
@@ -161,7 +161,6 @@ public class CatalogImpl extends Catalog {
     private static final AtomicLong physicalPositionBuilder = new AtomicLong();
 
     Comparator<CatalogColumn> columnComparator = Comparator.comparingInt( o -> o.position );
-    // TODO DL check solution for all
 
 
     public CatalogImpl() {
@@ -772,9 +771,13 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Inserts a new database,
-     * if a database with the same name already exists, it throws an error // TODO should it?
+     * Adds a database
      *
+     * @param name The name of the database
+     * @param ownerId The owner of this database
+     * @param ownerName The name of the owner
+     * @param defaultSchemaId The id of the default schema of this database
+     * @param defaultSchemaName The name of the default schema of this database
      * @return the id of the newly inserted database
      */
     @Override
@@ -791,6 +794,11 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Delete a database from the catalog
+     *
+     * @param databaseId The id of the database to delete
+     */
     @Override
     public void deleteDatabase( long databaseId ) {
         CatalogDatabase database = getDatabase( databaseId );
@@ -1131,7 +1139,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-
         if ( schemaNamePattern != null && tableNamePattern != null ) {
             CatalogSchema schema = schemaNames.get( new Object[]{ databaseId, schemaNamePattern.pattern } );
             if ( schema != null ) {
@@ -1178,6 +1185,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Returns the table with the given id
+     *
+     * @param tableId The id of the table
+     * @return The table
+     */
     @Override
     public CatalogTable getTable( long tableId ) {
         try {
@@ -1597,6 +1610,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Get a specific column placement.
+     *
+     * @param adapterId The id of the adapter
+     * @param columnId The id of the column
+     * @return The specific column placement
+     */
     @Override
     public CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId ) {
         try {
@@ -1609,6 +1629,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Checks if there is a column with the specified name in the specified table.
+     *
+     * @param adapterId The id of the adapter
+     * @param columnId The id of the column
+     * @return true if there is a column placement, false if not.
+     */
     @Override
     public boolean checkIfExistsColumnPlacement( int adapterId, long columnId ) {
         CatalogColumnPlacement placement = columnPlacements.get( new Object[]{ adapterId, columnId } );
@@ -1923,7 +1950,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException {
-
         try {
             CatalogTable table = getTable( databaseName, schemaName, tableName );
             return Objects.requireNonNull( columnNames.get( new Object[]{ table.databaseId, table.schemaId, table.id, columnName } ) );
@@ -2199,11 +2225,11 @@ public class CatalogImpl extends Catalog {
         listeners.firePropertyChange( "column", column, null );
     }
 
-    // TODO: String is only a temporary solution
-
 
     /**
      * Adds a default value for a column. If there already is a default values, it being replaced.
+     *
+     * TODO: String is only a temporary solution
      *
      * @param columnId The id of the column
      * @param type The type of the default value
@@ -2286,6 +2312,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Check whether a key is a primary key
+     *
+     * @param key The id of the key
+     * @return Whether the key is a primary key
+     */
     @Override
     public boolean isPrimaryKey( long key ) {
         try {
@@ -3322,6 +3354,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Updates the reference which partitions reside on which DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @param partitionIds List of partitionsIds to be updated
+     */
     @Override
     public void updatePartitionsOnDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
         synchronized ( this ) {
@@ -3351,7 +3390,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    // Returns list with the effective partitionIds
+    /**
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
     @Override
     public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
         List<Long> partitions = dataPartitionPlacement.get( new Object[]{ adapterId, tableId } );
@@ -3362,7 +3407,13 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    // Returns list with the index of the partitions on this adapter. 0..numPartitions
+    /**
+     * Returns list with the index of the partitions on this store from  0..numPartitions
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionId Indices
+     */
     @Override
     public List<Long> getPartitionsIndexOnDataPlacement( int adapterId, long tableId ) {
         List<Long> partitions = dataPartitionPlacement.get( new Object[]{ adapterId, tableId } );
@@ -3428,16 +3479,15 @@ public class CatalogImpl extends Catalog {
      * This method should be executed on a partitioned table before we run a DROP TABLE statement.
      *
      * @param tableId table to be flagged for deletion
-     * @param flag true if it should be flagged, fallse if flag should be removed
+     * @param flag true if it should be flagged, false if flag should be removed
      */
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
-        System.out.println("------> IS flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ));
+        System.out.println( "------> Is flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ) );
 
-        if ( flag &&  !tablesFlaggedForDeletion.contains( tableId )) {
+        if ( flag && !tablesFlaggedForDeletion.contains( tableId ) ) {
             tablesFlaggedForDeletion.add( tableId );
-        }
-        else if ( !flag &&  tablesFlaggedForDeletion.contains( tableId ) ){
+        } else if ( !flag && tablesFlaggedForDeletion.contains( tableId ) ) {
             tablesFlaggedForDeletion.remove( tableId );
         }
     }
@@ -3454,7 +3504,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
 
-        System.out.println("------> IS flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ));
+        System.out.println( "------> Is flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ) );
 
         return tablesFlaggedForDeletion.contains( tableId );
     }
@@ -3484,18 +3534,36 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Check whether a key is a index
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a index
+     */
     @Override
     public boolean isIndex( long keyId ) {
         return indexes.values().stream().anyMatch( i -> i.keyId == keyId );
     }
 
 
+    /**
+     * Check whether a key is a constraint
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a constraint
+     */
     @Override
     public boolean isConstraint( long keyId ) {
         return constraints.values().stream().anyMatch( c -> c.keyId == keyId );
     }
 
 
+    /**
+     * Check whether a key is a foreign key
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a foreign key
+     */
     @Override
     public boolean isForeignKey( long keyId ) {
         return foreignKeys.values().stream().anyMatch( f -> f.referencedKeyId == keyId );
