@@ -129,4 +129,3 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
     }
 
 }
-

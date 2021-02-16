@@ -77,6 +77,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        // TODO @HENNLO: This seems to be incomplete
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );

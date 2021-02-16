@@ -84,6 +84,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        // TODO @HENNLO: This seems to be incomplete
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -181,7 +182,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
                     }
                     if ( !isPartOfTable ) {
                         throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                                + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
+                                + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionNames( tableId ) ) );
 
                     }
                 }

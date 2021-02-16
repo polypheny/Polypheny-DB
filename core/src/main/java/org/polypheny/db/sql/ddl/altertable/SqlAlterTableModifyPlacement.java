@@ -86,6 +86,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        // TODO @HENNLO: This seems to be incomplete
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
@@ -103,8 +104,8 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         Catalog catalog = Catalog.getInstance();
 
-        //You can't partition placements if the table is not partitioned
-        if ( catalogTable.isPartitioned == false && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
+        // You can't partition placements if the table is not partitioned
+        if ( !catalogTable.isPartitioned && (!partitionList.isEmpty() || !partitionNamesList.isEmpty()) ) {
             throw new RuntimeException( " Partition Placement is not allowed for unpartitioned table '" + catalogTable.name + "'" );
         }
 
@@ -157,7 +158,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
 
                         if ( !partitionManager.probePartitionDistributionChange( catalogTable, placement.adapterId, placement.columnId ) ) {
                             throw new RuntimeException( "Validation of partition distribution failed. Placement: '"
-                                    + placement.adapterUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions" );
+                                    + placement.adapterUniqueName + "." + placement.getLogicalColumnName() + "' would be the last ColumnPlacement with all partitions!" );
                         }
                     }
                     // Drop Column on store
@@ -189,8 +190,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
             // If name partitions are specified
             else if ( !partitionNamesList.isEmpty() && partitionList.isEmpty() ) {
                 List<CatalogPartition> catalogPartitions = catalog.getPartitions( tableId );
-                for ( String partitionName : partitionNamesList.stream().map( Object::toString )
-                        .collect( Collectors.toList() ) ) {
+                for ( String partitionName : partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) ) {
                     boolean isPartOfTable = false;
                     for ( CatalogPartition catalogPartition : catalogPartitions ) {
                         if ( partitionName.equals( catalogPartition.partitionName.toLowerCase() ) ) {
@@ -200,8 +200,8 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
                         }
                     }
                     if ( !isPartOfTable ) {
-                        throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
-                                + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
+                        throw new RuntimeException( "Specified partition name: '" + partitionName + "' is not part of table '"
+                                + catalogTable.name + "'. Available partitions: " + String.join( ",", catalog.getPartitionNames( tableId ) ) );
                     }
                 }
                 catalog.updatePartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id, tempPartitionList );
@@ -242,4 +242,3 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
     }
 
 }
-
