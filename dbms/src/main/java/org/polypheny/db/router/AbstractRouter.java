@@ -81,7 +81,6 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.tools.RelBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.slf4j.Logger;
 
 
 @Slf4j
@@ -179,6 +178,10 @@ public abstract class AbstractRouter implements Router {
                 RelOptTableImpl table = (RelOptTableImpl) ((LogicalFilter) node).getInput().getTable();
 
                 if ( table.getTable() instanceof LogicalTable ) {
+
+                    // TODO Routing of partitioned tables is very limited. This should be improved to also apply sophisticated
+                    //  routing strategies, especially when we also get rid of the worst-case routing.
+
                     LogicalTable t = ((LogicalTable) table.getTable());
                     CatalogTable catalogTable;
                     catalogTable = Catalog.getInstance().getTable( t.getTableId() );
@@ -229,6 +232,10 @@ public abstract class AbstractRouter implements Router {
 
                 // Check if table is even partitioned
                 if ( catalogTable.isPartitioned ) {
+
+                    // TODO Routing of partitioned tables is very limited. This should be improved to also apply sophisticated
+                    //  routing strategies, especially when we also get rid of the worst-case routing.
+
                     if ( log.isDebugEnabled() ) {
                         log.debug( "VALUE from Map: {} id: {}", filterMap.get( node.getId() ), node.getId() );
                     }

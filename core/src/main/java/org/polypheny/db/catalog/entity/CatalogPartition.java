@@ -22,6 +22,7 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 
+
 @EqualsAndHashCode
 public final class CatalogPartition implements CatalogEntity {
 

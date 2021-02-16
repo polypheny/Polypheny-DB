@@ -1004,8 +1004,8 @@ public abstract class Catalog {
     public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException;
 
     /**
-     * Merges a  partitioned table
-     * Resets all objects and structures which were introduced by partitionTable
+     * Merges a  partitioned table.
+     * Resets all objects and structures which were introduced by partitionTable.
      *
      * @param tableId Table to be merged
      */

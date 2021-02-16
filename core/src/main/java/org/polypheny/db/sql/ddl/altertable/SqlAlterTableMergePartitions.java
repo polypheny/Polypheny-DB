@@ -76,14 +76,19 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
                 log.debug( "Merging partitions for table: {} with id {} on schema: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName() );
             }
 
-            // TODO Create partitions multithreaded
+            // TODO : Data Migrate needed.
+            //  We have partitioned data throughout many stores. And now want to merge all partitions.
+            //  Currently although the table isn't partitioned anymore, the old data stays partitioned on the store.
+            //  Therefore we need to make sure(maybe with migrator?) to gather all data from all partitions, and stores. That at the end of mergeTable()
+            //  there aren't any partitioned chunks of data left on a single store.
+
             catalog.mergeTable( tableId );
 
             if ( log.isDebugEnabled() ) {
                 log.debug( "Table: '{}' has been merged", catalogTable.name );
             }
         } else {
-            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned at all" );
+            throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned!" );
         }
     }
 

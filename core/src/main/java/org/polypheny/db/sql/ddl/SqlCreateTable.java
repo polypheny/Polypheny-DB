@@ -317,13 +317,11 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     partitionQualifierStringList.add( partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ) );
                 }
 
-                // TODO maybe create partitions multithreaded
                 catalog.partitionTable(
                         tableId,
                         actualPartitionType,
                         partitionColumnID,
                         numPartitions,
-                        //partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
                         partitionQualifierStringList,
                         partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
                 if ( log.isDebugEnabled() ) {
@@ -333,8 +331,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }
-
     }
 
 }
-

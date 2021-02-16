@@ -26,7 +26,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -105,19 +104,16 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                     log.debug( "Creating partition for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
                 }
 
-                List<String> partitionValue = new ArrayList<>();
                 List<List<String>> partitionQualifierStringList = new ArrayList<>();
                 for ( List<SqlNode> partitionValueList : partitionQualifierList ) {
                     partitionQualifierStringList.add( partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ) );
                 }
 
-                // TODO maybe create partitions multithreaded
                 catalog.partitionTable(
                         tableId,
                         actualPartitionType,
                         partitionColumnID,
                         numPartitions,
-                        //partitionQualifierList.stream().map( Object::toString ).collect( Collectors.toList() ),
                         partitionQualifierStringList,
                         partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
 
@@ -127,7 +123,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
             }
-        } catch ( UnknownPartitionTypeException | UnknownColumnException | UnknownPartitionIdRuntimeException | GenericCatalogException e ) {
+        } catch ( UnknownPartitionTypeException | UnknownColumnException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

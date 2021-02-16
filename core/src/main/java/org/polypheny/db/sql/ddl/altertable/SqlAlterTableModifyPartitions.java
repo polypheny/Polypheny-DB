@@ -46,7 +46,6 @@ import org.polypheny.db.util.ImmutableNullableList;
 @Slf4j
 public class SqlAlterTableModifyPartitions extends SqlAlterTable {
 
-
     private final SqlIdentifier table;
     private final SqlIdentifier storeName;
     private final List<Integer> partitionList;
@@ -93,7 +92,6 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
         if ( !catalogTable.isPartitioned ) {
             throw new RuntimeException( "Table '" + catalogTable.name + "' is not partitioned" );
         }
-
 
         long tableId = catalogTable.id;
 
@@ -146,7 +144,6 @@ public class SqlAlterTableModifyPartitions extends SqlAlterTable {
                 if ( !isPartOfTable ) {
                     throw new RuntimeException( "Specified Partition-Name: '" + partitionName + "' is not part of table '"
                             + catalogTable.name + "', has only " + catalog.getPartitionNames( tableId ) + " partitions" );
-
                 }
             }
         }
