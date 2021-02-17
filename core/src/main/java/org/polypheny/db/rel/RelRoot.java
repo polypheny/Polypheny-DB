@@ -35,9 +35,11 @@ package org.polypheny.db.rel;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -90,9 +92,10 @@ import org.polypheny.db.util.mapping.Mappings;
  * }
  * </code></blockquote>
  */
-public class RelRoot {
+public class RelRoot implements Serializable {
 
-    public final RelNode rel;
+    @Getter
+    public RelNode rel;
     public final RelDataType validatedRowType;
     public final SqlKind kind;
     public final ImmutableList<Pair<Integer, String>> fields;

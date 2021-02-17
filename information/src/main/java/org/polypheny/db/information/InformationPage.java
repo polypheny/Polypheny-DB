@@ -19,6 +19,7 @@ package org.polypheny.db.information;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -33,7 +34,7 @@ import org.polypheny.db.information.exception.InformationRuntimeException;
  * An InformationPage contains multiple InformationGroups that will be rendered together in a subpage in the UI.
  */
 @Accessors(chain = true)
-public class InformationPage extends Refreshable {
+public class InformationPage extends Refreshable implements Serializable {
 
 
     /**

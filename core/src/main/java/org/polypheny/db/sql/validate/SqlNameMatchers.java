@@ -35,6 +35,7 @@ package org.polypheny.db.sql.validate;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,7 @@ import org.polypheny.db.util.Util;
 /**
  * Helpers for {@link SqlNameMatcher}.
  */
-public class SqlNameMatchers {
+public class SqlNameMatchers implements Serializable {
 
     private static final BaseMatcher CASE_SENSITIVE = new BaseMatcher( true );
     private static final BaseMatcher CASE_INSENSITIVE = new BaseMatcher( false );
@@ -78,7 +79,7 @@ public class SqlNameMatchers {
     /**
      * Partial implementation of {@link SqlNameMatcher}.
      */
-    private static class BaseMatcher implements SqlNameMatcher {
+    private static class BaseMatcher implements SqlNameMatcher, Serializable {
 
         private final boolean caseSensitive;
 

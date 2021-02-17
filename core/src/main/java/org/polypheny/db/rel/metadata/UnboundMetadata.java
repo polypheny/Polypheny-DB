@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.metadata;
 
 
+import java.io.Serializable;
 import org.polypheny.db.rel.RelNode;
 
 
@@ -43,7 +44,7 @@ import org.polypheny.db.rel.RelNode;
  * @param <M> Metadata type
  */
 @FunctionalInterface
-public interface UnboundMetadata<M extends Metadata> {
+public interface UnboundMetadata<M extends Metadata> extends Serializable {
 
     M bind( RelNode rel, RelMetadataQuery mq );
 }

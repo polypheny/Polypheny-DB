@@ -18,6 +18,7 @@ package org.polypheny.db.schema;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.NavigableMap;
@@ -32,7 +33,7 @@ import org.polypheny.db.schema.impl.AbstractSchema;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-public interface PolyphenyDbSchema {
+public interface PolyphenyDbSchema extends Serializable {
 
     static PolyphenyDbSchema from( SchemaPlus plus ) {
         return plus.polyphenyDbSchema();
@@ -111,7 +112,7 @@ public interface PolyphenyDbSchema {
      *
      * The members of a schema must have unique names.
      */
-    abstract class Entry {
+    abstract class Entry implements Serializable {
 
         public final PolyphenyDbSchema schema;
         public final String name;
@@ -135,7 +136,7 @@ public interface PolyphenyDbSchema {
     /**
      * Membership of a table in a schema.
      */
-    abstract class TableEntry extends Entry {
+    abstract class TableEntry extends Entry implements Serializable {
 
         public final ImmutableList<String> sqls;
 
@@ -182,7 +183,7 @@ public interface PolyphenyDbSchema {
     /**
      * Implementation of {@link PolyphenyDbSchema.TableEntry} where all properties are held in fields.
      */
-    class TableEntryImpl extends TableEntry {
+    class TableEntryImpl extends TableEntry implements Serializable {
 
         private final Table table;
 

@@ -34,6 +34,7 @@
 package org.polypheny.db.rel.metadata;
 
 
+import java.io.Serializable;
 import org.polypheny.db.rel.RelNode;
 
 
@@ -44,7 +45,7 @@ import org.polypheny.db.rel.RelNode;
  *
  * Each kind of metadata has an interface that extends {@link Metadata} and has a method. Some examples: {@link BuiltInMetadata.Selectivity}, {@link BuiltInMetadata.ColumnUniqueness}.
  */
-public interface MetadataFactory {
+public interface MetadataFactory extends Serializable {
 
     /**
      * Returns a metadata interface to get a particular kind of metadata from a particular relational expression. Returns null if that kind of metadata is not available.

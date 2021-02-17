@@ -39,6 +39,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
@@ -64,7 +65,7 @@ import org.polypheny.db.util.Util;
 /**
  * Abstract base for implementations of {@link RelDataTypeFactory}.
  */
-public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory {
+public abstract class RelDataTypeFactoryImpl implements RelDataTypeFactory, Serializable {
 
     /**
      * Global cache. Uses soft values to allow GC.

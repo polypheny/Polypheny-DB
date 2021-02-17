@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +50,7 @@ import org.apache.calcite.linq4j.function.Experimental;
  *
  * @param <V> Value type
  */
-public class NameMultimap<V> {
+public class NameMultimap<V> implements Serializable {
 
     private final NameMap<List<V>> map;
 

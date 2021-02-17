@@ -37,6 +37,7 @@ package org.polypheny.db.rex;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
@@ -163,7 +164,7 @@ import org.polypheny.db.util.Util;
  * </tr>
  * </table>
  */
-public class RexLiteral extends RexNode {
+public class RexLiteral extends RexNode implements Serializable {
 
     /**
      * The value of this literal. Must be consistent with its type, as per {@link #valueMatchesType}. For example, you can't store an {@link Integer} value here just because you feel like it -- all numbers are

@@ -35,6 +35,7 @@ package org.polypheny.db.prepare;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
@@ -95,7 +96,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     private final RelDataType rowType;
     @Getter
     private final Table table;
-    private final Function<Class, Expression> expressionFunction;
+    private transient final Function<Class, Expression> expressionFunction;
     private final ImmutableList<String> names;
 
     /**

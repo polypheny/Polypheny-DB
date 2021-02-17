@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -53,7 +54,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * Utilities for {@link Source}.
  */
-public abstract class Sources {
+public abstract class Sources implements Serializable {
 
     private Sources() {
     }
@@ -106,7 +107,7 @@ public abstract class Sources {
     /**
      * Implementation of {@link Source}.
      */
-    private static class FileSource implements Source {
+    private static class FileSource implements Source, Serializable {
 
         private final File file;
         private final URL url;

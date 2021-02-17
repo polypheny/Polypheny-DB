@@ -34,6 +34,7 @@
 package org.polypheny.db.rex;
 
 
+import java.io.Serializable;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -63,7 +64,7 @@ import org.polypheny.db.util.Pair;
  *
  * So <code>RexInputRef(3, Integer)</code> is the correct reference for the field DEPTNO2.
  */
-public class RexInputRef extends RexSlot {
+public class RexInputRef extends RexSlot implements Serializable {
 
     // list of common names, to reduce memory allocations
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")

@@ -18,12 +18,13 @@ package org.polypheny.db.information;
 
 
 import com.google.gson.Gson;
+import java.io.Serializable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.exception.InformationRuntimeException;
 
 
 @Slf4j
-public abstract class Information {
+public abstract class Information implements Serializable {
 
     /**
      * The id needs to be unique for every Information object.

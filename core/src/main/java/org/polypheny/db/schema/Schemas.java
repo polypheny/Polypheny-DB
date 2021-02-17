@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.AbstractList;
 import java.util.ArrayList;

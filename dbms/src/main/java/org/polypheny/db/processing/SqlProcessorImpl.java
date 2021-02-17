@@ -66,6 +66,7 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlUtil;
+import org.polypheny.db.sql.ddl.SqlCreateView;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParseException;
@@ -119,16 +120,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
-            /*
-             Views Verison 2
-
-            if ( parsed instanceof SqlSelect ) {
-                Catalog catalog = Catalog.getInstance();
-                SqlSelect select = (SqlSelect) parsed;
-                ((SqlSelect) parsed).setFrom(normaliseFrom( select.getFrom() ) );
-            }
-
-             */
 
         } catch ( SqlParseException e ) {
             log.error( "Caught exception", e );
@@ -143,28 +134,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         return parsed;
     }
-
-
-    /*
-    Views Verison 2
-
-    public SqlNode normaliseFrom( SqlNode from ) {
-        if ( from instanceof SqlJoin ) {
-            ((SqlJoin) from).setLeft( normaliseFrom( ((SqlJoin) from).getLeft() ) );
-            ((SqlJoin) from).setRight( normaliseFrom( ((SqlJoin) from).getRight() ) );
-        } else if ( from instanceof SqlIdentifier ) {
-            if ( ((SqlIdentifier) from).names.size() == 1 ) {
-                Catalog catalog = Catalog.getInstance();
-                return catalog.getView( (((SqlIdentifier) from).names.get( 0 ) ) );
-            }else{
-                return from;
-            }
-        }
-        return from;
-    }
-
-     */
-
 
     @Override
     public Pair<SqlNode, RelDataType> validate( Transaction transaction, SqlNode parsed, boolean addDefaultValues ) {
@@ -272,6 +241,13 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             try {
                 // Acquire global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
+
+                if(parsed.isA( SqlKind.VIEW )){
+                    System.out.println("testing");
+                    ((SqlCreateView) parsed).setSql( ((SqlCreateView) parsed).getQuery().toString() );
+                    ((SqlCreateView) parsed).setRelRoot( (translate( statement, validate( statement.getTransaction(), ((SqlCreateView) parsed).getQuery(), RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )).getRel() );
+                }
+
                 // Execute statement
                 ((SqlExecutableStatement) parsed).
                         execute( statement.getPrepareContext(), statement );

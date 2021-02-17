@@ -38,6 +38,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import java.io.Serializable;
 import java.util.concurrent.ExecutionException;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.util.Pair;
@@ -49,9 +50,9 @@ import org.polypheny.db.util.Util;
  *
  * The cache does not store metadata. It remembers which providers can provide which kinds of metadata, for which kinds of relational expressions.
  */
-public class MetadataFactoryImpl implements MetadataFactory {
+public class MetadataFactoryImpl implements MetadataFactory, Serializable {
 
-    public static final UnboundMetadata<Metadata> DUMMY = ( rel, mq ) -> null;
+    public static final UnboundMetadata<Metadata> DUMMY = (UnboundMetadata<Metadata> & Serializable)( rel, mq ) -> null;
 
     private final LoadingCache<Pair<Class<RelNode>, Class<Metadata>>, UnboundMetadata<Metadata>> cache;
 

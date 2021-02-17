@@ -34,6 +34,7 @@
 package org.polypheny.db.plan;
 
 
+import java.io.Serializable;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
 
@@ -41,7 +42,7 @@ import org.polypheny.db.rel.type.RelDataType;
 /**
  * Node in a planner.
  */
-public interface RelOptNode {
+public interface RelOptNode extends Serializable {
 
     /**
      * Returns the ID of this relational expression, unique among all relational expressions created since the server was started.

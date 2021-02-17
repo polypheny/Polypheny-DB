@@ -34,6 +34,7 @@
 package org.polypheny.db.util;
 
 
+import java.io.Serializable;
 import java.util.Comparator;
 
 
@@ -45,7 +46,7 @@ import java.util.Comparator;
  * In a collection sorted on this comparator, we can find case-insensitive matches for a given string using
  * {@link #floorKey(java.lang.String)} and {@link #ceilingKey(java.lang.String)}.
  */
-class CaseInsensitiveComparator implements Comparator {
+class CaseInsensitiveComparator implements Comparator, Serializable {
 
     static final CaseInsensitiveComparator COMPARATOR = new CaseInsensitiveComparator();
 

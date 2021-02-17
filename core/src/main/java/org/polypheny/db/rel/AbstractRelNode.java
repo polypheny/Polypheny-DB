@@ -36,7 +36,9 @@ package org.polypheny.db.rel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.beans.Transient;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,7 +73,7 @@ import org.slf4j.Logger;
 /**
  * Base class for every relational expression ({@link RelNode}).
  */
-public abstract class AbstractRelNode implements RelNode {
+public abstract class AbstractRelNode implements RelNode, Serializable {
 
     /**
      * Generator for {@link #id} values.
@@ -99,7 +101,7 @@ public abstract class AbstractRelNode implements RelNode {
      */
     protected String digest;
 
-    private final RelOptCluster cluster;
+    private transient final RelOptCluster cluster;
 
     /**
      * unique id of this object -- for debugging

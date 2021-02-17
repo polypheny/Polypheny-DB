@@ -34,6 +34,8 @@
 package org.polypheny.db.plan;
 
 
+import java.beans.Transient;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -54,7 +56,7 @@ import org.polypheny.db.rex.RexNode;
 /**
  * An environment for related relational expressions during the optimization of a query.
  */
-public class RelOptCluster {
+public class RelOptCluster implements Serializable {
 
     private final RelDataTypeFactory typeFactory;
     private final RelOptPlanner planner;

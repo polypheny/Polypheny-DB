@@ -55,7 +55,7 @@ import org.polypheny.db.util.Util;
  *
  * Identity is based upon the {@link #digest} field, which each derived class should set during construction.
  */
-public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily {
+public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily, Serializable {
 
     protected final List<RelDataTypeField> fieldList;
     protected String digest;
@@ -354,7 +354,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final RelDataType protoType ) {
         assert protoType != null;
-        return typeFactory -> typeFactory.copyType( protoType );
+        return (RelProtoDataType & Serializable) typeFactory -> typeFactory.copyType( protoType );
     }
 
 
@@ -369,7 +369,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final PolyType typeName, final boolean nullable ) {
         assert typeName != null;
-        return typeFactory -> {
+        return (RelProtoDataType & Serializable) typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
@@ -388,7 +388,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      */
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final boolean nullable ) {
         assert typeName != null;
-        return typeFactory -> {
+        return (RelProtoDataType & Serializable) typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName, precision );
             return typeFactory.createTypeWithNullability( type, nullable );
         };
@@ -407,7 +407,7 @@ public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily 
      * @return Proto data type
      */
     public static RelProtoDataType proto( final PolyType typeName, final int precision, final int scale, final boolean nullable ) {
-        return typeFactory -> {
+        return (RelProtoDataType & Serializable) typeFactory -> {
             final RelDataType type = typeFactory.createPolyType( typeName, precision, scale );
             return typeFactory.createTypeWithNullability( type, nullable );
         };

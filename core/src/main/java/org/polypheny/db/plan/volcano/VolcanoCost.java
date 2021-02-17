@@ -34,6 +34,7 @@
 package org.polypheny.db.plan.volcano;
 
 
+import java.io.Serializable;
 import java.util.Objects;
 import org.polypheny.db.plan.RelOptCost;
 import org.polypheny.db.plan.RelOptCostFactory;
@@ -255,7 +256,7 @@ public class VolcanoCost implements RelOptCost {
     /**
      * Implementation of {@link org.polypheny.db.plan.RelOptCostFactory} that creates {@link org.polypheny.db.plan.volcano.VolcanoCost}s.
      */
-    private static class Factory implements RelOptCostFactory {
+    private static class Factory implements RelOptCostFactory, Serializable {
 
         @Override
         public RelOptCost makeCost( double dRows, double dCpu, double dIo ) {

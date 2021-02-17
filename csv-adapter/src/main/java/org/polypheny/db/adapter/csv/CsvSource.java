@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ import org.reflections.scanners.ResourcesScanner;
 
 
 @Slf4j
-public class CsvSource extends DataSource {
+public class CsvSource extends DataSource implements Serializable {
 
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "CSV";

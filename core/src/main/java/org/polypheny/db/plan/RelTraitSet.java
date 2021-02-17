@@ -35,6 +35,7 @@ package org.polypheny.db.plan;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,7 +49,7 @@ import org.polypheny.db.util.Pair;
 /**
  * RelTraitSet represents an ordered set of {@link RelTrait}s.
  */
-public final class RelTraitSet extends AbstractList<RelTrait> {
+public final class RelTraitSet extends AbstractList<RelTrait> implements Serializable {
 
     private static final RelTrait[] EMPTY_TRAITS = new RelTrait[0];
 
@@ -562,7 +563,7 @@ public final class RelTraitSet extends AbstractList<RelTrait> {
     /**
      * Cache of trait sets.
      */
-    private static class Cache {
+    private static class Cache implements Serializable{
 
         final Map<List<RelTrait>, RelTraitSet> map = new HashMap<>();
 

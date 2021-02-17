@@ -20,6 +20,7 @@ package org.polypheny.db.schema;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import org.polypheny.db.rel.type.RelProtoDataType;
@@ -31,7 +32,7 @@ import org.polypheny.db.util.NameSet;
 /**
  * A concrete implementation of {@link AbstractPolyphenyDbSchema} that maintains minimal state.
  */
-class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema {
+class SimplePolyphenyDbSchema extends AbstractPolyphenyDbSchema implements Serializable {
 
     /**
      * Creates a SimplePolyphenyDbSchema.

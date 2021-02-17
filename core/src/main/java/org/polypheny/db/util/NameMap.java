@@ -37,6 +37,7 @@ package org.polypheny.db.util;
 import static org.polypheny.db.util.CaseInsensitiveComparator.COMPARATOR;
 
 import com.google.common.collect.ImmutableSortedMap;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -49,7 +50,7 @@ import org.apache.calcite.linq4j.function.Experimental;
  *
  * @param <V> Value type
  */
-public class NameMap<V> {
+public class NameMap<V> implements Serializable {
 
     private final NavigableMap<String, V> map;
 

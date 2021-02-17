@@ -34,13 +34,14 @@
 package org.polypheny.db.plan;
 
 
+import java.io.Serializable;
 import org.polypheny.db.rel.RelNode;
 
 
 /**
  * Calling convention trait.
  */
-public interface Convention extends RelTrait {
+public interface Convention extends RelTrait, Serializable {
 
     /**
      * Convention that for a relational expression that does not support any convention. It is not implementable, and has to be transformed to something else in order to be implemented.
