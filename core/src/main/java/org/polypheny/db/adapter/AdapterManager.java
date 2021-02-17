@@ -169,7 +169,7 @@ public class AdapterManager {
         try {
             instance = (Adapter) ctor.newInstance( adapterId, uniqueName, settings );
         } catch ( Exception e ) {
-            removeAdapter( adapterId );
+            Catalog.getInstance().deleteAdapter( adapterId );
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
         adapterByName.put( instance.getUniqueName(), instance );

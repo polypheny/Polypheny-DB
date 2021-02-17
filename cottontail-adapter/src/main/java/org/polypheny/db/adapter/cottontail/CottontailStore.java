@@ -58,8 +58,10 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityDefinition;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Index;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexDefinition;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexDefinition.Builder;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
@@ -417,12 +419,21 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
+        IndexType indexType;
+        try {
+            indexType = IndexType.valueOf( catalogIndex.method.toUpperCase() );
+        } catch ( Exception e ) {
+            throw new RuntimeException( "Unknown index type: " + catalogIndex.method );
+        }
         Builder indexBuilder = IndexDefinition.newBuilder();
         Entity tableEntity = Entity.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( Catalog.getInstance().getColumnPlacement( getAdapterId(), catalogIndex.key.columnIds.get( 0 ) ).physicalTableName )
                 .build();
-        indexBuilder.getIndexBuilder().setEntity( tableEntity );
+        indexBuilder.getIndexBuilder()
+                .setEntity( tableEntity )
+                .setType( indexType )
+                .setName( "idx" + catalogIndex.id );
         for ( long columnId : catalogIndex.key.columnIds ) {
             CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( getAdapterId(), columnId );
             indexBuilder.addColumns( placement.physicalColumnName );
@@ -433,8 +444,15 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        // TODO: Add support for dropping indexes
-        log.error( "Cottontail-DB adapter does not support dropping indexes" );
+        Index.Builder indexBuilder = Index.newBuilder();
+        Entity tableEntity = Entity.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( Catalog.getInstance().getColumnPlacement( getAdapterId(), catalogIndex.key.columnIds.get( 0 ) ).physicalTableName )
+                .build();
+        indexBuilder
+                .setEntity( tableEntity )
+                .setName( "idx" + catalogIndex.id );
+        this.wrapper.dropIndexBlocking( indexBuilder.build() );
     }
 
 
@@ -527,9 +545,11 @@ public class CottontailStore extends DataStore {
 
     @Override
     public List<AvailableIndexMethod> getAvailableIndexMethods() {
-        return ImmutableList.of(
-                new AvailableIndexMethod( "default", "Default" )
-        );
+        ArrayList<AvailableIndexMethod> available = new ArrayList<>();
+        for ( IndexType indexType : IndexType.values() ) {
+            available.add( new AvailableIndexMethod( indexType.name().toLowerCase(), indexType.name() ) );
+        }
+        return ImmutableList.copyOf( available );
     }
 
 

@@ -21,16 +21,9 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
 
-    // Protobuf & gRPC
-    implementation group: "com.google.protobuf", name: "protobuf-java", version: "3.12.2"
-    implementation group: "io.grpc", name: "grpc-netty", version: "1.29.0"
-    implementation group: "io.grpc", name: "grpc-netty-shaded", version: "1.29.0"
-    implementation group: "io.grpc", name: "grpc-protobuf", version: "1.29.0"
-    implementation group: "io.grpc", name: "grpc-stub", version: "1.29.0"
-
     // Cottontail-DB
     implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
-    implementation (group: "org.vitrivr", name: "cottontaildb", version: "0.10") {
+    implementation (group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version ) {
         exclude group: "org.apache.logging.log4j"
         exclude group: "org.slf4j"
     }

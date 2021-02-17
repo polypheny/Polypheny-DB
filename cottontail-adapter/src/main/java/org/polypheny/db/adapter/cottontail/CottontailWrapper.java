@@ -43,6 +43,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Empty;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityDefinition;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Index;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexDefinition;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
@@ -103,6 +104,20 @@ public class CottontailWrapper implements AutoCloseable {
         } catch ( StatusRuntimeException e ) {
             if ( e.getStatus().getCode() == Status.ALREADY_EXISTS.getCode() ) {
                 log.warn( "Index on {}.{} was not created because it already exists", createMessage.getIndex().getEntity().getName(), createMessage.getColumnsList().toString() );
+                return;
+            }
+            log.error( "Caught exception", e );
+        }
+    }
+
+
+    public synchronized void dropIndexBlocking( Index dropMessage ) {
+        final CottonDDLBlockingStub stub = CottonDDLGrpc.newBlockingStub( this.channel );
+        try {
+            stub.dropIndex( dropMessage );
+        } catch ( StatusRuntimeException e ) {
+            if ( e.getStatus().getCode() == Status.NOT_FOUND.getCode() ) {
+                log.warn( "Unable to drop index {}", dropMessage.getEntity().getName() );
                 return;
             }
             log.error( "Caught exception", e );
