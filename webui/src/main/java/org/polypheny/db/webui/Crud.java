@@ -3225,13 +3225,24 @@ public class Crud implements InformationObserver {
         PolyphenyDbSignature signature;
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         SqlNode parsed = sqlProcessor.parse( sql );
-
+        RelRoot logicalRoot;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
 
         } else {
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
+            List<String> names = ((SqlIdentifier) ((SqlSelect)parsed).getFrom()).names;
+            if(names.size() > 1){
+                Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+                logicalRoot = sqlProcessor.translate( statement, validated.left );
+            }
+            else if(names.size() == 1){
+                Catalog catalog = Catalog.getInstance();
+                logicalRoot = RelRoot.of( catalog.getView(names.get( 0 )).relRoot, SqlKind.SELECT);
+            } else {
+                Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+                logicalRoot = sqlProcessor.translate( statement, validated.left );
+            }
+
 
             // Prepare
             signature = statement.getQueryProcessor().prepareQuery( logicalRoot );

@@ -417,5 +417,7 @@ public class SqlIdentifier extends SqlNode {
         final SqlIdentifier fqId = qualified.identifier;
         return qualified.namespace.resolve().getMonotonicity( Util.last( fqId.names ) );
     }
+
+
 }
 

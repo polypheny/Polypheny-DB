@@ -83,6 +83,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -109,7 +110,7 @@ public class CatalogImpl extends Catalog {
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
 
     private static BTreeMap<Long, CatalogView> views;
-    private static BTreeMap<Object[], CatalogView> viewNames;
+    private static BTreeMap<String, Long> viewNames;
 
     private static BTreeMap<Long, CatalogTable> tables;
     private static BTreeMap<Object[], CatalogTable> tableNames;
@@ -516,10 +517,7 @@ public class CatalogImpl extends Catalog {
         //noinspection unchecked
         views = db.treeMap( "views", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         //noinspection unchecked
-        viewNames = db.treeMap( "viewNames" )
-                .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
-                .valueSerializer( Serializer.JAVA )
-                .createOrOpen();
+        viewNames = db.treeMap( "viewNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
     }
 
 
@@ -1232,6 +1230,11 @@ public class CatalogImpl extends Catalog {
     }
 
     @Override
+    public CatalogView getView(String name) {
+        return views.get( viewNames.get( name ));
+    }
+
+    @Override
     public List<CatalogView> getAllViews(){
         return new ArrayList<>( views.getValues() );
     }
@@ -1246,7 +1249,7 @@ public class CatalogImpl extends Catalog {
 
         synchronized ( this ) {
             views.put( id, view );
-            viewNames.put( new Object[]{ schema.databaseId, schemaId, name }, view );
+            viewNames.put( name , id );
         }
 
         listeners.firePropertyChange( "view", null, view );

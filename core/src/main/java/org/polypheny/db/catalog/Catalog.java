@@ -60,6 +60,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -344,6 +345,8 @@ public abstract class Catalog {
     public abstract long addView(String name, long schemaId, int ownerId, boolean modifiable, String definition, RelNode relRoot );
 
     public abstract CatalogView getView(long viewId);
+
+    public abstract CatalogView getView(String name);
 
     public abstract List<CatalogView> getAllViews();
 

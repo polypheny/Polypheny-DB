@@ -245,7 +245,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 if(parsed.isA( SqlKind.VIEW )){
                     System.out.println("testing");
                     ((SqlCreateView) parsed).setSql( ((SqlCreateView) parsed).getQuery().toString() );
-                    ((SqlCreateView) parsed).setRelRoot( (translate( statement, validate( statement.getTransaction(), ((SqlCreateView) parsed).getQuery(), RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )).getRel() );
+                    ((SqlCreateView) parsed).setRelRoot( (translate( statement, validate( statement.getTransaction(), ((SqlCreateView) parsed).getQuery(), RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )).getRel());
                 }
 
                 // Execute statement
