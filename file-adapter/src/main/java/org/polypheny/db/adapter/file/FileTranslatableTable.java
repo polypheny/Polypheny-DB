@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     FileSchema fileSchema;
     RelProtoDataType protoRowType;
 
+
     protected FileTranslatableTable( final FileSchema fileSchema,
             final String tableName,
             final long tableId,
@@ -80,7 +81,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             final List<String> columnNames,
             final List<Long> pkIds,
             final RelProtoDataType protoRowType ) {
-        super( Object[].class );
+        super( Object.class );
         this.rootDir = fileSchema.getStore().getRootDir();
         this.tableName = tableName;
         this.tableId = tableId;
@@ -100,16 +101,19 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         }
     }
 
+
     @Override
     public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
         return new FileTableScan( context.getCluster(), relOptTable, this );
     }
 
+
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
+
 
     @Override
     public Collection getModifiableCollection() {
@@ -117,11 +121,13 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         //return new ArrayList<>();
     }
 
+
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         fileSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
+
 
     @Override
     public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
@@ -138,9 +144,10 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             super( dataContext, schema, FileTranslatableTable.this, tableName );
         }
 
+
         @Override
         public Enumerator<T> enumerator() {
-            throw new RuntimeException("FileQueryable enumerator not yet implemented");
+            throw new RuntimeException( "FileQueryable enumerator not yet implemented" );
         }
 
     }

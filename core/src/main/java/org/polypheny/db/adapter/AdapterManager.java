@@ -146,11 +146,13 @@ public class AdapterManager {
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
         }
-        Adapter instance;
+        Constructor<?> ctor;
+        AdapterType adapterType;
         try {
             Class<?> clazz = Class.forName( clazzName );
-            Constructor<?> ctor = clazz.getConstructor( int.class, String.class, Map.class );
-            AdapterType adapterType;
+            ctor = clazz.getConstructor( int.class, String.class, Map.class );
+
+            // Determine adapter type
             if ( DataStore.class.isAssignableFrom( clazz ) ) {
                 adapterType = AdapterType.STORE;
             } else if ( DataSource.class.isAssignableFrom( clazz ) ) {
@@ -158,13 +160,21 @@ public class AdapterManager {
             } else {
                 throw new RuntimeException( "Unknown type of adapter! Specified class is neither implementing DataStore nor DataSource." );
             }
-            int storeId = Catalog.getInstance().addAdapter( uniqueName, clazzName, adapterType, settings );
-            instance = (Adapter) ctor.newInstance( storeId, uniqueName, settings );
-            adapterByName.put( instance.getUniqueName(), instance );
-            adapterById.put( instance.getAdapterId(), instance );
-        } catch ( ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e ) {
-            throw new RuntimeException( "Something went wrong while adding a new store", e );
+        } catch ( NoSuchMethodException | ClassNotFoundException e ) {
+            throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
+
+        int adapterId = Catalog.getInstance().addAdapter( uniqueName, clazzName, adapterType, settings );
+        Adapter instance;
+        try {
+            instance = (Adapter) ctor.newInstance( adapterId, uniqueName, settings );
+        } catch ( Exception e ) {
+            removeAdapter( adapterId );
+            throw new RuntimeException( "Something went wrong while adding a new adapter", e );
+        }
+        adapterByName.put( instance.getUniqueName(), instance );
+        adapterById.put( instance.getAdapterId(), instance );
+
         return instance;
     }
 

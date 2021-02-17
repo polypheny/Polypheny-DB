@@ -426,6 +426,7 @@ public class JdbcRules {
                                     || !RexOver.containsOver( project.getProjects(), null ))
                                     && !userDefinedFunctionInProject( project )
                                     && !knnFunctionInProject( project )
+                                    && !multimediaFunctionInProject( project )
                                     && (out.dialect.supportsNestedArrays() || !itemOperatorInProject( project )),
                     Convention.NONE, out, relBuilderFactory, "JdbcProjectRule." + out );
         }
@@ -449,6 +450,18 @@ public class JdbcRules {
             for ( RexNode node : project.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean multimediaFunctionInProject( Project project ) {
+            CheckingMultimediaFunctionVisitor visitor = new CheckingMultimediaFunctionVisitor();
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsMultimediaFunction() ) {
                     return true;
                 }
             }
@@ -528,6 +541,7 @@ public class JdbcRules {
                     (Predicate<Filter>) filter -> (
                             !userDefinedFunctionInFilter( filter )
                                     && !knnFunctionInFilter( filter )
+                                    && !multimediaFunctionInFilter( filter )
                                     && (out.dialect.supportsNestedArrays() || (!itemOperatorInFilter( filter ) && isStringComparableArrayType( filter )))),
                     Convention.NONE, out, relBuilderFactory, "JdbcFilterRule." + out );
         }
@@ -545,6 +559,18 @@ public class JdbcRules {
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean multimediaFunctionInFilter( Filter filter ) {
+            CheckingMultimediaFunctionVisitor visitor = new CheckingMultimediaFunctionVisitor();
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.containsMultimediaFunction() ) {
                     return true;
                 }
             }
@@ -1158,6 +1184,33 @@ public class JdbcRules {
             SqlOperator operator = call.getOperator();
             if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isKnn() ) {
                 containsKnnFunction |= true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingMultimediaFunctionVisitor extends RexVisitorImpl<Void> {
+
+        private boolean containsMultimediaFunction = false;
+
+
+        CheckingMultimediaFunctionVisitor() {
+            super( true );
+        }
+
+
+        public boolean containsMultimediaFunction() {
+            return containsMultimediaFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            SqlOperator operator = call.getOperator();
+            if ( operator instanceof SqlFunction && ((SqlFunction) operator).getFunctionType().isMultimedia() ) {
+                containsMultimediaFunction = true;
             }
             return super.visitCall( call );
         }

@@ -121,7 +121,7 @@ public class Condition {
      * @return {@code Null} if it is not a PK lookup, or an Object array with the lookups to hash, if it is a PK lookup
      */
     @Nullable
-    public Object[] getPKLookup( final Set<Integer> pkColumnReferences, final PolyType[] columnTypes, final int colSize, final DataContext dataContext ) {
+    public Object getPKLookup( final Set<Integer> pkColumnReferences, final PolyType[] columnTypes, final int colSize, final DataContext dataContext ) {
         Object[] lookups = new Object[colSize];
         if ( operator == SqlKind.EQUALS && pkColumnReferences.size() == 1 ) {
             if ( pkColumnReferences.contains( columnReference ) ) {

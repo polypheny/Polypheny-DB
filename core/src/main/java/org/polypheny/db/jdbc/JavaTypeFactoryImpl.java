@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,6 +225,10 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return GeoFunctions.Geom.class;
                 case SYMBOL:
                     return Enum.class;
+                case FILE:
+                case IMAGE:
+                case VIDEO:
+                case SOUND:
                 case ANY:
                     return Object.class;
             }
@@ -357,6 +361,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         public String toString() {
             return name;
         }
+
     }
 
 
@@ -416,6 +421,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         public Type getDeclaringClass() {
             return syntheticType;
         }
+
     }
+
 }
 
