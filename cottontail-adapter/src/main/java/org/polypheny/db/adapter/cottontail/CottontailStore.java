@@ -433,7 +433,8 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        throw new RuntimeException( "Cottontail-DB adapter does not support dropping indexes" );
+        // TODO: Add support for dropping indexes
+        log.error( "Cottontail-DB adapter does not support dropping indexes" );
     }
 
 
