@@ -316,6 +316,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 // Decimal decoding is handled properly in Linq4JFixer
             case BINARY:
             case VARBINARY:
+            case IMAGE:
+            case SOUND:
+            case VIDEO:
+            case FILE:
                 // Binary and VarBinary are turned into base64 string
                 // Linq4JFixer takes care of decoding
             case TINYINT:
@@ -359,31 +363,28 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         switch ( polyType ) {
             case BOOLEAN:
                 return Types.lookupMethod( Linq4JFixer.class, "getBooleanData", Object.class );
-//                return "getBooleanData";
             case INTEGER:
                 return Types.lookupMethod( Linq4JFixer.class, "getIntData", Object.class );
-//                return "getIntData";
             case BIGINT:
                 return Types.lookupMethod( Linq4JFixer.class, "getLongData", Object.class );
-//                return "getLongData";
             case FLOAT:
             case REAL: // We are mapping REAL to CT FLOAT
                 return Types.lookupMethod( Linq4JFixer.class, "getFloatData", Object.class );
-//                return "getFloatData";
             case DOUBLE:
                 return Types.lookupMethod( Linq4JFixer.class, "getDoubleData", Object.class );
-//                return "getDoubleData";
             case CHAR:
             case VARCHAR:
                 return Types.lookupMethod( Linq4JFixer.class, "getStringData", Object.class );
-//                return "getStringData";
             case NULL:
                 return Types.lookupMethod( Linq4JFixer.class, "getNullData", Object.class );
-//                return "getNullData";
             case DECIMAL:
                 return Types.lookupMethod( Linq4JFixer.class, "getDecimalData", Object.class );
             case BINARY:
             case VARBINARY:
+            case IMAGE:
+            case SOUND:
+            case VIDEO:
+            case FILE:
                 return Types.lookupMethod( Linq4JFixer.class, "getBinaryData", Object.class );
             case TIME:
                 return Types.lookupMethod( Linq4JFixer.class, "getTimeData", Object.class );

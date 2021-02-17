@@ -58,6 +58,8 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityDefinition;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexDefinition;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexDefinition.Builder;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
@@ -415,7 +417,17 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        throw new RuntimeException( "Cottontail-DB adapter does not support adding indexes" );
+        Builder indexBuilder = IndexDefinition.newBuilder();
+        Entity tableEntity = Entity.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( Catalog.getInstance().getColumnPlacement( getAdapterId(), catalogIndex.key.columnIds.get( 0 ) ).physicalTableName )
+                .build();
+        indexBuilder.getIndexBuilder().setEntity( tableEntity );
+        for ( long columnId : catalogIndex.key.columnIds ) {
+            CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( getAdapterId(), columnId );
+            indexBuilder.addColumns( placement.physicalColumnName );
+        }
+        this.wrapper.createIndexBlocking( indexBuilder.build() );
     }
 
 
@@ -514,13 +526,15 @@ public class CottontailStore extends DataStore {
 
     @Override
     public List<AvailableIndexMethod> getAvailableIndexMethods() {
-        return ImmutableList.of();
+        return ImmutableList.of(
+                new AvailableIndexMethod( "default", "Default" )
+        );
     }
 
 
     @Override
     public AvailableIndexMethod getDefaultIndexMethod() {
-        throw new RuntimeException( "Cottontail-DB adapter does not support adding indexes" );
+        return getAvailableIndexMethods().get( 0 );
     }
 
 

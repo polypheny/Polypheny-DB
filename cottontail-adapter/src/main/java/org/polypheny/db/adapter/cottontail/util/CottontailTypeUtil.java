@@ -154,6 +154,11 @@ public class CottontailTypeUtil {
                 case VARBINARY:
                 case BINARY:
                     return Type.STRING;
+                case FILE:
+                case IMAGE:
+                case SOUND:
+                case VIDEO:
+                    return Type.STRING;
             }
         }
 
@@ -171,51 +176,59 @@ public class CottontailTypeUtil {
 
     public static Expression rexLiteralToDataExpression( RexLiteral rexLiteral, PolyType actualType ) {
         ConstantExpression constantExpression;
-        switch ( actualType ) {
-            case BOOLEAN:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Boolean.class ) );
-                break;
-            case INTEGER:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
-                break;
-            case BIGINT:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
-                break;
-            case DOUBLE:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Double.class ) );
-                break;
-            case REAL:
-            case FLOAT:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Float.class ) );
-                break;
-            case VARCHAR:
-            case CHAR:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( String.class ) );
-                break;
-            case TIMESTAMP:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
-                break;
-            case DATE:
-            case TIME:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
-                break;
-            case TINYINT:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Byte.class ) );
-                break;
-            case SMALLINT:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( Short.class ) );
-                break;
-            case DECIMAL:
+        if ( rexLiteral.isNull() ) {
+            constantExpression = Expressions.constant( null );
+        } else {
+            switch ( actualType ) {
+                case BOOLEAN:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Boolean.class ) );
+                    break;
+                case INTEGER:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
+                    break;
+                case BIGINT:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
+                    break;
+                case DOUBLE:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Double.class ) );
+                    break;
+                case REAL:
+                case FLOAT:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Float.class ) );
+                    break;
+                case VARCHAR:
+                case CHAR:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( String.class ) );
+                    break;
+                case TIMESTAMP:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Long.class ) );
+                    break;
+                case DATE:
+                case TIME:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Integer.class ) );
+                    break;
+                case TINYINT:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Byte.class ) );
+                    break;
+                case SMALLINT:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( Short.class ) );
+                    break;
+                case DECIMAL:
 //                constantExpression = Expressions.constant( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( rexLiteral.getValueAs( BigDecimal.class ) ) );
-                BigDecimal bigDecimal = rexLiteral.getValueAs( BigDecimal.class );
-                constantExpression = Expressions.constant( (bigDecimal != null) ? bigDecimal.toString() : null );
-                break;
-            case VARBINARY:
-            case BINARY:
-                constantExpression = Expressions.constant( rexLiteral.getValueAs( ByteString.class ).toBase64String() );
-                break;
-            default:
-                throw new RuntimeException( "Type " + rexLiteral.getTypeName() + " is not supported by the cottontail adapter." );
+                    BigDecimal bigDecimal = rexLiteral.getValueAs( BigDecimal.class );
+                    constantExpression = Expressions.constant( (bigDecimal != null) ? bigDecimal.toString() : null );
+                    break;
+                case VARBINARY:
+                case BINARY:
+                case FILE:
+                case SOUND:
+                case IMAGE:
+                case VIDEO:
+                    constantExpression = Expressions.constant( rexLiteral.getValueAs( ByteString.class ).toBase64String() );
+                    break;
+                default:
+                    throw new RuntimeException( "Type " + rexLiteral.getTypeName() + " is not supported by the cottontail adapter." );
+            }
         }
 
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( actualType ) );
@@ -278,11 +291,17 @@ public class CottontailTypeUtil {
                 if ( value instanceof Byte ) {
                     return builder.setIntData( ((Byte) value).intValue() ).build();
                 }
+                if ( value instanceof Long ) {
+                    return builder.setIntData( ((Long) value).intValue() ).build();
+                }
                 break;
             }
             case SMALLINT: {
                 if ( value instanceof Short ) {
                     return builder.setIntData( ((Short) value).intValue() ).build();
+                }
+                if ( value instanceof Long ) {
+                    return builder.setIntData( ((Long) value).intValue() ).build();
                 }
                 break;
             }
@@ -364,85 +383,17 @@ public class CottontailTypeUtil {
                 }
                 break;
             }
+            case FILE:
+            case IMAGE:
+            case SOUND:
+            case VIDEO:
+                if ( value instanceof String ) {
+                    return builder.setStringData( value.toString() ).build();
+                }
         }
 
         log.error( "Conversion not possible! value: {}, type: {}", value.getClass().getCanonicalName(), actualType );
         throw new RuntimeException( "Cottontail data type error: Type not handled." );
-
-        /*if ( value instanceof Boolean ) {
-            return builder.setBooleanData( (Boolean) value ).build();
-        } else if ( value instanceof Integer ) {
-            return builder.setIntData( (Integer) value ).build();
-        } else if ( value instanceof Long ) {
-            return builder.setLongData( (Long) value ).build();
-        } else if ( value instanceof Byte ) {
-            return builder.setIntData( ((Byte) value).intValue() ).build();
-        } else if ( value instanceof Short ) {
-            return builder.setIntData( ((Short) value).intValue() ).build();
-        } else if ( value instanceof Double ) {
-            return builder.setDoubleData( (Double) value ).build();
-        } else if ( value instanceof Float ) {
-            return builder.setFloatData( (Float) value ).build();
-        } else if ( value instanceof String ) {
-            return builder.setStringData( (String) value ).build();
-        } else if ( value instanceof BigDecimal ) {
-            return builder.setStringData( value.toString() ).build();
-        } else if ( value instanceof TimeString ) {
-            return builder.setIntData( ((TimeString) value).getMillisOfDay() ).build();
-        } else if ( value instanceof java.sql.Time ) {
-            java.sql.Time time = (java.sql.Time) value;
-            TimeString timeString = new TimeString( time.toString() );
-            return builder.setIntData( timeString.getMillisOfDay() ).build();
-        } else if ( value instanceof DateString ) {
-            return builder.setIntData( ((DateString) value).getDaysSinceEpoch() ).build();
-        } else if ( value instanceof java.sql.Date ) {
-            DateString dateString = new DateString( value.toString() );
-            return builder.setIntData( dateString.getDaysSinceEpoch() ).build();
-        } else if ( value instanceof TimestampString ) {
-            return builder.setLongData( ((TimestampString) value).getMillisSinceEpoch() ).build();
-        } else if ( value instanceof java.sql.Timestamp ) {
-            String timeStampString = value.toString();
-            if ( timeStampString.endsWith( ".0" ) ) {
-                timeStampString = timeStampString.substring( 0, timeStampString.length() - 2 );
-            }
-            TimestampString tsString = new TimestampString( timeStampString );
-            return builder.setLongData( tsString.getMillisSinceEpoch() ).build();
-        } else if ( value instanceof Calendar ) {
-            TimestampString timestampString = TimestampString.fromCalendarFields( (Calendar) value );
-            return builder.setLongData( timestampString.getMillisSinceEpoch() ).build();
-        } else if ( value instanceof List ) {
-            Vector.Builder vectorBuilder = Vector.newBuilder();
-            // TODO js(ct): add list.size() == 0 handling
-            Object firstItem = ((List) value).get( 0 );
-            Vector vector = toVectorData( value );
-            *//*if ( firstItem instanceof Integer ) {
-                return builder.setVectorData(
-                        vectorBuilder.setIntVector(
-                                IntVector.newBuilder().addAllVector( (List<Integer>) value ).build() ) ).build();
-            } else if ( firstItem instanceof Double ) {
-                return builder.setVectorData(
-                        vectorBuilder.setDoubleVector(
-                                DoubleVector.newBuilder().addAllVector( (List<Double>) value ).build() ) ).build();
-            } else if ( firstItem instanceof Long ) {
-                return builder.setVectorData(
-                        vectorBuilder.setLongVector(
-                                LongVector.newBuilder().addAllVector( (List<Long>) value ).build() ) ).build();
-            } else if ( firstItem instanceof Float ) {
-                return builder.setVectorData(
-                        vectorBuilder.setFloatVector(
-                                FloatVector.newBuilder().addAllVector( (List<Float>) value ).build() ) ).build();
-            } else if ( firstItem instanceof Boolean ) {
-                return builder.setVectorData(
-                        vectorBuilder.setBoolVector(
-                                BoolVector.newBuilder().addAllVector( (List<Boolean>) value ).build() ) ).build();*//*
-            if ( vector != null ) {
-                return builder.setVectorData( vector ).build();
-            } else {
-                return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( (List<Object>) value ) ).build();
-            }
-        } else {
-            throw new RuntimeException( "Cottontail data type error: Type not handled." );
-        }*/
     }
 
 

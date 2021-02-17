@@ -66,8 +66,17 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
         builder.add( Expressions.declare( Modifier.FINAL, valuesMapList_, valuesMapListCreator ) );
 
         final List<Pair<String, PolyType>> physicalColumnNames = new ArrayList<>();
+        List<Integer> tupleIndexes = new ArrayList<>();
+        int i = 0;
         for ( RelDataTypeField field : this.rowType.getFieldList() ) {
-            physicalColumnNames.add( new Pair<>( context.cottontailTable.getPhysicalColumnName( field.getName() ), field.getType().getPolyType() ) );
+            try {
+                physicalColumnNames.add( new Pair<>( context.cottontailTable.getPhysicalColumnName( field.getName() ), field.getType().getPolyType() ) );
+                tupleIndexes.add( i );
+            } catch ( IndexOutOfBoundsException e ) {
+                // ignore; this table seems to be vertically partitioned and this store does not have all columns
+            } finally {
+                i++;
+            }
         }
 
         for ( List<RexLiteral> tuple : tuples ) {
@@ -75,7 +84,17 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
             final NewExpression valuesMapCreator = Expressions.new_( HashMap.class );
             builder.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator ) );
 
-            for ( Pair<Pair<String, PolyType>, RexLiteral> pair : Pair.zip( physicalColumnNames, tuple ) ) {
+            List<RexLiteral> values;
+            if ( this.rowType.getFieldList().size() > physicalColumnNames.size() ) {
+                values = new ArrayList<>();
+                for ( int idx : tupleIndexes ) {
+                    values.add( tuple.get( idx ) );
+                }
+            } else {
+                values = tuple;
+            }
+
+            for ( Pair<Pair<String, PolyType>, RexLiteral> pair : Pair.zip( physicalColumnNames, values ) ) {
                 builder.add(
                         Expressions.statement(
                                 Expressions.call( valuesMap_,

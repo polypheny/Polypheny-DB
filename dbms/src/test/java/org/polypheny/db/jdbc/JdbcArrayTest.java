@@ -161,9 +161,10 @@ public class JdbcArrayTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( ARRAYTEST_SQL );
-                statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
                 try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id, intarray[1] FROM arraytest" ),
                             ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0], ((Object[]) ARRAYTEST_DATA[5])[0] } ) );
@@ -229,9 +230,10 @@ public class JdbcArrayTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( ARRAYTEST_SQL );
-                statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
                 try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id FROM arraytest WHERE intarray = array[1,2]" ),
                             ImmutableList.of( new Object[]{ 1 } ) );

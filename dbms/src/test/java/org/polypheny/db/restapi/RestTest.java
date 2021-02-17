@@ -37,6 +37,7 @@ import kong.unirest.RequestBodyEntity;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,6 +54,12 @@ public class RestTest {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         addTestSchema();
+    }
+
+
+    @AfterClass
+    public static void stop() {
+        deleteOldData();
     }
 
 
@@ -78,6 +85,24 @@ public class RestTest {
                         + "PRIMARY KEY (tinteger) )" );
                 connection.commit();
             }
+        }
+    }
+
+
+    private static void deleteOldData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "DROP TABLE test.resttest" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
+                statement.executeUpdate( "DROP SCHEMA test" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while deleting old data", e );
         }
     }
 
