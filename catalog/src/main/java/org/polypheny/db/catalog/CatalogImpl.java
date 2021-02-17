@@ -83,7 +83,6 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -1230,6 +1229,11 @@ public class CatalogImpl extends Catalog {
         } catch ( NullPointerException e ) {
             throw new UnknownTableIdRuntimeException( viewId );
         }
+    }
+
+    @Override
+    public List<CatalogView> getAllViews(){
+        return new ArrayList<>( views.getValues() );
     }
 
 

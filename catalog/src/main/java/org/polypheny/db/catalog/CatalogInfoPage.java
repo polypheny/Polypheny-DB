@@ -40,6 +40,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
     private final InformationTable adapterInformation;
+    private final InformationTable viewInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -55,6 +56,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
         this.indexInformation = addCatalogInformationTable( page, "Indexes", Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
+        this.viewInformation = addCatalogInformationTable( page, "Views", Arrays.asList( "ID", "Name", "SQL" ) );
 
         addPersistentInfo( page );
 
@@ -95,6 +97,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
         columnInformation.reset();
         adapterInformation.reset();
         indexInformation.reset();
+        viewInformation.reset();
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
@@ -117,6 +120,9 @@ public class CatalogInfoPage implements PropertyChangeListener {
             } );
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
+            } );
+            catalog.getAllViews(  ).forEach( catalogView -> {
+                viewInformation.addRow( catalogView.id, catalogView.name, catalogView.definition );
             } );
         } catch ( Exception e ) {
             log.error( "Exception while reset catalog information page", e );

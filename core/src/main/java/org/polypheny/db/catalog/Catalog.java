@@ -20,7 +20,6 @@ package org.polypheny.db.catalog;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.NonNull;
@@ -61,9 +60,6 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -348,6 +344,8 @@ public abstract class Catalog {
     public abstract long addView(String name, long schemaId, int ownerId, boolean modifiable, String definition, RelNode relRoot );
 
     public abstract CatalogView getView(long viewId);
+
+    public abstract List<CatalogView> getAllViews();
 
 
     /**
