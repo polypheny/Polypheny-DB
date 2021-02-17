@@ -39,12 +39,16 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -67,7 +71,12 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
+    @Setter
+    private RelNode relRoot;
+    @Getter
     private final SqlNode query;
+    @Setter
+    private String sql;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", SqlKind.CREATE_VIEW );
 
@@ -90,11 +99,12 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement ) {
+    public void execute( Context context, Statement statement) {
         Catalog catalog = Catalog.getInstance();
         String viewName;
         long schemaId;
 
+        System.out.println(relRoot);
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
                 schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
@@ -119,28 +129,18 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     schemaId,
                     context.getCurrentUserId(),
                     false,
-                    null
+                    sql,
+                    relRoot
             );
 
             CatalogView catalogView = catalog.getView(viewId);
 
 
-            System.out.println(catalogView.id);
+            System.out.println(catalogView.name);
 
         } catch ( Exception e ) {
             e.printStackTrace();
         }
-
-
-
-
-        /*
-        View Implementation test (Version 1 & 2)
-
-        Catalog catalog = Catalog.getInstance();
-        catalog.addView(name.toString(), query);
-         */
-        //throw new RuntimeException( "Not supported yet" );
     }
 
 

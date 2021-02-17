@@ -82,6 +82,8 @@ import org.polypheny.db.catalog.exceptions.UnknownTableIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -1232,11 +1234,11 @@ public class CatalogImpl extends Catalog {
 
 
     @Override
-    public long addView( String name, long schemaId, int ownerId, boolean modifiable, String definition ) {
+    public long addView( String name, long schemaId, int ownerId, boolean modifiable, String definition, RelNode relRoot ) {
         long id = addTable( name, schemaId, ownerId, TableType.VIEW, modifiable, definition );
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
-        CatalogView view = new CatalogView( id, name, schemaId, schema.databaseId, ownerId, owner.name, modifiable, definition );
+        CatalogView view = new CatalogView( id, name, schemaId, schema.databaseId, ownerId, owner.name, modifiable, definition, relRoot );
 
         synchronized ( this ) {
             views.put( id, view );

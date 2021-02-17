@@ -21,6 +21,8 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 
 
 @EqualsAndHashCode
@@ -34,10 +36,11 @@ public final class CatalogView implements CatalogEntity, Comparable<CatalogView>
     public final String ownerName;
     public final boolean modifiable;
     public final String definition;
+    public final RelNode relRoot;
 
 
 
-    public CatalogView( long id, String name, long schemaId, long databaseId, int ownerId, String ownerName, boolean modifiable, String definition ) {
+    public CatalogView( long id, String name, long schemaId, long databaseId, int ownerId, String ownerName, boolean modifiable, String definition, RelNode relRoot ) {
         this.id = id;
         this.name = name;
         this.schemaId = schemaId;
@@ -46,6 +49,7 @@ public final class CatalogView implements CatalogEntity, Comparable<CatalogView>
         this.ownerName = ownerName;
         this.modifiable = modifiable;
         this.definition = definition;
+        this.relRoot = relRoot;
     }
 
     @SneakyThrows
@@ -56,6 +60,7 @@ public final class CatalogView implements CatalogEntity, Comparable<CatalogView>
 
     @SneakyThrows
     public String getSchemaName() {
+
         return Catalog.getInstance().getSchema( schemaId ).name;
     }
 
