@@ -96,7 +96,7 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     private final RelDataType rowType;
     @Getter
     private final Table table;
-    private transient final Function<Class, Expression> expressionFunction;
+    private final Function<Class, Expression> expressionFunction;
     private final ImmutableList<String> names;
 
     /**
@@ -162,15 +162,15 @@ public class RelOptTableImpl extends Prepare.AbstractPreparingTable {
     private static Function<Class, Expression> getClassExpressionFunction( final SchemaPlus schema, final String tableName, final Table table ) {
         if ( table instanceof QueryableTable ) {
             final QueryableTable queryableTable = (QueryableTable) table;
-            return clazz -> queryableTable.getExpression( schema, tableName, clazz );
+            return (Function<Class, Expression> & Serializable) clazz -> queryableTable.getExpression( schema, tableName, clazz );
         } else if ( table instanceof ScannableTable
                 || table instanceof FilterableTable
                 || table instanceof ProjectableFilterableTable ) {
-            return clazz -> Schemas.tableExpression( schema, Object[].class, tableName, table.getClass() );
+            return (Function<Class, Expression> & Serializable) clazz -> Schemas.tableExpression( schema, Object[].class, tableName, table.getClass() );
         } else if ( table instanceof StreamableTable ) {
             return getClassExpressionFunction( schema, tableName, ((StreamableTable) table).stream() );
         } else {
-            return input -> {
+            return (Function<Class, Expression> & Serializable) input -> {
                 throw new UnsupportedOperationException();
             };
         }
