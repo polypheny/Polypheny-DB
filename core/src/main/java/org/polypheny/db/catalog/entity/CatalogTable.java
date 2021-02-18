@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.rel.RelNode;
 
 
 @EqualsAndHashCode
@@ -43,7 +44,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
     public final int ownerId;
     public final String ownerName;
     public final TableType tableType;
-    public final String definition;
+    public final RelNode definition;
     public final Long primaryKey;
     public final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter;
     public final boolean modifiable;
@@ -58,7 +59,7 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             final int ownerId,
             @NonNull final String ownerName,
             @NonNull final TableType type,
-            final String definition,
+            final RelNode definition,
             final Long primaryKey,
             @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter, boolean modifiable ) {
         this.id = id;

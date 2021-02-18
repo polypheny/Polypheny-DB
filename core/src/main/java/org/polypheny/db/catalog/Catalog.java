@@ -38,7 +38,6 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -60,7 +59,6 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -339,16 +337,7 @@ public abstract class Catalog {
      * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition );
-
-
-    public abstract long addView(String name, long schemaId, int ownerId, boolean modifiable, String definition, RelNode relRoot );
-
-    public abstract CatalogView getView(long viewId);
-
-    public abstract CatalogView getView(String name);
-
-    public abstract List<CatalogView> getAllViews();
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition );
 
 
     /**

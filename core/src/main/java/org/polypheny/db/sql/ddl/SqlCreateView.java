@@ -43,12 +43,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogView;
+import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -62,6 +64,7 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -71,8 +74,6 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
-    @Setter
-    private RelNode relRoot;
     @Getter
     private final SqlNode query;
     @Setter
@@ -99,12 +100,11 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
 
     @Override
-    public void execute( Context context, Statement statement) {
+    public void execute( Context context, Statement statement ) {
         Catalog catalog = Catalog.getInstance();
         String viewName;
         long schemaId;
 
-        System.out.println(relRoot);
         try {
             if ( name.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
                 schemaId = catalog.getSchema( name.names.get( 0 ), name.names.get( 1 ) ).id;
@@ -122,23 +122,20 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
-        try {
+        SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
+        RelNode relNode = sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel;
 
-            long viewId = catalog.addView(
+        try {
+            long tableId = catalog.addTable(
                     viewName,
                     schemaId,
                     context.getCurrentUserId(),
+                    TableType.VIEW,
                     false,
-                    sql,
-                    relRoot
+                    relNode
             );
 
-            CatalogView catalogView = catalog.getView(viewId);
-
-
-            System.out.println(catalogView.name);
-
-        } catch ( Exception e ) {
+        } catch ( RuntimeException e ) {
             e.printStackTrace();
         }
     }

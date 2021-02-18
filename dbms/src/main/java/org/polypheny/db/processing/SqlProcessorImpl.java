@@ -196,9 +196,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         .withConvertTableAccess( false )
                         .build();
         final SqlToRelConverter sqlToRelConverter = new SqlToRelConverter( this, validator, statement.getTransaction().getCatalogReader(), cluster, StandardConvertletTable.INSTANCE, config );
-        /*
-        hier müsste der convertQuery mit false aufgerufen werden
-         */
         RelRoot logicalRoot = sqlToRelConverter.convertQuery( sql, false, true );
 
         if ( statement.getTransaction().isAnalyze() ) {
@@ -241,13 +238,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             try {
                 // Acquire global schema lock
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
-
-                if(parsed.isA( SqlKind.VIEW )){
-                    System.out.println("testing");
-                    ((SqlCreateView) parsed).setSql( ((SqlCreateView) parsed).getQuery().toString() );
-                    ((SqlCreateView) parsed).setRelRoot( (translate( statement, validate( statement.getTransaction(), ((SqlCreateView) parsed).getQuery(), RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left )).getRel());
-                }
-
                 // Execute statement
                 ((SqlExecutableStatement) parsed).
                         execute( statement.getPrepareContext(), statement );

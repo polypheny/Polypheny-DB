@@ -59,7 +59,6 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -83,7 +82,6 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -92,7 +90,6 @@ import org.polypheny.db.util.FileSystemManager;
 
 @Slf4j
 public class CatalogImpl extends Catalog {
-
 
     private static final String FILE_PATH = "mapDB";
     private static DB db;
@@ -108,9 +105,6 @@ public class CatalogImpl extends Catalog {
     private static BTreeMap<Long, CatalogSchema> schemas;
     private static BTreeMap<Object[], CatalogSchema> schemaNames;
     private static HTreeMap<Long, ImmutableList<Long>> schemaChildren;
-
-    private static BTreeMap<Long, CatalogView> views;
-    private static BTreeMap<String, Long> viewNames;
 
     private static BTreeMap<Long, CatalogTable> tables;
     private static BTreeMap<Object[], CatalogTable> tableNames;
@@ -304,7 +298,6 @@ public class CatalogImpl extends Catalog {
             initDatabaseInfo( db );
             initSchemaInfo( db );
             initTableInfo( db );
-            initView( db );
             initColumnInfo( db );
             initKeysAndConstraintsInfo( db );
             initAdapterInfo( db );
@@ -510,14 +503,6 @@ public class CatalogImpl extends Catalog {
                 .keySerializer( new SerializerArrayTuple( Serializer.LONG, Serializer.LONG, Serializer.STRING ) )
                 .valueSerializer( Serializer.JAVA )
                 .createOrOpen();
-    }
-
-
-    private void initView( DB db ) {
-        //noinspection unchecked
-        views = db.treeMap( "views", Serializer.LONG, Serializer.JAVA ).createOrOpen();
-        //noinspection unchecked
-        viewNames = db.treeMap( "viewNames", Serializer.STRING, Serializer.LONG ).createOrOpen();
     }
 
 
@@ -1220,44 +1205,6 @@ public class CatalogImpl extends Catalog {
     }
 
 
-    @Override
-    public CatalogView getView( long viewId ) {
-        try {
-            return Objects.requireNonNull( views.get( viewId ) );
-        } catch ( NullPointerException e ) {
-            throw new UnknownTableIdRuntimeException( viewId );
-        }
-    }
-
-    @Override
-    public CatalogView getView(String name) {
-        return views.get( viewNames.get( name ));
-    }
-
-    @Override
-    public List<CatalogView> getAllViews(){
-        return new ArrayList<>( views.getValues() );
-    }
-
-
-    @Override
-    public long addView( String name, long schemaId, int ownerId, boolean modifiable, String definition, RelNode relRoot ) {
-        long id = addTable( name, schemaId, ownerId, TableType.VIEW, modifiable, definition );
-        CatalogSchema schema = getSchema( schemaId );
-        CatalogUser owner = getUser( ownerId );
-        CatalogView view = new CatalogView( id, name, schemaId, schema.databaseId, ownerId, owner.name, modifiable, definition, relRoot );
-
-        synchronized ( this ) {
-            views.put( id, view );
-            viewNames.put( name , id );
-        }
-
-        listeners.firePropertyChange( "view", null, view );
-        return id;
-
-    }
-
-
     /**
      * Adds a table to a specified schema.
      *
@@ -1270,7 +1217,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
