@@ -17,7 +17,11 @@
 package org.polypheny.db.adapter.cottontail.rules;
 
 
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import org.polypheny.db.adapter.cottontail.CottontailConvention;
 import org.polypheny.db.adapter.cottontail.CottontailToEnumerableConverter;
 import org.polypheny.db.adapter.cottontail.rel.CottontailProject;
@@ -43,18 +47,41 @@ import org.polypheny.db.type.PolyType;
 public class CottontailProjectRule extends CottontailConverterRule {
 
     CottontailProjectRule( CottontailConvention out, RelBuilderFactory relBuilderFactory ) {
-        super( Project.class, r -> true, Convention.NONE, out, relBuilderFactory, "CottontailProjectRule:" + out.getName() );
+        super( Project.class, p -> true, Convention.NONE, out, relBuilderFactory, "CottontailProjectRule:" + out.getName() );
+    }
+
+
+    private static boolean containsInnerProject( Project project ) {
+        List<RelNode> rels = ((RelSubset) project.getInput()).getRelList();
+        Set<RelNode> alreadyChecked = new HashSet<>();
+        Deque<RelNode> innerLevel = new LinkedList<>( rels );
+
+        while ( !innerLevel.isEmpty() ) {
+            RelNode relNode = innerLevel.pop();
+            alreadyChecked.add( relNode );
+            if ( relNode instanceof Project ) {
+                return true;
+            } else {
+                for ( RelNode innerNode : relNode.getInputs() ) {
+                    if ( innerNode instanceof RelSubset ) {
+                        for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
+                            if ( !alreadyChecked.contains( possibleNewRel ) ) {
+                                innerLevel.addLast( possibleNewRel );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
 
     @Override
     public boolean matches( RelOptRuleCall call ) {
         Project project = call.rel( 0 );
-
-        Project innerProject = CottontailSortRule.getUnderlyingProject( (RelSubset) project.getInput(), this.out );
-
-        if ( innerProject != null ) {
-            return false;
+        if ( containsInnerProject( project ) ) {
+            return super.matches( call );
         }
 
         boolean onlyInputRefs = true;
@@ -119,6 +146,7 @@ public class CottontailProjectRule extends CottontailConverterRule {
         return ((containsInputRefs || containsValueProjects) && !foundKnnFunction)
                 || ((containsInputRefs || foundKnnFunction) && !containsValueProjects);
 //        return onlyInputRefs || valueProject;
+
     }
 
 
