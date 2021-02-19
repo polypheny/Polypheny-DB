@@ -319,6 +319,8 @@ public class PolyTypeConversionUtil {
         }
 
         switch ( outType ) {
+            case DATE:
+                return value;
             default:
                 throw new IllegalArgumentException( "Cannot convert date to type: " + outType );
         }
@@ -337,6 +339,8 @@ public class PolyTypeConversionUtil {
         }
 
         switch ( outType ) {
+            case TIME:
+                return value;
             default:
                 throw new IllegalArgumentException( "Cannot convert time to type: " + outType );
         }
@@ -355,6 +359,8 @@ public class PolyTypeConversionUtil {
         }
 
         switch ( outType ) {
+            case TIMESTAMP:
+                return value;
             default:
                 throw new IllegalArgumentException( "Cannot convert timestamp to type: " + outType );
         }
@@ -372,7 +378,24 @@ public class PolyTypeConversionUtil {
             return returnList;
         }
 
+        String varcharValue = (String) value;
         switch ( outType ) {
+            case VARCHAR:
+                return value;
+            case BOOLEAN:
+                return Boolean.parseBoolean( varcharValue );
+            case TINYINT:
+                return Byte.parseByte( varcharValue );
+            case SMALLINT:
+                return Short.parseShort( varcharValue );
+            case INTEGER:
+                return Integer.parseInt( varcharValue );
+            case BIGINT:
+                return Long.parseLong( varcharValue );
+            case REAL:
+                return Float.parseFloat( varcharValue );
+            case DOUBLE:
+                return Double.parseDouble( varcharValue );
             default:
                 throw new IllegalArgumentException( "Cannot convert varchar to type: " + outType );
         }
