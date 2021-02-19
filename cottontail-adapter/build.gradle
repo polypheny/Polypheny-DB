@@ -28,7 +28,6 @@ dependencies {
         exclude group: "org.slf4j"
     }
 
-
     // --- Test Compile ---
     testImplementation project(path: ":core", configuration: "testClasses")
 

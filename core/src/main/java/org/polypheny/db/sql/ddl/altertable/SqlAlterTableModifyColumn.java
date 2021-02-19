@@ -162,7 +162,8 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
                     AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                             context,
                             placement,
-                            getCatalogColumn( catalogTable.id, columnName ) );
+                            getCatalogColumn( catalogTable.id, columnName ),
+                            catalogColumn.type );
                 }
             } else if ( nullable != null ) {
                 // Make sure that this is a table of type TABLE (and not SOURCE)

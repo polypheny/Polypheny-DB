@@ -90,7 +90,7 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
             return;
         }

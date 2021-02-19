@@ -22,8 +22,6 @@ import com.google.gson.annotations.Expose;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
 import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -52,6 +50,10 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.FileSystemManager;
 import org.vitrivr.cottontail.CottontailKt;
+import org.vitrivr.cottontail.config.Config;
+import org.vitrivr.cottontail.config.ExecutionConfig;
+import org.vitrivr.cottontail.config.MapDBConfig;
+import org.vitrivr.cottontail.config.ServerConfig;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnDefinition;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
@@ -103,6 +105,7 @@ public class CottontailStore extends DataStore {
         super( storeId, uniqueName, settings, true );
         this.dbName = settings.get( "database" );
         this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
+        this.dbPort = Integer.parseInt( settings.get( "port" ) );
 
         if ( this.isEmbedded ) {
             File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/cottontaildb-store" );
@@ -114,31 +117,20 @@ public class CottontailStore extends DataStore {
                 }
             }
 
-            File configFile = new File( embeddedDir, "config.json" );
-            if ( !configFile.exists() ) {
-                try {
-                    configFile.createNewFile();
-                    File dataFolder = new File( embeddedDir, "data" );
-                    FileWriter fileWriter = new FileWriter( configFile );
-                    fileWriter.write( "{" );
-                    fileWriter.write( "\"root\": \"" + dataFolder.getAbsolutePath() + "\"," );
-                    fileWriter.write( "\"mapdb\": {" );
-                    fileWriter.write( "\"enableMmap\": true," );
-                    fileWriter.write( "\"forceUnmap\": true," );
-                    fileWriter.write( "\"pageShift\": 22" );
-                    fileWriter.write( "} }" );
-                    fileWriter.close();
-                } catch ( IOException e ) {
-                    throw new RuntimeException( e );
-                }
-            }
-            this.embeddedServer = CottontailKt.embedded( configFile.getAbsolutePath() );
+            File dataFolder = new File( embeddedDir, "data" );
+            Config config = new Config(
+                    dataFolder.toPath(),
+                    false,
+                    new ServerConfig(),
+                    new MapDBConfig(),
+                    new ExecutionConfig()
+            );
+            this.embeddedServer = CottontailKt.embedded( config );
             this.dbHostname = "localhost";
-            this.dbPort = 1865;
         } else {
             this.embeddedServer = null;
             this.dbHostname = settings.get( "host" );
-            this.dbPort = Integer.parseInt( settings.get( "port" ) );
+
         }
 
         ManagedChannel channel = NettyChannelBuilder
@@ -488,7 +480,7 @@ public class CottontailStore extends DataStore {
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         // TODO js(ct): Add updateColumnType to cottontail
         log.error( "UPDATE COLUMN TYPE IS NOT SUPPORTED YET!" );
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogColumn.tableId );
@@ -522,10 +514,20 @@ public class CottontailStore extends DataStore {
         queryResponse.forEachRemaining( queryResponseMessage -> {
             for ( Tuple tuple : queryResponseMessage.getResultsList() ) {
                 Map<String, Data> dataMap = new HashMap<>( tuple.getDataMap() );
-                Object value = dataMap.get( newPhysicalColumnName );
-//                dataMap.put( newPhysicalColumnName, CottontailTypeConversionUtil.convertValue( value,  ) );
 
-                inserts.add( InsertMessage.newBuilder().setTuple( Tuple.newBuilder().putAllData( dataMap ).build() ).setFrom( from ).build() );
+               /* Data newValue = CottontailTypeConversionUtil.convertValue(
+                        dataMap.get( newPhysicalColumnName ),
+                        oldType,
+                        catalogColumn.type );
+
+                dataMap.put( newPhysicalColumnName, newValue );
+
+                Data.newBuilder().setIntData( (Integer) .build() ); */
+
+                InsertMessage insertMessage = InsertMessage.newBuilder()
+                        .setTuple( Tuple.newBuilder().putAllData( dataMap ).build() )
+                        .setFrom( from ).build();
+                inserts.add( insertMessage );
             }
         } );
     }
