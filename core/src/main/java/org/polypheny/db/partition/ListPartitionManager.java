@@ -175,6 +175,12 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
+    public String getRequiredUiInputs() {
+        return null;
+    }
+
+
+    @Override
     public boolean allowsUnboundPartition() {
         return ALLOWS_UNBOUND_PARTITION;
     }

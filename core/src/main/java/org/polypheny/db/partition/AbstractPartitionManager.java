@@ -16,6 +16,8 @@
 
 package org.polypheny.db.partition;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -105,4 +107,148 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         return returnCcps;
     }
 
+    @Override
+    public abstract String getRequiredUiInputs();
+    // ToDO: @HENNLO Maybe enforce and fillout mandatory keys on top level here and only fill out body in specialized classes
+
+
+    protected void generateSampleSQL( JsonObject json ){
+
+        System.out.println("Number of Top Level Keys: "+ json.size());
+
+        String function_title = json.get( "function_title" ).getAsString();
+        String info_tooltip = json.get( "info_tooltip" ).getAsString();
+        String sql_prefix = json.get( "sql_prefix" ).getAsString();
+        String sql_suffix = json.get( "sql_suffix" ).getAsString();
+        boolean dynamic_rows = json.get( "dynamic_rows" ).getAsBoolean();
+        String row_separation = json.get( "row_separation" ).getAsString();
+
+        System.out.println("Function Title: "+ function_title);
+        System.out.println("Info Tooltip: "+ info_tooltip + "\n");
+        System.out.println("SQL Construct: "+ sql_prefix + " " + sql_suffix);
+
+        System.out.println("Use Dynamic Rows: "+ dynamic_rows);
+        System.out.println("Row Separation Character: "+ row_separation);
+
+
+        //Will be selected in UI
+        int numPartitions = 3;
+
+        String content = "";
+
+        System.out.println("\n___________________________________________________");
+        if ( dynamic_rows ){
+            if ( !json.has( "columns" ) ){
+                throw new RuntimeException("UI-based Partition Definition for function: " + function_title + " is ill-defined");
+            }
+
+            JsonArray columns = json.get( "columns" ).getAsJsonArray();
+
+            for ( int i = 0; i < numPartitions; i++ ){
+
+                String header = "";
+                String fieldUI = "";
+                for ( int j = 0; j <columns.size() ; j++ ) {
+
+                    JsonObject currentJson = columns.get( j ).getAsJsonObject();
+                    //First round - print headers
+
+                    header = header + "\t\t\t" + currentJson.get( "title" );
+
+                    String field_type = currentJson.get( "field_type" ).getAsString();
+
+
+                    switch ( field_type ) {
+                        case "text":
+                            fieldUI = fieldUI + "\t\t\t[______]";
+                            break;
+
+                        case "dropdown":
+                            fieldUI = fieldUI + "\t\t\t[    |v]";
+                            //If dropdown was selected than pick options value which is also array
+                            break;
+
+                        case "label":
+                            fieldUI = fieldUI + "\t\t\t" + currentJson.get( "default_value" ).getAsString();
+                            break;
+
+                        default:
+                            System.out.println( "Unknown: field_type: '" + field_type + "' " );
+                            break;
+                    }
+
+
+                }
+
+                if ( i == 0 ) {
+                    System.out.println(header);
+                }
+                System.out.println( (i + 1) + ".  \t\t" + fieldUI );
+            }
+
+
+        }else{
+            System.out.println("Static-Rows: Not implemented yet -- Go line by line");
+
+
+            if ( !json.has( "columns" ) ){
+                throw new RuntimeException("UI-based Partition Definition for function: " + function_title + " is ill-defined");
+            }
+
+            JsonArray columns = json.get( "columns" ).getAsJsonArray();
+            numPartitions = columns.size();
+            System.out.println(numPartitions);
+            for ( int i = 0; i < numPartitions; i++ ){
+
+                //HERE
+                JsonArray currentRow = columns.get( i ).getAsJsonArray();
+
+                String header = "";
+                String fieldUI = "";
+                for ( int j = 0; j <currentRow.size() ; j++ ) {
+
+                    //HERE
+                    JsonObject currentJson= columns.get( j ).getAsJsonObject();
+
+
+                    header = header + "\t\t\t" + currentJson.get( "title" );
+
+                    String field_type = currentJson.get( "field_type" ).getAsString();
+
+
+                    switch ( field_type ) {
+                        case "text":
+                            fieldUI = fieldUI + "\t\t\t[______]";
+                            break;
+
+                        case "dropdown":
+                            fieldUI = fieldUI + "\t\t\t[    |v]";
+                            //If dropdown was selected than pick options value which is also array
+                            break;
+
+                        case "label":
+                            fieldUI = fieldUI + "\t\t\t" + currentJson.get( "default_value" ).getAsString();
+                            break;
+
+                        default:
+                            System.out.println( "Unknown: field_type: '" + field_type + "' " );
+                            break;
+                    }
+
+
+                }
+
+                if ( i == 0 ) {
+                    System.out.println(header);
+                }
+                System.out.println( (i + 1) + ".  \t\t" + fieldUI );
+            }
+
+
+        }
+        System.out.println("\n___________________________________________________");
+
+        System.out.println("\nSQL: ALTER TABLE dummy PARTITION BY "+ function_title + " (column) " + sql_prefix + " " + content + " " +  sql_suffix + "\n");
+
+    }
 }
