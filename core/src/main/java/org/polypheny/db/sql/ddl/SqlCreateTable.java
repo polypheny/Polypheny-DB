@@ -135,7 +135,19 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        // TODO @HENNLO: This seems to be incomplete
+        // TODO @HENNLO: The partition part is still incomplete
+        /** There are several possible ways to unparse the partition section.
+         The To Do is deferred until we have decided if parsing of partition functions will be
+         self contained or not. If not than we need to unparse
+         `WITH PARTITIONS 3`
+         or something like
+         `(
+            PARTITION a892_233 VALUES(892, 233),
+            PARTITION a1001_1002 VALUES(1001, 1002),
+            PARTITION a8000_4003 VALUES(8000, 4003),
+            PARTITION a900_999 VALUES(900, 999)
+         )`*/
+
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );
         if ( ifNotExists ) {

@@ -84,7 +84,11 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
-        // TODO @HENNLO: This seems to be incomplete
+        // TODO @HENNLO: The partition part is still incomplete
+        /** There are several possible ways to unparse the partition section.
+         The To Do is deferred until we have decided if parsing of partition functions will be
+         self contained or not.*/
+
         writer.keyword( "ALTER" );
         writer.keyword( "TABLE" );
         table.unparse( writer, leftPrec, rightPrec );
