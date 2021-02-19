@@ -47,6 +47,7 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeConversionUtil;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.FileSystemManager;
 import org.vitrivr.cottontail.CottontailKt;
@@ -481,25 +482,26 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
-        // TODO js(ct): Add updateColumnType to cottontail
-        log.error( "UPDATE COLUMN TYPE IS NOT SUPPORTED YET!" );
-        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogColumn.tableId );
+        final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapterSortedByPhysicalPosition( this.getAdapterId(), catalogColumn.tableId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
-        final CatalogColumn newColumn = this.catalog.getColumn( catalogColumn.id );
 
         final String currentPhysicalTableName = placements.get( 0 ).physicalTableName;
-
         final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
-        final String newPhysicalColumnName = CottontailNameUtil.createPhysicalColumnName( catalogColumn.id );
 
-        Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( currentPhysicalTableName ).build();
-        Entity newTableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( newPhysicalTableName ).build();
+        Entity tableEntity = Entity.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( currentPhysicalTableName )
+                .build();
+        Entity newTableEntity = Entity.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( newPhysicalTableName )
+                .build();
 
         EntityDefinition message = EntityDefinition.newBuilder()
                 .setEntity( newTableEntity )
-                .addAllColumns( columns ).build();
+                .addAllColumns( columns )
+                .build();
 
-        // DONE TODO js(ct): Create the new table over here!
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
@@ -514,22 +516,40 @@ public class CottontailStore extends DataStore {
         queryResponse.forEachRemaining( queryResponseMessage -> {
             for ( Tuple tuple : queryResponseMessage.getResultsList() ) {
                 Map<String, Data> dataMap = new HashMap<>( tuple.getDataMap() );
-
-               /* Data newValue = CottontailTypeConversionUtil.convertValue(
-                        dataMap.get( newPhysicalColumnName ),
+                Object o = PolyTypeConversionUtil.convertValue(
+                        CottontailTypeUtil.dataToValue( dataMap.get( columnPlacement.physicalColumnName ), oldType ),
                         oldType,
                         catalogColumn.type );
 
-                dataMap.put( newPhysicalColumnName, newValue );
-
-                Data.newBuilder().setIntData( (Integer) .build() ); */
+                dataMap.put( columnPlacement.physicalColumnName, CottontailTypeUtil.toData( o, catalogColumn.type ) );
 
                 InsertMessage insertMessage = InsertMessage.newBuilder()
                         .setTuple( Tuple.newBuilder().putAllData( dataMap ).build() )
-                        .setFrom( from ).build();
+                        .setFrom( from )
+                        .build();
                 inserts.add( insertMessage );
+
+                if ( inserts.size() > 100 ) {
+                    this.wrapper.insert( inserts );
+                }
             }
         } );
+
+        if ( inserts.size() > 0 ) {
+            this.wrapper.insert( inserts );
+        }
+
+        for ( CatalogColumnPlacement ccp : placements ) {
+            catalog.updateColumnPlacementPhysicalNames(
+                    getAdapterId(),
+                    ccp.columnId,
+                    ccp.physicalSchemaName,
+                    newPhysicalTableName,
+                    ccp.physicalColumnName,
+                    false );
+        }
+
+        this.wrapper.dropEntityBlocking( tableEntity );
     }
 
 

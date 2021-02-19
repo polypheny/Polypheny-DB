@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.cottontail.util;
+package org.polypheny.db.type;
 
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import org.polypheny.db.type.PolyType;
 
 
-public class CottontailTypeConversionUtil {
+public class PolyTypeConversionUtil {
 
     public static Object convertValue( Object value, PolyType inType, PolyType outType ) {
 
@@ -146,8 +145,18 @@ public class CottontailTypeConversionUtil {
         switch ( outType ) {
             case SMALLINT:
                 return value;
+            case TINYINT:
+                return Integer.valueOf( shortValue ).byteValue();
             case INTEGER:
                 return (int) shortValue;
+            case BIGINT:
+                return (long) shortValue;
+            case DECIMAL:
+                return BigDecimal.valueOf( shortValue );
+            case REAL:
+                return (float) shortValue;
+            case DOUBLE:
+                return (double) shortValue;
             // TODO FINISH
             default:
                 throw new IllegalArgumentException( "Cannot convert smallint to type: " + outType );
@@ -170,6 +179,10 @@ public class CottontailTypeConversionUtil {
         switch ( outType ) {
             case INTEGER:
                 return value;
+            case TINYINT:
+                return Integer.valueOf( intValue ).byteValue();
+            case SMALLINT:
+                return Integer.valueOf( intValue ).shortValue();
             case BIGINT:
                 return (long) intValue;
             case DECIMAL:
@@ -196,7 +209,23 @@ public class CottontailTypeConversionUtil {
             return returnList;
         }
 
+        Long bigintValue = (Long) value;
         switch ( outType ) {
+            case BIGINT:
+                return value;
+            case TINYINT:
+                return bigintValue.byteValue();
+            case SMALLINT:
+                return bigintValue.shortValue();
+            case INTEGER:
+                return bigintValue.intValue();
+            case DECIMAL:
+                return BigDecimal.valueOf( bigintValue );
+            case REAL:
+                return (float) bigintValue;
+            case DOUBLE:
+                return (double) bigintValue;
+            // TODO FINISH
             default:
                 throw new IllegalArgumentException( "Cannot convert bigint to type: " + outType );
         }
@@ -214,7 +243,14 @@ public class CottontailTypeConversionUtil {
             return returnList;
         }
 
+        BigDecimal decimalValue = (BigDecimal) value;
         switch ( outType ) {
+            case DECIMAL:
+                return value;
+            case REAL:
+                return decimalValue.floatValue();
+            case DOUBLE:
+                return decimalValue.doubleValue();
             default:
                 throw new IllegalArgumentException( "Cannot convert decimal to type: " + outType );
         }
@@ -232,7 +268,14 @@ public class CottontailTypeConversionUtil {
             return returnList;
         }
 
+        Float realValue = (Float) value;
         switch ( outType ) {
+            case REAL:
+                return value;
+            case DOUBLE:
+                return Double.parseDouble( realValue.toString() );
+            case DECIMAL:
+                return BigDecimal.valueOf( realValue );
             default:
                 throw new IllegalArgumentException( "Cannot convert real to type: " + outType );
         }
@@ -250,7 +293,14 @@ public class CottontailTypeConversionUtil {
             return returnList;
         }
 
+        Double doubleValue = (Double) value;
         switch ( outType ) {
+            case DOUBLE:
+                return value;
+            case REAL:
+                return Float.parseFloat( doubleValue.toString() );
+            case DECIMAL:
+                return BigDecimal.valueOf( doubleValue );
             default:
                 throw new IllegalArgumentException( "Cannot convert double to type: " + outType );
         }
