@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -176,6 +176,13 @@ public class PolyTypeAssignmentRules {
         rule.add( PolyType.BINARY );
         rule.add( PolyType.VARBINARY );
         rules.add( PolyType.BINARY, rule );
+
+        // FILE is assignable from...
+        rule.clear();
+        rule.add( PolyType.IMAGE );
+        rule.add( PolyType.VIDEO );
+        rule.add( PolyType.SOUND );
+        rules.add( PolyType.FILE, rule );
 
         // DATE is assignable from...
         rule.clear();
@@ -443,6 +450,8 @@ public class PolyTypeAssignmentRules {
         ImmutableSet.Builder<PolyType> copyValues( PolyType typeName ) {
             return ImmutableSet.<PolyType>builder().addAll( map.get( typeName ) );
         }
+
     }
+
 }
 
