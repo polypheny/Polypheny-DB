@@ -140,12 +140,16 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Sort;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -3242,20 +3246,44 @@ public class Crud implements InformationObserver {
 
 
     private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
-        PolyphenyDbSignature signature;
+        PolyphenyDbSignature signature = null;
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         SqlNode parsed = sqlProcessor.parse( sql );
-        RelRoot logicalRoot;
+        RelRoot logicalRoot = null;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statement, parsed );
 
         } else {
 
-            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-            logicalRoot = sqlProcessor.translate( statement, validated.left );
+            List<String> names = ((SqlIdentifier) ((SqlSelect) parsed).getFrom()).names;
+            if ( names.size() == 2 ) {
+                try {
+                    Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+                    logicalRoot = sqlProcessor.translate( statement, validated.left );
+                    Catalog catalog = Catalog.getInstance();
+                    Transaction transaction = getTransaction();
 
-            // Prepare
-            signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+                    RelRoot viewLogicalRoot = RelRoot.of( (catalog.getTable( databaseName, "public", names.get( 1 ) )).definition, SqlKind.SELECT );
+                    RelOptCluster relOptCluster = logicalRoot.rel.getCluster();
+                    ((LogicalProject) viewLogicalRoot.rel).setCluster( relOptCluster );
+                    ((LogicalJoin) ((LogicalProject) viewLogicalRoot.rel).getInput()).setCluster( relOptCluster );
+
+                    ((LogicalTableScan) ((LogicalJoin) ((LogicalProject) viewLogicalRoot.rel).getInput()).getLeft()).setCluster( relOptCluster );
+                    ((LogicalTableScan) ((LogicalJoin) ((LogicalProject) viewLogicalRoot.rel).getInput()).getRight()).setCluster( relOptCluster );
+
+                    // Prepare
+                    signature = statement.getQueryProcessor().prepareQuery( viewLogicalRoot );
+
+                } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
+                    e.printStackTrace();
+                }
+            } else {
+                Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+                logicalRoot = sqlProcessor.translate( statement, validated.left );
+                // Prepare
+                signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+            }
+
         }
         return signature;
     }

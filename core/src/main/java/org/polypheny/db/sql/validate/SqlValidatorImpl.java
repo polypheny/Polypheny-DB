@@ -64,11 +64,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
-
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.function.Functions;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.prepare.Prepare;
@@ -224,7 +222,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * Maps a {@link SqlNode node} to the {@link SqlValidatorNamespace namespace} which describes what columns they contain.
      */
-    protected final Map<SqlNode, SqlValidatorNamespace> namespaces = new IdentityHashMap<>();
+    protected final Map<SqlNode, SqlValidatorNamespace>
+            namespaces = new IdentityHashMap<>();
 
     /**
      * Set of select expressions used as cursor definitions. In standard SQL, only the top-level SELECT is a cursor; Polypheny-DB extends this with cursors as inputs to table functions.

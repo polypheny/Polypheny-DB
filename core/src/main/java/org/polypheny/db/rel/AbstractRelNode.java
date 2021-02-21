@@ -36,7 +36,6 @@ package org.polypheny.db.rel;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.beans.Transient;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -45,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Setter;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.RelOptCluster;
@@ -101,7 +101,8 @@ public abstract class AbstractRelNode implements RelNode, Serializable {
      */
     protected String digest;
 
-    private transient final RelOptCluster cluster;
+    @Setter
+    private transient RelOptCluster cluster;
 
     /**
      * unique id of this object -- for debugging
@@ -111,6 +112,7 @@ public abstract class AbstractRelNode implements RelNode, Serializable {
     /**
      * The RelTraitSet that describes the traits of this RelNode.
      */
+    @Setter
     protected RelTraitSet traitSet;
 
 

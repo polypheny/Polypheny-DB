@@ -38,19 +38,16 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -64,7 +61,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -126,6 +122,11 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         RelNode relNode = sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel;
 
         try {
+
+            if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
+                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
+            }
+
             long tableId = catalog.addTable(
                     viewName,
                     schemaId,
@@ -135,9 +136,11 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     relNode
             );
 
+
         } catch ( RuntimeException e ) {
             e.printStackTrace();
         }
+
     }
 
 
