@@ -200,8 +200,10 @@ public class HashPartitionManager extends AbstractPartitionManager {
         String returnValue = "";
 
         //returnValue = getRequiredUiInputsDEBUGHASH();
-        returnValue = getRequiredUiInputsDEBUGSample();
+        //returnValue = getRequiredUiInputsDEBUGSample();
         //returnValue = getRequiredUiInputsDEBUGTemperature();
+        //returnValue = getRequiredUiInputsDEBUGList();
+        returnValue = getRequiredUiInputsDEBUGRange();
 
 
 
@@ -232,6 +234,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
         nestedColumnPartitionNames.addProperty( "title", "Partition Names" );
         nestedColumnPartitionNames.addProperty( "field_type", "text" );
         nestedColumnPartitionNames.addProperty( "mandatory", true );
+        nestedColumnPartitionNames.addProperty( "sql_prefix", "" );
+        nestedColumnPartitionNames.addProperty( "sql_suffix", "" );
         nestedColumnPartitionNames.addProperty( "default_value", "" );
 
 
@@ -269,6 +273,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
         nestedColumnPartitionNames.addProperty( "title", "Partition Names" );
         nestedColumnPartitionNames.addProperty( "field_type", "text" );
         nestedColumnPartitionNames.addProperty( "mandatory", true );
+        nestedColumnPartitionNames.addProperty( "sql_prefix", "" );
+        nestedColumnPartitionNames.addProperty( "sql_suffix", "" );
         nestedColumnPartitionNames.addProperty( "default_value", "" );
 
         //Second column
@@ -276,6 +282,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
         nestedColumnLabel.addProperty( "title", "Classification" );
         nestedColumnLabel.addProperty( "field_type", "label" );
         nestedColumnLabel.addProperty( "mandatory", true );
+        nestedColumnLabel.addProperty( "sql_prefix", "" );
+        nestedColumnLabel.addProperty( "sql_suffix", "" );
         nestedColumnLabel.addProperty( "default_value", "newLabel" );
 
 
@@ -284,6 +292,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
         nestedColumnDropdown.addProperty( "title", "Options" );
         nestedColumnDropdown.addProperty( "field_type", "dropdown" );
         nestedColumnDropdown.addProperty( "mandatory", true );
+        nestedColumnDropdown.addProperty( "sql_prefix", "" );
+        nestedColumnDropdown.addProperty( "sql_suffix", "" );
         nestedColumnDropdown.addProperty( "default_value", "" );
 
         // add all repetetive columns to top-level columns element
@@ -305,8 +315,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
         JsonObject jsonDocument = new JsonObject();
 
         jsonDocument.addProperty( "function_title", "TEMPERATURE" );
-        jsonDocument.addProperty( "info_tooltip", "Partitions data based on a hash function which is applied to the values of the partition column." );
-        jsonDocument.addProperty( "sql_prefix", "WITH (" );
+        jsonDocument.addProperty( "info_tooltip", "Partitions data based on a temperature base function usind a prepared metric which is applied to the values of the partition column." );
+        jsonDocument.addProperty( "sql_prefix", "(" );
         jsonDocument.addProperty( "sql_suffix", ")" );
         jsonDocument.addProperty( "dynamic_rows", false );
         jsonDocument.addProperty( "row_separation", "," );
@@ -316,6 +326,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
         JsonArray columns = new JsonArray();
         JsonArray firstRow = new JsonArray();
         JsonArray secondRow = new JsonArray();
+        JsonArray thirdRow = new JsonArray();
 
         //First ROW
             //First column
@@ -323,6 +334,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
             nestedColumnPartitionNamesFirst.addProperty( "title", "Partition Names" );
             nestedColumnPartitionNamesFirst.addProperty( "field_type", "text" );
             nestedColumnPartitionNamesFirst.addProperty( "mandatory", false );
+            nestedColumnPartitionNamesFirst.addProperty( "sql_prefix", "PARTITION" );
+            nestedColumnPartitionNamesFirst.addProperty( "sql_suffix", "" );
             nestedColumnPartitionNamesFirst.addProperty( "default_value", "" );
 
             //Second column
@@ -330,6 +343,8 @@ public class HashPartitionManager extends AbstractPartitionManager {
             nestedColumnClassificationFirst.addProperty( "title", "Classification" );
             nestedColumnClassificationFirst.addProperty( "field_type", "label" );
             nestedColumnClassificationFirst.addProperty( "mandatory", true );
+            nestedColumnClassificationFirst.addProperty( "sql_prefix", "as" );
+            nestedColumnClassificationFirst.addProperty( "sql_suffix", "" );
             nestedColumnClassificationFirst.addProperty( "default_value", "HOT" );
 
             // add all repetetive columns to top-level columns element
@@ -339,10 +354,12 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         //Second ROW
             //First column
-            JsonObject nestedColumnPartitionNamesSecond = new JsonObject();
+             JsonObject nestedColumnPartitionNamesSecond = new JsonObject();
              nestedColumnPartitionNamesSecond.addProperty( "title", "Partition Names" );
              nestedColumnPartitionNamesSecond.addProperty( "field_type", "text" );
              nestedColumnPartitionNamesSecond.addProperty( "mandatory", false );
+             nestedColumnPartitionNamesSecond.addProperty( "sql_prefix", "PARTITION" );
+             nestedColumnPartitionNamesSecond.addProperty( "sql_suffix", "" );
              nestedColumnPartitionNamesSecond.addProperty( "default_value", "" );
 
             //Second column
@@ -350,16 +367,50 @@ public class HashPartitionManager extends AbstractPartitionManager {
             nestedColumnClassificationSecond.addProperty( "title", "Classification" );
             nestedColumnClassificationSecond.addProperty( "field_type", "label" );
             nestedColumnClassificationSecond.addProperty( "mandatory", true );
+            nestedColumnClassificationSecond.addProperty( "sql_prefix", "as" );
+            nestedColumnClassificationSecond.addProperty( "sql_suffix", "" );
             nestedColumnClassificationSecond.addProperty( "default_value", "COLD" );
-
-
-
 
             secondRow.add( nestedColumnPartitionNamesSecond );
             secondRow.add( nestedColumnClassificationSecond );
 
+
+            //Third column
+
+            JsonObject nestedColumnLabelThird = new JsonObject();
+            nestedColumnLabelThird.addProperty( "title", "Label" );
+            nestedColumnLabelThird.addProperty( "field_type", "label" );
+            nestedColumnLabelThird.addProperty( "default_value", "Using Metric: " );
+            nestedColumnLabelThird.addProperty( "mandatory", false );
+            nestedColumnLabelThird.addProperty( "sql_prefix", "" );
+            nestedColumnLabelThird.addProperty( "sql_suffix", "" );
+
+
+            JsonObject nestedColumnClassificationThird = new JsonObject();
+            nestedColumnClassificationThird.addProperty( "title", "Classification" );
+            nestedColumnClassificationThird.addProperty( "field_type", "dropdown" );
+
+
+            JsonArray options = new JsonArray();
+            options.add( "access_frequency" );
+            options.add( "write_frequency" );
+            options.add( "read_frequency" );
+
+            nestedColumnClassificationThird.add( "options", options );
+
+            nestedColumnClassificationThird.addProperty( "mandatory", false );
+            nestedColumnClassificationThird.addProperty( "sql_prefix", "USING METRIC" );
+            nestedColumnClassificationThird.addProperty( "sql_suffix", "" );
+            nestedColumnClassificationThird.addProperty( "default_value", "" );
+
+            thirdRow.add( nestedColumnLabelThird );
+            thirdRow.add( nestedColumnClassificationThird );
+
+
+
             columns.add( firstRow );
             columns.add( secondRow );
+            columns.add( thirdRow );
 
         jsonDocument.add( "columns", columns );
 
@@ -369,6 +420,191 @@ public class HashPartitionManager extends AbstractPartitionManager {
         return jsonDocument.toString();
     }
 
+
+    public String getRequiredUiInputsDEBUGList() {
+
+        //Outer Layer - Top Level
+        JsonObject jsonDocument = new JsonObject();
+
+        jsonDocument.addProperty( "function_title", "LIST" );
+        jsonDocument.addProperty( "info_tooltip", "Partitions data based on a list of values which is assigned to a specific partition." );
+        jsonDocument.addProperty( "sql_prefix", "(" );
+        jsonDocument.addProperty( "sql_suffix", ")" );
+        jsonDocument.addProperty( "dynamic_rows", true );
+        jsonDocument.addProperty( "row_separation", "," );
+
+
+        //First nested JSON Doc
+        JsonArray columns = new JsonArray();
+
+        //First column
+        JsonObject nestedColumnPartitionNames = new JsonObject();
+        nestedColumnPartitionNames.addProperty( "title", "Partition Names" );
+        nestedColumnPartitionNames.addProperty( "field_type", "text" );
+        nestedColumnPartitionNames.addProperty( "mandatory", true );
+        nestedColumnPartitionNames.addProperty( "sql_prefix", "PARTITION" );
+        nestedColumnPartitionNames.addProperty( "sql_suffix", "" );
+        nestedColumnPartitionNames.addProperty( "default_value", "" );
+
+        //Second column
+        JsonObject nestedColumnLabel = new JsonObject();
+        nestedColumnLabel.addProperty( "title", "Values" );
+        nestedColumnLabel.addProperty( "field_type", "text" );
+        nestedColumnLabel.addProperty( "mandatory", true );
+        nestedColumnLabel.addProperty( "default_value", "newLabel" );
+        nestedColumnLabel.addProperty( "value_separation", "," );
+        nestedColumnLabel.addProperty( "sql_prefix", "VALUES(" );
+        nestedColumnLabel.addProperty( "sql_suffix", ")" );
+
+
+        // add all repetetive columns to top-level columns element
+        columns.add( nestedColumnPartitionNames );
+        columns.add( nestedColumnLabel );
+
+
+        jsonDocument.add( "columns", columns );
+
+
+
+        //Display Only columns
+        JsonArray display_only_after = new JsonArray();
+
+        //First Row
+        JsonArray displayFirstRow = new JsonArray();
+
+        JsonObject nestedDisplayUnboundName = new JsonObject();
+        nestedDisplayUnboundName.addProperty( "title", "Unbound" );
+        nestedDisplayUnboundName.addProperty( "field_type", "label" );
+        nestedDisplayUnboundName.addProperty( "default_value", "UNBOUND" );
+        nestedDisplayUnboundName.addProperty( "modifiable", false );
+        nestedDisplayUnboundName.addProperty( "sql_prefix", "" );
+        nestedDisplayUnboundName.addProperty( "sql_suffix", "" );
+
+
+        JsonObject nestedDisplayUnboundValue = new JsonObject();
+        nestedDisplayUnboundValue.addProperty( "title", "Unbound" );
+        nestedDisplayUnboundValue.addProperty( "field_type", "text" );
+        nestedDisplayUnboundValue.addProperty( "default_value", "UNBOUND" );
+        nestedDisplayUnboundValue.addProperty( "modifiable", false );
+        nestedDisplayUnboundValue.addProperty( "sql_prefix", "" );
+        nestedDisplayUnboundValue.addProperty( "sql_suffix", "" );
+
+
+        displayFirstRow.add( nestedDisplayUnboundName );
+        displayFirstRow.add( nestedDisplayUnboundValue );
+
+        display_only_after.add( displayFirstRow );
+
+        jsonDocument.add( "display_only_after", display_only_after );
+
+        generateSampleSQL(jsonDocument);
+
+        // ToDO @HENNLO return JsonObject not String
+        return jsonDocument.toString();
+    }
+
+
+    public String getRequiredUiInputsDEBUGRange() {
+
+        //Outer Layer - Top Level
+        JsonObject jsonDocument = new JsonObject();
+
+        jsonDocument.addProperty( "function_title", "RANGE" );
+        jsonDocument.addProperty( "info_tooltip", "Partitions data based on a RANGE using min and max values per range. The rest of the values goes to defualt UNBOUND partition as a fallback." );
+        jsonDocument.addProperty( "sql_prefix", "(" );
+        jsonDocument.addProperty( "sql_suffix", ")" );
+        jsonDocument.addProperty( "dynamic_rows", true );
+        jsonDocument.addProperty( "row_separation", "," );
+
+
+        //First nested JSON Doc
+        JsonArray columns = new JsonArray();
+
+        //First column
+        JsonObject nestedColumnPartitionNames = new JsonObject();
+        nestedColumnPartitionNames.addProperty( "title", "Partition Names" );
+        nestedColumnPartitionNames.addProperty( "field_type", "text" );
+        nestedColumnPartitionNames.addProperty( "mandatory", true );
+        nestedColumnPartitionNames.addProperty( "sql_prefix", "PARTITION" );
+        nestedColumnPartitionNames.addProperty( "sql_suffix", "" );
+        nestedColumnPartitionNames.addProperty( "default_value", "" );
+
+        //Second column
+        JsonObject nestedColumnValueMIN = new JsonObject();
+        nestedColumnValueMIN.addProperty( "title", "MIN" );
+        nestedColumnValueMIN.addProperty( "field_type", "text" );
+        nestedColumnValueMIN.addProperty( "mandatory", true );
+        nestedColumnValueMIN.addProperty( "default_value", "newLabel" );
+        nestedColumnValueMIN.addProperty( "value_separation", "," );
+        nestedColumnValueMIN.addProperty( "sql_prefix", "VALUES(" );
+        nestedColumnValueMIN.addProperty( "sql_suffix", "" );
+
+        //Third column
+        JsonObject nestedColumnValueMAX = new JsonObject();
+        nestedColumnValueMAX.addProperty( "title", "MAX" );
+        nestedColumnValueMAX.addProperty( "field_type", "text" );
+        nestedColumnValueMAX.addProperty( "mandatory", true );
+        nestedColumnValueMAX.addProperty( "default_value", "newLabel" );
+        nestedColumnValueMAX.addProperty( "value_separation", "," );
+        nestedColumnValueMAX.addProperty( "sql_prefix", ", " );
+        nestedColumnValueMAX.addProperty( "sql_suffix", ")" );
+
+
+        // add all repetetive columns to top-level columns element
+        columns.add( nestedColumnPartitionNames );
+        columns.add( nestedColumnValueMIN );
+        columns.add( nestedColumnValueMAX );
+
+
+        jsonDocument.add( "columns", columns );
+
+
+
+        //Display Only columns
+        JsonArray display_only_after = new JsonArray();
+
+        //First Row
+        JsonArray displayFirstRow = new JsonArray();
+
+        JsonObject nestedDisplayUnboundName = new JsonObject();
+        nestedDisplayUnboundName.addProperty( "title", "Unbound" );
+        nestedDisplayUnboundName.addProperty( "field_type", "label" );
+        nestedDisplayUnboundName.addProperty( "default_value", "UNBOUND" );
+        nestedDisplayUnboundName.addProperty( "modifiable", false );
+        nestedDisplayUnboundName.addProperty( "sql_prefix", "" );
+        nestedDisplayUnboundName.addProperty( "sql_suffix", "" );
+
+
+        JsonObject nestedDisplayUnboundValueMin = new JsonObject();
+        nestedDisplayUnboundValueMin.addProperty( "title", "Unbound Min" );
+        nestedDisplayUnboundValueMin.addProperty( "field_type", "text" );
+        nestedDisplayUnboundValueMin.addProperty( "default_value", "UNBOUND" );
+        nestedDisplayUnboundValueMin.addProperty( "modifiable", false );
+        nestedDisplayUnboundValueMin.addProperty( "sql_prefix", "" );
+        nestedDisplayUnboundValueMin.addProperty( "sql_suffix", "" );
+
+        JsonObject nestedDisplayUnboundValueMax = new JsonObject();
+        nestedDisplayUnboundValueMax.addProperty( "title", "Unbound Max" );
+        nestedDisplayUnboundValueMax.addProperty( "field_type", "text" );
+        nestedDisplayUnboundValueMax.addProperty( "default_value", "UNBOUND" );
+        nestedDisplayUnboundValueMax.addProperty( "modifiable", false );
+        nestedDisplayUnboundValueMax.addProperty( "sql_prefix", "" );
+        nestedDisplayUnboundValueMax.addProperty( "sql_suffix", "" );
+
+
+        displayFirstRow.add( nestedDisplayUnboundName );
+        displayFirstRow.add( nestedDisplayUnboundValueMin );
+        displayFirstRow.add( nestedDisplayUnboundValueMax );
+
+        display_only_after.add( displayFirstRow );
+
+        jsonDocument.add( "display_only_after", display_only_after );
+
+        generateSampleSQL(jsonDocument);
+
+        // ToDO @HENNLO return JsonObject not String
+        return jsonDocument.toString();
+    }
 
     @Override
     public boolean allowsUnboundPartition() {
