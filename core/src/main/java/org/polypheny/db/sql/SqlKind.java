@@ -1249,8 +1249,6 @@ public enum SqlKind {
      */
     public static final EnumSet<SqlKind> DML = EnumSet.of( INSERT, DELETE, UPDATE, MERGE, PROCEDURE_CALL );
 
-    public static final EnumSet<SqlKind> VIEW = EnumSet.of(CREATE_VIEW);
-
     /**
      * Category consisting of all DDL operators.
      */

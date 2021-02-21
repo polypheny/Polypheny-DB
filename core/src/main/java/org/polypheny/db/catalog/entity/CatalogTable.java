@@ -32,7 +32,7 @@ import org.polypheny.db.rel.RelNode;
 
 
 @EqualsAndHashCode
-public final class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
+public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
     private static final long serialVersionUID = 5426944084650275437L;
 
@@ -140,6 +140,11 @@ public final class CatalogTable implements CatalogEntity, Comparable<CatalogTabl
             }
         }
         return -1;
+    }
+
+
+    public CatalogView generateView() {
+        return new CatalogView( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable);
     }
 
 

@@ -118,6 +118,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
@@ -140,21 +141,18 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.Sort;
-import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.statistic.StatisticsManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -3246,7 +3244,7 @@ public class Crud implements InformationObserver {
 
 
     private PolyphenyDbSignature processQuery( Statement statement, String sql ) {
-        PolyphenyDbSignature signature = null;
+        PolyphenyDbSignature signature;
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         SqlNode parsed = sqlProcessor.parse( sql );
         RelRoot logicalRoot = null;
@@ -3255,38 +3253,32 @@ public class Crud implements InformationObserver {
 
         } else {
 
-            List<String> names = ((SqlIdentifier) ((SqlSelect) parsed).getFrom()).names;
-            if ( names.size() == 2 ) {
+            Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
+            logicalRoot = sqlProcessor.translate( statement, validated.left );
+
+            if ( logicalRoot.kind.equals( SqlKind.SELECT) ) {
+                Catalog catalog = Catalog.getInstance();
+                List<String> names= ((RelOptTableImpl)((LogicalTableScan)((LogicalProject)logicalRoot.rel).getInput()).getTable()).getQualifiedName();
+                CatalogTable catalogTable = null;
                 try {
-                    Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-                    logicalRoot = sqlProcessor.translate( statement, validated.left );
-                    Catalog catalog = Catalog.getInstance();
-                    Transaction transaction = getTransaction();
-
-                    RelRoot viewLogicalRoot = RelRoot.of( (catalog.getTable( databaseName, "public", names.get( 1 ) )).definition, SqlKind.SELECT );
-                    RelOptCluster relOptCluster = logicalRoot.rel.getCluster();
-                    ((LogicalProject) viewLogicalRoot.rel).setCluster( relOptCluster );
-                    ((LogicalJoin) ((LogicalProject) viewLogicalRoot.rel).getInput()).setCluster( relOptCluster );
-
-                    ((LogicalTableScan) ((LogicalJoin) ((LogicalProject) viewLogicalRoot.rel).getInput()).getLeft()).setCluster( relOptCluster );
-                    ((LogicalTableScan) ((LogicalJoin) ((LogicalProject) viewLogicalRoot.rel).getInput()).getRight()).setCluster( relOptCluster );
-
-                    // Prepare
-                    signature = statement.getQueryProcessor().prepareQuery( viewLogicalRoot );
-
+                    catalogTable = catalog.getTable(databaseName, names.get(0), names.get( 1 ));
                 } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
                     e.printStackTrace();
                 }
+                if ( catalogTable.tableType == TableType.VIEW ) {
+                    CatalogView catalogView = (CatalogView) catalogTable;
+                    signature = statement.getQueryProcessor().prepareQuery( catalogView.prepareRelRoot( logicalRoot ) );
+                } else {
+                    // Prepare
+                    signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
+                }
             } else {
-                Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() );
-                logicalRoot = sqlProcessor.translate( statement, validated.left );
-                // Prepare
                 signature = statement.getQueryProcessor().prepareQuery( logicalRoot );
             }
-
         }
         return signature;
     }
+
 
 
     private int executeSqlUpdate( final Transaction transaction, final String sqlUpdate ) throws QueryExecutionException {
