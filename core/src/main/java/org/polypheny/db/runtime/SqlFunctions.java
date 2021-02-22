@@ -34,6 +34,12 @@
 package org.polypheny.db.runtime;
 
 
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.imaging.ImageProcessingException;
+import com.drew.metadata.Directory;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
+import com.google.gson.Gson;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -42,11 +48,16 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DecimalFormat;
@@ -68,6 +79,7 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.Spaces;
@@ -108,6 +120,7 @@ import org.polypheny.db.util.TimestampWithTimeZoneString;
  */
 @SuppressWarnings("UnnecessaryUnboxing")
 @Deterministic
+@Slf4j
 public class SqlFunctions {
 
     private static final DecimalFormat DOUBLE_FORMAT = NumberUtil.decimalFormat( "0.0E0" );
@@ -166,10 +179,12 @@ public class SqlFunctions {
         }
     }
 
+
     @SuppressWarnings("rawtypes")
     public static double knn( List value, List target, String metric, List weights, @SuppressWarnings("unused") int optimisationFactor ) {
         return knn( value, target, metric, weights );
     }
+
 
     @SuppressWarnings("rawtypes")
     public static double knn( List value, List target, String metric, @SuppressWarnings("unused") int optimisationFactor ) {
@@ -192,6 +207,143 @@ public class SqlFunctions {
             return KnnFunctions.cosineMetric( value, target );
         } else {
             return 0.0;
+        }
+    }
+
+
+    private static class MetadataModel {
+
+        String name;
+        String value;
+        List<MetadataModel> tags = new ArrayList<>();
+
+
+        MetadataModel( final Directory dir ) {
+            this.name = dir.getName();
+        }
+
+
+        MetadataModel( final Tag tag ) {
+            this.name = tag.getTagName();
+            this.value = tag.getDescription();
+        }
+
+
+        MetadataModel addTag( Directory dir ) {
+            tags.add( new MetadataModel( dir ) );
+            return this;
+        }
+
+
+        MetadataModel addTag( Tag tag ) {
+            tags.add( new MetadataModel( tag ) );
+            return this;
+        }
+
+
+        String toJson() {
+            return new Gson().toJson( this );
+        }
+
+    }
+
+
+    /**
+     * @param mm Multimedia object
+     * @param dirName Name of the metadata directory
+     * @return All available tags within the directory, or null
+     */
+    public static String meta( final Object mm, final String dirName, final String tagName ) {
+        Metadata metadata = getMetaData( mm );
+        if ( metadata == null ) {
+            return null;
+        }
+        for ( Directory dir : metadata.getDirectories() ) {
+            if ( !dir.getName().equalsIgnoreCase( dirName ) ) {
+                continue;
+            }
+            for ( Tag tag : dir.getTags() ) {
+                if ( tag.getTagName().equalsIgnoreCase( tagName ) ) {
+                    return new MetadataModel( tag ).toJson();
+                }
+            }
+        }
+        return null;
+    }
+
+
+    /**
+     * @param mm Multimedia object
+     * @param dirName Name of the metadata directory
+     * @return All available tags within the directory, or null
+     */
+    public static String meta( final Object mm, final String dirName ) {
+        Metadata metadata = getMetaData( mm );
+        if ( metadata == null ) {
+            return null;
+        }
+        List<MetadataModel> tags = new ArrayList<>();
+        for ( Directory dir : metadata.getDirectories() ) {
+            if ( !dir.getName().equalsIgnoreCase( dirName ) ) {
+                continue;
+            }
+            for ( Tag tag : dir.getTags() ) {
+                tags.add( new MetadataModel( tag ) );
+            }
+        }
+        return new Gson().toJson( tags );
+    }
+
+
+    /**
+     * @param mm Multimedia object
+     * @return All available metadata of a multimedia object,
+     * or null if the metadata cannot be derived
+     */
+    public static String meta( final Object mm ) {
+        Metadata metadata = getMetaData( mm );
+        if ( metadata == null ) {
+            return null;
+        }
+        List<MetadataModel> tags = new ArrayList<>();
+
+        for ( Directory dir : metadata.getDirectories() ) {
+            MetadataModel dirModel = new MetadataModel( dir );
+            for ( Tag tag : dir.getTags() ) {
+                dirModel.addTag( tag );
+            }
+            tags.add( dirModel );
+        }
+
+        return new Gson().toJson( tags );
+    }
+
+
+    /**
+     * @param mm Multimedia object that is of one of the following types:
+     * byte[], InputStream, Blob, File
+     * @return Derived metadata or null
+     */
+    private static Metadata getMetaData( final Object mm ) {
+        try {
+            if ( mm instanceof byte[] ) {
+                return ImageMetadataReader.readMetadata( new ByteArrayInputStream( (byte[]) mm ) );
+            } else if ( mm instanceof Blob || mm instanceof InputStream ) {
+                InputStream is;
+                if ( mm instanceof Blob ) {
+                    is = ((Blob) mm).getBinaryStream();
+                } else {
+                    is = (InputStream) mm;
+                }
+                return ImageMetadataReader.readMetadata( is );
+            } else if ( mm instanceof File ) {
+                return ImageMetadataReader.readMetadata( (File) mm );
+            } else {
+                throw new RuntimeException( "Multimedia data in unexpected format " + mm.getClass().getSimpleName() );
+            }
+        } catch ( IOException | ImageProcessingException | SQLException e ) {
+            log.debug( "Could not determine metadata of mm object", e );
+            return null;
         }
     }
 

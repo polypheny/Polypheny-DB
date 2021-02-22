@@ -577,22 +577,20 @@ public class CatalogImpl extends Catalog {
 
         //////////////
         // init adapters
-        if ( !adapterNames.containsKey( "hsqldb" ) ) {
+        if ( adapterNames.size() == 0 ) {
+            // Deploy default hsqldb store
             Map<String, String> hsqldbSettings = new HashMap<>();
             hsqldbSettings.put( "type", "Memory" );
             hsqldbSettings.put( "tableType", "Memory" );
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
-
             addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
-        }
 
-        if ( !adapterNames.containsKey( "hr" ) ) {
+            // Deploy default CSV view
             Map<String, String> csvSettings = new HashMap<>();
             csvSettings.put( "directory", "classpath://hr" );
             csvSettings.put( "maxStringLength", "255" );
-
             addAdapter( "hr", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
         }
 
@@ -617,13 +615,14 @@ public class CatalogImpl extends Catalog {
 
         ////////////////////////
         // init query interfaces
-        if ( !queryInterfaceNames.containsKey( "jdbc" ) ) {
+        if ( queryInterfaceNames.size() == 0 ) {
+            // Add JDBC interface
             Map<String, String> jdbcSettings = new HashMap<>();
             jdbcSettings.put( "port", "20591" );
             jdbcSettings.put( "serialization", "PROTOBUF" );
             addQueryInterface( "jdbc", "org.polypheny.db.jdbc.JdbcInterface", jdbcSettings );
-        }
-        if ( !queryInterfaceNames.containsKey( "rest" ) ) {
+
+            // Add REST interface
             Map<String, String> restSettings = new HashMap<>();
             restSettings.put( "port", "8089" );
             restSettings.put( "maxUploadSizeMb", "10000" );
@@ -1382,24 +1381,24 @@ public class CatalogImpl extends Catalog {
                 physicalColumnName,
                 physicalPositionBuilder.getAndIncrement() );
 
-            synchronized ( this ) {
-                columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
+        synchronized ( this ) {
+            columnPlacements.put( new Object[]{ adapterId, columnId }, placement );
 
-                CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
-                Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
-                if ( placementsByStore.containsKey( adapterId ) ) {
-                    List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
-                    placements.add( columnId );
-                    placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
-                } else {
-                    placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
-                }
-                CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ), old.modifiable );
-
-                tables.replace( column.tableId, table );
-                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+            CatalogTable old = Objects.requireNonNull( tables.get( column.tableId ) );
+            Map<Integer, ImmutableList<Long>> placementsByStore = new HashMap<>( old.placementsByAdapter );
+            if ( placementsByStore.containsKey( adapterId ) ) {
+                List<Long> placements = new ArrayList<>( placementsByStore.get( adapterId ) );
+                placements.add( columnId );
+                placementsByStore.replace( adapterId, ImmutableList.copyOf( placements ) );
+            } else {
+                placementsByStore.put( adapterId, ImmutableList.of( columnId ) );
             }
-            listeners.firePropertyChange( "columnPlacement", null, placement );
+            CatalogTable table = new CatalogTable( old.id, old.name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, ImmutableMap.copyOf( placementsByStore ), old.modifiable );
+
+            tables.replace( column.tableId, table );
+            tableNames.replace( new Object[]{ table.databaseId, table.schemaId, table.name }, table );
+        }
+        listeners.firePropertyChange( "columnPlacement", null, placement );
     }
 
 
@@ -2694,6 +2693,26 @@ public class CatalogImpl extends Catalog {
         }
         listeners.firePropertyChange( "adapter", null, adapter );
         return id;
+    }
+
+
+    /**
+     * Update settings of an adapter
+     *
+     * @param adapterId The id of the adapter
+     * @param newSettings The new settings for the adapter
+     */
+    @Override
+    public void updateAdapterSettings( int adapterId, Map<String, String> newSettings ) {
+        CatalogAdapter old = getAdapter( adapterId );
+        Map<String, String> temp = new HashMap<>();
+        newSettings.forEach( temp::put );
+        CatalogAdapter adapter = new CatalogAdapter( old.id, old.uniqueName, old.adapterClazz, old.type, temp );
+        synchronized ( this ) {
+            adapters.put( adapter.id, adapter );
+            adapterNames.put( adapter.uniqueName, adapter );
+        }
+        listeners.firePropertyChange( "adapter", old, adapter );
     }
 
 

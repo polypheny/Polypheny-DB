@@ -183,6 +183,7 @@ data: {
             "MESSAGE_LENGTH"
             "MESSAGE_OCTET_LENGTH"
             "MESSAGE_TEXT"
+            "META"
             "MILLISECOND"
             "MILLENNIUM"
             "MINVALUE"
