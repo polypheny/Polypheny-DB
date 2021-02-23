@@ -175,7 +175,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public String getRequiredUiInputs() {
+    public PartitionFunctionInfo getRequiredUiInputs() {
         return null;
     }
 

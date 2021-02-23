@@ -206,7 +206,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public String getRequiredUiInputs() {
+    public PartitionFunctionInfo getRequiredUiInputs() {
         return null;
     }
 

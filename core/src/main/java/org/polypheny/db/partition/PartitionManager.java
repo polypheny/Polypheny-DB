@@ -45,6 +45,6 @@ public interface PartitionManager {
 
     @return JSON Object to be parsed
      */
-    String getRequiredUiInputs();
+    PartitionFunctionInfo getRequiredUiInputs();
 
 }

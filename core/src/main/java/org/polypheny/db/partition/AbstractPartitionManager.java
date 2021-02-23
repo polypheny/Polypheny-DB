@@ -108,7 +108,7 @@ public abstract class AbstractPartitionManager implements PartitionManager {
     }
 
     @Override
-    public abstract String getRequiredUiInputs();
+    public abstract PartitionFunctionInfo getRequiredUiInputs();
     // ToDO: @HENNLO Maybe enforce and fillout mandatory keys on top level here and only fill out body in specialized classes
 
 
