@@ -339,6 +339,19 @@ public abstract class Catalog {
      */
     public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition );
 
+    /**
+     * Adds a table to a specified schema.
+     *
+     * @param name The name of the table to add
+     * @param schemaId The id of the schema
+     * @param ownerId The if of the owner
+     * @param tableType The table type
+     * @param modifiable Whether the content of the table can be modified
+     * @param definition The definition of this table RelNode with all information of table (used for Views)
+     * @param viewTable List of tables used for View
+     * @return The id of the inserted table
+     */
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTable );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.

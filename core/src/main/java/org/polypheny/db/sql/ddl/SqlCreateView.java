@@ -36,10 +36,10 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
-import lombok.Setter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -48,13 +48,16 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.sql.SqlBasicCall;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlJoin;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
+import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
@@ -72,8 +75,8 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     private final SqlNodeList columnList;
     @Getter
     private final SqlNode query;
-    @Setter
     private String sql;
+    List<String> viewTables = new ArrayList<>();
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", SqlKind.CREATE_VIEW );
 
@@ -126,6 +129,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
             if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
                 throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
             }
+            getViewTables( query );
 
             long tableId = catalog.addTable(
                     viewName,
@@ -133,14 +137,29 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     context.getCurrentUserId(),
                     TableType.VIEW,
                     false,
-                    relNode
+                    relNode,
+                    viewTables
+
             );
 
-
         } catch ( RuntimeException e ) {
-            e.printStackTrace();
+            throw new RuntimeException();
         }
 
+    }
+
+
+    //TODO IG: fix method to add viewTables
+    private void getViewTables( SqlNode query ) {
+        if ( query instanceof SqlSelect ) {
+            getViewTables( ((SqlSelect) query).getFrom() );
+        } else if ( query instanceof SqlJoin ) {
+            getViewTables( ((SqlJoin) query).getLeft() );
+            getViewTables( ((SqlJoin) query).getRight() );
+        } else if ( query instanceof SqlBasicCall ) {
+            SqlNode[] operands = ((SqlBasicCall) query).getOperands();
+            viewTables.add( (((SqlIdentifier) operands[1]).names.get( 0 )) );
+        }
     }
 
 

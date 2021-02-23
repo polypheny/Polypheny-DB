@@ -1205,6 +1205,12 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    @Override
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
+        return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null );
+    }
+
+
     /**
      * Adds a table to a specified schema.
      *
@@ -1217,7 +1223,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTables ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1235,9 +1241,6 @@ public class CatalogImpl extends Catalog {
                 ImmutableMap.of(),
                 modifiable );
 
-        if(tableType == TableType.VIEW){
-            table = table.generateView();
-        }
         synchronized ( this ) {
             tables.put( id, table );
 
@@ -1247,6 +1250,34 @@ public class CatalogImpl extends Catalog {
             children.add( id );
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
         }
+
+        if ( tableType == TableType.VIEW ) {
+            table = table.generateView();
+            if ( viewTables != null ) {
+                List<Long> columnIds = new ArrayList<>( table.columnIds );
+                for ( String t : viewTables ) {
+                    try {
+                        CatalogTable parentTable = getTable( schemaId, t );
+                        tableChildren.replace( id, tableChildren.get( parentTable.id ) );
+                        for ( Long cId : parentTable.columnIds ) {
+                            columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, Objects.requireNonNull( columns.get( cId ) ).name }, columns.get( cId ) );
+                        }
+
+                        columnIds.addAll( parentTable.columnIds );
+
+                        CatalogTable updatedTable = new CatalogView( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
+                        tables.replace( id, updatedTable );
+                        tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
+
+                        //TODO IG: fix catch
+                    } catch ( UnknownTableException e ) {
+                        throw new RuntimeException();
+                    }
+
+                }
+            }
+        }
+
         if ( tableType != TableType.VIEW ) {
             openTable = id;
         }
