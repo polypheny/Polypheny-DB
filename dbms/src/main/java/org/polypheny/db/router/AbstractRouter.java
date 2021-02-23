@@ -433,15 +433,15 @@ public abstract class AbstractRouter implements Router {
                 if ( columnNames.length == 1 ) { // columnName
                     columnName = columnNames[0];
                 } else if ( columnNames.length == 2 ) { // tableName.columnName
-                    if ( catalogTable.name.equalsIgnoreCase( columnNames[0] ) ) {
+                    if ( !catalogTable.name.equalsIgnoreCase( columnNames[0] ) ) {
                         throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
                     }
                     columnName = columnNames[1];
                 } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
-                    if ( catalogTable.getSchemaName().equalsIgnoreCase( columnNames[0] ) ) {
+                    if ( !catalogTable.getSchemaName().equalsIgnoreCase( columnNames[0] ) ) {
                         throw new RuntimeException( "Schema name does not match expected schema name: " + field.getName() );
                     }
-                    if ( catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
+                    if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
                         throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
                     }
                     columnName = columnNames[2];

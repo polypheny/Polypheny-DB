@@ -99,15 +99,25 @@ public class EnumerableConstraintEnforcer implements ConstraintEnforcer {
         final List<CatalogForeignKey> foreignKeys;
         final List<CatalogForeignKey> exportedKeys;
         try {
-            table = catalog.getTable( schema.id, root.getTable().getQualifiedName().get( 0 ) );
+            String tableName;
+            if ( root.getTable().getQualifiedName().size() == 1 ) { // tableName
+                tableName = root.getTable().getQualifiedName().get( 0 );
+            } else if ( root.getTable().getQualifiedName().size() == 2 ) { // schemaName.tableName
+                if ( !schema.name.equalsIgnoreCase( root.getTable().getQualifiedName().get( 0 ) ) ) {
+                    throw new RuntimeException( "Schema name does not match expected schema name: " + root.getTable().getQualifiedName().get( 0 ) );
+                }
+                tableName = root.getTable().getQualifiedName().get( 1 );
+            } else {
+                throw new RuntimeException( "Invalid table name: " + root.getTable().getQualifiedName() );
+            }
+            table = catalog.getTable( schema.id, tableName );
             primaryKey = catalog.getPrimaryKey( table.primaryKey );
             constraints = new ArrayList<>( Catalog.getInstance().getConstraints( table.id ) );
             foreignKeys = Catalog.getInstance().getForeignKeys( table.id );
             exportedKeys = Catalog.getInstance().getExportedKeys( table.id );
             // Turn primary key into an artificial unique constraint
             CatalogPrimaryKey pk = Catalog.getInstance().getPrimaryKey( table.primaryKey );
-            final CatalogConstraint pkc = new CatalogConstraint(
-                    0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
+            final CatalogConstraint pkc = new CatalogConstraint( 0L, pk.id, ConstraintType.UNIQUE, "PRIMARY KEY", pk );
             constraints.add( pkc );
         } catch ( UnknownTableException e ) {
             log.error( "Caught exception", e );
