@@ -18,11 +18,11 @@
 package org.polypheny.db.partition;
 
 
-import java.util.ArrayList;
+
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
-import org.polypheny.db.partition.PartitionFunctionInfo.Column.ColumnBuilder;
+
 
 
 @Getter
