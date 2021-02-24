@@ -23,7 +23,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 
 public interface PartitionManager {
 
-
     /**
      * Returns the Index of the partition where to place the object
      */
@@ -40,10 +39,7 @@ public interface PartitionManager {
     boolean allowsUnboundPartition();
 
     /**
-     * The sole purpose of this method is to create a JSON Object which should be consumed inside the UI
-     * to dynamically create a modal whith all required dependencies, which are needed to generate the correct SQL Statement for partitioning
-     *
-     * @return JSON Object to be parsed
+     * Returns an instance of PartitionFunctionInfo specifying the available parameters of the partition function.
      */
     PartitionFunctionInfo getPartitionFunctionInfo();
 
