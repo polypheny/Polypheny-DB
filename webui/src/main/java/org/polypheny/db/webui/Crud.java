@@ -174,6 +174,9 @@ import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.PartitionFunctionModel;
+import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
+import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.Result;
@@ -2007,23 +2010,25 @@ public class Crud implements InformationObserver {
     }
 
 
-    Result partitionTable( final Request req, final Response res ) {
+    String getPartitionFunctionModel( final Request req, final Response res ) {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
-        String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") PARTITIONS %d ", request.schemaName, request.tableName, request.method, request.column, request.numPartitions );
-        Transaction trx = getTransaction();
-        try {
-            int i = executeSqlUpdate( trx, query );
-            trx.commit();
-            return new Result( i ).setGeneratedQuery( query );
-        } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Could not partition table", e );
-            try {
-                trx.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Could not rollback", ex );
-            }
-            return new Result( e ).setGeneratedQuery( query );
-        }
+        List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
+        rows.add(
+                Arrays.asList( new PartitionFunctionColumn( FieldType.STRING, "string" ).setModifiable( false ),
+                        new PartitionFunctionColumn( FieldType.INTEGER, "123" ).setMandatory( true ) )
+        );
+        rows.add(
+                Arrays.asList( new PartitionFunctionColumn( FieldType.LABEL, "label" ),
+                        new PartitionFunctionColumn( FieldType.LIST, Arrays.asList( "a", "b", "c" ), "b" ) )
+        );
+        PartitionFunctionModel model = new PartitionFunctionModel( request.method.toString(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", Arrays.asList( "col1", "col2" ), rows );
+        return gson.toJson( model );
+    }
+
+
+    Result partitionTable( final Request req, final Response res ) {
+        PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
+        return new Result( "Not implemented yet" );
     }
 
 

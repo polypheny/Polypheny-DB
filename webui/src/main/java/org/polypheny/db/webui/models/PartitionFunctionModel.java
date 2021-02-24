@@ -16,7 +16,11 @@
 
 package org.polypheny.db.webui.models;
 
+
 import java.util.List;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
 
 public class PartitionFunctionModel {
 
@@ -30,19 +34,40 @@ public class PartitionFunctionModel {
     public long tableId;
     public long columnId;
 
+    public PartitionFunctionModel( final String title, final String description, final List<String> columnNames, final List<List<PartitionFunctionColumn>> rows ) {
+        this.title = title;
+        this.description = description;
+        this.columnNames = columnNames;
+        this.rows = rows;
+    }
+
 
     public enum FieldType {
         STRING, INTEGER, LIST, LABEL;
     }
 
 
+    @Accessors(chain = true)
     public static class PartitionFunctionColumn {
 
         public FieldType type;
-        public boolean mandatory;
-        public boolean modifiable;
+        @Setter
+        public boolean mandatory = false;
+        @Setter
+        public boolean modifiable = true;
         public String value;
         public List<String> options;
+
+        public PartitionFunctionColumn( final FieldType type, final String defaultValue ) {
+            this.type = type;
+            this.value = defaultValue;
+        }
+
+        public PartitionFunctionColumn( final FieldType type, final List<String> options, final String defaultValue ) {
+            this.type = type;
+            this.value = defaultValue;
+            this.options = options;
+        }
 
     }
 
