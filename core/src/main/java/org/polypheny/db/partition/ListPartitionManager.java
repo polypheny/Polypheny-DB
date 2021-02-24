@@ -127,23 +127,22 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
         if ( partitionIds != null ) {
 
+            for ( long partitionId : partitionIds ) {
 
-                for ( long partitionId : partitionIds ) {
+                // Find stores with full placements (partitions)
+                // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
+                for ( long columnId : catalogTable.columnIds ) {
 
-                    // Find stores with full placements (partitions)
-                    // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
-                    for ( long columnId : catalogTable.columnIds ) {
-
-                        List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition( catalogTable.id, partitionId, columnId );
-                        if ( !ccps.isEmpty() ) {
-                            //get first column placement which contains partition
-                            relevantCcps.add( ccps.get( 0 ) );
-                            if ( log.isDebugEnabled() ) {
-                                log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
-                            }
+                    List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition( catalogTable.id, partitionId, columnId );
+                    if ( !ccps.isEmpty() ) {
+                        //get first column placement which contains partition
+                        relevantCcps.add( ccps.get( 0 ) );
+                        if ( log.isDebugEnabled() ) {
+                            log.debug( "{} {} with part. {}", ccps.get( 0 ).adapterUniqueName, ccps.get( 0 ).getLogicalColumnName(), partitionId );
                         }
                     }
                 }
+            }
 
 
         } else {
@@ -202,8 +201,6 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 .defaultValue( "partition_name" )
                 .build() );
 
-
-
         //Fixed rows to display after dynamically generated ones
         List<List<Column>> rowsAfter = new ArrayList<>();
         List<Column> unboundRow = new ArrayList<>();
@@ -230,8 +227,6 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 .build() );
 
         rowsAfter.add( unboundRow );
-
-
 
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )

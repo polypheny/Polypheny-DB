@@ -209,7 +209,8 @@ public class QueryInterfaceManager {
         public final Class clazz;
         public final List<QueryInterfaceSetting> availableSettings;
 
-        public static String toJson ( QueryInterfaceInformation[] queryInterfaceInformations ) {
+
+        public static String toJson( QueryInterfaceInformation[] queryInterfaceInformations ) {
             JsonSerializer<QueryInterfaceInformation> queryInterfaceInformationSerializer = ( src, typeOfSrc, context ) -> {
                 JsonObject jsonStore = new JsonObject();
                 jsonStore.addProperty( "name", src.name );
@@ -221,15 +222,19 @@ public class QueryInterfaceManager {
             Gson qiiGson = new GsonBuilder().registerTypeAdapter( QueryInterfaceInformation.class, queryInterfaceInformationSerializer ).create();
             return qiiGson.toJson( queryInterfaceInformations, QueryInterfaceInformation[].class );
         }
+
     }
+
 
     /**
      * Model needed for the UI
      */
     public static class QueryInterfaceInformationRequest {
+
         public String clazzName;
         public String uniqueName;
         public Map<String, String> currentSettings;
+
     }
 
 }

@@ -69,7 +69,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
             selectedPartitionId = unboundPartitionId;
         }
 
-
         return selectedPartitionId;
     }
 
@@ -244,8 +243,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .defaultValue( "" )
                 .build() );
 
-
-
         //Fixed rows to display after dynamically generated ones
         List<List<Column>> rowsAfter = new ArrayList<>();
         List<Column> unboundRow = new ArrayList<>();
@@ -283,8 +280,6 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .build() );
 
         rowsAfter.add( unboundRow );
-
-
 
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )

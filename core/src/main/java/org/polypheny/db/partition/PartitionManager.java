@@ -40,10 +40,10 @@ public interface PartitionManager {
     boolean allowsUnboundPartition();
 
     /**
-    The sole purpose of this method is to create a JSON Object which should be consumed inside the UI
-    to dynamically create a modal whith all required dependencies, which are needed to generate the correct SQL Statement for partitioning
-
-    @return JSON Object to be parsed
+     * The sole purpose of this method is to create a JSON Object which should be consumed inside the UI
+     * to dynamically create a modal whith all required dependencies, which are needed to generate the correct SQL Statement for partitioning
+     *
+     * @return JSON Object to be parsed
      */
     PartitionFunctionInfo getPartitionFunctionInfo();
 

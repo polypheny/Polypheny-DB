@@ -130,7 +130,7 @@ public class SqlDropTable extends SqlDropObject {
         }
 
         // Delete data from the stores and remove the column placement
-        catalog.flagTableForDeletion( table.id, true);
+        catalog.flagTableForDeletion( table.id, true );
         for ( int storeId : table.placementsByAdapter.keySet() ) {
             // Delete table on store
             AdapterManager.getInstance().getStore( storeId ).dropTable( context, table );
@@ -150,7 +150,7 @@ public class SqlDropTable extends SqlDropObject {
                 catalog.deleteForeignKey( foreignKey.id );
             }
         } catch ( GenericCatalogException e ) {
-            catalog.flagTableForDeletion( table.id, false);
+            catalog.flagTableForDeletion( table.id, false );
             throw new PolyphenyDbContextException( "Exception while deleting self-referencing foreign key constraints.", e );
         }
 
@@ -175,7 +175,7 @@ public class SqlDropTable extends SqlDropObject {
                 catalog.deleteConstraint( constraint.id );
             }
         } catch ( GenericCatalogException e ) {
-            catalog.flagTableForDeletion( table.id, false);
+            catalog.flagTableForDeletion( table.id, false );
             throw new PolyphenyDbContextException( "Exception while dropping keys.", e );
         }
 

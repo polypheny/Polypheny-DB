@@ -157,6 +157,7 @@ public final class CatalogForeignKey extends CatalogKey {
             public final String fkName;
             public final String pkName;
             public final Integer deferrability;
+
         }
 
     }

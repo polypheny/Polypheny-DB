@@ -95,9 +95,10 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
 
     @Override
     public int compareTo( CatalogKey o ) {
-        if( o != null ){
+        if ( o != null ) {
             return (int) (this.id - o.id);
         }
         return -1;
     }
+
 }

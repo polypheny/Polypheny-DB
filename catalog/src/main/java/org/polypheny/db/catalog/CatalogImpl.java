@@ -718,16 +718,16 @@ public class CatalogImpl extends Catalog {
                 depts.id,
                 ImmutableList.of( getColumn( depts.id, "deptno" ).id ),
                 "fk_emps_depts",
-                ForeignKeyOption.RESTRICT,
-                ForeignKeyOption.RESTRICT );
+                ForeignKeyOption.NONE,
+                ForeignKeyOption.NONE );
         addForeignKey(
                 work.id,
                 ImmutableList.of( getColumn( work.id, "employeeno" ).id ),
                 emp.id,
                 ImmutableList.of( getColumn( emp.id, "employeeno" ).id ),
                 "fk_work_emp",
-                ForeignKeyOption.RESTRICT,
-                ForeignKeyOption.RESTRICT );
+                ForeignKeyOption.NONE,
+                ForeignKeyOption.NONE );
     }
 
 
@@ -1695,7 +1695,7 @@ public class CatalogImpl extends Catalog {
     /**
      * Get all column placements of a column
      *
-     * @param columnId the id of the specific column
+     * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
     @Override
@@ -2969,6 +2969,9 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Get a query interface by its unique name
+     *
+     * @param uniqueName The unique name of the query interface
+     * @return The CatalogQueryInterface
      */
     @Override
     public CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException {
@@ -2983,6 +2986,9 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Get a query interface by its id
+     *
+     * @param ifaceId The id of the query interface
+     * @return The CatalogQueryInterface
      */
     @Override
     public CatalogQueryInterface getQueryInterface( int ifaceId ) {
@@ -3056,6 +3062,7 @@ public class CatalogImpl extends Catalog {
      * @param schemaId The unique id of the table
      * @param ownerId the partitionId to be deleted
      * @param partitionType partition Type of the added partition
+     * @return The id of the created partition
      */
     @Override
     public long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException {
@@ -3090,12 +3097,13 @@ public class CatalogImpl extends Catalog {
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
-     * @param partitionId the partitionId to be deleted
+     * @param partitionId The partitionId to be deleted
      */
     @Override
     protected void deletePartition( long tableId, long schemaId, long partitionId ) throws UnknownPartitionIdRuntimeException {
         log.debug( "Deleting partition with id '{}' on table with id '{}'", partitionId, tableId );
-        CatalogPartition partition = getPartition( partitionId );
+        // Check whether there this partition id exists
+        getPartition( partitionId );
         synchronized ( this ) {
             partitions.remove( partitionId );
         }
@@ -3105,7 +3113,8 @@ public class CatalogImpl extends Catalog {
     /**
      * Get a partition object by its unique id
      *
-     * @return partition
+     * @param partitionId The unique id of the partition
+     * @return A catalog partition
      */
     @Override
     public CatalogPartition getPartition( long partitionId ) throws UnknownPartitionIdRuntimeException {
@@ -3121,11 +3130,11 @@ public class CatalogImpl extends Catalog {
      * Effectively partitions a table with the specified partitionType
      *
      * @param tableId Table to be partitioned
-     * @param partitionType partition function to apply on the table
-     * @param partitionColumnId column used to apply the partition function on
-     * @param numPartitions explicit number of partitions
-     * @param partitionQualifiers qualifiers which are directly associated with a partition
-     * @param partitionNames (optional)
+     * @param partitionType Partition function to apply on the table
+     * @param partitionColumnId Column used to apply the partition function on
+     * @param numPartitions Explicit number of partitions
+     * @param partitionQualifiers Qualifiers which are directly associated with a partition
+     * @param partitionNames (Optional) list of partition names
      */
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException {
@@ -3160,7 +3169,7 @@ public class CatalogImpl extends Catalog {
         for ( int i = 0; i < numPartitions; i++ ) {
             String partitionName;
 
-            //Make last partition unbound partition
+            // Make last partition unbound partition
             if ( partitionManager.allowsUnboundPartition() && i == numPartitions - 1 ) {
                 partId = addPartition( tableId, "Unbound", old.schemaId, old.ownerId, partitionType, new ArrayList<>(), true );
             } else {
@@ -3341,11 +3350,12 @@ public class CatalogImpl extends Catalog {
 
 
     /**
-     * Get placements by partition. Identify the location of partitions
+     * Get placements by partition. Identify the location of partitions.
+     * Essentially returns all ColumnPlacements which hold the specified partitionID.
      *
      * @param tableId The id of the table
      * @param partitionId The id of the partition
-     * @param columnId The id of tje columnn
+     * @param columnId The id of tje column
      * @return List of CatalogColumnPlacements
      */
     @Override
@@ -3368,8 +3378,9 @@ public class CatalogImpl extends Catalog {
      * Get adapters by partition. Identify the location of partitions/replicas
      * Essentially returns all adapters which hold the specified partitionID
      *
+     * @param tableId The unique id of the table
      * @param partitionId The unique id of the partition
-     * @return List of CatalogAdapter
+     * @return List of CatalogAdapters
      */
     @Override
     public List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId ) {
@@ -3491,9 +3502,11 @@ public class CatalogImpl extends Catalog {
 
     /**
      * Checks depending on the current partition distribution and partitionType
-     * If this would be sufficient. Basically a passthrough method to simplify the code
+     * if the distribution would be sufficient. Basically a passthrough method to simplify the code
      *
-     * @param tableId table to be checked
+     * @param adapterId The id of the adapter to be checked
+     * @param tableId The id of the table to be checked
+     * @param columnId The id of the column to be checked
      * @return If its correctly distributed or not
      */
     @Override
@@ -3518,8 +3531,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
-        System.out.println( "------> Is flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ) );
-
         if ( flag && !tablesFlaggedForDeletion.contains( tableId ) ) {
             tablesFlaggedForDeletion.add( tableId );
         } else if ( !flag && tablesFlaggedForDeletion.contains( tableId ) ) {
@@ -3538,9 +3549,6 @@ public class CatalogImpl extends Catalog {
      */
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
-
-        System.out.println( "------> Is flagged for deletion" + tablesFlaggedForDeletion.contains( tableId ) );
-
         return tablesFlaggedForDeletion.contains( tableId );
     }
 

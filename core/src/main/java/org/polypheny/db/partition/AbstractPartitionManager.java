@@ -107,16 +107,16 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         return returnCcps;
     }
 
+
     @Override
     public abstract PartitionFunctionInfo getPartitionFunctionInfo();
 
 
+    protected void generateSampleSQL( JsonObject json ) {
 
-    protected void generateSampleSQL( JsonObject json ){
+        System.out.println( "JSON:" + json );
 
-        System.out.println("JSON:" + json);
-
-        System.out.println("Number of Top Level Keys: "+ json.size());
+        System.out.println( "Number of Top Level Keys: " + json.size() );
 
         String function_title = json.get( "function_title" ).getAsString();
         String info_tooltip = json.get( "info_tooltip" ).getAsString();
@@ -125,45 +125,44 @@ public abstract class AbstractPartitionManager implements PartitionManager {
         boolean dynamic_rows = json.get( "dynamic_rows" ).getAsBoolean();
         String row_separation = json.get( "row_separation" ).getAsString();
 
-        System.out.println("Function Title: "+ function_title);
-        System.out.println("Info Tooltip: "+ info_tooltip + "\n");
-        System.out.println("SQL Construct: "+ sql_prefix + " " + sql_suffix);
+        System.out.println( "Function Title: " + function_title );
+        System.out.println( "Info Tooltip: " + info_tooltip + "\n" );
+        System.out.println( "SQL Construct: " + sql_prefix + " " + sql_suffix );
 
-        System.out.println("Use Dynamic Rows: "+ dynamic_rows);
-        System.out.println("Row Separation Character: "+ row_separation);
-
+        System.out.println( "Use Dynamic Rows: " + dynamic_rows );
+        System.out.println( "Row Separation Character: " + row_separation );
 
         //Will be selected in UI
         int numPartitions = 3;
 
         String content = "";
 
-        System.out.println("\n___________________________________________________");
-        if ( dynamic_rows ){
-            if ( !json.has( "columns" ) ){
-                throw new RuntimeException("UI-based Partition Definition for function: " + function_title + " is ill-defined");
+        System.out.println( "\n___________________________________________________" );
+        if ( dynamic_rows ) {
+            if ( !json.has( "columns" ) ) {
+                throw new RuntimeException( "UI-based Partition Definition for function: " + function_title + " is ill-defined" );
             }
 
             JsonArray columns = json.get( "columns" ).getAsJsonArray();
 
-            for ( int i = 0; i < numPartitions; i++ ){
+            for ( int i = 0; i < numPartitions; i++ ) {
 
                 //Relevant to set line separation if
-                if ( i != 0 ){
+                if ( i != 0 ) {
                     content = content + row_separation;
                 }
 
                 String header = "";
                 String fieldUI = "";
-                for ( int j = 0; j <columns.size() ; j++ ) {
+                for ( int j = 0; j < columns.size(); j++ ) {
 
                     JsonObject currentJson = columns.get( j ).getAsJsonObject();
                     //First round - print headers
 
                     header = header + "\t\t\t" + currentJson.get( "title" );
 
-                    String inner_sql_prefix = currentJson.get( "sql_prefix").getAsString();
-                    String inner_sql_suffix = currentJson.get( "sql_suffix").getAsString();
+                    String inner_sql_prefix = currentJson.get( "sql_prefix" ).getAsString();
+                    String inner_sql_suffix = currentJson.get( "sql_suffix" ).getAsString();
 
                     String field_type = currentJson.get( "field_type" ).getAsString();
 
@@ -172,15 +171,15 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                     switch ( field_type ) {
                         case "text":
 
-                            if ( currentJson.has( "modifiable" ) &&  currentJson.get( "modifiable" ).getAsBoolean()){
+                            if ( currentJson.has( "modifiable" ) && currentJson.get( "modifiable" ).getAsBoolean() ) {
 
                                 fieldUI = fieldUI + "\t\t\t[######]";
 
-                            }else {
+                            } else {
                                 fieldUI = fieldUI + "\t\t\t[______]";
                             }
                             //Generate random Name
-                            content = content + " part_"+i;
+                            content = content + " part_" + i;
                             break;
 
                         case "dropdown":
@@ -202,38 +201,35 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 }
 
                 if ( i == 0 ) {
-                    System.out.println(header);
+                    System.out.println( header );
                 }
                 System.out.println( (i + 1) + ".  \t\t" + fieldUI );
             }
 
 
-        }else{
-            if ( !json.has( "columns" ) ){
-                throw new RuntimeException("UI-based Partition Definition for function: " + function_title + " is ill-defined");
+        } else {
+            if ( !json.has( "columns" ) ) {
+                throw new RuntimeException( "UI-based Partition Definition for function: " + function_title + " is ill-defined" );
             }
 
             JsonArray columns = json.get( "columns" ).getAsJsonArray();
             numPartitions = columns.size();
 
-
-            for ( int i = 0; i < numPartitions; i++ ){
+            for ( int i = 0; i < numPartitions; i++ ) {
 
                 //HERE
                 JsonArray currentRow = columns.get( i ).getAsJsonArray();
 
                 String header = "";
                 String fieldUI = "";
-                for ( int j = 0; j <currentRow.size() ; j++ ) {
+                for ( int j = 0; j < currentRow.size(); j++ ) {
 
                     //HERE
-                    JsonObject currentJson= currentRow.get( j ).getAsJsonObject();
-
+                    JsonObject currentJson = currentRow.get( j ).getAsJsonObject();
 
                     header = header + "\t\t\t" + currentJson.get( "title" );
 
                     String field_type = currentJson.get( "field_type" ).getAsString();
-
 
                     switch ( field_type ) {
                         case "text":
@@ -258,45 +254,42 @@ public abstract class AbstractPartitionManager implements PartitionManager {
                 }
 
                 if ( i == 0 ) {
-                    System.out.println(header);
+                    System.out.println( header );
                 }
                 System.out.println( (i + 1) + ".  \t\t" + fieldUI );
             }
 
 
-
         }
 
-        if ( json.has( "display_only_after" ) ){
+        if ( json.has( "display_only_after" ) ) {
 
-            JsonArray display_only_afterArray = json.getAsJsonArray("display_only_after");
+            JsonArray display_only_afterArray = json.getAsJsonArray( "display_only_after" );
 
             //Fir numebr of rows in display_after
-            for ( int i = 0; i < display_only_afterArray.size(); i++ ){
+            for ( int i = 0; i < display_only_afterArray.size(); i++ ) {
 
                 //HERE
                 JsonArray currentRow = display_only_afterArray.get( i ).getAsJsonArray();
 
                 String header = "";
                 String fieldUI = "";
-                for ( int j = 0; j <currentRow.size() ; j++ ) {
+                for ( int j = 0; j < currentRow.size(); j++ ) {
 
                     //HERE
-                    JsonObject currentJson= currentRow.get( j ).getAsJsonObject();
-
+                    JsonObject currentJson = currentRow.get( j ).getAsJsonObject();
 
                     header = header + "\t\t\t" + currentJson.get( "title" );
 
                     String field_type = currentJson.get( "field_type" ).getAsString();
 
-
                     switch ( field_type ) {
                         case "text":
-                            if ( currentJson.has( "modifiable" ) &&  !currentJson.get( "modifiable" ).getAsBoolean()){
+                            if ( currentJson.has( "modifiable" ) && !currentJson.get( "modifiable" ).getAsBoolean() ) {
 
                                 fieldUI = fieldUI + "\t\t\t\t[######]";
 
-                            }else {
+                            } else {
                                 fieldUI = fieldUI + "\t\t\t\t[______]";
                             }
                             break;
@@ -321,16 +314,12 @@ public abstract class AbstractPartitionManager implements PartitionManager {
             }
 
 
-
         }
 
-        System.out.println("\n___________________________________________________");
+        System.out.println( "\n___________________________________________________" );
 
-
-
-
-
-        System.out.println("\nSQL: ALTER TABLE dummy PARTITION BY "+ function_title + " (column) " + sql_prefix + " " + content + " " +  sql_suffix + "\n");
+        System.out.println( "\nSQL: ALTER TABLE dummy PARTITION BY " + function_title + " (column) " + sql_prefix + " " + content + " " + sql_suffix + "\n" );
 
     }
+
 }

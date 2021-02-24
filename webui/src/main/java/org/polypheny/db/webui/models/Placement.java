@@ -46,6 +46,7 @@ public class Placement {
         this.exception = exception;
     }
 
+
     public Placement addAdapter( final Store s ) {
         if ( s.columnPlacements.size() > 0 ) {
             this.stores.add( s );

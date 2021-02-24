@@ -112,6 +112,7 @@ public abstract class Catalog {
         listeners.addPropertyChangeListener( listener );
     }
 
+
     /**
      * Removes a registered observer
      *
@@ -120,6 +121,7 @@ public abstract class Catalog {
     public void removeObserver( PropertyChangeListener listener ) {
         listeners.removePropertyChangeListener( listener );
     }
+
 
     /**
      * Validates that all columns have a valid placement,
@@ -440,7 +442,7 @@ public abstract class Catalog {
     /**
      * Get all column placements of a column
      *
-     * @param columnId the id of the specific column
+     * @param columnId The id of the specific column
      * @return List of column placements of specific column
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
@@ -939,11 +941,17 @@ public abstract class Catalog {
 
     /**
      * Get a query interface by its unique name
+     *
+     * @param uniqueName The unique name of the query interface
+     * @return The CatalogQueryInterface
      */
     public abstract CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException;
 
     /**
      * Get a query interface by its id
+     *
+     * @param ifaceId The id of the query interface
+     * @return The CatalogQueryInterface
      */
     public abstract CatalogQueryInterface getQueryInterface( int ifaceId );
 
@@ -971,23 +979,24 @@ public abstract class Catalog {
      * @param schemaId The unique id of the table
      * @param ownerId the partitionId to be deleted
      * @param partitionType partition Type of the added partition
+     * @return The id of the created partition
      */
     public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
-     * Should only be called from mergePartitions()
-     * deletes a single partition and all references
+     * Should only be called from mergePartitions(). Deletes a single partition and all references.
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
-     * @param partitionId the partitionId to be deleted
+     * @param partitionId The partitionId to be deleted
      */
     protected abstract void deletePartition( long tableId, long schemaId, long partitionId );
 
     /**
      * Get a partition object by its unique id
      *
-     * @return partition
+     * @param partitionId The unique id of the partition
+     * @return A catalog partition
      */
     public abstract CatalogPartition getPartition( long partitionId );
 
@@ -995,13 +1004,13 @@ public abstract class Catalog {
      * Effectively partitions a table with the specified partitionType
      *
      * @param tableId Table to be partitioned
-     * @param type partition function to apply on the table
-     * @param partitionColumnId column used to apply the partition function on
-     * @param numPartitions explicit number of partitions
-     * @param partitionQualifiers qualifiers which are directly associated with a partition
-     * @param partitionNames (optional)
+     * @param partitionType Partition function to apply on the table
+     * @param partitionColumnId Column used to apply the partition function on
+     * @param numPartitions Explicit number of partitions
+     * @param partitionQualifiers Qualifiers which are directly associated with a partition
+     * @param partitionNames (Optional) list of partition names
      */
-    public abstract void partitionTable( long tableId, PartitionType type, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException;
+    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException;
 
     /**
      * Merges a  partitioned table.
@@ -1040,11 +1049,11 @@ public abstract class Catalog {
 
     /**
      * Get placements by partition. Identify the location of partitions.
-     * Essentially returns all ColumnPlacements which hold the specified partitionID
+     * Essentially returns all ColumnPlacements which hold the specified partitionID.
      *
-     * @param partitionId The unique id of the partition
-     * @param columnId column placement to return
-     * @param tableId The unique Id of the table
+     * @param tableId The id of the table
+     * @param partitionId The id of the partition
+     * @param columnId The id of tje column
      * @return List of CatalogColumnPlacements
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId );
@@ -1053,8 +1062,9 @@ public abstract class Catalog {
      * Get adapters by partition. Identify the location of partitions/replicas
      * Essentially returns all adapters which hold the specified partitionID
      *
+     * @param tableId The unique id of the table
      * @param partitionId The unique id of the partition
-     * @return List of CatalogAdapter
+     * @return List of CatalogAdapters
      */
     public abstract List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId );
 
@@ -1095,12 +1105,14 @@ public abstract class Catalog {
 
     /**
      * Checks depending on the current partition distribution and partitionType
-     * If this would be sufficient. Basically a passthrough method to simplify the code.
+     * if the distribution would be sufficient. Basically a passthrough method to simplify the code
      *
-     * @param tableId table to be checked
+     * @param adapterId The id of the adapter to be checked
+     * @param tableId The id of the table to be checked
+     * @param columnId The id of the column to be checked
      * @return If its correctly distributed or not
      */
-    public abstract boolean validatePartitionDistribution( int storeId, long tableId, long columnId );
+    public abstract boolean validatePartitionDistribution( int adapterId, long tableId, long columnId );
 
     /**
      * Flags the table for deletion.
@@ -1119,7 +1131,7 @@ public abstract class Catalog {
      * @param tableId table to be checked
      * @return If table is flagged for deletion or not
      */
-    public abstract boolean isTableFlaggedForDeletion(long tableId);
+    public abstract boolean isTableFlaggedForDeletion( long tableId );
 
 
     /*
@@ -1337,6 +1349,7 @@ public abstract class Catalog {
 
 
     public enum ForeignKeyOption {
+        NONE( -1 ),
         // IDs according to JDBC standard
         //CASCADE( 0 ),
         RESTRICT( 1 );
@@ -1367,7 +1380,9 @@ public abstract class Catalog {
 
 
         public static ForeignKeyOption parse( @NonNull String str ) throws UnknownForeignKeyOptionException {
-            if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
+            if ( str.equalsIgnoreCase( "NONE" ) ) {
+                return ForeignKeyOption.NONE;
+            } else if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
                 return ForeignKeyOption.RESTRICT;
             } /*else if ( str.equalsIgnoreCase( "CASCADE" ) ) {
                 return ForeignKeyOption.CASCADE;

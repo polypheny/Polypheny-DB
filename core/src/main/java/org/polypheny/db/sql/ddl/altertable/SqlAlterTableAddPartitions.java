@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -101,9 +100,9 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
                 long tableId = catalogTable.id;
 
                 // Check if specified partitionColumn is even part of the table
-                Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName( partitionType.toString() );
+                Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName( partitionType.getSimple() );
 
-                long partitionColumnID = catalog.getColumn( tableId, partitionColumn.toString() ).id;
+                long partitionColumnID = getCatalogColumn( tableId, partitionColumn ).id;
                 if ( log.isDebugEnabled() ) {
                     log.debug( "Creating partition for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
                 }
@@ -127,7 +126,7 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             } else {
                 throw new RuntimeException( "Table '" + catalogTable.name + "' is already partitioned" );
             }
-        } catch ( UnknownPartitionTypeException | UnknownColumnException | GenericCatalogException e ) {
+        } catch ( UnknownPartitionTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
         }
     }

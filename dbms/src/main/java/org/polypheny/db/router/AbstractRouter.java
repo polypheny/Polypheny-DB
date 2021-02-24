@@ -530,7 +530,7 @@ public abstract class AbstractRouter implements Router {
                                 worstCaseRouting = true;
                             }
 
-                            if ( log.isDebugEnabled() ){
+                            if ( log.isDebugEnabled() ) {
                                 String partitionColumnName = catalog.getColumn( catalogTable.partitionColumnId ).name;
                                 String partitionName = catalog.getPartition( identPart ).partitionName;
                                 log.debug( "INSERT: partitionColumn-value: '{}' should be put on partition: {} ({}), which is partitioned with column",

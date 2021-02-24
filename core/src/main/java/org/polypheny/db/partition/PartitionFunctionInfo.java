@@ -18,11 +18,9 @@
 package org.polypheny.db.partition;
 
 
-
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
-
 
 
 @Getter

@@ -94,7 +94,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
     private final List<List<SqlNode>> partitionQualifierList;
 
-
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
 
@@ -116,13 +115,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             List<List<SqlNode>> partitionQualifierList ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.columnList = columnList; // may be null
+        this.columnList = columnList; // May be null
         this.query = query; // for "CREATE TABLE ... AS query"; may be null
         this.store = store; // ON STORE [store name]; may be null
         this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
-        this.partitionColumn = partitionColumn; // may be null
-        this.numPartitions = numPartitions; //May be null and can only be used in association with PARTITION BY
-        this.partitionNamesList = partitionNamesList; //May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionColumn = partitionColumn; // May be null
+        this.numPartitions = numPartitions; // May be null and can only be used in association with PARTITION BY
+        this.partitionNamesList = partitionNamesList; // May be null and can only be used in association with PARTITION BY and PARTITIONS
         this.partitionQualifierList = partitionQualifierList;
     }
 
@@ -142,10 +141,10 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
          `WITH PARTITIONS 3`
          or something like
          `(
-            PARTITION a892_233 VALUES(892, 233),
-            PARTITION a1001_1002 VALUES(1001, 1002),
-            PARTITION a8000_4003 VALUES(8000, 4003),
-            PARTITION a900_999 VALUES(900, 999)
+         PARTITION a892_233 VALUES(892, 233),
+         PARTITION a1001_1002 VALUES(1001, 1002),
+         PARTITION a8000_4003 VALUES(8000, 4003),
+         PARTITION a900_999 VALUES(900, 999)
          )`*/
 
         writer.keyword( "CREATE" );

@@ -113,7 +113,6 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
                     tableName += i;
                 }
 
-
                 long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly(), null );
                 List<Long> primaryKeyColIds = new ArrayList<>();
                 int colPos = 1;
