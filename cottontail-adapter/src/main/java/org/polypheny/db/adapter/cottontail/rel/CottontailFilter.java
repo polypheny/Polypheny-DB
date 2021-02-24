@@ -66,7 +66,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
 //            CottontailFilter.Translator.class,
             "generateCompoundPredicate",
             Object.class, Object.class, Object.class );
-//            CompoundBooleanPredicate.Operator.class, Object.class, Object.class );
 
     public static final Method CREATE_WHERE_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
@@ -103,7 +102,9 @@ public class CottontailFilter extends Filter implements CottontailRel {
     public static BooleanPredicate convertToCnf( RexNode condition ) {
         BooleanPredicate predicateInner = convertRexToBooleanPredicate( condition );
         BooleanPredicate predicate = new CompoundPredicate( Op.ROOT, predicateInner, null );
+        //noinspection StatementWithEmptyBody
         while ( predicate.simplify() ) {
+            // intentionally empty
         }
 
 //        Translator translator = new Translator( this.getRowType() )
@@ -139,9 +140,7 @@ public class CottontailFilter extends Filter implements CottontailRel {
             Expression filterExpression = convertBooleanPredicate( ((CompoundPredicate) predicate).left, null, dynamicParameterMap_, false );
 
             return Expressions.lambda(
-                    Expressions.block(
-                            Expressions.return_( null,
-                                    Expressions.call( CREATE_WHERE_METHOD, filterExpression ) ) ),
+                    Expressions.block( Expressions.return_( null, Expressions.call( CREATE_WHERE_METHOD, filterExpression ) ) ),
                     dynamicParameterMap_ );
         }
 
@@ -154,12 +153,9 @@ public class CottontailFilter extends Filter implements CottontailRel {
         ) {
             if ( predicate instanceof AtomicPredicate ) {
                 AtomicPredicate atomicPredicate = (AtomicPredicate) predicate;
-
                 return translateMatch2( atomicPredicate.node, dynamicParameterMap_, negated );
-
 //            RexNode leftOp = ((RexCall) atomicPredicate.node).getOperands().get( 0 );
 //            RexNode rightOp = ((RexCall) atomicPredicate.node).getOperands().get( 1 );
-
 //            return Expressions.call( CREATE_ATOMIC_PREDICATE_METHOD,  );
             } else {
                 CompoundPredicate compoundPredicate = (CompoundPredicate) predicate;
@@ -330,9 +326,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
 
 
     private static BooleanPredicate convertRexToBooleanPredicate( RexNode condition ) {
-        /*if ( !(condition instanceof RexCall) ) {
-            throw new RuntimeException();
-        }*/
         switch ( condition.getKind() ) {
             // Compound predicates
             case AND: {

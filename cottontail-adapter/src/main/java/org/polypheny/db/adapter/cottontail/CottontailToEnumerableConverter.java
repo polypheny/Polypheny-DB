@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -176,12 +175,9 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                                 Expressions.constant( cottontailContext.schemaName ),
                                 expressionOrNullExpression( cottontailContext.projectionMap ), // PROJECTION
                                 expressionOrNullExpression( cottontailContext.filterBuilder ),
-//                        cottontailContext.filterBuilder,
                                 expressionOrNullExpression( cottontailContext.knnBuilder ), // KNN
                                 expressionOrNullExpression( cottontailContext.limitBuilder ), // limit
-//                                Expressions.constant( cottontailContext.limit ), // limit
                                 expressionOrNullExpression( cottontailContext.offsetBuilder ), // offset
-//                                Expressions.constant( cottontailContext.offset ), // offset
                                 DataContext.ROOT,
                                 rowBuilder_, // ROW PARSER
                                 Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
@@ -263,8 +259,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         final Expression getDataFromMap_;
         try {
             getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
-//            getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( CottontailGrpc.Data.class, result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
-//            final Expression getDataFromMap_ = blockBuilder.append( "v" + i, Expressions.call( CottontailGrpc.Data.class, result_, BuiltInMethod.MAP_GET.method, Expressions.constant( physicalRowNames.get( i ).toLowerCase() ) ) );
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
@@ -330,7 +324,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             case TIMESTAMP:
             case NULL:
                 /* These are all simple types to fetch from the result. */
-//                source = Expressions.call( getDataFromMap_, cottontailGetMethod( fieldType.getPolyType() ) );
                 source = Expressions.call( cottontailGetMethod( fieldType.getPolyType() ), getDataFromMap_ );
                 break;
             case ARRAY: {
@@ -343,7 +336,7 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 } else {
                     // We need to handle nested arrays
                     source = Expressions.call(
-                            BuiltInMethod.JDBC_PARSE_ARRAY_FROM_TEXT.method,
+                            BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
                             Expressions.constant( fieldType.getComponentType().getPolyType() ),
                             Expressions.constant( arrayType.getDimension() ),
                             Expressions.call( cottontailGetMethod( PolyType.VARCHAR ), getDataFromMap_ ) );
@@ -437,22 +430,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
             DataContext dataContext,
             Function1 rowParser,
             CottontailWrapper wrapper
-//            String from,
-//            Map<String, String> projection,
-//            Function1<Map, CottontailGrpc.Where> whereBuilder,
-//            Object knn, // TODO js(ct) FIGURE OUT
-//            int limit, int offset,
-//            DataContext dataContext,
-//            Function1<Map<String, Data>, Object> rowParser,
-//            CottontailWrapper wrapper
     ) {
         Iterator<QueryResponseMessage> queryResponseIterator;
 
         if ( dataContext.getParameterValues().size() == 0 ) {
-            Map parameterValues = new HashMap();
-            Map<String, String> ghettoProjection = new HashMap<>();
-            ghettoProjection.put( "*", "" );
-//            ghettoProjection.put( "col27", "col27" );
             Query query = Query.newBuilder()
 //                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( "tab4" ).setSchema( Schema.newBuilder().setName( "cottontail" ) ) ) )
                     .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )

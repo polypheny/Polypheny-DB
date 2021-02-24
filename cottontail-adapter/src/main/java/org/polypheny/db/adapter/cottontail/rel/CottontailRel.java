@@ -31,7 +31,6 @@ public interface CottontailRel extends RelNode {
 
     class CottontailImplementContext {
 
-
         // Main block builder for the generated code.
         public BlockBuilder blockBuilder;
 

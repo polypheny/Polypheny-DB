@@ -142,7 +142,6 @@ public class Linq4JFixer {
         /*try {
             return new TimestampString( ((CottontailGrpc.Data) data).getStringData() ).getMillisSinceEpoch();
         } catch ( Exception e ) {
-            e.printStackTrace();
             throw new RuntimeException( e );
         }*/
     }
@@ -249,16 +248,6 @@ public class Linq4JFixer {
     }
 
 
-    /*public static Knn generateKnn(
-            String column,
-            String distance,
-            Object target,
-            Object fourthArgument
-    ) {
-
-    }*/
-
-
     public static Knn generateKnn(
             Object column,
             Object k,
@@ -281,12 +270,10 @@ public class Linq4JFixer {
 
         if ( target != null ) {
             knnBuilder.addQuery( (Vector) target );
-//            knnBuilder.setQuery( 0, (Vector) target );
         }
 
         if ( weights != null ) {
             knnBuilder.addWeights( (Vector) weights );
-//            knnBuilder.setWeights( 0, (Vector) weights );
         }
 
         knnBuilder.setDistance( getDistance( (String) distance ) );

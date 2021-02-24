@@ -310,7 +310,6 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
         @Override
         public Object[] apply( Map<String, Data> a0 ) {
             Object[] returnValue = new Object[this.physicalColumnNames.size()];
-//            List<Object> returnValue = new ArrayList<>( this.physicalColumnNames.size() );
 
             List<RelDataTypeField> fieldList = this.rowType.getFieldList();
             for ( int i = 0; i < fieldList.size(); i++ ) {

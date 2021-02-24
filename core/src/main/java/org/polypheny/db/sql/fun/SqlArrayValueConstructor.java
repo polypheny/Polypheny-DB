@@ -147,10 +147,6 @@ public class SqlArrayValueConstructor extends SqlMultisetValueConstructor {
 
     @Override
     public int hashCode() {
-        // FIXME js(knn): This is a hotfix to make the whole array creation function work properly in
-        //   things like `function(ARRAY[...])`.
-        //   It probably is not a good idea to not have dimension, cardinality, and max cardinality in
-        //   the hash, but right now it works and gets me moving forwards.
         return Objects.hash( kind, "ARRAY" );
     }
 

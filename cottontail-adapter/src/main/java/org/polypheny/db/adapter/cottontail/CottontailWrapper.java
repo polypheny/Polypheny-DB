@@ -182,10 +182,6 @@ public class CottontailWrapper implements AutoCloseable {
         }
     }
 
-//    public ListenableFuture<InsertStatus> insert( InsertMessage message) {
-//        return this.managementStub.insert(message);
-//    }
-
 
     public Long delete( DeleteMessage message ) {
 
@@ -197,9 +193,8 @@ public class CottontailWrapper implements AutoCloseable {
             @Override
             public void onNext( QueryResponseMessage value ) {
                 if ( value.getResultsList().size() != 0 ) {
-                    long deleted = count.addAndGet( value.getResultsList().get( 0 ).getDataMap().get( "deleted" ).getLongData() );
+                    count.addAndGet( value.getResultsList().get( 0 ).getDataMap().get( "deleted" ).getLongData() );
                 }
-//                count += value.getResultsList().size();
             }
 
 
@@ -235,9 +230,8 @@ public class CottontailWrapper implements AutoCloseable {
             @Override
             public void onNext( QueryResponseMessage value ) {
                 if ( value.getResultsList().size() != 0 ) {
-                    long updated = count.addAndGet( value.getResultsList().get( 0 ).getDataMap().get( "updated" ).getLongData() );
+                    count.addAndGet( value.getResultsList().get( 0 ).getDataMap().get( "updated" ).getLongData() );
                 }
-//                count += value.getResultsList().size();
             }
 
 

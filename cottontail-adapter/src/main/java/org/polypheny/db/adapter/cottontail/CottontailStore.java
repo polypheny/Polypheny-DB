@@ -277,7 +277,6 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void addColumn( Context context, CatalogTable catalogTable, CatalogColumn catalogColumn ) {
-        // TODO js(ct): Add addColumn to cottontail
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogTable.id );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
 
@@ -297,7 +296,6 @@ public class CottontailStore extends DataStore {
                 .setEntity( newTableEntity )
                 .addAllColumns( columns ).build();
 
-        // DONE TODO js(ct): Create the new table over here!
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
@@ -352,7 +350,6 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
-        // TODO js(ct): Add dropColumn to cottontail
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId );
         placements.removeIf( it -> it.columnId == columnPlacement.columnId );
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( placements );
@@ -369,7 +366,6 @@ public class CottontailStore extends DataStore {
                 .setEntity( newTableEntity )
                 .addAllColumns( columns ).build();
 
-        // DONE TODO js(ct): Create the new table over here!
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }

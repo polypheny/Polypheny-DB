@@ -25,7 +25,7 @@ dependencies {
     
     implementation group: "com.typesafe", name: "config", version: typesafe_config_version  // Apache 2.0
 
-    api group: "org.reflections", name: "reflections", version: reflections_version  // BSD 2-clause
+    implementation group: "org.reflections", name: "reflections", version: reflections_version  // BSD 2-clause
 
     implementation group: "com.google.guava", name: "guava", version: guava_version  // Apache 2.0
     

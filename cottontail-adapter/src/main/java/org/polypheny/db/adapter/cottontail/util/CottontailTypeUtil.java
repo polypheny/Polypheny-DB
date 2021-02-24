@@ -78,16 +78,13 @@ public class CottontailTypeUtil {
             "toVectorData",
             Object.class );
 
-
     public static final Method COTTONTAIL_KNN_BUILDER_METHOD = Types.lookupMethod(
             Linq4JFixer.class,
             "generateKnn",
             Object.class, Object.class, Object.class, Object.class, Object.class );
-//            String.class, Integer.class, String.class, Object.class, Object.class );
 
 
     public static CottontailGrpc.Type getPhysicalTypeRepresentation( RelDataType relDataType ) {
-
         PolyType type = relDataType.getPolyType();
         PolyType componentType = relDataType.getComponentType().getPolyType();
 
@@ -101,7 +98,6 @@ public class CottontailTypeUtil {
 
 
     public static CottontailGrpc.Type getPhysicalTypeRepresentation( PolyType logicalType, PolyType collectionType, int dimension ) {
-
         if ( collectionType == PolyType.ARRAY ) {
             if ( dimension != 1 ) {
                 // Dimension isn't 1, thus we have to serialise the array.
@@ -167,7 +163,6 @@ public class CottontailTypeUtil {
 
 
     public static Expression rexDynamicParamToDataExpression( RexDynamicParam dynamicParam, ParameterExpression dynamicParameterMap_, PolyType actualType ) {
-//        CompoundBooleanPredicate.newBuilder().set
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD,
                 Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method,
                         Expressions.constant( dynamicParam.getIndex() ) ), Expressions.constant( actualType ) );

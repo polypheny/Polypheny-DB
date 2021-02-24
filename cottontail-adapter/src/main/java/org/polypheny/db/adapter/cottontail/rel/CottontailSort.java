@@ -53,7 +53,6 @@ public class CottontailSort extends Sort implements CottontailRel {
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         final double rowCount = mq.getRowCount( this );
         return planner.getCostFactory().makeCost( rowCount, 0, 0 );
-//        return super.computeSelfCost( planner, mq ).multiplyBy( 0 );
     }
 
 
