@@ -18,6 +18,8 @@ package org.polypheny.db.webui.models;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -26,12 +28,14 @@ import java.util.ArrayList;
  */
 public class Uml {
 
-    private DbTable[] tables;
+    private Map<String, DbTable> tables = new HashMap<>();
     private ForeignKey[] foreignKeys;
 
 
     public Uml( final ArrayList<DbTable> tables, final ArrayList<ForeignKey> foreignKeys ) {
-        this.tables = tables.toArray( new DbTable[0] );
+        for ( DbTable table : tables ) {
+            this.tables.put( table.getTableName(), table );
+        }
         this.foreignKeys = foreignKeys.toArray( new ForeignKey[0] );
     }
 

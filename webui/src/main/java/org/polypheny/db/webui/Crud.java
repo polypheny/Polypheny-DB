@@ -2460,15 +2460,15 @@ public class Crud implements InformationObserver {
         String pkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         Result result;
+        String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
+                fkTable, fk.getFkName(), fk.getFkColumnName(), pkTable, fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
         try {
-            String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
-                    fkTable, fk.getFkName(), fk.getFkColumnName(), pkTable, fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
             executeSqlUpdate( transaction, sql );
             transaction.commit();
-            result = new Result( 1 );
+            result = new Result( 1 ).setGeneratedQuery( sql );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while adding a foreign key", e );
-            result = new Result( e );
+            result = new Result( e ).setGeneratedQuery( sql );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
