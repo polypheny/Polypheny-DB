@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.sql.SqlCall;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -57,7 +58,7 @@ public class SqlKeyConstraint extends SqlCall {
 
     public static final SqlSpecialOperator UNIQUE = new SqlSpecialOperator( "UNIQUE", SqlKind.UNIQUE );
 
-    protected static final SqlSpecialOperator PRIMARY = new SqlSpecialOperator( "PRIMARY KEY", SqlKind.PRIMARY_KEY );
+    public static final SqlSpecialOperator PRIMARY = new SqlSpecialOperator( "PRIMARY KEY", SqlKind.PRIMARY_KEY );
 
     @Getter
     private final SqlIdentifier name;
@@ -92,7 +93,17 @@ public class SqlKeyConstraint extends SqlCall {
             public SqlOperator getOperator() {
                 return PRIMARY;
             }
+
         };
+    }
+
+
+    public ConstraintType getConstraintType() {
+        if ( getOperator() == PRIMARY ) {
+            return ConstraintType.PRIMARY;
+        } else {
+            return ConstraintType.UNIQUE;
+        }
     }
 
 
@@ -117,5 +128,6 @@ public class SqlKeyConstraint extends SqlCall {
         writer.keyword( getOperator().getName() ); // "UNIQUE" or "PRIMARY KEY"
         columnList.unparse( writer, 1, 1 );
     }
+
 }
 

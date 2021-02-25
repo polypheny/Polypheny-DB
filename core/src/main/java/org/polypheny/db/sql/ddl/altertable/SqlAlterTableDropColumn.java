@@ -19,15 +19,10 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlWriter;
@@ -74,53 +69,13 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        if ( catalogTable.columnIds.size() < 2 ) {
-            throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
-        }
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, column );
 
         if ( column.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, column );
-
-        Catalog catalog = Catalog.getInstance();
-        // Check if column is part of an key
-        for ( CatalogKey key : catalog.getTableKeys( catalogTable.id ) ) {
-            if ( key.columnIds.contains( catalogColumn.id ) ) {
-                if ( catalog.isPrimaryKey( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the primary key." );
-                } else if ( catalog.isIndex( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the index with the name: '" + catalog.getIndexes( key ).get( 0 ).name + "'." );
-                } else if ( catalog.isForeignKey( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the foreign key with the name: '" + catalog.getForeignKeys( key ).get( 0 ).name + "'." );
-                } else if ( catalog.isConstraint( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the constraint with the name: '" + catalog.getConstraints( key ).get( 0 ).name + "'." );
-                }
-                throw new PolyphenyDbException( "Ok, strange... Something is going wrong here!" );
-            }
-        }
-
-        // Delete column from underlying data stores
-        for ( CatalogColumnPlacement dp : Catalog.getInstance().getColumnPlacementsByColumn( catalogColumn.id ) ) {
-            if ( catalogTable.tableType == TableType.TABLE ) {
-                AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( context, dp );
-            }
-            Catalog.getInstance().deleteColumnPlacement( dp.adapterId, dp.columnId );
-        }
-
-        // Delete from catalog
-        List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
-        Catalog.getInstance().deleteColumn( catalogColumn.id );
-        if ( catalogColumn.position != columns.size() ) {
-            // Update position of the other columns
-            for ( int i = catalogColumn.position; i < columns.size(); i++ ) {
-                Catalog.getInstance().setColumnPosition( columns.get( i ).id, i );
-            }
-        }
-
-        // Rest plan cache and implementation cache (not sure if required in this case)
-        statement.getQueryProcessor().resetCaches();
+        DdlManager.getInstance().alterTableDropColumn( catalogTable, catalogColumn, statement );
     }
 
 }

@@ -19,9 +19,12 @@ package org.polypheny.db.catalog;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -32,6 +35,8 @@ import org.polypheny.db.information.InformationTable;
 @Slf4j
 public class CatalogInfoPage implements PropertyChangeListener {
 
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "HH:mm:ss" );
+
     private final InformationManager infoManager;
     private final Catalog catalog;
     private final InformationTable databaseInformation;
@@ -40,6 +45,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
     private final InformationTable adapterInformation;
+
+    private final InformationTable debugInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -53,8 +60,10 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
         this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
-        this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
+        this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID", "Placements" ) );
         this.indexInformation = addCatalogInformationTable( page, "Indexes", Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
+
+        this.debugInformation = addCatalogInformationTable( page, "Debug", Arrays.asList( "Time", "Message" ) );
 
         addPersistentInfo( page );
 
@@ -72,19 +81,28 @@ public class CatalogInfoPage implements PropertyChangeListener {
     }
 
 
-    private InformationTable addPersistentInfo( InformationPage page ) {
+    private void addPersistentInfo( InformationPage page ) {
         InformationGroup catalogGroup = new InformationGroup( page, "Persistency" );
         infoManager.addGroup( catalogGroup );
         InformationTable table = new InformationTable( catalogGroup, Collections.singletonList( "is persistent" ) );
         infoManager.registerInformation( table );
         table.addRow( catalog.isPersistent ? "✔" : "X" );
-        return table;
     }
 
 
     @Override
     public void propertyChange( PropertyChangeEvent propertyChangeEvent ) {
-        resetCatalogInformation();
+        addDebugMessage( propertyChangeEvent );
+        new Thread( this::resetCatalogInformation ).start();
+
+    }
+
+
+    private void addDebugMessage( PropertyChangeEvent propertyChangeEvent ) {
+        String time = LocalTime.now().format( formatter );
+        String msg = String.format( "[Property]: %s, [New]: %s, [Old]: %s", propertyChangeEvent.getPropertyName(), propertyChangeEvent.getNewValue(), propertyChangeEvent.getOldValue() );
+        debugInformation.addRow( time, msg );
+
     }
 
 
@@ -113,7 +131,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
-                columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
+                String placements = catalog.getColumnPlacements( c.id ).stream().map( plac -> String.valueOf( plac.adapterId ) ).collect( Collectors.joining( "," ) );
+                columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId, placements );
             } );
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );

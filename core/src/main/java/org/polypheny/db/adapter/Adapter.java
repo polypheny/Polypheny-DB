@@ -25,6 +25,7 @@ import com.google.gson.JsonParseException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,11 @@ import lombok.experimental.Accessors;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -51,6 +57,10 @@ public abstract class Adapter {
 
     protected final Map<String, String> settings;
 
+    public InformationPage informationPage;
+    public List<InformationGroup> informationGroups;
+    public List<Information> informationElements;
+
 
     public Adapter( int adapterId, String uniqueName, Map<String, String> settings ) {
         this.adapterId = adapterId;
@@ -58,6 +68,10 @@ public abstract class Adapter {
         // Make sure the settings are actually valid
         this.validateSettings( settings, true );
         this.settings = settings;
+
+        informationPage = new InformationPage( uniqueName );
+        informationGroups = new ArrayList<>();
+        informationElements = new ArrayList<>();
     }
 
 
@@ -133,6 +147,56 @@ public abstract class Adapter {
     }
 
 
+    /**
+     * Enables the previously configured information groups and elements for this adapter in the InformationManager
+     */
+    public void enableInformationPage() {
+        InformationManager im = InformationManager.getInstance();
+        im.addPage( informationPage );
+        informationGroups.forEach( im::addGroup );
+
+        for ( Information information : informationElements ) {
+            im.registerInformation( information );
+        }
+    }
+
+
+    /**
+     * Removes all information objects defined in this adapter from the InformationManager
+     */
+    public void removeInformationPage() {
+        if ( informationElements.size() > 0 ) {
+            InformationManager im = InformationManager.getInstance();
+            im.removeInformation( informationElements.toArray( new Information[0] ) );
+            informationGroups.forEach( im::removeGroup );
+            im.removePage( informationPage );
+        }
+    }
+
+
+    /**
+     * Builds and adds an new information group, observing physical naming of columns, to the provided information objects
+     */
+    public void addInformationPhysicalNames() {
+
+        InformationGroup group = new InformationGroup( informationPage, "Physical Names" );
+        InformationTable physicalColumnNames = new InformationTable(
+                group,
+                Arrays.asList( "Id", "Name", "Physical Name" )
+        );
+        informationElements.add( physicalColumnNames );
+
+        group.setRefreshFunction( () -> {
+            physicalColumnNames.reset();
+            Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).forEach( placement -> {
+                physicalColumnNames.addRow( placement.columnId, Catalog.getInstance().getColumn( placement.columnId ).name, placement.physicalSchemaName + "." + placement.physicalTableName + "." + placement.physicalColumnName );
+            } );
+        } );
+
+        informationGroups.add( group );
+    }
+
+
     @Accessors(chain = true)
     public static abstract class AdapterSetting {
 
@@ -143,12 +207,14 @@ public abstract class Adapter {
         @Setter
         public String description;
 
+
         public AdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable ) {
             this.name = name;
             this.canBeNull = canBeNull;
             this.required = required;
             this.modifiable = modifiable;
         }
+
 
         /**
          * In most subclasses, this method returns the defaultValue, because the UI overrides the defaultValue when a new value is set.
@@ -169,6 +235,7 @@ public abstract class Adapter {
             this.defaultValue = defaultValue;
         }
 
+
         public String getValue() {
             return defaultValue.toString();
         }
@@ -187,6 +254,7 @@ public abstract class Adapter {
             this.defaultValue = defaultValue;
         }
 
+
         public String getValue() {
             return defaultValue;
         }
@@ -204,6 +272,7 @@ public abstract class Adapter {
             super( name, canBeNull, required, modifiable );
             this.defaultValue = defaultValue;
         }
+
 
         public String getValue() {
             return Boolean.toString( defaultValue );
@@ -229,6 +298,7 @@ public abstract class Adapter {
             }
         }
 
+
         public String getValue() {
             return defaultValue;
         }
@@ -247,12 +317,14 @@ public abstract class Adapter {
         public String[] fileNames = new String[]{ "" };
         public transient final Map<String, InputStream> inputStreams;
 
+
         public AdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable ) {
             super( name, canBeNull, required, modifiable );
             //so it will be serialized
             this.directory = "";
             this.inputStreams = new HashMap<>();
         }
+
 
         public String getValue() {
             return directory;
@@ -306,6 +378,7 @@ public abstract class Adapter {
             out.setDescription( description );
             return out;
         }
+
     }
 
 }

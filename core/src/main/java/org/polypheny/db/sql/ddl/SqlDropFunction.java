@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.ddl;
 
 
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlKind;
@@ -61,7 +62,8 @@ public class SqlDropFunction extends SqlDropObject {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        throw new RuntimeException( "Not supported yet" );
+        DdlManager.getInstance().dropFunction();
     }
+
 }
 

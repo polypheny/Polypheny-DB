@@ -21,15 +21,12 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import lombok.NonNull;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -39,7 +36,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -140,99 +136,16 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, tableName );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
-        Catalog catalog = Catalog.getInstance();
-        try {
-            if ( type != null ) {
-                // Make sure that this is a table of type TABLE (and not SOURCE)
-                if ( catalogTable.tableType != TableType.TABLE ) {
-                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-                }
-                PolyType dataType = PolyType.get( type.getTypeName().getSimple() );
-                final PolyType collectionsType = type.getCollectionsTypeName() == null ?
-                        null : PolyType.get( type.getCollectionsTypeName().getSimple() );
-                catalog.setColumnType(
-                        catalogColumn.id,
-                        dataType,
-                        collectionsType,
-                        type.getPrecision() == -1 ? null : type.getPrecision(),
-                        type.getScale() == -1 ? null : type.getScale(),
-                        type.getDimension() == -1 ? null : type.getDimension(),
-                        type.getCardinality() == -1 ? null : type.getCardinality());
-                for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
-                    AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
-                            context,
-                            placement,
-                            getCatalogColumn( catalogTable.id, columnName ) );
-                }
-            } else if ( nullable != null ) {
-                // Make sure that this is a table of type TABLE (and not SOURCE)
-                if ( catalogTable.tableType != TableType.TABLE ) {
-                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-                }
-                catalog.setNullable( catalogColumn.id, nullable );
-            } else if ( beforeColumn != null || afterColumn != null ) {
-                int targetPosition;
-                CatalogColumn refColumn;
-                if ( beforeColumn != null ) {
-                    refColumn = getCatalogColumn( catalogTable.id, beforeColumn );
-                    targetPosition = refColumn.position;
-                } else {
-                    refColumn = getCatalogColumn( catalogTable.id, afterColumn );
-                    targetPosition = refColumn.position + 1;
-                }
-                if ( catalogColumn.id == refColumn.id ) {
-                    throw new RuntimeException( "Same column!" );
-                }
-                List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
-                if ( targetPosition < catalogColumn.position ) {  // Walk from last column to first column
-                    for ( int i = columns.size(); i >= 1; i-- ) {
-                        if ( i < catalogColumn.position && i >= targetPosition ) {
-                            catalog.setColumnPosition( columns.get( i - 1 ).id, i + 1 );
-                        } else if ( i == catalogColumn.position ) {
-                            catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
-                        }
-                        if ( i == targetPosition ) {
-                            catalog.setColumnPosition( catalogColumn.id, targetPosition );
-                        }
-                    }
-                } else if ( targetPosition > catalogColumn.position ) { // Walk from first column to last column
-                    targetPosition--;
-                    for ( int i = 1; i <= columns.size(); i++ ) {
-                        if ( i > catalogColumn.position && i <= targetPosition ) {
-                            catalog.setColumnPosition( columns.get( i - 1 ).id, i - 1 );
-                        } else if ( i == catalogColumn.position ) {
-                            catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
-                        }
-                        if ( i == targetPosition ) {
-                            catalog.setColumnPosition( catalogColumn.id, targetPosition );
-                        }
-                    }
-                } else {
-                    // Do nothing
-                }
-            } else if ( collation != null ) {
-                // Make sure that this is a table of type TABLE (and not SOURCE)
-                if ( catalogTable.tableType != TableType.TABLE ) {
-                    throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-                }
-                Collation col = Collation.parse( collation );
-                catalog.setCollation( catalogColumn.id, col );
-            } else if ( defaultValue != null ) {
-                // TODO: String is only a temporal solution for default values
-                String v = defaultValue.toString();
-                if ( v.startsWith( "'" ) ) {
-                    v = v.substring( 1, v.length() - 1 );
-                }
-                catalog.setDefaultValue( catalogColumn.id, PolyType.VARCHAR, v );
-            } else if ( dropDefault != null && dropDefault ) {
-                catalog.deleteDefaultValue( catalogColumn.id );
-            } else {
-                throw new RuntimeException( "Unknown option" );
-            }
+        CatalogColumn beforeCatalogColumn = beforeColumn != null ? getCatalogColumn( catalogTable.id, beforeColumn ) : null;
+        CatalogColumn afterCatalogColumn = afterColumn != null ? getCatalogColumn( catalogTable.id, afterColumn ) : null;
 
-            // Rest plan cache and implementation cache (not sure if required in this case)
-            statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException | UnknownCollationException e ) {
+        String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
+
+        try {
+            DdlManager.getInstance().alterTableModifyColumn( catalogTable, catalogColumn, type, collation == null ? null : Collation.parse( collation ), defaultValue, nullable, dropDefault, beforeCatalogColumn, afterCatalogColumn, statement );
+        } catch ( DdlOnSourceException e ) {
+            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
+        } catch ( UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }

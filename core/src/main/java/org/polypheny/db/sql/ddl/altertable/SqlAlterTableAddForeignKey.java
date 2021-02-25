@@ -19,17 +19,16 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog;
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -112,21 +111,17 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
         if ( refTable.tableType != TableType.TABLE ) {
             throw SqlUtil.newContextException( referencesTable.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
-
         try {
-            List<Long> columnIds = new LinkedList<>();
-            for ( SqlNode node : columnList.getList() ) {
-                String columnName = node.toString();
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogTable.id, columnName );
-                columnIds.add( catalogColumn.id );
-            }
-            List<Long> referencesIds = new LinkedList<>();
-            for ( SqlNode node : referencesList.getList() ) {
-                String columnName = node.toString();
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( refTable.id, columnName );
-                referencesIds.add( catalogColumn.id );
-            }
-            Catalog.getInstance().addForeignKey( catalogTable.id, columnIds, refTable.id, referencesIds, constraintName.getSimple(), onUpdate, onDelete );
+            DdlManager.getInstance()
+                    .alterTableAddForeignKey(
+                            catalogTable,
+                            refTable,
+                            columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                            referencesList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                            columnList.getParserPosition(),
+                            constraintName.getSimple(),
+                            onUpdate,
+                            onDelete );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( GenericCatalogException e ) {

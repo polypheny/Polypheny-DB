@@ -19,19 +19,12 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -82,44 +75,15 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-        }
-
         try {
-            CatalogPrimaryKey oldPk = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
+            DdlManager.getInstance()
+                    .alterTableAddPrimaryKey(
+                            catalogTable,
+                            columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                            statement );
 
-            List<Long> columnIds = new LinkedList<>();
-            for ( SqlNode node : columnList.getList() ) {
-                String columnName = node.toString();
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogTable.id, columnName );
-                columnIds.add( catalogColumn.id );
-            }
-            Catalog.getInstance().addPrimaryKey( catalogTable.id, columnIds );
-
-            // Add new column placements
-            long pkColumnId = oldPk.columnIds.get( 0 ); // It is sufficent to check for one because all get replicated on all stores
-            List<CatalogColumnPlacement> oldPkPlacements = Catalog.getInstance().getColumnPlacements( pkColumnId );
-            for ( CatalogColumnPlacement ccp : oldPkPlacements ) {
-                for ( long columnId : columnIds ) {
-                    if ( !Catalog.getInstance().checkIfExistsColumnPlacement( ccp.adapterId, columnId ) ) {
-                        Catalog.getInstance().addColumnPlacement(
-                                ccp.adapterId,
-                                columnId,
-                                PlacementType.AUTOMATIC,
-                                null, // Will be set later
-                                null, // Will be set later
-                                null ); // Will be set later
-                        AdapterManager.getInstance().getStore( ccp.adapterId ).addColumn(
-                                context,
-                                Catalog.getInstance().getTable( ccp.tableId ),
-                                Catalog.getInstance().getColumn( columnId ) );
-                    }
-                }
-            }
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
+        } catch ( DdlOnSourceException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

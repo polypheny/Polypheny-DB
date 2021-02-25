@@ -43,6 +43,7 @@ dependencies {
     implementation project(":file-adapter")
     implementation project(":jdbc-adapter")
     implementation project(":catalog")
+    implementation project(":ddl-manager")
     implementation project(":webui")
     implementation project(":jdbc-interface")
     implementation project(":rest-interface")

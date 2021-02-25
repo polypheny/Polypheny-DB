@@ -19,18 +19,15 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.collect.ImmutableList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
-import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
@@ -83,55 +80,21 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+        DataStore storeInstance = getDataStoreInstance( storeName );
+
         List<Long> columnIds = new LinkedList<>();
         for ( SqlNode node : columnList.getList() ) {
             CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, (SqlIdentifier) node );
             columnIds.add( catalogColumn.id );
         }
-        List<CatalogColumn> addedColumns = new LinkedList<>();
-        DataStore storeInstance = getDataStoreInstance( storeName );
-        // Check whether this placement already exists
-        for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
-            if ( storeId == storeInstance.getAdapterId() ) {
-                throw SqlUtil.newContextException(
-                        storeName.getParserPosition(),
-                        RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
-            }
+
+        try {
+            DdlManager.getInstance().alterTableAddPlacement( catalogTable, columnIds, storeInstance, statement );
+        } catch ( PlacementAlreadyExistsException e ) {
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.placementAlreadyExists( catalogTable.name, storeName.getSimple() ) );
         }
-        // Check whether the list is empty (this is a short hand for a full placement)
-        if ( columnIds.size() == 0 ) {
-            columnIds = ImmutableList.copyOf( catalogTable.columnIds );
-        }
-        // Create column placements
-        for ( long cid : columnIds ) {
-            Catalog.getInstance().addColumnPlacement(
-                    storeInstance.getAdapterId(),
-                    cid,
-                    PlacementType.MANUAL,
-                    null,
-                    null,
-                    null );
-            addedColumns.add( Catalog.getInstance().getColumn( cid ) );
-        }
-        //Check if placement includes primary key columns
-        CatalogPrimaryKey primaryKey = Catalog.getInstance().getPrimaryKey( catalogTable.primaryKey );
-        for ( long cid : primaryKey.columnIds ) {
-            if ( !columnIds.contains( cid ) ) {
-                Catalog.getInstance().addColumnPlacement(
-                        storeInstance.getAdapterId(),
-                        cid,
-                        PlacementType.AUTOMATIC,
-                        null,
-                        null,
-                        null );
-                addedColumns.add( Catalog.getInstance().getColumn( cid ) );
-            }
-        }
-        // Create table on store
-        storeInstance.createTable( context, catalogTable );
-        // Copy data to the newly added placements
-        DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
-        dataMigrator.copyData( statement.getTransaction(), Catalog.getInstance().getAdapter( storeInstance.getAdapterId() ), addedColumns );
     }
 
 }

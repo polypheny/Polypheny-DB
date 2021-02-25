@@ -19,9 +19,9 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -74,10 +74,7 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnOldName );
 
-        Catalog.getInstance().renameColumn( catalogColumn.id, columnNewName.getSimple() );
-
-        // Rest plan cache and implementation cache (not sure if required in this case)
-        statement.getQueryProcessor().resetCaches();
+        DdlManager.getInstance().renameColumn( catalogColumn, columnNewName.getSimple(), statement );
     }
 
 }
