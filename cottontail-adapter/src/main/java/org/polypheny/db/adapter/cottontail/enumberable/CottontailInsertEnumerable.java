@@ -145,7 +145,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
         @Override
         public T current() {
             if ( this.wasSuccessful ) {
-                return this.fromPrepared ? (T) Integer.valueOf( 1 ) : (T) Integer.valueOf( this.inserts.size() );
+                return (T) Integer.valueOf( this.inserts.size() );
             } else {
                 return (T) Integer.valueOf( -1 );
             }
