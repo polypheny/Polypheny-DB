@@ -1388,13 +1388,6 @@ public class Crud implements InformationObserver {
         DbColumn oldColumn = request.oldColumn;
         DbColumn newColumn = request.newColumn;
 
-        if ( newColumn.cardinality == null ) {
-            newColumn.cardinality = -1;
-        }
-        if ( newColumn.dimension == null ) {
-            newColumn.dimension = -1;
-        }
-
         Result result;
         ArrayList<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();

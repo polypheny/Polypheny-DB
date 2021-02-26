@@ -52,7 +52,6 @@ import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnInformation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
-import org.polypheny.db.ddl.exception.NoColumnsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -173,8 +172,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             DdlManager.getInstance().createTable( schemaId, tableName, columns, constraints, ifNotExists, stores, placementType, statement );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
-        } catch ( NoColumnsException e ) {
-            throw SqlUtil.newContextException( SqlParserPos.ZERO, RESOURCE.createTableRequiresColumnList() );
         }
     }
 
