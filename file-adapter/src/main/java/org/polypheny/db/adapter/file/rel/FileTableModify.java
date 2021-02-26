@@ -33,9 +33,11 @@ import org.polypheny.db.rel.AbstractRelNode;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableModify;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 
 
 public class FileTableModify extends TableModify implements FileRel {
@@ -84,6 +86,8 @@ public class FileTableModify extends TableModify implements FileRel {
                         values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexLiteral) src).getValueForFileCondition(), false ) );
                     } else if ( src instanceof RexDynamicParam ) {
                         values.add( new Value( implementor.getFileTable().getColumnIdMap().get( getUpdateColumnList().get( i ) ).intValue(), ((RexDynamicParam) src).getIndex(), true ) );
+                    } else if ( src instanceof RexCall && src.getType().getPolyType() == PolyType.ARRAY ) {
+                        values.add( Value.fromArrayRexCall( (RexCall) src ) );
                     } else {
                         throw new RuntimeException( "Unknown element in sourceExpressionList: " + src.toString() );
                     }
