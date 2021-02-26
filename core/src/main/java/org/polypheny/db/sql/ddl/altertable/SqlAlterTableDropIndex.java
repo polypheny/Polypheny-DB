@@ -72,7 +72,7 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         try {
-            DdlManager.getInstance().alterTableDropIndex( catalogTable, indexName.getSimple(), statement );
+            DdlManager.getInstance().dropIndex( catalogTable, indexName.getSimple(), statement );
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }

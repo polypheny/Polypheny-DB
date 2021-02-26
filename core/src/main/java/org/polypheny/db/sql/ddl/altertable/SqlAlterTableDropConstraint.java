@@ -72,7 +72,7 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         try {
-            DdlManager.getInstance().alterTableDropConstraint( catalogTable, constraintName.getSimple() );
+            DdlManager.getInstance().dropConstraint( catalogTable, constraintName.getSimple() );
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }

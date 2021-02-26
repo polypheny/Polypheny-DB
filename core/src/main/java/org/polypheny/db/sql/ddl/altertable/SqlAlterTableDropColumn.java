@@ -77,7 +77,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
         }
 
         try {
-            DdlManager.getInstance().alterTableDropColumn( catalogTable, column.getSimple(), statement );
+            DdlManager.getInstance().dropColumn( catalogTable, column.getSimple(), statement );
         } catch ( ColumnNotExistsException e ) {
             throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }

@@ -125,7 +125,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().alterTableAddColumn(
+            DdlManager.getInstance().addColumn(
                     column.getSimple(),
                     catalogTable,
                     beforeColumnName == null ? null : beforeColumnName.getSimple(),

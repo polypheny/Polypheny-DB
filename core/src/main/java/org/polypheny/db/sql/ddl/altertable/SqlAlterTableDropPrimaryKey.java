@@ -71,7 +71,7 @@ public class SqlAlterTableDropPrimaryKey extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         try {
-            DdlManager.getInstance().alterTableDropPrimaryKey( catalogTable );
+            DdlManager.getInstance().dropPrimaryKey( catalogTable );
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }

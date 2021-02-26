@@ -87,7 +87,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         try {
-            DdlManager.getInstance().alterTableModifyPlacementDropColumn(
+            DdlManager.getInstance().dropColumnPlacement(
                     catalogTable,
                     columnName.getSimple(),
                     storeInstance,

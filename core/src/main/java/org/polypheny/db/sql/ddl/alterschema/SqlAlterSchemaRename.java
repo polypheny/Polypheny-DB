@@ -71,7 +71,7 @@ public class SqlAlterSchemaRename extends SqlAlterSchema {
     @Override
     public void execute( Context context, Statement statement ) {
         try {
-            DdlManager.getInstance().alterSchemaRename( newName.getSimple(), oldName.getSimple(), context.getDatabaseId() );
+            DdlManager.getInstance().renameSchema( newName.getSimple(), oldName.getSimple(), context.getDatabaseId() );
         } catch ( SchemaAlreadyExistsException e ) {
             throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.schemaExists( newName.getSimple() ) );
         } catch ( UnknownSchemaException e ) {

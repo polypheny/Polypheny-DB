@@ -111,7 +111,7 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().alterSourceTableAddColumn(
+            DdlManager.getInstance().addColumnToSourceTable(
                     catalogTable,
                     columnPhysical.getSimple(),
                     columnLogical.getSimple(),

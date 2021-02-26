@@ -76,7 +76,7 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         try {
-            DdlManager.getInstance().alterTableAddPrimaryKey(
+            DdlManager.getInstance().addPrimaryKey(
                     catalogTable,
                     columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
                     statement );

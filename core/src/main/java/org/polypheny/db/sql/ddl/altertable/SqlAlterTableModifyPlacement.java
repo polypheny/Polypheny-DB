@@ -88,7 +88,7 @@ public class SqlAlterTableModifyPlacement extends SqlAlterTable {
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         try {
-            DdlManager.getInstance().alterTableModifyPlacement(
+            DdlManager.getInstance().modifyColumnPlacement(
                     catalogTable,
                     columnList.getList().stream().map( c -> getCatalogColumn( catalogTable.id, (SqlIdentifier) c ).id ).collect( Collectors.toList() ),
                     storeInstance,
