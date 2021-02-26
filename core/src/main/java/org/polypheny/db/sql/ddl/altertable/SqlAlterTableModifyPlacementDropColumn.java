@@ -22,10 +22,10 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
@@ -84,13 +84,12 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
-        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         try {
             DdlManager.getInstance().alterTableModifyPlacementDropColumn(
                     catalogTable,
-                    catalogColumn,
+                    columnName.getSimple(),
                     storeInstance,
                     statement );
         } catch ( UnknownAdapterException e ) {
@@ -104,7 +103,7 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
         } catch ( IndexPreventsRemovalException e ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
-                    RESOURCE.indexPreventsRemovalOfPlacement( e.getIndexName(), catalogColumn.name ) );
+                    RESOURCE.indexPreventsRemovalOfPlacement( e.getIndexName(), columnName.getSimple() ) );
         } catch ( LastPlacementException e ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
@@ -112,7 +111,12 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
         } catch ( PlacementIsPrimaryException e ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
-                    RESOURCE.placementIsPrimaryKey( catalogColumn.name ) );
+                    RESOURCE.placementIsPrimaryKey( columnName.getSimple() ) );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException(
+                    columnName.getParserPosition(),
+                    RESOURCE.columnNotFoundInTable( e.columnName, e.tableName )
+            );
         }
     }
 

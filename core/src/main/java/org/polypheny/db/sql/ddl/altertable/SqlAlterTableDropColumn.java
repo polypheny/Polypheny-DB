@@ -17,14 +17,17 @@
 package org.polypheny.db.sql.ddl.altertable;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
@@ -69,13 +72,15 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, column );
-
         if ( column.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        DdlManager.getInstance().alterTableDropColumn( catalogTable, catalogColumn, statement );
+        try {
+            DdlManager.getInstance().alterTableDropColumn( catalogTable, column.getSimple(), statement );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+        }
     }
 
 }

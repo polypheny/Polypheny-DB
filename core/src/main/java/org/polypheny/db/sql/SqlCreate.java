@@ -34,7 +34,6 @@
 package org.polypheny.db.sql;
 
 
-import lombok.Getter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 
 
@@ -47,13 +46,12 @@ public abstract class SqlCreate extends SqlDdl {
     /**
      * Whether "OR REPLACE" was specified.
      */
-    public boolean replace;
+    protected boolean replace;
 
     /**
      * Whether "IF NOT EXISTS" was specified.
      */
-    @Getter
-    public final boolean ifNotExists;
+    protected final boolean ifNotExists;
 
 
     /**
