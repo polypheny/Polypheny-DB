@@ -1068,7 +1068,11 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void renameColumn( CatalogColumn catalogColumn, String newColumnName, Statement statement ) {
+    public void renameColumn( CatalogColumn catalogColumn, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException {
+        if ( catalog.checkIfExistsColumn( catalogColumn.tableId, newColumnName ) ) {
+            throw new ColumnAlreadyExistsException( newColumnName, catalogColumn.getTableName() );
+        }
+
         catalog.renameColumn( catalogColumn.id, newColumnName );
 
         // Rest plan cache and implementation cache (not sure if required in this case)

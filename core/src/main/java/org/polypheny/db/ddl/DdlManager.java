@@ -361,7 +361,7 @@ public abstract class DdlManager {
      * @param newColumnName the new name for the column
      * @param statement the used statement
      */
-    public abstract void renameColumn( CatalogColumn catalogColumn, String newColumnName, Statement statement );
+    public abstract void renameColumn( CatalogColumn catalogColumn, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException;
 
     /**
      * Create a new table
