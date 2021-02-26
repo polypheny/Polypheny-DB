@@ -76,11 +76,10 @@ public class SqlAlterTableAddPrimaryKey extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         try {
-            DdlManager.getInstance()
-                    .alterTableAddPrimaryKey(
-                            catalogTable,
-                            columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
-                            statement );
+            DdlManager.getInstance().alterTableAddPrimaryKey(
+                    catalogTable,
+                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    statement );
 
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );

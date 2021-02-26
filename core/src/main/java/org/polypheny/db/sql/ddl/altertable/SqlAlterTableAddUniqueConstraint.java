@@ -47,7 +47,11 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
     private final SqlNodeList columnList;
 
 
-    public SqlAlterTableAddUniqueConstraint( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList ) {
+    public SqlAlterTableAddUniqueConstraint(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier constraintName,
+            SqlNodeList columnList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.constraintName = Objects.requireNonNull( constraintName );

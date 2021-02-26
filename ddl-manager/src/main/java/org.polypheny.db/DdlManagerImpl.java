@@ -906,7 +906,6 @@ public class DdlManagerImpl extends DdlManager {
 
         // Check whether this placement already exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
-
             throw new PlacementNotExistsException();
         }
 
@@ -917,7 +916,6 @@ public class DdlManagerImpl extends DdlManager {
                 for ( CatalogIndex index : catalog.getIndexes( catalogTable.id, false ) ) {
                     if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( placement.columnId ) ) {
                         throw new IndexPreventsRemovalException( index.name, catalog.getColumn( placement.columnId ).name );
-
                     }
                 }
                 // Check whether the column is a primary key column

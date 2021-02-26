@@ -130,8 +130,14 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            DdlManager.getInstance().alterTableAddIndex( catalogTable, indexMethodName, columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ), indexName.getSimple(), unique, storeInstance, statement );
-
+            DdlManager.getInstance().alterTableAddIndex(
+                    catalogTable,
+                    indexMethodName,
+                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    indexName.getSimple(),
+                    unique,
+                    storeInstance,
+                    statement );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( UnknownSchemaException e ) {

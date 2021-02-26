@@ -142,7 +142,17 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().alterTableModifyColumn( catalogTable, catalogColumn, type, collation == null ? null : Collation.parse( collation ), defaultValue, nullable, dropDefault, beforeCatalogColumn, afterCatalogColumn, statement );
+            DdlManager.getInstance().alterTableModifyColumn(
+                    catalogTable,
+                    catalogColumn,
+                    type,
+                    collation == null ? null : Collation.parse( collation ),
+                    defaultValue,
+                    nullable,
+                    dropDefault,
+                    beforeCatalogColumn,
+                    afterCatalogColumn,
+                    statement );
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         } catch ( UnknownCollationException e ) {

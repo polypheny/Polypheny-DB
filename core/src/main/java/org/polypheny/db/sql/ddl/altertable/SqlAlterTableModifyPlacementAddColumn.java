@@ -49,7 +49,11 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
     private final SqlIdentifier storeName;
 
 
-    public SqlAlterTableModifyPlacementAddColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier columnName, SqlIdentifier storeName ) {
+    public SqlAlterTableModifyPlacementAddColumn(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier columnName,
+            SqlIdentifier storeName ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnName = Objects.requireNonNull( columnName );
@@ -86,7 +90,11 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         try {
-            DdlManager.getInstance().alterTableModifyPlacementAndColumn( catalogTable, catalogColumn, storeInstance, statement );
+            DdlManager.getInstance().alterTableModifyPlacementAndColumn(
+                    catalogTable,
+                    catalogColumn,
+                    storeInstance,
+                    statement );
         } catch ( UnknownAdapterException e ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),

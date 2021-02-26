@@ -55,7 +55,15 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
     private final ForeignKeyOption onDelete;
 
 
-    public SqlAlterTableAddForeignKey( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList, SqlIdentifier referencesTable, SqlNodeList referencesList, String onUpdate, String onDelete ) {
+    public SqlAlterTableAddForeignKey(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier constraintName,
+            SqlNodeList columnList,
+            SqlIdentifier referencesTable,
+            SqlNodeList referencesList,
+            String onUpdate,
+            String onDelete ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.constraintName = Objects.requireNonNull( constraintName );
@@ -112,16 +120,15 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
             throw SqlUtil.newContextException( referencesTable.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
         try {
-            DdlManager.getInstance()
-                    .alterTableAddForeignKey(
-                            catalogTable,
-                            refTable,
-                            columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
-                            referencesList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
-                            columnList.getParserPosition(),
-                            constraintName.getSimple(),
-                            onUpdate,
-                            onDelete );
+            DdlManager.getInstance().alterTableAddForeignKey(
+                    catalogTable,
+                    refTable,
+                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    referencesList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    columnList.getParserPosition(),
+                    constraintName.getSimple(),
+                    onUpdate,
+                    onDelete );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( GenericCatalogException e ) {

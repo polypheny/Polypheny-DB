@@ -71,7 +71,6 @@ public class SqlAlterTableDropIndex extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
-
         try {
             DdlManager.getInstance().alterTableDropIndex( catalogTable, indexName.getSimple(), statement );
         } catch ( DdlOnSourceException e ) {
