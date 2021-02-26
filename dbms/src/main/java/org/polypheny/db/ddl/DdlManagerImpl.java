@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db;
+package org.polypheny.db.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
@@ -67,7 +67,6 @@ import org.polypheny.db.catalog.exceptions.UnknownKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
-import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.AlterSourceException;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
@@ -315,8 +314,8 @@ public class DdlManagerImpl extends DdlManager {
             throw new ColumnAlreadyExistsException( columnLogicalName, catalogTable.name );
         }
 
-        CatalogColumn beforeColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
-        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
+        CatalogColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.id, beforeColumnName );
+        CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
 
         // Make sure that the table is of table type SOURCE
         checkIfTableType( catalogTable.tableType );
@@ -416,9 +415,9 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
             throw new ColumnAlreadyExistsException( columnName, catalogTable.name );
         }
-
-        CatalogColumn beforeColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
-        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
+        //
+        CatalogColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.id, beforeColumnName );
+        CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
 
         int position = updateAdjacentPositions( catalogTable, beforeColumn, afterColumn );
 
