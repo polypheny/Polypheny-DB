@@ -120,7 +120,14 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().alterSourceTableAddColumn( catalogTable, columnPhysical.getSimple(), columnLogical.getSimple(), beforeColumn, afterColumn, defaultValue, statement );
+            DdlManager.getInstance().alterSourceTableAddColumn(
+                    catalogTable,
+                    columnPhysical.getSimple(),
+                    columnLogical.getSimple(),
+                    beforeColumn,
+                    afterColumn,
+                    defaultValue,
+                    statement );
         } catch ( ColumnAlreadyExistsException e ) {
             throw SqlUtil.newContextException( columnLogical.getParserPosition(), RESOURCE.columnExists( columnLogical.getSimple() ) );
         } catch ( DdlOnSourceException e ) {

@@ -88,7 +88,11 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
         DataStore storeInstance = getDataStoreInstance( storeName );
 
         try {
-            DdlManager.getInstance().alterTableModifyPlacementDropColumn( catalogTable, catalogColumn, storeInstance, statement );
+            DdlManager.getInstance().alterTableModifyPlacementDropColumn(
+                    catalogTable,
+                    catalogColumn,
+                    storeInstance,
+                    statement );
         } catch ( UnknownAdapterException e ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),
@@ -102,7 +106,9 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
                     storeName.getParserPosition(),
                     RESOURCE.indexPreventsRemovalOfPlacement( e.getIndexName(), catalogColumn.name ) );
         } catch ( LastPlacementException e ) {
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.onlyOnePlacementLeft() );
         } catch ( PlacementIsPrimaryException e ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),

@@ -112,15 +112,14 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
             throw SqlUtil.newContextException( referencesTable.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
         try {
-            DdlManager.getInstance()
-                    .alterTableAddForeignKey(
-                            catalogTable,
-                            refTable,
-                            columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
-                            referencesList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
-                            constraintName.getSimple(),
-                            onUpdate,
-                            onDelete );
+            DdlManager.getInstance().alterTableAddForeignKey(
+                    catalogTable,
+                    refTable,
+                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    referencesList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    constraintName.getSimple(),
+                    onUpdate,
+                    onDelete );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( columnList.getParserPosition(), RESOURCE.columnNotFound( e.getColumnName() ) );
         } catch ( GenericCatalogException e ) {

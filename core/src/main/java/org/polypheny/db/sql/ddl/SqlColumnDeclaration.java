@@ -159,4 +159,3 @@ public class SqlColumnDeclaration extends SqlCall {
     }
 
 }
-
