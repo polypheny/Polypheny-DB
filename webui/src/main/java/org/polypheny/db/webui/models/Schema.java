@@ -18,6 +18,7 @@ package org.polypheny.db.webui.models;
 
 
 import lombok.Getter;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 
 
 /**
@@ -27,7 +28,7 @@ import lombok.Getter;
 public class Schema {
 
     private String name;
-    private String type; // TODO: enum
+    private SchemaType type; // TODO: enum
 
     // fields for creation
     private boolean create;
@@ -44,9 +45,8 @@ public class Schema {
      * @param name name of the schema
      * @param type type of the schema, e.g. relational
      */
-    public Schema( final String name, final String type ) {
+    public Schema( final String name, final SchemaType type ) {
         this.name = name;
         this.type = type;
     }
-
 }

@@ -833,7 +833,7 @@ public class DdlManagerImpl extends DdlManager {
                     AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                             statement.getPrepareContext(),
                             placement,
-                            catalogColumn );
+                            catalog.getColumn( catalogColumn.id ) );
                 }
             } else if ( nullable != null ) {
                 // Make sure that this is a table of type TABLE (and not SOURCE)
