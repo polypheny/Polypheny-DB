@@ -57,6 +57,7 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
+import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -68,6 +69,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.AlterSourceException;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
@@ -129,6 +131,17 @@ public class DdlManagerImpl extends DdlManager {
         } else {
             throw new RuntimeException( "Unknown kind of adapter: " + adapterInstance.getClass().getName() );
         }
+    }
+
+
+    private CatalogColumn getCatalogColumn( long tableId, String columnName ) throws ColumnNotExistsException {
+
+        try {
+            return catalog.getColumn( tableId, columnName );
+        } catch ( UnknownColumnException e ) {
+            throw new ColumnNotExistsException( tableId, columnName );
+        }
+
     }
 
 
@@ -296,11 +309,14 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addColumnToSourceTable( CatalogTable catalogTable, String columnPhysicalName, String columnLogicalName, CatalogColumn beforeColumn, CatalogColumn afterColumn, String defaultValue, Statement statement ) throws ColumnAlreadyExistsException, DdlOnSourceException {
+    public void addColumnToSourceTable( CatalogTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement ) throws ColumnAlreadyExistsException, DdlOnSourceException, ColumnNotExistsException {
 
         if ( catalog.checkIfExistsColumn( catalogTable.id, columnLogicalName ) ) {
             throw new ColumnAlreadyExistsException( columnLogicalName, catalogTable.name );
         }
+
+        CatalogColumn beforeColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
+        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
 
         // Make sure that the table is of table type SOURCE
         checkIfTableType( catalogTable.tableType );
@@ -390,7 +406,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addColumn( String columnName, CatalogTable catalogTable, CatalogColumn beforeColumn, CatalogColumn afterColumn, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException {
+    public void addColumn( String columnName, CatalogTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException, ColumnNotExistsException {
 
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
@@ -400,6 +416,9 @@ public class DdlManagerImpl extends DdlManager {
         if ( catalog.checkIfExistsColumn( catalogTable.id, columnName ) ) {
             throw new ColumnAlreadyExistsException( columnName, catalogTable.name );
         }
+
+        CatalogColumn beforeColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
+        CatalogColumn afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
 
         int position = updateAdjacentPositions( catalogTable, beforeColumn, afterColumn );
 
@@ -661,30 +680,32 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, Statement statement ) {
+    public void dropColumn( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException {
 
         if ( catalogTable.columnIds.size() < 2 ) {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
         }
 
+        CatalogColumn column = getCatalogColumn( catalogTable.id, columnName );
+
         // Check if column is part of an key
         for ( CatalogKey key : catalog.getTableKeys( catalogTable.id ) ) {
-            if ( key.columnIds.contains( catalogColumn.id ) ) {
+            if ( key.columnIds.contains( column.id ) ) {
                 if ( catalog.isPrimaryKey( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the primary key." );
+                    throw new PolyphenyDbException( "Cannot drop column '" + column.name + "' because it is part of the primary key." );
                 } else if ( catalog.isIndex( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the index with the name: '" + catalog.getIndexes( key ).get( 0 ).name + "'." );
+                    throw new PolyphenyDbException( "Cannot drop column '" + column.name + "' because it is part of the index with the name: '" + catalog.getIndexes( key ).get( 0 ).name + "'." );
                 } else if ( catalog.isForeignKey( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the foreign key with the name: '" + catalog.getForeignKeys( key ).get( 0 ).name + "'." );
+                    throw new PolyphenyDbException( "Cannot drop column '" + column.name + "' because it is part of the foreign key with the name: '" + catalog.getForeignKeys( key ).get( 0 ).name + "'." );
                 } else if ( catalog.isConstraint( key.id ) ) {
-                    throw new PolyphenyDbException( "Cannot drop column '" + catalogColumn.name + "' because it is part of the constraint with the name: '" + catalog.getConstraints( key ).get( 0 ).name + "'." );
+                    throw new PolyphenyDbException( "Cannot drop column '" + column.name + "' because it is part of the constraint with the name: '" + catalog.getConstraints( key ).get( 0 ).name + "'." );
                 }
                 throw new PolyphenyDbException( "Ok, strange... Something is going wrong here!" );
             }
         }
 
         // Delete column from underlying data stores
-        for ( CatalogColumnPlacement dp : catalog.getColumnPlacementsByColumn( catalogColumn.id ) ) {
+        for ( CatalogColumnPlacement dp : catalog.getColumnPlacementsByColumn( column.id ) ) {
             if ( catalogTable.tableType == TableType.TABLE ) {
                 AdapterManager.getInstance().getStore( dp.adapterId ).dropColumn( statement.getPrepareContext(), dp );
             }
@@ -693,10 +714,10 @@ public class DdlManagerImpl extends DdlManager {
 
         // Delete from catalog
         List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
-        catalog.deleteColumn( catalogColumn.id );
-        if ( catalogColumn.position != columns.size() ) {
+        catalog.deleteColumn( column.id );
+        if ( column.position != columns.size() ) {
             // Update position of the other columns
-            for ( int i = catalogColumn.position; i < columns.size(); i++ ) {
+            for ( int i = column.position; i < columns.size(); i++ ) {
                 catalog.setColumnPosition( columns.get( i ).id, i );
             }
         }
@@ -810,8 +831,12 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableModifyColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, CatalogColumn beforeColumn, CatalogColumn afterColumn, Statement statement ) throws DdlOnSourceException {
+    public void alterTableModifyColumn( CatalogTable catalogTable, String columnName, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, String beforeColumnName, String afterColumnName, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException {
         try {
+            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+            CatalogColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.id, beforeColumnName );
+            CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
+
             if ( type != null ) {
                 // Make sure that this is a table of type TABLE (and not SOURCE)
                 checkIfTableType( catalogTable.tableType );
@@ -971,7 +996,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addColumnPlacement( CatalogTable catalogTable, CatalogColumn catalogColumn, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException {
+    public void addColumnPlacement( CatalogTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException, ColumnNotExistsException {
         if ( storeInstance == null ) {
             throw new UnknownAdapterException( "" );
         }
@@ -979,6 +1004,9 @@ public class DdlManagerImpl extends DdlManager {
         if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
             throw new PlacementNotExistsException();
         }
+
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
         // Make sure that this store does not contain a placement of this column
         if ( catalog.checkIfExistsColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) ) {
             CatalogColumnPlacement placement = catalog.getColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id );
@@ -1010,16 +1038,17 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropColumnPlacement( CatalogTable catalogTable, CatalogColumn catalogColumn, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, PlacementIsPrimaryException {
+    public void dropColumnPlacement( CatalogTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, PlacementIsPrimaryException, ColumnNotExistsException {
         if ( storeInstance == null ) {
             throw new UnknownAdapterException( "" );
-
         }
         // Check whether this placement already exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
             throw new PlacementNotExistsException();
-
         }
+
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
         // Check whether this store actually contains a placement of this column
         if ( !catalog.checkIfExistsColumnPlacement( storeInstance.getAdapterId(), catalogColumn.id ) ) {
             throw new PlacementNotExistsException();
@@ -1027,7 +1056,7 @@ public class DdlManagerImpl extends DdlManager {
         // Check whether there are any indexes located on the store requiring this column
         for ( CatalogIndex index : catalog.getIndexes( catalogTable.id, false ) ) {
             if ( index.location == storeInstance.getAdapterId() && index.key.columnIds.contains( catalogColumn.id ) ) {
-                throw new IndexPreventsRemovalException( index.name, catalogColumn.name );
+                throw new IndexPreventsRemovalException( index.name, columnName );
             }
         }
         // Check if there are is another placement for this column
@@ -1067,7 +1096,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void renameColumn( CatalogColumn catalogColumn, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException {
+    public void renameColumn( CatalogTable catalogTable, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException {
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
         if ( catalog.checkIfExistsColumn( catalogColumn.tableId, newColumnName ) ) {
             throw new ColumnAlreadyExistsException( newColumnName, catalogColumn.getTableName() );
         }
@@ -1117,13 +1148,13 @@ public class DdlManagerImpl extends DdlManager {
             for ( DataStore store : stores ) {
                 store.createTable( statement.getPrepareContext(), catalogTable );
             }
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
             throw new RuntimeException( e );
         }
     }
 
 
-    private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) {
+    private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
         long addedColumnId = catalog.addColumn(
                 columnName,
                 tableId,

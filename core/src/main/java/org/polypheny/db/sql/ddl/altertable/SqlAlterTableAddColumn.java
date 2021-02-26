@@ -22,11 +22,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -117,15 +117,6 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        CatalogColumn beforeColumn = null;
-        if ( beforeColumnName != null ) {
-            beforeColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
-        }
-        CatalogColumn afterColumn = null;
-        if ( afterColumnName != null ) {
-            afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
-        }
-
         // Make sure that all adapters are of type store (and not source)
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
             getDataStoreInstance( storeId );
@@ -134,11 +125,21 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().addColumn( column.getSimple(), catalogTable, beforeColumn, afterColumn, ColumnTypeInformation.fromSqlDataTypeSpec( type ), nullable, defaultValue, statement );
+            DdlManager.getInstance().addColumn(
+                    column.getSimple(),
+                    catalogTable,
+                    beforeColumnName == null ? null : beforeColumnName.getSimple(),
+                    afterColumnName == null ? null : afterColumnName.getSimple(),
+                    ColumnTypeInformation.fromSqlDataTypeSpec( type ),
+                    nullable,
+                    defaultValue,
+                    statement );
         } catch ( NotNullAndDefaultValueException e ) {
             throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
         } catch ( ColumnAlreadyExistsException e ) {
             throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
     }
 

@@ -25,7 +25,6 @@ import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
@@ -39,6 +38,7 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.ddl.exception.AlterSourceException;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
@@ -159,25 +159,25 @@ public abstract class DdlManager {
      * @param catalogTable the table
      * @param columnPhysicalName the physical name of the new column
      * @param columnLogicalName the name of the new column
-     * @param beforeColumn the column before the column which is inserted; can be null
-     * @param afterColumn the column after the column, which is inserted; can be null
+     * @param beforeColumnName the name of the column before the column which is inserted; can be null
+     * @param afterColumnName the name of the column after the column, which is inserted; can be null
      * @param defaultValue the default value of the inserted column
      */
-    public abstract void addColumnToSourceTable( CatalogTable catalogTable, String columnPhysicalName, String columnLogicalName, CatalogColumn beforeColumn, CatalogColumn afterColumn, String defaultValue, Statement statement ) throws ColumnAlreadyExistsException, DdlOnSourceException;
+    public abstract void addColumnToSourceTable( CatalogTable catalogTable, String columnPhysicalName, String columnLogicalName, String beforeColumnName, String afterColumnName, String defaultValue, Statement statement ) throws ColumnAlreadyExistsException, DdlOnSourceException, ColumnNotExistsException;
 
     /**
      * Add a column to an existing table
      *
      * @param columnName the name of the new column
      * @param catalogTable the table
-     * @param beforeColumn the column before which the new column should be positioned; can be null
-     * @param afterColumn the column after which the new column should be positioned; can be null
+     * @param beforeColumnName the column before which the new column should be positioned; can be null
+     * @param afterColumnName the column after which the new column should be positioned; can be null
      * @param type the SQL data type specification of the new column
      * @param nullable if the column can hold the value NULL
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void addColumn( String columnName, CatalogTable catalogTable, CatalogColumn beforeColumn, CatalogColumn afterColumn, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException;
+    public abstract void addColumn( String columnName, CatalogTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException, ColumnNotExistsException;
 
     /**
      * Add a foreign key to a table
@@ -237,10 +237,10 @@ public abstract class DdlManager {
      * Drop a specific column in a table
      *
      * @param catalogTable the table
-     * @param catalogColumn the column which is dropped
+     * @param columnName the name of column which is dropped
      * @param statement the query statement
      */
-    public abstract void dropColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, Statement statement );
+    public abstract void dropColumn( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException;
 
     /**
      * Drop a specific constraint from a table
@@ -287,17 +287,17 @@ public abstract class DdlManager {
      * Modify a column
      *
      * @param catalogTable the table
-     * @param catalogColumn the column to be modified
+     * @param columnName the name of the column to be modified
      * @param type the new type of the column
      * @param collation the new collation of the column
      * @param defaultValue the new default value of the column
      * @param nullable if the column should be nullable
      * @param dropDefault whether to drop the current default value
-     * @param beforeColumn change position of the column and place it before this column
-     * @param afterColumn change position of the column and place it after this column
+     * @param beforeColumnName change position of the column and place it before this column
+     * @param afterColumnName change position of the column and place it after this column
      * @param statement the used statement
      */
-    public abstract void alterTableModifyColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, CatalogColumn beforeColumn, CatalogColumn afterColumn, Statement statement ) throws DdlOnSourceException;
+    public abstract void alterTableModifyColumn( CatalogTable catalogTable, String columnName, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, String beforeColumnName, String afterColumnName, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException;
 
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with
@@ -319,22 +319,22 @@ public abstract class DdlManager {
      * the column with type automatic, the placement type is changed to manual.
      *
      * @param catalogTable the table
-     * @param catalogColumn the column for which to add a placement
+     * @param columnName the column name for which to add a placement
      * @param storeInstance the data store on which the column should be placed
      * @param statement the used statement
      */
-    public abstract void addColumnPlacement( CatalogTable catalogTable, CatalogColumn catalogColumn, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException;
+    public abstract void addColumnPlacement( CatalogTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException, ColumnNotExistsException;
 
     /**
      * Drop a specified column from a specified data store. If the column is part of the primary key, the column placement typ
      * is changed to automatic.
      *
      * @param catalogTable the table
-     * @param catalogColumn the column for which to drop a placement
+     * @param columnName the name of the column for which to drop a placement
      * @param storeInstance the data store from which to remove the placement
      * @param statement the used statement
      */
-    public abstract void dropColumnPlacement( CatalogTable catalogTable, CatalogColumn catalogColumn, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, PlacementIsPrimaryException;
+    public abstract void dropColumnPlacement( CatalogTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException, PlacementIsPrimaryException, ColumnNotExistsException;
 
     /**
      * Change the owner of a table
@@ -356,11 +356,12 @@ public abstract class DdlManager {
     /**
      * Rename a column of a table (changing the logical name of the column)
      *
-     * @param catalogColumn the column to be renamed
+     * @param catalogTable the table in which the column resides
+     * @param columnName the old name of the column to be renamed
      * @param newColumnName the new name for the column
      * @param statement the used statement
      */
-    public abstract void renameColumn( CatalogColumn catalogColumn, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException;
+    public abstract void renameColumn( CatalogTable catalogTable, String columnName, String newColumnName, Statement statement ) throws ColumnAlreadyExistsException, ColumnNotExistsException;
 
     /**
      * Create a new table

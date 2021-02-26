@@ -22,11 +22,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
 import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -136,18 +136,27 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, tableName );
-        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
-        CatalogColumn beforeCatalogColumn = beforeColumn != null ? getCatalogColumn( catalogTable.id, beforeColumn ) : null;
-        CatalogColumn afterCatalogColumn = afterColumn != null ? getCatalogColumn( catalogTable.id, afterColumn ) : null;
 
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().alterTableModifyColumn( catalogTable, catalogColumn, type != null ? ColumnTypeInformation.fromSqlDataTypeSpec( type ) : null, collation == null ? null : Collation.parse( collation ), defaultValue, nullable, dropDefault, beforeCatalogColumn, afterCatalogColumn, statement );
+            DdlManager.getInstance().alterTableModifyColumn(
+                    catalogTable,
+                    columnName.getSimple(),
+                    type != null ? ColumnTypeInformation.fromSqlDataTypeSpec( type ) : null,
+                    collation == null ? null : Collation.parse( collation ),
+                    defaultValue,
+                    nullable,
+                    dropDefault,
+                    beforeColumn == null ? null : beforeColumn.getSimple(),
+                    afterColumn == null ? null : afterColumn.getSimple(),
+                    statement );
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         } catch ( UnknownCollationException e ) {
             throw new RuntimeException( e );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
     }
 

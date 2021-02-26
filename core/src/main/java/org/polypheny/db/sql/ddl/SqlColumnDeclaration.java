@@ -68,7 +68,7 @@ public class SqlColumnDeclaration extends SqlCall {
     @Getter
     final SqlNode expression;
     final ColumnStrategy strategy;
-    public final String collation;
+    final String collation;
 
 
     /**
