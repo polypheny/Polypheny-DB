@@ -94,15 +94,17 @@ public class CatalogInfoPage implements PropertyChangeListener {
     public void propertyChange( PropertyChangeEvent propertyChangeEvent ) {
         addDebugMessage( propertyChangeEvent );
         new Thread( this::resetCatalogInformation ).start();
-
     }
 
 
     private void addDebugMessage( PropertyChangeEvent propertyChangeEvent ) {
         String time = LocalTime.now().format( formatter );
-        String msg = String.format( "[Property]: %s, [New]: %s, [Old]: %s", propertyChangeEvent.getPropertyName(), propertyChangeEvent.getNewValue(), propertyChangeEvent.getOldValue() );
+        String msg = String.format(
+                "[Property]: %s, [New]: %s, [Old]: %s",
+                propertyChangeEvent.getPropertyName(),
+                propertyChangeEvent.getNewValue(),
+                propertyChangeEvent.getOldValue() );
         debugInformation.addRow( time, msg );
-
     }
 
 

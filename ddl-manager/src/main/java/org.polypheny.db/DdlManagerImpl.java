@@ -160,9 +160,9 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addAdapter( String storeName, String adapterName, Map<String, String> config ) {
+    public void addAdapter( String adapterName, String clazzName, Map<String, String> config ) {
 
-        Adapter adapter = AdapterManager.getInstance().addAdapter( adapterName, storeName, config );
+        Adapter adapter = AdapterManager.getInstance().addAdapter( clazzName, adapterName, config );
         if ( adapter instanceof DataSource ) {
             Map<String, List<ExportedColumn>> exportedColumns;
             try {
@@ -464,7 +464,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableAddIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore storeInstance, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
+    public void alterTableAddIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
 
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
@@ -484,7 +484,7 @@ public class DdlManagerImpl extends DdlManager {
             throw new IndexExistsException();
         }
 
-        if ( storeInstance == null ) { // Polystore Index
+        if ( location == null ) { // Polystore Index
             String method;
             String methodDisplayName;
             if ( indexMethodName != null ) {
@@ -519,7 +519,7 @@ public class DdlManagerImpl extends DdlManager {
 
             // Check if there if all required columns are present on this store
             for ( long columnId : columnIds ) {
-                if ( !catalog.checkIfExistsColumnPlacement( storeInstance.getAdapterId(), columnId ) ) {
+                if ( !catalog.checkIfExistsColumnPlacement( location.getAdapterId(), columnId ) ) {
                     throw new MissingColumnPlacementException( catalog.getColumn( columnId ).name );
                 }
             }
@@ -528,7 +528,7 @@ public class DdlManagerImpl extends DdlManager {
             String methodDisplayName;
             if ( indexMethodName != null ) {
                 AvailableIndexMethod aim = null;
-                for ( AvailableIndexMethod availableIndexMethod : storeInstance.getAvailableIndexMethods() ) {
+                for ( AvailableIndexMethod availableIndexMethod : location.getAvailableIndexMethods() ) {
                     if ( availableIndexMethod.name.equals( indexMethodName ) ) {
                         aim = availableIndexMethod;
                     }
@@ -539,8 +539,8 @@ public class DdlManagerImpl extends DdlManager {
                 method = aim.name;
                 methodDisplayName = aim.displayName;
             } else {
-                method = storeInstance.getDefaultIndexMethod().name;
-                methodDisplayName = storeInstance.getDefaultIndexMethod().displayName;
+                method = location.getDefaultIndexMethod().name;
+                methodDisplayName = location.getDefaultIndexMethod().displayName;
             }
 
             long indexId = catalog.addIndex(
@@ -549,11 +549,11 @@ public class DdlManagerImpl extends DdlManager {
                     isUnique,
                     method,
                     methodDisplayName,
-                    storeInstance.getAdapterId(),
+                    location.getAdapterId(),
                     type,
                     indexName );
 
-            storeInstance.addIndex( statement.getPrepareContext(), catalog.getIndex( indexId ) );
+            location.addIndex( statement.getPrepareContext(), catalog.getIndex( indexId ) );
         }
     }
 

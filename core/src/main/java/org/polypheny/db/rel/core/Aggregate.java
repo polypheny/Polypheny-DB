@@ -437,6 +437,7 @@ public abstract class Aggregate extends SingleRel {
     public String relCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 input.relCompareString() + "$" +
+                (aggCalls != null ? aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
                 (groupSet != null ? groupSet.toString() : "") + "$" +
                 (groupSets != null ? groupSets.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
                 indicator + "&";

@@ -57,9 +57,9 @@ public abstract class Adapter {
 
     protected final Map<String, String> settings;
 
-    public InformationPage informationPage;
-    public List<InformationGroup> informationGroups;
-    public List<Information> informationElements;
+    protected final InformationPage informationPage;
+    protected final List<InformationGroup> informationGroups;
+    protected final List<Information> informationElements;
 
 
     public Adapter( int adapterId, String uniqueName, Map<String, String> settings ) {
@@ -178,7 +178,6 @@ public abstract class Adapter {
      * Builds and adds an new information group, observing physical naming of columns, to the provided information objects
      */
     public void addInformationPhysicalNames() {
-
         InformationGroup group = new InformationGroup( informationPage, "Physical Names" );
         InformationTable physicalColumnNames = new InformationTable(
                 group,
@@ -189,7 +188,10 @@ public abstract class Adapter {
         group.setRefreshFunction( () -> {
             physicalColumnNames.reset();
             Catalog.getInstance().getColumnPlacementsOnAdapter( adapterId ).forEach( placement -> {
-                physicalColumnNames.addRow( placement.columnId, Catalog.getInstance().getColumn( placement.columnId ).name, placement.physicalSchemaName + "." + placement.physicalTableName + "." + placement.physicalColumnName );
+                physicalColumnNames.addRow(
+                        placement.columnId,
+                        Catalog.getInstance().getColumn( placement.columnId ).name,
+                        placement.physicalSchemaName + "." + placement.physicalTableName + "." + placement.physicalColumnName );
             } );
         } );
 
