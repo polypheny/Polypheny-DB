@@ -28,7 +28,7 @@ import org.polypheny.db.catalog.Catalog.SchemaType;
 public class Schema {
 
     private String name;
-    private SchemaType type; // TODO: enum
+    private SchemaType type;
 
     // fields for creation
     private boolean create;

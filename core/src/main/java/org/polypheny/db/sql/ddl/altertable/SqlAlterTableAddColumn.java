@@ -134,7 +134,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().alterTableAddColumn( column.getSimple(), catalogTable, beforeColumn, afterColumn, ColumnTypeInformation.fromSqlDataTypeSpec( type ), nullable, defaultValue, statement );
+            DdlManager.getInstance().addColumn( column.getSimple(), catalogTable, beforeColumn, afterColumn, ColumnTypeInformation.fromSqlDataTypeSpec( type ), nullable, defaultValue, statement );
         } catch ( NotNullAndDefaultValueException e ) {
             throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
         } catch ( ColumnAlreadyExistsException e ) {

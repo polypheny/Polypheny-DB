@@ -130,7 +130,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
         try {
-            DdlManager.getInstance().alterTableAddIndex(
+            DdlManager.getInstance().addIndex(
                     catalogTable,
                     indexMethodName,
                     columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),

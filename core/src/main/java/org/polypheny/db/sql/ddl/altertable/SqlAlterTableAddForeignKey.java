@@ -112,7 +112,7 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
             throw SqlUtil.newContextException( referencesTable.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
         try {
-            DdlManager.getInstance().alterTableAddForeignKey(
+            DdlManager.getInstance().addForeignKey(
                     catalogTable,
                     refTable,
                     columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),

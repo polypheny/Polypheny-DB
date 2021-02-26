@@ -89,7 +89,7 @@ public class SqlAlterTableAddPlacement extends SqlAlterTable {
         }
 
         try {
-            DdlManager.getInstance().alterTableAddPlacement( catalogTable, columnIds, storeInstance, statement );
+            DdlManager.getInstance().addPlacement( catalogTable, columnIds, storeInstance, statement );
         } catch ( PlacementAlreadyExistsException e ) {
             throw SqlUtil.newContextException(
                     storeName.getParserPosition(),

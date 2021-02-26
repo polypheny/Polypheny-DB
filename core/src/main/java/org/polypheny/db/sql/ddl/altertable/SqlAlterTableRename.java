@@ -77,7 +77,7 @@ public class SqlAlterTableRename extends SqlAlterTable {
         }
 
         try {
-            DdlManager.getInstance().alterTableRename( table, newName.getSimple(), statement );
+            DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.tableExists( newName.getSimple() ) );
         }

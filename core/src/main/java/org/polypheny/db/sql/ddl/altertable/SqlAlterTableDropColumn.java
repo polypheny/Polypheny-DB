@@ -75,7 +75,7 @@ public class SqlAlterTableDropColumn extends SqlAlterTable {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        DdlManager.getInstance().alterTableDropColumn( catalogTable, catalogColumn, statement );
+        DdlManager.getInstance().dropColumn( catalogTable, catalogColumn, statement );
     }
 
 }

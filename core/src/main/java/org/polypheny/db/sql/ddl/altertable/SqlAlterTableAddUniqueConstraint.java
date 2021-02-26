@@ -83,7 +83,7 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
         try {
-            DdlManager.getInstance().alterTableAddUniqueConstraint(
+            DdlManager.getInstance().addUniqueConstraint(
                     catalogTable,
                     columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
                     constraintName.getSimple() );
