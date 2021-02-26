@@ -238,6 +238,7 @@ public abstract class Adapter {
         }
 
 
+        @Override
         public String getValue() {
             return defaultValue.toString();
         }
@@ -257,6 +258,7 @@ public abstract class Adapter {
         }
 
 
+        @Override
         public String getValue() {
             return defaultValue;
         }
@@ -276,6 +278,7 @@ public abstract class Adapter {
         }
 
 
+        @Override
         public String getValue() {
             return Boolean.toString( defaultValue );
         }
@@ -301,6 +304,7 @@ public abstract class Adapter {
         }
 
 
+        @Override
         public String getValue() {
             return defaultValue;
         }
@@ -328,6 +332,7 @@ public abstract class Adapter {
         }
 
 
+        @Override
         public String getValue() {
             return directory;
         }
@@ -338,6 +343,7 @@ public abstract class Adapter {
     //see https://stackoverflow.com/questions/19588020/gson-serialize-a-list-of-polymorphic-objects/22081826#22081826
     public static class AdapterSettingDeserializer implements JsonDeserializer<AdapterSetting> {
 
+        @Override
         public AdapterSetting deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
             JsonObject jsonObject = json.getAsJsonObject();
             String type = jsonObject.get( "type" ).getAsString();

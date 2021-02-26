@@ -236,6 +236,7 @@ public final class JdbcUtils {
             int offset = TimeZone.getDefault().getOffset( time );
             return new Date( time + offset );
         }
+
     }
 
 

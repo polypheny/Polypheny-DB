@@ -44,7 +44,6 @@ import org.polypheny.db.ddl.exception.IndexExistsException;
 import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
-import org.polypheny.db.ddl.exception.NoColumnsException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
@@ -375,7 +374,7 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, NoColumnsException;
+    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException;
 
     /**
      * Adds a new constraint to a table
@@ -503,21 +502,27 @@ public abstract class DdlManager {
         public final Boolean nullable;
 
 
-        public ColumnTypeInformation( PolyType type, PolyType collectionType, Integer precision, Integer scale, Integer dimesion, Integer cardinality, Boolean nullable ) {
+        public ColumnTypeInformation( PolyType type, PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
             this.type = type;
             this.collectionType = collectionType;
             this.precision = precision == -1 ? null : precision;
             this.scale = scale == -1 ? null : scale;
-            this.dimension = dimesion == -1 ? null : dimesion;
+            this.dimension = dimension == -1 ? null : dimension;
             this.cardinality = cardinality == -1 ? null : cardinality;
             this.nullable = nullable;
         }
 
 
         public static ColumnTypeInformation fromSqlDataTypeSpec( SqlDataTypeSpec sqlDataType ) {
-            return new ColumnTypeInformation( sqlDataType.getType(), sqlDataType.getCollectionsType(), sqlDataType.getPrecision(), sqlDataType.getScale(), sqlDataType.getDimension(), sqlDataType.getCardinality(), sqlDataType.getNullable() );
+            return new ColumnTypeInformation(
+                    sqlDataType.getType(),
+                    sqlDataType.getCollectionsType(),
+                    sqlDataType.getPrecision(),
+                    sqlDataType.getScale(),
+                    sqlDataType.getDimension(),
+                    sqlDataType.getCardinality(),
+                    sqlDataType.getNullable() );
         }
-
 
     }
 

@@ -57,7 +57,6 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
@@ -1118,13 +1117,13 @@ public class DdlManagerImpl extends DdlManager {
             for ( DataStore store : stores ) {
                 store.createTable( statement.getPrepareContext(), catalogTable );
             }
-        } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException e ) {
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             throw new RuntimeException( e );
         }
     }
 
 
-    private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
+    private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) {
         long addedColumnId = catalog.addColumn(
                 columnName,
                 tableId,

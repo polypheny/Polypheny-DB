@@ -457,4 +457,5 @@ public class SqlDataTypeSpec extends SqlNode {
 
         return type;
     }
+
 }
