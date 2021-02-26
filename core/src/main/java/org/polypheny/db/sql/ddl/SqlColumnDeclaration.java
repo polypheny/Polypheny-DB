@@ -85,7 +85,8 @@ public class SqlColumnDeclaration extends SqlCall {
 
 
     /**
-     * Parses the collation from string format to an collation object
+     * Parses the collation string and returns the corresponding enum.
+     * Throws an exception if the collation is unknown.
      *
      * @return the parsed collation
      */

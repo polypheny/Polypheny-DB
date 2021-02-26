@@ -236,6 +236,7 @@ public final class JdbcUtils {
             int offset = TimeZone.getDefault().getOffset( time );
             return new Date( time + offset );
         }
+
     }
 
 
@@ -276,9 +277,9 @@ public final class JdbcUtils {
     /**
      * Builds and adds an new information group, observing the connection pool, to the provided information objects
      *
-     * @param informationPage the information page used to show information of this jdbc adapter
-     * @param groups a collection of the group on this page
-     * @param informationElements a collection of all already registered elements of these groups on this specific page
+     * @param informationPage The information page used to show information on this jdbc adapter
+     * @param groups The collection of information groups associated with this adapter
+     * @param informationElements The collection of information elements associated with this adapter
      */
     public static void addInformationPoolSize( InformationPage informationPage, List<InformationGroup> groups, List<Information> informationElements, ConnectionFactory connectionFactory, String uniqueName ) {
         InformationGroup group = new InformationGroup( informationPage, "JDBC Connection Pool" );

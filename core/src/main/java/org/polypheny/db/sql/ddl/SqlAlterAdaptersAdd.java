@@ -74,7 +74,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         uniqueName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "USING" );
         adapterName.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "WÍTH" );
+        writer.keyword( "WITH" );
         config.unparse( writer, leftPrec, rightPrec );
     }
 

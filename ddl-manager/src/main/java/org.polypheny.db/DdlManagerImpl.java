@@ -996,7 +996,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableModifyPlacementAndColumn( CatalogTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException, ColumnNotExistsException {
+    public void addColumnPlacement( CatalogTable catalogTable, String columnName, DataStore storeInstance, Statement statement ) throws UnknownAdapterException, PlacementNotExistsException, PlacementAlreadyExistsException, ColumnNotExistsException {
         if ( storeInstance == null ) {
             throw new UnknownAdapterException( "" );
         }
