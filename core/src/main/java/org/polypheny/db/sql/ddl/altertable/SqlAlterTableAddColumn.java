@@ -26,6 +26,7 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -133,7 +134,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
 
         try {
-            DdlManager.getInstance().alterTableAddColumn( column.getSimple(), catalogTable, beforeColumn, afterColumn, type, nullable, defaultValue, statement );
+            DdlManager.getInstance().alterTableAddColumn( column.getSimple(), catalogTable, beforeColumn, afterColumn, ColumnTypeInformation.fromSqlDataTypeSpec( type ), nullable, defaultValue, statement );
         } catch ( NotNullAndDefaultValueException e ) {
             throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
         } catch ( ColumnAlreadyExistsException e ) {

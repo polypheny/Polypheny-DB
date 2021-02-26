@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
-import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
@@ -53,9 +52,9 @@ import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.PolyType;
 
 /**
  * Abstract class for the DDLManager, goal of this class is to expose a unified interface,
@@ -72,6 +71,7 @@ public abstract class DdlManager {
         MQL( 2 );
 
         private final int id;
+
 
         Language( int id ) {
             this.id = id;
@@ -174,11 +174,11 @@ public abstract class DdlManager {
      * @param beforeColumn the column before which the new column should be positioned; can be null
      * @param afterColumn the column after which the new column should be positioned; can be null
      * @param type the SQL data type specification of the new column
-     * @param nullable whether the column can hold NULL values
+     * @param nullable if the column can hold the value NULL
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void alterTableAddColumn( String columnName, CatalogTable catalogTable, CatalogColumn beforeColumn, CatalogColumn afterColumn, SqlDataTypeSpec type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException;
+    public abstract void alterTableAddColumn( String columnName, CatalogTable catalogTable, CatalogColumn beforeColumn, CatalogColumn afterColumn, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException;
 
     /**
      * Add a foreign key to a table
@@ -187,12 +187,11 @@ public abstract class DdlManager {
      * @param refTable the table being referenced
      * @param columnNames the names of the columns
      * @param refColumnNames the names of the columns which are referenced
-     * @param columnListPos the position of the column list in the query
      * @param constraintName the name of this new foreign key constraint
      * @param onUpdate how to enforce the constraint on updated
      * @param onDelete how to enforce the constraint on delete
      */
-    public abstract void alterTableAddForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, SqlParserPos columnListPos, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException;
+    public abstract void alterTableAddForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException;
 
     /**
      * Adds an index to a table
@@ -299,7 +298,7 @@ public abstract class DdlManager {
      * @param afterColumn change position of the column and place it after this column
      * @param statement the used statement
      */
-    public abstract void alterTableModifyColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, SqlDataTypeSpec type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, CatalogColumn beforeColumn, CatalogColumn afterColumn, Statement statement ) throws DdlOnSourceException;
+    public abstract void alterTableModifyColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, CatalogColumn beforeColumn, CatalogColumn afterColumn, Statement statement ) throws DdlOnSourceException;
 
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with
@@ -379,20 +378,6 @@ public abstract class DdlManager {
     public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, NoColumnsException;
 
     /**
-     * Add a new column to a specified table
-     *
-     * @param columnName the name of the column which is added
-     * @param dataTypeSpec the dataspec of the column
-     * @param collation the collation type of the new column
-     * @param defaultValue the default value of the new column
-     * @param tableId the id of the table to which the column is added
-     * @param position the (logical) position of the new column
-     * @param stores list of data stores on which a placement of the column should be created
-     * @param placementType the placement type to be used for the initial column placement
-     */
-    public abstract void addColumn( String columnName, SqlDataTypeSpec dataTypeSpec, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException;
-
-    /**
      * Adds a new constraint to a table
      *
      * @param constraintName the name of the constraint
@@ -466,15 +451,15 @@ public abstract class DdlManager {
     public static class ColumnInformation {
 
         public final String name;
-        public final SqlDataTypeSpec dataType;
+        public final ColumnTypeInformation typeInformation;
         public final Collation collation;
         public final String defaultValue;
         public final int position;
 
 
-        public ColumnInformation( String name, SqlDataTypeSpec dataType, Collation collation, String defaultValue, int position ) {
+        public ColumnInformation( String name, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, int position ) {
             this.name = name;
-            this.dataType = dataType;
+            this.typeInformation = typeInformation;
             this.collation = collation;
             this.defaultValue = defaultValue;
             this.position = position;
@@ -499,6 +484,40 @@ public abstract class DdlManager {
             this.type = type;
             this.columnNames = columnNames;
         }
+
+    }
+
+
+    /**
+     * Helper class, which holds all type information for a column
+     * decoupled from the used query language
+     */
+    public static class ColumnTypeInformation {
+
+        public final PolyType type;
+        public final PolyType collectionType;
+        public final Integer precision;
+        public final Integer scale;
+        public final Integer dimension;
+        public final Integer cardinality;
+        public final Boolean nullable;
+
+
+        public ColumnTypeInformation( PolyType type, PolyType collectionType, Integer precision, Integer scale, Integer dimesion, Integer cardinality, Boolean nullable ) {
+            this.type = type;
+            this.collectionType = collectionType;
+            this.precision = precision == -1 ? null : precision;
+            this.scale = scale == -1 ? null : scale;
+            this.dimension = dimesion == -1 ? null : dimesion;
+            this.cardinality = cardinality == -1 ? null : cardinality;
+            this.nullable = nullable;
+        }
+
+
+        public static ColumnTypeInformation fromSqlDataTypeSpec( SqlDataTypeSpec sqlDataType ) {
+            return new ColumnTypeInformation( sqlDataType.getType(), sqlDataType.getCollectionsType(), sqlDataType.getPrecision(), sqlDataType.getScale(), sqlDataType.getDimension(), sqlDataType.getCardinality(), sqlDataType.getNullable() );
+        }
+
 
     }
 

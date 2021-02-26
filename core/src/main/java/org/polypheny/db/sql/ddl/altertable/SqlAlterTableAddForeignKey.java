@@ -118,7 +118,6 @@ public class SqlAlterTableAddForeignKey extends SqlAlterTable {
                             refTable,
                             columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
                             referencesList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
-                            columnList.getParserPosition(),
                             constraintName.getSimple(),
                             onUpdate,
                             onDelete );

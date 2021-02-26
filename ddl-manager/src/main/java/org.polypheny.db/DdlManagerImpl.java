@@ -18,7 +18,6 @@ package org.polypheny.db;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -84,9 +83,6 @@ import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
-import org.polypheny.db.sql.SqlDataTypeSpec;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -395,7 +391,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableAddColumn( String columnName, CatalogTable catalogTable, CatalogColumn beforeColumn, CatalogColumn afterColumn, SqlDataTypeSpec type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException {
+    public void alterTableAddColumn( String columnName, CatalogTable catalogTable, CatalogColumn beforeColumn, CatalogColumn afterColumn, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException {
 
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
@@ -412,12 +408,12 @@ public class DdlManagerImpl extends DdlManager {
                 columnName,
                 catalogTable.id,
                 position,
-                type.getType(),
-                type.getCollectionsType(),
-                type.getPrecision() == -1 ? null : type.getPrecision(),
-                type.getScale() == -1 ? null : type.getScale(),
-                type.getDimension() == -1 ? null : type.getDimension(),
-                type.getCardinality() == -1 ? null : type.getCardinality(),
+                type.type,
+                type.collectionType,
+                type.precision,
+                type.scale,
+                type.dimension,
+                type.cardinality,
                 nullable,
                 Collation.getDefaultCollation()
         );
@@ -447,7 +443,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableAddForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, SqlParserPos columnListPos, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException {
+    public void alterTableAddForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException {
 
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
@@ -815,7 +811,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableModifyColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, SqlDataTypeSpec type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, CatalogColumn beforeColumn, CatalogColumn afterColumn, Statement statement ) throws DdlOnSourceException {
+    public void alterTableModifyColumn( CatalogTable catalogTable, CatalogColumn catalogColumn, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, CatalogColumn beforeColumn, CatalogColumn afterColumn, Statement statement ) throws DdlOnSourceException {
         try {
             if ( type != null ) {
                 // Make sure that this is a table of type TABLE (and not SOURCE)
@@ -823,12 +819,12 @@ public class DdlManagerImpl extends DdlManager {
 
                 catalog.setColumnType(
                         catalogColumn.id,
-                        type.getType(),
-                        type.getCollectionsType(),
-                        type.getPrecision() == -1 ? null : type.getPrecision(),
-                        type.getScale() == -1 ? null : type.getScale(),
-                        type.getDimension() == -1 ? null : type.getDimension(),
-                        type.getCardinality() == -1 ? null : type.getCardinality() );
+                        type.type,
+                        type.collectionType,
+                        type.precision,
+                        type.scale,
+                        type.dimension,
+                        type.cardinality );
                 for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
                     AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                             statement.getPrepareContext(),
@@ -1108,15 +1104,8 @@ public class DdlManagerImpl extends DdlManager {
                     true,
                     null );
 
-            int offset = 0;
-            if ( catalog.getSchema( schemaId ).schemaType == SchemaType.DOCUMENT ) {
-                SqlDataTypeSpec dataType = new SqlDataTypeSpec( null, new SqlIdentifier( Collections.singletonList( "JSON" ), SqlParserPos.ZERO ), 300, -1, -1, -1, null, null, true, SqlParserPos.ZERO );
-                columns.add( new ColumnInformation( "_hidden", dataType, Collation.getDefaultCollation(), null, 0 ) );
-                offset++;
-            }
-
             for ( ColumnInformation column : columns ) {
-                addColumn( column.name, column.dataType, column.collation, column.defaultValue, tableId, column.position + offset, stores, placementType );
+                addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
             }
 
             for ( ConstraintInformation constraint : constraints ) {
@@ -1133,21 +1122,23 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    @Override
-    public void addColumn( String columnName, SqlDataTypeSpec dataTypeSpec, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
+    private void addColumn( String columnName, ColumnTypeInformation typeInformation, Collation collation, String defaultValue, long tableId, int position, List<DataStore> stores, PlacementType placementType ) throws GenericCatalogException, UnknownCollationException, UnknownColumnException {
         long addedColumnId = catalog.addColumn(
                 columnName,
                 tableId,
                 position,
-                dataTypeSpec.getType(),
-                dataTypeSpec.getCollectionsType(),
-                dataTypeSpec.getPrecision() == -1 ? null : dataTypeSpec.getPrecision(),
-                dataTypeSpec.getScale() == -1 ? null : dataTypeSpec.getScale(),
-                dataTypeSpec.getDimension() == -1 ? null : dataTypeSpec.getDimension(),
-                dataTypeSpec.getCardinality() == -1 ? null : dataTypeSpec.getCardinality(),
-                dataTypeSpec.getNullable(),
+                typeInformation.type,
+                typeInformation.collectionType,
+                typeInformation.precision,
+                typeInformation.scale,
+                typeInformation.dimension,
+                typeInformation.cardinality,
+                typeInformation.nullable,
                 collation
         );
+
+        // Add default value
+        addDefaultValue( defaultValue, addedColumnId );
 
         for ( DataStore s : stores ) {
             catalog.addColumnPlacement(
@@ -1159,8 +1150,6 @@ public class DdlManagerImpl extends DdlManager {
                     null );
         }
 
-        // Add default value
-        addDefaultValue( defaultValue, addedColumnId );
     }
 
 
