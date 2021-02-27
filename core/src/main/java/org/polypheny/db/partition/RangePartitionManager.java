@@ -17,6 +17,7 @@
 package org.polypheny.db.partition;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -223,7 +224,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         dynamicRows.add( Column.builder()
                 .title( "MIN" )
-                .fieldType( "text" )
+                .fieldType( "integer" )
                 .mandatory( true )
                 .modifiable( true )
                 .sqlPrefix( "VALUES(" )
@@ -234,7 +235,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         dynamicRows.add( Column.builder()
                 .title( "MAX" )
-                .fieldType( "text" )
+                .fieldType( "integer" )
                 .mandatory( true )
                 .modifiable( true )
                 .sqlPrefix( "," )
@@ -289,6 +290,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
                 .rowsAfter( rowsAfter )
+                .headings( new ArrayList<String>( Arrays.asList("Partition Names", "MIN", "MAX") ))
                 .build();
 
         return uiObject;

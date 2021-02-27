@@ -58,6 +58,12 @@ public class PartitionFunctionModel {
         public String value;
         public List<String> options;
 
+        //Necessary altercation needed due to loss of context of original json
+        @Setter
+        public String sqlPrefix = "";
+        @Setter
+        public String sqlSuffix = "";
+
         public PartitionFunctionColumn( final FieldType type, final String defaultValue ) {
             this.type = type;
             this.value = defaultValue;

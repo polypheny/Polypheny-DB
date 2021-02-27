@@ -18,6 +18,7 @@ package org.polypheny.db.partition;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -213,6 +214,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
+                .headings( new ArrayList<String>( Arrays.asList("Partition Names") ))
                 .build();
 
         return uiObject;

@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializer;
@@ -141,6 +142,10 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.partition.PartitionFunctionInfo;
+import org.polypheny.db.partition.PartitionFunctionInfo.Column;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -2012,24 +2017,151 @@ public class Crud implements InformationObserver {
 
     String getPartitionFunctionModel( final Request req, final Response res ) {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+
+        //Get correct partition function
+        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+
+        PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
+
+
+        JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
+
+
+
         List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
-        rows.add(
-                Arrays.asList( new PartitionFunctionColumn( FieldType.STRING, "string" ).setModifiable( false ),
-                        new PartitionFunctionColumn( FieldType.INTEGER, "123" ).setMandatory( true ) )
-        );
-        rows.add(
-                Arrays.asList( new PartitionFunctionColumn( FieldType.LABEL, "label" ),
-                        new PartitionFunctionColumn( FieldType.LIST, Arrays.asList( "a", "b", "c" ), "b" ) )
-        );
-        PartitionFunctionModel model = new PartitionFunctionModel( request.method.toString(), "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", Arrays.asList( "col1", "col2" ), rows );
-        return gson.toJson( model );
+        List<String> headings = new ArrayList<>();
+
+
+        if ( infoJson.has( "rowsBefore" ) ) {
+
+            // Insert Rows Before
+            List<List<Column>> rowsBefore = functionInfo.getRowsBefore();
+            for ( int i = 0; i < rowsBefore.size(); i++ ) {
+                rows.add( buildPartitionInfoRow(rowsBefore.get( i )) );
+            }
+
+        }
+
+
+
+        if ( infoJson.has( "dynamicRows" ) ) {
+            //build as much dynamic rows as requested per num Partitions
+            for ( int i = 0; i < request.numPartitions; i++ ) {
+                rows.add( buildPartitionInfoRow( functionInfo.getDynamicRows() ) );
+            }
+        }
+
+
+        if ( infoJson.has( "rowsAfter" ) ) {
+            // Insert Rows After
+            List<List<Column>> rowsAfter = functionInfo.getRowsAfter();
+
+            for ( int i = 0; i < rowsAfter.size(); i++ ) {
+                rows.add( buildPartitionInfoRow(rowsAfter.get( i )) );
+            }
+        }
+
+
+        PartitionFunctionModel model = new PartitionFunctionModel( functionInfo.getFunctionTitle(), functionInfo.getUiTooltip(), functionInfo.getHeadings(), rows );
+
+
+         return gson.toJson( model );
     }
 
+
+    private List<PartitionFunctionColumn> buildPartitionInfoRow(List<Column> columnList){
+        List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
+
+
+        for ( Column currentColumn : columnList ) {
+
+            FieldType type;
+            switch ( currentColumn.getFieldType() ) {
+                case "text":
+                    type = FieldType.STRING;
+                    break;
+
+                case "integer":
+                    type = FieldType.INTEGER;
+                    break;
+
+                case "dropdown":
+                    type = FieldType.LIST;
+                    break;
+
+                case "label":
+                    type = FieldType.LABEL;
+                    break;
+
+                default:
+                    throw new RuntimeException( "Unknown Field Type: " + currentColumn.getFieldType() );
+            }
+
+            if ( type.equals( FieldType.LIST ) ) {
+                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getOptions(), currentColumn.getDefaultValue() )
+                        .setModifiable( currentColumn.isModifiable() )
+                        .setMandatory( currentColumn.isMandatory() )
+                        .setSqlPrefix( currentColumn.getSqlPrefix() )
+                        .setSqlSuffix( currentColumn.getSqlSuffix() ));
+            } else {
+                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getDefaultValue() )
+                        .setModifiable( currentColumn.isModifiable() )
+                        .setMandatory( currentColumn.isMandatory() )
+                        .setSqlPrefix( currentColumn.getSqlPrefix() )
+                        .setSqlSuffix( currentColumn.getSqlSuffix() ));
+            }
+        }
+
+
+        return constructedRow;
+    }
 
     Result partitionTable( final Request req, final Response res ) {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
+
+        String content = "";
+        for ( List<PartitionFunctionColumn> currentRow: request.rows) {
+
+            // If more than one row, keep appending ,
+            if ( request.rows.indexOf( currentRow ) != 0){
+                content = content + ", ";
+            }
+            for ( PartitionFunctionColumn currentColumn : currentRow ){
+                if ( currentColumn.modifiable ) {
+                    content = content + currentColumn.sqlPrefix + " " + currentColumn.value + " " + currentColumn.sqlSuffix;
+                }
+            }
+
+        }
+
+        System.out.println(content);
+
+        //Problem is that we took the structure completely out of the original JSON therefore losing valuable information and context
+        //what part of rows were actually needed to build the SQL and which one not.
+        //Now we have to crosscheck every statement
+        //Actually to complex and rather poor maintenance quality.
+        //Changes to extensions to this model now have to be made on two parts
+
+
+/**        String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") PARTITIONS %d ",
+  //              request.schemaName, request.tableName, request.method, request.column, request.numPartitions );
+        Transaction trx = getTransaction();
+        try {
+            int i = executeSqlUpdate( trx, query );
+            trx.commit();
+            return new Result( i ).setGeneratedQuery( query );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not partition table", e );
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }// return new Result( e ).setGeneratedQuery( query );
+        }**/
         return new Result( "Not implemented yet" );
     }
+
 
 
     Result mergePartitions( final Request req, final Response res ) {

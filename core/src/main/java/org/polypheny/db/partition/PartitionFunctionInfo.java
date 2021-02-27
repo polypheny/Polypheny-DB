@@ -23,6 +23,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 
+
 @Getter
 @Builder
 public class PartitionFunctionInfo {
@@ -32,6 +33,7 @@ public class PartitionFunctionInfo {
     private String sqlPrefix;
     private String sqlSuffix;
     private String rowSeparation;
+    private List<String> headings;
 
     //rows_before List of List of Inner Class
     private List<List<Column>> rowsBefore;
@@ -55,6 +57,7 @@ public class PartitionFunctionInfo {
         private String sqlSuffix;
         private String defaultValue;
         private String valueSeparation;
+        private List<String> options;
 
     }
 
