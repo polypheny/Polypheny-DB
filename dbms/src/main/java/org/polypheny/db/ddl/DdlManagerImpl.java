@@ -830,93 +830,128 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void alterTableModifyColumn( CatalogTable catalogTable, String columnName, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, String beforeColumnName, String afterColumnName, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException {
-        try {
-            CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
-            CatalogColumn beforeColumn = beforeColumnName == null ? null : getCatalogColumn( catalogTable.id, beforeColumnName );
-            CatalogColumn afterColumn = afterColumnName == null ? null : getCatalogColumn( catalogTable.id, afterColumnName );
+    public void setColumnType( CatalogTable catalogTable, String columnName, ColumnTypeInformation type, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException, GenericCatalogException {
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        checkIfTableType( catalogTable.tableType );
 
-            if ( type != null ) {
-                // Make sure that this is a table of type TABLE (and not SOURCE)
-                checkIfTableType( catalogTable.tableType );
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
 
-                catalog.setColumnType(
-                        catalogColumn.id,
-                        type.type,
-                        type.collectionType,
-                        type.precision,
-                        type.scale,
-                        type.dimension,
-                        type.cardinality );
-                for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
-                    AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
-                            statement.getPrepareContext(),
-                            placement,
-                            catalog.getColumn( catalogColumn.id ) );
-                }
-            } else if ( nullable != null ) {
-                // Make sure that this is a table of type TABLE (and not SOURCE)
-                checkIfTableType( catalogTable.tableType );
-
-                catalog.setNullable( catalogColumn.id, nullable );
-            } else if ( beforeColumn != null || afterColumn != null ) {
-                int targetPosition;
-                CatalogColumn refColumn;
-                if ( beforeColumn != null ) {
-                    refColumn = beforeColumn;
-                    targetPosition = refColumn.position;
-                } else {
-                    refColumn = afterColumn;
-                    targetPosition = refColumn.position + 1;
-                }
-                if ( catalogColumn.id == refColumn.id ) {
-                    throw new RuntimeException( "Same column!" );
-                }
-                List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
-                if ( targetPosition < catalogColumn.position ) {  // Walk from last column to first column
-                    for ( int i = columns.size(); i >= 1; i-- ) {
-                        if ( i < catalogColumn.position && i >= targetPosition ) {
-                            catalog.setColumnPosition( columns.get( i - 1 ).id, i + 1 );
-                        } else if ( i == catalogColumn.position ) {
-                            catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
-                        }
-                        if ( i == targetPosition ) {
-                            catalog.setColumnPosition( catalogColumn.id, targetPosition );
-                        }
-                    }
-                } else if ( targetPosition > catalogColumn.position ) { // Walk from first column to last column
-                    targetPosition--;
-                    for ( int i = 1; i <= columns.size(); i++ ) {
-                        if ( i > catalogColumn.position && i <= targetPosition ) {
-                            catalog.setColumnPosition( columns.get( i - 1 ).id, i - 1 );
-                        } else if ( i == catalogColumn.position ) {
-                            catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
-                        }
-                        if ( i == targetPosition ) {
-                            catalog.setColumnPosition( catalogColumn.id, targetPosition );
-                        }
-                    }
-                } else {
-                    // Do nothing
-                }
-            } else if ( collation != null ) {
-                // Make sure that this is a table of type TABLE (and not SOURCE)
-                checkIfTableType( catalogTable.tableType );
-
-                catalog.setCollation( catalogColumn.id, collation );
-            } else if ( defaultValue != null ) {
-                addDefaultValue( defaultValue, catalogColumn.id );
-            } else if ( dropDefault != null && dropDefault ) {
-                catalog.deleteDefaultValue( catalogColumn.id );
-            } else {
-                throw new RuntimeException( "Unknown option" );
-            }
-
-            // Rest plan cache and implementation cache (not sure if required in this case)
-            statement.getQueryProcessor().resetCaches();
-        } catch ( GenericCatalogException e ) {
-            throw new RuntimeException( e );
+        catalog.setColumnType(
+                catalogColumn.id,
+                type.type,
+                type.collectionType,
+                type.precision,
+                type.scale,
+                type.dimension,
+                type.cardinality );
+        for ( CatalogColumnPlacement placement : catalog.getColumnPlacements( catalogColumn.id ) ) {
+            AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
+                    statement.getPrepareContext(),
+                    placement,
+                    catalog.getColumn( catalogColumn.id ) );
         }
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void setColumnNullable( CatalogTable catalogTable, String columnName, boolean nullable, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException, GenericCatalogException {
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        checkIfTableType( catalogTable.tableType );
+
+        catalog.setNullable( catalogColumn.id, nullable );
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void setColumnPosition( CatalogTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException {
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
+        int targetPosition;
+        CatalogColumn refColumn;
+        if ( beforeColumnName != null ) {
+            refColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
+            ;
+            targetPosition = refColumn.position;
+        } else {
+            refColumn = getCatalogColumn( catalogTable.id, afterColumnName );
+            targetPosition = refColumn.position + 1;
+        }
+        if ( catalogColumn.id == refColumn.id ) {
+            throw new RuntimeException( "Same column!" );
+        }
+        List<CatalogColumn> columns = catalog.getColumns( catalogTable.id );
+        if ( targetPosition < catalogColumn.position ) {  // Walk from last column to first column
+            for ( int i = columns.size(); i >= 1; i-- ) {
+                if ( i < catalogColumn.position && i >= targetPosition ) {
+                    catalog.setColumnPosition( columns.get( i - 1 ).id, i + 1 );
+                } else if ( i == catalogColumn.position ) {
+                    catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
+                }
+                if ( i == targetPosition ) {
+                    catalog.setColumnPosition( catalogColumn.id, targetPosition );
+                }
+            }
+        } else if ( targetPosition > catalogColumn.position ) { // Walk from first column to last column
+            targetPosition--;
+            for ( int i = 1; i <= columns.size(); i++ ) {
+                if ( i > catalogColumn.position && i <= targetPosition ) {
+                    catalog.setColumnPosition( columns.get( i - 1 ).id, i - 1 );
+                } else if ( i == catalogColumn.position ) {
+                    catalog.setColumnPosition( catalogColumn.id, columns.size() + 1 );
+                }
+                if ( i == targetPosition ) {
+                    catalog.setColumnPosition( catalogColumn.id, targetPosition );
+                }
+            }
+        }
+        // Do nothing
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void setColumnCollation( CatalogTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException {
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        checkIfTableType( catalogTable.tableType );
+
+        catalog.setCollation( catalogColumn.id, collation );
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void setDefaultValue( CatalogTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException {
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
+        addDefaultValue( defaultValue, catalogColumn.id );
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void dropDefaultValue( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException {
+        CatalogColumn catalogColumn = getCatalogColumn( catalogTable.id, columnName );
+
+        catalog.deleteDefaultValue( catalogColumn.id );
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
     }
 
 

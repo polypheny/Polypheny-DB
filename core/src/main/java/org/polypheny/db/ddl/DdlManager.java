@@ -284,20 +284,64 @@ public abstract class DdlManager {
     public abstract void dropPrimaryKey( CatalogTable catalogTable ) throws DdlOnSourceException;
 
     /**
-     * Modify a column
+     * Set the type of the column
      *
      * @param catalogTable the table
      * @param columnName the name of the column to be modified
-     * @param type the new type of the column
-     * @param collation the new collation of the column
-     * @param defaultValue the new default value of the column
-     * @param nullable if the column should be nullable
-     * @param dropDefault whether to drop the current default value
-     * @param beforeColumnName change position of the column and place it before this column
-     * @param afterColumnName change position of the column and place it after this column
+     * @param typeInformation the new type of the column
      * @param statement the used statement
      */
-    public abstract void alterTableModifyColumn( CatalogTable catalogTable, String columnName, ColumnTypeInformation type, Collation collation, String defaultValue, Boolean nullable, Boolean dropDefault, String beforeColumnName, String afterColumnName, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException;
+    public abstract void setColumnType( CatalogTable catalogTable, String columnName, ColumnTypeInformation typeInformation, Statement statement ) throws DdlOnSourceException, ColumnNotExistsException, GenericCatalogException;
+
+    /**
+     * Set if the column can hold the value NULL or not
+     *
+     * @param catalogTable the table
+     * @param columnName the name of the column to be modified
+     * @param nullable if the column should be nullable
+     * @param statement the used statement
+     */
+    public abstract void setColumnNullable( CatalogTable catalogTable, String columnName, boolean nullable, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException, GenericCatalogException;
+
+    /**
+     * Changes the position of the column and places it before or after the provided columns
+     *
+     * @param catalogTable the table
+     * @param columnName the name of the column to be modified
+     * @param beforeColumnName change position of the column and place it before this column; nullable
+     * @param afterColumnName change position of the column and place it after this column; nullable
+     * @param statement the used statement
+     */
+    public abstract void setColumnPosition( CatalogTable catalogTable, String columnName, String beforeColumnName, String afterColumnName, Statement statement ) throws ColumnNotExistsException;
+
+    /**
+     * Set the collation to the column
+     *
+     * @param catalogTable the table
+     * @param columnName the name of the column to be modified
+     * @param collation the new collation of the column
+     * @param statement the used statement
+     */
+    public abstract void setColumnCollation( CatalogTable catalogTable, String columnName, Collation collation, Statement statement ) throws ColumnNotExistsException, DdlOnSourceException;
+
+    /**
+     * Set the default value of the column
+     *
+     * @param catalogTable the table
+     * @param columnName the name of the column to be modified
+     * @param defaultValue the new default value of the column
+     * @param statement the used statement
+     */
+    public abstract void setDefaultValue( CatalogTable catalogTable, String columnName, String defaultValue, Statement statement ) throws ColumnNotExistsException;
+
+    /**
+     * Drop the default value of the column
+     *
+     * @param catalogTable the table
+     * @param columnName the name of the column to be modified
+     * @param statement the used statement
+     */
+    public abstract void dropDefaultValue( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException;
 
     /**
      * Modify the placement of a table on a specified data store. This method compares the specified list of column ids with

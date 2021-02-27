@@ -23,6 +23,7 @@ import java.util.List;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
@@ -137,26 +138,32 @@ public class SqlAlterTableModifyColumn extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, tableName );
 
-        String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
-
         try {
-            DdlManager.getInstance().alterTableModifyColumn(
-                    catalogTable,
-                    columnName.getSimple(),
-                    type != null ? ColumnTypeInformation.fromSqlDataTypeSpec( type ) : null,
-                    collation == null ? null : Collation.parse( collation ),
-                    defaultValue,
-                    nullable,
-                    dropDefault,
-                    beforeColumn == null ? null : beforeColumn.getSimple(),
-                    afterColumn == null ? null : afterColumn.getSimple(),
-                    statement );
+            if ( type != null ) {
+                DdlManager.getInstance().setColumnType( catalogTable, columnName.getSimple(), ColumnTypeInformation.fromSqlDataTypeSpec( type ), statement );
+            } else if ( nullable != null ) {
+                DdlManager.getInstance().setColumnNullable( catalogTable, columnName.getSimple(), nullable, statement );
+            } else if ( beforeColumn != null || afterColumn != null ) {
+                DdlManager.getInstance().setColumnPosition( catalogTable, columnName.getSimple(), beforeColumn == null ? null : beforeColumn.getSimple(), afterColumn == null ? null : afterColumn.getSimple(), statement );
+            } else if ( collation != null ) {
+                DdlManager.getInstance().setColumnCollation( catalogTable, columnName.getSimple(), Collation.parse( collation ), statement );
+            } else if ( defaultValue != null ) {
+                DdlManager.getInstance().setDefaultValue( catalogTable, columnName.getSimple(), defaultValue.toString(), statement );
+            } else if ( dropDefault != null && dropDefault ) {
+                DdlManager.getInstance().dropDefaultValue( catalogTable, columnName.getSimple(), statement );
+            } else {
+                throw new RuntimeException( "Unknown option" );
+            }
+
+
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-        } catch ( UnknownCollationException e ) {
-            throw new RuntimeException( e );
         } catch ( ColumnNotExistsException e ) {
             throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+        } catch ( UnknownCollationException e ) {
+            throw SqlUtil.newContextException( tableName.getParserPosition(), RESOURCE.unknownCollation( collation ) );
+        } catch ( GenericCatalogException e ) {
+            throw new RuntimeException( e );
         }
     }
 
