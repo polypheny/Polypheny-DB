@@ -173,6 +173,27 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         boolean lock = !isSubquery;
 
         final StopWatch stopWatch = new StopWatch();
+/*
+        stopWatch.start();
+        if ( logicalRoot.kind.equals( SqlKind.SELECT ) ) {
+
+            Catalog catalog = Catalog.getInstance();
+
+            //TODO IG: create methode in order to always get nameIds
+            if ( logicalRoot.rel instanceof LogicalProject ) {
+                Long tableId = ((LogicalTable) ((RelOptTableImpl) ((LogicalTableScan) ((LogicalProject) logicalRoot.rel).getInput()).getTable()).getTable()).getTableId();
+                CatalogTable catalogTable = catalog.getTable( tableId );
+                if ( catalogTable.tableType == TableType.VIEW ) {
+                    CatalogView catalogView = (CatalogView) catalogTable;
+                    logicalRoot = catalogView.prepareRelRoot( logicalRoot );
+                }
+            }
+        }
+        stopWatch.stop();
+        System.out.println( stopWatch.getTime() );
+        stopWatch.reset();
+
+ */
 
         if ( log.isDebugEnabled() ) {
             log.debug( "Preparing statement  ..." );
