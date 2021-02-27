@@ -195,7 +195,7 @@ public class Qfs extends DataSource {
         ) );
 
         Map<String, List<ExportedColumn>> out = new HashMap<>();
-        out.put( "QFS", columns );
+        out.put( getUniqueName(), columns );
         return out;
     }
 }

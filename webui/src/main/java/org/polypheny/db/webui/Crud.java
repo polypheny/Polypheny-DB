@@ -2918,11 +2918,12 @@ public class Crud implements InformationObserver {
         } else {
             res.header( "Content-Disposition", "attachment; filename=" + "file" );
         }
+        long fileLength = f.length();
+        res.header( "Content-Length", String.valueOf( fileLength ) );
         String range = req.headers( "Range" );
         if ( range != null ) {
             long rangeStart;
             long rangeEnd;
-            long fileLength = f.length();
             Pattern pattern = Pattern.compile( "bytes=(\\d*)-(\\d*)" );
             Matcher m = pattern.matcher( range );
             if ( m.find() && m.groupCount() == 2 ) {
@@ -2949,7 +2950,6 @@ public class Crud implements InformationObserver {
                 res.status( 206 );//partial content
                 int len = Long.valueOf( rangeEnd - rangeStart ).intValue() + 1;
                 res.header( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
-                res.header( "Content-Length", String.valueOf( len ) );
 
                 RandomAccessFile raf = new RandomAccessFile( f, "r" );
                 raf.seek( rangeStart );
@@ -2980,7 +2980,7 @@ public class Crud implements InformationObserver {
     }
 
     String getDirectory( File dir, Response res ) {
-        res.header( "Content-Type", "application/octet-stream" );
+        res.header( "Content-Type", "application/zip" );
         res.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
         String zipFileName = UUID.randomUUID().toString() + ".zip";
         File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
@@ -2990,6 +2990,7 @@ public class Crud implements InformationObserver {
             res.status( 500 );
             log.error( "Could not zip directory", e );
         }
+        res.header( "Content-Length", String.valueOf( zipFile.length() ) );
         try ( OutputStream os = res.raw().getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
             IOUtils.copy( is, os );
         } catch ( IOException e ) {
