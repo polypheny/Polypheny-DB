@@ -121,6 +121,7 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
@@ -2015,61 +2016,6 @@ public class Crud implements InformationObserver {
     }
 
 
-    String getPartitionFunctionModel( final Request req, final Response res ) {
-        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
-
-        //Get correct partition function
-        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
-        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
-
-        PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
-
-
-        JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
-
-
-
-        List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
-        List<String> headings = new ArrayList<>();
-
-
-        if ( infoJson.has( "rowsBefore" ) ) {
-
-            // Insert Rows Before
-            List<List<Column>> rowsBefore = functionInfo.getRowsBefore();
-            for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionInfoRow(rowsBefore.get( i )) );
-            }
-
-        }
-
-
-
-        if ( infoJson.has( "dynamicRows" ) ) {
-            //build as much dynamic rows as requested per num Partitions
-            for ( int i = 0; i < request.numPartitions; i++ ) {
-                rows.add( buildPartitionInfoRow( functionInfo.getDynamicRows() ) );
-            }
-        }
-
-
-        if ( infoJson.has( "rowsAfter" ) ) {
-            // Insert Rows After
-            List<List<Column>> rowsAfter = functionInfo.getRowsAfter();
-
-            for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionInfoRow(rowsAfter.get( i )) );
-            }
-        }
-
-
-        PartitionFunctionModel model = new PartitionFunctionModel( functionInfo.getFunctionTitle(), functionInfo.getUiTooltip(), functionInfo.getHeadings(), rows );
-
-
-         return gson.toJson( model );
-    }
-
-
     private List<PartitionFunctionColumn> buildPartitionInfoRow(List<Column> columnList){
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
@@ -2117,35 +2063,116 @@ public class Crud implements InformationObserver {
         return constructedRow;
     }
 
+
+    String getPartitionFunctionModel( final Request req, final Response res ) {
+        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+
+        //Get correct partition function
+        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+
+        PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
+
+
+        JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
+
+
+
+        List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
+        List<String> headings = new ArrayList<>();
+
+
+        if ( infoJson.has( "rowsBefore" ) ) {
+
+            // Insert Rows Before
+            List<List<Column>> rowsBefore = functionInfo.getRowsBefore();
+            for ( int i = 0; i < rowsBefore.size(); i++ ) {
+                rows.add( buildPartitionInfoRow(rowsBefore.get( i )) );
+            }
+        }
+
+
+        if ( infoJson.has( "dynamicRows" ) ) {
+            //build as much dynamic rows as requested per num Partitions
+            for ( int i = 0; i < request.numPartitions; i++ ) {
+                rows.add( buildPartitionInfoRow( functionInfo.getDynamicRows() ) );
+            }
+        }
+
+
+        if ( infoJson.has( "rowsAfter" ) ) {
+            // Insert Rows After
+            List<List<Column>> rowsAfter = functionInfo.getRowsAfter();
+
+            for ( int i = 0; i < rowsAfter.size(); i++ ) {
+                rows.add( buildPartitionInfoRow(rowsAfter.get( i )) );
+            }
+        }
+
+
+        PartitionFunctionModel model = new PartitionFunctionModel( functionInfo.getFunctionTitle(), functionInfo.getUiTooltip(), functionInfo.getHeadings(), rows );
+        model.setFunctionName( request.method.toString() );
+        model.setTableName( request.tableName );
+        model.setPartitionColumnName( request.column );
+        model.setSchemaName( request.schemaName );
+
+        return gson.toJson( model );
+    }
+
+
+
     Result partitionTable( final Request req, final Response res ) {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
+
+        //Get correct partition function
+        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManager partitionManager = null;
+        try {
+            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName) );
+        } catch ( UnknownPartitionTypeException e ) {
+            throw new RuntimeException( e );
+        }
+
+        PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
+
+
+
         String content = "";
+
         for ( List<PartitionFunctionColumn> currentRow: request.rows) {
 
-            // If more than one row, keep appending ,
-            if ( request.rows.indexOf( currentRow ) != 0){
-                content = content + ", ";
-            }
+            boolean rowSeparationApplied = false;
+
             for ( PartitionFunctionColumn currentColumn : currentRow ){
                 if ( currentColumn.modifiable ) {
+                    // If more than one row, keep appending ','
+                    if ( !rowSeparationApplied && request.rows.indexOf( currentRow ) != 0){
+                        content = content + functionInfo.getRowSeparation();
+                        rowSeparationApplied = true;
+                    }
                     content = content + currentColumn.sqlPrefix + " " + currentColumn.value + " " + currentColumn.sqlSuffix;
                 }
             }
-
         }
 
+        content = functionInfo.getSqlPrefix() + " " + content + " " + functionInfo.getSqlSuffix();
         System.out.println(content);
 
+        //INFO - do discuss
         //Problem is that we took the structure completely out of the original JSON therefore losing valuable information and context
         //what part of rows were actually needed to build the SQL and which one not.
         //Now we have to crosscheck every statement
         //Actually to complex and rather poor maintenance quality.
         //Changes to extensions to this model now have to be made on two parts
 
+        //System.out.println("request: " + request.schemaName +" " +  request.tableName + " " + request.functionName  + " "+ request.partitionColumnName );
 
-/**        String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") PARTITIONS %d ",
-  //              request.schemaName, request.tableName, request.method, request.column, request.numPartitions );
+
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") %s ",
+               request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
+
+        System.out.println("\nQUERY: " + query);
         Transaction trx = getTransaction();
         try {
             int i = executeSqlUpdate( trx, query );
@@ -2157,9 +2184,10 @@ public class Crud implements InformationObserver {
                 trx.rollback();
             } catch ( TransactionException ex ) {
                 log.error( "Could not rollback", ex );
-            }// return new Result( e ).setGeneratedQuery( query );
-        }**/
-        return new Result( "Not implemented yet" );
+            }
+            return new Result( e ).setGeneratedQuery( query );
+        }
+       // return new Result( "Not implemented yet" );
     }
 
 
