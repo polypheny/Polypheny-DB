@@ -2157,7 +2157,6 @@ public class Crud implements InformationObserver {
         }
 
         content = functionInfo.getSqlPrefix() + " " + content + " " + functionInfo.getSqlSuffix();
-        System.out.println(content);
 
         //INFO - do discuss
         //Problem is that we took the structure completely out of the original JSON therefore losing valuable information and context
@@ -2166,13 +2165,11 @@ public class Crud implements InformationObserver {
         //Actually to complex and rather poor maintenance quality.
         //Changes to extensions to this model now have to be made on two parts
 
-        //System.out.println("request: " + request.schemaName +" " +  request.tableName + " " + request.functionName  + " "+ request.partitionColumnName );
-
 
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") %s ",
                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
 
-        System.out.println("\nQUERY: " + query);
+
         Transaction trx = getTransaction();
         try {
             int i = executeSqlUpdate( trx, query );
@@ -2187,7 +2184,6 @@ public class Crud implements InformationObserver {
             }
             return new Result( e ).setGeneratedQuery( query );
         }
-       // return new Result( "Not implemented yet" );
     }
 
 

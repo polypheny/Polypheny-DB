@@ -266,7 +266,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .sqlPrefix( "" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .defaultValue( "" )
+                .defaultValue( "auto fill" )
                 .build() );
 
         unboundRow.add( Column.builder()
@@ -277,14 +277,15 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .sqlPrefix( "" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .defaultValue( "" )
+                .defaultValue( "auto fill" )
                 .build() );
 
         rowsAfter.add( unboundRow );
 
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
-                .uiTooltip( "Partitions data based on a list of values which is assigned to a specific partition" )
+                .uiTooltip( "Partitions data based on a defined numeric range. A partition is therefore responsible for all values residing in that range. "
+                        + "INFO: Note that this Partition Function provides an 'UNBOUND' partition, which is needed to capture all data which is not explicitly specified." )
                 .sqlPrefix( "(" )
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )

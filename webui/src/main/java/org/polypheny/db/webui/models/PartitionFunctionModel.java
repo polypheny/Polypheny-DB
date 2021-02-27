@@ -29,10 +29,19 @@ public class PartitionFunctionModel {
     public List<String> columnNames;
     public List<List<PartitionFunctionColumn>> rows;
 
+    @Setter
     public String functionName;
     public int numberOfPartitions;
     public long tableId;
     public long columnId;
+
+    //Needed becuase requestJson in Crud.getPartitionFunctionModel() only delivers names instead of ids
+    @Setter
+    public String tableName;
+    @Setter
+    public String partitionColumnName;
+    @Setter
+    public String schemaName;
 
     public PartitionFunctionModel( final String title, final String description, final List<String> columnNames, final List<List<PartitionFunctionColumn>> rows ) {
         this.title = title;

@@ -204,12 +204,12 @@ public class HashPartitionManager extends AbstractPartitionManager {
                 .sqlPrefix( "" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .defaultValue( "partition_name" )
+                .defaultValue( "name" )
                 .build() );
 
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
-                .uiTooltip( "Partitions data based on a hash function which is applied to the values of the partition column." )
+                .uiTooltip( "Partitions data based on a hash function which is automatically applied to the values of the partition column." )
                 .sqlPrefix( "WITH (" )
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )

@@ -188,7 +188,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 .sqlPrefix( "PARTITION" )
                 .sqlSuffix( "" )
                 .valueSeparation( "" )
-                .defaultValue( "partition_name" )
+                .defaultValue( "name" )
                 .build() );
 
         dynamicRows.add( Column.builder()
@@ -199,7 +199,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 .sqlPrefix( "VALUES(" )
                 .sqlSuffix( ")" )
                 .valueSeparation( "," )
-                .defaultValue( "partition_name" )
+                .defaultValue( "'value'" )
                 .build() );
 
         //Fixed rows to display after dynamically generated ones
@@ -231,7 +231,9 @@ public class ListPartitionManager extends AbstractPartitionManager {
 
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
-                .uiTooltip( "Partitions data based on a list of values which is assigned to a specific partition" )
+                .uiTooltip( "Partitions data based on a comma-separated list of values which is assigned to a specific partition. "
+                        + "Please surround string values with single quotations: '3' and numerics without: 3. "
+                        + "INFO: Note that this Partition Function provides an 'UNBOUND' partition, which is needed to capture all data which is not explicitly specified." )
                 .sqlPrefix( "(" )
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
