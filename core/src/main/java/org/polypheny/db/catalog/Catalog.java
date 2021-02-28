@@ -984,13 +984,13 @@ public abstract class Catalog {
     public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
 
     /**
-     * Should only be called from mergePartitions(). Deletes a single partition and all references.
+     * Deletes a single partition and all references.
      *
      * @param tableId The unique id of the table
      * @param schemaId The unique id of the table
      * @param partitionId The partitionId to be deleted
      */
-    protected abstract void deletePartition( long tableId, long schemaId, long partitionId );
+    public abstract void deletePartition( long tableId, long schemaId, long partitionId );
 
     /**
      * Get a partition object by its unique id
@@ -1007,10 +1007,9 @@ public abstract class Catalog {
      * @param partitionType Partition function to apply on the table
      * @param partitionColumnId Column used to apply the partition function on
      * @param numPartitions Explicit number of partitions
-     * @param partitionQualifiers Qualifiers which are directly associated with a partition
-     * @param partitionNames (Optional) list of partition names
+     * @param partitionIds List of ids of the catalog partitions
      */
-    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<List<String>> partitionQualifiers, List<String> partitionNames ) throws GenericCatalogException;
+    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<Long> partitionIds );
 
     /**
      * Merges a  partitioned table.

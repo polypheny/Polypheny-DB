@@ -52,7 +52,6 @@ public class PartitionFunctionInfo {
     @Builder
     public static class PartitionFunctionInfoColumn {
 
-        private String title;
         private PartitionFunctionInfoColumnType fieldType;
         private boolean mandatory;
         private boolean modifiable;

@@ -37,11 +37,9 @@ package org.polypheny.db.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
@@ -70,6 +68,7 @@ import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.ddl.altertable.SqlAlterTableAddPartitions;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
@@ -317,28 +316,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             }
 
             if ( partitionType != null ) {
-                // Check if specified partitionColumn is even part of the table
-                Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName( partitionType.toString() );
-                long partitionColumnID = catalog.getColumn( tableId, partitionColumn.toString() ).id;
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Creating partitions for table: {} with id {} on schema: {} on column: {}", catalogTable.name, catalogTable.id, catalogTable.getSchemaName(), partitionColumnID );
-                }
-
-                List<List<String>> partitionQualifierStringList = new ArrayList<>();
-                for ( List<SqlNode> partitionValueList : partitionQualifierList ) {
-                    partitionQualifierStringList.add( partitionValueList.stream().map( Object::toString ).collect( Collectors.toList() ) );
-                }
-
-                catalog.partitionTable(
+                SqlAlterTableAddPartitions.partitionTable(
                         tableId,
-                        actualPartitionType,
-                        partitionColumnID,
+                        partitionType,
+                        getCatalogColumn( catalogTable.id, partitionColumn ),
+                        partitionNamesList,
                         numPartitions,
-                        partitionQualifierStringList,
-                        partitionNamesList.stream().map( Object::toString ).collect( Collectors.toList() ) );
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Table: '{}' has been partitioned on columnId '{}' ", catalogTable.name, catalogTable.columnIds.get( catalogTable.columnIds.indexOf( partitionColumnID ) ) );
-                }
+                        partitionQualifierList );
             }
         } catch ( GenericCatalogException | UnknownColumnException | UnknownCollationException | UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );

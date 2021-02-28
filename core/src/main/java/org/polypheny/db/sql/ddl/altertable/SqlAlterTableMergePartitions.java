@@ -82,6 +82,11 @@ public class SqlAlterTableMergePartitions extends SqlAlterTable {
             //  Therefore we need to make sure(maybe with migrator?) to gather all data from all partitions, and stores. That at the end of mergeTable()
             //  there aren't any partitioned chunks of data left on a single store.
 
+            // Loop over **old.partitionIds** to delete all partitions which are part of table
+            for ( long partitionId : catalogTable.partitionIds ) {
+                catalog.deletePartition( tableId, catalogTable.schemaId, partitionId );
+            }
+
             catalog.mergeTable( tableId );
 
             if ( log.isDebugEnabled() ) {
