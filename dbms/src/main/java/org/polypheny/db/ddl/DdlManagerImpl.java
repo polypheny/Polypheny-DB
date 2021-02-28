@@ -168,7 +168,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addAdapter( String adapterName, String clazzName, Map<String, String> config ) {
-
         Adapter adapter = AdapterManager.getInstance().addAdapter( clazzName, adapterName, config );
         if ( adapter instanceof DataSource ) {
             Map<String, List<ExportedColumn>> exportedColumns;
@@ -406,7 +405,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addColumn( String columnName, CatalogTable catalogTable, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, String defaultValue, Statement statement ) throws NotNullAndDefaultValueException, ColumnAlreadyExistsException, ColumnNotExistsException {
-
         // Check if the column either allows null values or has a default value defined.
         if ( defaultValue == null && !nullable ) {
             throw new NotNullAndDefaultValueException();
@@ -461,7 +459,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addForeignKey( CatalogTable catalogTable, CatalogTable refTable, List<String> columnNames, List<String> refColumnNames, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws UnknownColumnException, GenericCatalogException {
-
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
             CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
@@ -478,7 +475,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addIndex( CatalogTable catalogTable, String indexMethodName, List<String> columnNames, String indexName, boolean isUnique, DataStore location, Statement statement ) throws UnknownColumnException, UnknownIndexMethodException, GenericCatalogException, UnknownTableException, UnknownUserException, UnknownSchemaException, UnknownKeyException, UnknownDatabaseException, TransactionException, AlterSourceException, IndexExistsException, MissingColumnPlacementException {
-
         List<Long> columnIds = new LinkedList<>();
         for ( String columnName : columnNames ) {
             CatalogColumn catalogColumn = catalog.getColumn( catalogTable.id, columnName );
@@ -573,7 +569,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void addPlacement( CatalogTable catalogTable, List<Long> columnIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException {
-
         List<CatalogColumn> addedColumns = new LinkedList<>();
 
         // Check whether this placement already exists
@@ -957,7 +952,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException {
-
         // Check whether this placement already exists
         if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
             throw new PlacementNotExistsException();
@@ -1413,6 +1407,5 @@ public class DdlManagerImpl extends DdlManager {
     public void dropType() {
         throw new RuntimeException( "Not supported yet" );
     }
-
 
 }

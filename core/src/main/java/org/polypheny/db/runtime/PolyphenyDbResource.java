@@ -910,7 +910,7 @@ public interface PolyphenyDbResource {
     @BaseMessage("There is no adapter with this unique name: ''{0}''")
     ExInst<PolyphenyDbException> unknownAdapter( String store );
 
-    @BaseMessage("The exists no collation with this name: ''{0}''")
+    @BaseMessage("There is no collation with this name: ''{0}''")
     ExInst<PolyphenyDbException> unknownCollation( String collationName );
 
 }
