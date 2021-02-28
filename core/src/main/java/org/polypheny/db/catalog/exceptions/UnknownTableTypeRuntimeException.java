@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class ColumnAlreadyExistsException extends CatalogException {
+public class UnknownTableTypeRuntimeException extends CatalogRuntimeException {
 
-    public ColumnAlreadyExistsException( String columnName, String tableName ) {
-        super( "There is already a column with the name '" + columnName + "' in table '" + tableName + "'" );
+    public UnknownTableTypeRuntimeException( final int id ) {
+        super( "There is no TableType with id: " + id );
     }
 
 }

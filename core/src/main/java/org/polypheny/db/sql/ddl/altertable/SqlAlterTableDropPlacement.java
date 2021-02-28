@@ -113,6 +113,8 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
         for ( CatalogColumnPlacement placement : placements ) {
             Catalog.getInstance().deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
         }
+        // Remove All
+        Catalog.getInstance().deletePartitionsOnDataPlacement( storeInstance.getAdapterId(), catalogTable.id );
     }
 
 }

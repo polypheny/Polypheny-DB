@@ -20,6 +20,7 @@ package org.polypheny.db.webui.models;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 
@@ -31,12 +32,20 @@ public class Placement {
 
     Throwable exception;
     public List<Store> stores = new ArrayList<>();
+    boolean isPartitioned;
+    List<String> partitionNames;
 
-    public Placement () {}
 
-    public Placement ( final Throwable exception ) {
+    public Placement( final boolean isPartitioned, final List<String> partitionNames ) {
+        this.isPartitioned = isPartitioned;
+        this.partitionNames = partitionNames;
+    }
+
+
+    public Placement( final Throwable exception ) {
         this.exception = exception;
     }
+
 
     public Placement addAdapter( final Store s ) {
         if ( s.columnPlacements.size() > 0 ) {
@@ -46,24 +55,36 @@ public class Placement {
     }
 
 
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
     public static class Store {
 
         public final String uniqueName;
         private final String adapterName;
         private final List<ColumnPlacement> columnPlacements;
+        private final List<Long> partitionKeys;
+        private final long numPartitions;
+        private final PartitionType partitionType;
 
 
         public Store(
                 String uniqueName,
                 String adapterName,
-                List<CatalogColumnPlacement> columnPlacements ) {
+                List<CatalogColumnPlacement> columnPlacements,
+                final List<Long> partitionKeys,
+                final long numPartitions,
+                final PartitionType partitionType ) {
             this.uniqueName = uniqueName;
             this.adapterName = adapterName;
             this.columnPlacements = columnPlacements.stream().map( ColumnPlacement::new ).collect( Collectors.toList() );
+            this.partitionKeys = partitionKeys;
+            this.numPartitions = numPartitions;
+            this.partitionType = partitionType;
         }
+
     }
 
 
+    @SuppressWarnings({ "unused", "FieldCanBeLocal" })
     private static class ColumnPlacement {
 
         private final long tableId;
@@ -90,5 +111,7 @@ public class Placement {
             this.physicalTableName = catalogColumnPlacement.physicalTableName;
             this.physicalColumnName = catalogColumnPlacement.physicalColumnName;
         }
+
     }
+
 }

@@ -535,21 +535,22 @@ public class Rest {
 
 
     String executeAndTransformRelAlg( RelRoot relRoot, final Statement statement, final Response res ) {
-        // Prepare
-        PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
-        log.debug( "RelRoot was prepared." );
-
-        @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
-        Iterator<Object> iterator = iterable.iterator();
-        RestResult restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
-        restResult.transform();
-        if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
-            signature.getExecutionTimeMonitor().setExecutionTime( restResult.getExecutionTime() );
-        }
+        RestResult restResult;
         try {
+            // Prepare
+            PolyphenyDbSignature signature = statement.getQueryProcessor().prepareQuery( relRoot );
+            log.debug( "RelRoot was prepared." );
+
+            @SuppressWarnings("unchecked") final Iterable<Object> iterable = signature.enumerable( statement.getDataContext() );
+            Iterator<Object> iterator = iterable.iterator();
+            restResult = new RestResult( relRoot.kind, iterator, signature.rowType, signature.columns );
+            restResult.transform();
+            if ( !relRoot.kind.belongsTo( SqlKind.DML ) ) {
+                signature.getExecutionTimeMonitor().setExecutionTime( restResult.getExecutionTime() );
+            }
             statement.getTransaction().commit();
-        } catch ( TransactionException e ) {
-            log.error( "Could not commit", e );
+        } catch ( Throwable e ) {
+            log.error( "Error during execution of REST query", e );
             try {
                 statement.getTransaction().rollback();
             } catch ( TransactionException transactionException ) {

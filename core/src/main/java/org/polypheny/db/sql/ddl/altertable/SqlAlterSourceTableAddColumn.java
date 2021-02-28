@@ -213,7 +213,8 @@ public class SqlAlterSourceTableAddColumn extends SqlAlterTable {
                 PlacementType.STATIC,
                 exportedColumn.physicalSchemaName,
                 exportedColumn.physicalTableName,
-                exportedColumn.physicalColumnName );
+                exportedColumn.physicalColumnName,
+                null );
 
         // Set column position
         catalog.updateColumnPlacementPhysicalPosition( adapterId, columnId, exportedColumn.physicalPosition );

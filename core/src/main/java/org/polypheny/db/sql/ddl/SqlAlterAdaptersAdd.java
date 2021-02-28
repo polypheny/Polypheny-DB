@@ -58,9 +58,6 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
     private final SqlNode config;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterAdaptersAdd( SqlParserPos pos, SqlNode uniqueName, SqlNode adapterName, SqlNode config ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
@@ -83,7 +80,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         uniqueName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "USING" );
         adapterName.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "WÍTH" );
+        writer.keyword( "WITH" );
         config.unparse( writer, leftPrec, rightPrec );
     }
 
@@ -138,7 +135,8 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
                             PlacementType.STATIC,
                             exportedColumn.physicalSchemaName,
                             exportedColumn.physicalTableName,
-                            exportedColumn.physicalColumnName );
+                            exportedColumn.physicalColumnName,
+                            null );
                     catalog.updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
                     if ( exportedColumn.primary ) {
                         primaryKeyColIds.add( columnId );

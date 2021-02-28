@@ -59,9 +59,6 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
     private final SqlNode uniqueName;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterAdaptersDrop( SqlParserPos pos, SqlNode uniqueName ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
@@ -94,7 +91,7 @@ public class SqlAlterAdaptersDrop extends SqlAlter {
         if ( uniqueNameStr.endsWith( "'" ) ) {
             uniqueNameStr = StringUtils.chop( uniqueNameStr );
         }
-        
+
         try {
             CatalogAdapter catalogAdapter = Catalog.getInstance().getAdapter( uniqueNameStr );
             if ( catalogAdapter.type == AdapterType.SOURCE ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -437,6 +437,7 @@ public abstract class Aggregate extends SingleRel {
     public String relCompareString() {
         return this.getClass().getSimpleName() + "$" +
                 input.relCompareString() + "$" +
+                (aggCalls != null ? aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
                 (groupSet != null ? groupSet.toString() : "") + "$" +
                 (groupSets != null ? groupSets.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
                 indicator + "&";
@@ -538,6 +539,8 @@ public abstract class Aggregate extends SingleRel {
         public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
             return SqlUtil.newContextException( SqlParserPos.ZERO, e );
         }
+
     }
+
 }
 

@@ -40,6 +40,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     private final InformationTable columnInformation;
     private final InformationTable indexInformation;
     private final InformationTable adapterInformation;
+    private final InformationTable partitionInformation;
 
 
     public CatalogInfoPage( Catalog catalog ) {
@@ -52,9 +53,10 @@ public class CatalogInfoPage implements PropertyChangeListener {
         this.adapterInformation = addCatalogInformationTable( page, "Adapters", Arrays.asList( "ID", "Name", "Type" ) );
         this.databaseInformation = addCatalogInformationTable( page, "Databases", Arrays.asList( "ID", "Name", "Default SchemaID" ) );
         this.schemaInformation = addCatalogInformationTable( page, "Schemas", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaType" ) );
-        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID" ) );
+        this.tableInformation = addCatalogInformationTable( page, "Tables", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "PartitionType", "Partitions" ) );
         this.columnInformation = addCatalogInformationTable( page, "Columns", Arrays.asList( "ID", "Name", "DatabaseID", "SchemaID", "TableID" ) );
         this.indexInformation = addCatalogInformationTable( page, "Indexes", Arrays.asList( "ID", "Name", "KeyID", "Location", "Method", "Unique" ) );
+        this.partitionInformation = addCatalogInformationTable( page, "Partitions", Arrays.asList( "ID", "Name", "TableID", "Qualifiers" ) );
 
         addPersistentInfo( page );
 
@@ -95,6 +97,8 @@ public class CatalogInfoPage implements PropertyChangeListener {
         columnInformation.reset();
         adapterInformation.reset();
         indexInformation.reset();
+        partitionInformation.reset();
+
         if ( catalog == null ) {
             log.error( "Catalog not defined in the catalogInformationPage." );
             return;
@@ -110,13 +114,16 @@ public class CatalogInfoPage implements PropertyChangeListener {
                 schemaInformation.addRow( s.id, s.name, s.databaseId, s.schemaType );
             } );
             catalog.getTables( null, null, null ).forEach( t -> {
-                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId );
+                tableInformation.addRow( t.id, t.name, t.databaseId, t.schemaId, t.partitionType.toString(), t.numPartitions );
             } );
             catalog.getColumns( null, null, null, null ).forEach( c -> {
                 columnInformation.addRow( c.id, c.name, c.databaseId, c.schemaId, c.tableId );
             } );
             catalog.getIndexes().forEach( i -> {
                 indexInformation.addRow( i.id, i.name, i.keyId, i.location, i.method, i.unique );
+            } );
+            catalog.getPartitions( null, null, null ).forEach( p -> {
+                partitionInformation.addRow( p.id, p.partitionName, p.tableId, p.partitionQualifiers );
             } );
         } catch ( Exception e ) {
             log.error( "Exception while reset catalog information page", e );

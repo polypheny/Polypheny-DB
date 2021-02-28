@@ -196,7 +196,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
                     PlacementType.AUTOMATIC,
                     null, // Will be set later
                     null, // Will be set later
-                    null ); // Will be set later
+                    null, // Will be set later
+                    null );
             AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
         }
 

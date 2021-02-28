@@ -118,6 +118,7 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
                     PlacementType.MANUAL,
                     null,
                     null,
+                    null,
                     null );
             // Add column on store
             storeInstance.addColumn( context, catalogTable, catalogColumn );
@@ -128,4 +129,3 @@ public class SqlAlterTableModifyPlacementAddColumn extends SqlAlterTable {
     }
 
 }
-

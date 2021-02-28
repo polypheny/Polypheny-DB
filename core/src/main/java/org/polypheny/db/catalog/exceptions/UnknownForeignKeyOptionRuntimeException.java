@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021‚ The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,10 @@
 package org.polypheny.db.catalog.exceptions;
 
 
-public class CatalogTransactionException extends CatalogException {
+public class UnknownForeignKeyOptionRuntimeException extends CatalogRuntimeException {
 
-    private Exception exception;
-
-
-    public CatalogTransactionException( String message ) {
-        super( message );
-    }
-
-
-    public CatalogTransactionException( String message, Exception e ) {
-        super( message, e );
-        exception = e;
+    public UnknownForeignKeyOptionRuntimeException( int id ) {
+        super( "There is no Foreign Key Option with id: " + id );
     }
 
 }
