@@ -115,4 +115,5 @@ public class SqlCreateFunction extends SqlCreate {
     public List<SqlNode> getOperandList() {
         return Arrays.asList( name, className, usingList );
     }
+
 }

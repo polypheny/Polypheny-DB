@@ -539,6 +539,8 @@ public abstract class Aggregate extends SingleRel {
         public PolyphenyDbException newError( Resources.ExInst<SqlValidatorException> e ) {
             return SqlUtil.newContextException( SqlParserPos.ZERO, e );
         }
+
     }
+
 }
 

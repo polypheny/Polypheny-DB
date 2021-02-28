@@ -49,4 +49,5 @@ public class Schema {
         this.name = name;
         this.type = type;
     }
+
 }

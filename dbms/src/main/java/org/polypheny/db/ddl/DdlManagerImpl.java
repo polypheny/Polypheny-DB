@@ -873,7 +873,6 @@ public class DdlManagerImpl extends DdlManager {
         CatalogColumn refColumn;
         if ( beforeColumnName != null ) {
             refColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
-            ;
             targetPosition = refColumn.position;
         } else {
             refColumn = getCatalogColumn( catalogTable.id, afterColumnName );
@@ -1209,7 +1208,6 @@ public class DdlManagerImpl extends DdlManager {
                     null,
                     null );
         }
-
     }
 
 
