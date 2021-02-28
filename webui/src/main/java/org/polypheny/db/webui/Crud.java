@@ -143,7 +143,7 @@ import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.partition.PartitionFunctionInfo;
-import org.polypheny.db.partition.PartitionFunctionInfo.Column;
+import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.SqlProcessor;
@@ -2015,22 +2015,22 @@ public class Crud implements InformationObserver {
     }
 
 
-    private List<PartitionFunctionColumn> buildPartitionInfoRow( List<Column> columnList ) {
+    private List<PartitionFunctionColumn> buildPartitionFunctionRow( List<PartitionFunctionInfoColumn> columnList ) {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
-        for ( Column currentColumn : columnList ) {
+        for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
             FieldType type;
             switch ( currentColumn.getFieldType() ) {
-                case "text":
+                case STRING:
                     type = FieldType.STRING;
                     break;
-                case "integer":
+                case INTEGER:
                     type = FieldType.INTEGER;
                     break;
-                case "dropdown":
+                case LIST:
                     type = FieldType.LIST;
                     break;
-                case "label":
+                case LABEL:
                     type = FieldType.LABEL;
                     break;
                 default:
@@ -2071,24 +2071,24 @@ public class Crud implements InformationObserver {
 
         if ( infoJson.has( "rowsBefore" ) ) {
             // Insert Rows Before
-            List<List<Column>> rowsBefore = functionInfo.getRowsBefore();
+            List<List<PartitionFunctionInfoColumn>> rowsBefore = functionInfo.getRowsBefore();
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionInfoRow( rowsBefore.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( rowsBefore.get( i ) ) );
             }
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
             //build as much dynamic rows as requested per num Partitions
             for ( int i = 0; i < request.numPartitions; i++ ) {
-                rows.add( buildPartitionInfoRow( functionInfo.getDynamicRows() ) );
+                rows.add( buildPartitionFunctionRow( functionInfo.getDynamicRows() ) );
             }
         }
 
         if ( infoJson.has( "rowsAfter" ) ) {
             // Insert Rows After
-            List<List<Column>> rowsAfter = functionInfo.getRowsAfter();
+            List<List<PartitionFunctionInfoColumn>> rowsAfter = functionInfo.getRowsAfter();
             for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionInfoRow( rowsAfter.get( i ) ) );
+                rows.add( buildPartitionFunctionRow( rowsAfter.get( i ) ) );
             }
         }
 

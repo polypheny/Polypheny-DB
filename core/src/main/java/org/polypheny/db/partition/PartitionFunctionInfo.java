@@ -34,22 +34,26 @@ public class PartitionFunctionInfo {
     private String rowSeparation;
     private List<String> headings;
 
+
+    public enum PartitionFunctionInfoColumnType {STRING, INTEGER, LIST, LABEL}
+
+
     //rows_before List of List of Inner Class
-    private List<List<Column>> rowsBefore;
+    private List<List<PartitionFunctionInfoColumn>> rowsBefore;
 
     //dynamic_rows Which will be defined ones and then repeated as often as 'n' (number of Partitions is specified)
-    private List<Column> dynamicRows;
+    private List<PartitionFunctionInfoColumn> dynamicRows;
 
     //rows_after List of List of Inner Class
-    private List<List<Column>> rowsAfter;
+    private List<List<PartitionFunctionInfoColumn>> rowsAfter;
 
 
     @Getter
     @Builder
-    public static class Column {
+    public static class PartitionFunctionInfoColumn {
 
         private String title;
-        private String fieldType;
+        private PartitionFunctionInfoColumnType fieldType;
         private boolean mandatory;
         private boolean modifiable;
         private String sqlPrefix;
