@@ -132,13 +132,10 @@ public class ListPartitionManager extends AbstractPartitionManager {
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
 
         if ( partitionIds != null ) {
-
             for ( long partitionId : partitionIds ) {
-
                 // Find stores with full placements (partitions)
                 // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
                 for ( long columnId : catalogTable.columnIds ) {
-
                     List<CatalogColumnPlacement> ccps = catalog.getColumnPlacementsByPartition( catalogTable.id, partitionId, columnId );
                     if ( !ccps.isEmpty() ) {
                         //get first column placement which contains partition
@@ -149,8 +146,6 @@ public class ListPartitionManager extends AbstractPartitionManager {
                     }
                 }
             }
-
-
         } else {
             // Take the first column placement
             // Worst-case
@@ -166,14 +161,13 @@ public class ListPartitionManager extends AbstractPartitionManager {
     public boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
         super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
 
-        if ( partitionColumn.type.getFamily() == PolyTypeFamily.NUMERIC ){
-            for ( List<String> singlePartitionQualifiers: partitionQualifiers ){
-                for ( String qualifier: singlePartitionQualifiers ){
-                    try{
+        if ( partitionColumn.type.getFamily() == PolyTypeFamily.NUMERIC ) {
+            for ( List<String> singlePartitionQualifiers : partitionQualifiers ) {
+                for ( String qualifier : singlePartitionQualifiers ) {
+                    try {
                         Integer.valueOf( qualifier );
-                    }
-                    catch ( NumberFormatException e ){
-                        throw new RuntimeException("Specified Partition Value: '" + qualifier + "' is not number according to selected partition column: "+ partitionColumn.name);
+                    } catch ( NumberFormatException e ) {
+                        throw new RuntimeException( "Specified partition value '" + qualifier + "' is not a number as expected according to the type of the partition column " + partitionColumn.name );
                     }
                 }
             }
