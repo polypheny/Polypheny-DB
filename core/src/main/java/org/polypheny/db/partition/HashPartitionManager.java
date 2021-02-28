@@ -53,7 +53,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
     // HASH Partitioning needs at least one column placement which contains all partitions as a fallback
     @Override
     public boolean probePartitionDistributionChange( CatalogTable catalogTable, int storeId, long columnId ) {
-
         // Change is only critical if there is only one column left with the characteristics
         int numberOfFullPlacements = getPlacementsWithAllPartitions( columnId, catalogTable.numPartitions ).size();
         if ( numberOfFullPlacements <= 1 ) {
@@ -70,7 +69,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
     @Override
     public List<CatalogColumnPlacement> getRelevantPlacements( CatalogTable catalogTable, List<Long> partitionIds ) {
-
         List<CatalogColumnPlacement> relevantCcps = new ArrayList<>();
         // Find stores with full placements (partitions)
         // Pick for each column the column placement which has full partitioning //SELECT WORST-CASE ergo Fallback
@@ -100,100 +98,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
     @Override
     public PartitionFunctionInfo getPartitionFunctionInfo() {
-
-        //Could be considered in value generation
-
-        /* Example JSON. Use for templating
-
-            {
-                "function_title" : "HASH",
-                "info_tooltip": "STRING with information for example what this partition does and if it has special behaviours (unbound partition)"
-                "columns" : <2..n>  - The first column is always the index (1..n) where n is numPartitions specified in first modal at `add data partitioning` can be used to iterate with for to know how many params you are looking for
-                maybe just make columns and sub documents
-
-                "columns" : [
-                                {
-                                        "title" : "Partition Names"
-                                        "field_type" : "text/dropdown/label"
-                                        "options": [1,2,3] (only relevant if `"field_type" : "dropdown"` selected)
-                                        "maxValue" : ...
-                                        "mandatory" : "FALSE"
-                                        "info_tooltip" : "Example Text when hovering over info tooltip to help the user"
-                                        "default_value" : "Part_<0..numPartitions>"
-                                        "value_separation" : ",/;",
-                                        "sql_construct" : "VALUES()"
-                                        "fixed_size": "NONE/1,2,3,4,..."
-                                },
-
-
-                            ]
-
-                "numPartitions" :
-                                    {
-                                        "type" : "INTEGER"
-                                        "maxValue" : ...
-                                        "mandatory" : "TRUE/FALSE"
-                                        "info_tooltip" : "Example Text when hovering over info tooltip to help the user"
-                                        "fixed_size": "NONE/1,2,3,4,..."
-                                    },
-                "partitionNames" :
-                                    {
-                                        "type" : "String"
-                                        "maxValue" : ...
-                                        "mandatory" : "FALSE"
-                                        "info_tooltip" : "Example Text when hovering over info tooltip to help the user"
-                                        "default_value" : "Part_<0..numPartitions>"
-                                        "fixed_size": "NONE/1,2,3,4,..."
-                                    },
-                "exampleField" :
-                                    {
-                                        "inputType" : "INTEGER"
-                                        "fieldType" : "TEXTBOX,DROPDOWN,BUTTON"
-                                        "maxValue" : ...
-                                        "mandatory" : "TRUE/FALSE"
-                                        "info_tooltip" : "Example Text when hovering over info tooltip to help the user"
-                                        "fixed_size": NONE/1,2,3,4,...,
-                                        "SQL_Encapsulation",
-                                        "options": [option]
-                                    }
-
-            }
-
-            Should at the end create table: ALTER TABLE depo
-                                            PARTITION BY LIST (num)
-                                            (PARTITION A892_233 VALUES(892, 233),
-                                            PARTITION a1001_1002 VALUES(1001, 1002),
-                                            PARTITION a8000_4003 VALUES(8000, 4003),
-                                            PARTITION a900_999 VALUES(900, 999)
-                                            )
-
-                                            especially the part in parenthesis
-
-
-
-
-
-                EXAMPLE HASH to generate SQL alter table we partition by hash (msg) with (partitionNames)
-
-                {
-                "function_title" : "HASH",
-                "info_tooltip" : "Partitions data based on a hash function which is applied to the values of the partition column."
-                "sql_prefix" : "WITH (",
-                sql_suffix" : ")",
-                "dynamic_rows" : "TRUE",
-                "row_separation" : ",",
-                "columns" : [
-                                {
-                                        "title" : "Partition Names"
-                                        "field_type" : "text"
-                                        "mandatory" : true
-                                        "info_tooltip" : "Example Text when hovering over info tooltip to help the user"
-                                        "default_value" : ""
-                                },
-
-
-         */
-
         //Dynamic content which will be generated by selected numPartitions
         List<Column> dynamicRows = new ArrayList<>();
         dynamicRows.add( Column.builder()
@@ -218,7 +122,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
                 .build();
 
         return uiObject;
-
     }
 
 

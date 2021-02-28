@@ -24,7 +24,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializer;
@@ -2019,27 +2018,21 @@ public class Crud implements InformationObserver {
     private List<PartitionFunctionColumn> buildPartitionInfoRow(List<Column> columnList){
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
-
         for ( Column currentColumn : columnList ) {
-
             FieldType type;
             switch ( currentColumn.getFieldType() ) {
                 case "text":
                     type = FieldType.STRING;
                     break;
-
                 case "integer":
                     type = FieldType.INTEGER;
                     break;
-
                 case "dropdown":
                     type = FieldType.LIST;
                     break;
-
                 case "label":
                     type = FieldType.LABEL;
                     break;
-
                 default:
                     throw new RuntimeException( "Unknown Field Type: " + currentColumn.getFieldType() );
             }
@@ -2059,7 +2052,6 @@ public class Crud implements InformationObserver {
             }
         }
 
-
         return constructedRow;
     }
 
@@ -2073,24 +2065,17 @@ public class Crud implements InformationObserver {
 
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
 
-
         JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
 
-
-
         List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
-        List<String> headings = new ArrayList<>();
-
 
         if ( infoJson.has( "rowsBefore" ) ) {
-
             // Insert Rows Before
             List<List<Column>> rowsBefore = functionInfo.getRowsBefore();
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
                 rows.add( buildPartitionInfoRow(rowsBefore.get( i )) );
             }
         }
-
 
         if ( infoJson.has( "dynamicRows" ) ) {
             //build as much dynamic rows as requested per num Partitions
@@ -2099,16 +2084,13 @@ public class Crud implements InformationObserver {
             }
         }
 
-
         if ( infoJson.has( "rowsAfter" ) ) {
             // Insert Rows After
             List<List<Column>> rowsAfter = functionInfo.getRowsAfter();
-
             for ( int i = 0; i < rowsAfter.size(); i++ ) {
                 rows.add( buildPartitionInfoRow(rowsAfter.get( i )) );
             }
         }
-
 
         PartitionFunctionModel model = new PartitionFunctionModel( functionInfo.getFunctionTitle(), functionInfo.getUiTooltip(), functionInfo.getHeadings(), rows );
         model.setFunctionName( request.method.toString() );
@@ -2124,7 +2106,6 @@ public class Crud implements InformationObserver {
     Result partitionTable( final Request req, final Response res ) {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
-
         //Get correct partition function
         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
         PartitionManager partitionManager = null;
@@ -2136,14 +2117,9 @@ public class Crud implements InformationObserver {
 
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
 
-
-
         String content = "";
-
         for ( List<PartitionFunctionColumn> currentRow: request.rows) {
-
             boolean rowSeparationApplied = false;
-
             for ( PartitionFunctionColumn currentColumn : currentRow ){
                 if ( currentColumn.modifiable ) {
                     // If more than one row, keep appending ','
@@ -2165,10 +2141,8 @@ public class Crud implements InformationObserver {
         //Actually to complex and rather poor maintenance quality.
         //Changes to extensions to this model now have to be made on two parts
 
-
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") %s ",
                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
-
 
         Transaction trx = getTransaction();
         try {
