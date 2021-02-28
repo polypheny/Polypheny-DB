@@ -35,7 +35,7 @@ public class PartitionFunctionModel {
     public long tableId;
     public long columnId;
 
-    //Needed becuase requestJson in Crud.getPartitionFunctionModel() only delivers names instead of ids
+    // Needed because requestJson in Crud.getPartitionFunctionModel() only delivers names instead of ids
     @Setter
     public String tableName;
     @Setter

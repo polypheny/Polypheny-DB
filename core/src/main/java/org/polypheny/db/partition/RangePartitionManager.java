@@ -16,6 +16,7 @@
 
 package org.polypheny.db.partition;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,14 +30,16 @@ import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
 public class RangePartitionManager extends AbstractPartitionManager {
 
-    public static final boolean ALLOWS_UNBOUND_PARTITION = true;
+    public static final boolean REQUIRES_UNBOUND_PARTITION = true;
     public static final String FUNCTION_TITLE = "RANGE";
+    public static final List<PolyType> SUPPORTED_TYPES = ImmutableList.of( PolyType.INTEGER, PolyType.BIGINT, PolyType.SMALLINT, PolyType.TINYINT );
 
 
     @Override
@@ -285,14 +288,14 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
-                .uiTooltip( "Partitions data based on a defined numeric range. A partition is therefore responsible for all values residing in that range. "
-                        + "INFO: Note that this Partition Function provides an 'UNBOUND' partition, which is needed to capture all data which is not explicitly specified." )
+                .description( "Partitions data based on a defined numeric range. A partition is therefore responsible for all values residing in that range. "
+                        + "INFO: Note that this partition function provides an 'UNBOUND' partition capturing all values that are not covered by one of the specified ranges." )
                 .sqlPrefix( "(" )
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
                 .rowsAfter( rowsAfter )
-                .headings( new ArrayList<String>( Arrays.asList( "Partition Names", "MIN", "MAX" ) ) )
+                .headings( new ArrayList<>( Arrays.asList( "Partition Names", "MIN", "MAX" ) ) )
                 .build();
 
         return uiObject;
@@ -300,8 +303,14 @@ public class RangePartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean allowsUnboundPartition() {
-        return ALLOWS_UNBOUND_PARTITION;
+    public boolean requiresUnboundPartition() {
+        return REQUIRES_UNBOUND_PARTITION;
+    }
+
+
+    @Override
+    public boolean supportsColumnOfType( PolyType type ) {
+        return SUPPORTED_TYPES.contains( type );
     }
 
 

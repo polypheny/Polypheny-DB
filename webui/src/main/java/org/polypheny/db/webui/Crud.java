@@ -2011,7 +2011,7 @@ public class Crud implements InformationObserver {
 
 
     String getPartitionTypes( final Request req, final Response res ) {
-        return gson.toJson( PartitionType.values(), PartitionType[].class );
+        return gson.toJson( Arrays.stream( PartitionType.values() ).filter( t -> t != PartitionType.NONE ).toArray( PartitionType[]::new ), PartitionType[].class );
     }
 
 
@@ -2059,9 +2059,26 @@ public class Crud implements InformationObserver {
     String getPartitionFunctionModel( final Request req, final Response res ) {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
 
-        //Get correct partition function
+        // Get correct partition function
         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
         PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+
+        // Check whether the selected partition function supports the selected partition column
+        CatalogColumn partitionColumn;
+        try {
+            partitionColumn = Catalog.getInstance().getColumn( "APP", request.schemaName, request.tableName, request.column );
+        } catch ( UnknownColumnException | UnknownSchemaException | UnknownDatabaseException | UnknownTableException e ) { // This should not happen
+            log.error( "Unknown column", e );
+            throw new RuntimeException( e );
+        }
+        if ( !partitionManager.supportsColumnOfType( partitionColumn.type ) ) {
+            // TODO replace with toast message
+            return gson.toJson( new PartitionFunctionModel(
+                    "Unsupported",
+                    "The partition function " + request.method + " does not support columns of type " + partitionColumn.type,
+                    ImmutableList.of(),
+                    ImmutableList.of() ) );
+        }
 
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
 
@@ -2078,7 +2095,7 @@ public class Crud implements InformationObserver {
         }
 
         if ( infoJson.has( "dynamicRows" ) ) {
-            //build as much dynamic rows as requested per num Partitions
+            // Build as many dynamic rows as requested per num Partitions
             for ( int i = 0; i < request.numPartitions; i++ ) {
                 rows.add( buildPartitionFunctionRow( functionInfo.getDynamicRows() ) );
             }
@@ -2092,7 +2109,7 @@ public class Crud implements InformationObserver {
             }
         }
 
-        PartitionFunctionModel model = new PartitionFunctionModel( functionInfo.getFunctionTitle(), functionInfo.getUiTooltip(), functionInfo.getHeadings(), rows );
+        PartitionFunctionModel model = new PartitionFunctionModel( functionInfo.getFunctionTitle(), functionInfo.getDescription(), functionInfo.getHeadings(), rows );
         model.setFunctionName( request.method.toString() );
         model.setTableName( request.tableName );
         model.setPartitionColumnName( request.column );
@@ -2105,7 +2122,7 @@ public class Crud implements InformationObserver {
     Result partitionTable( final Request req, final Response res ) {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
-        //Get correct partition function
+        // Get correct partition function
         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
         PartitionManager partitionManager = null;
         try {

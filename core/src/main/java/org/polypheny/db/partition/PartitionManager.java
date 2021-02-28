@@ -20,6 +20,7 @@ import java.util.List;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.type.PolyType;
 
 public interface PartitionManager {
 
@@ -36,7 +37,9 @@ public interface PartitionManager {
 
     boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn );
 
-    boolean allowsUnboundPartition();
+    boolean requiresUnboundPartition();
+
+    boolean supportsColumnOfType( PolyType type );
 
     /**
      * Returns an instance of PartitionFunctionInfo specifying the available parameters of the partition function.

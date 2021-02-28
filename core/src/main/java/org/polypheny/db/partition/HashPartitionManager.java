@@ -27,13 +27,15 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
+import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
 public class HashPartitionManager extends AbstractPartitionManager {
 
-    public static final boolean ALLOWS_UNBOUND_PARTITION = false;
+    public static final boolean REQUIRES_UNBOUND_PARTITION = false;
     public static final String FUNCTION_TITLE = "HASH";
+
 
 
     @Override
@@ -114,12 +116,12 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
         PartitionFunctionInfo uiObject = PartitionFunctionInfo.builder()
                 .functionTitle( FUNCTION_TITLE )
-                .uiTooltip( "Partitions data based on a hash function which is automatically applied to the values of the partition column." )
+                .description( "Partitions data based on a hash function which is automatically applied to the values of the partition column." )
                 .sqlPrefix( "WITH (" )
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
-                .headings( new ArrayList<String>( Arrays.asList( "Partition Names" ) ) )
+                .headings( new ArrayList<>( Arrays.asList( "Partition Names" ) ) )
                 .build();
 
         return uiObject;
@@ -127,8 +129,14 @@ public class HashPartitionManager extends AbstractPartitionManager {
 
 
     @Override
-    public boolean allowsUnboundPartition() {
-        return ALLOWS_UNBOUND_PARTITION;
+    public boolean requiresUnboundPartition() {
+        return REQUIRES_UNBOUND_PARTITION;
+    }
+
+
+    @Override
+    public boolean supportsColumnOfType( PolyType type ) {
+        return true;
     }
 
 }

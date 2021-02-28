@@ -28,7 +28,7 @@ import lombok.Getter;
 public class PartitionFunctionInfo {
 
     private String functionTitle;
-    private String uiTooltip;
+    private String description;
     private String sqlPrefix;
     private String sqlSuffix;
     private String rowSeparation;

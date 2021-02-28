@@ -3154,7 +3154,7 @@ public class CatalogImpl extends Catalog {
         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
         PartitionManager partitionManager = partitionManagerFactory.getInstance( partitionType );
 
-        if ( partitionManager.allowsUnboundPartition() ) {
+        if ( partitionManager.requiresUnboundPartition() ) {
             // Because of the implicit unbound partition
             numPartitions = partitionNames.size();
             numPartitions += 1;
@@ -3170,7 +3170,7 @@ public class CatalogImpl extends Catalog {
             String partitionName;
 
             // Make last partition unbound partition
-            if ( partitionManager.allowsUnboundPartition() && i == numPartitions - 1 ) {
+            if ( partitionManager.requiresUnboundPartition() && i == numPartitions - 1 ) {
                 partId = addPartition( tableId, "Unbound", old.schemaId, old.ownerId, partitionType, new ArrayList<>(), true );
             } else {
                 // If no names have been explicitly defined
@@ -3303,11 +3303,14 @@ public class CatalogImpl extends Catalog {
         try {
             CatalogTable table = Objects.requireNonNull( tables.get( tableId ) );
             List<CatalogPartition> partitions = new ArrayList<>();
+            if ( table.partitionIds == null ) {
+                return new ArrayList<>();
+            }
             for ( long partId : table.partitionIds ) {
                 partitions.add( getPartition( partId ) );
             }
             return partitions;
-        } catch ( NullPointerException | UnknownPartitionIdRuntimeException e ) {
+        } catch ( UnknownPartitionIdRuntimeException e ) {
             return new ArrayList<>();
         }
     }
