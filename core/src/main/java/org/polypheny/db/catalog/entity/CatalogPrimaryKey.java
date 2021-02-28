@@ -75,6 +75,7 @@ public final class CatalogPrimaryKey extends CatalogKey {
             public final String columnName;
             public final int keySeq;
             public final String pkName;
+
         }
 
     }

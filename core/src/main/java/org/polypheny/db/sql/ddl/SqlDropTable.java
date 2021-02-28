@@ -86,6 +86,7 @@ public class SqlDropTable extends SqlDropObject {
         } catch ( DdlOnSourceException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
+
     }
 
 }

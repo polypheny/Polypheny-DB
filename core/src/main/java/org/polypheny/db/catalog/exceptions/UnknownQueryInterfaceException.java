@@ -17,16 +17,17 @@
 package org.polypheny.db.catalog.exceptions;
 
 
+import lombok.Getter;
+
 public class UnknownQueryInterfaceException extends CatalogException {
+
+    @Getter
+    private final String ifaceName;
 
 
     public UnknownQueryInterfaceException( String ifaceName ) {
         super( "There is no query interface with name " + ifaceName );
-    }
-
-
-    public UnknownQueryInterfaceException( int ifaceId ) {
-        super( "There is no query interface with the id " + ifaceId );
+        this.ifaceName = ifaceName;
     }
 
 }

@@ -19,6 +19,7 @@ package org.polypheny.db.ddl;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog.Collation;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -34,6 +35,7 @@ import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownKeyException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -45,12 +47,15 @@ import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
+import org.polypheny.db.ddl.exception.PartitionsNotUniqueException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.sql.SqlDataTypeSpec;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -210,10 +215,12 @@ public abstract class DdlManager {
      *
      * @param catalogTable the table
      * @param columnIds the ids of the columns for which to create a new placement
+     * @param partitionIds the ids of the partitions of the column
+     * @param partitionNames the name for these partition
      * @param dataStore the data store on which to create the placement
      * @param statement the query statement
      */
-    public abstract void addPlacement( CatalogTable catalogTable, List<Long> columnIds, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
+    public abstract void addPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionIds, List<String> partitionNames, DataStore dataStore, Statement statement ) throws PlacementAlreadyExistsException;
 
     /**
      * Adds a new primary key to a table
@@ -353,10 +360,12 @@ public abstract class DdlManager {
      *
      * @param catalogTable the table
      * @param columnIds which columns should be placed on the specified data store
+     * @param partitionIds the ids of the partitions of this column
+     * @param partitionNames the name of these partitions
      * @param storeInstance the data store
      * @param statement the used statement
      */
-    public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
+    public abstract void modifyColumnPlacement( CatalogTable catalogTable, List<Long> columnIds, List<Integer> partitionIds, List<String> partitionNames, DataStore storeInstance, Statement statement ) throws PlacementNotExistsException, IndexPreventsRemovalException, LastPlacementException;
 
     /**
      * Add a column placement for a specified column on a specified data store. If the store already contains a placement of
@@ -419,7 +428,15 @@ public abstract class DdlManager {
      * @param placementType which placement type should be used for the initial placements
      * @param statement the used statement
      */
-    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException;
+    public abstract void createTable( long schemaId, String tableName, List<ColumnInformation> columns, List<ConstraintInformation> constraints, boolean ifNotExists, List<DataStore> stores, PlacementType placementType, Statement statement ) throws TableAlreadyExistsException, ColumnNotExistsException, UnknownPartitionTypeException;
+
+
+    /**
+     * Add new partitions for the column
+     *
+     * @param partitionInfo the information concerning the partition
+     */
+    public abstract void addPartition( PartitionInformation partitionInfo ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownTableException, UnknownColumnException, PartitionsNotUniqueException;
 
     /**
      * Adds a new constraint to a table
@@ -567,6 +584,48 @@ public abstract class DdlManager {
                     sqlDataType.getDimension(),
                     sqlDataType.getCardinality(),
                     sqlDataType.getNullable() );
+        }
+
+    }
+
+
+    public static class PartitionInformation {
+
+        public final CatalogTable table;
+        public final String columnName;
+        public final String typeName;
+        public final List<String> partitionNames;
+        public final int numberOf;
+        public final List<List<String>> qualifiers;
+
+
+        public PartitionInformation( CatalogTable table, String typeName, String columnName, List<String> partitionNames, int numberOf, List<List<String>> qualifiers ) {
+            this.table = table;
+            this.typeName = typeName;
+            this.columnName = columnName;
+            this.partitionNames = partitionNames;
+            this.numberOf = numberOf;
+            this.qualifiers = qualifiers;
+
+
+        }
+
+
+        public static PartitionInformation fromSqlLists( CatalogTable table, String typeName, String columnName, List<SqlIdentifier> partitionNames, int numberOf, List<List<SqlNode>> partitionQualifierList ) {
+
+            List<String> names = partitionNames
+                    .stream()
+                    .map( SqlIdentifier::getSimple )
+                    .collect( Collectors.toList() );
+            List<List<String>> qualifiers = partitionQualifierList
+                    .stream()
+                    .map( qs -> qs.stream()
+                            .map( SqlNode::toString )
+                            .collect( Collectors.toList() ) )
+                    .collect( Collectors.toList() );
+            ;
+
+            return new PartitionInformation( table, typeName, columnName, names, numberOf, qualifiers );
         }
 
     }

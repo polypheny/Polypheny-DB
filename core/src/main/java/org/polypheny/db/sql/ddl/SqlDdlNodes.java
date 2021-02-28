@@ -36,9 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import org.polypheny.db.catalog.Catalog.SchemaType;
-import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.ColumnStrategy;
-import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlDrop;
@@ -47,8 +45,6 @@ import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.parser.SqlParserPos;
-import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.Util;
 
 
 /**
@@ -79,8 +75,8 @@ public class SqlDdlNodes {
     /**
      * Creates a CREATE TABLE.
      */
-    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store ) {
-        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store );
+    public static SqlCreateTable createTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store, SqlIdentifier partitionType, SqlIdentifier partitionColumn, int numPartitions, List<SqlIdentifier> partitionNamesList, List<List<SqlNode>> partitionQualifierList ) {
+        return new SqlCreateTable( pos, replace, ifNotExists, name, columnList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList );
     }
 
 
@@ -186,27 +182,6 @@ public class SqlDdlNodes {
 
 
     /**
-     * Returns the schema in which to create an object.
-     */
-    static Pair<PolyphenyDbSchema, String> schema( Context context, boolean mutable, SqlIdentifier id ) {
-        final String name;
-        final List<String> path;
-        if ( id.isSimple() ) {
-            path = context.getDefaultSchemaPath();
-            name = id.getSimple();
-        } else {
-            path = Util.skipLast( id.names );
-            name = Util.last( id.names );
-        }
-        PolyphenyDbSchema schema = context.getRootSchema();
-        for ( String p : path ) {
-            schema = schema.getSubSchema( p, true );
-        }
-        return Pair.of( schema, name );
-    }
-
-
-    /**
      * File type for CREATE FUNCTION.
      */
     public enum FileType {
@@ -216,4 +191,3 @@ public class SqlDdlNodes {
     }
 
 }
-

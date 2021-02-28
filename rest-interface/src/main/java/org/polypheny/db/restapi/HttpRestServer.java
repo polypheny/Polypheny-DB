@@ -177,6 +177,9 @@ public class HttpRestServer extends QueryInterface {
             bodyReturn.put( "error", e.getErrorCode().name );
             bodyReturn.put( "error_description", e.getErrorCode().description );
             return gson.toJson( bodyReturn );
+        } catch ( Throwable t ) {
+            log.error( "Rest error", t );
+            throw t;
         }
 
         log.error( "processResourceRequest should never reach this point in the code!" );

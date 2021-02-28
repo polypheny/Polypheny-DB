@@ -41,17 +41,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PlacementType;
+import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnInformation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
+import org.polypheny.db.ddl.DdlManager.PartitionInformation;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.ddl.exception.PartitionsNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -72,12 +80,19 @@ import org.polypheny.db.util.Pair;
 /**
  * Parse tree for {@code CREATE TABLE} statement.
  */
+@Slf4j
 public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement {
 
     private final SqlIdentifier name;
     private final SqlNodeList columnList;
     private final SqlNode query;
     private final SqlIdentifier store;
+    private final SqlIdentifier partitionColumn;
+    private final SqlIdentifier partitionType;
+    private final int numPartitions;
+    private final List<SqlIdentifier> partitionNamesList;
+
+    private final List<List<SqlNode>> partitionQualifierList;
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE TABLE", SqlKind.CREATE_TABLE );
 
@@ -85,12 +100,29 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
     /**
      * Creates a SqlCreateTable.
      */
-    SqlCreateTable( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SqlNodeList columnList, SqlNode query, SqlIdentifier store ) {
+    SqlCreateTable(
+            SqlParserPos pos,
+            boolean replace,
+            boolean ifNotExists,
+            SqlIdentifier name,
+            SqlNodeList columnList,
+            SqlNode query,
+            SqlIdentifier store,
+            SqlIdentifier partitionType,
+            SqlIdentifier partitionColumn,
+            int numPartitions,
+            List<SqlIdentifier> partitionNamesList,
+            List<List<SqlNode>> partitionQualifierList ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
-        this.columnList = columnList; // may be null
+        this.columnList = columnList; // May be null
         this.query = query; // for "CREATE TABLE ... AS query"; may be null
         this.store = store; // ON STORE [store name]; may be null
+        this.partitionType = partitionType; // PARTITION BY (HASH | RANGE | LIST); may be null
+        this.partitionColumn = partitionColumn; // May be null
+        this.numPartitions = numPartitions; // May be null and can only be used in association with PARTITION BY
+        this.partitionNamesList = partitionNamesList; // May be null and can only be used in association with PARTITION BY and PARTITIONS
+        this.partitionQualifierList = partitionQualifierList;
     }
 
 
@@ -102,6 +134,19 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+        // TODO @HENNLO: The partition part is still incomplete
+        /** There are several possible ways to unparse the partition section.
+         The To Do is deferred until we have decided if parsing of partition functions will be
+         self contained or not. If not than we need to unparse
+         `WITH PARTITIONS 3`
+         or something like
+         `(
+         PARTITION a892_233 VALUES(892, 233),
+         PARTITION a1001_1002 VALUES(1001, 1002),
+         PARTITION a8000_4003 VALUES(8000, 4003),
+         PARTITION a900_999 VALUES(900, 999)
+         )`*/
+
         writer.keyword( "CREATE" );
         writer.keyword( "TABLE" );
         if ( ifNotExists ) {
@@ -124,6 +169,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         if ( store != null ) {
             writer.keyword( "ON STORE" );
             store.unparse( writer, 0, 0 );
+        }
+        if ( partitionType != null ) {
+            writer.keyword( " PARTITION" );
+            writer.keyword( " BY" );
+            SqlWriter.Frame frame = writer.startList( "(", ")" );
+            partitionColumn.unparse( writer, 0, 0 );
+            writer.endList( frame );
         }
     }
 
@@ -169,9 +221,39 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
         try {
-            DdlManager.getInstance().createTable( schemaId, tableName, columns, constraints, ifNotExists, stores, placementType, statement );
+
+            DdlManager.getInstance().createTable(
+                    schemaId,
+                    tableName,
+                    columns,
+                    constraints,
+                    ifNotExists,
+                    stores,
+                    placementType,
+                    statement );
+
+            if ( partitionType != null ) {
+                DdlManager.getInstance()
+                        .addPartition( PartitionInformation.fromSqlLists(
+                                getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
+                                partitionType.getSimple(),
+                                partitionColumn.getSimple(),
+                                partitionNamesList,
+                                numPartitions,
+                                partitionQualifierList ) );
+            }
+
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( tableName ) );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+        } catch ( UnknownPartitionTypeException e ) {
+            throw SqlUtil.newContextException( partitionType.getParserPosition(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
+        } catch ( PartitionsNotUniqueException e ) {
+            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionsNotUnique() );
+        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
+            // we just added the table/column so it has to exist or we have a internal problem
+            throw new RuntimeException( e );
         }
     }
 
@@ -201,6 +283,7 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
         return new Pair<>( columnInformations, constraintInformations );
+
     }
 
 
