@@ -291,7 +291,7 @@ public class RangePartitionManager extends AbstractPartitionManager {
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
                 .rowsAfter( rowsAfter )
-                .headings( new ArrayList<String>( Arrays.asList("Partition Names", "MIN", "MAX") ))
+                .headings( new ArrayList<String>( Arrays.asList( "Partition Names", "MIN", "MAX" ) ) )
                 .build();
 
         return uiObject;

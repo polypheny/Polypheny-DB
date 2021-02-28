@@ -238,7 +238,7 @@ public class ListPartitionManager extends AbstractPartitionManager {
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
-                .headings( new ArrayList<String>( Arrays.asList("Partition Names", "Values") ))
+                .headings( new ArrayList<String>( Arrays.asList( "Partition Names", "Values" ) ) )
                 .rowsAfter( rowsAfter )
                 .build();
 

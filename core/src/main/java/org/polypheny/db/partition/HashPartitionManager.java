@@ -118,7 +118,7 @@ public class HashPartitionManager extends AbstractPartitionManager {
                 .sqlSuffix( ")" )
                 .rowSeparation( "," )
                 .dynamicRows( dynamicRows )
-                .headings( new ArrayList<String>( Arrays.asList("Partition Names") ))
+                .headings( new ArrayList<String>( Arrays.asList( "Partition Names" ) ) )
                 .build();
 
         return uiObject;

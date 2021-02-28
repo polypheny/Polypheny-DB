@@ -2015,7 +2015,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    private List<PartitionFunctionColumn> buildPartitionInfoRow(List<Column> columnList){
+    private List<PartitionFunctionColumn> buildPartitionInfoRow( List<Column> columnList ) {
         List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
 
         for ( Column currentColumn : columnList ) {
@@ -2042,13 +2042,13 @@ public class Crud implements InformationObserver {
                         .setModifiable( currentColumn.isModifiable() )
                         .setMandatory( currentColumn.isMandatory() )
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
-                        .setSqlSuffix( currentColumn.getSqlSuffix() ));
+                        .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             } else {
                 constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getDefaultValue() )
                         .setModifiable( currentColumn.isModifiable() )
                         .setMandatory( currentColumn.isMandatory() )
                         .setSqlPrefix( currentColumn.getSqlPrefix() )
-                        .setSqlSuffix( currentColumn.getSqlSuffix() ));
+                        .setSqlSuffix( currentColumn.getSqlSuffix() ) );
             }
         }
 
@@ -2073,7 +2073,7 @@ public class Crud implements InformationObserver {
             // Insert Rows Before
             List<List<Column>> rowsBefore = functionInfo.getRowsBefore();
             for ( int i = 0; i < rowsBefore.size(); i++ ) {
-                rows.add( buildPartitionInfoRow(rowsBefore.get( i )) );
+                rows.add( buildPartitionInfoRow( rowsBefore.get( i ) ) );
             }
         }
 
@@ -2088,7 +2088,7 @@ public class Crud implements InformationObserver {
             // Insert Rows After
             List<List<Column>> rowsAfter = functionInfo.getRowsAfter();
             for ( int i = 0; i < rowsAfter.size(); i++ ) {
-                rows.add( buildPartitionInfoRow(rowsAfter.get( i )) );
+                rows.add( buildPartitionInfoRow( rowsAfter.get( i ) ) );
             }
         }
 
@@ -2102,7 +2102,6 @@ public class Crud implements InformationObserver {
     }
 
 
-
     Result partitionTable( final Request req, final Response res ) {
         PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
 
@@ -2110,7 +2109,7 @@ public class Crud implements InformationObserver {
         PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
         PartitionManager partitionManager = null;
         try {
-            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName) );
+            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw new RuntimeException( e );
         }
@@ -2118,12 +2117,12 @@ public class Crud implements InformationObserver {
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
 
         String content = "";
-        for ( List<PartitionFunctionColumn> currentRow: request.rows) {
+        for ( List<PartitionFunctionColumn> currentRow : request.rows ) {
             boolean rowSeparationApplied = false;
-            for ( PartitionFunctionColumn currentColumn : currentRow ){
+            for ( PartitionFunctionColumn currentColumn : currentRow ) {
                 if ( currentColumn.modifiable ) {
                     // If more than one row, keep appending ','
-                    if ( !rowSeparationApplied && request.rows.indexOf( currentRow ) != 0){
+                    if ( !rowSeparationApplied && request.rows.indexOf( currentRow ) != 0 ) {
                         content = content + functionInfo.getRowSeparation();
                         rowSeparationApplied = true;
                     }
@@ -2142,7 +2141,7 @@ public class Crud implements InformationObserver {
         //Changes to extensions to this model now have to be made on two parts
 
         String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") %s ",
-               request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
+                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
 
         Transaction trx = getTransaction();
         try {
@@ -2159,7 +2158,6 @@ public class Crud implements InformationObserver {
             return new Result( e ).setGeneratedQuery( query );
         }
     }
-
 
 
     Result mergePartitions( final Request req, final Response res ) {

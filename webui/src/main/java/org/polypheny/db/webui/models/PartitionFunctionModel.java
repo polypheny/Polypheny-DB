@@ -43,6 +43,7 @@ public class PartitionFunctionModel {
     @Setter
     public String schemaName;
 
+
     public PartitionFunctionModel( final String title, final String description, final List<String> columnNames, final List<List<PartitionFunctionColumn>> rows ) {
         this.title = title;
         this.description = description;
@@ -73,10 +74,12 @@ public class PartitionFunctionModel {
         @Setter
         public String sqlSuffix = "";
 
+
         public PartitionFunctionColumn( final FieldType type, final String defaultValue ) {
             this.type = type;
             this.value = defaultValue;
         }
+
 
         public PartitionFunctionColumn( final FieldType type, final List<String> options, final String defaultValue ) {
             this.type = type;
