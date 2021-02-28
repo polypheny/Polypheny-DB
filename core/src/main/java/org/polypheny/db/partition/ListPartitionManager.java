@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
 import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumnType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
@@ -164,6 +165,19 @@ public class ListPartitionManager extends AbstractPartitionManager {
     @Override
     public boolean validatePartitionSetup( List<List<String>> partitionQualifiers, long numPartitions, List<String> partitionNames, CatalogColumn partitionColumn ) {
         super.validatePartitionSetup( partitionQualifiers, numPartitions, partitionNames, partitionColumn );
+
+        if ( partitionColumn.type.getFamily() == PolyTypeFamily.NUMERIC ){
+            for ( List<String> singlePartitionQualifiers: partitionQualifiers ){
+                for ( String qualifier: singlePartitionQualifiers ){
+                    try{
+                        Integer.valueOf( qualifier );
+                    }
+                    catch ( NumberFormatException e ){
+                        throw new RuntimeException("Specified Partition Value: '" + qualifier + "' is not number according to selected partition column: "+ partitionColumn.name);
+                    }
+                }
+            }
+        }
 
         if ( partitionQualifiers.isEmpty() ) {
             throw new RuntimeException( "LIST Partitioning doesn't support  empty Partition Qualifiers: '" + partitionQualifiers +
