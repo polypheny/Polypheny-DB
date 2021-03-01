@@ -367,6 +367,11 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing transaction", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
         }
         return result;
     }
@@ -2326,11 +2331,19 @@ public class Crud implements InformationObserver {
 
         // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
         // currently seams to be the best option). When migrating this to a DDL manager, make sure to find a better approach.
+        Transaction transaction = null;
         try {
-            Transaction transaction = getTransaction();
+            transaction = getTransaction();
             transaction.createStatement().getQueryProcessor().resetCaches();
             transaction.commit();
         } catch ( TransactionException e ) {
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException transactionException ) {
+                    log.error( "Exception while rollback", transactionException );
+                }
+            }
             throw new RuntimeException( "Error while resetting caches", e );
         }
 
@@ -2430,6 +2443,11 @@ public class Crud implements InformationObserver {
             return new Result( numRows ).setGeneratedQuery( query );
         } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not deploy data store", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
             return new Result( e ).setGeneratedQuery( query );
         }
     }
@@ -2448,6 +2466,11 @@ public class Crud implements InformationObserver {
             return new Result( a ).setGeneratedQuery( query );
         } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not remove store {}", req.body(), e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
             return new Result( e ).setGeneratedQuery( query );
         }
     }
@@ -2623,7 +2646,6 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-
         Transaction transaction = getTransaction( true );
         transaction.getQueryAnalyzer().setSession( session );
         Statement statement = transaction.createStatement();
@@ -2682,6 +2704,11 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing the plan builder tree", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
             throw new RuntimeException( e );
         }
 
@@ -3118,6 +3145,11 @@ public class Crud implements InformationObserver {
                 transaction.commit();
             } catch ( TransactionException e ) {
                 log.error( "Error while fetching table", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException transactionException ) {
+                    log.error( "Exception while rollback", transactionException );
+                }
             }
         }
     }
