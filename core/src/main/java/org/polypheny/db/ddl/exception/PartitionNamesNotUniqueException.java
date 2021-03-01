@@ -16,6 +16,6 @@
 
 package org.polypheny.db.ddl.exception;
 
-public class PartitionsNotUniqueException extends Exception {
+public class PartitionNamesNotUniqueException extends Exception {
 
 }

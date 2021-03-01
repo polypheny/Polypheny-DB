@@ -916,11 +916,11 @@ public interface PolyphenyDbResource {
     @BaseMessage("There is no query interface with this unique name: ''{0}''")
     ExInst<PolyphenyDbException> unknownQueryInterface( String name );
 
-    @BaseMessage("There is no partition with this name : ''{0}''")
+    @BaseMessage("There is no partition with this name: ''{0}''")
     ExInst<PolyphenyDbException> unknownPartitionType( String name );
 
-    @BaseMessage("The partitions for a column need to be unique")
-    ExInst<PolyphenyDbException> partitionsNotUnique();
+    @BaseMessage("The partition names for a column need to be unique")
+    ExInst<PolyphenyDbException> partitionNamesNotUnique();
 
 }
 

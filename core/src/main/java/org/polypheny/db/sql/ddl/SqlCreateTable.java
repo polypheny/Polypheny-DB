@@ -52,14 +52,13 @@ import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.ColumnInformation;
 import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.ddl.DdlManager.ConstraintInformation;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
-import org.polypheny.db.ddl.exception.PartitionsNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -221,7 +220,6 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
         }
 
         try {
-
             DdlManager.getInstance().createTable(
                     schemaId,
                     tableName,
@@ -233,14 +231,13 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
                     statement );
 
             if ( partitionType != null ) {
-                DdlManager.getInstance()
-                        .addPartition( PartitionInformation.fromSqlLists(
-                                getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
-                                partitionType.getSimple(),
-                                partitionColumn.getSimple(),
-                                partitionNamesList,
-                                numPartitions,
-                                partitionQualifierList ) );
+                DdlManager.getInstance().addPartition( PartitionInformation.fromSqlLists(
+                        getCatalogTable( context, new SqlIdentifier( tableName, SqlParserPos.ZERO ) ),
+                        partitionType.getSimple(),
+                        partitionColumn.getSimple(),
+                        partitionNamesList,
+                        numPartitions,
+                        partitionQualifierList ) );
             }
 
         } catch ( TableAlreadyExistsException e ) {
@@ -249,9 +246,9 @@ public class SqlCreateTable extends SqlCreate implements SqlExecutableStatement 
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         } catch ( UnknownPartitionTypeException e ) {
             throw SqlUtil.newContextException( partitionType.getParserPosition(), RESOURCE.unknownPartitionType( partitionType.getSimple() ) );
-        } catch ( PartitionsNotUniqueException e ) {
-            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionsNotUnique() );
-        } catch ( GenericCatalogException | UnknownTableException | UnknownColumnException e ) {
+        } catch ( PartitionNamesNotUniqueException e ) {
+            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
+        } catch ( GenericCatalogException | UnknownColumnException e ) {
             // we just added the table/column so it has to exist or we have a internal problem
             throw new RuntimeException( e );
         }

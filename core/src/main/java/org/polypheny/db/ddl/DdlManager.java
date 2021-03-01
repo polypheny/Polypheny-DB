@@ -47,7 +47,7 @@ import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
-import org.polypheny.db.ddl.exception.PartitionsNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
@@ -436,7 +436,7 @@ public abstract class DdlManager {
      *
      * @param partitionInfo the information concerning the partition
      */
-    public abstract void addPartition( PartitionInformation partitionInfo ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownTableException, UnknownColumnException, PartitionsNotUniqueException;
+    public abstract void addPartition( PartitionInformation partitionInfo ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionNamesNotUniqueException;
 
     /**
      * Adds a new constraint to a table

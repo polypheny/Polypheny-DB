@@ -80,7 +80,7 @@ import org.polypheny.db.ddl.exception.IndexPreventsRemovalException;
 import org.polypheny.db.ddl.exception.LastPlacementException;
 import org.polypheny.db.ddl.exception.MissingColumnPlacementException;
 import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
-import org.polypheny.db.ddl.exception.PartitionsNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
 import org.polypheny.db.ddl.exception.PlacementAlreadyExistsException;
 import org.polypheny.db.ddl.exception.PlacementIsPrimaryException;
 import org.polypheny.db.ddl.exception.PlacementNotExistsException;
@@ -1313,7 +1313,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void addPartition( PartitionInformation partitionInfo ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownTableException, UnknownColumnException, PartitionsNotUniqueException {
+    public void addPartition( PartitionInformation partitionInfo ) throws GenericCatalogException, UnknownPartitionTypeException, UnknownColumnException, PartitionNamesNotUniqueException {
         CatalogColumn catalogColumn = catalog.getColumn( partitionInfo.table.id, partitionInfo.columnName );
 
         Catalog.PartitionType actualPartitionType = Catalog.PartitionType.getByName( partitionInfo.typeName );
@@ -1324,7 +1324,7 @@ public class DdlManagerImpl extends DdlManager {
                 .map( name -> name.trim().toLowerCase() )
                 .collect( Collectors.toList() );
         if ( sanitizedPartitionNames.size() != new HashSet<>( sanitizedPartitionNames ).size() ) {
-            throw new PartitionsNotUniqueException();
+            throw new PartitionNamesNotUniqueException();
         }
 
         // Check if specified partitionColumn is even part of the table

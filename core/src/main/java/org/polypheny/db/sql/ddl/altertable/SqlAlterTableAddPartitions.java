@@ -27,10 +27,9 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManager.PartitionInformation;
-import org.polypheny.db.ddl.exception.PartitionsNotUniqueException;
+import org.polypheny.db.ddl.exception.PartitionNamesNotUniqueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -114,10 +113,8 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             }
         } catch ( UnknownPartitionTypeException | GenericCatalogException e ) {
             throw new RuntimeException( e );
-        } catch ( UnknownTableException e ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.columnNotFoundInTable( partitionColumn.getSimple(), catalogTable.name ) );
-        } catch ( PartitionsNotUniqueException e ) {
-            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionsNotUnique() );
+        } catch ( PartitionNamesNotUniqueException e ) {
+            throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.partitionNamesNotUnique() );
         } catch ( UnknownColumnException e ) {
             throw SqlUtil.newContextException( partitionColumn.getParserPosition(), RESOURCE.columnNotFoundInTable( partitionColumn.getSimple(), catalogTable.name ) );
         }
