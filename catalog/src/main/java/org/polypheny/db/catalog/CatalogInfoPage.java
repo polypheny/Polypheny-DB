@@ -95,7 +95,7 @@ public class CatalogInfoPage implements PropertyChangeListener {
     @Override
     public void propertyChange( PropertyChangeEvent propertyChangeEvent ) {
         addDebugMessage( propertyChangeEvent );
-        new Thread( this::resetCatalogInformation ).start();
+        this.resetCatalogInformation();
     }
 
 
