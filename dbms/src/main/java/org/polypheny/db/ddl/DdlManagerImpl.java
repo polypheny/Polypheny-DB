@@ -142,13 +142,11 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private CatalogColumn getCatalogColumn( long tableId, String columnName ) throws ColumnNotExistsException {
-
         try {
             return catalog.getColumn( tableId, columnName );
         } catch ( UnknownColumnException e ) {
             throw new ColumnNotExistsException( tableId, columnName );
         }
-
     }
 
 
@@ -165,11 +163,7 @@ public class DdlManagerImpl extends DdlManager {
                 throw new SchemaAlreadyExistsException();
             }
         } else {
-            long id = catalog.addSchema(
-                    name,
-                    databaseId,
-                    userId,
-                    type );
+            long id = catalog.addSchema( name, databaseId, userId, type );
         }
     }
 
@@ -760,7 +754,6 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropColumn( CatalogTable catalogTable, String columnName, Statement statement ) throws ColumnNotExistsException {
-
         if ( catalogTable.columnIds.size() < 2 ) {
             throw new RuntimeException( "Cannot drop sole column of table " + catalogTable.name );
         }
@@ -904,7 +897,6 @@ public class DdlManagerImpl extends DdlManager {
         try {
             // Make sure that this is a table of type TABLE (and not SOURCE)
             checkIfTableType( catalogTable.tableType );
-
             catalog.deletePrimaryKey( catalogTable.id );
         } catch ( GenericCatalogException e ) {
             throw new RuntimeException( e );
