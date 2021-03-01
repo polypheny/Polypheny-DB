@@ -2056,7 +2056,7 @@ public class Crud implements InformationObserver {
     }
 
 
-    String getPartitionFunctionModel( final Request req, final Response res ) {
+    PartitionFunctionModel getPartitionFunctionModel( final Request req, final Response res ) {
         PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
 
         // Get correct partition function
@@ -2072,12 +2072,7 @@ public class Crud implements InformationObserver {
             throw new RuntimeException( e );
         }
         if ( !partitionManager.supportsColumnOfType( partitionColumn.type ) ) {
-            // TODO replace with toast message
-            return gson.toJson( new PartitionFunctionModel(
-                    "Unsupported",
-                    "The partition function " + request.method + " does not support columns of type " + partitionColumn.type,
-                    ImmutableList.of(),
-                    ImmutableList.of() ) );
+            return new PartitionFunctionModel( "The partition function " + request.method + " does not support columns of type " + partitionColumn.type );
         }
 
         PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
@@ -2115,7 +2110,7 @@ public class Crud implements InformationObserver {
         model.setPartitionColumnName( request.column );
         model.setSchemaName( request.schemaName );
 
-        return gson.toJson( model );
+        return model;
     }
 
 
