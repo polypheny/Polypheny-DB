@@ -564,7 +564,14 @@ public abstract class DdlManager {
         public final Boolean nullable;
 
 
-        public ColumnTypeInformation( PolyType type, PolyType collectionType, Integer precision, Integer scale, Integer dimension, Integer cardinality, Boolean nullable ) {
+        public ColumnTypeInformation(
+                PolyType type,
+                PolyType collectionType,
+                Integer precision,
+                Integer scale,
+                Integer dimension,
+                Integer cardinality,
+                Boolean nullable ) {
             this.type = type;
             this.collectionType = collectionType;
             this.precision = precision == -1 ? null : precision;
@@ -599,32 +606,37 @@ public abstract class DdlManager {
         public final List<List<String>> qualifiers;
 
 
-        public PartitionInformation( CatalogTable table, String typeName, String columnName, List<String> partitionNames, int numberOf, List<List<String>> qualifiers ) {
+        public PartitionInformation(
+                CatalogTable table,
+                String typeName,
+                String columnName,
+                List<String> partitionNames,
+                int numberOf,
+                List<List<String>> qualifiers ) {
             this.table = table;
             this.typeName = typeName;
             this.columnName = columnName;
             this.partitionNames = partitionNames;
             this.numberOf = numberOf;
             this.qualifiers = qualifiers;
-
-
         }
 
 
-        public static PartitionInformation fromSqlLists( CatalogTable table, String typeName, String columnName, List<SqlIdentifier> partitionNames, int numberOf, List<List<SqlNode>> partitionQualifierList ) {
-
+        public static PartitionInformation fromSqlLists(
+                CatalogTable table,
+                String typeName,
+                String columnName,
+                List<SqlIdentifier> partitionNames,
+                int numberOf,
+                List<List<SqlNode>> partitionQualifierList ) {
             List<String> names = partitionNames
                     .stream()
                     .map( SqlIdentifier::getSimple )
                     .collect( Collectors.toList() );
             List<List<String>> qualifiers = partitionQualifierList
                     .stream()
-                    .map( qs -> qs.stream()
-                            .map( SqlNode::toString )
-                            .collect( Collectors.toList() ) )
+                    .map( qs -> qs.stream().map( SqlNode::toString ).collect( Collectors.toList() ) )
                     .collect( Collectors.toList() );
-            ;
-
             return new PartitionInformation( table, typeName, columnName, names, numberOf, qualifiers );
         }
 
