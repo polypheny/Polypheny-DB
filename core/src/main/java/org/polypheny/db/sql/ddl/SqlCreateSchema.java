@@ -38,8 +38,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.SchemaType;
+import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -62,15 +63,18 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
 
     private final SqlIdentifier name;
 
+    private final SchemaType type;
+
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE SCHEMA", SqlKind.CREATE_SCHEMA );
 
 
     /**
      * Creates a SqlCreateSchema.
      */
-    SqlCreateSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name ) {
+    SqlCreateSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name, SchemaType schemaType ) {
         super( OPERATOR, pos, replace, ifNotExists );
         this.name = Objects.requireNonNull( name );
+        this.type = schemaType;
     }
 
 
@@ -96,25 +100,12 @@ public class SqlCreateSchema extends SqlCreate implements SqlExecutableStatement
 
     @Override
     public void execute( Context context, Statement statement ) {
-        Catalog catalog = Catalog.getInstance();
-        // Check if there is already a schema with this name
-        if ( catalog.checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
-            if ( ifNotExists ) {
-                // It is ok that there is already a schema with this name because "IF NOT EXISTS" was specified
-                return;
-            } else if ( replace ) {
-                throw new RuntimeException( "Replacing schema is not yet supported." );
-            } else {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
-            }
-        } else {
-            catalog.addSchema(
-                    name.getSimple(),
-                    context.getDatabaseId(),
-                    context.getCurrentUserId(),
-                    SchemaType.RELATIONAL );
+        try {
+            DdlManager.getInstance().createSchema( name.getSimple(), context.getDatabaseId(), type, context.getCurrentUserId(), ifNotExists, replace );
+        } catch ( SchemaAlreadyExistsException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaExists( name.getSimple() ) );
         }
+
     }
 
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ package org.polypheny.db.sql;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.sql.validate.SqlValidator;
@@ -217,7 +218,8 @@ public class SqlSetOption extends SqlAlter {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        // TODO: Implement
+        DdlManager.getInstance().setOption();
     }
+
 }
 

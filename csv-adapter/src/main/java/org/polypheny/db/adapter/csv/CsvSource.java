@@ -24,7 +24,6 @@ import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
@@ -57,10 +56,6 @@ public class CsvSource extends DataSource {
     private URL csvDir;
     private CsvSchema currentSchema;
     private final int maxStringLength;
-
-    private InformationPage informationPage;
-    private final List<InformationGroup> informationGroups = new ArrayList<>();
-    private final List<Information> informationElements = new ArrayList<>();
 
 
     public CsvSource( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -279,13 +274,11 @@ public class CsvSource extends DataSource {
 
     protected void registerInformationPage( String uniqueName ) {
         InformationManager im = InformationManager.getInstance();
-        informationPage = new InformationPage( uniqueName, "CSV Data Source" ).setLabel( "Sources" );
-        im.addPage( informationPage );
+        /*informationPage = new InformationPage( uniqueName, "CSV Data Source" ).setLabel( "Sources" );
+        im.addPage( informationPage );*/
 
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
-            im.addGroup( group );
-            informationGroups.add( group );
 
             InformationTable table = new InformationTable(
                     group,
@@ -300,8 +293,8 @@ public class CsvSource extends DataSource {
                         exportedColumn.primary ? "✔" : ""
                 );
             }
-            im.registerInformation( table );
             informationElements.add( table );
+            informationGroups.add( group );
         }
     }
 

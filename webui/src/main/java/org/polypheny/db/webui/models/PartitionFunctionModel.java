@@ -43,12 +43,19 @@ public class PartitionFunctionModel {
     @Setter
     public String schemaName;
 
+    public String error;
+
 
     public PartitionFunctionModel( final String title, final String description, final List<String> columnNames, final List<List<PartitionFunctionColumn>> rows ) {
         this.title = title;
         this.description = description;
         this.columnNames = columnNames;
         this.rows = rows;
+    }
+
+
+    public PartitionFunctionModel( final String error ) {
+        this.error = error;
     }
 
 

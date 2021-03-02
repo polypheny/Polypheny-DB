@@ -37,7 +37,6 @@ public class HashPartitionManager extends AbstractPartitionManager {
     public static final String FUNCTION_TITLE = "HASH";
 
 
-
     @Override
     public long getTargetPartitionId( CatalogTable catalogTable, String columnValue ) {
         long partitionID = columnValue.hashCode() * -1;

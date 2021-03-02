@@ -35,6 +35,7 @@ package org.polypheny.db.sql.ddl;
 
 
 import java.util.List;
+import org.polypheny.db.catalog.Catalog.SchemaType;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.SqlCollation;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -59,7 +60,7 @@ public class SqlDdlNodes {
      * Creates a CREATE SCHEMA.
      */
     public static SqlCreateSchema createSchema( SqlParserPos pos, boolean replace, boolean ifNotExists, SqlIdentifier name ) {
-        return new SqlCreateSchema( pos, replace, ifNotExists, name );
+        return new SqlCreateSchema( pos, replace, ifNotExists, name, SchemaType.RELATIONAL );
     }
 
 

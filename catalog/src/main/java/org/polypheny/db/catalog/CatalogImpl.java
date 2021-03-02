@@ -2286,7 +2286,7 @@ public class CatalogImpl extends Catalog {
                 old.nullable,
                 old.collation,
                 null );
-        if ( column.defaultValue != null ) {
+        if ( old.defaultValue != null ) {
             synchronized ( this ) {
                 columns.replace( columnId, column );
                 columnNames.replace( new Object[]{ old.databaseId, old.schemaId, old.tableId, old.name }, column );

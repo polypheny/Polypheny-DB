@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog;
 
 
+import com.google.gson.annotations.SerializedName;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
@@ -67,6 +68,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -1199,7 +1201,11 @@ public abstract class Catalog {
 
 
     public enum SchemaType {
-        RELATIONAL( 1 );
+        @SerializedName("relational")
+        RELATIONAL( 1 ),
+        @SerializedName("document")
+        DOCUMENT( 2 );
+
         // GRAPH, DOCUMENT, ...
 
         private final int id;
@@ -1271,6 +1277,11 @@ public abstract class Catalog {
             }
             throw new UnknownCollationException( str );
         }
+
+
+        public static Collation getDefaultCollation() {
+            return getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() );
+        }
     }
 
 
@@ -1313,7 +1324,8 @@ public abstract class Catalog {
 
 
     public enum ConstraintType {
-        UNIQUE( 1 );
+        UNIQUE( 1 ),
+        PRIMARY( 2 );
 
         private final int id;
 
