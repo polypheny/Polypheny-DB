@@ -1,4 +1,4 @@
-name: Polypheny-Control CI
+name: Polypheny-DB CI
 
 on: [ push, pull_request ]
 
