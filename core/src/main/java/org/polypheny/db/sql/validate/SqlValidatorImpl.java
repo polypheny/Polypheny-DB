@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -4284,17 +4284,17 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             RelDataType sourceType = sourceFields.get( i ).getType();
             RelDataType targetType = targetFields.get( i ).getType();
 
-            if( targetType instanceof ArrayType ) {
-                if( sourceType instanceof ArrayType ) {
+            if ( targetType instanceof ArrayType ) {
+                if ( sourceType instanceof ArrayType ) {
                     long targetDimension = ((ArrayType) targetType).getDimension();
                     long sourceDimension = ((ArrayType) sourceType).getMaxDimension();
-                    if(sourceDimension > targetDimension && targetDimension > -1 ) {
-                        throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getKey(), sourceDimension, targetDimension ));
+                    if ( sourceDimension > targetDimension && targetDimension > -1 ) {
+                        throw newValidationError( query, RESOURCE.exceededDimension( targetFields.get( i ).getKey(), sourceDimension, targetDimension ) );
                     }
 
                     long targetCardinality = ((ArrayType) targetType).getCardinality();
                     long sourceCardinality = ((ArrayType) sourceType).getMaxCardinality();
-                    if(sourceCardinality > targetCardinality && targetCardinality > -1 ) {
+                    if ( sourceCardinality > targetCardinality && targetCardinality > -1 ) {
                         throw newValidationError( query, RESOURCE.exceededCardinality( targetFields.get( i ).getKey(), sourceCardinality, targetCardinality ) );
                     }
                 }

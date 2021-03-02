@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@
 package org.polypheny.db.sql.ddl;
 
 
+import static org.polypheny.db.util.Static.RESOURCE;
+
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
@@ -29,6 +32,7 @@ import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlOperator;
 import org.polypheny.db.sql.SqlSpecialOperator;
+import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
@@ -46,9 +50,6 @@ public class SqlAlterInterfacesDrop extends SqlAlter {
     private final SqlNode uniqueName;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterInterfacesDrop( SqlParserPos pos, SqlNode uniqueName ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
@@ -79,8 +80,13 @@ public class SqlAlterInterfacesDrop extends SqlAlter {
         if ( uniqueNameStr.endsWith( "'" ) ) {
             uniqueNameStr = StringUtils.chop( uniqueNameStr );
         }
+
+        // TODO: Check if the query interface has any running transactions
+
         try {
             QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueNameStr );
+        } catch ( UnknownQueryInterfaceException e ) {
+            throw SqlUtil.newContextException( uniqueName.getParserPosition(), RESOURCE.unknownQueryInterface( e.getIfaceName() ) );
         } catch ( Exception e ) {
             throw new RuntimeException( "Could not remove query interface " + uniqueNameStr, e );
         }

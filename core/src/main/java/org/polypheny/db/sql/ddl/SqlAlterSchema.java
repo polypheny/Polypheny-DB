@@ -41,4 +41,3 @@ public abstract class SqlAlterSchema extends SqlAlter {
     }
 
 }
-

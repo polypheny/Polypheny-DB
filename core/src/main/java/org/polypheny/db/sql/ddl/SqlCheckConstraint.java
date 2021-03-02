@@ -96,5 +96,5 @@ public class SqlCheckConstraint extends SqlCall {
             writer.sep( ")" );
         }
     }
-}
 
+}

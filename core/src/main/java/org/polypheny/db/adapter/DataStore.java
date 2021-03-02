@@ -41,6 +41,8 @@ public abstract class DataStore extends Adapter {
     public DataStore( final int adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent ) {
         super( adapterId, uniqueName, settings );
         this.persistent = persistent;
+
+        informationPage.setLabel( "Stores" );
     }
 
 

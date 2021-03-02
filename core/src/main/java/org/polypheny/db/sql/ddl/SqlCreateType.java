@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import java.util.List;
 import java.util.Objects;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlDataTypeSpec;
@@ -77,7 +78,7 @@ public class SqlCreateType extends SqlCreate implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        throw new RuntimeException( "Not supported yet" );
+        DdlManager.getInstance().createType();
     }
 
 

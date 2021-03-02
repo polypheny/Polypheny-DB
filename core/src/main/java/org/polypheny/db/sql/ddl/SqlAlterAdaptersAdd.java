@@ -18,21 +18,12 @@ package org.polypheny.db.sql.ddl;
 
 
 import com.google.gson.Gson;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataSource;
-import org.polypheny.db.adapter.DataSource.ExportedColumn;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlAlter;
 import org.polypheny.db.sql.SqlKind;
@@ -58,9 +49,6 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
     private final SqlNode config;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterAdaptersAdd( SqlParserPos pos, SqlNode uniqueName, SqlNode adapterName, SqlNode config ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
@@ -83,74 +71,21 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         uniqueName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "USING" );
         adapterName.unparse( writer, leftPrec, rightPrec );
-        writer.keyword( "WÍTH" );
+        writer.keyword( "WITH" );
         config.unparse( writer, leftPrec, rightPrec );
     }
 
 
     @Override
     public void execute( Context context, Statement statement ) {
-        String storeNameStr = removeQuotationMarks( uniqueName.toString() );
-        String adapterNameStr = removeQuotationMarks( adapterName.toString() );
+
+        @SuppressWarnings("unchecked")
         Map<String, String> configMap = new Gson().fromJson( removeQuotationMarks( config.toString() ), Map.class );
 
-        Adapter adapter = AdapterManager.getInstance().addAdapter( adapterNameStr, storeNameStr, configMap );
-        if ( adapter instanceof DataSource ) {
-            Catalog catalog = Catalog.getInstance();
-            Map<String, List<ExportedColumn>> exportedColumns;
-            try {
-                exportedColumns = ((DataSource) adapter).getExportedColumns();
-            } catch ( Exception e ) {
-                AdapterManager.getInstance().removeAdapter( adapter.getAdapterId() );
-                throw new RuntimeException( "Could not deploy adapter", e );
-            }
-            // Create table, columns etc.
-            for ( Map.Entry<String, List<ExportedColumn>> entry : exportedColumns.entrySet() ) {
-                // Make sure the table name is unique
-                String tableName = entry.getKey();
-                if ( catalog.checkIfExistsTable( 1, tableName ) ) {
-                    int i = 0;
-                    while ( catalog.checkIfExistsTable( 1, tableName + i ) ) {
-                        i++;
-                    }
-                    tableName += i;
-                }
-
-                long tableId = catalog.addTable( tableName, 1, 1, TableType.SOURCE, !((DataSource) adapter).isDataReadOnly(), null );
-                List<Long> primaryKeyColIds = new ArrayList<>();
-                int colPos = 1;
-                for ( ExportedColumn exportedColumn : entry.getValue() ) {
-                    long columnId = catalog.addColumn(
-                            exportedColumn.name,
-                            tableId,
-                            colPos++,
-                            exportedColumn.type,
-                            exportedColumn.collectionsType,
-                            exportedColumn.length,
-                            exportedColumn.scale,
-                            exportedColumn.dimension,
-                            exportedColumn.cardinality,
-                            exportedColumn.nullable,
-                            Collation.CASE_INSENSITIVE );
-                    catalog.addColumnPlacement(
-                            adapter.getAdapterId(),
-                            columnId,
-                            PlacementType.STATIC,
-                            exportedColumn.physicalSchemaName,
-                            exportedColumn.physicalTableName,
-                            exportedColumn.physicalColumnName );
-                    catalog.updateColumnPlacementPhysicalPosition( adapter.getAdapterId(), columnId, exportedColumn.physicalPosition );
-                    if ( exportedColumn.primary ) {
-                        primaryKeyColIds.add( columnId );
-                    }
-                }
-                try {
-                    catalog.addPrimaryKey( tableId, primaryKeyColIds );
-                } catch ( GenericCatalogException e ) {
-                    throw new RuntimeException( "Exception while adding primary key" );
-                }
-            }
-        }
+        DdlManager.getInstance().addAdapter(
+                removeQuotationMarks( uniqueName.toString() ),
+                removeQuotationMarks( adapterName.toString() ),
+                configMap );
     }
 
 

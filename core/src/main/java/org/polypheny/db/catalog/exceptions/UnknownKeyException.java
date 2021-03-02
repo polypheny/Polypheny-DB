@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,8 @@ package org.polypheny.db.catalog.exceptions;
 
 public class UnknownKeyException extends CatalogException {
 
-
     public UnknownKeyException( String keyName ) {
         super( "There is no key with this name: '" + keyName + "'." );
     }
 
-
-    public UnknownKeyException( long keyId ) {
-        super( "Unknown key id: " + keyId + ". There is no key with this id." );
-    }
 }

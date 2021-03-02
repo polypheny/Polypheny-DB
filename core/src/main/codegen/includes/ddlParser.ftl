@@ -262,14 +262,63 @@ SqlCreate SqlCreateTable(Span s, boolean replace) :
     SqlNodeList tableElementList = null;
     SqlNode query = null;
     SqlIdentifier store = null;
+    SqlIdentifier partitionColumn = null;
+    SqlIdentifier partitionType = null;
+    int numPartitions = 0;
+    List<SqlIdentifier> partitionNamesList = new ArrayList<SqlIdentifier>();
+    SqlIdentifier partitionName = null;
+    List< List<SqlNode>> partitionQualifierList = new ArrayList<List<SqlNode>>();
+    List<SqlNode> partitionQualifiers = new ArrayList<SqlNode>();
+    SqlNode partitionValues = null;
 }
 {
     <TABLE> ifNotExists = IfNotExistsOpt() id = CompoundIdentifier()
     [ tableElementList = TableElementList() ]
     [ <AS> query = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) ]
     [ <ON> <STORE> store = SimpleIdentifier() ]
+    [ <PARTITION> <BY>
+                       (
+                                partitionType = SimpleIdentifier()
+                            |
+                                <RANGE> { partitionType = new SqlIdentifier( "RANGE", s.end(this) );}
+                       )
+        <LPAREN> partitionColumn = SimpleIdentifier() <RPAREN>
+        [
+            (
+                    <PARTITIONS> numPartitions = UnsignedIntLiteral()
+                |
+                    <WITH> <LPAREN>
+                            partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                            (
+                                <COMMA> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                            )*
+                    <RPAREN>
+                |
+                    <LPAREN>
+                        <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                        <VALUES> <LPAREN>
+                                partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                (
+                                    <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                )*
+                        <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                        (
+                                <COMMA> <PARTITION> partitionName = SimpleIdentifier() { partitionNamesList.add(partitionName); }
+                                        <VALUES> <LPAREN>
+                                                partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                (
+                                                    <COMMA> partitionValues = Literal() { partitionQualifiers.add(partitionValues); }
+                                                )*
+                                        <RPAREN> {partitionQualifierList.add(partitionQualifiers); partitionQualifiers = new ArrayList<SqlNode>();}
+                        )*
+                    <RPAREN>
+
+            )
+
+        ]
+    ]
     {
-        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store);
+        return SqlDdlNodes.createTable(s.end(this), replace, ifNotExists, id, tableElementList, query, store, partitionType, partitionColumn, numPartitions, partitionNamesList, partitionQualifierList);
     }
 }
 

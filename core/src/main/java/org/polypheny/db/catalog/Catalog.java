@@ -17,6 +17,7 @@
 package org.polypheny.db.catalog;
 
 
+import com.google.gson.annotations.SerializedName;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import org.polypheny.db.catalog.entity.CatalogDatabase;
 import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
+import org.polypheny.db.catalog.entity.CatalogPartition;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
@@ -46,18 +48,27 @@ import org.polypheny.db.catalog.exceptions.UnknownCollationIdRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
 import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownConstraintTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionException;
+import org.polypheny.db.catalog.exceptions.UnknownForeignKeyOptionRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexException;
 import org.polypheny.db.catalog.exceptions.UnknownIndexTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownIndexTypeRuntimeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownPlacementTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownSchemaTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownTableTypeRuntimeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.transaction.Transaction;
@@ -134,8 +145,23 @@ public abstract class Catalog {
     }
 
 
+    /**
+     * Adds a database
+     *
+     * @param name The name of the database
+     * @param ownerId The owner of this database
+     * @param ownerName The name of the owner
+     * @param defaultSchemaId The id of the default schema of this database
+     * @param defaultSchemaName The name of the default schema of this database
+     * @return the id of the newly inserted database
+     */
     public abstract long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName );
 
+    /**
+     * Delete a database from the catalog
+     *
+     * @param databaseId The id of the database to delete
+     */
     public abstract void deleteDatabase( long databaseId );
 
     /**
@@ -250,10 +276,9 @@ public abstract class Catalog {
     /**
      * Delete a schema from the catalog
      *
-     * @param schemaId The if of the schema to delete
+     * @param schemaId The id of the schema to delete
      */
     public abstract void deleteSchema( long schemaId );
-
 
     /**
      * Get all tables of the specified schema which fit to the specified filters.
@@ -304,7 +329,6 @@ public abstract class Catalog {
      * @return The table
      */
     public abstract CatalogTable getTable( long tableId );
-
 
     /**
      * Returns the table with the given name in the specified schema.
@@ -403,8 +427,9 @@ public abstract class Catalog {
      * @param physicalSchemaName The schema name on the adapter
      * @param physicalTableName The table name on the adapter
      * @param physicalColumnName The column name on the adapter
+     * @param partitionIds List of partitions to place on this column placement (may be null)
      */
-    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName );
+    public abstract void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionIds );
 
     /**
      * Deletes a column placement
@@ -413,7 +438,6 @@ public abstract class Catalog {
      * @param columnId The id of the column
      */
     public abstract void deleteColumnPlacement( int adapterId, long columnId );
-
 
     /**
      * Get a specific column placement.
@@ -424,7 +448,6 @@ public abstract class Catalog {
      */
     public abstract CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId );
 
-
     /**
      * Checks if there is a column with the specified name in the specified table.
      *
@@ -434,12 +457,11 @@ public abstract class Catalog {
      */
     public abstract boolean checkIfExistsColumnPlacement( int adapterId, long columnId );
 
-
     /**
-     * Get all placements of a column
+     * Get all column placements of a column
      *
-     * @param columnId The id of the column
-     * @return List of placements
+     * @param columnId The id of the specific column
+     * @return List of column placements of specific column
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacements( long columnId );
 
@@ -452,7 +474,6 @@ public abstract class Catalog {
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId );
 
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId );
-
 
     /**
      * Get column placements on a adapter
@@ -468,7 +489,6 @@ public abstract class Catalog {
 
     public abstract List<CatalogKey> getTableKeys( long tableId );
 
-
     /**
      * Get column placements in a specific schema on a specific adapter
      *
@@ -477,7 +497,6 @@ public abstract class Catalog {
      * @return List of column placements on this adapter and schema
      */
     public abstract List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId );
-
 
     /**
      * Update type of a placement.
@@ -488,7 +507,6 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType );
 
-
     /**
      * Update physical position of a column placement on a specified adapter.
      *
@@ -498,7 +516,6 @@ public abstract class Catalog {
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position );
 
-
     /**
      * Update physical position of a column placement on a specified adapter. Uses auto-increment to get the globally increasing number.
      *
@@ -506,7 +523,6 @@ public abstract class Catalog {
      * @param columnId The id of the column
      */
     public abstract void updateColumnPlacementPhysicalPosition( int adapterId, long columnId );
-
 
     /**
      * Change physical names of a placement.
@@ -516,10 +532,9 @@ public abstract class Catalog {
      * @param physicalSchemaName The physical schema name
      * @param physicalTableName The physical table name
      * @param physicalColumnName The physical column name
-     * @param updatePhysicalColumnPosition Whether to reset the column position (highst number in the table; represents that the column is now at the last position)
+     * @param updatePhysicalColumnPosition Whether to reset the column position (highest number in the table; represents that the column is now at the last position)
      */
     public abstract void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition );
-
 
     /**
      * Get all columns of the specified table.
@@ -528,7 +543,6 @@ public abstract class Catalog {
      * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
      */
     public abstract List<CatalogColumn> getColumns( long tableId );
-
 
     /**
      * Get all columns of the specified database which fit to the specified filter patterns.
@@ -669,10 +683,7 @@ public abstract class Catalog {
      * @param type The type of the default value
      * @param defaultValue True if the column should allow null values, false if not.
      */
-
-
     public abstract void setDefaultValue( long columnId, PolyType type, String defaultValue );
-
 
     /**
      * Deletes an existing default value of a column. NoOp if there is no default value defined.
@@ -689,13 +700,36 @@ public abstract class Catalog {
      */
     public abstract CatalogPrimaryKey getPrimaryKey( long key );
 
+    /**
+     * Check whether a key is a primary key
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a primary key
+     */
+    public abstract boolean isPrimaryKey( long keyId );
 
-    public abstract boolean isPrimaryKey( long key );
-
+    /**
+     * Check whether a key is a foreign key
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a foreign key
+     */
     public abstract boolean isForeignKey( long keyId );
 
+    /**
+     * Check whether a key is a index
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a index
+     */
     public abstract boolean isIndex( long keyId );
 
+    /**
+     * Check whether a key is a constraint
+     *
+     * @param keyId The id of the key
+     * @return Whether the key is a constraint
+     */
     public abstract boolean isConstraint( long keyId );
 
     /**
@@ -935,8 +969,7 @@ public abstract class Catalog {
      */
     public abstract void deleteAdapter( int adapterId );
 
-
-    /**
+    /*
      * Get list of all query interfaces
      *
      * @return List of query interfaces
@@ -945,13 +978,19 @@ public abstract class Catalog {
 
     /**
      * Get a query interface by its unique name
+     *
+     * @param uniqueName The unique name of the query interface
+     * @return The CatalogQueryInterface
      */
     public abstract CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException;
 
     /**
      * Get a query interface by its id
+     *
+     * @param ifaceId The id of the query interface
+     * @return The CatalogQueryInterface
      */
-    public abstract CatalogQueryInterface getQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException;
+    public abstract CatalogQueryInterface getQueryInterface( int ifaceId );
 
     /**
      * Add a query interface
@@ -968,14 +1007,172 @@ public abstract class Catalog {
      *
      * @param ifaceId The id of the query interface to delete
      */
-    public abstract void deleteQueryInterface( int ifaceId ) throws UnknownQueryInterfaceException;
+    public abstract void deleteQueryInterface( int ifaceId );
+
+    /**
+     * Adds a partition to the catalog
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param ownerId the partitionId to be deleted
+     * @param partitionType partition Type of the added partition
+     * @return The id of the created partition
+     */
+    public abstract long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException;
+
+    /**
+     * Deletes a single partition and all references.
+     *
+     * @param tableId The unique id of the table
+     * @param schemaId The unique id of the table
+     * @param partitionId The partitionId to be deleted
+     */
+    public abstract void deletePartition( long tableId, long schemaId, long partitionId );
+
+    /**
+     * Get a partition object by its unique id
+     *
+     * @param partitionId The unique id of the partition
+     * @return A catalog partition
+     */
+    public abstract CatalogPartition getPartition( long partitionId );
+
+    /**
+     * Effectively partitions a table with the specified partitionType
+     *
+     * @param tableId Table to be partitioned
+     * @param partitionType Partition function to apply on the table
+     * @param partitionColumnId Column used to apply the partition function on
+     * @param numPartitions Explicit number of partitions
+     * @param partitionIds List of ids of the catalog partitions
+     */
+    public abstract void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<Long> partitionIds );
+
+    /**
+     * Merges a  partitioned table.
+     * Resets all objects and structures which were introduced by partitionTable.
+     *
+     * @param tableId Table to be merged
+     */
+    public abstract void mergeTable( long tableId );
+
+    /**
+     * Get a List of all partitions belonging to a specific table
+     *
+     * @param tableId Table to be queried
+     * @return list of all partitions on this table
+     */
+    public abstract List<CatalogPartition> getPartitions( long tableId );
+
+    /**
+     * Get all partitions of the specified database which fit to the specified filter patterns.
+     * <code>getColumns(xid, databaseName, null, null, null)</code> returns all partitions of the database.
+     *
+     * @param databaseNamePattern Pattern for the database name. null returns all.
+     * @param schemaNamePattern Pattern for the schema name. null returns all.
+     * @param tableNamePattern Pattern for the table name. null returns catalog/src/test/java/org/polypheny/db/test/CatalogTest.javaall.
+     * @return List of columns which fit to the specified filters. If there is no column which meets the criteria, an empty list is returned.
+     */
+    public abstract List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern );
+
+    /**
+     * Get a List of all partition name belonging to a specific table
+     *
+     * @param tableId Table to be queried
+     * @return list of all partition names on this table
+     */
+    public abstract List<String> getPartitionNames( long tableId );
+
+    /**
+     * Get placements by partition. Identify the location of partitions.
+     * Essentially returns all ColumnPlacements which hold the specified partitionID.
+     *
+     * @param tableId The id of the table
+     * @param partitionId The id of the partition
+     * @param columnId The id of tje column
+     * @return List of CatalogColumnPlacements
+     */
+    public abstract List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId );
+
+    /**
+     * Get adapters by partition. Identify the location of partitions/replicas
+     * Essentially returns all adapters which hold the specified partitionID
+     *
+     * @param tableId The unique id of the table
+     * @param partitionId The unique id of the partition
+     * @return List of CatalogAdapters
+     */
+    public abstract List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId );
+
+    /**
+     * Updates the reference which partitions reside on which DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @param partitionIds List of partitionsIds to be updated
+     */
+    public abstract void updatePartitionsOnDataPlacement( int adapterId, long tableId, List<Long> partitionIds );
+
+    /**
+     * Get all partitions of a DataPlacement (identified by adapterId and tableId)
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionIds
+     */
+    public abstract List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId );
+
+    /**
+     * Returns list with the index of the partitions on this store from  0..numPartitions
+     *
+     * @param adapterId The unique id of the adapter
+     * @param tableId The unique id of the table
+     * @return List of partitionId Indices
+     */
+    public abstract List<Long> getPartitionsIndexOnDataPlacement( int adapterId, long tableId );
+
+    /**
+     * Mostly needed if a placement is dropped from a store.
+     *
+     * @param storeId Placement to be updated with new partitions
+     * @param tableId List of partitions which the placement should hold
+     */
+    public abstract void deletePartitionsOnDataPlacement( int storeId, long tableId );
+
+    /**
+     * Checks depending on the current partition distribution and partitionType
+     * if the distribution would be sufficient. Basically a passthrough method to simplify the code
+     *
+     * @param adapterId The id of the adapter to be checked
+     * @param tableId The id of the table to be checked
+     * @param columnId The id of the column to be checked
+     * @return If its correctly distributed or not
+     */
+    public abstract boolean validatePartitionDistribution( int adapterId, long tableId, long columnId );
+
+    /**
+     * Flags the table for deletion.
+     * This method should be executed on a partitioned table before we run a DROP TABLE statement.
+     *
+     * @param tableId table to be flagged for deletion
+     * @param flag true if it should be flagged, false if flag should be removed
+     */
+    public abstract void flagTableForDeletion( long tableId, boolean flag );
+
+    /**
+     * Is used to detect if a table is flagged for deletion.
+     * Effectively checks if a drop of this table is currently in progress.
+     * This is needed to ensure that there aren't any constraints when recursively removing a table and all placements and partitions.
+     *
+     * @param tableId table to be checked
+     * @return If table is flagged for deletion or not
+     */
+    public abstract boolean isTableFlaggedForDeletion( long tableId );
 
 
     /*
      *
      */
-
-    // public abstract CatalogCombinedKey getCombinedKey( long keyId ) throws GenericCatalogException, UnknownKeyException;
 
 
     public abstract void close();
@@ -1002,13 +1199,13 @@ public abstract class Catalog {
         }
 
 
-        public static TableType getById( final int id ) throws UnknownTableTypeException {
+        public static TableType getById( final int id ) {
             for ( TableType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
             }
-            throw new UnknownTableTypeException( id );
+            throw new UnknownTableTypeRuntimeException( id );
         }
 
 
@@ -1039,7 +1236,11 @@ public abstract class Catalog {
 
 
     public enum SchemaType {
-        RELATIONAL( 1 );
+        @SerializedName("relational")
+        RELATIONAL( 1 ),
+        @SerializedName("document")
+        DOCUMENT( 2 );
+
         // GRAPH, DOCUMENT, ...
 
         private final int id;
@@ -1055,13 +1256,13 @@ public abstract class Catalog {
         }
 
 
-        public static SchemaType getById( final int id ) throws UnknownSchemaTypeException {
+        public static SchemaType getById( final int id ) {
             for ( SchemaType t : values() ) {
                 if ( t.id == id ) {
                     return t;
                 }
             }
-            throw new UnknownSchemaTypeException( id );
+            throw new UnknownSchemaTypeRuntimeException( id );
         }
 
 
@@ -1111,6 +1312,11 @@ public abstract class Catalog {
             }
             throw new UnknownCollationException( str );
         }
+
+
+        public static Collation getDefaultCollation() {
+            return getById( RuntimeConfig.DEFAULT_COLLATION.getInteger() );
+        }
     }
 
 
@@ -1131,13 +1337,13 @@ public abstract class Catalog {
         }
 
 
-        public static Catalog.IndexType getById( int id ) throws UnknownIndexTypeException {
+        public static Catalog.IndexType getById( int id ) {
             for ( Catalog.IndexType e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownIndexTypeException( id );
+            throw new UnknownIndexTypeRuntimeException( id );
         }
 
 
@@ -1153,7 +1359,8 @@ public abstract class Catalog {
 
 
     public enum ConstraintType {
-        UNIQUE( 1 );
+        UNIQUE( 1 ),
+        PRIMARY( 2 );
 
         private final int id;
 
@@ -1168,13 +1375,13 @@ public abstract class Catalog {
         }
 
 
-        public static ConstraintType getById( int id ) throws UnknownConstraintTypeException {
+        public static ConstraintType getById( int id ) {
             for ( ConstraintType e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownConstraintTypeException( id );
+            throw new UnknownConstraintTypeRuntimeException( id );
         }
 
 
@@ -1188,6 +1395,7 @@ public abstract class Catalog {
 
 
     public enum ForeignKeyOption {
+        NONE( -1 ),
         // IDs according to JDBC standard
         //CASCADE( 0 ),
         RESTRICT( 1 );
@@ -1207,18 +1415,20 @@ public abstract class Catalog {
         }
 
 
-        public static ForeignKeyOption getById( int id ) throws UnknownForeignKeyOptionException {
+        public static ForeignKeyOption getById( int id ) {
             for ( ForeignKeyOption e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownForeignKeyOptionException( id );
+            throw new UnknownForeignKeyOptionRuntimeException( id );
         }
 
 
         public static ForeignKeyOption parse( @NonNull String str ) throws UnknownForeignKeyOptionException {
-            if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
+            if ( str.equalsIgnoreCase( "NONE" ) ) {
+                return ForeignKeyOption.NONE;
+            } else if ( str.equalsIgnoreCase( "RESTRICT" ) ) {
                 return ForeignKeyOption.RESTRICT;
             } /*else if ( str.equalsIgnoreCase( "CASCADE" ) ) {
                 return ForeignKeyOption.CASCADE;
@@ -1250,13 +1460,13 @@ public abstract class Catalog {
         }
 
 
-        public static PlacementType getById( int id ) throws UnknownPlacementTypeException {
+        public static PlacementType getById( int id ) {
             for ( PlacementType e : values() ) {
                 if ( e.id == id ) {
                     return e;
                 }
             }
-            throw new UnknownPlacementTypeException( id );
+            throw new UnknownPlacementTypeRuntimeException( id );
         }
 
 
@@ -1268,13 +1478,55 @@ public abstract class Catalog {
             }
             throw new UnknownPlacementTypeException( str );
         }
+
+
+    }
+
+
+    public enum PartitionType {
+        NONE( 0 ),
+        RANGE( 1 ),
+        LIST( 2 ),
+        HASH( 3 );
+
+        private final int id;
+
+
+        PartitionType( int id ) {
+            this.id = id;
+        }
+
+
+        public int getId() {
+            return id;
+        }
+
+
+        public static PartitionType getById( final int id ) {
+            for ( PartitionType t : values() ) {
+                if ( t.id == id ) {
+                    return t;
+                }
+            }
+            throw new UnknownPartitionTypeRuntimeException( id );
+        }
+
+
+        public static PartitionType getByName( final String name ) throws UnknownPartitionTypeException {
+            for ( PartitionType t : values() ) {
+                if ( t.name().equalsIgnoreCase( name ) ) {
+                    return t;
+                }
+            }
+            throw new UnknownPartitionTypeException( name );
+        }
+
     }
 
 
     public static class Pattern {
 
         public final String pattern;
-
         public final boolean containsWildcards;
 
 

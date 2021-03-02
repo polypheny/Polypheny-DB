@@ -21,12 +21,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogForeignKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownForeignKeyException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -75,18 +72,10 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
-
-        // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-        }
-
         try {
-            Catalog catalog = Catalog.getInstance();
-            CatalogForeignKey foreignKey = catalog.getForeignKey( catalogTable.id, foreignKeyName.getSimple() );
-            catalog.deleteForeignKey( foreignKey.id );
-        } catch ( GenericCatalogException | UnknownForeignKeyException e ) {
-            throw new RuntimeException( e );
+            DdlManager.getInstance().dropForeignKey( catalogTable, foreignKeyName.getSimple() );
+        } catch ( DdlOnSourceException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

@@ -383,6 +383,7 @@ public class SqlParserTest {
             "PARAMETER", "92", "99", "2003", "2011", "2014", "c",
             "PARTIAL", "92", "99",
             "PARTITION", "99", "2003", "2011", "2014", "c",
+            "PARTITIONS", "99", "2003", "2011", "2014", "c",
             "PATH", "92", "99",
             "PATTERN", "2014", "c",
             "PER", "2014", "c",

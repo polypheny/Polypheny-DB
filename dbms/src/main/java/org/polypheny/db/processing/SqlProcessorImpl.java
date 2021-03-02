@@ -59,14 +59,11 @@ import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlInsert;
-import org.polypheny.db.sql.SqlJoin;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlLiteral;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
-import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlUtil;
-import org.polypheny.db.sql.ddl.SqlCreateView;
 import org.polypheny.db.sql.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.parser.SqlParseException;
@@ -117,6 +114,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.start();
         SqlNode parsed;
+        log.debug( "SQL: {}", sql );
+
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();

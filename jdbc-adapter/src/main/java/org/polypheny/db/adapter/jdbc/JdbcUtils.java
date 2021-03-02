@@ -47,7 +47,6 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -137,6 +136,7 @@ public final class JdbcUtils {
                 }
             }
         }
+
     }
 
 
@@ -236,6 +236,7 @@ public final class JdbcUtils {
             int offset = TimeZone.getDefault().getOffset( time );
             return new Date( time + offset );
         }
+
     }
 
 
@@ -273,8 +274,15 @@ public final class JdbcUtils {
     }
 
 
-    public static List<Information> buildInformationPoolSize( InformationPage page, InformationGroup group, ConnectionFactory connectionFactory, String uniqueName ) {
-        List<Information> informationElements = new ArrayList<>();
+    /**
+     * Builds and adds an new information group, observing the connection pool, to the provided information objects
+     *
+     * @param informationPage The information page used to show information on this jdbc adapter
+     * @param groups The collection of information groups associated with this adapter
+     * @param informationElements The collection of information elements associated with this adapter
+     */
+    public static void addInformationPoolSize( InformationPage informationPage, List<InformationGroup> groups, List<Information> informationElements, ConnectionFactory connectionFactory, String uniqueName ) {
+        InformationGroup group = new InformationGroup( informationPage, "JDBC Connection Pool" );
 
         InformationGraph connectionPoolSizeGraph = new InformationGraph(
                 group,
@@ -305,7 +313,8 @@ public final class JdbcUtils {
             connectionPoolSizeTable.addRow( "Max", max );
         } );
 
-        return informationElements;
+        groups.add( group );
+
     }
 
 }
