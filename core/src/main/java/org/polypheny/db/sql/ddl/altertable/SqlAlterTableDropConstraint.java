@@ -21,12 +21,9 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogConstraint;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownConstraintException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -74,17 +71,10 @@ public class SqlAlterTableDropConstraint extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
-
-        // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-        }
-
         try {
-            CatalogConstraint constraint = Catalog.getInstance().getConstraint( catalogTable.id, constraintName.getSimple() );
-            Catalog.getInstance().deleteConstraint( constraint.id );
-        } catch ( GenericCatalogException | UnknownConstraintException e ) {
-            throw new RuntimeException( e );
+            DdlManager.getInstance().dropConstraint( catalogTable, constraintName.getSimple() );
+        } catch ( DdlOnSourceException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

@@ -252,7 +252,7 @@ public class SqlFunctions {
             }
             for ( Tag tag : dir.getTags() ) {
                 if ( tag.getTagName().equalsIgnoreCase( tagName ) ) {
-                    return new MetadataModel( tag ).toJson();
+                    return tag.getDescription();
                 }
             }
         }

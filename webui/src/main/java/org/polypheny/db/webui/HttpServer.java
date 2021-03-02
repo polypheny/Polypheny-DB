@@ -150,6 +150,16 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/addDropPlacement", crud::addDropPlacement, gson::toJson );
 
+        webuiServer.get( "/getPartitionTypes", crud::getPartitionTypes );
+
+        webuiServer.post( "/getPartitionFunctionModel", crud::getPartitionFunctionModel, gson::toJson );
+
+        webuiServer.post( "/partitionTable", crud::partitionTable, gson::toJson );
+
+        webuiServer.post( "/mergePartitions", crud::mergePartitions, gson::toJson );
+
+        webuiServer.post( "/modifyPartitions", crud::modifyPartitions, gson::toJson );
+
         webuiServer.post( "/getAnalyzerPage", crud::getAnalyzerPage );
 
         webuiServer.post( "/schemaRequest", crud::schemaRequest, gson::toJson );

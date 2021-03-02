@@ -37,12 +37,10 @@ package org.polypheny.db.sql.ddl;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
-import java.util.Arrays;
 import java.util.List;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogSchema;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
+import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDrop;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -95,33 +93,11 @@ public class SqlDropSchema extends SqlDrop implements SqlExecutableStatement {
     @Override
     public void execute( Context context, Statement statement ) {
         try {
-            Catalog catalog = Catalog.getInstance();
-            // Check if there is a schema with this name
-            if ( catalog.checkIfExistsSchema( context.getDatabaseId(), name.getSimple() ) ) {
-                CatalogSchema catalogSchema = catalog.getSchema( context.getDatabaseId(), name.getSimple() );
-
-                // Drop all tables in this schema
-                List<CatalogTable> catalogTables = catalog.getTables( catalogSchema.id, null );
-                catalogTables.forEach( catalogTable -> {
-                    new SqlDropTable(
-                            SqlParserPos.ZERO,
-                            false,
-                            new SqlIdentifier( Arrays.asList( catalogTable.getDatabaseName(), catalogTable.getSchemaName(), catalogTable.name ), SqlParserPos.ZERO )
-                    ).execute( context, statement );
-                } );
-
-                // Drop schema
-                catalog.deleteSchema( catalogSchema.id );
-            } else {
-                if ( ifExists ) {
-                    // This is ok because "IF EXISTS" was specified
-                    return;
-                } else {
-                    throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.getSimple() ) );
-                }
-            }
-        } catch ( UnknownSchemaException e ) {
-            throw new RuntimeException( e );
+            DdlManager.getInstance().dropSchema( context.getDatabaseId(), name.getSimple(), ifExists, statement );
+        } catch ( SchemaNotExistException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.getSimple() ) );
+        } catch ( DdlOnSourceException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

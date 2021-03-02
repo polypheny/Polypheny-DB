@@ -34,6 +34,8 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManagerImpl;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
@@ -222,6 +224,9 @@ public class PolyphenyDb {
             }
             throw new RuntimeException( "Something went wrong while restoring stores from the catalog.", e );
         }
+
+        // Initialize DdlManager
+        DdlManager.setAndGetInstance( new DdlManagerImpl( catalog ) );
 
         // Start Polypheny UI
         final HttpServer httpServer = new HttpServer( transactionManager, authenticator );

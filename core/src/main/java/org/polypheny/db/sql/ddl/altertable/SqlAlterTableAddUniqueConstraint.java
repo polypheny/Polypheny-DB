@@ -19,15 +19,12 @@ package org.polypheny.db.sql.ddl.altertable;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
+import java.util.stream.Collectors;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.GenericCatalogException;
-import org.polypheny.db.catalog.exceptions.UnknownColumnException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.DdlOnSourceException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -50,7 +47,11 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
     private final SqlNodeList columnList;
 
 
-    public SqlAlterTableAddUniqueConstraint( SqlParserPos pos, SqlIdentifier table, SqlIdentifier constraintName, SqlNodeList columnList ) {
+    public SqlAlterTableAddUniqueConstraint(
+            SqlParserPos pos,
+            SqlIdentifier table,
+            SqlIdentifier constraintName,
+            SqlNodeList columnList ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.constraintName = Objects.requireNonNull( constraintName );
@@ -81,21 +82,13 @@ public class SqlAlterTableAddUniqueConstraint extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
 
-        // Make sure that this is a table of type TABLE (and not SOURCE)
-        if ( catalogTable.tableType != TableType.TABLE ) {
-            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
-        }
-
         try {
-            List<Long> columnIds = new LinkedList<>();
-            for ( SqlNode node : columnList.getList() ) {
-                String columnName = node.toString();
-                CatalogColumn catalogColumn = Catalog.getInstance().getColumn( catalogTable.id, columnName );
-                columnIds.add( catalogColumn.id );
-            }
-            Catalog.getInstance().addUniqueConstraint( catalogTable.id, constraintName.getSimple(), columnIds );
-        } catch ( GenericCatalogException | UnknownColumnException e ) {
-            throw new RuntimeException( e );
+            DdlManager.getInstance().addUniqueConstraint(
+                    catalogTable,
+                    columnList.getList().stream().map( SqlNode::toString ).collect( Collectors.toList() ),
+                    constraintName.getSimple() );
+        } catch ( DdlOnSourceException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.ddlOnSourceTable() );
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,9 +50,6 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
     private final SqlNode config;
 
 
-    /**
-     * Creates a SqlAlterSchemaOwner.
-     */
     public SqlAlterInterfacesAdd( SqlParserPos pos, SqlNode uniqueName, SqlNode clazzName, SqlNode config ) {
         super( OPERATOR, pos );
         this.uniqueName = Objects.requireNonNull( uniqueName );
@@ -102,5 +99,6 @@ public class SqlAlterInterfacesAdd extends SqlAlter {
         }
         return str;
     }
+
 }
 

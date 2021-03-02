@@ -21,13 +21,11 @@ import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.adapter.index.IndexManager;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
-import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.exception.LastPlacementException;
+import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
@@ -78,40 +76,17 @@ public class SqlAlterTableDropPlacement extends SqlAlterTable {
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
-        // Check whether this placement exists
-        if ( !catalogTable.placementsByAdapter.containsKey( storeInstance.getAdapterId() ) ) {
-            throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
-        }
 
-        // Check if there are is another placement for every column on this store
-        for ( CatalogColumnPlacement placement : Catalog.getInstance().getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) ) {
-            List<CatalogColumnPlacement> existingPlacements = Catalog.getInstance().getColumnPlacements( placement.columnId );
-            if ( existingPlacements.size() < 2 ) {
-                throw SqlUtil.newContextException( storeName.getParserPosition(), RESOURCE.onlyOnePlacementLeft() );
-            }
-        }
-        // Drop all indexes on this store
-        for ( CatalogIndex index : Catalog.getInstance().getIndexes( catalogTable.id, false ) ) {
-            if ( index.location == storeInstance.getAdapterId() ) {
-                if ( index.location == 0 ) {
-                    // Delete polystore index
-                    IndexManager.getInstance().deleteIndex( index );
-                } else {
-                    // Delete index on store
-                    AdapterManager.getInstance().getStore( index.location ).dropIndex( context, index );
-                }
-                // Delete index in catalog
-                Catalog.getInstance().deleteIndex( index.id );
-            }
-        }
-        // Physically delete the data from the store
-        storeInstance.dropTable( context, catalogTable );
-        // Inform routing
-        statement.getRouter().dropPlacements( Catalog.getInstance().getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id ) );
-        // Delete placement in the catalog
-        List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( storeInstance.getAdapterId(), catalogTable.id );
-        for ( CatalogColumnPlacement placement : placements ) {
-            Catalog.getInstance().deleteColumnPlacement( storeInstance.getAdapterId(), placement.columnId );
+        try {
+            DdlManager.getInstance().dropPlacement( catalogTable, storeInstance, statement );
+        } catch ( PlacementNotExistsException e ) {
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.placementDoesNotExist( catalogTable.name, storeName.getSimple() ) );
+        } catch ( LastPlacementException e ) {
+            throw SqlUtil.newContextException(
+                    storeName.getParserPosition(),
+                    RESOURCE.onlyOnePlacementLeft() );
         }
     }
 
