@@ -59,6 +59,7 @@ import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownTableTypeException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -351,7 +352,7 @@ public abstract class Catalog {
      * @param viewTable List of tables used for View
      * @return The id of the inserted table
      */
-    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTable );
+    public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTable, SqlNodeList viewColumns );
 
     /**
      * Checks if there is a table with the specified name in the specified schema.

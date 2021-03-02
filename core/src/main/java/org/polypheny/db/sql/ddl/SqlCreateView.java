@@ -122,14 +122,20 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         }
 
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
-        RelNode relNode = sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel;
+        RelNode relNode = (sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel);
 
         try {
-
             if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
                 throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
             }
             getViewTables( query );
+
+            //List<String> viewColumns = null;
+            SqlNodeList viewColumns = null;
+            if ( this.query instanceof SqlSelect ) {
+                // viewColumns = (((SqlNodeList)((SqlSelect)this.query).getSelectList()).getList()).stream().map(name -> ((SqlIdentifier)name).names).map( names -> names.get( names.size() - 1 ) ).collect( Collectors.toList() );
+                viewColumns = ((SqlSelect) this.query).getSelectList();
+            }
 
             long tableId = catalog.addTable(
                     viewName,
@@ -138,9 +144,10 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     TableType.VIEW,
                     false,
                     relNode,
-                    viewTables
-
+                    viewTables,
+                    viewColumns
             );
+
 
         } catch ( RuntimeException e ) {
             throw new RuntimeException();

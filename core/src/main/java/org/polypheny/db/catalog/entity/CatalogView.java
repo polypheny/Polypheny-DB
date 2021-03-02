@@ -26,31 +26,35 @@ import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlKind;
 
-public class CatalogView extends CatalogTable{
+public class CatalogView extends CatalogTable {
 
     public CatalogView( long id, @NonNull String name, ImmutableList<Long> columnIds, long schemaId, long databaseId, int ownerId, @NonNull String ownerName, @NonNull Catalog.TableType type, RelNode definition, Long primaryKey, @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter, boolean modifiable ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable );
     }
 
-    public RelRoot prepareRelRoot(RelRoot logicalRoot){
+
+    public RelRoot prepareView( RelOptCluster cluster, RelDataType rowType ) {
         RelRoot viewLogicalRoot = RelRoot.of( definition, SqlKind.SELECT );
-        RelOptCluster relOptCluster = logicalRoot.rel.getCluster();
-        repareViewCluster( viewLogicalRoot.rel, relOptCluster );
+        repareView( viewLogicalRoot.rel, cluster );
+        //((LogicalProject)viewLogicalRoot.rel).setRowType( rowType );
         return viewLogicalRoot;
     }
 
-    public void repareViewCluster (RelNode viewLogicalRoot, RelOptCluster relOptCluster){
-        if(viewLogicalRoot instanceof LogicalProject ){
+
+    public void repareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster ) {
+        if ( viewLogicalRoot instanceof LogicalProject ) {
             ((LogicalProject) viewLogicalRoot).setCluster( relOptCluster );
-            repareViewCluster( ((LogicalProject) viewLogicalRoot).getInput(), relOptCluster );
-        }else if(viewLogicalRoot instanceof LogicalJoin ){
+            repareView( ((LogicalProject) viewLogicalRoot).getInput(), relOptCluster );
+        } else if ( viewLogicalRoot instanceof LogicalJoin ) {
             ((LogicalJoin) viewLogicalRoot).setCluster( relOptCluster );
-            repareViewCluster(((LogicalJoin) viewLogicalRoot).getLeft(), relOptCluster );
-            repareViewCluster(((LogicalJoin) viewLogicalRoot).getRight(), relOptCluster );
-        }else if(viewLogicalRoot instanceof LogicalTableScan ){
-            ((LogicalTableScan)viewLogicalRoot).setCluster( relOptCluster );
+            repareView( ((LogicalJoin) viewLogicalRoot).getLeft(), relOptCluster );
+            repareView( ((LogicalJoin) viewLogicalRoot).getRight(), relOptCluster );
+
+        } else if ( viewLogicalRoot instanceof LogicalTableScan ) {
+            ((LogicalTableScan) viewLogicalRoot).setCluster( relOptCluster );
         }
     }
 

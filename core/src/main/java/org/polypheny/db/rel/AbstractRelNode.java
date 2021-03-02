@@ -91,6 +91,7 @@ public abstract class AbstractRelNode implements RelNode, Serializable {
     /**
      * Cached type of this relational expression.
      */
+    @Setter
     protected RelDataType rowType;
 
     /**

@@ -78,6 +78,12 @@ public class ViewTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
+
     /**
      * Table macro that returns a view.
      *

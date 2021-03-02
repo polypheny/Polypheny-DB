@@ -138,6 +138,12 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     }
 
 
+    @Override
+    public Long getTableId() {
+        return tableId;
+    }
+
+
     public class FileQueryable<T> extends AbstractTableQueryable<T> {
 
         public FileQueryable( DataContext dataContext, SchemaPlus schema, FileTranslatableTable table, String tableName ) {

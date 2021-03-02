@@ -252,6 +252,12 @@ public class JdbcTable extends AbstractQueryableTable implements TranslatableTab
     }
 
 
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
+
     /**
      * Enumerable that returns the contents of a {@link JdbcTable} by connecting to the JDBC data source.
      *

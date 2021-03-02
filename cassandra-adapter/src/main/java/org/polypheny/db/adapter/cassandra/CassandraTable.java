@@ -168,11 +168,17 @@ public class CassandraTable extends AbstractQueryableTable implements Translatab
     }
 
 
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
+
     /**
      * Executes a CQL query on the underlying table.
      *
-     * @param session    Cassandra session
-     * @param fields     List of fields to project
+     * @param session Cassandra session
+     * @param fields List of fields to project
      * @param predicates A list of predicates which should be used in the query
      * @return Enumerator of results
      */

@@ -499,7 +499,7 @@ public class SqlToRelConverter {
      * @param needsValidation Whether to validate the query before converting; <code>false</code> if the query has already been validated.
      * @param top Whether the query is top-level, say if its result will become a JDBC result set; <code>false</code> if the query will be part of a view.
      */
-    //ToDo Isabel: check convertQuery what does it doe exactly (can I use: top =false)
+    //ToDo IG: check convertQuery what does it doe exactly (can I use: top =false)
     public RelRoot convertQuery( SqlNode query, final boolean needsValidation, final boolean top ) {
         if ( needsValidation ) {
             query = validator.validate( query );
@@ -3846,6 +3846,7 @@ public class SqlToRelConverter {
 
             // Found in current query's from list.  Find which from item.
             // We assume that the order of the from clause items has been preserved.
+            //TODO IG: Order has not peen preserved....
             final SqlValidatorScope ancestorScope = resolve.scope;
             boolean isParent = ancestorScope != scope;
             if ( (inputs != null) && !isParent ) {

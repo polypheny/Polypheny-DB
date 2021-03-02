@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.Ord;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException.SerializationError;
@@ -83,6 +84,9 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.sql.SqlIdentifier;
+import org.polypheny.db.sql.SqlNode;
+import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -1207,7 +1211,7 @@ public class CatalogImpl extends Catalog {
 
     @Override
     public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
-        return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null );
+        return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null, null );
     }
 
 
@@ -1223,7 +1227,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTables ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTables, SqlNodeList viewColumns ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1254,27 +1258,28 @@ public class CatalogImpl extends Catalog {
         if ( tableType == TableType.VIEW ) {
             table = table.generateView();
             if ( viewTables != null ) {
-                List<Long> columnIds = new ArrayList<>( table.columnIds );
+                List<Long> columnIds = new ArrayList<>();
                 for ( String t : viewTables ) {
                     try {
                         CatalogTable parentTable = getTable( schemaId, t );
-                        tableChildren.replace( id, tableChildren.get( parentTable.id ) );
-                        for ( Long cId : parentTable.columnIds ) {
-                            columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, Objects.requireNonNull( columns.get( cId ) ).name }, columns.get( cId ) );
+                        for ( Ord<SqlNode> c : Ord.zip( viewColumns ) ) {
+                            String viewColName = ((SqlIdentifier) c.getValue()).names.get( ((SqlIdentifier) c.getValue()).names.size() - 1 );
+                            for ( Long cId : parentTable.columnIds ) {
+                                String parentColumnName = Objects.requireNonNull( columns.get( cId ) ).name;
+                                if ( viewColName.equals( parentColumnName ) ) {
+                                    columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, parentColumnName }, columns.get( cId ) );
+                                    columnIds.add( cId );
+                                }
+                            }
                         }
-
-                        columnIds.addAll( parentTable.columnIds );
-
-                        CatalogTable updatedTable = new CatalogView( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
-                        tables.replace( id, updatedTable );
-                        tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
-
                         //TODO IG: fix catch
                     } catch ( UnknownTableException e ) {
-                        throw new RuntimeException();
+                        throw new RuntimeException( e );
                     }
-
                 }
+                CatalogTable updatedTable = new CatalogView( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
+                tables.replace( id, updatedTable );
+                tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
             }
         }
 

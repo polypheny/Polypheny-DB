@@ -103,5 +103,12 @@ public class CsvFilterableTable extends CsvTable implements FilterableTable {
         }
         return false;
     }
+
+
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
 }
 

@@ -267,6 +267,12 @@ public class ReflectiveSchema extends AbstractSchema {
 
 
         @Override
+        public Long getTableId() {
+            return null;
+        }
+
+
+        @Override
         public Enumerable<Object[]> scan( DataContext root ) {
             if ( elementType == Object[].class ) {
                 //noinspection unchecked

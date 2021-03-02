@@ -46,7 +46,6 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     private final String logicalSchemaName;
     @Getter
     private final String logicalTableName;
-    @Getter
     private final long tableId;
 
     @Getter
@@ -127,6 +126,11 @@ public class LogicalTable extends AbstractQueryableTable implements Translatable
     @Override
     public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
         throw new RuntimeException( "toRel() is not implemented for Logical Tables!" );
+    }
+
+
+    public Long getTableId() {
+        return tableId;
     }
 
 }

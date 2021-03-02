@@ -89,5 +89,10 @@ public abstract class AbstractTable implements Table, Wrapper, Serializable {
     public boolean rolledUpColumnValidInsideAgg( String column, SqlCall call, SqlNode parent ) {
         return true;
     }
+
+
+    @Override
+    public abstract Long getTableId();
+
 }
 

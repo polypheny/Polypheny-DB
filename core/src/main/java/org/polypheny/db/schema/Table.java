@@ -55,6 +55,8 @@ import org.polypheny.db.sql.SqlNode;
  */
 public interface Table {
 
+    Long getTableId();
+
     /**
      * Returns this table's row type.
      *

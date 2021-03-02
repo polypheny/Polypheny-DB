@@ -173,6 +173,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         boolean lock = !isSubquery;
 
         final StopWatch stopWatch = new StopWatch();
+
 /*
         stopWatch.start();
         if ( logicalRoot.kind.equals( SqlKind.SELECT ) ) {
