@@ -89,8 +89,10 @@ import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -1256,6 +1258,27 @@ public class DdlManagerImpl extends DdlManager {
 
         // Rest plan cache and implementation cache (not sure if required in this case)
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void createView( String viewName, long schemaId, RelNode relNode, List<String> viewTables, SqlNodeList viewColumns, Statement statement ) throws TableAlreadyExistsException {
+
+        if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
+            throw new TableAlreadyExistsException();
+        }
+
+        long tableId = catalog.addTable(
+                viewName,
+                schemaId,
+                statement.getPrepareContext().getCurrentUserId(),
+                TableType.VIEW,
+                false,
+                relNode,
+                viewTables,
+                viewColumns
+        );
+
     }
 
 

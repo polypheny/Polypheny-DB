@@ -41,10 +41,11 @@ import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
+import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
@@ -100,7 +101,6 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement ) {
-        // DdlManager.getInstance().createView(); TODO IG move to ddlmanager
         Catalog catalog = Catalog.getInstance();
         String viewName;
         long schemaId;
@@ -125,33 +125,24 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         RelNode relNode = (sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel);
 
+        getViewTables( query );
+
+        SqlNodeList viewColumns = null;
+        if ( this.query instanceof SqlSelect ) {
+            // viewColumns = (((SqlNodeList)((SqlSelect)this.query).getSelectList()).getList()).stream().map(name -> ((SqlIdentifier)name).names).map( names -> names.get( names.size() - 1 ) ).collect( Collectors.toList() );
+            viewColumns = ((SqlSelect) this.query).getSelectList();
+        }
+
         try {
-            if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
-                throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
-            }
-            getViewTables( query );
-
-            //List<String> viewColumns = null;
-            SqlNodeList viewColumns = null;
-            if ( this.query instanceof SqlSelect ) {
-                // viewColumns = (((SqlNodeList)((SqlSelect)this.query).getSelectList()).getList()).stream().map(name -> ((SqlIdentifier)name).names).map( names -> names.get( names.size() - 1 ) ).collect( Collectors.toList() );
-                viewColumns = ((SqlSelect) this.query).getSelectList();
-            }
-
-            long tableId = catalog.addTable(
+            DdlManager.getInstance().createView(
                     viewName,
                     schemaId,
-                    context.getCurrentUserId(),
-                    TableType.VIEW,
-                    false,
                     relNode,
                     viewTables,
-                    viewColumns
-            );
-
-
-        } catch ( RuntimeException e ) {
-            throw new RuntimeException();
+                    viewColumns,
+                    statement );
+        } catch ( TableAlreadyExistsException e ) {
+            throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         }
 
     }

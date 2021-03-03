@@ -373,7 +373,8 @@ public abstract class Catalog {
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
      * @param definition The definition of this table RelNode with all information of table (used for Views)
-     * @param viewTable List of tables used for View
+     * @param viewTable all tables used for View
+     * @param viewColumns all columns selected within the viewTable
      * @return The id of the inserted table
      */
     public abstract long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTable, SqlNodeList viewColumns );

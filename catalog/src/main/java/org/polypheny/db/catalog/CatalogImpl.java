@@ -1267,6 +1267,17 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    /**
+     * Adds a table to a specified schema.
+     *
+     * @param name The name of the table to add
+     * @param schemaId The id of the schema
+     * @param ownerId The if of the owner
+     * @param tableType The table type
+     * @param modifiable Whether the content of the table can be modified
+     * @param definition RelNode used to create Views (null if not applicable)
+     * @return The id of the inserted table
+     */
     @Override
     public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
         return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null, null );
@@ -1281,7 +1292,9 @@ public class CatalogImpl extends Catalog {
      * @param ownerId The if of the owner
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
-     * @param definition The definition of this table (e.g. a SQL string; null if not applicable)
+     * @param definition RelNode used to create Views
+     * @param viewColumns all tables that were used within the Select statement (only used for views)
+     * @param viewTables all columns from all tables used within the Select statement (only used for views)
      * @return The id of the inserted table
      */
     @Override
