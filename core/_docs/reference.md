@@ -66,8 +66,16 @@ The page describes the SQL dialect recognized by Polypheny-DB's default SQL pars
 SQL grammar in [BNF](https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_Form)-like
 form.
 
-{% highlight sql %} statement:
-alterStatement | explain | describe | insert | update | merge | delete | query
+{% highlight sql %}
+statement:
+alterStatement
+|   explain
+|   describe
+|   insert
+|   update
+|   merge
+|   delete
+|   query
 
 alterStatement:
 ALTER ( SYSTEM | SESSION ) SET identifier '=' expression | ALTER ( SYSTEM | SESSION ) RESET identifier | ALTER ( SYSTEM | SESSION ) RESET ALL | ALTER SCHEMA [ databaseName . ] schemaName RENAME TO newSchemaName  
@@ -77,11 +85,23 @@ ALTER ( SYSTEM | SESSION ) SET identifier '=' expression | ALTER ( SYSTEM | SESS
 | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName physicalName AS name [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
 | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET NOT NULL | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP NOT NULL | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET COLLATION collation | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET DEFAULT value | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName DROP DEFAULT | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET TYPE type | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY COLUMN columnName SET POSITION ( BEFORE | AFTER ) columnName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PRIMARY KEY ( columnName | '(' columnName [ , columnName ]* ')' )
 | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PRIMARY KEY | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT constraintName UNIQUE ( columnName| '(' columnName [ , columnName ]* ')' )
-| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP CONSTRAINT constraintName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT foreignKeyName FOREIGN KEY ( columnName | '(' columnName [ , columnName ]* ')' ) REFERENCES [ databaseName . ] [ schemaName . ] tableName '(' columnName [ , columnName ]* ')' [ ON UPDATE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ] [ ON DELETE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ]
-| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP FOREIGN KEY foreignKeyName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD [UNIQUE] INDEX indexName ON ( columnName | '(' columnName [ , columnName ]* ')' ) [ USING indexMethod ] [ ON STORE storeName ]
-| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT [( columnName | '(' columnName [ , columnName ]* ')' )] ON STORE storeUniqueName [ WITH PARTITIONS '(' partitionId [ , partitionId ]* ')']
-| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT ( ADD | DROP ) COLUMN columnName ON STORE storeUniqueName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT '(' columnName [ , columnName ]* ')' ON STORE storeUniqueName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT ON STORE storeUniqueName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName PARTITION BY ( HASH | RANGE | LIST) '(' columnName ')' [PARTITIONS numPartitions | with (partitionName1, partitionName2 [, partitionNameN]* ) ]
-| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MERGE PARTITIONS | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PARTITIONS '(' partitionId [ , partitionId ]* ')' ON STORE storeName | ALTER CONFIG key SET value | ALTER ADAPTERS ADD uniqueName USING adapterClass WITH config | ALTER ADAPTERS DROP uniqueName | ALTER INTERFACES ADD uniqueName USING clazzName WITH config | ALTER INTERFACES DROP uniqueName
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP CONSTRAINT constraintName
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD CONSTRAINT foreignKeyName FOREIGN KEY ( columnName | '(' columnName [ , columnName ]* ')' ) REFERENCES [ databaseName . ] [ schemaName . ] tableName '(' columnName [ , columnName ]* ')' [ ON UPDATE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ] [ ON DELETE ( CASCADE | RESTRICT | SET NULL | SET DEFAULT ) ]
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP FOREIGN KEY foreignKeyName
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD [UNIQUE] INDEX indexName ON ( columnName | '(' columnName [ , columnName ]* ')' ) [ USING indexMethod ] [ ON STORE storeName ]
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP INDEX indexName
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD PLACEMENT [( columnName | '(' columnName [ , columnName ]* ')' )] ON STORE storeUniqueName [ WITH PARTITIONS '(' partitionId [ , partitionId ]* ')']
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT ( ADD | DROP ) COLUMN columnName ON STORE storeUniqueName
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PLACEMENT '(' columnName [ , columnName ]* ')' ON STORE storeUniqueName
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP PLACEMENT ON STORE storeUniqueName
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName PARTITION BY ( HASH | RANGE | LIST) '(' columnName ')' [PARTITIONS numPartitions | with (partitionName1, partitionName2 [, partitionNameN]* ) ]
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MERGE PARTITIONS
+| ALTER TABLE [ databaseName . ] [ schemaName . ] tableName MODIFY PARTITIONS '(' partitionId [ , partitionId ]* ')' ON STORE storeName
+| ALTER CONFIG key SET value
+| ALTER ADAPTERS ADD uniqueName USING adapterClass WITH config
+| ALTER ADAPTERS DROP uniqueName
+| ALTER INTERFACES ADD uniqueName USING clazzName WITH config
+| ALTER INTERFACES DROP uniqueName
 
 explain:
 EXPLAIN PLAN
@@ -91,8 +111,11 @@ EXPLAIN PLAN
 FOR ( query | insert | update | merge | delete )
 
 describe:
-DESCRIBE DATABASE databaseName | DESCRIBE CATALOG [ databaseName . ] catalogName | DESCRIBE SCHEMA [ [ databaseName . ] catalogName ] . schemaName | DESCRIBE [ TABLE ] [ [ [ databaseName . ] catalogName . ] schemaName . ] tableName [ columnName ]
-| DESCRIBE [ STATEMENT ] ( query | insert | update | merge | delete )
+DESCRIBE DATABASE databaseName
+|  DESCRIBE CATALOG [ databaseName . ] catalogName
+|  DESCRIBE SCHEMA [ [ databaseName . ] catalogName ] . schemaName
+|  DESCRIBE [ TABLE ] [ [ [ databaseName . ] catalogName . ] schemaName . ] tableName [ columnName ]
+|  DESCRIBE [ STATEMENT ] ( query | insert | update | merge | delete )
 
 insert:
 ( INSERT | UPSERT ) INTO tablePrimary
@@ -100,7 +123,8 @@ insert:
 query
 
 update:
-UPDATE tablePrimary SET assign [, assign ]*
+UPDATE tablePrimary
+SET assign [, assign ]*
 [ WHERE booleanExpression ]
 
 assign:
@@ -108,7 +132,8 @@ identifier '=' expression
 
 merge:
 MERGE INTO tablePrimary [ [ AS ] alias ]
-USING tablePrimary ON booleanExpression
+USING tablePrimary
+ON booleanExpression
 [ WHEN MATCHED THEN UPDATE SET assign [, assign ]* ]
 [ WHEN NOT MATCHED THEN INSERT VALUES '(' value [ , value ]* ')' ]
 
@@ -117,7 +142,16 @@ DELETE FROM tablePrimary [ [ AS ] alias ]
 [ WHERE booleanExpression ]
 
 query:
-values | WITH withItem [ , withItem ]* query | { select | selectWithoutFrom | query UNION [ ALL | DISTINCT ] query | query EXCEPT [ ALL | DISTINCT ] query | query MINUS [ ALL | DISTINCT ] query | query INTERSECT [ ALL | DISTINCT ] query }
+values
+|   WITH withItem [ , withItem ]* query
+|   {
+select
+|   selectWithoutFrom
+|   query UNION [ ALL | DISTINCT ] query
+|   query EXCEPT [ ALL | DISTINCT ] query
+|   query MINUS [ ALL | DISTINCT ] query
+|   query INTERSECT [ ALL | DISTINCT ] query
+}
 [ ORDER BY orderItem [, orderItem ]* ]
 [ LIMIT [ start, ] { count | ALL } ]
 [ OFFSET start { ROW | ROWS } ]
@@ -133,7 +167,8 @@ expression [ ASC | DESC ] [ NULLS FIRST | NULLS LAST ]
 
 select:
 SELECT [ STREAM ] [ ALL | DISTINCT ]
-{ * | projectItem [, projectItem ]* } FROM tableExpression
+{ * | projectItem [, projectItem ]* }
+FROM tableExpression
 [ WHERE booleanExpression ]
 [ GROUP BY { groupItem [, groupItem ]* } ]
 [ HAVING booleanExpression ]
@@ -145,15 +180,17 @@ SELECT [ ALL | DISTINCT ]
 
 projectItem:
 expression [ [ AS ] columnAlias ]
-| tableAlias . *
+|   tableAlias . *
 
 tableExpression:
 tableReference [, tableReference ]*
-| tableExpression [ NATURAL ] [ ( LEFT | RIGHT | FULL ) [ OUTER ] ] JOIN tableExpression [ joinCondition ]
-| tableExpression CROSS JOIN tableExpression | tableExpression [ CROSS | OUTER ] APPLY tableExpression
+|   tableExpression [ NATURAL ] [ ( LEFT | RIGHT | FULL ) [ OUTER ] ] JOIN tableExpression [ joinCondition ]
+|   tableExpression CROSS JOIN tableExpression
+|   tableExpression [ CROSS | OUTER ] APPLY tableExpression
 
 joinCondition:
-ON booleanExpression | USING '(' column [, column ]* ')'
+ON booleanExpression
+|   USING '(' column [, column ]* ')'
 
 tableReference:
 tablePrimary
@@ -163,9 +200,9 @@ tablePrimary
 tablePrimary:
 [ [ catalogName . ] schemaName . ] tableName
 '(' TABLE [ [ catalogName . ] schemaName . ] tableName ')'
-| tablePrimary [ EXTEND ] '(' columnDecl [, columnDecl ]* ')'
+|   tablePrimary [ EXTEND ] '(' columnDecl [, columnDecl ]* ')'
 |   [ LATERAL ] '(' query ')'
-| UNNEST '(' expression ')' [ WITH ORDINALITY ]
+|   UNNEST '(' expression ')' [ WITH ORDINALITY ]
 |   [ LATERAL ] TABLE '(' [ SPECIFIC ] functionName '(' expression [, expression ]* ')' ')'
 
 columnDecl:
@@ -175,14 +212,16 @@ values:
 VALUES expression [, expression ]*
 
 groupItem:
-expression |   '(' ')'
+expression
+|   '(' ')'
 |   '(' expression [, expression ]* ')'
-| CUBE '(' expression [, expression ]* ')'
-| ROLLUP '(' expression [, expression ]* ')'
-| GROUPING SETS '(' groupItem [, groupItem ]* ')'
+|   CUBE '(' expression [, expression ]* ')'
+|   ROLLUP '(' expression [, expression ]* ')'
+|   GROUPING SETS '(' groupItem [, groupItem ]* ')'
 
 windowRef:
-windowName | windowSpec
+windowName
+|   windowSpec
 
 windowSpec:
 [ windowName ]
@@ -190,12 +229,15 @@ windowSpec:
 [ ORDER BY orderItem [, orderItem ]* ]
 [ PARTITION BY expression [, expression ]* ]
 [
-RANGE numericOrIntervalExpression { PRECEDING | FOLLOWING } | ROWS numericExpression { PRECEDING | FOLLOWING }
+RANGE numericOrIntervalExpression { PRECEDING | FOLLOWING }
+|   ROWS numericExpression { PRECEDING | FOLLOWING }
 ]
 ')'
 {% endhighlight %}
 
-In *insert*, if the INSERT or UPSERT statement does not specify a list of target columns, the query must have the same number of columns as the target table, except in certain
+In *insert*, if the INSERT or UPSERT statement does not specify a
+list of target columns, the query must have the same number of
+columns as the target table, except in certain
 [conformance levels]({{ site.apiRoot }}/org/polypheny/db/sql/validate/SqlConformance.html#isInsertSubsetColumnsAllowed--).
 
 In *merge*, at least one of the WHEN MATCHED and WHEN NOT MATCHED clauses must
@@ -632,15 +674,34 @@ OCTETS,
 OPTION,
 OPTIONS,
 **OR**,
-**ORDER**, ORDERING, ORDINALITY, OTHERS,
+**ORDER**,
+ORDERING,
+ORDINALITY,
+OTHERS,
 **OUT**,
-**OUTER**, OUTPUT,
+**OUTER**,
+OUTPUT,
 **OVER**,
 **OVERLAPS**,
-**OVERLAY**, OVERRIDING, OWNER, PAD,
-**PARAMETER**, PARAMETER_MODE, PARAMETER_NAME, PARAMETER_ORDINAL_POSITION, PARAMETER_SPECIFIC_CATALOG, PARAMETER_SPECIFIC_NAME, PARAMETER_SPECIFIC_SCHEMA, PARTIAL,
+**OVERLAY**,
+OVERRIDING,
+OWNER,
+PAD,
+**PARAMETER**,
+PARAMETER_MODE,
+PARAMETER_NAME,
+PARAMETER_ORDINAL_POSITION,
+PARAMETER_SPECIFIC_CATALOG,
+PARAMETER_SPECIFIC_NAME,
+PARAMETER_SPECIFIC_SCHEMA,
+PARTIAL,
 **PARTITION**,
-**PARTITIONS**, PASCAL, PASSING, PASSTHROUGH, PAST, PATH,
+**PARTITIONS**,
+PASCAL,
+PASSING,
+PASSTHROUGH,
+PAST,
+PATH,
 **PATTERN**,
 **PER**,
 **PERCENT**,
@@ -648,7 +709,9 @@ OPTIONS,
 **PERCENTILE_DISC**,
 **PERCENT_RANK**,
 **PERIOD**,
-**PERMUTE**, PLACEMENT, PLACING,
+**PERMUTE**,
+PLACEMENT,
+PLACING,
 PLAN,
 PLI,
 **PORTION**,
@@ -969,8 +1032,10 @@ name will have been converted to upper case also.
 
 Where:
 
-{% highlight sql %} timeUnit:
-MILLENNIUM | CENTURY | DECADE | YEAR | QUARTER | MONTH | WEEK | DOY | DOW | DAY | HOUR | MINUTE | SECOND | EPOCH {% endhighlight %}
+{% highlight sql %}
+timeUnit:
+MILLENNIUM | CENTURY | DECADE | YEAR | QUARTER | MONTH | WEEK | DOY | DOW | DAY | HOUR | MINUTE | SECOND | EPOCH
+{% endhighlight %}
 
 Note:
 
@@ -1069,11 +1134,15 @@ The operator precedence and associativity, highest to lowest.
 | value comparison ALL (sub-query)                  | Whether *value* *comparison* every row returned by *sub-query*
 | EXISTS (sub-query)                                | Whether *sub-query* returns at least one row
 
-{% highlight sql %} comp:
-= |   <>
+{% highlight sql %}
+comp:
+=
+|   <>
 |   >
-|   >= |   <
-|   <= {% endhighlight %}
+|   >=
+|   <
+|   <=
+{% endhighlight %}
 
 ### Logical operators
 
@@ -1343,11 +1412,12 @@ See also: the UNNEST relational operator converts a collection to a relation.
 
 Where *period1* and *period2* are period expressions:
 
-{% highlight sql %} period:
+{% highlight sql %}
+period:
 (dateTime, dateTime)
 |   (dateTime, interval)
-| PERIOD (dateTime, dateTime)
-| PERIOD (dateTime, interval)
+|   PERIOD (dateTime, dateTime)
+|   PERIOD (dateTime, interval)
 {% endhighlight %}
 
 ### JDBC function escape
@@ -1450,11 +1520,12 @@ Not implemented:
 
 Syntax:
 
-{% highlight sql %} aggregateCall:
+{% highlight sql %}
+aggregateCall:
 agg( [ ALL | DISTINCT ] value [, value ]*)
 [ WITHIN GROUP (ORDER BY orderItem [, orderItem ]*) ]
 [ FILTER (WHERE condition) ]
-| agg(*) [ FILTER (WHERE condition) ]
+|   agg(*) [ FILTER (WHERE condition) ]
 {% endhighlight %}
 
 If `FILTER` is present, the aggregate function only considers rows for which
@@ -1544,10 +1615,13 @@ Not implemented:
 
 ### Grouped window functions
 
-Grouped window functions occur in the `GROUP BY` clause and define a key value that represents a window containing several rows.
+Grouped window functions occur in the `GROUP BY` clause and define a key value
+that represents a window containing several rows.
 
-In some window functions, a row may belong to more than one window. For example, if a query is grouped using
-`HOP(t, INTERVAL '2' HOUR, INTERVAL '1' HOUR)`, a row with timestamp '10:15:00' will occur in both the 10:00 - 11:00 and 11:00 - 12:00 totals.
+In some window functions, a row may belong to more than one window.
+For example, if a query is grouped using
+`HOP(t, INTERVAL '2' HOUR, INTERVAL '1' HOUR)`, a row with timestamp '10:15:00'
+will occur in both the 10:00 - 11:00 and 11:00 - 12:00 totals.
 
 | Operator syntax      | Description
 |:-------------------- |:-----------
@@ -2000,8 +2074,14 @@ To solve this problem, the SQL standard allows you to pass parameters by name, a
 
 Suppose you have a function `f`, declared as in the following pseudo syntax:
 
-{% highlight sql %} FUNCTION f(
-INTEGER a, INTEGER b DEFAULT NULL, INTEGER c, INTEGER d DEFAULT NULL, INTEGER e DEFAULT NULL) RETURNS INTEGER {% endhighlight sql %}
+{% highlight sql %}
+FUNCTION f(
+INTEGER a,
+INTEGER b DEFAULT NULL,
+INTEGER c,
+INTEGER d DEFAULT NULL,
+INTEGER e DEFAULT NULL) RETURNS INTEGER
+{% endhighlight sql %}
 
 All of the function's parameters have names, and parameters `b`, `d` and `e` have a default value of `NULL` and are therefore optional. In Polypheny-DB, `NULL` is the only allowable default value for optional parameters.
 
@@ -2027,14 +2107,19 @@ It is experimental in Polypheny-DB, and yet not fully implemented.
 
 #### Syntax
 
-{% highlight sql %} matchRecognize:
+{% highlight sql %}
+matchRecognize:
 MATCH_RECOGNIZE '('
 [ PARTITION BY expression [, expression ]* ]
 [ ORDER BY orderItem [, orderItem ]* ]
 [ MEASURES measureColumn [, measureColumn ]* ]
 [ ONE ROW PER MATCH | ALL ROWS PER MATCH ]
 [ AFTER MATCH
-( SKIP TO NEXT ROW | SKIP PAST LAST ROW | SKIP TO FIRST variable | SKIP TO LAST variable | SKIP TO variable )
+( SKIP TO NEXT ROW
+| SKIP PAST LAST ROW
+| SKIP TO FIRST variable
+| SKIP TO LAST variable
+| SKIP TO variable )
 ]
 PATTERN '(' pattern ')'
 [ WITHIN intervalLiteral ]
@@ -2058,12 +2143,21 @@ patternFactor:
 patternPrimary [ patternQuantifier ]
 
 patternPrimary:
-variable |   '$' |   '^' |   '(' [ pattern ] ')'
-|   '{-' pattern '-}' | PERMUTE '(' pattern [, pattern ]* ')'
+variable
+|   '$'
+|   '^'
+|   '(' [ pattern ] ')'
+|   '{-' pattern '-}'
+|   PERMUTE '(' pattern [, pattern ]* ')'
 
 patternQuantifier:
 '*'
-|   '*?' |   '+' |   '+?' |   '?' |   '??' |   '{' { [ minRepeat ], [ maxRepeat ] } '}' ['?']
+|   '*?'
+|   '+'
+|   '+?'
+|   '?'
+|   '??'
+|   '{' { [ minRepeat ], [ maxRepeat ] } '}' ['?']
 |   '{' repeat '}'
 
 intervalLiteral:
@@ -2074,8 +2168,20 @@ In *patternQuantifier*, *repeat* is a positive integer, and *minRepeat* and *max
 
 ### DDL Extensions
 
-{% highlight sql %} ddlStatement:
-createSchemaStatement | createForeignSchemaStatement | createTableStatement | createViewStatement | createTypeStatement | createFunctionStatement | dropSchemaStatement | dropForeignSchemaStatement | dropTableStatement | dropViewStatement | dropTypeStatement | dropFunctionStatement
+{% highlight sql %}
+ddlStatement:
+createSchemaStatement
+|   createForeignSchemaStatement
+|   createTableStatement
+|   createViewStatement
+|   createTypeStatement
+|   createFunctionStatement
+|   dropSchemaStatement
+|   dropForeignSchemaStatement
+|   dropTableStatement
+|   dropViewStatement
+|   dropTypeStatement
+|   dropFunctionStatement
 
 createSchemaStatement:
 CREATE [ OR REPLACE ] SCHEMA [ IF NOT EXISTS ] name
@@ -2083,7 +2189,8 @@ CREATE [ OR REPLACE ] SCHEMA [ IF NOT EXISTS ] name
 createForeignSchemaStatement:
 CREATE [ OR REPLACE ] FOREIGN SCHEMA [ IF NOT EXISTS ] name
 (
-TYPE 'type' | LIBRARY 'com.example.polyphenydb.ExampleSchemaFactory'
+TYPE 'type'
+|   LIBRARY 'com.example.polyphenydb.ExampleSchemaFactory'
 )
 [ OPTIONS '(' option [, option ]* ')' ]
 
@@ -2098,7 +2205,10 @@ CREATE TABLE [ IF NOT EXISTS ] name
 [ PARTITION BY ( HASH | RANGE | LIST ) '(' columnName ')' [PARTITIONS numberPartitions | with (partitionName1, partitionName2 [, partitionNameN]* )] ]
 
 createTypeStatement:
-CREATE [ OR REPLACE ] TYPE name AS { baseType |   '(' attributeDef [, attributeDef ]* ')'
+CREATE [ OR REPLACE ] TYPE name AS
+{
+baseType
+|   '(' attributeDef [, attributeDef ]* ')'
 }
 
 attributeDef:
@@ -2109,10 +2219,12 @@ attributeName type
 
 tableElement:
 columnName type [ columnGenerator ] [ columnConstraint ]
-| columnName | tableConstraint
+|   columnName
+|   tableConstraint
 
 columnGenerator:
-DEFAULT expression |   [ GENERATED ALWAYS ] AS '(' expression ')'
+DEFAULT expression
+|   [ GENERATED ALWAYS ] AS '(' expression ')'
 { VIRTUAL | STORED }
 
 columnConstraint:
@@ -2121,9 +2233,10 @@ columnConstraint:
 
 tableConstraint:
 [ CONSTRAINT name ]
-{ CHECK '(' expression ')'
-| PRIMARY KEY '(' columnName [, columnName ]* ')'
-| UNIQUE '(' columnName [, columnName ]* ')'
+{
+CHECK '(' expression ')'
+|   PRIMARY KEY '(' columnName [, columnName ]* ')'
+|   UNIQUE '(' columnName [, columnName ]* ')'
 }
 
 createViewStatement:
@@ -2132,8 +2245,9 @@ CREATE [ OR REPLACE ] VIEW name
 AS query
 
 createFunctionStatement:
-CREATE [ OR REPLACE ] FUNCTION [ IF NOT EXISTS ] name AS classNameLiteral
-[ USING usingFile [, usingFile ]* ]
+CREATE [ OR REPLACE ] FUNCTION [ IF NOT EXISTS ] name
+AS classNameLiteral
+[ USING  usingFile [, usingFile ]* ]
 
 usingFile:
 ( JAR | FILE | ARCHIVE ) filePathLiteral
@@ -2154,7 +2268,8 @@ dropTypeStatement:
 DROP TYPE [ IF EXISTS ] name
 
 dropFunctionStatement:
-DROP FUNCTION [ IF EXISTS ] name {% endhighlight %}
+DROP FUNCTION [ IF EXISTS ] name
+{% endhighlight %}
 
 In *createTableStatement*, if you specify *AS query*, you may omit the list of *tableElement*s, or you can omit the data type of any *tableElement*, in which case it just renames the underlying column.
 
