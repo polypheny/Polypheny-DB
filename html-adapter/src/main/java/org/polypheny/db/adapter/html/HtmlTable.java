@@ -103,6 +103,12 @@ class HtmlTable extends AbstractQueryableTable implements TranslatableTable {
 
 
     @Override
+    public Long getTableId() {
+        return null;
+    }
+
+
+    @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         if ( protoRowType != null ) {
             return protoRowType.apply( typeFactory );

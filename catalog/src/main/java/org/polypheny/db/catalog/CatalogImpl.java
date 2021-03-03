@@ -1326,6 +1326,7 @@ public class CatalogImpl extends Catalog {
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
         }
 
+        int pos = 0;
         if ( tableType == TableType.VIEW ) {
             table = table.generateView();
             if ( viewTables != null ) {
@@ -1338,8 +1339,26 @@ public class CatalogImpl extends Catalog {
                             for ( Long cId : parentTable.columnIds ) {
                                 String parentColumnName = Objects.requireNonNull( columns.get( cId ) ).name;
                                 if ( viewColName.equals( parentColumnName ) ) {
-                                    columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, parentColumnName }, columns.get( cId ) );
+                                    CatalogColumn col = columns.get( cId );
+                                    CatalogColumn newCol = new CatalogColumn(
+                                            col.id,
+                                            col.name,
+                                            col.tableId,
+                                            col.schemaId,
+                                            col.databaseId,
+                                            pos,
+                                            col.type,
+                                            col.collectionsType,
+                                            col.length,
+                                            col.scale,
+                                            col.dimension,
+                                            col.cardinality,
+                                            col.nullable,
+                                            col.collation,
+                                            col.defaultValue );
+                                    columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, parentColumnName }, newCol );
                                     columnIds.add( cId );
+                                    pos++;
                                 }
                             }
                         }
@@ -1351,6 +1370,7 @@ public class CatalogImpl extends Catalog {
                 CatalogTable updatedTable = new CatalogView( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
                 tables.replace( id, updatedTable );
                 tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
+
             }
         }
 

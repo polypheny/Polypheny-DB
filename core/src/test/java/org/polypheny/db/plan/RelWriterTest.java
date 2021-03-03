@@ -97,7 +97,7 @@ public class RelWriterTest {
         String s =
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
                     rootSchema.add( "hr", new ReflectiveSchema( new HrSchema() ) );
-                    LogicalTableScan scan =
+                    RelNode scan =
                             LogicalTableScan.create( cluster,
                                     relOptSchema.getTableForMember( Arrays.asList( "hr", "emps" ) ) );
                     final RexBuilder rexBuilder = cluster.getRexBuilder();

@@ -135,6 +135,12 @@ public final class HrClusteredSchema extends AbstractSchema {
 
 
         @Override
+        public Long getTableId() {
+            return null;
+        }
+
+
+        @Override
         public RelDataType getRowType( final RelDataTypeFactory typeFactory ) {
             return typeBuilder.apply( typeFactory );
         }

@@ -151,6 +151,12 @@ public class TraitPropagationTest {
                 public Statistic getStatistic() {
                     return Statistics.of( 100d, ImmutableList.of(), ImmutableList.of( COLLATION ) );
                 }
+
+
+                @Override
+                public Long getTableId() {
+                    return null;
+                }
             };
 
             final RelOptAbstractTable t1 = new RelOptAbstractTable( relOptSchema, "t1", table.getRowType( typeFactory ) ) {

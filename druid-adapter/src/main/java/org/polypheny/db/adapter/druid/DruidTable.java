@@ -52,7 +52,6 @@ import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.AggregateCall;
-import org.polypheny.db.rel.core.TableScan;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
@@ -185,6 +184,12 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     }
 
 
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
+
     private boolean isValidParentKind( SqlNode node ) {
         return node.getKind() == SqlKind.SELECT
                 || node.getKind() == SqlKind.FILTER
@@ -238,7 +243,7 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         final RelOptCluster cluster = context.getCluster();
-        final TableScan scan = LogicalTableScan.create( cluster, relOptTable );
+        final RelNode scan = LogicalTableScan.create( cluster, relOptTable );
         return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), relOptTable, this, ImmutableList.of( scan ) );
     }
 

@@ -389,6 +389,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
 
 
             @Override
+            public Long getTableId() {
+                return null;
+            }
+
+
+            @Override
             public Table extend( final List<RelDataTypeField> fields ) {
                 return new ModifiableTable( Util.last( names ) ) {
                     @Override
@@ -777,6 +783,13 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                 }
                 return super.unwrap( aClass );
             }
+
+
+            @Override
+            public Long getTableId() {
+                return null;
+            }
+
         }
 
 
@@ -1051,6 +1064,12 @@ public abstract class MockCatalogReader extends PolyphenyDbCatalogReader {
                     : aClass.isInstance( table )
                             ? aClass.cast( table )
                             : null;
+        }
+
+
+        @Override
+        public Long getTableId() {
+            return null;
         }
 
 

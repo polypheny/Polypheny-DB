@@ -92,5 +92,12 @@ public class PigTable extends AbstractTable implements TranslatableTable {
         final RelOptCluster cluster = context.getCluster();
         return new PigTableScan( cluster, cluster.traitSetOf( PigRel.CONVENTION ), relOptTable );
     }
+
+
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
 }
 

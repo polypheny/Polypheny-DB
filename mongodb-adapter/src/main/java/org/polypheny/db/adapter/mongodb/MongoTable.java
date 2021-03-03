@@ -182,6 +182,12 @@ public class MongoTable extends AbstractQueryableTable implements TranslatableTa
     }
 
 
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
+
     /**
      * Implementation of {@link org.apache.calcite.linq4j.Queryable} based on a {@link org.polypheny.db.adapter.mongodb.MongoTable}.
      *

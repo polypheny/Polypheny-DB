@@ -20,14 +20,12 @@ package org.polypheny.db.schema;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.Adapter;
@@ -93,18 +91,14 @@ public class PolySchemaBuilder implements PropertyChangeListener, Serializable {
                 List<String> columnNames = new LinkedList<>();
                 final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
                 final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
-                List<CatalogColumn> columns = new ArrayList<>();
-                //if(catalogTable.tableType == TableType.VIEW){
-                // TODO IG: check why getColumns does not return ordered (catalog = catalog.getColumns( catalogTable.id ))
-                columns = catalogTable.columnIds.stream().map( catalog::getColumn ).collect( Collectors.toList() );
 
-                for ( CatalogColumn catalogColumn : columns ) {
+                for ( CatalogColumn catalogColumn : catalog.getColumns( catalogTable.id ) ) {
                     columnNames.add( catalogColumn.name );
                     fieldInfo.add( catalogColumn.name, null, catalogColumn.getRelDataType( typeFactory ) );
                     fieldInfo.nullable( catalogColumn.nullable );
                 }
                 List<Long> columnIds = new LinkedList<>();
-                columns.forEach( c -> columnIds.add( c.id ) );
+                catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
                 LogicalTable table = new LogicalTable(
                         catalogTable.id,
                         catalogTable.getSchemaName(),

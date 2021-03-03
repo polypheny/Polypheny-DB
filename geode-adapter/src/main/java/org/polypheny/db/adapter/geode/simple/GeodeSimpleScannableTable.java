@@ -95,5 +95,12 @@ public class GeodeSimpleScannableTable extends AbstractTable implements Scannabl
             }
         };
     }
+
+
+    @Override
+    public Long getTableId() {
+        return null;
+    }
+
 }
 

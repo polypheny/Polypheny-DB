@@ -100,7 +100,14 @@ public class FrameworksTest {
         RelNode x =
                 Frameworks.withPlanner( ( cluster, relOptSchema, rootSchema ) -> {
                     final RelDataTypeFactory typeFactory = cluster.getTypeFactory();
-                    final Table table = new AbstractTable() {
+                    final Table table;
+                    table = new AbstractTable() {
+                        @Override
+                        public Long getTableId() {
+                            return null;
+                        }
+
+
                         @Override
                         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                             final RelDataType stringType = typeFactory.createJavaType( String.class );
@@ -384,6 +391,12 @@ public class FrameworksTest {
         @Override
         public Statistic getStatistic() {
             return Statistics.of( 15D, ImmutableList.of( ImmutableBitSet.of( 0 ) ), ImmutableList.of() );
+        }
+
+
+        @Override
+        public Long getTableId() {
+            return null;
         }
 
 

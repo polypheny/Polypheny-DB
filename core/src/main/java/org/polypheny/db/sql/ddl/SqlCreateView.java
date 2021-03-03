@@ -132,6 +132,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
             // viewColumns = (((SqlNodeList)((SqlSelect)this.query).getSelectList()).getList()).stream().map(name -> ((SqlIdentifier)name).names).map( names -> names.get( names.size() - 1 ) ).collect( Collectors.toList() );
             viewColumns = ((SqlSelect) this.query).getSelectList();
         }
+        //relNode.getRowType().getFieldList().
 
         try {
             DdlManager.getInstance().createView(
@@ -144,6 +145,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         }
+
 
     }
 

@@ -137,6 +137,12 @@ public class RelToSqlConverterStructsTest {
     // { a: INT, n1: { n11: { b INT }, n12: {c: Int } }, n2: { d: Int }, e: Int }
     private static final Table TABLE = new Table() {
         @Override
+        public Long getTableId() {
+            return null;
+        }
+
+
+        @Override
         public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
             final RelDataType aType = typeFactory.createPolyType( PolyType.BIGINT );
             final RelDataType bType = typeFactory.createPolyType( PolyType.BIGINT );

@@ -61,8 +61,9 @@ public class SqlColumnDeclaration extends SqlCall {
 
     private static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "COLUMN_DECL", SqlKind.COLUMN_DECL );
 
+
     @Getter
-    final SqlIdentifier name;
+    public final SqlIdentifier name;
     @Getter
     final SqlDataTypeSpec dataType;
     @Getter
