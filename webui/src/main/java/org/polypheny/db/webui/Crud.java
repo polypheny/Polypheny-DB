@@ -1339,7 +1339,7 @@ public class Crud implements InformationObserver {
             ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
             Set<Integer> adapterIds = placements.keySet();
             if ( adapterIds.size() > 1 ) {
-                log.warn( "The number of DataSources of a Table should not be > 1." );
+                log.warn( String.format( "The number of DataSources of a Table should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
             }
             List<Result> exportedColumns = new ArrayList<>();
             for ( int adapterId : adapterIds ) {

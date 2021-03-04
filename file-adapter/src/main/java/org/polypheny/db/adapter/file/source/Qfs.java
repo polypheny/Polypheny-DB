@@ -126,8 +126,8 @@ public class Qfs extends DataSource {
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         //name, extension, path, mime, canExecute, canRead, canWrite, size, lastModified
-        String physSchemaName = "QFS";
-        String physTableName = "QFS";
+        String physSchemaName = getUniqueName();
+        String physTableName = getUniqueName();
         List<ExportedColumn> columns = new ArrayList<>();
 
         columns.add( new ExportedColumn(
