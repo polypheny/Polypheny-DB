@@ -1981,6 +1981,7 @@ public class Crud implements InformationObserver {
             affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not add or drop placement", e );
             return new Result( e );
         }
         return new Result( affectedRows ).setGeneratedQuery( query );
