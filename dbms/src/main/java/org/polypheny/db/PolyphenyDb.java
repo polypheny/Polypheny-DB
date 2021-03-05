@@ -36,15 +36,12 @@ import org.polypheny.db.catalog.exceptions.UnknownUserException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.DdlManagerImpl;
-import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.exploreByExample.ExploreManager;
 import org.polypheny.db.exploreByExample.ExploreQueryProcessor;
 import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.monitoring.core.MonitoringService;
-import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -189,8 +186,7 @@ public class PolyphenyDb {
             log.error( "Unable to retrieve host information." );
         }
         try{
-            //TODO add storage backend connector form Runtime Config instead of specifying it in Monitoring Service
-            //final MonitoringService monitoringService = new MonitoringService();
+            MonitoringService.InitializeClient();
         } catch( Exception e) {
             log.error( "Unable to connect to monitoring service client" );
         }
@@ -260,27 +256,9 @@ public class PolyphenyDb {
             throw new RuntimeException( "Something went wrong while initializing index manager.", e );
         }
 
-        // Call DockerManager once to remove old containers
-        DockerManager.getInstance();
-
         final ExploreQueryProcessor exploreQueryProcessor = new ExploreQueryProcessor( transactionManager, authenticator ); // Explore-by-Example
         ExploreManager explore = ExploreManager.getInstance();
         explore.setExploreQueryProcessor( exploreQueryProcessor );
-
-
-        // Todo remove this testing
-       /* InternalSubscriber internalSubscriber = new InternalSubscriber();
-        DummySubscriber dummySubscriber = new DummySubscriber();
-        MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.TABLE, 6, "Internal Usage" );
-        MonitoringService.INSTANCE.subscribeToEvents( internalSubscriber, SubscriptionTopic.STORE, 2, "Internal Usage" );
-        MonitoringService.INSTANCE.subscribeToEvents( dummySubscriber, SubscriptionTopic.TABLE, 6, "Lorem ipsum" );
-        *///
-
-        MonitoringService monitoringService = MonitoringServiceProvider.getInstance();
-
-
-        //
-
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

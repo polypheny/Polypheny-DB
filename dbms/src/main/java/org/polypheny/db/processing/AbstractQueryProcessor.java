@@ -66,9 +66,6 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.events.DMLEvent;
-import org.polypheny.db.monitoring.events.QueryEvent;
-import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -329,26 +326,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 if ( isAnalyze ) {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
-
-
-                //TODO @Cedric this produces an error causing several checks to fail. Please investigate
-                //needed for row results
-                //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-                //Iterator<Object> iterator = enumerable.iterator();
-
-
-
-                if ( statement.getTransaction().getMonitoringData() != null ) {
-                    StatementEvent eventData = statement.getTransaction().getMonitoringData();
-                    eventData.setMonitoringType( parameterizedRoot.kind.sql );
-                    eventData.setDescription( "Test description: " + signature.statementType.toString() );
-                    eventData.setRouted( logicalRoot );
-                    eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
-                    //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
-                    eventData.setAnalyze( isAnalyze );
-                    eventData.setSubQuery( isSubquery );
-                    eventData.setDurations( statement.getDuration().asJson() );
-                }
                 return signature;
             }
         }
@@ -428,27 +405,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         stopWatch.stop();
         if ( log.isDebugEnabled() ) {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
-        }
-
-
-        //TODO @Cedric this produces an error causing severall checks to fail. Please investigate
-        //needed for row results
-        //final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
-        //Iterator<Object> iterator = enumerable.iterator();
-
-
-
-        TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
-        if ( transaction.getMonitoringData() != null ) {
-            StatementEvent eventData = transaction.getMonitoringData();
-            eventData.setMonitoringType( parameterizedRoot.kind.sql );
-            eventData.setDescription( "Test description: " + signature.statementType.toString() );
-            eventData.setRouted( logicalRoot );
-            eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
-            //eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
-            eventData.setAnalyze( isAnalyze );
-            eventData.setSubQuery( isSubquery );
-            eventData.setDurations( statement.getDuration().asJson() );
         }
 
         return signature;
