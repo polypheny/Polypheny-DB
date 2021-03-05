@@ -24,3 +24,5 @@ include 'rest-interface'
 include 'cottontail-adapter'
 
 include 'dbms'
+include 'monitoring'
+
