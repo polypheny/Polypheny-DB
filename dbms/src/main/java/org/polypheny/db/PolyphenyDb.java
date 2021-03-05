@@ -42,6 +42,7 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
+import org.polypheny.db.monitoring.MonitoringService;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -185,6 +186,11 @@ public class PolyphenyDb {
         } catch ( Exception e ) {
             log.error( "Unable to retrieve host information." );
         }
+        try{
+            MonitoringService.InitializeClient();
+        } catch( Exception e) {
+            log.error( "Unable to connect to monitoring service client" );
+        }
 
         /*ThreadManager.getComponent().addShutdownHook( "[ShutdownHook] HttpServerDispatcher.stop()", () -> {
             try {
@@ -259,6 +265,8 @@ public class PolyphenyDb {
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
         log.info( "                              The UI is waiting for you on port {}:", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
         log.info( "                                       http://localhost:{}", RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        log.info( "                              UI for Monitoring with influxDB");
+        log.info( "                                       http://localhost:8086");
         log.info( "****************************************************************************************************" );
         isReady = true;
 

@@ -18,7 +18,7 @@ targetCompatibility = 1.8
 
 
 dependencies {
-
+    compile "com.influxdb:influxdb-client-java:1.8.0"
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
 }
