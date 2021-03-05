@@ -23,3 +23,5 @@ include 'explore-by-example'
 include 'rest-interface'
 
 include 'dbms'
+include 'monitoring'
+

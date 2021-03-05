@@ -48,6 +48,7 @@ dependencies {
     implementation project(":rest-interface")
     implementation project(":statistic")
     implementation project(":explore-by-example")
+    implementation project(":monitoring")
 
     ////// Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version  // Apache 2.0
