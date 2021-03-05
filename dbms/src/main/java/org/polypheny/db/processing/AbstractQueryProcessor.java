@@ -66,6 +66,8 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.MonitoringService;
+import org.polypheny.db.monitoring.MonitoringService.InfluxPojo;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -287,6 +289,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 if ( isAnalyze ) {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
+
+                MonitoringService.MonitorEvent( new InfluxPojo( routedRoot.rel.relCompareString(), signature.statementType.toString(), signature.columns.size()));
                 return signature;
             }
         }
@@ -368,6 +372,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
+        MonitoringService.MonitorEvent( new InfluxPojo( routedRoot.rel.relCompareString(), signature.statementType.toString(), signature.columns.size() ));
         return signature;
     }
 
