@@ -2914,7 +2914,7 @@ public class Crud implements InformationObserver {
         } else {
             res.header( "Content-Type", "application/octet-stream" );
         }
-        if ( info != null && info.getFileExtensions() != null ) {
+        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
             res.header( "Content-Disposition", "attachment; filename=" + "file." + info.getFileExtensions()[0] );
         } else {
             res.header( "Content-Disposition", "attachment; filename=" + "file" );
@@ -3172,7 +3172,7 @@ public class Crud implements InformationObserver {
                                         info = util.findMatch( f );
                                     }
                                     String extension = "";
-                                    if ( info != null && info.getFileExtensions() != null ) {
+                                    if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
                                         extension = "." + info.getFileExtensions()[0];
                                     }
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
@@ -3208,7 +3208,7 @@ public class Crud implements InformationObserver {
                                     ContentInfo info = util.findMatch( buffer );
                                     pbis.unread( buffer );
                                     String extension = "";
-                                    if ( info != null && info.getFileExtensions() != null ) {
+                                    if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
                                         extension = "." + info.getFileExtensions()[0];
                                     }
                                     f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
@@ -3228,7 +3228,7 @@ public class Crud implements InformationObserver {
                                 }
                                 ContentInfo info = util.findMatch( bytes );
                                 String extension = "";
-                                if ( info != null && info.getFileExtensions() != null ) {
+                                if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
                                     extension = "." + info.getFileExtensions()[0];
                                 }
                                 File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
