@@ -47,18 +47,20 @@ import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.SqlBasicCall;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlJoin;
 import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.sql.SqlOperator;
-import org.polypheny.db.sql.SqlSelect;
 import org.polypheny.db.sql.SqlSpecialOperator;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
@@ -77,7 +79,8 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     @Getter
     private final SqlNode query;
     private String sql;
-    List<String> viewTables = new ArrayList<>();
+    //List<String> viewTables = new ArrayList<>();
+    List<Long> underlyingTables = new ArrayList<>();
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", SqlKind.CREATE_VIEW );
 
@@ -125,41 +128,30 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         RelNode relNode = (sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel);
 
-        getViewTables( query );
-
-        SqlNodeList viewColumns = null;
-        if ( this.query instanceof SqlSelect ) {
-            // viewColumns = (((SqlNodeList)((SqlSelect)this.query).getSelectList()).getList()).stream().map(name -> ((SqlIdentifier)name).names).map( names -> names.get( names.size() - 1 ) ).collect( Collectors.toList() );
-            viewColumns = ((SqlSelect) this.query).getSelectList();
-        }
-        //relNode.getRowType().getFieldList().
+        getUnderlyingTables( relNode );
+        RelDataType fieldList = relNode.getRowType();
 
         try {
-            DdlManager.getInstance().createView(
-                    viewName,
+            DdlManager.getInstance().createView( viewName,
                     schemaId,
                     relNode,
-                    viewTables,
-                    viewColumns,
+                    underlyingTables,
+                    fieldList,
                     statement );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         }
-
-
     }
 
 
-    //TODO IG: fix method to add viewTables
-    private void getViewTables( SqlNode query ) {
-        if ( query instanceof SqlSelect ) {
-            getViewTables( ((SqlSelect) query).getFrom() );
-        } else if ( query instanceof SqlJoin ) {
-            getViewTables( ((SqlJoin) query).getLeft() );
-            getViewTables( ((SqlJoin) query).getRight() );
-        } else if ( query instanceof SqlBasicCall ) {
-            SqlNode[] operands = ((SqlBasicCall) query).getOperands();
-            viewTables.add( (((SqlIdentifier) operands[1]).names.get( 0 )) );
+    private void getUnderlyingTables( RelNode relNode ) {
+        if ( relNode instanceof LogicalProject ) {
+            getUnderlyingTables( ((LogicalProject) relNode).getInput() );
+        } else if ( relNode instanceof LogicalJoin ) {
+            getUnderlyingTables( ((LogicalJoin) relNode).getLeft() );
+            getUnderlyingTables( ((LogicalJoin) relNode).getRight() );
+        } else if ( relNode instanceof LogicalTableScan ) {
+            underlyingTables.add( ((RelOptTableImpl) relNode.getTable()).getTable().getTableId() );
         }
     }
 

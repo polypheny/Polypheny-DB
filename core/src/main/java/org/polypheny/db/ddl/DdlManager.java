@@ -54,10 +54,10 @@ import org.polypheny.db.ddl.exception.PlacementNotExistsException;
 import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -439,11 +439,11 @@ public abstract class DdlManager {
      * @param viewName the name of the new view
      * @param schemaId the id of the schema to which the view belongs
      * @param relNode the relNode which was built form the Select part of the view
-     * @param viewTables all tables that were used within the Select statement
-     * @param viewColumns all columns from all tables used within the Select statement
+     * @param underlyingTables all tables that were used within the Select statement
+     * @param fieldList all columns from all tables used within the Select statement
      * @param statement the used Statement
      */
-    public abstract void createView( String viewName, long schemaId, RelNode relNode, List<String> viewTables, SqlNodeList viewColumns, Statement statement ) throws TableAlreadyExistsException;
+    public abstract void createView( String viewName, long schemaId, RelNode relNode, List<Long> underlyingTables, RelDataType fieldList, Statement statement ) throws TableAlreadyExistsException;
 
     /**
      * Add new partitions for the column

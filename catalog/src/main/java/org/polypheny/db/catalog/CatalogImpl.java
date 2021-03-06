@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.linq4j.Ord;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException.SerializationError;
@@ -61,7 +60,6 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
-import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -89,9 +87,7 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.sql.SqlIdentifier;
-import org.polypheny.db.sql.SqlNode;
-import org.polypheny.db.sql.SqlNodeList;
+import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -1293,12 +1289,12 @@ public class CatalogImpl extends Catalog {
      * @param tableType The table type
      * @param modifiable Whether the content of the table can be modified
      * @param definition RelNode used to create Views
-     * @param viewColumns all tables that were used within the Select statement (only used for views)
-     * @param viewTables all columns from all tables used within the Select statement (only used for views)
+     * @param underlyingTables all tables that were used within the Select statement (only used for views)
+     * @param fieldList all columns from all tables used within the Select statement (only used for views)
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<String> viewTables, SqlNodeList viewColumns ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<Long> underlyingTables, RelDataType fieldList ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1316,6 +1312,10 @@ public class CatalogImpl extends Catalog {
                 ImmutableMap.of(),
                 modifiable );
 
+        if ( tableType == TableType.VIEW ) {
+            table = table.generateView( ImmutableList.copyOf( underlyingTables ), fieldList );
+        }
+
         synchronized ( this ) {
             tables.put( id, table );
 
@@ -1326,57 +1326,10 @@ public class CatalogImpl extends Catalog {
             schemaChildren.replace( schemaId, ImmutableList.copyOf( children ) );
         }
 
-        int pos = 0;
-        if ( tableType == TableType.VIEW ) {
-            table = table.generateView();
-            if ( viewTables != null ) {
-                List<Long> columnIds = new ArrayList<>();
-                for ( String t : viewTables ) {
-                    try {
-                        CatalogTable parentTable = getTable( schemaId, t );
-                        for ( Ord<SqlNode> c : Ord.zip( viewColumns ) ) {
-                            String viewColName = ((SqlIdentifier) c.getValue()).names.get( ((SqlIdentifier) c.getValue()).names.size() - 1 );
-                            for ( Long cId : parentTable.columnIds ) {
-                                String parentColumnName = Objects.requireNonNull( columns.get( cId ) ).name;
-                                if ( viewColName.equals( parentColumnName ) ) {
-                                    CatalogColumn col = columns.get( cId );
-                                    CatalogColumn newCol = new CatalogColumn(
-                                            col.id,
-                                            col.name,
-                                            col.tableId,
-                                            col.schemaId,
-                                            col.databaseId,
-                                            pos,
-                                            col.type,
-                                            col.collectionsType,
-                                            col.length,
-                                            col.scale,
-                                            col.dimension,
-                                            col.cardinality,
-                                            col.nullable,
-                                            col.collation,
-                                            col.defaultValue );
-                                    columnNames.put( new Object[]{ table.databaseId, table.schemaId, table.id, parentColumnName }, newCol );
-                                    columnIds.add( cId );
-                                    pos++;
-                                }
-                            }
-                        }
-                        //TODO IG: fix catch
-                    } catch ( UnknownTableException e ) {
-                        throw new RuntimeException( e );
-                    }
-                }
-                CatalogTable updatedTable = new CatalogView( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
-                tables.replace( id, updatedTable );
-                tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
-
-            }
-        }
-
         if ( tableType != TableType.VIEW ) {
             openTable = id;
         }
+
         listeners.firePropertyChange( "table", null, table );
         return id;
     }

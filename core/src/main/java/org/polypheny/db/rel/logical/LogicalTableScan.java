@@ -126,7 +126,7 @@ public final class LogicalTableScan extends TableScan {
 
             CatalogTable catalogTable = catalog.getTable( tableId );
             if ( catalogTable.tableType == TableType.VIEW ) {
-                RelNode relNode = ((CatalogView) catalogTable).prepareView( cluster, relOptTable.getRowType() ).rel;
+                RelNode relNode = ((CatalogView) catalogTable).prepareView( cluster ).rel;
                 return relNode;
             }
         }

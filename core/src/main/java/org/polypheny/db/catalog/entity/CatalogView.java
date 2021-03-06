@@ -18,6 +18,8 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.List;
+import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.plan.RelOptCluster;
@@ -31,15 +33,35 @@ import org.polypheny.db.sql.SqlKind;
 
 public class CatalogView extends CatalogTable {
 
-    public CatalogView( long id, @NonNull String name, ImmutableList<Long> columnIds, long schemaId, long databaseId, int ownerId, @NonNull String ownerName, @NonNull Catalog.TableType type, RelNode definition, Long primaryKey, @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter, boolean modifiable ) {
+    List<Long> underlyingTables;
+    @Getter
+    RelDataType fieldList;
+
+
+    public CatalogView(
+            long id,
+            @NonNull String name,
+            ImmutableList<Long> columnIds,
+            long schemaId,
+            long databaseId,
+            int ownerId,
+            @NonNull String ownerName,
+            @NonNull Catalog.TableType type,
+            RelNode definition,
+            Long primaryKey,
+            @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable,
+            ImmutableList<Long> underlyingTables,
+            RelDataType fieldList ) {
         super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, type, definition, primaryKey, placementsByAdapter, modifiable );
+        this.underlyingTables = underlyingTables;
+        this.fieldList = fieldList;
     }
 
 
-    public RelRoot prepareView( RelOptCluster cluster, RelDataType rowType ) {
+    public RelRoot prepareView( RelOptCluster cluster ) {
         RelRoot viewLogicalRoot = RelRoot.of( definition, SqlKind.SELECT );
         repareView( viewLogicalRoot.rel, cluster );
-        //((LogicalProject)viewLogicalRoot.rel).setRowType( rowType );
         return viewLogicalRoot;
     }
 

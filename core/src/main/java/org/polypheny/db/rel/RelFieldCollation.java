@@ -34,6 +34,7 @@
 package org.polypheny.db.rel;
 
 
+import java.io.Serializable;
 import java.util.Objects;
 import org.polypheny.db.sql.validate.SqlMonotonicity;
 
@@ -43,7 +44,7 @@ import org.polypheny.db.sql.validate.SqlMonotonicity;
  *
  * @see RelCollation
  */
-public class RelFieldCollation {
+public class RelFieldCollation implements Serializable {
 
     /**
      * Utility method that compares values taking into account null direction.
