@@ -20,6 +20,7 @@ package org.polypheny.db.adapter.file.source;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -55,9 +62,14 @@ public class Qfs extends DataSource {
     private File rootDir;
     private QfsSchema currentSchema;
 
+    private InformationPage informationPage;
+    private final List<InformationGroup> informationGroups = new ArrayList<>();
+    private final List<Information> informationElements = new ArrayList<>();
+
     public Qfs( int adapterId, String uniqueName, Map<String, String> settings ) {
         super( adapterId, uniqueName, settings, true );
         init( settings );
+        registerInformationPage( uniqueName );
     }
 
     private void init( final Map<String, String> settings ) {
@@ -115,12 +127,21 @@ public class Qfs extends DataSource {
 
     @Override
     public void shutdown() {
-
+        InformationManager im = InformationManager.getInstance();
+        if ( informationElements.size() > 0 ) {
+            im.removeInformation( informationElements.toArray( new Information[0] ) );
+        }
+        if ( informationGroups.size() > 0 ) {
+            im.removeGroup( informationGroups.toArray( new InformationGroup[0] ) );
+        }
+        im.removePage( informationPage );
     }
 
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         init( settings );
+        InformationManager im = InformationManager.getInstance();
+        im.getInformation( getUniqueName() + "-rootDir" ).unwrap( InformationText.class ).setText( settings.get( "rootDir" ) );
     }
 
     @Override
@@ -198,4 +219,38 @@ public class Qfs extends DataSource {
         out.put( getUniqueName(), columns );
         return out;
     }
+
+    protected void registerInformationPage( String uniqueName ) {
+        InformationManager im = InformationManager.getInstance();
+        informationPage = new InformationPage( uniqueName, "Query a filesystem" ).setLabel( "Sources" );
+        im.addPage( informationPage );
+
+        InformationGroup rootGroup = new InformationGroup( informationPage, "Root directory" ).setOrder( 1 );
+        InformationText iText = new InformationText( uniqueName + "-rootDir", rootGroup, settings.get( "rootDir" ) );
+        im.addGroup( rootGroup );
+        im.registerInformation( iText );
+
+        int i = 2;
+        for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
+            im.addGroup( group );
+            informationGroups.add( group );
+
+            InformationTable table = new InformationTable(
+                    group,
+                    Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Primary" ) );
+            for ( ExportedColumn exportedColumn : entry.getValue() ) {
+                table.addRow(
+                        exportedColumn.physicalPosition,
+                        exportedColumn.name,
+                        exportedColumn.getDisplayType(),
+                        exportedColumn.nullable ? "✔" : "",
+                        exportedColumn.primary ? "✔" : ""
+                );
+            }
+            im.registerInformation( table );
+            informationElements.add( table );
+        }
+    }
+
 }

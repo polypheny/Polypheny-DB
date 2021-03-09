@@ -4,6 +4,7 @@ package org.polypheny.db.adapter.file;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.sun.javafx.PlatformUtil;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -28,6 +29,13 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGraph;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -63,11 +71,17 @@ public class FileStore extends DataStore {
     @SuppressWarnings("UnstableApiUsage") // see https://stackoverflow.com/questions/53060907/is-it-safe-to-use-hashing-class-from-com-google-common-hash
     public static final HashFunction SHA = Hashing.sha256();
 
+    //information manager
+    private InformationPage informationPage;
+    private InformationGroup informationGroup;
+    private Information informationElement;
+
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
         setRootDir();
         trxRecovery();
+        setInformationPage();
     }
 
 
@@ -87,6 +101,35 @@ public class FileStore extends DataStore {
                 throw new RuntimeException( "Could not create WAL folder" );
             }
         }
+    }
+
+
+    private void setInformationPage() {
+        InformationManager im = InformationManager.getInstance();
+        informationPage = new InformationPage( getUniqueName() ).setLabel( "Stores" );
+        informationGroup = new InformationGroup( informationPage, "Disk usage in GB" );
+        File root = rootDir.toPath().getRoot().toFile();
+        int base = 1024;
+        if ( PlatformUtil.isMac() ) {
+            base = 1000;
+        }
+        informationElement = new InformationGraph(
+                informationGroup,
+                GraphType.DOUGHNUT,
+                new String[]{ "used", "free" },
+                new GraphData<>( "disk-usage", new Double[]{ (double) ((root.getTotalSpace() - root.getUsableSpace()) / (long) Math.pow( base, 3 )), (double) (root.getUsableSpace() / (long) Math.pow( base, 3 ))
+                } ) );
+        im.addPage( informationPage );
+        im.addGroup( informationGroup );
+        im.registerInformation( informationElement );
+    }
+
+
+    private void removeInformationPage() {
+        InformationManager im = InformationManager.getInstance();
+        im.removeInformation( informationElement );
+        im.removeGroup( informationGroup );
+        im.removePage( informationPage );
     }
 
 
@@ -359,6 +402,7 @@ public class FileStore extends DataStore {
     @Override
     public void shutdown() {
         log.info( "shutting down file store '{}'", getUniqueName() );
+        removeInformationPage();
         try {
             FileHelper.deleteDirRecursively( rootDir );
         } catch ( IOException e ) {
