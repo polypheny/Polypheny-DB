@@ -118,6 +118,7 @@ import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
@@ -405,12 +406,18 @@ public class Crud implements InformationObserver {
                         }
                         SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
 
-                        if ( request.depth > 2 ) {
+                        if ( table.tableType == TableType.VIEW ) {
+                            List<String> underlyingViewColumns = ((CatalogView) catalog.getTable( table.id )).getFieldList().getFieldNames();
+                            for ( String columnName : underlyingViewColumns ) {
+                                tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + columnName, columnName, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
+                            }
+                        } else if ( request.depth > 2 && table.tableType != TableType.VIEW ) {
                             List<CatalogColumn> columns = catalog.getColumns( table.id );
                             for ( CatalogColumn column : columns ) {
                                 tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                             }
                         }
+
                         if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
                             tableTree.add( tableElement );
                         } else if ( request.views && table.tableType == TableType.VIEW ) {
