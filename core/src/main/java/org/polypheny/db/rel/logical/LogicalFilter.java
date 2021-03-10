@@ -35,6 +35,7 @@ package org.polypheny.db.rel.logical;
 
 
 import com.google.common.collect.ImmutableSet;
+import java.io.Serializable;
 import java.util.Objects;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
@@ -57,7 +58,7 @@ import org.polypheny.db.util.Litmus;
 /**
  * Sub-class of {@link Filter} not targeted at any particular engine or calling convention.
  */
-public final class LogicalFilter extends Filter {
+public final class LogicalFilter extends Filter implements Serializable {
 
     private final ImmutableSet<CorrelationId> variablesSet;
 

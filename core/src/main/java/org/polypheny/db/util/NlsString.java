@@ -37,6 +37,10 @@ package org.polypheny.db.util;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -56,36 +60,35 @@ import org.polypheny.db.sql.SqlUtil;
 /**
  * A string, optionally with {@link Charset character set} and {@link SqlCollation}. It is immutable.
  */
-public class NlsString implements Comparable<NlsString>, Cloneable {
+public class NlsString implements Comparable<NlsString>, Cloneable, Externalizable {
 
     private static final LoadingCache<Pair<ByteString, Charset>, String>
-            DECODE_MAP =
-            CacheBuilder.newBuilder()
-                    .softValues()
-                    .build(
-                            new CacheLoader<Pair<ByteString, Charset>, String>() {
-                                @Override
-                                public String load( @Nonnull Pair<ByteString, Charset> key ) {
-                                    final Charset charset = key.right;
-                                    final CharsetDecoder decoder = charset.newDecoder();
-                                    final byte[] bytes = key.left.getBytes();
-                                    final ByteBuffer buffer = ByteBuffer.wrap( bytes );
-                                    try {
-                                        return decoder.decode( buffer ).toString();
-                                    } catch ( CharacterCodingException ex ) {
-                                        throw Static.RESOURCE.charsetEncoding(
-                                                //CHECKSTYLE: IGNORE 1
-                                                new String( bytes, Charset.defaultCharset() ),
-                                                charset.name() ).ex();
-                                    }
-                                }
-                            } );
+            DECODE_MAP = CacheBuilder.newBuilder()
+            .softValues()
+            .build(
+                    new CacheLoader<Pair<ByteString, Charset>, String>() {
+                        @Override
+                        public String load( @Nonnull Pair<ByteString, Charset> key ) {
+                            final Charset charset = key.right;
+                            final CharsetDecoder decoder = charset.newDecoder();
+                            final byte[] bytes = key.left.getBytes();
+                            final ByteBuffer buffer = ByteBuffer.wrap( bytes );
+                            try {
+                                return decoder.decode( buffer ).toString();
+                            } catch ( CharacterCodingException ex ) {
+                                throw Static.RESOURCE.charsetEncoding(
+                                        //CHECKSTYLE: IGNORE 1
+                                        new String( bytes, Charset.defaultCharset() ),
+                                        charset.name() ).ex();
+                            }
+                        }
+                    } );
 
-    private final String stringValue;
-    private final ByteString bytesValue;
-    private final String charsetName;
-    private final Charset charset;
-    private final SqlCollation collation;
+    private String stringValue;
+    private ByteString bytesValue;
+    private String charsetName;
+    private Charset charset;
+    private SqlCollation collation;
 
 
     /**
@@ -148,6 +151,10 @@ public class NlsString implements Comparable<NlsString>, Cloneable {
         this.collation = collation;
         this.stringValue = stringValue;
         this.bytesValue = bytesValue;
+    }
+
+
+    public NlsString() {
     }
 
 
@@ -303,5 +310,26 @@ public class NlsString implements Comparable<NlsString>, Cloneable {
     public ByteString getValueBytes() {
         return bytesValue;
     }
+
+
+    @Override
+    public void writeExternal( ObjectOutput out ) throws IOException {
+        out.writeUTF( stringValue );
+        out.writeObject( bytesValue );
+        out.writeUTF( charsetName );
+        out.writeObject( SerializableCharset.forCharset( charset ) );
+        out.writeObject( collation );
+    }
+
+
+    @Override
+    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException {
+        stringValue = in.readUTF();
+        bytesValue = (ByteString) in.readObject();
+        charsetName = in.readUTF();
+        charset = ((SerializableCharset) in.readObject()).getCharset();
+        collation = (SqlCollation) in.readObject();
+    }
+
 }
 

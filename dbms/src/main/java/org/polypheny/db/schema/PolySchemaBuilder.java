@@ -107,7 +107,6 @@ public class PolySchemaBuilder implements PropertyChangeListener, Serializable {
                     s.add( catalogTable.name, viewTable );
                     tableMap.put( catalogTable.name, viewTable );
 
-
                 } else {
                     final RelDataTypeFactory typeFactory = new PolyTypeFactoryImpl( RelDataTypeSystem.DEFAULT );
                     final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();

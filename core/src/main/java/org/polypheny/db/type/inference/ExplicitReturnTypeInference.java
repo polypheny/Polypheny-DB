@@ -17,6 +17,7 @@
 package org.polypheny.db.type.inference;
 
 
+import java.io.Serializable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
@@ -26,7 +27,7 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 /**
  * A {@link PolyReturnTypeInference} which always returns the same SQL type.
  */
-public class ExplicitReturnTypeInference implements PolyReturnTypeInference {
+public class ExplicitReturnTypeInference implements PolyReturnTypeInference, Serializable {
 
     protected final RelProtoDataType protoType;
 

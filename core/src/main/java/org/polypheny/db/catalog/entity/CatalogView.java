@@ -25,6 +25,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
+import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
@@ -70,6 +71,10 @@ public class CatalogView extends CatalogTable {
         if ( viewLogicalRoot instanceof LogicalProject ) {
             ((LogicalProject) viewLogicalRoot).setCluster( relOptCluster );
             repareView( ((LogicalProject) viewLogicalRoot).getInput(), relOptCluster );
+        } else if ( viewLogicalRoot instanceof LogicalFilter ) {
+            ((LogicalFilter) viewLogicalRoot).setCluster( relOptCluster );
+            //((RexCall)((LogicalFilter)viewLogicalRoot).setCondition(  );
+            repareView( ((LogicalFilter) viewLogicalRoot).getInput(), relOptCluster );
         } else if ( viewLogicalRoot instanceof LogicalJoin ) {
             ((LogicalJoin) viewLogicalRoot).setCluster( relOptCluster );
             repareView( ((LogicalJoin) viewLogicalRoot).getLeft(), relOptCluster );

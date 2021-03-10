@@ -17,6 +17,7 @@
 package org.polypheny.db.type.checker;
 
 
+import java.io.Serializable;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlNode;
 
@@ -26,7 +27,7 @@ import org.polypheny.db.sql.SqlNode;
  * checking the type of a single operand in isolation. This isn't meaningful for all type-checking rules
  * (e.g. SameOperandTypeChecker requires two operands to have matching types, so checking one in isolation is meaningless).
  */
-public interface PolySingleOperandTypeChecker extends PolyOperandTypeChecker {
+public interface PolySingleOperandTypeChecker extends PolyOperandTypeChecker, Serializable {
 
     /**
      * Checks the type of a single operand against a particular ordinal position within a formal operator signature.

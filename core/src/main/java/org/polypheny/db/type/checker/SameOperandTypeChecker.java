@@ -20,6 +20,7 @@ package org.polypheny.db.type.checker;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
@@ -37,7 +38,7 @@ import org.polypheny.db.util.Util;
 /**
  * Parameter type-checking strategy where all operand types must be the same.
  */
-public class SameOperandTypeChecker implements PolySingleOperandTypeChecker {
+public class SameOperandTypeChecker implements PolySingleOperandTypeChecker, Serializable {
 
     protected final int nOperands;
 

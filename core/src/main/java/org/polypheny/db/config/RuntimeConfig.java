@@ -221,7 +221,7 @@ public enum RuntimeConfig {
 
     SCHEMA_CACHING( "runtime/schemaCaching",
             "Cache polypheny-db schema",
-            false,
+            true,
             ConfigType.BOOLEAN ),
 
     QUERY_PLAN_CACHING( "runtime/queryPlanCaching",

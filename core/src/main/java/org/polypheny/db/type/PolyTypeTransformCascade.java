@@ -35,6 +35,7 @@ package org.polypheny.db.type;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlOperatorBinding;
 import org.polypheny.db.type.inference.PolyReturnTypeInference;
@@ -44,7 +45,7 @@ import org.polypheny.db.type.inference.PolyReturnTypeInference;
  * Strategy to infer the type of an operator call from the type of the operands by using one {@link PolyReturnTypeInference}
  * rule and a combination of {@link PolyTypeTransform}s
  */
-public class PolyTypeTransformCascade implements PolyReturnTypeInference {
+public class PolyTypeTransformCascade implements PolyReturnTypeInference, Serializable {
 
     private final PolyReturnTypeInference rule;
     private final ImmutableList<PolyTypeTransform> transforms;

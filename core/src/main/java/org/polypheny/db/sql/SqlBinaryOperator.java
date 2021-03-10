@@ -34,6 +34,7 @@
 package org.polypheny.db.sql;
 
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import org.polypheny.db.rel.type.RelDataType;
@@ -53,7 +54,7 @@ import org.polypheny.db.util.Util;
 /**
  * <code>SqlBinaryOperator</code> is a binary operator.
  */
-public class SqlBinaryOperator extends SqlOperator {
+public class SqlBinaryOperator extends SqlOperator implements Serializable {
 
 
     /**

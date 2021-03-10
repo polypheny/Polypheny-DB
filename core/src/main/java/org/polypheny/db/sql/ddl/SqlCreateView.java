@@ -50,10 +50,13 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -127,6 +130,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         RelNode relNode = (sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel);
+        prepareView( relNode );
 
         getUnderlyingTables( relNode );
         RelDataType fieldList = relNode.getRowType();
@@ -140,6 +144,25 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     statement );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
+        }
+    }
+
+
+    public void prepareView( RelNode viewNode ) {
+        if ( viewNode instanceof LogicalProject ) {
+            ((LogicalProject) viewNode).setCluster( null );
+            prepareView( ((LogicalProject) viewNode).getInput() );
+        } else if ( viewNode instanceof LogicalFilter ) {
+            ((LogicalFilter) viewNode).setCluster( null );
+            List<RexNode> rexNodes = ((RexCall) ((LogicalFilter) viewNode).getCondition()).getOperands();
+            prepareView( ((LogicalFilter) viewNode).getInput() );
+        } else if ( viewNode instanceof LogicalJoin ) {
+            ((LogicalJoin) viewNode).setCluster( null );
+            prepareView( ((LogicalJoin) viewNode).getLeft() );
+            prepareView( ((LogicalJoin) viewNode).getRight() );
+
+        } else if ( viewNode instanceof LogicalTableScan ) {
+            ((LogicalTableScan) viewNode).setCluster( null );
         }
     }
 

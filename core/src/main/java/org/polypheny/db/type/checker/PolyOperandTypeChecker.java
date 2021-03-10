@@ -17,6 +17,7 @@
 package org.polypheny.db.type.checker;
 
 
+import java.io.Serializable;
 import org.polypheny.db.sql.SqlCallBinding;
 import org.polypheny.db.sql.SqlOperandCountRange;
 import org.polypheny.db.sql.SqlOperator;
@@ -27,7 +28,7 @@ import org.polypheny.db.sql.SqlOperator;
  * <p>
  * This interface is an example of the {@link org.polypheny.db.util.Glossary#STRATEGY_PATTERN strategy pattern}.
  */
-public interface PolyOperandTypeChecker {
+public interface PolyOperandTypeChecker extends Serializable {
 
     /**
      * Checks the types of all operands to an operator call.
