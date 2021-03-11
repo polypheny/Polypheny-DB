@@ -134,7 +134,7 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public void commit() throws TransactionException {
         if ( !isActive() ) {
-            log.warn( "This transaction has already been finished!" );
+            log.trace( "This transaction has already been finished!" );
             return;
         }
         // Prepare to commit changes on all involved adapters and the catalog
@@ -172,7 +172,7 @@ public class TransactionImpl implements Transaction, Comparable {
     @Override
     public void rollback() throws TransactionException {
         if ( !isActive() ) {
-            log.warn( "This transaction has already been finished!" );
+            log.trace( "This transaction has already been finished!" );
             return;
         }
         try {
