@@ -1225,7 +1225,7 @@ public class DbmsMeta implements ProtobufMeta {
 
         SqlNode parsed = sqlProcessor.parse( sql );
 
-        PolyphenyDbSignature signature = null;
+        PolyphenyDbSignature signature;
         if ( parsed.isA( SqlKind.DDL ) ) {
             signature = sqlProcessor.prepareDdl( statementHandle.getStatement(), parsed );
         } else {
@@ -1454,7 +1454,7 @@ public class DbmsMeta implements ProtobufMeta {
 
             // Check if there is an running transaction
             Transaction transaction = connectionToClose.getCurrentTransaction();
-            if ( transaction != null ) {
+            if ( transaction != null && transaction.isActive() ) {
                 log.warn( "There is a running transaction associated with this connection {}", connectionToClose );
                 log.warn( "Rollback transaction {}", transaction );
                 try {
@@ -1524,7 +1524,7 @@ public class DbmsMeta implements ProtobufMeta {
             }
             Transaction transaction = connection.getCurrentTransaction();
 
-            if ( transaction == null ) {
+            if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
                     log.trace( "No open transaction for ConnectionHandle {}", connection );
                 }
@@ -1554,7 +1554,7 @@ public class DbmsMeta implements ProtobufMeta {
             }
             Transaction transaction = connection.getCurrentTransaction();
 
-            if ( transaction == null ) {
+            if ( transaction == null || !transaction.isActive() ) {
                 if ( log.isTraceEnabled() ) {
                     log.trace( "No open transaction for ConnectionHandle {}", connection );
                 }
