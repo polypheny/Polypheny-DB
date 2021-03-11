@@ -386,56 +386,45 @@ public class Crud implements InformationObserver {
             return new ArrayList<>();
         }
 
-        Transaction transaction = getTransaction();
-        try {
-            List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
-            for ( CatalogSchema schema : schemas ) {
-                SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
+        List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
+        for ( CatalogSchema schema : schemas ) {
+            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
 
-                if ( request.depth > 1 ) {
-                    ArrayList<SidebarElement> tableTree = new ArrayList<>();
-                    ArrayList<SidebarElement> viewTree = new ArrayList<>();
-                    List<CatalogTable> tables = catalog.getTables( schema.id, null );
-                    for ( CatalogTable table : tables ) {
-                        String icon = "fa fa-table";
-                        if ( table.tableType == TableType.SOURCE ) {
-                            icon = "fa fa-plug";
-                        } else if ( table.tableType == TableType.VIEW ) {
-                            icon = "icon-eye";
-                        }
-                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
+            if ( request.depth > 1 ) {
+                ArrayList<SidebarElement> tableTree = new ArrayList<>();
+                ArrayList<SidebarElement> viewTree = new ArrayList<>();
+                List<CatalogTable> tables = catalog.getTables( schema.id, null );
+                for ( CatalogTable table : tables ) {
+                    String icon = "fa fa-table";
+                    if ( table.tableType == TableType.SOURCE ) {
+                        icon = "fa fa-plug";
+                    } else if ( table.tableType == TableType.VIEW ) {
+                        icon = "icon-eye";
+                    }
+                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
 
-                        if ( request.depth > 2 ) {
-                            List<CatalogColumn> columns = catalog.getColumns( table.id );
-                            for ( CatalogColumn column : columns ) {
-                                tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
-                            }
-                        }
-                        if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
-                            tableTree.add( tableElement );
-                        } else if ( request.views && table.tableType == TableType.VIEW ) {
-                            viewTree.add( tableElement );
+                    if ( request.depth > 2 ) {
+                        List<CatalogColumn> columns = catalog.getColumns( table.id );
+                        for ( CatalogColumn column : columns ) {
+                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                         }
                     }
-                    if ( request.showTable ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
-                    } else {
-                        schemaTree.addChildren( tableTree ).setRouterLink( "" );
-                    }
-                    if ( request.views ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                    if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
+                        tableTree.add( tableElement );
+                    } else if ( request.views && table.tableType == TableType.VIEW ) {
+                        viewTree.add( tableElement );
                     }
                 }
-                result.add( schemaTree );
+                if ( request.showTable ) {
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                } else {
+                    schemaTree.addChildren( tableTree ).setRouterLink( "" );
+                }
+                if ( request.views ) {
+                    schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                }
             }
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
+            result.add( schemaTree );
         }
 
         return result;
@@ -464,8 +453,14 @@ public class Crud implements InformationObserver {
         try {
             int rows = executeSqlUpdate( transaction, query );
             result = new Result( rows ).setGeneratedQuery( query );
-        } catch ( QueryExecutionException e ) {
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
             result = new Result( e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
         }
         return result;
     }
@@ -712,6 +707,9 @@ public class Crud implements InformationObserver {
         boolean noLimit;
         for ( String query : queries ) {
             Result result;
+            if ( !transaction.isActive() ) {
+                transaction = getTransaction( request.analyze );
+            }
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
@@ -871,8 +869,6 @@ public class Crud implements InformationObserver {
             try {
                 result = executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
                 transaction.commit();
-                transaction = getTransaction( classifyAllData.analyze );
-
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
                 result = new Result( e ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
