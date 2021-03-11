@@ -184,6 +184,12 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
+    public boolean isActive() {
+        return transactionManager.isActive( xid );
+    }
+
+
+    @Override
     public JavaTypeFactory getTypeFactory() {
         return new JavaTypeFactoryImpl();
     }
