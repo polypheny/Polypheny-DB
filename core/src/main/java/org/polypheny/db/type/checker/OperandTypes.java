@@ -20,6 +20,7 @@ package org.polypheny.db.type.checker;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Predicate;
@@ -53,18 +54,52 @@ import org.polypheny.db.type.inference.ReturnTypes;
  * @see ReturnTypes
  * @see InferTypes
  */
-public abstract class OperandTypes {
+public abstract class OperandTypes implements Serializable {
 
     private OperandTypes() {
     }
 
 
     /**
-     * Creates a checker that passes if each operand is a member of a corresponding family.
+     * Operand type-checking strategy type must be a positive integer non-NULL literal.
      */
-    public static FamilyOperandTypeChecker family( PolyTypeFamily... families ) {
-        return new FamilyOperandTypeChecker( ImmutableList.copyOf( families ), i -> false );
-    }
+    public static final PolySingleOperandTypeChecker POSITIVE_INTEGER_LITERAL =
+            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.INTEGER ), (Predicate<Integer> & Serializable) i -> false ) {
+                @Override
+                public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
+                    if ( !LITERAL.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
+                        return false;
+                    }
+
+                    if ( !super.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
+                        return false;
+                    }
+
+                    final SqlLiteral arg = (SqlLiteral) node;
+                    final BigDecimal value = (BigDecimal) arg.getValue();
+                    if ( value.compareTo( BigDecimal.ZERO ) < 0 || hasFractionalPart( value ) ) {
+                        if ( throwOnFailure ) {
+                            throw callBinding.newError( RESOURCE.argumentMustBePositiveInteger( callBinding.getOperator().getName() ) );
+                        }
+                        return false;
+                    }
+                    if ( value.compareTo( BigDecimal.valueOf( Integer.MAX_VALUE ) ) > 0 ) {
+                        if ( throwOnFailure ) {
+                            throw callBinding.newError( RESOURCE.numberLiteralOutOfRange( value.toString() ) );
+                        }
+                        return false;
+                    }
+                    return true;
+                }
+
+
+                /** Returns whether a number has any fractional part.
+                 *
+                 * @see BigDecimal#longValueExact() */
+                private boolean hasFractionalPart( BigDecimal bd ) {
+                    return bd.precision() - bd.scale() <= 0;
+                }
+            };
 
 
     /**
@@ -79,8 +114,8 @@ public abstract class OperandTypes {
     /**
      * Creates a checker that passes if each operand is a member of a corresponding family.
      */
-    public static FamilyOperandTypeChecker family( List<PolyTypeFamily> families ) {
-        return family( families, i -> false );
+    public static FamilyOperandTypeChecker family( PolyTypeFamily... families ) {
+        return new FamilyOperandTypeChecker( ImmutableList.copyOf( families ), (Predicate<Integer> & Serializable) i -> false );
     }
 
 
@@ -266,46 +301,13 @@ public abstract class OperandTypes {
      */
     public static final PolySingleOperandTypeChecker LITERAL = new LiteralOperandTypeChecker( false );
 
+
     /**
-     * Operand type-checking strategy type must be a positive integer non-NULL literal.
+     * Creates a checker that passes if each operand is a member of a corresponding family.
      */
-    public static final PolySingleOperandTypeChecker POSITIVE_INTEGER_LITERAL =
-            new FamilyOperandTypeChecker( ImmutableList.of( PolyTypeFamily.INTEGER ), i -> false ) {
-                @Override
-                public boolean checkSingleOperandType( SqlCallBinding callBinding, SqlNode node, int iFormalOperand, boolean throwOnFailure ) {
-                    if ( !LITERAL.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
-                        return false;
-                    }
-
-                    if ( !super.checkSingleOperandType( callBinding, node, iFormalOperand, throwOnFailure ) ) {
-                        return false;
-                    }
-
-                    final SqlLiteral arg = (SqlLiteral) node;
-                    final BigDecimal value = (BigDecimal) arg.getValue();
-                    if ( value.compareTo( BigDecimal.ZERO ) < 0 || hasFractionalPart( value ) ) {
-                        if ( throwOnFailure ) {
-                            throw callBinding.newError( RESOURCE.argumentMustBePositiveInteger( callBinding.getOperator().getName() ) );
-                        }
-                        return false;
-                    }
-                    if ( value.compareTo( BigDecimal.valueOf( Integer.MAX_VALUE ) ) > 0 ) {
-                        if ( throwOnFailure ) {
-                            throw callBinding.newError( RESOURCE.numberLiteralOutOfRange( value.toString() ) );
-                        }
-                        return false;
-                    }
-                    return true;
-                }
-
-
-                /** Returns whether a number has any fractional part.
-                 *
-                 * @see BigDecimal#longValueExact() */
-                private boolean hasFractionalPart( BigDecimal bd ) {
-                    return bd.precision() - bd.scale() <= 0;
-                }
-            };
+    public static FamilyOperandTypeChecker family( List<PolyTypeFamily> families ) {
+        return family( families, (Predicate<Integer> & Serializable) i -> false );
+    }
 
     /**
      * Operand type-checking strategy where two operands must both be in the same type family.

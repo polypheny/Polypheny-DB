@@ -46,6 +46,7 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings("SqlDialectInspection")
 @Slf4j
+//TODO IG: delete ignore again
 @Ignore
 public class RestTest {
 

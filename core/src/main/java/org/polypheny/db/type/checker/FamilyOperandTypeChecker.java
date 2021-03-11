@@ -20,6 +20,7 @@ package org.polypheny.db.type.checker;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
+import java.io.Serializable;
 import java.util.List;
 import java.util.function.Predicate;
 import org.apache.calcite.linq4j.Ord;
@@ -37,7 +38,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 /**
  * Operand type-checking strategy which checks operands for inclusion in type families.
  */
-public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker {
+public class FamilyOperandTypeChecker implements PolySingleOperandTypeChecker, Serializable {
 
     protected final ImmutableList<PolyTypeFamily> families;
     protected final Predicate<Integer> optional;

@@ -18,6 +18,7 @@ package org.polypheny.db.type.inference;
 
 
 import com.google.common.base.Preconditions;
+import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.List;
 import org.polypheny.db.rel.type.RelDataType;
@@ -44,7 +45,7 @@ import org.polypheny.db.util.Static;
 /**
  * A collection of return-type inference strategies.
  */
-public abstract class ReturnTypes {
+public abstract class ReturnTypes implements Serializable {
 
     private ReturnTypes() {
     }
@@ -168,7 +169,7 @@ public abstract class ReturnTypes {
      * used if all arguments are BOOLEAN.
      */
     public static final PolyReturnTypeInference BOOLEAN_NULLABLE_OPTIMIZED =
-            opBinding -> {
+            (PolyReturnTypeInference & Serializable) opBinding -> {
                 // Equivalent to
                 //   cascade(ARG0, SqlTypeTransforms.TO_NULLABLE);
                 // but implemented by hand because used in AND, which is a very common operator.
@@ -261,12 +262,12 @@ public abstract class ReturnTypes {
      *
      * @see Glossary#SQL99 SQL:1999 Part 2 Section 9.3
      */
-    public static final PolyReturnTypeInference LEAST_RESTRICTIVE = opBinding -> opBinding.getTypeFactory().leastRestrictive( opBinding.collectOperandTypes() );
+    public static final PolyReturnTypeInference LEAST_RESTRICTIVE = (PolyReturnTypeInference & Serializable) opBinding -> opBinding.getTypeFactory().leastRestrictive( opBinding.collectOperandTypes() );
     /**
      * Returns the same type as the multiset carries. The multiset type returned is the least restrictive of the call's
      * multiset operands.
      */
-    public static final PolyReturnTypeInference MULTISET = opBinding -> {
+    public static final PolyReturnTypeInference MULTISET = (PolyReturnTypeInference & Serializable) opBinding -> {
         ExplicitOperatorBinding newBinding =
                 new ExplicitOperatorBinding(
                         opBinding,
@@ -322,7 +323,7 @@ public abstract class ReturnTypes {
      * Type-inference strategy for a call where the first argument is a decimal.
      * The result type of a call is a decimal with a scale of 0, and the same precision and nullability as the first argument.
      */
-    public static final PolyReturnTypeInference DECIMAL_SCALE0 = opBinding -> {
+    public static final PolyReturnTypeInference DECIMAL_SCALE0 = (PolyReturnTypeInference & Serializable) opBinding -> {
         RelDataType type1 = opBinding.getOperandType( 0 );
         if ( PolyTypeUtil.isDecimal( type1 ) ) {
             if ( type1.getScale() == 0 ) {
@@ -349,7 +350,7 @@ public abstract class ReturnTypes {
      * Type-inference strategy whereby the result type of a call is the decimal product of two exact numeric operands
      * where at least one of the operands is a decimal.
      */
-    public static final PolyReturnTypeInference DECIMAL_PRODUCT = opBinding -> {
+    public static final PolyReturnTypeInference DECIMAL_PRODUCT = (PolyReturnTypeInference & Serializable) opBinding -> {
         RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         RelDataType type1 = opBinding.getOperandType( 0 );
         RelDataType type2 = opBinding.getOperandType( 1 );
@@ -371,7 +372,7 @@ public abstract class ReturnTypes {
      * Type-inference strategy whereby the result type of a call is the decimal product of two exact numeric operands where
      * at least one of the operands is a decimal.
      */
-    public static final PolyReturnTypeInference DECIMAL_QUOTIENT = opBinding -> {
+    public static final PolyReturnTypeInference DECIMAL_QUOTIENT = (PolyReturnTypeInference & Serializable) opBinding -> {
         RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         RelDataType type1 = opBinding.getOperandType( 0 );
         RelDataType type2 = opBinding.getOperandType( 1 );
@@ -403,7 +404,7 @@ public abstract class ReturnTypes {
      *
      * @see Glossary#SQL2003 SQL:2003 Part 2 Section 6.26
      */
-    public static final PolyReturnTypeInference DECIMAL_SUM = opBinding -> {
+    public static final PolyReturnTypeInference DECIMAL_SUM = (PolyReturnTypeInference & Serializable) opBinding -> {
         RelDataType type1 = opBinding.getOperandType( 0 );
         RelDataType type2 = opBinding.getOperandType( 1 );
         if ( PolyTypeUtil.isExactNumeric( type1 ) && PolyTypeUtil.isExactNumeric( type2 ) ) {
@@ -457,7 +458,7 @@ public abstract class ReturnTypes {
      * </ul>
      */
     public static final PolyReturnTypeInference DYADIC_STRING_SUM_PRECISION =
-            opBinding -> {
+            (PolyReturnTypeInference & Serializable) opBinding -> {
                 final RelDataType argType0 = opBinding.getOperandType( 0 );
                 final RelDataType argType1 = opBinding.getOperandType( 1 );
 
@@ -526,7 +527,7 @@ public abstract class ReturnTypes {
      * {@link org.polypheny.db.sql.validate.SqlValidatorNamespace}, and therefore the result type of the call is the type of
      * that namespace.
      */
-    public static final PolyReturnTypeInference SCOPE = opBinding -> {
+    public static final PolyReturnTypeInference SCOPE = (PolyReturnTypeInference & Serializable) opBinding -> {
         SqlCallBinding callBinding = (SqlCallBinding) opBinding;
         return callBinding.getValidator().getNamespace( callBinding.getCall() ).getRowType();
     };
@@ -535,7 +536,7 @@ public abstract class ReturnTypes {
      * Returns a multiset of column #0 of a multiset. For example, given <code>RECORD(x INTEGER, y DATE) MULTISET</code>,
      * returns <code>INTEGER MULTISET</code>.
      */
-    public static final PolyReturnTypeInference MULTISET_PROJECT0 = opBinding -> {
+    public static final PolyReturnTypeInference MULTISET_PROJECT0 = (PolyReturnTypeInference & Serializable) opBinding -> {
         assert opBinding.getOperandCount() == 1;
         final RelDataType recordMultisetType = opBinding.getOperandType( 0 );
         RelDataType multisetType = recordMultisetType.getComponentType();
@@ -549,7 +550,7 @@ public abstract class ReturnTypes {
      * Returns a multiset of the first column of a multiset. For example, given <code>INTEGER MULTISET</code>, returns
      * <code>RECORD(x INTEGER) MULTISET</code>.
      */
-    public static final PolyReturnTypeInference MULTISET_RECORD = opBinding -> {
+    public static final PolyReturnTypeInference MULTISET_RECORD = (PolyReturnTypeInference & Serializable) opBinding -> {
         assert opBinding.getOperandCount() == 1;
         final RelDataType multisetType = opBinding.getOperandType( 0 );
         RelDataType componentType = multisetType.getComponentType();
@@ -562,7 +563,7 @@ public abstract class ReturnTypes {
      * Returns the field type of a structured type which has only one field. For example, given {@code RECORD(x INTEGER)}
      * returns {@code INTEGER}.
      */
-    public static final PolyReturnTypeInference RECORD_TO_SCALAR = opBinding -> {
+    public static final PolyReturnTypeInference RECORD_TO_SCALAR = (PolyReturnTypeInference & Serializable) opBinding -> {
         assert opBinding.getOperandCount() == 1;
 
         final RelDataType recordType = opBinding.getOperandType( 0 );
@@ -583,7 +584,7 @@ public abstract class ReturnTypes {
      * within a "GROUP BY ()" query. E.g. in "select sum(x) as s from empty", s may be null. Also, with the default
      * implementation of RelDataTypeSystem, s has the same type name as x.
      */
-    public static final PolyReturnTypeInference AGG_SUM = opBinding -> {
+    public static final PolyReturnTypeInference AGG_SUM = (PolyReturnTypeInference & Serializable) opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType type = typeFactory
                 .getTypeSystem()
@@ -600,7 +601,7 @@ public abstract class ReturnTypes {
      * identical to the operand type. E.g. in "select $sum0(x) as s from empty", s has the same type as x.
      */
     public static final PolyReturnTypeInference AGG_SUM_EMPTY_IS_ZERO =
-            opBinding -> {
+            (PolyReturnTypeInference & Serializable) opBinding -> {
                 final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
                 final RelDataType sumType = typeFactory
                         .getTypeSystem()
@@ -614,7 +615,7 @@ public abstract class ReturnTypes {
     /**
      * Type-inference strategy for the {@code CUME_DIST} and {@code PERCENT_RANK} aggregate functions.
      */
-    public static final PolyReturnTypeInference FRACTIONAL_RANK = opBinding -> {
+    public static final PolyReturnTypeInference FRACTIONAL_RANK = (PolyReturnTypeInference & Serializable) opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.getTypeSystem().deriveFractionalRankType( typeFactory );
     };
@@ -623,12 +624,12 @@ public abstract class ReturnTypes {
      * Type-inference strategy for the {@code NTILE}, {@code RANK}, {@code DENSE_RANK}, and {@code ROW_NUMBER} aggregate
      * functions.
      */
-    public static final PolyReturnTypeInference RANK = opBinding -> {
+    public static final PolyReturnTypeInference RANK = (PolyReturnTypeInference & Serializable) opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         return typeFactory.getTypeSystem().deriveRankType( typeFactory );
     };
 
-    public static final PolyReturnTypeInference AVG_AGG_FUNCTION = opBinding -> {
+    public static final PolyReturnTypeInference AVG_AGG_FUNCTION = (PolyReturnTypeInference & Serializable) opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType relDataType = typeFactory.getTypeSystem().deriveAvgAggType( typeFactory, opBinding.getOperandType( 0 ) );
         if ( opBinding.getGroupCount() == 0 || opBinding.hasFilter() ) {
@@ -638,7 +639,7 @@ public abstract class ReturnTypes {
         }
     };
 
-    public static final PolyReturnTypeInference COVAR_REGR_FUNCTION = opBinding -> {
+    public static final PolyReturnTypeInference COVAR_REGR_FUNCTION = (PolyReturnTypeInference & Serializable) opBinding -> {
         final RelDataTypeFactory typeFactory = opBinding.getTypeFactory();
         final RelDataType relDataType = typeFactory
                 .getTypeSystem()
