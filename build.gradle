@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
+buildscript {
+    repositories {
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+    }
+    dependencies {
+        classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
+        classpath group: "com.adarshr", name: "gradle-test-logger-plugin", version: gradle_test_logger_version
+    }
+}
 
 allprojects {
 
@@ -28,11 +39,9 @@ allprojects {
                 url "https://clojars.org/repo/"
             }
         }
-        dependencies {
-            // Lombok (https://plugins.gradle.org/plugin/io.freefair.lombok)
-            classpath group: "io.freefair.gradle", name: "lombok-plugin", version: lombok_version
-        }
     }
+
+    apply plugin: 'com.adarshr.test-logger'
 
     repositories {
         mavenLocal()
@@ -54,6 +63,25 @@ allprojects {
     configurations.all {
         // check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+    }
+
+    testlogger {
+        theme 'standard'
+        showExceptions true
+        showStackTraces true
+        showFullStackTraces false
+        showCauses true
+        slowThreshold 2000
+        showSummary true
+        showSimpleNames false
+        showPassed false
+        showSkipped false
+        showFailed true
+        showStandardStreams false
+        showPassedStandardStreams true
+        showSkippedStandardStreams true
+        showFailedStandardStreams true
+        logLevel 'lifecycle'
     }
 
 }

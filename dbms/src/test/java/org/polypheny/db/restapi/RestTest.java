@@ -37,6 +37,7 @@ import kong.unirest.RequestBodyEntity;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -76,6 +77,19 @@ public class RestTest {
                         + "ttinyint TINYINT NOT NULL, "
                         + "tvarchar VARCHAR(20) NOT NULL, "
                         + "PRIMARY KEY (tinteger) )" );
+                connection.commit();
+            }
+        }
+    }
+
+
+    @AfterClass
+    public static void dropTestSchema() throws SQLException {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( "DROP TABLE test.resttest" );
+                statement.executeUpdate( "DROP SCHEMA test" );
                 connection.commit();
             }
         }
