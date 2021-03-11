@@ -39,12 +39,14 @@ import kong.unirest.UnirestException;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings("SqlDialectInspection")
 @Slf4j
+@Ignore
 public class RestTest {
 
     @BeforeClass
@@ -142,7 +144,6 @@ public class RestTest {
     }
 
     // --------------- Tests ---------------
-
 
     @Test
     public void testOperations() {
