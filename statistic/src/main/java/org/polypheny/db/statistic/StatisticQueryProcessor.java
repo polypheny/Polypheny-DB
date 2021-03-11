@@ -298,7 +298,8 @@ public class StatisticQueryProcessor {
         SqlNode parsed = sqlProcessor.parse( sql );
 
         if ( parsed.isA( SqlKind.DDL ) ) {
-            signature = sqlProcessor.prepareDdl( statement, parsed );
+            // statistics module should not execute any ddls
+            throw new RuntimeException( "No DDL expected here" );
         } else {
             Pair<SqlNode, RelDataType> validated = sqlProcessor.validate( statement.getTransaction(), parsed, false );
             RelRoot logicalRoot = sqlProcessor.translate( statement, validated.left );
