@@ -906,7 +906,6 @@ public class Crud implements InformationObserver {
      * For pagination within the Explore-by-Example table
      */
     public Object getExploreTables( Request request, Response response ) {
-
         ExploreTables exploreTables = this.gson.fromJson( request.body(), ExploreTables.class );
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -992,7 +991,6 @@ public class Crud implements InformationObserver {
      * Creates the initial query for the Explore-by-Example process
      */
     public Result createInitialExploreQuery( Request req, Response res ) {
-
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
         Transaction transaction = getTransaction( queryExplorationRequest.analyze );
@@ -1009,8 +1007,6 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( statement, queryExplorationRequest, query, false ).setGeneratedQuery( query );
             transaction.commit();
-            transaction = getTransaction( queryExplorationRequest.analyze );
-
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while executing a query from the console", e );
             result = new Result( e ).setGeneratedQuery( query );
