@@ -364,7 +364,7 @@ public class CassandraStore extends DataStore {
 
 
     @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement placement, CatalogColumn catalogColumn, PolyType oldType ) {
 //    public void updateColumnType( Context context, CatalogColumn catalogColumn ) {
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
@@ -387,7 +387,7 @@ public class CassandraStore extends DataStore {
         RelationMetadata relationMetadata = session.getMetadata().getKeyspace( dbKeyspace ).get().getTable( physicalTableName ).get();
         List<ColumnMetadata> primaryKeys = relationMetadata.getPrimaryKey();
         ColumnMetadata oldColumn = relationMetadata.getColumn( physicalColumnName ).get();
-        PolyType oldType = CassandraTypesUtils.getPolyType( oldColumn.getType() );
+        //PolyType oldType = CassandraTypesUtils.getPolyType( oldColumn.getType() );
 
 //        PolyTypeAssignmentRules rules = PolyTypeAssignmentRules.instance( true );
 //        if ( ! rules.canCastFrom( catalogColumn.type, oldType )) {

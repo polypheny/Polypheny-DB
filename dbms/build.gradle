@@ -30,6 +30,7 @@ targetCompatibility = 1.8
 dependencies {
     implementation project(":core")
     implementation project(":cassandra-adapter")
+    implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")
     implementation project(":file-adapter")
     implementation project(":jdbc-adapter")
@@ -135,7 +136,12 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 shadowJar {
+    zip64 true
     classifier = ""
+    mergeServiceFiles {
+        setPath("META-INF/services")
+        include("io.grpc.*")
+    }
 }
 assemble.dependsOn shadowJar
 artifacts {

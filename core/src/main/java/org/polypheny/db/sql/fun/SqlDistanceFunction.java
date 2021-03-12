@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,19 +37,19 @@ import org.polypheny.db.type.inference.ReturnTypes;
 import org.polypheny.db.util.Util;
 
 
-public class SqlKnnFunction extends SqlFunction {
+public class SqlDistanceFunction extends SqlFunction {
 
     private static final PolyOperandTypeChecker OTC_CUSTOM = OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.ANY, PolyTypeFamily.ANY );
 
 
-    public SqlKnnFunction() {
+    public SqlDistanceFunction() {
         super(
-                "KNN",
-                SqlKind.KNN,
+                "DISTANCE",
+                SqlKind.DISTANCE,
                 ReturnTypes.DOUBLE,
                 null,
-                KNN_ARG_CHECKER,
-                SqlFunctionCategory.KNN );
+                DISTANCE_ARG_CHECKER,
+                SqlFunctionCategory.DISTANCE );
     }
 
 
@@ -66,7 +66,7 @@ public class SqlKnnFunction extends SqlFunction {
     }
 
 
-    private static PolyOperandTypeChecker KNN_ARG_CHECKER = new PolyOperandTypeChecker() {
+    private static PolyOperandTypeChecker DISTANCE_ARG_CHECKER = new PolyOperandTypeChecker() {
         @Override
         public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
 
@@ -129,7 +129,7 @@ public class SqlKnnFunction extends SqlFunction {
                 }
             }
 
-            // Check, if present, whether fourth argument is an integer or an array
+            // Check, if present, whether fourth argument is an array
             if ( nOperandsActual == 4 ) {
                 if ( SqlUtil.isNullLiteral( callBinding.operand( 3 ), false ) ) {
                     if ( throwOnFailure ) {
@@ -139,42 +139,7 @@ public class SqlKnnFunction extends SqlFunction {
                     }
                 }
 
-                if ( !PolyTypeUtil.isIntType( callBinding.getOperandType( 3 ) ) && (!PolyTypeUtil.isArray( callBinding.getOperandType( 3 ) ) || !PolyTypeUtil.isNumeric( callBinding.getOperandType( 3 ).getComponentType() )) ) {
-                    if ( throwOnFailure ) {
-                        throw callBinding.newValidationSignatureError();
-                    } else {
-                        return false;
-                    }
-                }
-            }
-
-            // Check, if present, whether fourth argument is an array and fifth argument is an integer.
-            if ( nOperandsActual == 5 ) {
-                if ( SqlUtil.isNullLiteral( callBinding.operand( 3 ), false ) ) {
-                    if ( throwOnFailure ) {
-                        throw callBinding.getValidator().newValidationError( callBinding.operand( 3 ), RESOURCE.nullIllegal() );
-                    } else {
-                        return false;
-                    }
-                }
-
-                if ( !PolyTypeUtil.isArray( callBinding.getOperandType( 3 ) ) || !PolyTypeUtil.isNumeric( callBinding.getOperandType( 3 ).getComponentType() ) ) {
-                    if ( throwOnFailure ) {
-                        throw callBinding.newValidationSignatureError();
-                    } else {
-                        return false;
-                    }
-                }
-
-                if ( SqlUtil.isNullLiteral( callBinding.operand( 4 ), false ) ) {
-                    if ( throwOnFailure ) {
-                        throw callBinding.getValidator().newValidationError( callBinding.operand( 4 ), RESOURCE.nullIllegal() );
-                    } else {
-                        return false;
-                    }
-                }
-
-                if ( !PolyTypeUtil.isIntType( callBinding.getOperandType( 4 ) ) ) {
+                if ( (!PolyTypeUtil.isArray( callBinding.getOperandType( 3 ) ) || !PolyTypeUtil.isNumeric( callBinding.getOperandType( 3 ).getComponentType() )) ) {
                     if ( throwOnFailure ) {
                         throw callBinding.newValidationSignatureError();
                     } else {
@@ -195,16 +160,14 @@ public class SqlKnnFunction extends SqlFunction {
 
         @Override
         public SqlOperandCountRange getOperandCountRange() {
-            return PolyOperandCountRanges.between( 3, 5 );
+            return PolyOperandCountRanges.between( 3, 4 );
         }
 
 
         @Override
         public String getAllowedSignatures( SqlOperator op, String opName ) {
-            return "'KNN(<ARRAY>, <ARRAY>, <STRING>)'" + "\n" +
-                    "'KNN(<ARRAY>, <ARRAY>, <STRING>, <INTEGER>)'" + "\n" +
-                    "'KNN(<ARRAY>, <ARRAY>, <STRING>, <ARRAY>)'" + "\n" +
-                    "'KNN(<ARRAY>, <ARRAY>, <STRING>, <ARRAY>, <INTEGER>)'";
+            return "'DISTANCE(<ARRAY>, <ARRAY>, <STRING>)'" + "\n" +
+                    "'DISTANCE(<ARRAY>, <ARRAY>, <STRING>, <ARRAY>)'";
         }
 
 

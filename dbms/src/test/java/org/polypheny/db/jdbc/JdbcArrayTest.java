@@ -39,7 +39,7 @@ public class JdbcArrayTest {
             + "id INTEGER NOT NULL, "
             + "bigintarray BIGINT ARRAY(1,2), "
             + "booleanarray BOOLEAN ARRAY(1,2), "
-            + "decimalarray DECIMAL ARRAY(1,2), "
+            + "decimalarray DECIMAL(3,1) ARRAY(1,2), "
             + "doublearray DOUBLE ARRAY(1,2), "
             + "intarray INTEGER ARRAY(1,2), "
             + "realarray REAL ARRAY(1,2), "
@@ -102,9 +102,10 @@ public class JdbcArrayTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( ARRAYTEST_SQL );
-                statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
                 try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id FROM arraytest" ),
                             ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0] } ) );
@@ -161,9 +162,10 @@ public class JdbcArrayTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( ARRAYTEST_SQL );
-                statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
                 try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id, intarray[1] FROM arraytest" ),
                             ImmutableList.of( new Object[]{ ARRAYTEST_DATA[0], ((Object[]) ARRAYTEST_DATA[5])[0] } ) );
@@ -206,9 +208,9 @@ public class JdbcArrayTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( ARRAYTEST_SQL );
-                statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
                 try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
                     statement.executeUpdate( "UPDATE arraytest SET intarray = null" );
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT intarray FROM arraytest" ),
@@ -229,11 +231,32 @@ public class JdbcArrayTest {
             Connection connection = polyphenyDbConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
                 statement.executeUpdate( ARRAYTEST_SQL );
-                statement.executeUpdate( ARRAYTEST_DATA_SQL );
 
                 try {
+                    statement.executeUpdate( ARRAYTEST_DATA_SQL );
+
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT id FROM arraytest WHERE intarray = array[1,2]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE bigintarray = array[9999999,8888888]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE booleanarray = array[true,false]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE decimalarray = array[22.2,11.1]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE doublearray = array[cast(2.0 as double),cast(2.5 as double)]" ),
+                            ImmutableList.of( new Object[]{ 1 } ) );
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT id FROM arraytest WHERE smallintarray = array[56,44]" ),
                             ImmutableList.of( new Object[]{ 1 } ) );
 
                     TestHelper.checkResultSet(
