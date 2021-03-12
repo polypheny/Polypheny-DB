@@ -22,11 +22,17 @@ import com.influxdb.annotations.Column;
 import com.influxdb.annotations.Measurement;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.InfluxDBClientFactory;
+import com.influxdb.client.QueryApi;
 import com.influxdb.client.WriteApi;
 import com.influxdb.client.domain.HealthCheck;
 import com.influxdb.client.domain.HealthCheck.StatusEnum;
 import com.influxdb.client.domain.WritePrecision;
+import com.influxdb.query.FluxTable;
+import com.influxdb.query.internal.FluxResultMapper;
 import java.time.Instant;
+import java.util.List;
+import java.util.Random;
+import org.omg.Messaging.SyncScopeHelper;
 
 
 public class MonitoringService {
@@ -49,10 +55,24 @@ public class MonitoringService {
 
         InfluxDBClient client = InfluxDBClientFactory.create(url, token.toCharArray());
 
-        InfluxPojo data = new InfluxPojo( "sql statement", "sql statement type", 5);
+        InfluxPojo data = InfluxPojo.Create( "sql statement", "sql statement type", new Random().nextLong());
         try ( WriteApi writeApi = client.getWriteApi()) {
             writeApi.writeMeasurement(bucket, org, WritePrecision.NS, data);
         }
+
+        // Import to query with the pivot command:
+        // from(bucket: "polypheny-monitoring")
+        //    |> range(start: -1h)
+        //    |> filter(fn: (r) => r["_measurement"] == "Query")
+        //    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
+
+        // IMPORTANT: range always need to be defined!
+
+        String query = String.format("from(bucket: \"%s\") |> range(start: -1h) |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\") |> filter(fn: (r) => r[\"_measurement\"] == \"Query\")", bucket);
+
+        List<InfluxPojo> results = client.getQueryApi().query( query, org, InfluxPojo.class);
+
+        results.forEach( (InfluxPojo elem) -> System.out.println(elem.toString()) );
 
         client.close();
     }
@@ -79,30 +99,6 @@ public class MonitoringService {
                 }
             }
         }
-    }
-
-    @Measurement( name = "Query" )
-    public static class InfluxPojo{
-
-        public InfluxPojo( String sql, String type, Integer numberCols ) {
-            this.sql = sql;
-            this.type = type;
-            this.numberCols = numberCols;
-
-            this.time = Instant.now();
-        }
-
-        @Column
-        String sql;
-
-        @Column
-        String type;
-
-        @Column
-        Integer numberCols;
-
-        @Column(timestamp = true)
-        Instant time;
     }
 }
 
