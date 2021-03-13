@@ -642,7 +642,7 @@ public class Crud implements InformationObserver {
             int numRows = executeSqlUpdate( statement, transaction, query );
             transaction.commit();
             return new Result( numRows ).setGeneratedQuery( query );
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( Exception | TransactionException e ) {
             log.info( "Generated query: {}", query );
             log.error( "Could not insert row", e );
             try {
