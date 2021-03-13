@@ -4,7 +4,6 @@ package org.polypheny.db.adapter.file;
 import com.google.common.collect.ImmutableList;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.sun.javafx.PlatformUtil;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -23,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -110,7 +110,7 @@ public class FileStore extends DataStore {
         informationGroup = new InformationGroup( informationPage, "Disk usage in GB" );
         File root = rootDir.toPath().getRoot().toFile();
         int base = 1024;
-        if ( PlatformUtil.isMac() ) {
+        if ( SystemUtils.IS_OS_MAC ) {
             base = 1000;
         }
         informationElement = new InformationGraph(
