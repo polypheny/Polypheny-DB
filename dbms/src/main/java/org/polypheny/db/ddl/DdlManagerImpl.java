@@ -925,7 +925,8 @@ public class DdlManagerImpl extends DdlManager {
             AdapterManager.getInstance().getStore( placement.adapterId ).updateColumnType(
                     statement.getPrepareContext(),
                     placement,
-                    catalog.getColumn( catalogColumn.id ) );
+                    catalog.getColumn( catalogColumn.id ),
+                    catalogColumn.type );
         }
 
         // Rest plan cache and implementation cache (not sure if required in this case)

@@ -36,6 +36,7 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -136,10 +137,11 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         RelDataType fieldList = relNode.getRowType();
 
         try {
-            DdlManager.getInstance().createView( viewName,
+            DdlManager.getInstance().createView(
+                    viewName,
                     schemaId,
                     relNode,
-                    underlyingTables,
+                    ImmutableList.copyOf( underlyingTables ),
                     fieldList,
                     statement );
         } catch ( TableAlreadyExistsException e ) {

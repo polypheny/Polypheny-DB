@@ -403,7 +403,9 @@ public final class RelTraitSet extends AbstractList<RelTrait> implements Seriali
     public boolean containsIfApplicable( RelTrait trait ) {
         // Note that '==' is sufficient, because trait should be canonized.
         final RelTrait trait1 = getTrait( trait.getTraitDef() );
-        return trait1 == null || trait1 == trait;
+        //|| (((Convention)trait1).getName()).equals( ((Convention)trait).getName())
+        //TODO IG: really ugly fix, find issue with RelTrait
+        return trait1 == null || trait1 == trait || (((Convention) trait1).getName()).equals( ((Convention) trait).getName() );
     }
 
 

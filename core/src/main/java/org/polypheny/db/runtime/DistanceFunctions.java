@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import org.polypheny.db.util.Pair;
 
 
-public class KnnFunctions {
+public class DistanceFunctions {
 
 
     protected static double l1Metric( List<Number> value, List<Number> target ) {
@@ -138,4 +138,5 @@ public class KnnFunctions {
             throw new RuntimeException( "Not useable Arrays, ask jan." );
         }
     }
+
 }

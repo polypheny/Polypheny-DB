@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalFilter;
@@ -60,28 +61,29 @@ public class CatalogView extends CatalogTable {
     }
 
 
-    public RelRoot prepareView( RelOptCluster cluster ) {
+    public RelRoot prepareView( RelOptCluster cluster, RelTraitSet traitSet ) {
         RelRoot viewLogicalRoot = RelRoot.of( definition, SqlKind.SELECT );
-        repareView( viewLogicalRoot.rel, cluster );
+        repareView( viewLogicalRoot.rel, cluster, traitSet );
         return viewLogicalRoot;
     }
 
 
-    public void repareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster ) {
+    public void repareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelTraitSet traitSet ) {
         if ( viewLogicalRoot instanceof LogicalProject ) {
             ((LogicalProject) viewLogicalRoot).setCluster( relOptCluster );
-            repareView( ((LogicalProject) viewLogicalRoot).getInput(), relOptCluster );
+            repareView( ((LogicalProject) viewLogicalRoot).getInput(), relOptCluster, traitSet );
         } else if ( viewLogicalRoot instanceof LogicalFilter ) {
             ((LogicalFilter) viewLogicalRoot).setCluster( relOptCluster );
             //((RexCall)((LogicalFilter)viewLogicalRoot).setCondition(  );
-            repareView( ((LogicalFilter) viewLogicalRoot).getInput(), relOptCluster );
+            repareView( ((LogicalFilter) viewLogicalRoot).getInput(), relOptCluster, traitSet );
         } else if ( viewLogicalRoot instanceof LogicalJoin ) {
             ((LogicalJoin) viewLogicalRoot).setCluster( relOptCluster );
-            repareView( ((LogicalJoin) viewLogicalRoot).getLeft(), relOptCluster );
-            repareView( ((LogicalJoin) viewLogicalRoot).getRight(), relOptCluster );
+            repareView( ((LogicalJoin) viewLogicalRoot).getLeft(), relOptCluster, traitSet );
+            repareView( ((LogicalJoin) viewLogicalRoot).getRight(), relOptCluster, traitSet );
 
         } else if ( viewLogicalRoot instanceof LogicalTableScan ) {
             ((LogicalTableScan) viewLogicalRoot).setCluster( relOptCluster );
+            ((LogicalTableScan) viewLogicalRoot).setTraitSet( traitSet );
         }
     }
 

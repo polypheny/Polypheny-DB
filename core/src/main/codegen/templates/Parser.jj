@@ -5753,7 +5753,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <FUSION>
     |   <GROUPING>
     |   <HOUR>
-    |   <KNN>
+    |   <DISTANCE>
     |   <LAG>
     |   <LEAD>
     |   <LAST_VALUE>
@@ -6352,7 +6352,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < KEY: "KEY" >
 |   < KEY_MEMBER: "KEY_MEMBER" >
 |   < KEY_TYPE: "KEY_TYPE" >
-|   < KNN: "KNN" >
+|   < DISTANCE: "DISTANCE" >
 |   < LABEL: "LABEL" >
 |   < LAG: "LAG" >
 |   < LANGUAGE: "LANGUAGE" >

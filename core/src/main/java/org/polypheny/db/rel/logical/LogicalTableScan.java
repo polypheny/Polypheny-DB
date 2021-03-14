@@ -109,6 +109,7 @@ public final class LogicalTableScan extends TableScan {
      */
     public static RelNode create( RelOptCluster cluster, final RelOptTable relOptTable ) {
         final Table table = relOptTable.unwrap( Table.class );
+
         final RelTraitSet traitSet =
                 cluster.traitSetOf( Convention.NONE )
                         .replaceIfs(
@@ -126,8 +127,8 @@ public final class LogicalTableScan extends TableScan {
 
             CatalogTable catalogTable = catalog.getTable( tableId );
             if ( catalogTable.tableType == TableType.VIEW ) {
-                RelNode relNode = ((CatalogView) catalogTable).prepareView( cluster ).rel;
-                return relNode;
+
+                return ((CatalogView) catalogTable).prepareView( cluster, traitSet ).rel;
             }
         }
 
