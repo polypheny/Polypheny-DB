@@ -2920,7 +2920,6 @@ public class Crud implements InformationObserver {
             res.header( "Content-Disposition", "attachment; filename=" + "file" );
         }
         long fileLength = f.length();
-        res.header( "Content-Length", String.valueOf( fileLength ) );
         String range = req.headers( "Range" );
         if ( range != null ) {
             long rangeStart;
@@ -2968,6 +2967,7 @@ public class Crud implements InformationObserver {
                 res.status( 500 );
             }
         } else {
+            res.header( "Content-Length", String.valueOf( fileLength ) );
             try ( FileInputStream fis = new FileInputStream( f ) ) {
                 ServletOutputStream os = res.raw().getOutputStream();
                 IOUtils.copyLarge( fis, os );

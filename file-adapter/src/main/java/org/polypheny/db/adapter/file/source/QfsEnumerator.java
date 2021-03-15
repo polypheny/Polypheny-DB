@@ -29,6 +29,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.Condition;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
+import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 
 
@@ -116,10 +117,26 @@ public class QfsEnumerator<E> implements Enumerator<E> {
                     row.add( file.getName() );
                     break;
                 case "size":
-                    row.add( file.length() );
+                    if ( file.isFile() ) {
+                        row.add( file.length() );
+                    } else {
+                        row.add( null );
+                    }
                     break;
                 case "file":
-                    row.add( file );
+                    if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
+                        if ( file.isFile() ) {
+                            try {
+                                row.add( Files.readAllBytes( file.toPath() ) );
+                            } catch ( IOException e ) {
+                                throw new RuntimeException( "Could not return QFS file as a byte array", e );
+                            }
+                        } else {
+                            row.add( null );
+                        }
+                    } else {
+                        row.add( file );
+                    }
                     break;
                 default:
                     throw new RuntimeException( "The QFS data source has not implemented the column " + col + " yet" );
