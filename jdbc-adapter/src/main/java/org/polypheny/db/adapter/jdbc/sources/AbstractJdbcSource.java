@@ -37,10 +37,6 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.information.Information;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.sql.SqlDialect;
@@ -52,10 +48,6 @@ import org.polypheny.db.type.PolyType;
 
 @Slf4j
 public abstract class AbstractJdbcSource extends DataSource {
-
-    private InformationPage informationPage;
-    private InformationGroup informationGroup;
-    private List<Information> informationElements;
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
@@ -73,23 +65,15 @@ public abstract class AbstractJdbcSource extends DataSource {
         super( storeId, uniqueName, settings, readOnly );
         this.connectionFactory = createConnectionFactory( settings, MysqlSqlDialect.DEFAULT, diverClass );
         this.dialect = dialect;
-        // Register the JDBC Pool Size as information in the information manager
-        registerJdbcPoolSizeInformation( uniqueName );
+        // Register the JDBC Pool Size as information in the information manager and enable it
+        registerInformationPage();
     }
 
 
-    protected void registerJdbcPoolSizeInformation( String uniqueName ) {
-        informationPage = new InformationPage( uniqueName ).setLabel( "Sources" );
-        informationGroup = new InformationGroup( informationPage, "JDBC Connection Pool" );
-        informationElements = JdbcUtils.buildInformationPoolSize( informationPage, informationGroup, connectionFactory, getUniqueName() );
-
-        InformationManager im = InformationManager.getInstance();
-        im.addPage( informationPage );
-        im.addGroup( informationGroup );
-
-        for ( Information information : informationElements ) {
-            im.registerInformation( information );
-        }
+    protected void registerInformationPage() {
+        JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getUniqueName() );
+        addInformationPhysicalNames();
+        enableInformationPage();
     }
 
 
@@ -188,16 +172,6 @@ public abstract class AbstractJdbcSource extends DataSource {
             connectionFactory.getConnectionHandler( xid ).rollback();
         } else {
             log.warn( "There is no connection to rollback (Unique name: {}, XID: {})!", getUniqueName(), xid );
-        }
-    }
-
-
-    protected void removeInformationPage() {
-        if ( informationElements.size() > 0 ) {
-            InformationManager im = InformationManager.getInstance();
-            im.removeInformation( informationElements.toArray( new Information[0] ) );
-            im.removeGroup( informationGroup );
-            im.removePage( informationPage );
         }
     }
 

@@ -32,10 +32,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.information.Information;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.SchemaPlus;
@@ -48,10 +44,6 @@ import org.polypheny.db.type.PolyType;
 
 @Slf4j
 public abstract class AbstractJdbcStore extends DataStore {
-
-    private InformationPage informationPage;
-    private InformationGroup informationGroup;
-    private List<Information> informationElements;
 
     protected SqlDialect dialect;
     protected JdbcSchema currentJdbcSchema;
@@ -69,23 +61,15 @@ public abstract class AbstractJdbcStore extends DataStore {
         super( storeId, uniqueName, settings, persistent );
         this.connectionFactory = connectionFactory;
         this.dialect = dialect;
-        // Register the JDBC Pool Size as information in the information manager
-        registerJdbcPoolSizeInformation( uniqueName );
+        // Register the JDBC Pool Size as information in the information manager and enable it
+        registerJdbcInformation();
     }
 
 
-    protected void registerJdbcPoolSizeInformation( String uniqueName ) {
-        informationPage = new InformationPage( uniqueName ).setLabel( "Stores" );
-        informationGroup = new InformationGroup( informationPage, "JDBC Connection Pool" );
-        informationElements = JdbcUtils.buildInformationPoolSize( informationPage, informationGroup, connectionFactory, getUniqueName() );
-
-        InformationManager im = InformationManager.getInstance();
-        im.addPage( informationPage );
-        im.addGroup( informationGroup );
-
-        for ( Information information : informationElements ) {
-            im.registerInformation( information );
-        }
+    protected void registerJdbcInformation() {
+        JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getUniqueName() );
+        addInformationPhysicalNames();
+        enableInformationPage();
     }
 
 
@@ -269,7 +253,7 @@ public abstract class AbstractJdbcStore extends DataStore {
 
     // Make sure to update overridden methods as well
     @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
             return;
         }
@@ -397,14 +381,5 @@ public abstract class AbstractJdbcStore extends DataStore {
 
     protected abstract String getDefaultPhysicalSchemaName();
 
-
-    protected void removeInformationPage() {
-        if ( informationElements.size() > 0 ) {
-            InformationManager im = InformationManager.getInstance();
-            im.removeInformation( informationElements.toArray( new Information[0] ) );
-            im.removeGroup( informationGroup );
-            im.removePage( informationPage );
-        }
-    }
 
 }

@@ -162,49 +162,37 @@ public class SqlFunctions {
 
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static double knn( List value, List target, String metric, List weights ) {
-        KnnFunctions.verifyInputs( value, target, weights );
+    public static double distance( List value, List target, String metric, List weights ) {
+        DistanceFunctions.verifyInputs( value, target, weights );
         if ( "L2".equals( metric ) ) {
-            return KnnFunctions.l2MetricWeighted( value, target, weights );
+            return DistanceFunctions.l2MetricWeighted( value, target, weights );
         } else if ( "L1".equals( metric ) ) {
-            return KnnFunctions.l1MetricWeighted( value, target, weights );
+            return DistanceFunctions.l1MetricWeighted( value, target, weights );
         } else if ( "L2SQUARED".equals( metric ) ) {
-            return KnnFunctions.l2SquaredMetricWeighted( value, target, weights );
+            return DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
         } else if ( "CHISQUARED".equals( metric ) ) {
-            return KnnFunctions.chiSquaredMetricWeighted( value, target, weights );
+            return DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
         } else if ( "COSINE".equals( metric ) ) {
-            return KnnFunctions.cosineMetricWeighted( value, target, weights );
+            return DistanceFunctions.cosineMetricWeighted( value, target, weights );
         } else {
             return 0.0;
         }
     }
 
 
-    @SuppressWarnings("rawtypes")
-    public static double knn( List value, List target, String metric, List weights, @SuppressWarnings("unused") int optimisationFactor ) {
-        return knn( value, target, metric, weights );
-    }
-
-
-    @SuppressWarnings("rawtypes")
-    public static double knn( List value, List target, String metric, @SuppressWarnings("unused") int optimisationFactor ) {
-        return knn( value, target, metric );
-    }
-
-
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public static double knn( List value, List target, String metric ) {
-        KnnFunctions.verifyInputs( value, target, null );
+    public static double distance( List value, List target, String metric ) {
+        DistanceFunctions.verifyInputs( value, target, null );
         if ( "L2".equals( metric ) ) {
-            return KnnFunctions.l2Metric( value, target );
+            return DistanceFunctions.l2Metric( value, target );
         } else if ( "L1".equals( metric ) ) {
-            return KnnFunctions.l1Metric( value, target );
+            return DistanceFunctions.l1Metric( value, target );
         } else if ( "L2SQUARED".equals( metric ) ) {
-            return KnnFunctions.l2SquaredMetric( value, target );
+            return DistanceFunctions.l2SquaredMetric( value, target );
         } else if ( "CHISQUARED".equals( metric ) ) {
-            return KnnFunctions.chiSquaredMetric( value, target );
+            return DistanceFunctions.chiSquaredMetric( value, target );
         } else if ( "COSINE".equals( metric ) ) {
-            return KnnFunctions.cosineMetric( value, target );
+            return DistanceFunctions.cosineMetric( value, target );
         } else {
             return 0.0;
         }
@@ -264,7 +252,7 @@ public class SqlFunctions {
             }
             for ( Tag tag : dir.getTags() ) {
                 if ( tag.getTagName().equalsIgnoreCase( tagName ) ) {
-                    return new MetadataModel( tag ).toJson();
+                    return tag.getDescription();
                 }
             }
         }
@@ -3298,10 +3286,7 @@ public class SqlFunctions {
         if ( obj instanceof Collection ) {
             return false;
         }
-        if ( obj instanceof Map ) {
-            return false;
-        }
-        return true;
+        return !(obj instanceof Map);
     }
 
 

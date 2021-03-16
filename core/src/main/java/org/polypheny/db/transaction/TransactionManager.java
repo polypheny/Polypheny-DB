@@ -39,4 +39,6 @@ public interface TransactionManager {
 
     void removeTransaction( PolyXid xid );
 
+    boolean isActive( PolyXid xid );
+
 }

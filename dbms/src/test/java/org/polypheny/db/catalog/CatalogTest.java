@@ -74,10 +74,22 @@ public class CatalogTest {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
             Connection connection = jdbcConnection.getConnection();
             try ( Statement statement = connection.createStatement() ) {
-                statement.executeUpdate( "ALTER TABLE schema1.table2 DROP FOREIGN KEY fk_id" );
-                statement.executeUpdate( "ALTER TABLE schema1.table1 DROP INDEX index1" );
-                statement.executeUpdate( "DROP TABLE schema1.table1" );
-                statement.executeUpdate( "DROP TABLE schema1.table2" );
+                try {
+                    statement.executeUpdate( "ALTER TABLE schema1.table2 DROP FOREIGN KEY fk_id" );
+                    statement.executeUpdate( "ALTER TABLE schema1.table1 DROP INDEX index1" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
+                try {
+                    statement.executeUpdate( "DROP TABLE schema1.table1" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
+                try {
+                    statement.executeUpdate( "DROP TABLE schema1.table2" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
                 statement.executeUpdate( "DROP SCHEMA schema1" );
                 connection.commit();
             }

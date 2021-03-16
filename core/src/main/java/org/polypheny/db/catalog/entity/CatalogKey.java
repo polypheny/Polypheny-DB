@@ -32,7 +32,7 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
     public final long tableId;
     public final long schemaId;
     public final long databaseId;
-    public List<Long> columnIds;
+    public final List<Long> columnIds;
 
 
     public CatalogKey(
@@ -95,9 +95,10 @@ public class CatalogKey implements CatalogEntity, Comparable<CatalogKey> {
 
     @Override
     public int compareTo( CatalogKey o ) {
-        if( o != null ){
+        if ( o != null ) {
             return (int) (this.id - o.id);
         }
         return -1;
     }
+
 }

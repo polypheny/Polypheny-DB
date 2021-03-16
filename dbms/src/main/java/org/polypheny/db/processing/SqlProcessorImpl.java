@@ -80,6 +80,7 @@ import org.polypheny.db.transaction.Lock.LockMode;
 import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionImpl;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
@@ -114,6 +115,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         stopWatch.start();
         SqlNode parsed;
+        log.debug( "SQL: {}", sql );
+
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
@@ -238,6 +241,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                 LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.EXCLUSIVE );
                 // Execute statement
                 ((SqlExecutableStatement) parsed).execute( statement.getPrepareContext(), statement );
+                statement.getTransaction().commit();
                 Catalog.getInstance().commit();
                 return new PolyphenyDbSignature<>(
                         parsed.toSqlString( PolyphenyDbSqlDialect.DEFAULT ).getSql(),
@@ -254,11 +258,10 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
                         new ExecutionTimeMonitor() );
             } catch ( DeadlockException e ) {
                 throw new RuntimeException( "Exception while acquiring global schema lock", e );
-            } catch ( NoTablePrimaryKeyException e ) {
+            } catch ( TransactionException | NoTablePrimaryKeyException e ) {
                 throw new RuntimeException( e );
             } finally {
                 // Release lock
-                // TODO: This can be removed when auto-commit of ddls is implemented
                 LockManager.INSTANCE.unlock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction() );
             }
         } else {

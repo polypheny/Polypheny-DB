@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.catalog.exceptions;
+package org.polypheny.db.ddl.exception;
 
-
-public class DatabaseAlreadyExistsException extends CatalogException {
+public class DdlOnSourceException extends Exception {
 
 }

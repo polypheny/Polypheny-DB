@@ -1,0 +1,107 @@
+
+group "org.polypheny"
+
+version = versionMajor + "." + versionMinor + versionQualifier
+
+
+apply plugin: "java-library"
+apply plugin: "idea"
+apply plugin: "io.freefair.lombok"
+
+
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+javadoc.options.encoding = "UTF-8"
+
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
+dependencies {
+    implementation project(":core")
+
+    // Cottontail-DB
+    implementation group: "org.slf4j", name: "log4j-over-slf4j", version: slf4j_api_version
+    implementation (group: "org.vitrivr", name: "cottontaildb", version: cottontaildb_version ) {
+        exclude group: "org.apache.logging.log4j"
+        exclude group: "org.slf4j"
+    }
+
+    // --- Test Compile ---
+    testImplementation project(path: ":core", configuration: "testClasses")
+
+    testImplementation group: "junit", name: "junit", version: junit_version
+
+}
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+            outputDir = file(project.buildDir.absolutePath + "/classes")
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            outputDir = file(project.buildDir.absolutePath + "/test-classes")
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+
+/**
+ * JavaDoc
+ */
+javadoc {
+    // suppress most of the warnings
+    options.addStringOption("Xdoclint:none", "-quiet")
+    // Include private fields in JavaDoc
+    options.memberLevel = JavadocMemberLevel.PRIVATE
+    // Use HTML 5 for JavaDoc
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption("html5", true)
+    }
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+
+/**
+ * IntelliJ
+ */
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+
+        inheritOutputDirs = false
+        outputDir = file("${project.buildDir}/classes")
+        testOutputDir = file("${project.buildDir}/test-classes")
+    }
+}

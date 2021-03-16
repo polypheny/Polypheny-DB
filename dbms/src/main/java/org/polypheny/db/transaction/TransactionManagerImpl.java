@@ -114,6 +114,12 @@ public class TransactionManagerImpl implements TransactionManager {
     }
 
 
+    @Override
+    public boolean isActive( PolyXid xid ) {
+        return transactions.containsKey( xid );
+    }
+
+
     private static PolyXid generateNewTransactionId( final NodeId nodeId, final UserId userId, final ConnectionId connectionId ) {
         return Utils.generateGlobalTransactionIdentifier( nodeId, userId, connectionId, PUID.randomPUID( PUID.Type.TRANSACTION ) );
     }

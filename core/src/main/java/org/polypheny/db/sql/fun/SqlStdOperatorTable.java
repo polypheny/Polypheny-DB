@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1269,9 +1269,9 @@ public class SqlStdOperatorTable extends ReflectiveSqlOperatorTable {
     //-------------------------------------------------------------
 
     /**
-     * k-nearest-neighbour function: <code>KNN(column, ARRAY[], METRIC, WEIGHTS, optimisationNumber)</code>.
+     * distance function: <code>DISTANCE(column, ARRAY[], METRIC, WEIGHTS)</code>.
      */
-    public static final SqlFunction KNN = new SqlKnnFunction();
+    public static final SqlFunction DISTANCE = new SqlDistanceFunction();
 
     /**
      * Get metadata of multimedia files

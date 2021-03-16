@@ -31,6 +31,8 @@ public abstract class DataSource extends Adapter {
     protected DataSource( final int adapterId, final String uniqueName, final Map<String, String> settings, boolean dataReadOnly ) {
         super( adapterId, uniqueName, settings );
         this.dataReadOnly = dataReadOnly;
+
+        informationPage.setLabel( "Sources" );
     }
 
 

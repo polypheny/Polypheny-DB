@@ -19,8 +19,8 @@ package org.polypheny.db.sql.ddl;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDdl;
 import org.polypheny.db.sql.SqlExecutableStatement;
@@ -71,15 +71,8 @@ public class SqlTruncate extends SqlDdl implements SqlExecutableStatement {
     public void execute( Context context, Statement statement ) {
         CatalogTable table = getCatalogTable( context, name );
 
-        // Make sure that the table can be modified
-        if ( !table.modifiable ) {
-            throw new RuntimeException( "Unable to modify a read-only table!" );
-        }
-
-        //  Execute truncate on all placements
-        table.placementsByAdapter.forEach( ( adapterId, placements ) -> {
-            AdapterManager.getInstance().getAdapter( adapterId ).truncate( context, table );
-        } );
+        DdlManager.getInstance().truncate( table, statement );
     }
+
 }
 

@@ -131,6 +131,7 @@ import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.SourceStringReader;
 import org.polypheny.db.util.Util;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
+import org.polypheny.db.catalog.Catalog;
 
 import org.slf4j.Logger;
 
@@ -4431,6 +4432,8 @@ int IntLiteral() :
     }
 }
 
+
+
 // Type name with optional scale and precision
 SqlDataTypeSpec DataType() :
 {
@@ -5750,7 +5753,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <FUSION>
     |   <GROUPING>
     |   <HOUR>
-    |   <KNN>
+    |   <DISTANCE>
     |   <LAG>
     |   <LEAD>
     |   <LAST_VALUE>
@@ -6349,7 +6352,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < KEY: "KEY" >
 |   < KEY_MEMBER: "KEY_MEMBER" >
 |   < KEY_TYPE: "KEY_TYPE" >
-|   < KNN: "KNN" >
+|   < DISTANCE: "DISTANCE" >
 |   < LABEL: "LABEL" >
 |   < LAG: "LAG" >
 |   < LANGUAGE: "LANGUAGE" >
@@ -6463,6 +6466,7 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < PARAMETER_SPECIFIC_SCHEMA: "PARAMETER_SPECIFIC_SCHEMA" >
 |   < PARTIAL: "PARTIAL" >
 |   < PARTITION: "PARTITION" >
+|   < PARTITIONS: "PARTITIONS" >
 |   < PASCAL: "PASCAL" >
 |   < PASSING: "PASSING" >
 |   < PASSTHROUGH: "PASSTHROUGH" >

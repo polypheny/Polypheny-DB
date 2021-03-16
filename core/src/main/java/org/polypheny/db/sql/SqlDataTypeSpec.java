@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,8 +182,28 @@ public class SqlDataTypeSpec extends SqlNode {
     }
 
 
+    /**
+     * Parses the collection type to a PolyType; can be null
+     *
+     * @return the parsed collection
+     */
+    public PolyType getCollectionsType() {
+        return collectionsTypeName == null ? null : PolyType.get( collectionsTypeName.getSimple() );
+    }
+
+
     public SqlIdentifier getTypeName() {
         return typeName;
+    }
+
+
+    /**
+     * Parses the type to a PolyType; can be null
+     *
+     * @return the parsed type
+     */
+    public PolyType getType() {
+        return typeName == null ? null : PolyType.get( typeName.getSimple() );
     }
 
 
@@ -256,10 +276,10 @@ public class SqlDataTypeSpec extends SqlNode {
             PolyType polyType = PolyType.get( name );
 
             //e.g. for CAST call, for stores that don't support ARRAYs. This is a fix for the WebUI filtering (see webui.Crud.filterTable)
-            if( !writer.getDialect().supportsNestedArrays() && polyType == PolyType.ARRAY ) {
+            if ( !writer.getDialect().supportsNestedArrays() && polyType == PolyType.ARRAY ) {
                 polyType = PolyType.VARCHAR;
                 name = polyType.getName();
-                if(precision < 0){
+                if ( precision < 0 ) {
                     name = name + "(8000)";
                 }
             }
@@ -437,4 +457,5 @@ public class SqlDataTypeSpec extends SqlNode {
 
         return type;
     }
+
 }

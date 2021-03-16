@@ -107,9 +107,9 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
 import org.polypheny.db.catalog.Catalog.ForeignKeyOption;
+import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.NameGenerator;
-import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -121,6 +121,8 @@ import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.exceptions.UnknownColumnException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownQueryInterfaceException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.catalog.exceptions.UnknownTableException;
 import org.polypheny.db.catalog.exceptions.UnknownUserException;
@@ -141,6 +143,10 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationStacktrace;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.partition.PartitionFunctionInfo;
+import org.polypheny.db.partition.PartitionFunctionInfo.PartitionFunctionInfoColumn;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelCollation;
 import org.polypheny.db.rel.RelCollations;
@@ -174,6 +180,9 @@ import org.polypheny.db.webui.models.HubMeta;
 import org.polypheny.db.webui.models.HubMeta.TableMapping;
 import org.polypheny.db.webui.models.HubResult;
 import org.polypheny.db.webui.models.Index;
+import org.polypheny.db.webui.models.PartitionFunctionModel;
+import org.polypheny.db.webui.models.PartitionFunctionModel.FieldType;
+import org.polypheny.db.webui.models.PartitionFunctionModel.PartitionFunctionColumn;
 import org.polypheny.db.webui.models.Placement;
 import org.polypheny.db.webui.models.QueryInterfaceModel;
 import org.polypheny.db.webui.models.Result;
@@ -193,6 +202,8 @@ import org.polypheny.db.webui.models.requests.EditTableRequest;
 import org.polypheny.db.webui.models.requests.ExploreData;
 import org.polypheny.db.webui.models.requests.ExploreTables;
 import org.polypheny.db.webui.models.requests.HubRequest;
+import org.polypheny.db.webui.models.requests.PartitioningRequest;
+import org.polypheny.db.webui.models.requests.PartitioningRequest.ModifyPartitionRequest;
 import org.polypheny.db.webui.models.requests.QueryExplorationRequest;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.webui.models.requests.RelAlgRequest;
@@ -357,6 +368,11 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing transaction", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
         }
         return result;
     }
@@ -371,56 +387,45 @@ public class Crud implements InformationObserver {
             return new ArrayList<>();
         }
 
-        Transaction transaction = getTransaction();
-        try {
-            List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
-            for ( CatalogSchema schema : schemas ) {
-                SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
+        List<CatalogSchema> schemas = catalog.getSchemas( new Catalog.Pattern( databaseName ), null );
+        for ( CatalogSchema schema : schemas ) {
+            SidebarElement schemaTree = new SidebarElement( schema.name, schema.name, "", "cui-layers" );
 
-                if ( request.depth > 1 ) {
-                    ArrayList<SidebarElement> tableTree = new ArrayList<>();
-                    ArrayList<SidebarElement> viewTree = new ArrayList<>();
-                    List<CatalogTable> tables = catalog.getTables( schema.id, null );
-                    for ( CatalogTable table : tables ) {
-                        String icon = "fa fa-table";
-                        if ( table.tableType == TableType.SOURCE ) {
-                            icon = "fa fa-plug";
-                        } else if ( table.tableType == TableType.VIEW ) {
-                            icon = "icon-eye";
-                        }
-                        SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
+            if ( request.depth > 1 ) {
+                ArrayList<SidebarElement> tableTree = new ArrayList<>();
+                ArrayList<SidebarElement> viewTree = new ArrayList<>();
+                List<CatalogTable> tables = catalog.getTables( schema.id, null );
+                for ( CatalogTable table : tables ) {
+                    String icon = "fa fa-table";
+                    if ( table.tableType == TableType.SOURCE ) {
+                        icon = "fa fa-plug";
+                    } else if ( table.tableType == TableType.VIEW ) {
+                        icon = "icon-eye";
+                    }
+                    SidebarElement tableElement = new SidebarElement( schema.name + "." + table.name, table.name, request.routerLinkRoot, icon );
 
-                        if ( request.depth > 2 ) {
-                            List<CatalogColumn> columns = catalog.getColumns( table.id );
-                            for ( CatalogColumn column : columns ) {
-                                tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
-                            }
-                        }
-                        if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
-                            tableTree.add( tableElement );
-                        } else if ( request.views && table.tableType == TableType.VIEW ) {
-                            viewTree.add( tableElement );
+                    if ( request.depth > 2 ) {
+                        List<CatalogColumn> columns = catalog.getColumns( table.id );
+                        for ( CatalogColumn column : columns ) {
+                            tableElement.addChild( new SidebarElement( schema.name + "." + table.name + "." + column.name, column.name, request.routerLinkRoot ).setCssClass( "sidebarColumn" ) );
                         }
                     }
-                    if ( request.showTable ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
-                    } else {
-                        schemaTree.addChildren( tableTree ).setRouterLink( "" );
-                    }
-                    if ( request.views ) {
-                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                    if ( table.tableType == TableType.TABLE || table.tableType == TableType.SOURCE ) {
+                        tableTree.add( tableElement );
+                    } else if ( request.views && table.tableType == TableType.VIEW ) {
+                        viewTree.add( tableElement );
                     }
                 }
-                result.add( schemaTree );
+                if ( request.showTable ) {
+                    schemaTree.addChild( new SidebarElement( schema.name + ".tables", "tables", request.routerLinkRoot, "fa fa-table" ).addChildren( tableTree ).setRouterLink( "" ) );
+                } else {
+                    schemaTree.addChildren( tableTree ).setRouterLink( "" );
+                }
+                if ( request.views ) {
+                    schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                }
             }
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Caught exception", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
+            result.add( schemaTree );
         }
 
         return result;
@@ -449,8 +454,14 @@ public class Crud implements InformationObserver {
         try {
             int rows = executeSqlUpdate( transaction, query );
             result = new Result( rows ).setGeneratedQuery( query );
-        } catch ( QueryExecutionException e ) {
+            transaction.commit();
+        } catch ( QueryExecutionException | TransactionException e ) {
             result = new Result( e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
         }
         return result;
     }
@@ -693,10 +704,13 @@ public class Crud implements InformationObserver {
         allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
         //remove whitespace at the end
         allQueries = allQueries.replaceAll( "(\\s*)$", "" );
-        String[] queries = allQueries.split( ";", 0 );
+        String[] queries = allQueries.split(";(?=(?:[^\']*\'[^\']*\')*[^\']*$)");
         boolean noLimit;
         for ( String query : queries ) {
             Result result;
+            if ( !transaction.isActive() ) {
+                transaction = getTransaction( request.analyze );
+            }
             if ( Pattern.matches( "(?si:[\\s]*COMMIT.*)", query ) ) {
                 try {
                     temp = System.nanoTime();
@@ -856,8 +870,6 @@ public class Crud implements InformationObserver {
             try {
                 result = executeSqlSelect( statement, classifyAllData, explore.getClassifiedSqlStatement(), false ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
                 transaction.commit();
-                transaction = getTransaction( classifyAllData.analyze );
-
             } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
                 log.error( "Caught exception while executing a query from the console", e );
                 result = new Result( e ).setGeneratedQuery( explore.getClassifiedSqlStatement() );
@@ -895,7 +907,6 @@ public class Crud implements InformationObserver {
      * For pagination within the Explore-by-Example table
      */
     public Object getExploreTables( Request request, Response response ) {
-
         ExploreTables exploreTables = this.gson.fromJson( request.body(), ExploreTables.class );
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -945,8 +956,7 @@ public class Crud implements InformationObserver {
         }
         result.setExplorerId( explore.getId() );
         result.setCurrentPage( exploreTables.cPage ).setTable( exploreTables.tableId );
-        int tableSize = 0;
-        tableSize = explore.getTableSize();
+        int tableSize = explore.getTableSize();
 
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
 
@@ -959,7 +969,7 @@ public class Crud implements InformationObserver {
 
         if ( explore.isDataAfterClassification ) {
             int tablesize = explore.getDataAfterClassification().size();
-            List<String[]> paginationDataList = new ArrayList<>();
+            List<String[]> paginationDataList;
             if ( tablesize >= ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()) && tablesize < ((Math.max( 0, exploreTables.cPage )) * getPageSize()) ) {
                 paginationDataList = explore.getDataAfterClassification().subList( ((Math.max( 0, exploreTables.cPage - 1 )) * getPageSize()), tablesize );
             } else {
@@ -982,7 +992,6 @@ public class Crud implements InformationObserver {
      * Creates the initial query for the Explore-by-Example process
      */
     public Result createInitialExploreQuery( Request req, Response res ) {
-
         QueryExplorationRequest queryExplorationRequest = this.gson.fromJson( req.body(), QueryExplorationRequest.class );
         ExploreManager exploreManager = ExploreManager.getInstance();
         Transaction transaction = getTransaction( queryExplorationRequest.analyze );
@@ -999,8 +1008,6 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( statement, queryExplorationRequest, query, false ).setGeneratedQuery( query );
             transaction.commit();
-            transaction = getTransaction( queryExplorationRequest.analyze );
-
         } catch ( QueryExecutionException | TransactionException | RuntimeException e ) {
             log.error( "Caught exception while executing a query from the console", e );
             result = new Result( e ).setGeneratedQuery( query );
@@ -1935,11 +1942,20 @@ public class Crud implements InformationObserver {
         String tableName = index.getTable();
         try {
             CatalogTable table = catalog.getTable( databaseName, schemaName, tableName );
-            Placement p = new Placement();
-            for ( CatalogAdapter catalogAdapter : catalog.getAdapters() ) {
-                Adapter adapter = AdapterManager.getInstance().getAdapter( catalogAdapter.id );
-                List<CatalogColumnPlacement> placements = catalog.getColumnPlacementsOnAdapter( catalogAdapter.id, table.id );
-                p.addAdapter( new Placement.Store( adapter.getUniqueName(), adapter.getAdapterName(), placements ) );
+            Placement p = new Placement( table.isPartitioned, catalog.getPartitionNames( table.id ) );
+            long pkid = table.primaryKey;
+            List<Long> pkColumnIds = Catalog.getInstance().getPrimaryKey( pkid ).columnIds;
+            CatalogColumn pkColumn = Catalog.getInstance().getColumn( pkColumnIds.get( 0 ) );
+            List<CatalogColumnPlacement> pkPlacements = catalog.getColumnPlacements( pkColumn.id );
+            for ( CatalogColumnPlacement placement : pkPlacements ) {
+                Adapter adapter = AdapterManager.getInstance().getAdapter( placement.adapterId );
+                p.addAdapter( new Placement.Store(
+                        adapter.getUniqueName(),
+                        adapter.getAdapterName(),
+                        catalog.getColumnPlacementsOnAdapter( adapter.getAdapterId(), table.id ),
+                        catalog.getPartitionsIndexOnDataPlacement( placement.adapterId, placement.tableId ),
+                        table.numPartitions,
+                        table.partitionType ) );
             }
             return p;
         } catch ( UnknownTableException | UnknownDatabaseException | UnknownSchemaException e ) {
@@ -1981,10 +1997,220 @@ public class Crud implements InformationObserver {
             affectedRows = executeSqlUpdate( transaction, query );
             transaction.commit();
         } catch ( QueryExecutionException | TransactionException e ) {
-            log.error( "Could not add or drop placement", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
             return new Result( e );
         }
         return new Result( affectedRows ).setGeneratedQuery( query );
+    }
+
+
+    String getPartitionTypes( final Request req, final Response res ) {
+        return gson.toJson( Arrays.stream( PartitionType.values() ).filter( t -> t != PartitionType.NONE ).toArray( PartitionType[]::new ), PartitionType[].class );
+    }
+
+
+    private List<PartitionFunctionColumn> buildPartitionFunctionRow( List<PartitionFunctionInfoColumn> columnList ) {
+        List<PartitionFunctionColumn> constructedRow = new ArrayList<>();
+
+        for ( PartitionFunctionInfoColumn currentColumn : columnList ) {
+            FieldType type;
+            switch ( currentColumn.getFieldType() ) {
+                case STRING:
+                    type = FieldType.STRING;
+                    break;
+                case INTEGER:
+                    type = FieldType.INTEGER;
+                    break;
+                case LIST:
+                    type = FieldType.LIST;
+                    break;
+                case LABEL:
+                    type = FieldType.LABEL;
+                    break;
+                default:
+                    throw new RuntimeException( "Unknown Field Type: " + currentColumn.getFieldType() );
+            }
+
+            if ( type.equals( FieldType.LIST ) ) {
+                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getOptions(), currentColumn.getDefaultValue() )
+                        .setModifiable( currentColumn.isModifiable() )
+                        .setMandatory( currentColumn.isMandatory() )
+                        .setSqlPrefix( currentColumn.getSqlPrefix() )
+                        .setSqlSuffix( currentColumn.getSqlSuffix() ) );
+            } else {
+                constructedRow.add( new PartitionFunctionColumn( type, currentColumn.getDefaultValue() )
+                        .setModifiable( currentColumn.isModifiable() )
+                        .setMandatory( currentColumn.isMandatory() )
+                        .setSqlPrefix( currentColumn.getSqlPrefix() )
+                        .setSqlSuffix( currentColumn.getSqlSuffix() ) );
+            }
+        }
+
+        return constructedRow;
+    }
+
+
+    PartitionFunctionModel getPartitionFunctionModel( final Request req, final Response res ) {
+        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+
+        // Get correct partition function
+        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManager partitionManager = partitionManagerFactory.getInstance( request.method );
+
+        // Check whether the selected partition function supports the selected partition column
+        CatalogColumn partitionColumn;
+        try {
+            partitionColumn = Catalog.getInstance().getColumn( "APP", request.schemaName, request.tableName, request.column );
+        } catch ( UnknownColumnException | UnknownSchemaException | UnknownDatabaseException | UnknownTableException e ) { // This should not happen
+            log.error( "Unknown column", e );
+            throw new RuntimeException( e );
+        }
+        if ( !partitionManager.supportsColumnOfType( partitionColumn.type ) ) {
+            return new PartitionFunctionModel( "The partition function " + request.method + " does not support columns of type " + partitionColumn.type );
+        }
+
+        PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
+
+        JsonObject infoJson = gson.toJsonTree( partitionManager.getPartitionFunctionInfo() ).getAsJsonObject();
+
+        List<List<PartitionFunctionColumn>> rows = new ArrayList<>();
+
+        if ( infoJson.has( "rowsBefore" ) ) {
+            // Insert Rows Before
+            List<List<PartitionFunctionInfoColumn>> rowsBefore = functionInfo.getRowsBefore();
+            for ( int i = 0; i < rowsBefore.size(); i++ ) {
+                rows.add( buildPartitionFunctionRow( rowsBefore.get( i ) ) );
+            }
+        }
+
+        if ( infoJson.has( "dynamicRows" ) ) {
+            // Build as many dynamic rows as requested per num Partitions
+            for ( int i = 0; i < request.numPartitions; i++ ) {
+                rows.add( buildPartitionFunctionRow( functionInfo.getDynamicRows() ) );
+            }
+        }
+
+        if ( infoJson.has( "rowsAfter" ) ) {
+            // Insert Rows After
+            List<List<PartitionFunctionInfoColumn>> rowsAfter = functionInfo.getRowsAfter();
+            for ( int i = 0; i < rowsAfter.size(); i++ ) {
+                rows.add( buildPartitionFunctionRow( rowsAfter.get( i ) ) );
+            }
+        }
+
+        PartitionFunctionModel model = new PartitionFunctionModel( functionInfo.getFunctionTitle(), functionInfo.getDescription(), functionInfo.getHeadings(), rows );
+        model.setFunctionName( request.method.toString() );
+        model.setTableName( request.tableName );
+        model.setPartitionColumnName( request.column );
+        model.setSchemaName( request.schemaName );
+
+        return model;
+    }
+
+
+    Result partitionTable( final Request req, final Response res ) {
+        PartitionFunctionModel request = gson.fromJson( req.body(), PartitionFunctionModel.class );
+
+        // Get correct partition function
+        PartitionManagerFactory partitionManagerFactory = new PartitionManagerFactory();
+        PartitionManager partitionManager = null;
+        try {
+            partitionManager = partitionManagerFactory.getInstance( PartitionType.getByName( request.functionName ) );
+        } catch ( UnknownPartitionTypeException e ) {
+            throw new RuntimeException( e );
+        }
+
+        PartitionFunctionInfo functionInfo = partitionManager.getPartitionFunctionInfo();
+
+        String content = "";
+        for ( List<PartitionFunctionColumn> currentRow : request.rows ) {
+            boolean rowSeparationApplied = false;
+            for ( PartitionFunctionColumn currentColumn : currentRow ) {
+                if ( currentColumn.modifiable ) {
+                    // If more than one row, keep appending ','
+                    if ( !rowSeparationApplied && request.rows.indexOf( currentRow ) != 0 ) {
+                        content = content + functionInfo.getRowSeparation();
+                        rowSeparationApplied = true;
+                    }
+                    content = content + currentColumn.sqlPrefix + " " + currentColumn.value + " " + currentColumn.sqlSuffix;
+                }
+            }
+        }
+
+        content = functionInfo.getSqlPrefix() + " " + content + " " + functionInfo.getSqlSuffix();
+
+        //INFO - do discuss
+        //Problem is that we took the structure completely out of the original JSON therefore losing valuable information and context
+        //what part of rows were actually needed to build the SQL and which one not.
+        //Now we have to crosscheck every statement
+        //Actually to complex and rather poor maintenance quality.
+        //Changes to extensions to this model now have to be made on two parts
+
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" PARTITION BY %s (\"%s\") %s ",
+                request.schemaName, request.tableName, request.functionName, request.partitionColumnName, content );
+
+        Transaction trx = getTransaction();
+        try {
+            int i = executeSqlUpdate( trx, query );
+            trx.commit();
+            return new Result( i ).setGeneratedQuery( query );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not partition table", e );
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+            return new Result( e ).setGeneratedQuery( query );
+        }
+    }
+
+
+    Result mergePartitions( final Request req, final Response res ) {
+        PartitioningRequest request = gson.fromJson( req.body(), PartitioningRequest.class );
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" MERGE PARTITIONS", request.schemaName, request.tableName );
+        Transaction trx = getTransaction();
+        try {
+            int i = executeSqlUpdate( trx, query );
+            trx.commit();
+            return new Result( i ).setGeneratedQuery( query );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not merge partitions", e );
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+            return new Result( e ).setGeneratedQuery( query );
+        }
+    }
+
+
+    Result modifyPartitions( final Request req, final Response res ) {
+        ModifyPartitionRequest request = gson.fromJson( req.body(), ModifyPartitionRequest.class );
+        StringJoiner partitions = new StringJoiner( "," );
+        for ( String partition : request.partitions ) {
+            partitions.add( "\"" + partition + "\"" );
+        }
+        String query = String.format( "ALTER TABLE \"%s\".\"%s\" MODIFY PARTITIONS(%s) ON STORE %s", request.schemaName, request.tableName, partitions.toString(), request.storeUniqueName );
+        Transaction trx = getTransaction();
+        try {
+            int i = executeSqlUpdate( trx, query );
+            trx.commit();
+            return new Result( i ).setGeneratedQuery( query );
+        } catch ( QueryExecutionException | TransactionException e ) {
+            log.error( "Could not modify partitions", e );
+            try {
+                trx.rollback();
+            } catch ( TransactionException ex ) {
+                log.error( "Could not rollback", ex );
+            }
+            return new Result( e ).setGeneratedQuery( query );
+        }
     }
 
 
@@ -2098,11 +2324,19 @@ public class Crud implements InformationObserver {
 
         // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
         // currently seams to be the best option). When migrating this to a DDL manager, make sure to find a better approach.
+        Transaction transaction = null;
         try {
-            Transaction transaction = getTransaction();
+            transaction = getTransaction();
             transaction.createStatement().getQueryProcessor().resetCaches();
             transaction.commit();
         } catch ( TransactionException e ) {
+            if ( transaction != null ) {
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException transactionException ) {
+                    log.error( "Exception while rollback", transactionException );
+                }
+            }
             throw new RuntimeException( "Error while resetting caches", e );
         }
 
@@ -2202,6 +2436,11 @@ public class Crud implements InformationObserver {
             return new Result( numRows ).setGeneratedQuery( query );
         } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not deploy data store", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
             return new Result( e ).setGeneratedQuery( query );
         }
     }
@@ -2220,6 +2459,11 @@ public class Crud implements InformationObserver {
             return new Result( a ).setGeneratedQuery( query );
         } catch ( TransactionException | QueryExecutionException e ) {
             log.error( "Could not remove store {}", req.body(), e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
             return new Result( e ).setGeneratedQuery( query );
         }
     }
@@ -2276,7 +2520,8 @@ public class Crud implements InformationObserver {
         try {
             qim.removeQueryInterface( catalog, uniqueName );
             return new Result( 1 ).setGeneratedQuery( generatedQuery );
-        } catch ( RuntimeException e ) {
+        } catch ( RuntimeException | UnknownQueryInterfaceException e ) {
+            log.error( "Could not remove query interface {}", req.body(), e );
             return new Result( e ).setGeneratedQuery( generatedQuery );
         }
     }
@@ -2292,7 +2537,7 @@ public class Crud implements InformationObserver {
 
         List<CatalogTable> catalogTables = catalog.getTables( new Catalog.Pattern( databaseName ), new Catalog.Pattern( request.schema ), null );
         for ( CatalogTable catalogTable : catalogTables ) {
-            if ( catalogTable.tableType == TableType.TABLE ) {
+            if ( catalogTable.tableType == TableType.TABLE || catalogTable.tableType == TableType.SOURCE ) {
                 // get foreign keys
                 List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
                 for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
@@ -2371,15 +2616,15 @@ public class Crud implements InformationObserver {
         String pkTable = String.format( "\"%s\".\"%s\"", t[0], t[1] );
 
         Result result;
+        String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
+                fkTable, fk.getFkName(), fk.getFkColumnName(), pkTable, fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
         try {
-            String sql = String.format( "ALTER TABLE %s ADD CONSTRAINT \"%s\" FOREIGN KEY (\"%s\") REFERENCES %s(\"%s\") ON UPDATE %s ON DELETE %s",
-                    fkTable, fk.getFkName(), fk.getFkColumnName(), pkTable, fk.getPkColumnName(), fk.getUpdate(), fk.getDelete() );
             executeSqlUpdate( transaction, sql );
             transaction.commit();
-            result = new Result( 1 );
+            result = new Result( 1 ).setGeneratedQuery( sql );
         } catch ( QueryExecutionException | TransactionException e ) {
             log.error( "Caught exception while adding a foreign key", e );
-            result = new Result( e );
+            result = new Result( e ).setGeneratedQuery( sql );
             try {
                 transaction.rollback();
             } catch ( TransactionException ex ) {
@@ -2394,7 +2639,6 @@ public class Crud implements InformationObserver {
      * Execute a logical plan coming from the Web-Ui plan builder
      */
     Result executeRelAlg( final RelAlgRequest request, Session session ) {
-
         Transaction transaction = getTransaction( true );
         transaction.getQueryAnalyzer().setSession( session );
         Statement statement = transaction.createStatement();
@@ -2453,6 +2697,11 @@ public class Crud implements InformationObserver {
             transaction.commit();
         } catch ( TransactionException e ) {
             log.error( "Caught exception while committing the plan builder tree", e );
+            try {
+                transaction.rollback();
+            } catch ( TransactionException transactionException ) {
+                log.error( "Exception while rollback", transactionException );
+            }
             throw new RuntimeException( e );
         }
 
@@ -2889,6 +3138,11 @@ public class Crud implements InformationObserver {
                 transaction.commit();
             } catch ( TransactionException e ) {
                 log.error( "Error while fetching table", e );
+                try {
+                    transaction.rollback();
+                } catch ( TransactionException transactionException ) {
+                    log.error( "Exception while rollback", transactionException );
+                }
             }
         }
     }
@@ -3329,7 +3583,7 @@ public class Crud implements InformationObserver {
                     }
                     // Check if num is equal for all adapters
                     if ( rowsChanged != -1 && rowsChanged != num ) {
-                        throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
+                        //throw new QueryExecutionException( "The number of changed rows is not equal for all stores!" );
                     }
                     rowsChanged = num;
                 }

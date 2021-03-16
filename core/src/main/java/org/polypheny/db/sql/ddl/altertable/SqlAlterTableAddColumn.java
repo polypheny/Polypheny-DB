@@ -22,13 +22,12 @@ import static org.polypheny.db.util.Static.RESOURCE;
 import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.DataStore;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.Collation;
-import org.polypheny.db.catalog.Catalog.PlacementType;
-import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
+import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
+import org.polypheny.db.ddl.exception.ColumnNotExistsException;
+import org.polypheny.db.ddl.exception.NotNullAndDefaultValueException;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.sql.SqlDataTypeSpec;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -38,7 +37,6 @@ import org.polypheny.db.sql.SqlWriter;
 import org.polypheny.db.sql.ddl.SqlAlterTable;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -119,89 +117,30 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             throw new RuntimeException( "No FQDN allowed here: " + column.toString() );
         }
 
-        CatalogColumn beforeColumn = null;
-        if ( beforeColumnName != null ) {
-            beforeColumn = getCatalogColumn( catalogTable.id, beforeColumnName );
-        }
-        CatalogColumn afterColumn = null;
-        if ( afterColumnName != null ) {
-            afterColumn = getCatalogColumn( catalogTable.id, afterColumnName );
-        }
-
-        // Check if the column either allows null values or has a default value defined.
-        if ( defaultValue == null && !nullable ) {
-            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
-        }
-
-        if ( Catalog.getInstance().checkIfExistsColumn( catalogTable.id, column.getSimple() ) ) {
-            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
-        }
-
         // Make sure that all adapters are of type store (and not source)
         for ( int storeId : catalogTable.placementsByAdapter.keySet() ) {
             getDataStoreInstance( storeId );
         }
 
-        List<CatalogColumn> columns = Catalog.getInstance().getColumns( catalogTable.id );
-        int position = columns.size() + 1;
-        if ( beforeColumn != null || afterColumn != null ) {
-            if ( beforeColumn != null ) {
-                position = beforeColumn.position;
-            } else {
-                position = afterColumn.position + 1;
-            }
-            // Update position of the other columns
-            for ( int i = columns.size(); i >= position; i-- ) {
-                Catalog.getInstance().setColumnPosition( columns.get( i - 1 ).id, i + 1 );
-            }
+        String defaultValue = this.defaultValue == null ? null : this.defaultValue.toString();
+
+        try {
+            DdlManager.getInstance().addColumn(
+                    column.getSimple(),
+                    catalogTable,
+                    beforeColumnName == null ? null : beforeColumnName.getSimple(),
+                    afterColumnName == null ? null : afterColumnName.getSimple(),
+                    ColumnTypeInformation.fromSqlDataTypeSpec( type ),
+                    nullable,
+                    defaultValue,
+                    statement );
+        } catch ( NotNullAndDefaultValueException e ) {
+            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.notNullAndNoDefaultValue( column.getSimple() ) );
+        } catch ( ColumnAlreadyExistsException e ) {
+            throw SqlUtil.newContextException( column.getParserPosition(), RESOURCE.columnExists( column.getSimple() ) );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException( table.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
         }
-        final PolyType collectionsType = type.getCollectionsTypeName() == null ?
-                null : PolyType.get( type.getCollectionsTypeName().getSimple() );
-        long columnId = Catalog.getInstance().addColumn(
-                column.getSimple(),
-                catalogTable.id,
-                position,
-                PolyType.get( type.getTypeName().getSimple() ),
-                collectionsType,
-                type.getPrecision() == -1 ? null : type.getPrecision(),
-                type.getScale() == -1 ? null : type.getScale(),
-                type.getDimension() == -1 ? null : type.getDimension(),
-                type.getCardinality() == -1 ? null : type.getCardinality(),
-                nullable,
-                Collation.CASE_INSENSITIVE
-        );
-        CatalogColumn addedColumn = Catalog.getInstance().getColumn( columnId );
-
-        // Add default value
-        if ( defaultValue != null ) {
-            // TODO: String is only a temporal solution for default values
-            String v = defaultValue.toString();
-            if ( v.startsWith( "'" ) ) {
-                v = v.substring( 1, v.length() - 1 );
-            }
-            Catalog.getInstance().setDefaultValue( addedColumn.id, PolyType.VARCHAR, v );
-
-            // Update addedColumn variable
-            addedColumn = Catalog.getInstance().getColumn( columnId );
-        }
-
-        // Ask router on which stores this column shall be placed
-        List<DataStore> stores = statement.getRouter().addColumn( catalogTable, statement );
-
-        // Add column on underlying data stores and insert default value
-        for ( DataStore store : stores ) {
-            Catalog.getInstance().addColumnPlacement(
-                    store.getAdapterId(),
-                    addedColumn.id,
-                    PlacementType.AUTOMATIC,
-                    null, // Will be set later
-                    null, // Will be set later
-                    null ); // Will be set later
-            AdapterManager.getInstance().getStore( store.getAdapterId() ).addColumn( context, catalogTable, addedColumn );
-        }
-
-        // Rest plan cache and implementation cache (not sure if required in this case)
-        statement.getQueryProcessor().resetCaches();
     }
 
 }

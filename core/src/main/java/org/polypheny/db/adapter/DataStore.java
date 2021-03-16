@@ -28,6 +28,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.type.PolyType;
 
 
 public abstract class DataStore extends Adapter {
@@ -41,6 +42,8 @@ public abstract class DataStore extends Adapter {
     public DataStore( final int adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent ) {
         super( adapterId, uniqueName, settings );
         this.persistent = persistent;
+
+        informationPage.setLabel( "Stores" );
     }
 
 
@@ -56,7 +59,7 @@ public abstract class DataStore extends Adapter {
 
     public abstract void dropIndex( Context context, CatalogIndex catalogIndex );
 
-    public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn );
+    public abstract void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType );
 
     public abstract List<AvailableIndexMethod> getAvailableIndexMethods();
 
