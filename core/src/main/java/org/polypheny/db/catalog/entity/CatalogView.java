@@ -18,7 +18,6 @@ package org.polypheny.db.catalog.entity;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
@@ -35,7 +34,8 @@ import org.polypheny.db.sql.SqlKind;
 
 public class CatalogView extends CatalogTable {
 
-    List<Long> underlyingTables;
+    @Getter
+    ImmutableList<Long> underlyingTables;
     @Getter
     RelDataType fieldList;
 

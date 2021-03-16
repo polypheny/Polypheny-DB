@@ -1263,10 +1263,15 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelNode relNode, List<Long> underlyingTables, RelDataType fieldList, Statement statement ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelNode relNode, List<Long> underlyingTables, RelDataType fieldList, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> columns ) throws TableAlreadyExistsException {
 
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
+        }
+
+        if ( stores == null ) {
+            // Ask router on which store(s) the table should be placed
+            stores = statement.getRouter().createTable( schemaId, statement );
         }
 
         long tableId = catalog.addTable(
@@ -1279,6 +1284,24 @@ public class DdlManagerImpl extends DdlManager {
                 underlyingTables,
                 fieldList
         );
+
+        for ( ColumnInformation column : columns ) {
+
+            //addColumn( column.name, column.typeInformation, column.collation, column.defaultValue, tableId, column.position, stores, placementType );
+            long columnId = catalog.addColumn(
+                    column.name,
+                    tableId,
+                    column.position,
+                    column.typeInformation.type,
+                    column.typeInformation.collectionType,
+                    column.typeInformation.precision,
+                    column.typeInformation.scale,
+                    column.typeInformation.dimension,
+                    column.typeInformation.cardinality,
+                    column.typeInformation.nullable,
+                    column.collation );
+
+        }
 
     }
 
@@ -1634,12 +1657,6 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView() {
-        throw new RuntimeException( "Not supported yet" );
-    }
-
-
-    @Override
     public void dropView() {
         throw new RuntimeException( "Not supported yet" );
     }
@@ -1665,6 +1682,12 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropType() {
+        throw new RuntimeException( "Not supported yet" );
+    }
+
+
+    @Override
+    public void createView() {
         throw new RuntimeException( "Not supported yet" );
     }
 

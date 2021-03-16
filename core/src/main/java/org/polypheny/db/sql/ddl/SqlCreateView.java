@@ -41,12 +41,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.Collation;
+import org.polypheny.db.catalog.Catalog.PlacementType;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
+import org.polypheny.db.catalog.exceptions.UnknownCollationException;
 import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
+import org.polypheny.db.ddl.DdlManager.ColumnInformation;
+import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.SqlProcessor;
@@ -56,6 +62,7 @@ import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlCreate;
@@ -83,7 +90,6 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     @Getter
     private final SqlNode query;
     private String sql;
-    //List<String> viewTables = new ArrayList<>();
     List<Long> underlyingTables = new ArrayList<>();
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", SqlKind.CREATE_VIEW );
@@ -92,7 +98,12 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     /**
      * Creates a SqlCreateView.
      */
-    SqlCreateView( SqlParserPos pos, boolean replace, SqlIdentifier name, SqlNodeList columnList, SqlNode query ) {
+    SqlCreateView(
+            SqlParserPos pos,
+            boolean replace,
+            SqlIdentifier name,
+            SqlNodeList columnList,
+            SqlNode query ) {
         super( OPERATOR, pos, replace, false );
         this.name = Objects.requireNonNull( name );
         this.columnList = columnList; // may be null
@@ -129,12 +140,37 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.schemaNotFound( name.toString() ) );
         }
 
+        List<DataStore> store = null;
+        PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
+
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
         RelNode relNode = (sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel);
         prepareView( relNode );
-
         getUnderlyingTables( relNode );
         RelDataType fieldList = relNode.getRowType();
+
+        List<ColumnInformation> columns = new ArrayList<>();
+        if ( columnList == null ) {
+            int position = 1;
+            for ( RelDataTypeField rel : fieldList.getFieldList() ) {
+
+                columns.add( new ColumnInformation(
+                        rel.getName(),
+                        new ColumnTypeInformation(
+                                rel.getType().getPolyType(),
+                                null,
+                                rel.getValue().getPrecision(),
+                                rel.getValue().getScale(),
+                                -1,
+                                -1,
+                                false ),
+                        Collation.getDefaultCollation(),
+                        null,
+                        position ) );
+
+                position++;
+            }
+        }
 
         try {
             DdlManager.getInstance().createView(
@@ -143,9 +179,26 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
                     relNode,
                     ImmutableList.copyOf( underlyingTables ),
                     fieldList,
-                    statement );
+                    statement,
+                    store,
+                    placementType,
+                    columns );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
+        }
+    }
+
+
+    private Collation getCollation( RelDataTypeField rel ) {
+        try {
+            if ( rel.getValue().getCollation() != null ) {
+                return Collation.parse( rel.getValue().getCollation().getCollationName() );
+            } else {
+                return Collation.getDefaultCollation();
+            }
+
+        } catch ( UnknownCollationException e ) {
+            throw new RuntimeException( e );
         }
     }
 
