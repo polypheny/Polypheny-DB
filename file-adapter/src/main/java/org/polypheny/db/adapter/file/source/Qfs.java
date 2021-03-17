@@ -62,9 +62,9 @@ public class Qfs extends DataSource {
     private File rootDir;
     private QfsSchema currentSchema;
 
-    private InformationPage informationPage;
-    private final List<InformationGroup> informationGroups = new ArrayList<>();
-    private final List<Information> informationElements = new ArrayList<>();
+    private InformationPage infoPage;
+    private final List<InformationGroup> infoGroups = new ArrayList<>();
+    private final List<Information> infoElements = new ArrayList<>();
 
     public Qfs( int adapterId, String uniqueName, Map<String, String> settings ) {
         super( adapterId, uniqueName, settings, true );
@@ -128,13 +128,13 @@ public class Qfs extends DataSource {
     @Override
     public void shutdown() {
         InformationManager im = InformationManager.getInstance();
-        if ( informationElements.size() > 0 ) {
-            im.removeInformation( informationElements.toArray( new Information[0] ) );
+        if ( infoElements.size() > 0 ) {
+            im.removeInformation( infoElements.toArray( new Information[0] ) );
         }
-        if ( informationGroups.size() > 0 ) {
-            im.removeGroup( informationGroups.toArray( new InformationGroup[0] ) );
+        if ( infoGroups.size() > 0 ) {
+            im.removeGroup( infoGroups.toArray( new InformationGroup[0] ) );
         }
-        im.removePage( informationPage );
+        im.removePage( infoPage );
     }
 
     @Override
@@ -222,19 +222,19 @@ public class Qfs extends DataSource {
 
     protected void registerInformationPage( String uniqueName ) {
         InformationManager im = InformationManager.getInstance();
-        informationPage = new InformationPage( uniqueName, "Query a filesystem" ).setLabel( "Sources" );
-        im.addPage( informationPage );
+        infoPage = new InformationPage( uniqueName, "Query a filesystem" ).setLabel( "Sources" );
+        im.addPage( infoPage );
 
-        InformationGroup rootGroup = new InformationGroup( informationPage, "Root directory" ).setOrder( 1 );
+        InformationGroup rootGroup = new InformationGroup( infoPage, "Root directory" ).setOrder( 1 );
         InformationText iText = new InformationText( uniqueName + "-rootDir", rootGroup, settings.get( "rootDir" ) );
         im.addGroup( rootGroup );
         im.registerInformation( iText );
 
         int i = 2;
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
+            InformationGroup group = new InformationGroup( infoPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
             im.addGroup( group );
-            informationGroups.add( group );
+            infoGroups.add( group );
 
             InformationTable table = new InformationTable(
                     group,
@@ -249,7 +249,7 @@ public class Qfs extends DataSource {
                 );
             }
             im.registerInformation( table );
-            informationElements.add( table );
+            infoElements.add( table );
         }
     }
 

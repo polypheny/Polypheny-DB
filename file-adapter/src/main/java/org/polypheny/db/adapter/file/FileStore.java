@@ -72,10 +72,9 @@ public class FileStore extends DataStore {
     @SuppressWarnings("UnstableApiUsage") // see https://stackoverflow.com/questions/53060907/is-it-safe-to-use-hashing-class-from-com-google-common-hash
     public static final HashFunction SHA = Hashing.sha256();
 
-    //information manager
-    private InformationPage informationPage;
-    private InformationGroup informationGroup;
-    private Information informationElement;
+    private InformationPage infoPage;
+    private InformationGroup infoGroup;
+    private Information infoElement;
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -107,30 +106,30 @@ public class FileStore extends DataStore {
 
     private void setInformationPage() {
         InformationManager im = InformationManager.getInstance();
-        informationPage = new InformationPage( getUniqueName() ).setLabel( "Stores" );
-        informationGroup = new InformationGroup( informationPage, "Disk usage in GB" );
+        infoPage = new InformationPage( getUniqueName() ).setLabel( "Stores" );
+        infoGroup = new InformationGroup( infoPage, "Disk usage in GB" );
         File root = rootDir.toPath().getRoot().toFile();
         int base = 1024;
         if ( SystemUtils.IS_OS_MAC ) {
             base = 1000;
         }
-        informationElement = new InformationGraph(
-                informationGroup,
+        infoElement = new InformationGraph(
+                infoGroup,
                 GraphType.DOUGHNUT,
                 new String[]{ "used", "free" },
                 new GraphData<>( "disk-usage", new Double[]{ (double) ((root.getTotalSpace() - root.getUsableSpace()) / (long) Math.pow( base, 3 )), (double) (root.getUsableSpace() / (long) Math.pow( base, 3 ))
                 } ) );
-        im.addPage( informationPage );
-        im.addGroup( informationGroup );
-        im.registerInformation( informationElement );
+        im.addPage( infoPage );
+        im.addGroup( infoGroup );
+        im.registerInformation( infoElement );
     }
 
 
-    private void removeInformationPage() {
+    public void removeInformationPage() {
         InformationManager im = InformationManager.getInstance();
-        im.removeInformation( informationElement );
-        im.removeGroup( informationGroup );
-        im.removePage( informationPage );
+        im.removeInformation( infoElement );
+        im.removeGroup( infoGroup );
+        im.removePage( infoPage );
     }
 
 
