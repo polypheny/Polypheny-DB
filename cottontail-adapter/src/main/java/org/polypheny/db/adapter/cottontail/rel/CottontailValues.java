@@ -110,5 +110,4 @@ public class CottontailValues extends Values implements org.polypheny.db.adapter
         context.blockBuilder = builder;
         context.valuesHashMapList = valuesMapList_;
     }
-
 }

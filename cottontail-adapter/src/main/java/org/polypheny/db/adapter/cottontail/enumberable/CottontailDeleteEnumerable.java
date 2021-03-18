@@ -53,6 +53,12 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
+    @Override
+    public Enumerator<T> enumerator() {
+        return new CottontailDeleteEnumerator<>( deletes, wrapper );
+    }
+
+
     public static CottontailDeleteEnumerable<Object> delete(
             String entity,
             String schema,
@@ -96,12 +102,6 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
         builder.setWhere( whereBuilder.apply( parameterValues ) );
 
         return builder.build();
-    }
-
-
-    @Override
-    public Enumerator<T> enumerator() {
-        return new CottontailDeleteEnumerator<>( deletes, wrapper );
     }
 
 

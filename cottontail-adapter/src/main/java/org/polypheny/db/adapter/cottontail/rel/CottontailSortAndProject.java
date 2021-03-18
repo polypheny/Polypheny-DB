@@ -67,60 +67,6 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
     }
 
 
-    public static Pair<ParameterExpression, Expression> makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, RexNode limitNode ) {
-        final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
-        final NewExpression projectionMapCreator = Expressions.new_( HashMap.class );
-        builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
-
-        Expression knnBuilder = null;
-
-        for ( Pair<RexNode, String> pair : namedProjects ) {
-            if ( pair.left instanceof RexInputRef ) {
-                final String name = pair.right;
-                final String physicalName = physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() );
-
-                builder.add( Expressions.statement(
-                        Expressions.call( projectionMap_,
-                                BuiltInMethod.MAP_PUT.method,
-                                Expressions.constant( physicalName ),
-                                Expressions.constant( name.toLowerCase() ) ) ) );
-            } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
-                // KNN Function pushdown
-                knnBuilder = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, limitNode );
-//                context.knnBuilder = knnBuilder;
-
-                final String name = pair.right;
-                builder.add( Expressions.statement(
-                        Expressions.call( projectionMap_,
-                                BuiltInMethod.MAP_PUT.method,
-                                Expressions.constant( "distance" ),
-                                Expressions.constant( name.toLowerCase() ) ) ) );
-            }
-        }
-
-        return new Pair<>( projectionMap_, knnBuilder );
-    }
-
-
-    private static Expression numberBuilderBuilder( RexNode node ) {
-        BlockBuilder inner = new BlockBuilder();
-        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
-
-        Expression expr;
-        if ( node instanceof RexLiteral ) {
-            expr = Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
-        } else if ( node instanceof RexDynamicParam ) {
-            expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
-        } else {
-            throw new RuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
-        }
-
-        inner.add( Expressions.return_( null, expr ) );
-
-        return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
-    }
-
-
     @Override
     public void implement( CottontailImplementContext context ) {
         BlockBuilder builder = context.blockBuilder;
@@ -238,6 +184,60 @@ public class CottontailSortAndProject extends SortAndProject implements Cottonta
     @Override
     public SortAndProject copy( RelTraitSet traitSet, RelNode input, List<RexNode> projects, RelCollation newCollation, RexNode offset, RexNode fetch ) {
         return new CottontailSortAndProject( getCluster(), traitSet, input, collation, offset, fetch, projects, rowType, projectRowType, arrayProject );
+    }
+
+
+    public static Pair<ParameterExpression, Expression> makeProjectionAndKnnBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, RexNode limitNode ) {
+        final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
+        final NewExpression projectionMapCreator = Expressions.new_( HashMap.class );
+        builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
+
+        Expression knnBuilder = null;
+
+        for ( Pair<RexNode, String> pair : namedProjects ) {
+            if ( pair.left instanceof RexInputRef ) {
+                final String name = pair.right;
+                final String physicalName = physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() );
+
+                builder.add( Expressions.statement(
+                        Expressions.call( projectionMap_,
+                                BuiltInMethod.MAP_PUT.method,
+                                Expressions.constant( physicalName ),
+                                Expressions.constant( name.toLowerCase() ) ) ) );
+            } else if ( pair.left instanceof RexCall && (((RexCall) pair.left).getOperator() instanceof SqlDistanceFunction) ) {
+                // KNN Function pushdown
+                knnBuilder = CottontailTypeUtil.knnCallToFunctionExpression( (RexCall) pair.left, physicalColumnNames, limitNode );
+//                context.knnBuilder = knnBuilder;
+
+                final String name = pair.right;
+                builder.add( Expressions.statement(
+                        Expressions.call( projectionMap_,
+                                BuiltInMethod.MAP_PUT.method,
+                                Expressions.constant( "distance" ),
+                                Expressions.constant( name.toLowerCase() ) ) ) );
+            }
+        }
+
+        return new Pair<>( projectionMap_, knnBuilder );
+    }
+
+
+    private static Expression numberBuilderBuilder( RexNode node ) {
+        BlockBuilder inner = new BlockBuilder();
+        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
+
+        Expression expr;
+        if ( node instanceof RexLiteral ) {
+            expr = Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
+        } else if ( node instanceof RexDynamicParam ) {
+            expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
+        } else {
+            throw new RuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
+        }
+
+        inner.add( Expressions.return_( null, expr ) );
+
+        return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
 
 }

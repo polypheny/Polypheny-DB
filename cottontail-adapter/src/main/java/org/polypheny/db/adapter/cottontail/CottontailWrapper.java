@@ -55,14 +55,16 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
 @Slf4j
 public class CottontailWrapper implements AutoCloseable {
 
-    public static final int maxMessageSize = 150_000_000;
     private static final CottontailGrpc.Status INTERRUPTED_INSERT = CottontailGrpc.Status.newBuilder().setSuccess( false ).build();
-    private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; // TODO expose to config
-    private static final long MAX_CALL_TIMEOUT = 5000; // TODO expose to config
+
     private final ManagedChannel channel;
     private final CottonDDLFutureStub definitionFutureStub;
     private final CottonDMLStub managementStub;
     private final CottonDMLStub insertStub;
+
+    public static final int maxMessageSize = 150_000_000;
+    private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; // TODO expose to config
+    private static final long MAX_CALL_TIMEOUT = 5000; // TODO expose to config
 
 
     public CottontailWrapper( ManagedChannel channel ) {

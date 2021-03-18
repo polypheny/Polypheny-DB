@@ -42,6 +42,30 @@ public class SqlDistanceFunction extends SqlFunction {
     private static final PolyOperandTypeChecker OTC_CUSTOM = OperandTypes.family( PolyTypeFamily.ANY, PolyTypeFamily.ANY, PolyTypeFamily.ANY );
 
 
+    public SqlDistanceFunction() {
+        super(
+                "DISTANCE",
+                SqlKind.DISTANCE,
+                ReturnTypes.DOUBLE,
+                null,
+                DISTANCE_ARG_CHECKER,
+                SqlFunctionCategory.DISTANCE );
+    }
+
+
+    @Override
+    public String getSignatureTemplate( int operandsCount ) {
+        switch ( operandsCount ) {
+            case 3:
+                return "{0}({1}, {2}, {3})";
+            case 4:
+                return "{0}({1}, {2}, {3}, {4})";
+            default:
+                throw new AssertionError();
+        }
+    }
+
+
     private static PolyOperandTypeChecker DISTANCE_ARG_CHECKER = new PolyOperandTypeChecker() {
         @Override
         public boolean checkOperandTypes( SqlCallBinding callBinding, boolean throwOnFailure ) {
@@ -160,29 +184,5 @@ public class SqlDistanceFunction extends SqlFunction {
             return i == 3;
         }
     };
-
-
-    @Override
-    public String getSignatureTemplate( int operandsCount ) {
-        switch ( operandsCount ) {
-            case 3:
-                return "{0}({1}, {2}, {3})";
-            case 4:
-                return "{0}({1}, {2}, {3}, {4})";
-            default:
-                throw new AssertionError();
-        }
-    }
-
-
-    public SqlDistanceFunction() {
-        super(
-                "DISTANCE",
-                SqlKind.DISTANCE,
-                ReturnTypes.DOUBLE,
-                null,
-                DISTANCE_ARG_CHECKER,
-                SqlFunctionCategory.DISTANCE );
-    }
 
 }

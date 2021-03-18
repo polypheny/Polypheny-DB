@@ -96,81 +96,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
     }
 
 
-    public static BigDecimal bigDecimalFromString( final String string ) {
-        return new BigDecimal( string );
-    }
-
-
-    public static CottontailQueryEnumerable<Object> query(
-            String from,
-            String schema,
-            Object projection,
-            Function1 whereBuilder,
-            Object knn, // TODO js(ct) FIGURE OUT
-            Integer limit, Integer offset,
-            DataContext dataContext,
-            Function1 rowParser,
-            CottontailWrapper wrapper
-    ) {
-        Iterator<QueryResponseMessage> queryResponseIterator;
-
-        if ( dataContext.getParameterValues().size() == 0 ) {
-            Query query = Query.newBuilder()
-//                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( "tab4" ).setSchema( Schema.newBuilder().setName( "cottontail" ) ) ) )
-                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
-//                    .setKnn( (Knn) knn )
-                    .setLimit( 6 )
-//                    .setSkip( offset )
-                    .setProjection( Projection.newBuilder().putAttributes( "*", "" ) )
-//                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) ghettoProjection ) )
-//                    .setWhere( (Where) whereBuilder.apply( parameterValues ) )
-                    .build();
-            queryResponseIterator = wrapper.query(
-                    QueryMessage.newBuilder().setQuery( query ).build() );
-
-        } else if ( dataContext.getParameterValues().size() == 1 ) {
-            Map parameterValues = dataContext.getParameterValues().get( 0 );
-            // Single query case!
-            Query query = Query.newBuilder()
-                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
-                    .setKnn( (Knn) knn )
-                    .setLimit( limit )
-                    .setSkip( offset )
-                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
-                    .setWhere( (Where) whereBuilder.apply( parameterValues ) )
-                    .build();
-            queryResponseIterator = wrapper.query(
-                    QueryMessage.newBuilder().setQuery( query ).build() );
-
-        } else {
-            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
-            for ( Map parameterValues : dataContext.getParameterValues() ) {
-                Query query = Query.newBuilder()
-                        .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).build() ).build() )
-                        .setKnn( (Knn) knn )
-                        .setLimit( limit )
-                        .setSkip( offset )
-                        .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
-                        .setWhere( (Where) whereBuilder.apply( parameterValues ) )
-                        .build();
-                batchedQueryMessageBuilder.addQueries( query );
-            }
-
-            queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
-        }
-        return new CottontailQueryEnumerable<>( queryResponseIterator, rowParser );
-    }
-
-
-    private static Expression expressionOrNullExpression( Expression expression ) {
-        if ( expression == null ) {
-            return Expressions.constant( null );
-        } else {
-            return expression;
-        }
-    }
-
-
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
         return new CottontailToEnumerableConverter( getCluster(), traitSet, AbstractRelNode.sole( inputs ) );
@@ -486,6 +411,81 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 return Types.lookupMethod( Linq4JFixer.class, "getLongVector", Object.class );
             default:
                 throw new AssertionError( "No vector access method for inner type: " + polyType );
+        }
+    }
+
+
+    public static BigDecimal bigDecimalFromString( final String string ) {
+        return new BigDecimal( string );
+    }
+
+
+    public static CottontailQueryEnumerable<Object> query(
+            String from,
+            String schema,
+            Object projection,
+            Function1 whereBuilder,
+            Object knn, // TODO js(ct) FIGURE OUT
+            Integer limit, Integer offset,
+            DataContext dataContext,
+            Function1 rowParser,
+            CottontailWrapper wrapper
+    ) {
+        Iterator<QueryResponseMessage> queryResponseIterator;
+
+        if ( dataContext.getParameterValues().size() == 0 ) {
+            Query query = Query.newBuilder()
+//                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( "tab4" ).setSchema( Schema.newBuilder().setName( "cottontail" ) ) ) )
+                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
+//                    .setKnn( (Knn) knn )
+                    .setLimit( 6 )
+//                    .setSkip( offset )
+                    .setProjection( Projection.newBuilder().putAttributes( "*", "" ) )
+//                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) ghettoProjection ) )
+//                    .setWhere( (Where) whereBuilder.apply( parameterValues ) )
+                    .build();
+            queryResponseIterator = wrapper.query(
+                    QueryMessage.newBuilder().setQuery( query ).build() );
+
+        } else if ( dataContext.getParameterValues().size() == 1 ) {
+            Map parameterValues = dataContext.getParameterValues().get( 0 );
+            // Single query case!
+            Query query = Query.newBuilder()
+                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
+                    .setKnn( (Knn) knn )
+                    .setLimit( limit )
+                    .setSkip( offset )
+                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
+                    .setWhere( (Where) whereBuilder.apply( parameterValues ) )
+                    .build();
+            queryResponseIterator = wrapper.query(
+                    QueryMessage.newBuilder().setQuery( query ).build() );
+
+        } else {
+            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
+            for ( Map parameterValues : dataContext.getParameterValues() ) {
+                Query query = Query.newBuilder()
+                        .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).build() ).build() )
+                        .setKnn( (Knn) knn )
+                        .setLimit( limit )
+                        .setSkip( offset )
+                        .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
+                        .setWhere( (Where) whereBuilder.apply( parameterValues ) )
+                        .build();
+                batchedQueryMessageBuilder.addQueries( query );
+            }
+
+            queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
+        }
+        return new CottontailQueryEnumerable<>( queryResponseIterator, rowParser );
+    }
+
+
+    private static Expression expressionOrNullExpression( Expression expression ) {
+        if ( expression == null ) {
+            return Expressions.constant( null );
+        } else {
+            return expression;
         }
     }
 

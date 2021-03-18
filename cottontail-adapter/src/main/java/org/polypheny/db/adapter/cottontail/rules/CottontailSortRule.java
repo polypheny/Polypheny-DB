@@ -47,47 +47,6 @@ public class CottontailSortRule extends CottontailConverterRule {
     }
 
 
-    /**
-     * Finds the underlying {@link Project} of the subset.
-     *
-     * @param relSubset the subset.
-     * @return the {@link Project} or <code>null</code> if not found.
-     */
-    public static Project getUnderlyingProject( RelSubset relSubset, Convention targetConvention ) {
-        return getUnderlyingProject( relSubset.getRelList(), targetConvention );
-    }
-
-
-    private static Project getUnderlyingProject( List<RelNode> rels, Convention targetConvention ) {
-        Set<RelNode> alreadyChecked = new HashSet<>();
-        Deque<RelNode> innerLevel = new LinkedList<>();
-
-        innerLevel.addAll( rels );
-
-        while ( !innerLevel.isEmpty() ) {
-            RelNode relNode = innerLevel.pop();
-            alreadyChecked.add( relNode );
-            if ( relNode instanceof Project ) {
-//                if ( ((Project) relNode).getInput().getConvention().equals( targetConvention ) ) {
-                return (Project) relNode;
-//                }
-            } else {
-                for ( RelNode innerNode : relNode.getInputs() ) {
-                    if ( innerNode instanceof RelSubset ) {
-                        for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
-                            if ( !alreadyChecked.contains( possibleNewRel ) ) {
-                                innerLevel.addLast( possibleNewRel );
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-
     @Override
     public boolean matches( RelOptRuleCall call ) {
         final Sort sort = call.rel( 0 );
@@ -139,6 +98,47 @@ public class CottontailSortRule extends CottontailConverterRule {
         return new CottontailSort( sort.getCluster(), traitSet, input, sort.getCollation(), sort.offset, sort.fetch );
 //        return new CottontailSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( out ) ), sort.getCollation(), sort.offset, sort.fetch );
 //        return new CottontailSort( sort.getCluster(), traitSet, convert( sort.getInput(), traitSet.replace( RelCollations.EMPTY ) ), sort.getCollation(), sort.offset, sort.fetch );
+    }
+
+
+    /**
+     * Finds the underlying {@link Project} of the subset.
+     *
+     * @param relSubset the subset.
+     * @return the {@link Project} or <code>null</code> if not found.
+     */
+    public static Project getUnderlyingProject( RelSubset relSubset, Convention targetConvention ) {
+        return getUnderlyingProject( relSubset.getRelList(), targetConvention );
+    }
+
+
+    private static Project getUnderlyingProject( List<RelNode> rels, Convention targetConvention ) {
+        Set<RelNode> alreadyChecked = new HashSet<>();
+        Deque<RelNode> innerLevel = new LinkedList<>();
+
+        innerLevel.addAll( rels );
+
+        while ( !innerLevel.isEmpty() ) {
+            RelNode relNode = innerLevel.pop();
+            alreadyChecked.add( relNode );
+            if ( relNode instanceof Project ) {
+//                if ( ((Project) relNode).getInput().getConvention().equals( targetConvention ) ) {
+                return (Project) relNode;
+//                }
+            } else {
+                for ( RelNode innerNode : relNode.getInputs() ) {
+                    if ( innerNode instanceof RelSubset ) {
+                        for ( RelNode possibleNewRel : ((RelSubset) innerNode).getRelList() ) {
+                            if ( !alreadyChecked.contains( possibleNewRel ) ) {
+                                innerLevel.addLast( possibleNewRel );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
 }

@@ -49,25 +49,6 @@ public class CottontailSort extends Sort implements CottontailRel {
     }
 
 
-    private static Expression numberBuilderBuilder( RexNode node ) {
-        BlockBuilder inner = new BlockBuilder();
-        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
-
-        Expression expr;
-        if ( node instanceof RexLiteral ) {
-            expr = Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
-        } else if ( node instanceof RexDynamicParam ) {
-            expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
-        } else {
-            throw new RuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
-        }
-
-        inner.add( Expressions.return_( null, expr ) );
-
-        return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
-    }
-
-
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         final double rowCount = mq.getRowCount( this );
@@ -88,6 +69,25 @@ public class CottontailSort extends Sort implements CottontailRel {
                 context.offsetBuilder = numberBuilderBuilder( this.offset );
             }
         }
+    }
+
+
+    private static Expression numberBuilderBuilder( RexNode node ) {
+        BlockBuilder inner = new BlockBuilder();
+        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
+
+        Expression expr;
+        if ( node instanceof RexLiteral ) {
+            expr = Expressions.constant( ((RexLiteral) node).getValueAs( Integer.class ) );
+        } else if ( node instanceof RexDynamicParam ) {
+            expr = Expressions.call( dynamicParameterMap_, BuiltInMethod.MAP_GET.method, Expressions.constant( ((RexDynamicParam) node).getIndex() ) );
+        } else {
+            throw new RuntimeException( "Node statement is neither a Literal nor a Dynamic Parameter." );
+        }
+
+        inner.add( Expressions.return_( null, expr ) );
+
+        return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
 
 

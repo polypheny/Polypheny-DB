@@ -36,9 +36,7 @@ public class CottontailFilterTest {
                                 new AtomicPredicate( null, false )
                         ), null ), null );
 
-        while ( testPredicate.simplify() ) {
-            ;
-        }
+        while ( testPredicate.simplify() );
 
         CompoundPredicate result = (CompoundPredicate) ((CompoundPredicate) testPredicate).left;
 
@@ -46,5 +44,4 @@ public class CottontailFilterTest {
         Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.left).op );
         Assert.assertEquals( "Inner operations should be negation", Op.NOT, ((CompoundPredicate) result.right).op );
     }
-
 }

@@ -39,9 +39,10 @@ public abstract class SortAndProject extends SingleRel {
 
     // Sort part
     public final RelCollation collation;
+    protected final ImmutableList<RexNode> fieldExps;
     public final RexNode offset;
     public final RexNode fetch;
-    protected final ImmutableList<RexNode> fieldExps;
+
     // Project part
     protected final ImmutableList<RexNode> exps;
     protected final RelDataType projectRowType;

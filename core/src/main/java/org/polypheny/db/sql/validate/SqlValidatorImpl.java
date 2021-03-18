@@ -222,8 +222,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     /**
      * Maps a {@link SqlNode node} to the {@link SqlValidatorNamespace namespace} which describes what columns they contain.
      */
-    protected final Map<SqlNode, SqlValidatorNamespace>
-            namespaces = new IdentityHashMap<>();
+    protected final Map<SqlNode, SqlValidatorNamespace> namespaces = new IdentityHashMap<>();
 
     /**
      * Set of select expressions used as cursor definitions. In standard SQL, only the top-level SELECT is a cursor; Polypheny-DB extends this with cursors as inputs to table functions.

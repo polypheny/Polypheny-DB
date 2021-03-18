@@ -54,18 +54,21 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
 
 public class CottontailTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {  // implements TranslatableTable
 
+    private RelProtoDataType protoRowType;
+    private CottontailSchema cottontailSchema;
+
+    @Getter
+    private Entity entity;
+
     @Getter
     private final String physicalSchemaName;
     @Getter
     private final String physicalTableName;
     private final List<String> physicalColumnNames;
+
     private final String logicalSchemaName;
     private final String logicalTableName;
     private final List<String> logicalColumnNames;
-    private RelProtoDataType protoRowType;
-    private CottontailSchema cottontailSchema;
-    @Getter
-    private Entity entity;
 
 
     protected CottontailTable(

@@ -120,7 +120,6 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         try {
             final SqlParser parser = SqlParser.create( new SourceStringReader( sql ), parserConfig );
             parsed = parser.parseStmt();
-
         } catch ( SqlParseException e ) {
             log.error( "Caught exception", e );
             throw new RuntimeException( e );
@@ -134,6 +133,7 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
         }
         return parsed;
     }
+
 
     @Override
     public Pair<SqlNode, RelDataType> validate( Transaction transaction, SqlNode parsed, boolean addDefaultValues ) {

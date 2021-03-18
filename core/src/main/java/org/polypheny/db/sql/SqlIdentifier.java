@@ -60,7 +60,7 @@ public class SqlIdentifier extends SqlNode {
      * The empty string represents the wildcard "*", to distinguish it from a real "*" (presumably specified using quotes).
      *
      * It's convenient to have this member public, and it's convenient to have this member not-final, but it's a shame it's public and not-final.
-     * If you assign to this member, please use {@link #setNames(List, List)}.
+     * If you assign to this member, please use {@link #setNames(java.util.List, java.util.List)}.
      * And yes, we'd like to make identifiers immutable one day.
      */
     public ImmutableList<String> names;
@@ -417,7 +417,5 @@ public class SqlIdentifier extends SqlNode {
         final SqlIdentifier fqId = qualified.identifier;
         return qualified.namespace.resolve().getMonotonicity( Util.last( fqId.names ) );
     }
-
-
 }
 

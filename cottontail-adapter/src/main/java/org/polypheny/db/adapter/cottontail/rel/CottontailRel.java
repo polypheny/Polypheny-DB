@@ -61,17 +61,17 @@ public interface CottontailRel extends RelNode {
         public Expression offsetBuilder;
 
 
-        public void visitChild( int ordinal, RelNode input ) {
-            assert ordinal == 0;
-            ((CottontailRel) input).implement( this );
-        }
-
-
         public enum QueryType {
             SELECT,
             INSERT,
             UPDATE,
             DELETE
+        }
+
+
+        public void visitChild( int ordinal, RelNode input ) {
+            assert ordinal == 0;
+            ((CottontailRel) input).implement( this );
         }
 
     }

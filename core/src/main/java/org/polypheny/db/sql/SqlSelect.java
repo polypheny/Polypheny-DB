@@ -174,6 +174,7 @@ public class SqlSelect extends SqlCall {
         return from;
     }
 
+
     public void setFrom( SqlNode from ) {
         this.from = from;
     }
@@ -289,6 +290,5 @@ public class SqlSelect extends SqlCall {
     public boolean isKeywordPresent( SqlSelectKeyword targetKeyWord ) {
         return getModifierNode( targetKeyWord ) != null;
     }
-
 }
 

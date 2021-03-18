@@ -63,7 +63,7 @@ public class SqlColumnDeclaration extends SqlCall {
 
 
     @Getter
-    public final SqlIdentifier name;
+    final SqlIdentifier name;
     @Getter
     final SqlDataTypeSpec dataType;
     @Getter

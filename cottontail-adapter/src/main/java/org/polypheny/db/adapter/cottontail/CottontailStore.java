@@ -96,9 +96,10 @@ public class CottontailStore extends DataStore {
     private final String dbHostname;
     private final int dbPort;
     private final String dbName;
+
+    private CottontailSchema currentSchema;
     @Expose(serialize = false, deserialize = false)
     private final transient CottontailWrapper wrapper;
-    private CottontailSchema currentSchema;
 
 
     public CottontailStore( int storeId, String uniqueName, Map<String, String> settings ) {

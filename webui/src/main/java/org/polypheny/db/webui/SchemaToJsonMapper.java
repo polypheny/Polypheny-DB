@@ -156,7 +156,6 @@ public class SchemaToJsonMapper {
         public final String tableName;
         public final List<JsonColumn> columns;
         public final List<String> primaryKeyColumnNames;
-
     }
 
 

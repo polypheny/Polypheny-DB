@@ -74,69 +74,6 @@ public class CottontailProject extends Project implements CottontailRel {
     }
 
 
-    public static ParameterExpression makeProjectionBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
-        final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
-        final NewExpression projectionMapCreator = Expressions.new_( HashMap.class );
-        builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
-
-        Expression knnBuilder = null;
-
-        for ( Pair<RexNode, String> pair : namedProjects ) {
-            if ( pair.left instanceof RexInputRef ) {
-                final String name = pair.right;
-                final String physicalName = physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() );
-
-                builder.add( Expressions.statement(
-                        Expressions.call( projectionMap_,
-                                BuiltInMethod.MAP_PUT.method,
-                                Expressions.constant( physicalName ),
-                                Expressions.constant( name.toLowerCase() ) ) ) );
-            }
-        }
-
-        return projectionMap_;
-    }
-
-
-    public static Expression makeProjectValueBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, List<PolyType> columnTypes ) {
-        BlockBuilder inner = new BlockBuilder();
-
-        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
-
-        ParameterExpression valuesMap_ = Expressions.variable( Map.class, inner.newName( "valuesMap" ) );
-        NewExpression valuesMapCreator_ = Expressions.new_( HashMap.class );
-        inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
-
-        for ( int i = 0; i < namedProjects.size(); i++ ) {
-            Pair<RexNode, String> pair = namedProjects.get( i );
-            final String originalName = physicalColumnNames.get( i );
-
-            Expression source_;
-            if ( pair.left instanceof RexLiteral ) {
-                source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) pair.left, columnTypes.get( i ) );
-            } else if ( pair.left instanceof RexDynamicParam ) {
-                source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) pair.left, dynamicParameterMap_, columnTypes.get( i ) );
-            } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof SqlArrayValueConstructor) ) {
-                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left, columnTypes.get( i ) );
-            } else {
-                // Skip this item!
-                continue;
-//                throw new RuntimeException( "unable to convert expression." );
-            }
-
-            inner.add( Expressions.statement(
-                    Expressions.call( valuesMap_,
-                            BuiltInMethod.MAP_PUT.method,
-                            Expressions.constant( originalName ),
-                            source_ ) ) );
-        }
-
-        inner.add( Expressions.return_( null, valuesMap_ ) );
-
-        return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
-    }
-
-
     @Override
     public boolean isImplementationCacheable() {
         return true;
@@ -255,6 +192,69 @@ public class CottontailProject extends Project implements CottontailRel {
             context.blockBuilder = builder;
             context.projectionMap = makeProjectionBuilder( context.blockBuilder, getNamedProjects(), physicalColumnNames );
         }
+    }
+
+
+    public static ParameterExpression makeProjectionBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames ) {
+        final ParameterExpression projectionMap_ = Expressions.variable( Map.class, builder.newName( "projectionMap" ) );
+        final NewExpression projectionMapCreator = Expressions.new_( HashMap.class );
+        builder.add( Expressions.declare( Modifier.FINAL, projectionMap_, projectionMapCreator ) );
+
+        Expression knnBuilder = null;
+
+        for ( Pair<RexNode, String> pair : namedProjects ) {
+            if ( pair.left instanceof RexInputRef ) {
+                final String name = pair.right;
+                final String physicalName = physicalColumnNames.get( ((RexInputRef) pair.left).getIndex() );
+
+                builder.add( Expressions.statement(
+                        Expressions.call( projectionMap_,
+                                BuiltInMethod.MAP_PUT.method,
+                                Expressions.constant( physicalName ),
+                                Expressions.constant( name.toLowerCase() ) ) ) );
+            }
+        }
+
+        return projectionMap_;
+    }
+
+
+    public static Expression makeProjectValueBuilder( BlockBuilder builder, List<Pair<RexNode, String>> namedProjects, List<String> physicalColumnNames, List<PolyType> columnTypes ) {
+        BlockBuilder inner = new BlockBuilder();
+
+        ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, inner.newName( "dynamicParameters" ) );
+
+        ParameterExpression valuesMap_ = Expressions.variable( Map.class, inner.newName( "valuesMap" ) );
+        NewExpression valuesMapCreator_ = Expressions.new_( HashMap.class );
+        inner.add( Expressions.declare( Modifier.FINAL, valuesMap_, valuesMapCreator_ ) );
+
+        for ( int i = 0; i < namedProjects.size(); i++ ) {
+            Pair<RexNode, String> pair = namedProjects.get( i );
+            final String originalName = physicalColumnNames.get( i );
+
+            Expression source_;
+            if ( pair.left instanceof RexLiteral ) {
+                source_ = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) pair.left, columnTypes.get( i ) );
+            } else if ( pair.left instanceof RexDynamicParam ) {
+                source_ = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) pair.left, dynamicParameterMap_, columnTypes.get( i ) );
+            } else if ( (pair.left instanceof RexCall) && (((RexCall) pair.left).getOperator() instanceof SqlArrayValueConstructor) ) {
+                source_ = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) pair.left, columnTypes.get( i ) );
+            } else {
+                // Skip this item!
+                continue;
+//                throw new RuntimeException( "unable to convert expression." );
+            }
+
+            inner.add( Expressions.statement(
+                    Expressions.call( valuesMap_,
+                            BuiltInMethod.MAP_PUT.method,
+                            Expressions.constant( originalName ),
+                            source_ ) ) );
+        }
+
+        inner.add( Expressions.return_( null, valuesMap_ ) );
+
+        return Expressions.lambda( inner.toBlock(), dynamicParameterMap_ );
     }
 
 }

@@ -79,81 +79,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
     }
 
 
-    public static BooleanPredicate convertToCnf( RexNode condition ) {
-        BooleanPredicate predicateInner = convertRexToBooleanPredicate( condition );
-        BooleanPredicate predicate = new CompoundPredicate( Op.ROOT, predicateInner, null );
-        //noinspection StatementWithEmptyBody
-        while ( predicate.simplify() ) {
-            // intentionally empty
-        }
-
-//        Translator translator = new Translator( this.getRowType() )
-        return predicate;
-    }
-
-
-    private static BooleanPredicate convertRexToBooleanPredicate( RexNode condition ) {
-        switch ( condition.getKind() ) {
-            // Compound predicates
-            case AND: {
-                List<BooleanPredicate> operands = new ArrayList<>();
-                BooleanPredicate returnValue = null;
-                // Do we care about the "only one operand" case? Can it happen?
-                for ( RexNode node : ((RexCall) condition).getOperands() ) {
-                    BooleanPredicate temp = convertRexToBooleanPredicate( node );
-                    if ( returnValue == null ) {
-                        returnValue = temp;
-                    } else {
-                        returnValue = new CompoundPredicate( Op.AND,
-                                returnValue,
-                                temp );
-                    }
-                }
-
-                return returnValue;
-            }
-            // How to handle more than 2 arguments?
-            case OR: {
-                List<BooleanPredicate> operands = new ArrayList<>();
-                BooleanPredicate returnValue = null;
-                // Do we care about the "only one operand" case? Can it happen?
-                for ( RexNode node : ((RexCall) condition).getOperands() ) {
-                    BooleanPredicate temp = convertRexToBooleanPredicate( node );
-                    if ( returnValue == null ) {
-                        returnValue = temp;
-                    } else {
-                        returnValue = new CompoundPredicate( Op.OR,
-                                returnValue,
-                                temp );
-                    }
-                }
-
-                return returnValue;
-            }
-            case NOT: {
-                return new CompoundPredicate( Op.NOT,
-                        convertRexToBooleanPredicate( ((RexCall) condition).getOperands().get( 0 ) ),
-                        null );
-            }
-
-            // Atomic predicates
-            case EQUALS:
-            case GREATER_THAN:
-            case GREATER_THAN_OR_EQUAL:
-            case LESS_THAN:
-            case LESS_THAN_OR_EQUAL:
-            case IS_NULL:
-            case IS_NOT_NULL:
-                return new AtomicPredicate( condition, false );
-            case LIKE:
-            case IN:
-            default:
-                // FIXME js(ct): Deal with this case
-                return null;
-        }
-    }
-
-
     @Override
     public void implement( CottontailImplementContext context ) {
         context.visitChild( 0, getInput() );
@@ -174,19 +99,16 @@ public class CottontailFilter extends Filter implements CottontailRel {
     }
 
 
-    interface BooleanPredicate {
+    public static BooleanPredicate convertToCnf( RexNode condition ) {
+        BooleanPredicate predicateInner = convertRexToBooleanPredicate( condition );
+        BooleanPredicate predicate = new CompoundPredicate( Op.ROOT, predicateInner, null );
+        //noinspection StatementWithEmptyBody
+        while ( predicate.simplify() ) {
+            // intentionally empty
+        }
 
-        boolean isLeaf();
-
-        /**
-         * Simplify the underlying node.
-         *
-         * @return returns <code>true</code> if the node changed.
-         */
-        boolean simplify();
-
-        void finalise();
-
+//        Translator translator = new Translator( this.getRowType() )
+        return predicate;
     }
 
 
@@ -202,62 +124,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
             List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
             this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
             this.columnTypes = rowType.getFieldList().stream().map( RelDataTypeField::getType ).map( RelDataType::getPolyType ).collect( Collectors.toList() );
-        }
-
-
-        public static CompoundBooleanPredicate generateCompoundPredicate(
-                Object operator_,
-//                CompoundBooleanPredicate.Operator operator,
-                Object left,
-                Object right
-        ) {
-            CompoundBooleanPredicate.Operator operator = (CompoundBooleanPredicate.Operator) operator_;
-            CompoundBooleanPredicate.Builder builder = CompoundBooleanPredicate.newBuilder();
-            builder = builder.setOp( operator );
-
-            if ( left instanceof AtomicLiteralBooleanPredicate ) {
-                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) left );
-            } else {
-                builder = builder.setCleft( (CompoundBooleanPredicate) left );
-            }
-
-            if ( right instanceof AtomicLiteralBooleanPredicate ) {
-                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) right );
-            } else {
-                builder = builder.setCleft( (CompoundBooleanPredicate) right );
-            }
-
-            return builder.build();
-        }
-
-
-        public static AtomicLiteralBooleanPredicate generateAtomicPredicate(
-                String attribute,
-                boolean not,
-                Object operator_,
-                Object data_
-        ) {
-            AtomicLiteralBooleanPredicate.Operator operator = (AtomicLiteralBooleanPredicate.Operator) operator_;
-            Data data = (Data) data_;
-            return AtomicLiteralBooleanPredicate.newBuilder()
-                    .addData( data )
-                    .setNot( not )
-                    .setAttribute( attribute )
-                    .setOp( operator )
-                    .build();
-        }
-
-
-        public static Where generateWhere( Object filterExpression ) {
-            if ( filterExpression instanceof AtomicLiteralBooleanPredicate ) {
-                return Where.newBuilder().setAtomic( (AtomicLiteralBooleanPredicate) filterExpression ).build();
-            }
-
-            if ( filterExpression instanceof CompoundBooleanPredicate ) {
-                return Where.newBuilder().setCompound( (CompoundBooleanPredicate) filterExpression ).build();
-            }
-
-            throw new RuntimeException( "Not a proper filter expression!" );
         }
 
 
@@ -400,6 +266,140 @@ public class CottontailFilter extends Filter implements CottontailRel {
             }
         }
 
+
+        public static CompoundBooleanPredicate generateCompoundPredicate(
+                Object operator_,
+//                CompoundBooleanPredicate.Operator operator,
+                Object left,
+                Object right
+        ) {
+            CompoundBooleanPredicate.Operator operator = (CompoundBooleanPredicate.Operator) operator_;
+            CompoundBooleanPredicate.Builder builder = CompoundBooleanPredicate.newBuilder();
+            builder = builder.setOp( operator );
+
+            if ( left instanceof AtomicLiteralBooleanPredicate ) {
+                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) left );
+            } else {
+                builder = builder.setCleft( (CompoundBooleanPredicate) left );
+            }
+
+            if ( right instanceof AtomicLiteralBooleanPredicate ) {
+                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) right );
+            } else {
+                builder = builder.setCleft( (CompoundBooleanPredicate) right );
+            }
+
+            return builder.build();
+        }
+
+
+        public static AtomicLiteralBooleanPredicate generateAtomicPredicate(
+                String attribute,
+                boolean not,
+                Object operator_,
+                Object data_
+        ) {
+            AtomicLiteralBooleanPredicate.Operator operator = (AtomicLiteralBooleanPredicate.Operator) operator_;
+            Data data = (Data) data_;
+            return AtomicLiteralBooleanPredicate.newBuilder()
+                    .addData( data )
+                    .setNot( not )
+                    .setAttribute( attribute )
+                    .setOp( operator )
+                    .build();
+        }
+
+
+        public static Where generateWhere( Object filterExpression ) {
+            if ( filterExpression instanceof AtomicLiteralBooleanPredicate ) {
+                return Where.newBuilder().setAtomic( (AtomicLiteralBooleanPredicate) filterExpression ).build();
+            }
+
+            if ( filterExpression instanceof CompoundBooleanPredicate ) {
+                return Where.newBuilder().setCompound( (CompoundBooleanPredicate) filterExpression ).build();
+            }
+
+            throw new RuntimeException( "Not a proper filter expression!" );
+        }
+
+    }
+
+
+    private static BooleanPredicate convertRexToBooleanPredicate( RexNode condition ) {
+        switch ( condition.getKind() ) {
+            // Compound predicates
+            case AND: {
+                List<BooleanPredicate> operands = new ArrayList<>();
+                BooleanPredicate returnValue = null;
+                // Do we care about the "only one operand" case? Can it happen?
+                for ( RexNode node : ((RexCall) condition).getOperands() ) {
+                    BooleanPredicate temp = convertRexToBooleanPredicate( node );
+                    if ( returnValue == null ) {
+                        returnValue = temp;
+                    } else {
+                        returnValue = new CompoundPredicate( Op.AND,
+                                returnValue,
+                                temp );
+                    }
+                }
+
+                return returnValue;
+            }
+            // How to handle more than 2 arguments?
+            case OR: {
+                List<BooleanPredicate> operands = new ArrayList<>();
+                BooleanPredicate returnValue = null;
+                // Do we care about the "only one operand" case? Can it happen?
+                for ( RexNode node : ((RexCall) condition).getOperands() ) {
+                    BooleanPredicate temp = convertRexToBooleanPredicate( node );
+                    if ( returnValue == null ) {
+                        returnValue = temp;
+                    } else {
+                        returnValue = new CompoundPredicate( Op.OR,
+                                returnValue,
+                                temp );
+                    }
+                }
+
+                return returnValue;
+            }
+            case NOT: {
+                return new CompoundPredicate( Op.NOT,
+                        convertRexToBooleanPredicate( ((RexCall) condition).getOperands().get( 0 ) ),
+                        null );
+            }
+
+            // Atomic predicates
+            case EQUALS:
+            case GREATER_THAN:
+            case GREATER_THAN_OR_EQUAL:
+            case LESS_THAN:
+            case LESS_THAN_OR_EQUAL:
+            case IS_NULL:
+            case IS_NOT_NULL:
+                return new AtomicPredicate( condition, false );
+            case LIKE:
+            case IN:
+            default:
+                // FIXME js(ct): Deal with this case
+                return null;
+        }
+    }
+
+
+    interface BooleanPredicate {
+
+        boolean isLeaf();
+
+        /**
+         * Simplify the underlying node.
+         *
+         * @return returns <code>true</code> if the node changed.
+         */
+        boolean simplify();
+
+        void finalise();
+
     }
 
 
@@ -446,36 +446,6 @@ public class CottontailFilter extends Filter implements CottontailRel {
             this.op = op;
             this.left = left;
             this.right = right;
-        }
-
-
-        private static BooleanPredicate removeDoubleNegation( CompoundPredicate predicate ) {
-            return ((CompoundPredicate) predicate.left).left;
-        }
-
-
-        private static BooleanPredicate pushDownNot( CompoundPredicate predicate ) {
-            CompoundPredicate inner = (CompoundPredicate) predicate.left;
-            return new CompoundPredicate( inner.op.inverse(),
-                    new CompoundPredicate( Op.NOT, inner.left, null ),
-                    new CompoundPredicate( Op.NOT, inner.right, null ) );
-        }
-
-
-        private static BooleanPredicate pushDownDisjunction( CompoundPredicate predicate ) {
-            CompoundPredicate orPredicate;
-            BooleanPredicate otherPredicate;
-            if ( predicate.left instanceof CompoundPredicate && ((CompoundPredicate) predicate.left).op == Op.AND ) {
-                orPredicate = (CompoundPredicate) predicate.left;
-                otherPredicate = predicate.right;
-            } else {
-                orPredicate = (CompoundPredicate) predicate.right;
-                otherPredicate = predicate.left;
-            }
-
-            return new CompoundPredicate( Op.AND,
-                    new CompoundPredicate( Op.OR, orPredicate.left, otherPredicate ),
-                    new CompoundPredicate( Op.OR, orPredicate.right, otherPredicate ) );
         }
 
 
@@ -557,8 +527,21 @@ public class CottontailFilter extends Filter implements CottontailRel {
         }
 
 
+        private static BooleanPredicate removeDoubleNegation( CompoundPredicate predicate ) {
+            return ((CompoundPredicate) predicate.left).left;
+        }
+
+
         public boolean canPushDownNot() {
             return this.op == Op.NOT && this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op != Op.NOT;
+        }
+
+
+        private static BooleanPredicate pushDownNot( CompoundPredicate predicate ) {
+            CompoundPredicate inner = (CompoundPredicate) predicate.left;
+            return new CompoundPredicate( inner.op.inverse(),
+                    new CompoundPredicate( Op.NOT, inner.left, null ),
+                    new CompoundPredicate( Op.NOT, inner.right, null ) );
         }
 
 
@@ -566,6 +549,23 @@ public class CottontailFilter extends Filter implements CottontailRel {
             return this.op == Op.OR && (
                     (this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op == Op.AND)
                             || (this.right instanceof CompoundPredicate && ((CompoundPredicate) this.right).op == Op.AND));
+        }
+
+
+        private static BooleanPredicate pushDownDisjunction( CompoundPredicate predicate ) {
+            CompoundPredicate orPredicate;
+            BooleanPredicate otherPredicate;
+            if ( predicate.left instanceof CompoundPredicate && ((CompoundPredicate) predicate.left).op == Op.AND ) {
+                orPredicate = (CompoundPredicate) predicate.left;
+                otherPredicate = predicate.right;
+            } else {
+                orPredicate = (CompoundPredicate) predicate.right;
+                otherPredicate = predicate.left;
+            }
+
+            return new CompoundPredicate( Op.AND,
+                    new CompoundPredicate( Op.OR, orPredicate.left, otherPredicate ),
+                    new CompoundPredicate( Op.OR, orPredicate.right, otherPredicate ) );
         }
 
 

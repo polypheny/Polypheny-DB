@@ -40,15 +40,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 
 @SuppressWarnings("SqlDialectInspection")
 @Slf4j
-//TODO IG: delete ignore again
-@Ignore
 public class RestTest {
 
     @BeforeClass
@@ -170,6 +167,7 @@ public class RestTest {
     }
 
     // --------------- Tests ---------------
+
 
     @Test
     public void testOperations() {
