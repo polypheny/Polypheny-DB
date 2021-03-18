@@ -3433,7 +3433,8 @@ public class Crud implements InformationObserver {
                                     if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );
                                     } else {
-                                        added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
+                                        added = Files.copy( f.toPath(), newLink.toPath() );
+                                        //added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
                                     }
                                     TemporalFileManager.addPath( transaction.getXid().toString(), added );
                                     temp[counter] = newLink.getName();

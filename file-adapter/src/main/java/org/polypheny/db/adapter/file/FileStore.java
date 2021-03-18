@@ -355,6 +355,19 @@ public class FileStore extends DataStore {
                 }
             }
         }
+        cleanupHardlinks( xid );
+    }
+
+
+    private void cleanupHardlinks( final PolyXid xid ) {
+        File hardlinkFolder = new File( rootDir, "hardlinks/" + SHA.hashString( xid.toString(), FileStore.CHARSET ).toString() );
+        if ( hardlinkFolder.exists() ) {
+            try {
+                FileHelper.deleteDirRecursively( hardlinkFolder );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Could not cleanup hardlink-folder " + hardlinkFolder.getAbsolutePath(), e );
+            }
+        }
     }
 
 

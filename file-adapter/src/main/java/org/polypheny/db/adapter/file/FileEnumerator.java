@@ -60,6 +60,7 @@ public class FileEnumerator implements Enumerator<Object> {
     final Gson gson;
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
+    final File hardlinkFolder;
 
 
     /**
@@ -144,6 +145,14 @@ public class FileEnumerator implements Enumerator<Object> {
             this.fileList = FileStore.getColumnFolder( rootPath, pkIds.get( 0 ) ).listFiles( fileFilter );
         }
         numOfCols = columnFolders.size();
+
+        //create folder for the hardlinks
+        this.hardlinkFolder = new File( rootPath, "hardlinks/" + xidHash );
+        if ( !hardlinkFolder.exists() ) {
+            if ( !hardlinkFolder.mkdirs() ) {
+                throw new RuntimeException( "Could not create hardlink directory " + hardlinkFolder.getAbsolutePath() );
+            }
+        }
     }
 
 
@@ -364,7 +373,12 @@ public class FileEnumerator implements Enumerator<Object> {
                 if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
                     curr[i] = encoded;
                 } else {
-                    curr[i] = f;
+                    File hardLink = new File( hardlinkFolder, colFolder.getName() + "_" + f.getName() );
+                    if ( !hardLink.exists() ) {
+                        Files.createLink( hardLink.toPath(), f.toPath() );
+                    }
+                    //curr[i] = f;
+                    curr[i] = hardLink;
                 }
             } else {
                 curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );
