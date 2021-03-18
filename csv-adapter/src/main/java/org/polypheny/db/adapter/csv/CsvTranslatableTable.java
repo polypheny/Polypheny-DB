@@ -111,11 +111,4 @@ public class CsvTranslatableTable extends CsvTable implements QueryableTable, Tr
         // Request all fields.
         return new CsvTableScan( context.getCluster(), relOptTable, this, fields );
     }
-
-
-    @Override
-    public Long getTableId() {
-        return null;
-    }
-
 }

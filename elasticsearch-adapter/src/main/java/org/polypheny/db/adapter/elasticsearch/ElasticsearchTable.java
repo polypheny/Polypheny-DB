@@ -335,12 +335,6 @@ public class ElasticsearchTable extends AbstractQueryableTable implements Transl
     }
 
 
-    @Override
-    public Long getTableId() {
-        return null;
-    }
-
-
     /**
      * Implementation of {@link Queryable} based on a {@link ElasticsearchTable}.
      *

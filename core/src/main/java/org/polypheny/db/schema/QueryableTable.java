@@ -45,9 +45,6 @@ import org.polypheny.db.adapter.DataContext;
  */
 public interface QueryableTable extends Table {
 
-    @Override
-    Long getTableId();
-
     /**
      * Converts this table into a {@link Queryable}.
      */

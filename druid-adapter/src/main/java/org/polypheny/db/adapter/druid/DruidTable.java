@@ -184,12 +184,6 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     }
 
 
-    @Override
-    public Long getTableId() {
-        return null;
-    }
-
-
     private boolean isValidParentKind( SqlNode node ) {
         return node.getKind() == SqlKind.SELECT
                 || node.getKind() == SqlKind.FILTER

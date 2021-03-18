@@ -88,11 +88,21 @@ import org.polypheny.db.ddl.exception.SchemaNotExistException;
 import org.polypheny.db.ddl.exception.UnknownIndexMethodException;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
+import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.logical.LogicalAggregate;
+import org.polypheny.db.rel.logical.LogicalFilter;
+import org.polypheny.db.rel.logical.LogicalJoin;
+import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -1263,7 +1273,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelNode relNode, List<Long> underlyingTables, RelDataType fieldList, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> columns ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelNode relNode, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException {
 
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
@@ -1274,6 +1284,33 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
+        prepareView( relNode );
+
+        RelDataType fieldList = relNode.getRowType();
+
+        List<ColumnInformation> columns = new ArrayList<>();
+        if ( projectedColumns == null ) {
+            int position = 1;
+            for ( RelDataTypeField rel : fieldList.getFieldList() ) {
+
+                columns.add( new ColumnInformation(
+                        rel.getName(),
+                        new ColumnTypeInformation(
+                                rel.getType().getPolyType(),
+                                null,
+                                rel.getValue().getPrecision(),
+                                rel.getValue().getScale(),
+                                -1,
+                                -1,
+                                false ),
+                        Collation.getDefaultCollation(),
+                        null,
+                        position ) );
+
+                position++;
+            }
+        }
+
         long tableId = catalog.addTable(
                 viewName,
                 schemaId,
@@ -1281,7 +1318,7 @@ public class DdlManagerImpl extends DdlManager {
                 TableType.VIEW,
                 false,
                 relNode,
-                underlyingTables,
+                findUnderlyingTablesOfView( relNode ),
                 fieldList
         );
 
@@ -1303,6 +1340,41 @@ public class DdlManagerImpl extends DdlManager {
 
         }
 
+    }
+
+
+    private void prepareView( RelNode viewNode ) {
+        if ( viewNode instanceof LogicalProject ) {
+            ((LogicalProject) viewNode).setCluster( null );
+            prepareView( ((LogicalProject) viewNode).getInput() );
+        } else if ( viewNode instanceof LogicalFilter ) {
+            ((LogicalFilter) viewNode).setCluster( null );
+            List<RexNode> rexNodes = ((RexCall) ((LogicalFilter) viewNode).getCondition()).getOperands();
+            prepareView( ((LogicalFilter) viewNode).getInput() );
+        } else if ( viewNode instanceof LogicalJoin ) {
+            ((LogicalJoin) viewNode).setCluster( null );
+            prepareView( ((LogicalJoin) viewNode).getLeft() );
+            prepareView( ((LogicalJoin) viewNode).getRight() );
+        } else if ( viewNode instanceof LogicalTableScan ) {
+            ((LogicalTableScan) viewNode).setCluster( null );
+        } else if ( viewNode instanceof LogicalAggregate ) {
+            ((LogicalAggregate) viewNode).setCluster( null );
+            prepareView( ((LogicalAggregate) viewNode).getInput() );
+        }
+    }
+
+
+    private List<Long> findUnderlyingTablesOfView( RelNode relNode ) {
+        List<Long> underlyingTables = new ArrayList<>();
+        if ( relNode instanceof LogicalProject ) {
+            underlyingTables.addAll( findUnderlyingTablesOfView( ((LogicalProject) relNode).getInput() ) );
+        } else if ( relNode instanceof LogicalJoin ) {
+            underlyingTables.addAll( findUnderlyingTablesOfView( ((LogicalJoin) relNode).getLeft() ) );
+            underlyingTables.addAll( findUnderlyingTablesOfView( ((LogicalJoin) relNode).getRight() ) );
+        } else if ( relNode instanceof LogicalTableScan ) {
+            underlyingTables.add( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
+        }
+        return underlyingTables;
     }
 
 

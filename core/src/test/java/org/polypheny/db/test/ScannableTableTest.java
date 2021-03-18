@@ -452,12 +452,6 @@ public class ScannableTableTest {
             };
         }
 
-
-        @Override
-        public Long getTableId() {
-            return null;
-        }
-
     }
 
 
@@ -484,13 +478,6 @@ public class ScannableTableTest {
                 }
             };
         }
-
-
-        @Override
-        public Long getTableId() {
-            return null;
-        }
-
     }
 
 
@@ -529,13 +516,6 @@ public class ScannableTableTest {
                 }
             };
         }
-
-
-        @Override
-        public Long getTableId() {
-            return null;
-        }
-
     }
 
 
@@ -574,13 +554,6 @@ public class ScannableTableTest {
                 }
             };
         }
-
-
-        @Override
-        public Long getTableId() {
-            return null;
-        }
-
     }
 
 

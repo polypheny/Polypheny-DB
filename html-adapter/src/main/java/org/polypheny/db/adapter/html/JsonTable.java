@@ -70,12 +70,5 @@ public class JsonTable extends AbstractTable implements ScannableTable {
             }
         };
     }
-
-
-    @Override
-    public Long getTableId() {
-        return null;
-    }
-
 }
 

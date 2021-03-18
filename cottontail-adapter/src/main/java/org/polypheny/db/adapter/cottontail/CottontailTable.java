@@ -176,12 +176,6 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
     }
 
 
-    @Override
-    public Long getTableId() {
-        return null;
-    }
-
-
     private class CottontailTableQueryable<T> extends AbstractTableQueryable<T> {
 
         public CottontailTableQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {

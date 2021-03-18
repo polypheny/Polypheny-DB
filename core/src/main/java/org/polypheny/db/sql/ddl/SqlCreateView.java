@@ -36,8 +36,6 @@ package org.polypheny.db.sql.ddl;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import lombok.Getter;
@@ -51,21 +49,10 @@ import org.polypheny.db.catalog.exceptions.UnknownDatabaseException;
 import org.polypheny.db.catalog.exceptions.UnknownSchemaException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.DdlManager.ColumnInformation;
-import org.polypheny.db.ddl.DdlManager.ColumnTypeInformation;
 import org.polypheny.db.jdbc.Context;
-import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.SqlProcessor;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableScan;
-import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.SqlCreate;
 import org.polypheny.db.sql.SqlExecutableStatement;
 import org.polypheny.db.sql.SqlIdentifier;
@@ -90,8 +77,6 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
     private final SqlNodeList columnList;
     @Getter
     private final SqlNode query;
-    private String sql;
-    List<Long> underlyingTables = new ArrayList<>();
 
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "CREATE VIEW", SqlKind.CREATE_VIEW );
 
@@ -145,45 +130,19 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
         PlacementType placementType = store == null ? PlacementType.AUTOMATIC : PlacementType.MANUAL;
 
         SqlProcessor sqlProcessor = statement.getTransaction().getSqlProcessor();
-        RelNode relNode = (sqlProcessor.translate( statement, (sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left) ).rel);
-        prepareView( relNode );
-        getUnderlyingTables( relNode );
-        RelDataType fieldList = relNode.getRowType();
-
-        List<ColumnInformation> columns = new ArrayList<>();
-        if ( columnList == null ) {
-            int position = 1;
-            for ( RelDataTypeField rel : fieldList.getFieldList() ) {
-
-                columns.add( new ColumnInformation(
-                        rel.getName(),
-                        new ColumnTypeInformation(
-                                rel.getType().getPolyType(),
-                                null,
-                                rel.getValue().getPrecision(),
-                                rel.getValue().getScale(),
-                                -1,
-                                -1,
-                                false ),
-                        Collation.getDefaultCollation(),
-                        null,
-                        position ) );
-
-                position++;
-            }
-        }
+        RelRoot relRoot = sqlProcessor.translate(
+                statement,
+                sqlProcessor.validate( statement.getTransaction(), this.query, RuntimeConfig.ADD_DEFAULT_VALUES_IN_INSERTS.getBoolean() ).left );
 
         try {
             DdlManager.getInstance().createView(
                     viewName,
                     schemaId,
-                    relNode,
-                    ImmutableList.copyOf( underlyingTables ),
-                    fieldList,
+                    relRoot.rel,
                     statement,
                     store,
                     placementType,
-                    columns );
+                    null ); // ToDo: Check if columnList != null and provide list of column information
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( name.getParserPosition(), RESOURCE.tableExists( viewName ) );
         }
@@ -200,39 +159,6 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
 
         } catch ( UnknownCollationException e ) {
             throw new RuntimeException( e );
-        }
-    }
-
-
-    public void prepareView( RelNode viewNode ) {
-        if ( viewNode instanceof LogicalProject ) {
-            ((LogicalProject) viewNode).setCluster( null );
-            prepareView( ((LogicalProject) viewNode).getInput() );
-        } else if ( viewNode instanceof LogicalFilter ) {
-            ((LogicalFilter) viewNode).setCluster( null );
-            List<RexNode> rexNodes = ((RexCall) ((LogicalFilter) viewNode).getCondition()).getOperands();
-            prepareView( ((LogicalFilter) viewNode).getInput() );
-        } else if ( viewNode instanceof LogicalJoin ) {
-            ((LogicalJoin) viewNode).setCluster( null );
-            prepareView( ((LogicalJoin) viewNode).getLeft() );
-            prepareView( ((LogicalJoin) viewNode).getRight() );
-        } else if ( viewNode instanceof LogicalTableScan ) {
-            ((LogicalTableScan) viewNode).setCluster( null );
-        } else if ( viewNode instanceof LogicalAggregate ) {
-            ((LogicalAggregate) viewNode).setCluster( null );
-            prepareView( ((LogicalAggregate) viewNode).getInput() );
-        }
-    }
-
-
-    private void getUnderlyingTables( RelNode relNode ) {
-        if ( relNode instanceof LogicalProject ) {
-            getUnderlyingTables( ((LogicalProject) relNode).getInput() );
-        } else if ( relNode instanceof LogicalJoin ) {
-            getUnderlyingTables( ((LogicalJoin) relNode).getLeft() );
-            getUnderlyingTables( ((LogicalJoin) relNode).getRight() );
-        } else if ( relNode instanceof LogicalTableScan ) {
-            underlyingTables.add( ((RelOptTableImpl) relNode.getTable()).getTable().getTableId() );
         }
     }
 

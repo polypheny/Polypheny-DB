@@ -90,9 +90,5 @@ public abstract class AbstractTable implements Table, Wrapper, Serializable {
         return true;
     }
 
-
-    @Override
-    public abstract Long getTableId();
-
 }
 

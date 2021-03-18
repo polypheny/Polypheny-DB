@@ -48,6 +48,7 @@ import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
 
@@ -121,11 +122,10 @@ public final class LogicalTableScan extends TableScan {
                                     return ImmutableList.of();
                                 } );
 
-        Long tableId = table.getTableId();
-        if ( tableId != null ) {
+        if ( table instanceof LogicalTable ) {
             Catalog catalog = Catalog.getInstance();
 
-            CatalogTable catalogTable = catalog.getTable( tableId );
+            CatalogTable catalogTable = catalog.getTable( ((LogicalTable) table).getTableId() );
             if ( catalogTable.tableType == TableType.VIEW ) {
 
                 return ((CatalogView) catalogTable).prepareView( cluster, traitSet ).rel;

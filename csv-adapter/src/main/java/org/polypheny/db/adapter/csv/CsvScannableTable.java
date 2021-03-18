@@ -77,12 +77,5 @@ public class CsvScannableTable extends CsvTable implements ScannableTable, Seria
             }
         };
     }
-
-
-    @Override
-    public Long getTableId() {
-        return null;
-    }
-
 }
 

@@ -114,12 +114,6 @@ public class Smalls {
         final Enumerable<Integer> enumerable = Linq4j.asEnumerable( items );
         return new AbstractQueryableTable( Integer.class ) {
             @Override
-            public Long getTableId() {
-                return null;
-            }
-
-
-            @Override
             public <E> Queryable<E> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
                 //noinspection unchecked
                 return (Queryable<E>) enumerable.asQueryable();
@@ -144,12 +138,6 @@ public class Smalls {
      */
     public static QueryableTable generateStrings( final Integer count ) {
         return new AbstractQueryableTable( IntString.class ) {
-            @Override
-            public Long getTableId() {
-                return null;
-            }
-
-
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.createJavaType( IntString.class );
@@ -215,12 +203,6 @@ public class Smalls {
         final int offs = offset == null ? 0 : offset;
         return new AbstractQueryableTable( Object[].class ) {
             @Override
-            public Long getTableId() {
-                return null;
-            }
-
-
-            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 final RelDataTypeFactory.Builder builder = typeFactory.builder();
                 builder.add( "row_name", null, typeFactory.createJavaType( String.class ) );
@@ -270,12 +252,6 @@ public class Smalls {
      */
     public static ScannableTable fibonacciTableWithLimit( final long limit ) {
         return new ScannableTable() {
-            @Override
-            public Long getTableId() {
-                return null;
-            }
-
-
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder().add( "N", null, PolyType.BIGINT ).build();
@@ -358,12 +334,6 @@ public class Smalls {
     public static QueryableTable processCursor( final int offset, final Enumerable<Object[]> a ) {
         return new AbstractQueryableTable( Object[].class ) {
             @Override
-            public Long getTableId() {
-                return null;
-            }
-
-
-            @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
                         .add( "result", null, PolyType.INTEGER )
@@ -386,12 +356,6 @@ public class Smalls {
      */
     public static QueryableTable processCursors( final int offset, final Enumerable<Object[]> a, final Enumerable<IntString> b ) {
         return new AbstractQueryableTable( Object[].class ) {
-            @Override
-            public Long getTableId() {
-                return null;
-            }
-
-
             @Override
             public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
                 return typeFactory.builder()
@@ -1172,13 +1136,6 @@ public class Smalls {
             Object[][] rows = { { "abcde" }, { "xyz" }, { content } };
             return Linq4j.asEnumerable( rows );
         }
-
-
-        @Override
-        public Long getTableId() {
-            return null;
-        }
-
     }
 
 
