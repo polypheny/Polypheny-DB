@@ -34,7 +34,6 @@
 package org.polypheny.db.rel.type;
 
 
-import java.io.Serializable;
 import org.polypheny.db.type.PolyType;
 
 

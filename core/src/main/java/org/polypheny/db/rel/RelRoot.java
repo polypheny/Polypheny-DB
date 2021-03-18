@@ -39,7 +39,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import lombok.Getter;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -94,8 +93,7 @@ import org.polypheny.db.util.mapping.Mappings;
  */
 public class RelRoot implements Serializable {
 
-    @Getter
-    public RelNode rel;
+    public final RelNode rel;
     public final RelDataType validatedRowType;
     public final SqlKind kind;
     public final ImmutableList<Pair<Integer, String>> fields;

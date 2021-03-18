@@ -4320,7 +4320,6 @@ public class SqlToRelConverter {
         public String getOriginalRelName() {
             return originalRelName;
         }
-
     }
 
 
@@ -4339,7 +4338,6 @@ public class SqlToRelConverter {
         public RexNode convertSubQuery( SqlCall subQuery, SqlToRelConverter parentConverter, boolean isExists, boolean isExplain ) {
             throw new IllegalArgumentException();
         }
-
     }
 
 
@@ -4745,7 +4743,6 @@ public class SqlToRelConverter {
         public RelDataTypeFactory getTypeFactory() {
             return typeFactory;
         }
-
     }
 
 
@@ -4780,7 +4777,6 @@ public class SqlToRelConverter {
         Pair<RelNode, Integer> findRel( int offset ) {
             return relOffsetList.get( offset );
         }
-
     }
 
 
@@ -4958,7 +4954,6 @@ public class SqlToRelConverter {
                 return type;
             }
         }
-
     }
 
 
@@ -4976,7 +4971,6 @@ public class SqlToRelConverter {
             this.node = node;
             this.logic = logic;
         }
-
     }
 
 
@@ -5027,7 +5021,6 @@ public class SqlToRelConverter {
 
             return call.getOperator().acceptCall( this, call );
         }
-
     }
 
 
@@ -5049,7 +5042,6 @@ public class SqlToRelConverter {
             this.requiredColumns = requiredColumns;
             this.r = r;
         }
-
     }
 
 
@@ -5118,7 +5110,6 @@ public class SqlToRelConverter {
          * Returns the factory to create {@link RelBuilder}, never null. Default is {@link RelFactories#LOGICAL_BUILDER}.
          */
         RelBuilderFactory getRelBuilderFactory();
-
     }
 
 
@@ -5211,7 +5202,6 @@ public class SqlToRelConverter {
         public Config build() {
             return new ConfigImpl( convertTableAccess, decorrelationEnabled, trimUnusedFields, createValuesRel, explain, expand, inSubQueryThreshold, relBuilderFactory );
         }
-
     }
 
 
@@ -5289,8 +5279,6 @@ public class SqlToRelConverter {
         public RelBuilderFactory getRelBuilderFactory() {
             return relBuilderFactory;
         }
-
     }
-
 }
 

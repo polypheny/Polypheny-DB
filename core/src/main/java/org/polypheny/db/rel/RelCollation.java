@@ -50,6 +50,5 @@ public interface RelCollation extends RelMultipleTrait, Serializable {
      * Returns the ordinals and directions of the columns in this ordering.
      */
     List<RelFieldCollation> getFieldCollations();
-
 }
 

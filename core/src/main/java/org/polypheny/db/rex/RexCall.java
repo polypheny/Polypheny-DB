@@ -65,7 +65,7 @@ import org.polypheny.db.util.Litmus;
 public class RexCall extends RexNode implements Serializable {
 
     public final SqlOperator op;
-    public ImmutableList<RexNode> operands;
+    public final ImmutableList<RexNode> operands;
     public final RelDataType type;
 
     private static final Set<SqlKind> SIMPLE_BINARY_OPS;

@@ -37,7 +37,6 @@ package org.polypheny.db.rel.core;
 import com.google.common.collect.ImmutableList;
 import java.io.Serializable;
 import java.util.List;
-import lombok.Setter;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptCost;
@@ -66,8 +65,7 @@ import org.polypheny.db.util.Litmus;
  */
 public abstract class Filter extends SingleRel implements Serializable {
 
-    @Setter
-    protected RexNode condition;
+    protected final RexNode condition;
 
 
     /**

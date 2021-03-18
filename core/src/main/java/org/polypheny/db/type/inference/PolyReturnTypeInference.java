@@ -39,6 +39,5 @@ public interface PolyReturnTypeInference extends Serializable {
      * @return inferred type; may be null
      */
     RelDataType inferReturnType( SqlOperatorBinding opBinding );
-
 }
 

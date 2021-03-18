@@ -34,7 +34,6 @@
 package org.polypheny.db.plan;
 
 
-import java.beans.Transient;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
