@@ -57,6 +57,7 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.SqlProcessor;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -215,9 +216,11 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
             ((LogicalJoin) viewNode).setCluster( null );
             prepareView( ((LogicalJoin) viewNode).getLeft() );
             prepareView( ((LogicalJoin) viewNode).getRight() );
-
         } else if ( viewNode instanceof LogicalTableScan ) {
             ((LogicalTableScan) viewNode).setCluster( null );
+        } else if ( viewNode instanceof LogicalAggregate ) {
+            ((LogicalAggregate) viewNode).setCluster( null );
+            prepareView( ((LogicalAggregate) viewNode).getInput() );
         }
     }
 
