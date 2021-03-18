@@ -326,19 +326,32 @@ public class FileStore extends DataStore {
                 for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
                     data.delete();
                 }
+                File data = null;
+                File target = null;
+                File[] fileList = columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) );
+                if ( fileList == null ) {
+                    return;
+                }
                 try {
-                    for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
+                    //for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
+                    for ( int i = 0; i < fileList.length; i++ ) {
+                        data = fileList[i];
                         String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
-                        File target = new File( columnFolder, hash );
+                        target = new File( columnFolder, hash );
                         if ( commit ) {
                             Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
                         } else {
                             Files.move( data.toPath(), target.toPath() );
                         }
-
+                        i++;
                     }
                 } catch ( IOException e ) {
-                    throw new RuntimeException( "Could not commit because moving of files failed", e );
+                    if ( target == null ) {
+                        throw new RuntimeException( "Could not commit because moving of files failed", e );
+                    } else {
+                        throw new RuntimeException( "Could not commit because moving of files failed, trying to move "
+                                + data.getAbsolutePath() + " to " + target.getAbsolutePath(), e );
+                    }
                 }
             }
         }

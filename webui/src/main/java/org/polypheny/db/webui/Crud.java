@@ -298,7 +298,7 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit );
             result.setXid( transaction.getXid().toString() );
-        } catch ( QueryExecutionException e ) {
+        } catch ( Exception e ) {
             if ( request.filter != null ) {
                 result = new Result( "Error while filtering table " + request.tableId );
             } else {
@@ -360,7 +360,7 @@ public class Crud implements InformationObserver {
         int tableSize = 0;
         try {
             tableSize = getTableSize( transaction, request );
-        } catch ( QueryExecutionException e ) {
+        } catch ( Exception e ) {
             log.error( "Caught exception while determining page size", e );
         }
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
@@ -3439,8 +3439,8 @@ public class Crud implements InformationObserver {
                                     }
                                     TemporalFileManager.addPath( transaction.getXid().toString(), added );
                                     temp[counter] = newLink.getName();
-                                } catch ( IOException e ) {
-                                    throw new RuntimeException( "Could not create link to mm file", e );
+                                } catch ( Exception e ) {
+                                    throw new RuntimeException( "Could not create link to mm file " + f.getAbsolutePath(), e );
                                 }
                                 break;
                             } else if ( o instanceof InputStream || o instanceof Blob ) {

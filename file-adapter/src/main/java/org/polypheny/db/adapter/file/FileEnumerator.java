@@ -131,7 +131,7 @@ public class FileEnumerator implements Enumerator<Object> {
         // We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
         @SuppressWarnings("UnstableApiUsage")
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
-        FileFilter fileFilter = file -> !file.isHidden() && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
+        FileFilter fileFilter = file -> !file.isHidden() && !file.getName().startsWith( "~$" ) && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
         for ( Long colId : columnsToIterate ) {
             File columnFolder = FileStore.getColumnFolder( rootPath, colId );
             columnFolders.add( columnFolder );
