@@ -3222,11 +3222,9 @@ public class Crud implements InformationObserver {
             }
         } else {
             res.header( "Content-Length", String.valueOf( fileLength ) );
-            try ( FileInputStream fis = new FileInputStream( f ) ) {
-                ServletOutputStream os = res.raw().getOutputStream();
+            try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = res.raw().getOutputStream() ) {
                 IOUtils.copyLarge( fis, os );
                 os.flush();
-                os.close();
             } catch ( IOException ignored ) {
                 res.status( 500 );
             }
@@ -3455,8 +3453,8 @@ public class Crud implements InformationObserver {
                                     is = (InputStream) o;
                                 }
                                 File f;
-                                try {
-                                    PushbackInputStream pbis = new PushbackInputStream( is, ContentInfoUtil.DEFAULT_READ_SIZE );
+                                FileOutputStream fos = null;
+                                try ( PushbackInputStream pbis = new PushbackInputStream( is, ContentInfoUtil.DEFAULT_READ_SIZE ) ) {
                                     byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
                                     pbis.read( buffer );
                                     ContentInfo info = util.findMatch( buffer );
@@ -3466,10 +3464,19 @@ public class Crud implements InformationObserver {
                                         extension = "." + info.getFileExtensions()[0];
                                     }
                                     f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
-                                    IOUtils.copyLarge( pbis, new FileOutputStream( f.getPath() ) );
+                                    fos = new FileOutputStream( f.getPath() );
+                                    IOUtils.copyLarge( pbis, fos );
                                     TemporalFileManager.addFile( transaction.getXid().toString(), f );
                                 } catch ( IOException e ) {
                                     throw new RuntimeException( "Could not place file in mm folder", e );
+                                } finally {
+                                    if ( fos != null ) {
+                                        try {
+                                            fos.close();
+                                        } catch ( IOException ignored ) {
+                                            // ignore
+                                        }
+                                    }
                                 }
                                 temp[counter] = f.getName();
                                 break;
