@@ -18,12 +18,16 @@ package org.polypheny.db.adapter.file.source;
 
 
 import com.google.common.collect.ImmutableList;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource;
@@ -142,6 +146,42 @@ public class Qfs extends DataSource {
         init( settings );
         InformationManager im = InformationManager.getInstance();
         im.getInformation( getUniqueName() + "-rootDir" ).unwrap( InformationText.class ).setText( settings.get( "rootDir" ) );
+    }
+
+    @Override
+    protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
+        super.validateSettings( newSettings, initialSetup );
+        File rootDir = new File( newSettings.get( "rootDir" ) );
+        boolean allowed = false;
+        StringJoiner allowedPaths = new StringJoiner( "\n" );
+        int numberOfWhitelistEntries = 0;
+        try ( InputStream is = getClass().getClassLoader().getResourceAsStream( "qfs-whitelist" ); BufferedReader br = new BufferedReader( new InputStreamReader( is ) ) ) {
+            String line;
+            while ( (line = br.readLine()) != null ) {
+                line = line.trim();
+                if ( line.startsWith( "#" ) ) {
+                    continue;
+                }
+                numberOfWhitelistEntries++;
+                File f = new File( line );
+                allowedPaths.add( f.getCanonicalPath() );
+                if ( rootDir.getCanonicalPath().startsWith( f.getCanonicalPath() ) ) {
+                    allowed = true;
+                    break;
+                }
+            }
+        } catch ( Exception e ) {
+            throw new RuntimeException( "Could not read QFS whitelist. A whitelist must be present and contain at least one entry." );
+        }
+        if ( numberOfWhitelistEntries == 0 ) {
+            throw new RuntimeException( "The QFS whitelist must contain at least one entry." );
+        }
+        if ( !allowed ) {
+            throw new RuntimeException( "The selected path (" + newSettings.get( "rootDir" ) + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths.toString() );
+        }
+        if ( !rootDir.exists() ) {
+            throw new RuntimeException( "The specified root dir does not exist!" );
+        }
     }
 
     @Override

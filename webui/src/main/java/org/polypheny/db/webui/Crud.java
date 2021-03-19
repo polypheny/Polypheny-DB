@@ -2303,7 +2303,7 @@ public class Crud implements InformationObserver {
     /**
      * Update the settings of an adapter
      */
-    Adapter updateAdapterSettings( final Request req, final Response res ) {
+    Result updateAdapterSettings( final Request req, final Response res ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
         JsonDeserializer<Adapter> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
@@ -2316,10 +2316,14 @@ public class Crud implements InformationObserver {
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
         Adapter adapter = adapterGson.fromJson( req.body(), Adapter.class );
-        if ( adapter instanceof DataStore ) {
-            AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
-        } else if ( adapter instanceof DataSource ) {
-            AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+        try {
+            if ( adapter instanceof DataStore ) {
+                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+            } else if ( adapter instanceof DataSource ) {
+                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+            }
+        } catch ( Throwable t ) {
+            return new Result( "Could not update AdapterSettings", t );
         }
 
         // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
@@ -2337,10 +2341,10 @@ public class Crud implements InformationObserver {
                     log.error( "Exception while rollback", transactionException );
                 }
             }
-            throw new RuntimeException( "Error while resetting caches", e );
+            return new Result( "Error while resetting caches", e );
         }
 
-        return adapter;
+        return new Result( 1 );
     }
 
 
