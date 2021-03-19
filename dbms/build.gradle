@@ -26,19 +26,11 @@ javadoc.options.encoding = "UTF-8"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-// Use different postgres version for embedded tests (there is an issue with macOS Big Sur)
-configurations.all {
-    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
-        if (details.requested.group == 'io.zonky.test.postgres') {
-            details.useVersion '10.15.0-1'
-        }
-    }
-}
-
 
 dependencies {
     implementation project(":core")
     implementation project(":cassandra-adapter")
+    implementation project(":cottontail-adapter")
     implementation project(":csv-adapter")
     implementation project(":file-adapter")
     implementation project(":jdbc-adapter")
@@ -145,7 +137,12 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 shadowJar {
+    zip64 true
     classifier = ""
+    mergeServiceFiles {
+        setPath("META-INF/services")
+        include("io.grpc.*")
+    }
 }
 assemble.dependsOn shadowJar
 artifacts {

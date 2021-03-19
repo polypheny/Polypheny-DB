@@ -317,7 +317,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     );
                 } else {
                     source = Expressions.call(
-                            BuiltInMethod.JDBC_PARSE_ARRAY_FROM_TEXT.method,
+                            BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
                             Expressions.constant( fieldType.getComponentType().getPolyType() ),
                             Expressions.constant( ((ArrayType) fieldType).getDimension() ),
                             Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )

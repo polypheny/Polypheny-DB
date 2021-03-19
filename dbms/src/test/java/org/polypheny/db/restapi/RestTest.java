@@ -37,6 +37,7 @@ import kong.unirest.RequestBodyEntity;
 import kong.unirest.Unirest;
 import kong.unirest.UnirestException;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,6 +54,12 @@ public class RestTest {
         //noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
         addTestSchema();
+    }
+
+
+    @AfterClass
+    public static void stop() {
+        deleteOldData();
     }
 
 
@@ -78,6 +85,24 @@ public class RestTest {
                         + "PRIMARY KEY (tinteger) )" );
                 connection.commit();
             }
+        }
+    }
+
+
+    private static void deleteOldData() {
+        try ( JdbcConnection jdbcConnection = new JdbcConnection( false ) ) {
+            Connection connection = jdbcConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                try {
+                    statement.executeUpdate( "DROP TABLE test.resttest" );
+                } catch ( SQLException e ) {
+                    log.error( "Exception while deleting old data", e );
+                }
+                statement.executeUpdate( "DROP SCHEMA test" );
+                connection.commit();
+            }
+        } catch ( SQLException e ) {
+            log.error( "Exception while deleting old data", e );
         }
     }
 
@@ -164,7 +189,7 @@ public class RestTest {
         request = Unirest.get( "{protocol}://{host}:{port}/restapi/v1/res/test.resttest" )
                 .queryString( "test.resttest.ttinyint", "=" + 22 );
         Assert.assertEquals(
-                "{\"result\":[{\"test.resttest.tsmallint\":45,\"test.resttest.tdecimal\":123.00,\"test.resttest.ttinyint\":22,\"test.resttest.treal\":0.3333,\"test.resttest.tinteger\":9876,\"test.resttest.ttime\":\"43505000\",\"test.resttest.tbigint\":1234,\"test.resttest.tboolean\":true,\"test.resttest.tdate\":18466,\"test.resttest.tdouble\":1.999999,\"test.resttest.tvarchar\":\"hallo\",\"test.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}",
+                "{\"result\":[{\"test.resttest.tsmallint\":45,\"test.resttest.tdecimal\":123.45,\"test.resttest.ttinyint\":22,\"test.resttest.treal\":0.3333,\"test.resttest.tinteger\":9876,\"test.resttest.ttime\":\"43505000\",\"test.resttest.tbigint\":1234,\"test.resttest.tboolean\":true,\"test.resttest.tdate\":18466,\"test.resttest.tdouble\":1.999999,\"test.resttest.tvarchar\":\"hallo\",\"test.resttest.ttimestamp\":\"2020-07-23T12:05:05\"}],\"size\":1}",
                 executeRest( request ).getBody() );
 
         // Delete

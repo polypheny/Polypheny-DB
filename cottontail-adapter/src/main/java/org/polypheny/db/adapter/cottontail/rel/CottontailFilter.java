@@ -1,0 +1,595 @@
+/*
+ * Copyright 2019-2021 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.adapter.cottontail.rel;
+
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.calcite.linq4j.tree.BlockBuilder;
+import org.apache.calcite.linq4j.tree.Expression;
+import org.apache.calcite.linq4j.tree.Expressions;
+import org.apache.calcite.linq4j.tree.ParameterExpression;
+import org.apache.calcite.linq4j.tree.Types;
+import org.polypheny.db.adapter.cottontail.rel.CottontailFilter.CompoundPredicate.Op;
+import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
+import org.polypheny.db.plan.RelOptCluster;
+import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.core.Filter;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rel.type.RelDataTypeField;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexInputRef;
+import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicLiteralBooleanPredicate.Operator;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.CompoundBooleanPredicate;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
+
+
+public class CottontailFilter extends Filter implements CottontailRel {
+
+    public static final Method CREATE_ATOMIC_PREDICATE_METHOD = Types.lookupMethod(
+            Linq4JFixer.class,
+//            CottontailFilter.Translator.class,
+            "generateAtomicPredicate",
+            String.class, Boolean.class, Object.class, Object.class );
+//            String.class, Boolean.cla/ss, AtomicLiteralBooleanPredicate.Operator.class, Data.class );
+
+    public static final Method CREATE_COMPOUND_PREDICATE_METHOD = Types.lookupMethod(
+            Linq4JFixer.class,
+//            CottontailFilter.Translator.class,
+            "generateCompoundPredicate",
+            Object.class, Object.class, Object.class );
+
+    public static final Method CREATE_WHERE_METHOD = Types.lookupMethod(
+            Linq4JFixer.class,
+//            CottontailFilter.Translator.class,
+            "generateWhere",
+            Object.class );
+
+
+    public CottontailFilter( RelOptCluster cluster, RelTraitSet traits, RelNode child, RexNode condition ) {
+        super( cluster, traits, child, condition );
+    }
+
+
+    @Override
+    public void implement( CottontailImplementContext context ) {
+        context.visitChild( 0, getInput() );
+
+        BooleanPredicate predicate = convertToCnf( this.condition );
+
+        Translator translator = new Translator( context.cottontailTable.getRowType( this.getCluster().getTypeFactory() ) );
+
+        Expression filterBuilder_ = translator.generateWhereBuilder( predicate, context.blockBuilder );
+
+        context.filterBuilder = filterBuilder_;
+    }
+
+
+    @Override
+    public Filter copy( RelTraitSet traitSet, RelNode input, RexNode condition ) {
+        return new CottontailFilter( getCluster(), traitSet, input, condition );
+    }
+
+
+    public static BooleanPredicate convertToCnf( RexNode condition ) {
+        BooleanPredicate predicateInner = convertRexToBooleanPredicate( condition );
+        BooleanPredicate predicate = new CompoundPredicate( Op.ROOT, predicateInner, null );
+        //noinspection StatementWithEmptyBody
+        while ( predicate.simplify() ) {
+            // intentionally empty
+        }
+
+//        Translator translator = new Translator( this.getRowType() )
+        return predicate;
+    }
+
+
+    public static class Translator {
+
+        private final RelDataType rowType;
+        private final List<String> fieldNames;
+        private final List<PolyType> columnTypes;
+
+
+        public Translator( RelDataType rowType ) {
+            this.rowType = rowType;
+            List<Pair<String, String>> pairs = Pair.zip( rowType.getFieldList().stream().map( RelDataTypeField::getPhysicalName ).collect( Collectors.toList() ), rowType.getFieldNames() );
+            this.fieldNames = pairs.stream().map( it -> it.left != null ? it.left : it.right ).collect( Collectors.toList() );
+            this.columnTypes = rowType.getFieldList().stream().map( RelDataTypeField::getType ).map( RelDataType::getPolyType ).collect( Collectors.toList() );
+        }
+
+
+        private Expression generateWhereBuilder(
+                BooleanPredicate predicate,
+                BlockBuilder builder
+        ) {
+            ParameterExpression dynamicParameterMap_ = Expressions.parameter( Modifier.FINAL, Map.class, builder.newName( "dynamicParameters" ) );
+
+            if ( !(predicate instanceof CompoundPredicate) || (((CompoundPredicate) predicate).op != Op.ROOT) ) {
+                throw new AssertionError( "Predicate must be ROOT." );
+            }
+
+            Expression filterExpression = convertBooleanPredicate( ((CompoundPredicate) predicate).left, null, dynamicParameterMap_, false );
+
+            return Expressions.lambda(
+                    Expressions.block( Expressions.return_( null, Expressions.call( CREATE_WHERE_METHOD, filterExpression ) ) ),
+                    dynamicParameterMap_ );
+        }
+
+
+        private Expression convertBooleanPredicate(
+                BooleanPredicate predicate,
+                BlockBuilder builder,
+                ParameterExpression dynamicParameterMap_,
+                boolean negated
+        ) {
+            if ( predicate instanceof AtomicPredicate ) {
+                AtomicPredicate atomicPredicate = (AtomicPredicate) predicate;
+                return translateMatch2( atomicPredicate.node, dynamicParameterMap_, negated );
+//            RexNode leftOp = ((RexCall) atomicPredicate.node).getOperands().get( 0 );
+//            RexNode rightOp = ((RexCall) atomicPredicate.node).getOperands().get( 1 );
+//            return Expressions.call( CREATE_ATOMIC_PREDICATE_METHOD,  );
+            } else {
+                CompoundPredicate compoundPredicate = (CompoundPredicate) predicate;
+
+                switch ( compoundPredicate.op ) {
+                    case AND:
+                        return Expressions.call( CREATE_COMPOUND_PREDICATE_METHOD,
+                                Expressions.constant( CompoundBooleanPredicate.Operator.AND ),
+                                convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, negated ),
+                                convertBooleanPredicate( compoundPredicate.right, builder, dynamicParameterMap_, negated ) );
+                    case OR:
+                        return Expressions.call( CREATE_COMPOUND_PREDICATE_METHOD,
+                                Expressions.constant( CompoundBooleanPredicate.Operator.OR ),
+                                convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, negated ),
+                                convertBooleanPredicate( compoundPredicate.right, builder, dynamicParameterMap_, negated ) );
+                    case NOT:
+                        return convertBooleanPredicate( compoundPredicate.left, builder, dynamicParameterMap_, true );
+                    case ROOT:
+                        break;
+                }
+            }
+
+            throw new AssertionError( "Unable to translate" );
+        }
+
+
+        private Expression translateMatch2( RexNode node, ParameterExpression dynamicParameterMap_, boolean negated ) {
+            switch ( node.getKind() ) {
+                case EQUALS:
+                    return translateBinary( Operator.EQUAL, Operator.EQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case LESS_THAN:
+                    return translateBinary( Operator.LESS, Operator.GEQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case LESS_THAN_OR_EQUAL:
+                    return translateBinary( Operator.LEQUAL, Operator.GREATER, (RexCall) node, dynamicParameterMap_, negated );
+                case GREATER_THAN:
+                    return translateBinary( Operator.GREATER, Operator.LEQUAL, (RexCall) node, dynamicParameterMap_, negated );
+                case GREATER_THAN_OR_EQUAL:
+                    return translateBinary( Operator.GEQUAL, Operator.LESS, (RexCall) node, dynamicParameterMap_, negated );
+                default:
+                    throw new AssertionError( "cannot translate: " + node );
+            }
+        }
+
+
+        private Expression translateBinary( AtomicLiteralBooleanPredicate.Operator op,
+                AtomicLiteralBooleanPredicate.Operator rightOp,
+                RexCall call,
+                ParameterExpression dynamicParameterMap_,
+                boolean negated ) {
+            final RexNode left = call.operands.get( 0 );
+            final RexNode right = call.operands.get( 1 );
+            Expression expression = translateBinary2( op, left, right, dynamicParameterMap_, negated );
+            if ( expression != null ) {
+                return expression;
+            }
+
+            expression = translateBinary2( rightOp, right, left, dynamicParameterMap_, negated );
+            if ( expression != null ) {
+                return expression;
+            }
+
+            throw new AssertionError( "cannot translate op " + op + "call " + call );
+        }
+
+
+        private Expression translateBinary2( AtomicLiteralBooleanPredicate.Operator op,
+                RexNode left,
+                RexNode right,
+                ParameterExpression dynamicParameterMap_,
+                boolean negated ) {
+            Expression rightSideData;
+
+            if ( left.getKind() != SqlKind.INPUT_REF ) {
+                return null;
+            }
+
+            final RexInputRef left1 = (RexInputRef) left;
+
+            switch ( right.getKind() ) {
+                case LITERAL:
+                    rightSideData = CottontailTypeUtil.rexLiteralToDataExpression( (RexLiteral) right, columnTypes.get( left1.getIndex() ) );
+                    break;
+                case DYNAMIC_PARAM:
+                    rightSideData = CottontailTypeUtil.rexDynamicParamToDataExpression( (RexDynamicParam) right, dynamicParameterMap_, columnTypes.get( left1.getIndex() ) );
+                    break;
+                case ARRAY_VALUE_CONSTRUCTOR:
+                    // TODO js(ct): IMPLEMENT!
+                    rightSideData = CottontailTypeUtil.rexArrayConstructorToExpression( (RexCall) right, columnTypes.get( left1.getIndex() ) );
+                    break;
+                default:
+                    return null;
+            }
+
+            switch ( left.getKind() ) {
+                case INPUT_REF:
+//                    final RexInputRef left1 = (RexInputRef) left;
+                    String name = fieldNames.get( left1.getIndex() );
+
+                    return Expressions.call(
+                            CREATE_ATOMIC_PREDICATE_METHOD,
+                            Expressions.constant( name ),
+                            Expressions.constant( negated ),
+                            Expressions.constant( op ),
+                            rightSideData
+                    );
+                default:
+                    return null;
+            }
+        }
+
+
+        public static CompoundBooleanPredicate generateCompoundPredicate(
+                Object operator_,
+//                CompoundBooleanPredicate.Operator operator,
+                Object left,
+                Object right
+        ) {
+            CompoundBooleanPredicate.Operator operator = (CompoundBooleanPredicate.Operator) operator_;
+            CompoundBooleanPredicate.Builder builder = CompoundBooleanPredicate.newBuilder();
+            builder = builder.setOp( operator );
+
+            if ( left instanceof AtomicLiteralBooleanPredicate ) {
+                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) left );
+            } else {
+                builder = builder.setCleft( (CompoundBooleanPredicate) left );
+            }
+
+            if ( right instanceof AtomicLiteralBooleanPredicate ) {
+                builder = builder.setAleft( (AtomicLiteralBooleanPredicate) right );
+            } else {
+                builder = builder.setCleft( (CompoundBooleanPredicate) right );
+            }
+
+            return builder.build();
+        }
+
+
+        public static AtomicLiteralBooleanPredicate generateAtomicPredicate(
+                String attribute,
+                boolean not,
+                Object operator_,
+                Object data_
+        ) {
+            AtomicLiteralBooleanPredicate.Operator operator = (AtomicLiteralBooleanPredicate.Operator) operator_;
+            Data data = (Data) data_;
+            return AtomicLiteralBooleanPredicate.newBuilder()
+                    .addData( data )
+                    .setNot( not )
+                    .setAttribute( attribute )
+                    .setOp( operator )
+                    .build();
+        }
+
+
+        public static Where generateWhere( Object filterExpression ) {
+            if ( filterExpression instanceof AtomicLiteralBooleanPredicate ) {
+                return Where.newBuilder().setAtomic( (AtomicLiteralBooleanPredicate) filterExpression ).build();
+            }
+
+            if ( filterExpression instanceof CompoundBooleanPredicate ) {
+                return Where.newBuilder().setCompound( (CompoundBooleanPredicate) filterExpression ).build();
+            }
+
+            throw new RuntimeException( "Not a proper filter expression!" );
+        }
+
+    }
+
+
+    private static BooleanPredicate convertRexToBooleanPredicate( RexNode condition ) {
+        switch ( condition.getKind() ) {
+            // Compound predicates
+            case AND: {
+                List<BooleanPredicate> operands = new ArrayList<>();
+                BooleanPredicate returnValue = null;
+                // Do we care about the "only one operand" case? Can it happen?
+                for ( RexNode node : ((RexCall) condition).getOperands() ) {
+                    BooleanPredicate temp = convertRexToBooleanPredicate( node );
+                    if ( returnValue == null ) {
+                        returnValue = temp;
+                    } else {
+                        returnValue = new CompoundPredicate( Op.AND,
+                                returnValue,
+                                temp );
+                    }
+                }
+
+                return returnValue;
+            }
+            // How to handle more than 2 arguments?
+            case OR: {
+                List<BooleanPredicate> operands = new ArrayList<>();
+                BooleanPredicate returnValue = null;
+                // Do we care about the "only one operand" case? Can it happen?
+                for ( RexNode node : ((RexCall) condition).getOperands() ) {
+                    BooleanPredicate temp = convertRexToBooleanPredicate( node );
+                    if ( returnValue == null ) {
+                        returnValue = temp;
+                    } else {
+                        returnValue = new CompoundPredicate( Op.OR,
+                                returnValue,
+                                temp );
+                    }
+                }
+
+                return returnValue;
+            }
+            case NOT: {
+                return new CompoundPredicate( Op.NOT,
+                        convertRexToBooleanPredicate( ((RexCall) condition).getOperands().get( 0 ) ),
+                        null );
+            }
+
+            // Atomic predicates
+            case EQUALS:
+            case GREATER_THAN:
+            case GREATER_THAN_OR_EQUAL:
+            case LESS_THAN:
+            case LESS_THAN_OR_EQUAL:
+            case IS_NULL:
+            case IS_NOT_NULL:
+                return new AtomicPredicate( condition, false );
+            case LIKE:
+            case IN:
+            default:
+                // FIXME js(ct): Deal with this case
+                return null;
+        }
+    }
+
+
+    interface BooleanPredicate {
+
+        boolean isLeaf();
+
+        /**
+         * Simplify the underlying node.
+         *
+         * @return returns <code>true</code> if the node changed.
+         */
+        boolean simplify();
+
+        void finalise();
+
+    }
+
+
+    static class AtomicPredicate implements BooleanPredicate {
+
+        final RexNode node;
+        final boolean negated;
+
+
+        AtomicPredicate( RexNode node, boolean negated ) {
+            this.node = node;
+            this.negated = negated;
+        }
+
+
+        @Override
+        public boolean isLeaf() {
+            return true;
+        }
+
+
+        @Override
+        public boolean simplify() {
+            return false;
+        }
+
+
+        @Override
+        public void finalise() {
+
+        }
+
+    }
+
+
+    static class CompoundPredicate implements BooleanPredicate {
+
+        public Op op;
+        public BooleanPredicate left;
+        public BooleanPredicate right;
+
+
+        CompoundPredicate( Op op, BooleanPredicate left, BooleanPredicate right ) {
+            this.op = op;
+            this.left = left;
+            this.right = right;
+        }
+
+
+        @Override
+        public boolean isLeaf() {
+            return false;
+        }
+
+
+        @Override
+        public boolean simplify() {
+            boolean changed = false;
+
+            // TODO js(ct): Should we go down the tree first and then do this node? Or first this node?
+            if ( this.left != null ) {
+                // We only have a left node
+                changed = changed || this.left.simplify();
+            }
+            if ( this.right != null ) {
+                changed = changed || this.right.simplify();
+            }
+
+            if ( this.left instanceof CompoundPredicate ) {
+                CompoundPredicate tempLeft = (CompoundPredicate) this.left;
+
+                // We only do one change because left might turn into an AtomicPredicate!
+                if ( tempLeft.isDoubleNegation() ) {
+                    // We pull up the predicate that has a double negation.
+                    this.left = removeDoubleNegation( tempLeft );
+                    changed = true;
+                } else if ( tempLeft.canPushDownNot() ) {
+//                    CompoundPredicate inner = (CompoundPredicate) tempLeft.left;
+                    this.left = pushDownNot( tempLeft );
+                    changed = true;
+
+                } else if ( tempLeft.canPushDownDisjunction() ) {
+                    this.left = pushDownDisjunction( tempLeft );
+                    changed = true;
+                }
+            }
+
+            if ( this.right != null && this.right instanceof CompoundPredicate ) {
+                CompoundPredicate tempRight = (CompoundPredicate) this.right;
+                // We only do one change because left might turn into an AtomicPredicate!
+                if ( tempRight.isDoubleNegation() ) {
+                    // We pull up the predicate that has a double negation.
+                    this.right = removeDoubleNegation( tempRight );
+                    changed = true;
+                } else if ( tempRight.canPushDownNot() ) {
+//                    CompoundPredicate inner = (CompoundPredicate) tempLeft.left;
+                    this.right = pushDownNot( tempRight );
+                    changed = true;
+
+                } else if ( tempRight.canPushDownDisjunction() ) {
+                    this.right = pushDownDisjunction( tempRight );
+                    changed = true;
+                }
+            }
+
+            return changed;
+        }
+
+
+        @Override
+        public void finalise() {
+            if ( this.left != null ) {
+                this.left.finalise();
+            }
+            if ( this.right != null ) {
+                this.right.finalise();
+            }
+            if ( this.op == Op.NOT ) {
+            }
+        }
+
+
+        public boolean isDoubleNegation() {
+            return this.op == Op.NOT && this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op == Op.NOT;
+        }
+
+
+        private static BooleanPredicate removeDoubleNegation( CompoundPredicate predicate ) {
+            return ((CompoundPredicate) predicate.left).left;
+        }
+
+
+        public boolean canPushDownNot() {
+            return this.op == Op.NOT && this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op != Op.NOT;
+        }
+
+
+        private static BooleanPredicate pushDownNot( CompoundPredicate predicate ) {
+            CompoundPredicate inner = (CompoundPredicate) predicate.left;
+            return new CompoundPredicate( inner.op.inverse(),
+                    new CompoundPredicate( Op.NOT, inner.left, null ),
+                    new CompoundPredicate( Op.NOT, inner.right, null ) );
+        }
+
+
+        public boolean canPushDownDisjunction() {
+            return this.op == Op.OR && (
+                    (this.left instanceof CompoundPredicate && ((CompoundPredicate) this.left).op == Op.AND)
+                            || (this.right instanceof CompoundPredicate && ((CompoundPredicate) this.right).op == Op.AND));
+        }
+
+
+        private static BooleanPredicate pushDownDisjunction( CompoundPredicate predicate ) {
+            CompoundPredicate orPredicate;
+            BooleanPredicate otherPredicate;
+            if ( predicate.left instanceof CompoundPredicate && ((CompoundPredicate) predicate.left).op == Op.AND ) {
+                orPredicate = (CompoundPredicate) predicate.left;
+                otherPredicate = predicate.right;
+            } else {
+                orPredicate = (CompoundPredicate) predicate.right;
+                otherPredicate = predicate.left;
+            }
+
+            return new CompoundPredicate( Op.AND,
+                    new CompoundPredicate( Op.OR, orPredicate.left, otherPredicate ),
+                    new CompoundPredicate( Op.OR, orPredicate.right, otherPredicate ) );
+        }
+
+
+        public enum Op {
+            AND,
+            OR,
+            NOT,
+            ROOT;
+
+
+            public Op inverse() {
+                switch ( this ) {
+                    case AND:
+                        return OR;
+                    case OR:
+                        return AND;
+                    case NOT:
+                    case ROOT:
+                        return this;
+                }
+                throw new RuntimeException( "Unreachable code!" );
+            }
+        }
+
+    }
+
+}

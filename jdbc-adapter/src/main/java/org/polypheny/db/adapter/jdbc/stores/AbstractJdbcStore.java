@@ -253,7 +253,7 @@ public abstract class AbstractJdbcStore extends DataStore {
 
     // Make sure to update overridden methods as well
     @Override
-    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn ) {
+    public void updateColumnType( Context context, CatalogColumnPlacement columnPlacement, CatalogColumn catalogColumn, PolyType oldType ) {
         if ( !this.dialect.supportsNestedArrays() && catalogColumn.collectionsType != null ) {
             return;
         }
