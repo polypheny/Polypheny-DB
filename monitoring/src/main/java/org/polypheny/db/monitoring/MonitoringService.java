@@ -32,73 +32,88 @@ import com.influxdb.query.internal.FluxResultMapper;
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
-import org.omg.Messaging.SyncScopeHelper;
+import lombok.extern.slf4j.Slf4j;
 
 
+//ToDo add some kind of configuration which can for one decide on which backend to select, if we might have severall like
+// * InfluxDB
+// * File
+// * map db
+// * etc
+@Slf4j
 public class MonitoringService {
-    static InfluxDBClient client;
 
-    // InfluxDB needs to be started to use monitoring in a proper way.
-    // I tested the implementation with the docker image, working just fine and explained here:
-    // https://docs.influxdata.com/influxdb/v2.0/get-started/?t=Docker#
+    private final String MONITORING_BACKEND = "simple"; //InfluxDB
+    private BackendConnector backendConnector;
 
-    // You can generate a Token from the "Tokens Tab" in the UI
-    // TODO: Add your own token and config here!
 
-    static String token = "EvyOwXhnCxKwAd25pUq41o3n3O3um39qi8bRtr134adzzUu_vCyxFJ8mKLqHeQ0MRpt6uEiH3dkkhL6gkctzpw==";
-    static String bucket = "polypheny-monitoring";
-    static String org = "unibas";
-    static String url = "http://localhost:8086";
-
-    // For influxDB testing purpose
-    public static void main(final String[] args) {
-
-        InfluxDBClient client = InfluxDBClientFactory.create(url, token.toCharArray());
-
-        InfluxPojo data = InfluxPojo.Create( "sql statement", "sql statement type", new Random().nextLong());
-        try ( WriteApi writeApi = client.getWriteApi()) {
-            writeApi.writeMeasurement(bucket, org, WritePrecision.NS, data);
-        }
-
-        // Import to query with the pivot command:
-        // from(bucket: "polypheny-monitoring")
-        //    |> range(start: -1h)
-        //    |> filter(fn: (r) => r["_measurement"] == "Query")
-        //    |> pivot(rowKey:["_time"], columnKey: ["_field"], valueColumn: "_value")
-
-        // IMPORTANT: range always need to be defined!
-
-        String query = String.format("from(bucket: \"%s\") |> range(start: -1h) |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\") |> filter(fn: (r) => r[\"_measurement\"] == \"Query\")", bucket);
-
-        List<InfluxPojo> results = client.getQueryApi().query( query, org, InfluxPojo.class);
-
-        results.forEach( (InfluxPojo elem) -> System.out.println(elem.toString()) );
-
-        client.close();
+    public MonitoringService(){
+        initializeClient();
     }
 
-    public static void InitializeClient(){
-        if(client == null) {
-            client = InfluxDBClientFactory.create("http://localhost:8086", token.toCharArray());
-        }
+    /**
+     * This method faces should be used to add new items to backend
+     * it should be invoked in directly
+     *
+     * It is backend agnostic and makes sure to parse and extract all necessary information
+     * which should be added to the backend
+     *
+     * @param event to add to the queue which will registered as a new monitoring metric
+     */
+    public void addWorkloadEventToQueue(MonitorEvent event){
+
+
+        System.out.println("\nHENNLO: Added new Worklaod event:"
+                + "\n\t STMT_TYPE:" + event.monitoringType + " "
+                + "\n\t Description: " + event.getDescription() + " "
+                + "\n\t Timestamp " + event.getRecordedTimestamp() + " "
+                + "\n\t Field Names " + event.getFieldNames());
+
+
     }
 
-    public static void MonitorEvent(InfluxPojo data){
-        // check if client is initialized
-        if( client == null){
-            InitializeClient();
-        }
 
-        // check if client is available
-        if (client != null) {
-            HealthCheck healthCheck = client.health();
-            if(healthCheck.getStatus() == StatusEnum.PASS) {
-                try ( WriteApi writeApi = client.getWriteApi()) {
-                    writeApi.writeMeasurement(bucket, org, WritePrecision.NS, data);
-                    writeApi.flush();
-                }
+    /**
+     * This is currently a dummy Service mimicking the final retrieval of monitoring data
+     *
+     * @param type  Search for specific workload type
+     * @param filter on select worklaod type
+     *
+     * @return some event or statistic which can be immidiately used
+     */
+    public String getWorkloadItem(String type, String filter){
+        System.out.println("HENNLO: Looking for: '" + type +"' with filter: '" + filter + "'");
+
+        backendConnector.readStatisticEvent( " " );
+
+        return "EMPTY WORKLOAD EVENT";
+    }
+
+    private void initializeClient(){
+        // Get Backend currently set in monitoring
+        backendConnector = BackendConnectorFactory.getBackendInstance(MONITORING_BACKEND);
+    }
+
+    private static class BackendConnectorFactory {
+
+        //Returns backend based on configured statistic Backend in runtimeconfig
+        public static BackendConnector getBackendInstance( String statisticBackend ) {
+            switch ( statisticBackend ) {
+                case "InfluxDB":
+                    //TODO add error handling or fallback to default backend when no Influx is available
+                    return new InfluxBackendConnector();
+
+                case "simple":
+                    return new SimpleBackendConnector();
+
+                default :
+                    throw new RuntimeException( "Unknown Backend type: '" + statisticBackend  + "' ");
             }
+
+
         }
+
     }
+
 }
 
