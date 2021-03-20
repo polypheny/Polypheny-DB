@@ -187,7 +187,7 @@ public class PolyphenyDb {
         }
         try{
             //TODO add storage backend connector form Runtime Config instead of specifying it in Monitoring Service
-            final MonitoringService monitoringService = new MonitoringService();
+            //final MonitoringService monitoringService = new MonitoringService();
         } catch( Exception e) {
             log.error( "Unable to connect to monitoring service client" );
         }

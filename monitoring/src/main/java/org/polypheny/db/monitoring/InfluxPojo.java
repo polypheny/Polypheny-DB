@@ -24,7 +24,7 @@ import java.time.Instant;
 
 @Measurement( name = "Query" )
 public class InfluxPojo{
-    public static InfluxPojo Create( String sql, String type, Long numberCols ){
+    public  InfluxPojo Create( String sql, String type, Long numberCols ){
         return new InfluxPojo( sql, type, numberCols );
     }
 

@@ -149,6 +149,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
 
+    //MonitoringService monitoringService = new MonitoringService();
+
 
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
@@ -414,9 +416,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
 
-        //TODO dummy service won't be instantiated here
-        MonitoringService monitoringService = new MonitoringService();
-        monitoringService.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
+
+        MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
                 .description( "Test description" )
                 .fieldNames( signature.rowType.getFieldNames() )
                 .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
