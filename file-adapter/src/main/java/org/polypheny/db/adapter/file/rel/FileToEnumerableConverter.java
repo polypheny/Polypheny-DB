@@ -49,8 +49,8 @@ import org.polypheny.db.type.PolyType;
 
 public class FileToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
-    final Method enumeratorMethod;
-    final FileSchema fileSchema;
+    private final Method enumeratorMethod;
+    private final FileSchema fileSchema;
 
 
     public FileToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input, Method enumeratorMethod, FileSchema fileSchema ) {

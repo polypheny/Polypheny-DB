@@ -51,26 +51,23 @@ import org.polypheny.db.type.PolyType;
 
 public class FileTranslatableTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
-    final File rootDir;
+    private final File rootDir;
     @Getter
     private final String tableName;
-    long tableId;
+    private final long tableId;
     @Getter
-    List<String> columnNames;
+    private final List<String> columnNames;
     @Getter
-    final Map<String, Long> columnIdMap;
+    private final Map<String, Long> columnIdMap;
     @Getter
-    final Map<String, PolyType> columnTypeMap;
-    /**
-     * Ids of the columns that are part of the primary key
-     */
+    private final Map<String, PolyType> columnTypeMap;
     @Getter
-    final List<Long> pkIds;
+    private final List<Long> pkIds; // Ids of the columns that are part of the primary key
     @Getter
-    final int adapterId;
+    private final int adapterId;
     @Getter
-    FileSchema fileSchema;
-    RelProtoDataType protoRowType;
+    private final FileSchema fileSchema;
+    private final RelProtoDataType protoRowType;
 
 
     public FileTranslatableTable( final FileSchema fileSchema,

@@ -35,7 +35,6 @@ import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -55,16 +54,9 @@ public class FileStore extends DataStore {
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of();
 
-    @Getter
-    private File rootDir;
-    private FileStoreSchema currentSchema;
-    /**
-     * A folder containing the write ahead log
-     */
-    private File WAL;
-
     // Standards
     public static final Charset CHARSET = StandardCharsets.UTF_8;
+
     /**
      * Hash function to use the hash of a primary key to name a file.
      * If you change this function, make sure to change the offset in the {@link FileStore#commitOrRollback} method!
@@ -72,20 +64,16 @@ public class FileStore extends DataStore {
     @SuppressWarnings("UnstableApiUsage") // see https://stackoverflow.com/questions/53060907/is-it-safe-to-use-hashing-class-from-com-google-common-hash
     public static final HashFunction SHA = Hashing.sha256();
 
-    private InformationPage infoPage;
-    private InformationGroup infoGroup;
-    private Information infoElement;
+    @Getter
+    private final File rootDir;
+    private FileStoreSchema currentSchema;
+
+    private final File WAL; // A folder containing the write ahead log
 
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
-        setRootDir();
-        trxRecovery();
-        setInformationPage();
-    }
 
-
-    private void setRootDir() {
         File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
         rootDir = new File( adapterRoot, "store" + getAdapterId() );
 
@@ -94,42 +82,39 @@ public class FileStore extends DataStore {
                 throw new RuntimeException( "Could not create root directory" );
             }
         }
-        //subfolder for the write ahead log
+        // Subfolder for the write ahead log
         this.WAL = new File( rootDir, "WAL" );
         if ( !WAL.exists() ) {
             if ( !WAL.mkdirs() ) {
                 throw new RuntimeException( "Could not create WAL folder" );
             }
         }
+
+        trxRecovery();
+        setInformationPage();
     }
 
 
     private void setInformationPage() {
-        InformationManager im = InformationManager.getInstance();
-        infoPage = new InformationPage( getUniqueName() ).setLabel( "Stores" );
-        infoGroup = new InformationGroup( infoPage, "Disk usage in GB" );
+        InformationGroup infoGroup = new InformationGroup( informationPage, "Disk usage in GB" );
+        informationGroups.add( infoGroup );
         File root = rootDir.toPath().getRoot().toFile();
         int base = 1024;
         if ( SystemUtils.IS_OS_MAC ) {
             base = 1000;
         }
-        infoElement = new InformationGraph(
+        Double[] diskUsage = new Double[]{
+                (double) ((root.getTotalSpace() - root.getUsableSpace()) / (long) Math.pow( base, 3 )),
+                (double) (root.getUsableSpace() / (long) Math.pow( base, 3 )) };
+        Information infoElement = new InformationGraph(
                 infoGroup,
                 GraphType.DOUGHNUT,
                 new String[]{ "used", "free" },
-                new GraphData<>( "disk-usage", new Double[]{ (double) ((root.getTotalSpace() - root.getUsableSpace()) / (long) Math.pow( base, 3 )), (double) (root.getUsableSpace() / (long) Math.pow( base, 3 ))
-                } ) );
-        im.addPage( infoPage );
+                new GraphData<>( "disk-usage", diskUsage ) );
+        InformationManager im = InformationManager.getInstance();
+        im.addPage( informationPage );
         im.addGroup( infoGroup );
         im.registerInformation( infoElement );
-    }
-
-
-    public void removeInformationPage() {
-        InformationManager im = InformationManager.getInstance();
-        im.removeInformation( infoElement );
-        im.removeGroup( infoGroup );
-        im.removePage( infoPage );
     }
 
 
@@ -377,7 +362,7 @@ public class FileStore extends DataStore {
         FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name );
         try {
             for ( String colName : fileTable.getColumnNames() ) {
-                File columnFolder = getColumnFolder( fileTable.columnIdMap.get( colName ) );
+                File columnFolder = getColumnFolder( fileTable.getColumnIdMap().get( colName ) );
                 FileUtils.cleanDirectory( columnFolder );
             }
         } catch ( IOException e ) {

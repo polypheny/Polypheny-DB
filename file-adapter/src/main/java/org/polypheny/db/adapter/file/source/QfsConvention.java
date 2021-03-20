@@ -30,7 +30,7 @@ import org.polypheny.db.plan.RelOptRule;
 public class QfsConvention extends FileConvention {
 
     @Getter
-    final Expression fileSchemaExpression;
+    private final Expression fileSchemaExpression;
 
 
     public QfsConvention( String name, Expression fileSchemaExpression, FileSchema fileSchema ) {

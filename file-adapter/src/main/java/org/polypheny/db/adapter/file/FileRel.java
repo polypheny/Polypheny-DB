@@ -58,10 +58,10 @@ public interface FileRel extends RelNode {
         private Operation operation;
         @Getter
         @Setter
-        Condition condition;
+        private Condition condition;
         @Getter
         @Setter
-        List<Value> updates;
+        private List<Value> updates;
 
 
         public FileImplementor() {

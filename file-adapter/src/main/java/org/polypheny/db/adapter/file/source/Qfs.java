@@ -36,10 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.jdbc.Context;
@@ -69,10 +67,6 @@ public class Qfs extends DataSource {
     @Getter
     private File rootDir;
     private QfsSchema currentSchema;
-
-    private InformationPage infoPage;
-    private final List<InformationGroup> infoGroups = new ArrayList<>();
-    private final List<Information> infoElements = new ArrayList<>();
 
 
     public Qfs( int adapterId, String uniqueName, Map<String, String> settings ) {
@@ -147,14 +141,7 @@ public class Qfs extends DataSource {
 
     @Override
     public void shutdown() {
-        InformationManager im = InformationManager.getInstance();
-        if ( infoElements.size() > 0 ) {
-            im.removeInformation( infoElements.toArray( new Information[0] ) );
-        }
-        if ( infoGroups.size() > 0 ) {
-            im.removeGroup( infoGroups.toArray( new InformationGroup[0] ) );
-        }
-        im.removePage( infoPage );
+        removeInformationPage();
     }
 
 
@@ -181,11 +168,8 @@ public class Qfs extends DataSource {
         String path = whitelist.getAbsolutePath();
         if ( !whitelist.exists() ) {
             try ( FileWriter fw = new FileWriter( whitelist ); PrintWriter pw = new PrintWriter( fw ) ) {
-                if ( !whitelist.createNewFile() ) {
-                    throw new IOException( "Could not create QFS whitelist file in " + path );
-                }
-                pw.println( "# A list of allowed directories for the QFS data source" );
-                pw.println( "# The list must be non-empty. A QFS directory will only be accepted if it is a subdirectory of one of the following directories." );
+                pw.println( "# A list of allowed directories for the Query File System (QFS) data source adapter" );
+                pw.println( "# The list must be non-empty. A QFS directory will only be accepted if it is listed here or is a subdirectory of a directory listed here." );
             } catch ( IOException e ) {
                 throw new RuntimeException( "Could not write QFS whitelist file " + path, e );
             }
@@ -200,7 +184,7 @@ public class Qfs extends DataSource {
                 }
                 File f = new File( line );
                 if ( !f.exists() ) {
-                    log.warn( "The following QFS whitelist entry does not exist: " + line );
+                    log.warn( "The following QFS whitelist entry does not exist: {}", line );
                     continue;
                 }
                 numberOfWhitelistEntries++;
@@ -301,19 +285,18 @@ public class Qfs extends DataSource {
 
     protected void registerInformationPage( String uniqueName ) {
         InformationManager im = InformationManager.getInstance();
-        infoPage = new InformationPage( uniqueName, "Query a filesystem" ).setLabel( "Sources" );
-        im.addPage( infoPage );
+        im.addPage( informationPage );
 
-        InformationGroup rootGroup = new InformationGroup( infoPage, "Root directory" ).setOrder( 1 );
+        InformationGroup rootGroup = new InformationGroup( informationPage, "Root directory" ).setOrder( 1 );
         InformationText iText = new InformationText( uniqueName + "-rootDir", rootGroup, settings.get( "rootDir" ) );
         im.addGroup( rootGroup );
         im.registerInformation( iText );
 
         int i = 2;
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( infoPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
             im.addGroup( group );
-            infoGroups.add( group );
+            informationGroups.add( group );
 
             InformationTable table = new InformationTable(
                     group,
@@ -328,7 +311,7 @@ public class Qfs extends DataSource {
                 );
             }
             im.registerInformation( table );
-            infoElements.add( table );
+            informationElements.add( table );
         }
     }
 

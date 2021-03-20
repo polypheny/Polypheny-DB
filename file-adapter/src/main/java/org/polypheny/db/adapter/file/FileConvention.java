@@ -29,16 +29,16 @@ import org.polypheny.db.plan.RelOptRule;
 public class FileConvention extends Convention.Impl {
 
     @Getter
-    final Expression fileSchemaExpression;
+    private final Expression fileSchemaExpression;
     @Getter
-    final FileSchema fileSchema;
+    private final FileSchema fileSchema;
     /**
      * Whether the query is a modification (insert, update, delete) or a select query.
-     * Needed for the {@link org.polypheny.db.adapter.file.rel.FileRules.FileUnionRule}
+     * Needed for the {@see org.polypheny.db.adapter.file.rel.FileRules.FileUnionRule}
      */
     @Getter
     @Setter
-    boolean isModification = false;
+    private boolean isModification = false;
 
 
     public FileConvention( String name, Expression fileSchemaExpression, FileSchema fileSchema ) {
