@@ -2322,6 +2322,7 @@ public class Crud implements InformationObserver {
             } else if ( adapter instanceof DataSource ) {
                 AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
             }
+            Catalog.getInstance().commit();
         } catch ( Throwable t ) {
             return new Result( "Could not update AdapterSettings", t );
         }
