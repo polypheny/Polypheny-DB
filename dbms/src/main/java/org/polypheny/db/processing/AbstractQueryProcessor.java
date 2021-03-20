@@ -66,8 +66,8 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
+import org.polypheny.db.monitoring.InfluxPojo;
 import org.polypheny.db.monitoring.MonitoringService;
-import org.polypheny.db.monitoring.MonitoringService.InfluxPojo;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -412,7 +412,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
-        MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
+
+
+        //TODO dummy service won't be instantiated here
+        MonitoringService monitoringService = new MonitoringService();
+        monitoringService.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
+                .description( "Test description" )
+                .fieldNames( signature.rowType.getFieldNames() )
+                .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
+                .build() );
+        //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
         return signature;
     }
 
