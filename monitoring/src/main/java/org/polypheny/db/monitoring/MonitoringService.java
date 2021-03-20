@@ -17,22 +17,18 @@
 package org.polypheny.db.monitoring;
 
 
-import com.influxdb.LogLevel;
-import com.influxdb.annotations.Column;
-import com.influxdb.annotations.Measurement;
-import com.influxdb.client.InfluxDBClient;
-import com.influxdb.client.InfluxDBClientFactory;
-import com.influxdb.client.QueryApi;
-import com.influxdb.client.WriteApi;
-import com.influxdb.client.domain.HealthCheck;
-import com.influxdb.client.domain.HealthCheck.StatusEnum;
-import com.influxdb.client.domain.WritePrecision;
-import com.influxdb.query.FluxTable;
-import com.influxdb.query.internal.FluxResultMapper;
-import java.time.Instant;
-import java.util.List;
-import java.util.Random;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.java.Array;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTaskManager;
 
 
 //ToDo add some kind of configuration which can for one decide on which backend to select, if we might have severall like
@@ -43,12 +39,46 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MonitoringService {
 
+    public static final MonitoringService INSTANCE = new MonitoringService();
+
     private final String MONITORING_BACKEND = "simple"; //InfluxDB
     private BackendConnector backendConnector;
+    BackendConnectorFactory backendConnectorFactory = new BackendConnectorFactory();
 
+
+    private InformationPage informationPage;
+    private InformationGroup informationGroupOverview;
+    private InformationTable queueOverviewTable;
 
     public MonitoringService(){
-        initializeClient();
+
+        initializeMonitoringBackend();
+
+        //Initialize Information Page
+        informationPage = new InformationPage( "Monitoring Queue" );
+        informationPage.fullWidth();
+        informationGroupOverview = new InformationGroup( informationPage, "Queue Overview" );
+
+        InformationManager im = InformationManager.getInstance();
+        im.addPage( informationPage );
+        im.addGroup( informationGroupOverview );
+
+        queueOverviewTable = new InformationTable(
+                informationGroupOverview,
+                Arrays.asList( "STMT", "Description", " Recorded Timestamp", "Field Names") );
+        im.registerInformation( queueOverviewTable );
+
+
+
+        // Background Task
+        String taskId = BackgroundTaskManager.INSTANCE.registerTask(
+                this::executeEventInQueue,
+                "Add monitoring events from queue to backend",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_TEN_SECONDS
+        );
+
+
     }
 
     /**
@@ -62,16 +92,20 @@ public class MonitoringService {
      */
     public void addWorkloadEventToQueue(MonitorEvent event){
 
-
         System.out.println("\nHENNLO: Added new Worklaod event:"
                 + "\n\t STMT_TYPE:" + event.monitoringType + " "
                 + "\n\t Description: " + event.getDescription() + " "
                 + "\n\t Timestamp " + event.getRecordedTimestamp() + " "
                 + "\n\t Field Names " + event.getFieldNames());
 
+        queueOverviewTable.addRow( Arrays.asList( event.monitoringType, event.getDescription(), event.getRecordedTimestamp(),event.getFieldNames() ) );
 
     }
 
+    public void executeEventInQueue(){
+        //Will be executed every 5seconds due to Background Task Manager and checks the queue and then asyncronously writes them to backend
+        System.out.println("Executed Background Task at: " + new Timestamp(System.currentTimeMillis()) );
+    }
 
     /**
      * This is currently a dummy Service mimicking the final retrieval of monitoring data
@@ -89,15 +123,15 @@ public class MonitoringService {
         return "EMPTY WORKLOAD EVENT";
     }
 
-    private void initializeClient(){
-        // Get Backend currently set in monitoring
-        backendConnector = BackendConnectorFactory.getBackendInstance(MONITORING_BACKEND);
+
+    private void initializeMonitoringBackend(){
+        backendConnector = backendConnectorFactory.getBackendInstance(MONITORING_BACKEND);
     }
 
-    private static class BackendConnectorFactory {
+    private class BackendConnectorFactory {
 
         //Returns backend based on configured statistic Backend in runtimeconfig
-        public static BackendConnector getBackendInstance( String statisticBackend ) {
+        public BackendConnector getBackendInstance( String statisticBackend ) {
             switch ( statisticBackend ) {
                 case "InfluxDB":
                     //TODO add error handling or fallback to default backend when no Influx is available

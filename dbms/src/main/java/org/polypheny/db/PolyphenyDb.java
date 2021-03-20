@@ -42,7 +42,6 @@ import org.polypheny.db.iface.Authenticator;
 import org.polypheny.db.iface.QueryInterfaceManager;
 import org.polypheny.db.information.HostInformation;
 import org.polypheny.db.information.JavaInformation;
-import org.polypheny.db.monitoring.MonitoringService;
 import org.polypheny.db.processing.AuthenticatorImpl;
 import org.polypheny.db.statistic.StatisticQueryProcessor;
 import org.polypheny.db.statistic.StatisticsManager;
@@ -188,7 +187,7 @@ public class PolyphenyDb {
         }
         try{
             //TODO add storage backend connector form Runtime Config instead of specifying it in Monitoring Service
-            final MonitoringService monitoringService = new MonitoringService();
+            //final MonitoringService monitoringService = new MonitoringService();
         } catch( Exception e) {
             log.error( "Unable to connect to monitoring service client" );
         }
