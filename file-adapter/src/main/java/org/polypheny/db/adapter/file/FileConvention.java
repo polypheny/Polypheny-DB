@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,13 @@ public class FileConvention extends Convention.Impl {
     @Setter
     boolean isModification = false;
 
+
     public FileConvention( String name, Expression fileSchemaExpression, FileSchema fileSchema ) {
         super( "FileConvention." + name, FileRel.class );
         this.fileSchemaExpression = fileSchemaExpression;
         this.fileSchema = fileSchema;
     }
+
 
     @Override
     public void register( RelOptPlanner planner ) {
@@ -52,4 +54,5 @@ public class FileConvention extends Convention.Impl {
             planner.addRule( rule );
         }
     }
+
 }

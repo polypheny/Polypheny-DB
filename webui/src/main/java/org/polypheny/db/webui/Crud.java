@@ -704,7 +704,7 @@ public class Crud implements InformationObserver {
         allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
         //remove whitespace at the end
         allQueries = allQueries.replaceAll( "(\\s*)$", "" );
-        String[] queries = allQueries.split(";(?=(?:[^\']*\'[^\']*\')*[^\']*$)");
+        String[] queries = allQueries.split( ";(?=(?:[^\']*\'[^\']*\')*[^\']*$)" );
         boolean noLimit;
         for ( String query : queries ) {
             Result result;
@@ -3236,6 +3236,7 @@ public class Crud implements InformationObserver {
         }
         return "";
     }
+
 
     String getDirectory( File dir, Response res ) {
         res.header( "Content-Type", "application/zip" );

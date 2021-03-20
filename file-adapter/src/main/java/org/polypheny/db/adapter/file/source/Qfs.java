@@ -74,11 +74,13 @@ public class Qfs extends DataSource {
     private final List<InformationGroup> infoGroups = new ArrayList<>();
     private final List<Information> infoElements = new ArrayList<>();
 
+
     public Qfs( int adapterId, String uniqueName, Map<String, String> settings ) {
         super( adapterId, uniqueName, settings, true );
         init( settings );
         registerInformationPage( uniqueName );
     }
+
 
     private void init( final Map<String, String> settings ) {
         rootDir = new File( settings.get( "rootDir" ) );
@@ -87,30 +89,36 @@ public class Qfs extends DataSource {
         }
     }
 
+
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
     }
+
 
     @Override
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         currentSchema = new QfsSchema( rootSchema, name, this );
     }
 
+
     @Override
     public Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore ) {
         return currentSchema.createFileTable( combinedTable, columnPlacementsOnStore );
     }
+
 
     @Override
     public Schema getCurrentSchema() {
         return currentSchema;
     }
 
+
     @Override
     public void truncate( Context context, CatalogTable table ) {
         throw new RuntimeException( "QFS does not support truncate" );
     }
+
 
     @Override
     public boolean prepare( PolyXid xid ) {
@@ -118,20 +126,24 @@ public class Qfs extends DataSource {
         return true;
     }
 
+
     @Override
     public void commit( PolyXid xid ) {
         log.debug( "QFS does not support commit" );
     }
+
 
     @Override
     public void rollback( PolyXid xid ) {
         log.debug( "QFS does not support rollback" );
     }
 
+
     @Override
     public List<AdapterSetting> getAvailableSettings() {
         return AVAILABLE_SETTINGS;
     }
+
 
     @Override
     public void shutdown() {
@@ -145,12 +157,14 @@ public class Qfs extends DataSource {
         im.removePage( infoPage );
     }
 
+
     @Override
     protected void reloadSettings( List<String> updatedSettings ) {
         init( settings );
         InformationManager im = InformationManager.getInstance();
         im.getInformation( getUniqueName() + "-rootDir" ).unwrap( InformationText.class ).setText( settings.get( "rootDir" ) );
     }
+
 
     @Override
     protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
@@ -206,6 +220,7 @@ public class Qfs extends DataSource {
             throw new RuntimeException( "The selected path (" + newSettings.get( "rootDir" ) + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths.toString() );
         }
     }
+
 
     @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
@@ -282,6 +297,7 @@ public class Qfs extends DataSource {
         out.put( getUniqueName(), columns );
         return out;
     }
+
 
     protected void registerInformationPage( String uniqueName ) {
         InformationManager im = InformationManager.getInstance();

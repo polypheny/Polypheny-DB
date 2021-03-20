@@ -52,6 +52,7 @@ public class FileToEnumerableConverter extends ConverterImpl implements Enumerab
     final Method enumeratorMethod;
     final FileSchema fileSchema;
 
+
     public FileToEnumerableConverter( RelOptCluster cluster, RelTraitSet traits, RelNode input, Method enumeratorMethod, FileSchema fileSchema ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
         this.enumeratorMethod = enumeratorMethod;

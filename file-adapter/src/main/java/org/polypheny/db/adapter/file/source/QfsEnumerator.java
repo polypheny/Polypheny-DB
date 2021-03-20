@@ -35,13 +35,13 @@ import org.polypheny.db.type.PolyType;
 
 public class QfsEnumerator<E> implements Enumerator<E> {
 
-    final private DataContext dataContext;
-    final private List<String> columns;
-    final private PolyType[] columnTypes;
-    final private Integer[] projectionMapping;
-    final private Condition condition;
-    final private Iterator<Path> iterator;
-    E current;
+    private final DataContext dataContext;
+    private final List<String> columns;
+    private final PolyType[] columnTypes;
+    private final Integer[] projectionMapping;
+    private final Condition condition;
+    private final Iterator<Path> iterator;
+    private E current;
 
 
     public QfsEnumerator( final DataContext dataContext, final String path, final Long[] columnIds, final Integer[] projectionMapping, final Condition condition ) {
@@ -51,7 +51,7 @@ public class QfsEnumerator<E> implements Enumerator<E> {
         try {
             this.iterator = Files.walk( root.toPath() ).filter( file -> !file.toFile().isHidden() ).iterator();
         } catch ( IOException e ) {
-            throw new RuntimeException( "Could not query the file system", e );
+            throw new RuntimeException( "Unable to query the file system", e );
         }
 
         List<String> columns = new ArrayList<>();
@@ -147,7 +147,7 @@ public class QfsEnumerator<E> implements Enumerator<E> {
 
 
     private Object[] project( final Object[] row ) {
-        //if there is no condition, the projection has already been performed
+        // If there is no condition, the projection has already been performed
         if ( this.projectionMapping == null || condition == null ) {
             return row;
         }
@@ -169,4 +169,5 @@ public class QfsEnumerator<E> implements Enumerator<E> {
     public void close() {
 
     }
+
 }

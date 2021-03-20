@@ -78,10 +78,12 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         return source.getRootDir();
     }
 
+
     @Override
     public int getAdapterId() {
         return source.getAdapterId();
     }
+
 
     @Override
     protected Map<String, Table> getTableMap() {
@@ -109,11 +111,14 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
                 columnNames.add( catalogColumn.name );
 
                 if ( catalogColumn.type.allowsScale() && catalogColumn.length != null && catalogColumn.scale != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length, catalogColumn.scale ).nullable( catalogColumn.nullable );
+                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length, catalogColumn.scale )
+                            .nullable( catalogColumn.nullable );
                 } else if ( catalogColumn.type.allowsPrec() && catalogColumn.length != null ) {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length ).nullable( catalogColumn.nullable );
+                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type, catalogColumn.length )
+                            .nullable( catalogColumn.nullable );
                 } else {
-                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type ).nullable( catalogColumn.nullable );
+                    fieldInfo.add( catalogColumn.name, p.physicalColumnName, catalogColumn.type )
+                            .nullable( catalogColumn.nullable );
                 }
             }
         }
@@ -125,7 +130,15 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
         } else {
             pkIds = new ArrayList<>();
         }
-        FileTranslatableTable table = new FileTranslatableTable( this, catalogTable.name, catalogTable.id, columnIds, columnTypes, columnNames, pkIds, protoRowType );
+        FileTranslatableTable table = new FileTranslatableTable(
+                this,
+                catalogTable.name,
+                catalogTable.id,
+                columnIds,
+                columnTypes,
+                columnNames,
+                pkIds,
+                protoRowType );
         tableMap.put( catalogTable.name, table );
         return table;
     }
@@ -134,7 +147,17 @@ public class QfsSchema extends AbstractSchema implements FileSchema {
     /**
      * Called from generated code
      */
-    public static Enumerable<Object[]> execute( final Operation operation, final Integer adapterId, final DataContext dataContext, final String path, final Long[] columnIds, final PolyType[] columnTypes, final List<Long> pkIds, final Integer[] projectionMapping, final Condition condition, final Value[] updates ) {
+    public static Enumerable<Object[]> execute(
+            final Operation operation,
+            final Integer adapterId,
+            final DataContext dataContext,
+            final String path,
+            final Long[] columnIds,
+            final PolyType[] columnTypes,
+            final List<Long> pkIds,
+            final Integer[] projectionMapping,
+            final Condition condition,
+            final Value[] updates ) {
         dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( adapterId ) );
         return new AbstractEnumerable<Object[]>() {
             @Override

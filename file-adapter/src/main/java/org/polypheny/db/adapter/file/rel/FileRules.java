@@ -120,6 +120,7 @@ public class FileRules {
         private final Method enumeratorMethod;
         private final FileSchema fileSchema;
 
+
         public FileToEnumerableConverterRule( FileConvention convention, RelBuilderFactory relBuilderFactory, Method enumeratorMethod, FileSchema fileSchema ) {
             super( RelNode.class, r -> true, convention, EnumerableConvention.INSTANCE, relBuilderFactory, "FileToEnumerableConverterRule:" + convention.getName() );
             this.enumeratorMethod = enumeratorMethod;

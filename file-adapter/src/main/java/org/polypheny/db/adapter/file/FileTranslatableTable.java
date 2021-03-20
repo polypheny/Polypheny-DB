@@ -72,6 +72,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
     FileSchema fileSchema;
     RelProtoDataType protoRowType;
 
+
     public FileTranslatableTable( final FileSchema fileSchema,
             final String tableName,
             final long tableId,
@@ -100,16 +101,19 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         }
     }
 
+
     @Override
     public RelNode toRel( ToRelContext context, RelOptTable relOptTable ) {
         fileSchema.getConvention().register( context.getCluster().getPlanner() );
         return new FileTableScan( context.getCluster(), relOptTable, this );
     }
 
+
     @Override
     public RelDataType getRowType( RelDataTypeFactory typeFactory ) {
         return protoRowType.apply( typeFactory );
     }
+
 
     @Override
     public Collection getModifiableCollection() {
@@ -117,11 +121,13 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         //return new ArrayList<>();
     }
 
+
     @Override
     public TableModify toModificationRel( RelOptCluster cluster, RelOptTable table, CatalogReader catalogReader, RelNode child, Operation operation, List<String> updateColumnList, List<RexNode> sourceExpressionList, boolean flattened ) {
         fileSchema.getConvention().register( cluster.getPlanner() );
         return new LogicalTableModify( cluster, cluster.traitSetOf( Convention.NONE ), table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
+
 
     @Override
     public <T> Queryable<T> asQueryable( DataContext dataContext, SchemaPlus schema, String tableName ) {
@@ -137,6 +143,7 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
         public FileQueryable( DataContext dataContext, SchemaPlus schema, FileTranslatableTable table, String tableName ) {
             super( dataContext, schema, FileTranslatableTable.this, tableName );
         }
+
 
         @Override
         public Enumerator<T> enumerator() {

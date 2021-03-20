@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,12 @@ public class FileTableModify extends TableModify implements FileRel {
         super( cluster, traits, table, catalogReader, child, operation, updateColumnList, sourceExpressionList, flattened );
     }
 
+
     @Override
     public RelOptCost computeSelfCost( RelOptPlanner planner, RelMetadataQuery mq ) {
         return super.computeSelfCost( planner, mq ).multiplyBy( 0.1 );
     }
+
 
     @Override
     public RelNode copy( RelTraitSet traitSet, List<RelNode> inputs ) {
@@ -65,10 +67,12 @@ public class FileTableModify extends TableModify implements FileRel {
                 isFlattened() );
     }
 
+
     @Override
     public void register( RelOptPlanner planner ) {
         getConvention().register( planner );
     }
+
 
     @Override
     public void implement( final FileImplementor implementor ) {
@@ -117,4 +121,5 @@ public class FileTableModify extends TableModify implements FileRel {
                 throw new RuntimeException( "The File adapter does not support " + operation + "operations." );
         }
     }
+
 }

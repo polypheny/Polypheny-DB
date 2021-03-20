@@ -73,10 +73,12 @@ public class FileStoreSchema extends AbstractSchema implements FileSchema {
         return store.getRootDir();
     }
 
+
     @Override
     public int getAdapterId() {
         return store.getAdapterId();
     }
+
 
     @Override
     protected Map<String, Table> getTableMap() {
