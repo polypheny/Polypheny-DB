@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.AbstractList;
 import java.util.ArrayList;
@@ -67,6 +69,7 @@ import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.monitoring.InfluxPojo;
+import org.polypheny.db.monitoring.MonitorEvent;
 import org.polypheny.db.monitoring.MonitoringService;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
@@ -290,7 +293,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
 
-                MonitoringService.MonitorEvent( InfluxPojo.Create(  routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ) );
+
+                //MonitoringService.MonitorEvent( InfluxPojo.Create(  routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ) );
                 return signature;
             }
         }
@@ -372,7 +376,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement ... done. [{}]", stopWatch );
         }
 
-        MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
+
+
+        //TODO dummy service won't be instantiated here
+        MonitoringService monitoringService = new MonitoringService();
+        monitoringService.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
+                .description( "Test description" )
+                .fieldNames( signature.rowType.getFieldNames() )
+                .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
+                .build() );
+        //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
         return signature;
     }
 

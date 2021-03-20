@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Random;
 import lombok.extern.slf4j.Slf4j;
 
-
+//ToDO Cedric just moved this the conenctor backend without much refactoring
+// please check if this is still working
 public class InfluxBackendConnector implements BackendConnector{
 
     static InfluxDBClient client;
