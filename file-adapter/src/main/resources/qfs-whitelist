@@ -1,3 +1,0 @@
-# A list of allowed directories for the QFS data source
-# The list must be non-empty. A QFS directory will only be accepted if it is a subdirectory of one of the following directories.
-/
