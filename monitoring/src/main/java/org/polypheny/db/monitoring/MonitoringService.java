@@ -17,15 +17,24 @@
 package org.polypheny.db.monitoring;
 
 
+import java.io.File;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.adapter.java.Array;
+import org.mapdb.BTreeMap;
+import org.mapdb.DB;
+import org.mapdb.DBException.SerializationError;
+import org.mapdb.DBMaker;
+import org.mapdb.Serializer;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -40,11 +49,18 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 public class MonitoringService {
 
     public static final MonitoringService INSTANCE = new MonitoringService();
+    private static final long serialVersionUID = 2312903251112906177L;
 
     private final String MONITORING_BACKEND = "simple"; //InfluxDB
     private BackendConnector backendConnector;
     BackendConnectorFactory backendConnectorFactory = new BackendConnectorFactory();
 
+
+    private static final String FILE_PATH = "queueMapDB";
+    private static DB db;
+
+    private static final AtomicLong queueIdBuilder = new AtomicLong();
+    private static BTreeMap<Long, MonitorEvent> eventQueue;
 
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
@@ -53,6 +69,9 @@ public class MonitoringService {
     public MonitoringService(){
 
         initializeMonitoringBackend();
+
+        initPersistentDBQueue();
+
 
         //Initialize Information Page
         informationPage = new InformationPage( "Monitoring Queue" );
@@ -65,7 +84,7 @@ public class MonitoringService {
 
         queueOverviewTable = new InformationTable(
                 informationGroupOverview,
-                Arrays.asList( "STMT", "Description", " Recorded Timestamp", "Field Names") );
+                Arrays.asList( "Queue ID", "STMT", "Description", " Recorded Timestamp", "Field Names") );
         im.registerInformation( queueOverviewTable );
 
 
@@ -81,6 +100,48 @@ public class MonitoringService {
 
     }
 
+    private void initPersistentDBQueue() {
+
+
+        if ( db != null ) {
+            db.close();
+        }
+        synchronized ( this ) {
+
+            File folder = FileSystemManager.getInstance().registerNewFolder( "monitoring" );
+
+            db = DBMaker.fileDB( new File( folder, this.FILE_PATH ) )
+                            .closeOnJvmShutdown()
+                            .transactionEnable()
+                            .fileMmapEnableIfSupported()
+                            .fileMmapPreclearDisable()
+                            .make();
+
+            db.getStore().fileLoad();
+
+            eventQueue = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+
+            try{
+
+                restoreIdBuilder(eventQueue, queueIdBuilder);
+            } catch (SerializationError e ) {
+                log.error( "!!!!!!!!!!! Error while restoring the monitoring queue !!!!!!!!!!!" );
+                log.error( "This usually means that there have been changes to the internal structure of the monitoring queue with the last update of Polypheny-DB." );
+                log.error( "To fix this, you must reset the catalog. To do this, please ..." );
+                System.exit( 1 );
+            }
+
+
+        }
+
+    }
+
+    private void restoreIdBuilder( Map<Long, ?> map, AtomicLong idBuilder ) {
+        if ( !map.isEmpty() ) {
+            idBuilder.set( Collections.max( map.keySet() ) + 1 );
+        }
+    }
+
     /**
      * This method faces should be used to add new items to backend
      * it should be invoked in directly
@@ -92,13 +153,22 @@ public class MonitoringService {
      */
     public void addWorkloadEventToQueue(MonitorEvent event){
 
+        long id = queueIdBuilder.getAndIncrement();
+
         System.out.println("\nHENNLO: Added new Worklaod event:"
                 + "\n\t STMT_TYPE:" + event.monitoringType + " "
                 + "\n\t Description: " + event.getDescription() + " "
                 + "\n\t Timestamp " + event.getRecordedTimestamp() + " "
+                + "\n\t QUEUE_ID " + id + " "
                 + "\n\t Field Names " + event.getFieldNames());
 
-        queueOverviewTable.addRow( Arrays.asList( event.monitoringType, event.getDescription(), event.getRecordedTimestamp(),event.getFieldNames() ) );
+
+        //Add event to persitent queue
+        synchronized ( this ) {
+            //eventQueue.put( id, event );
+        }
+
+        queueOverviewTable.addRow( id, event.monitoringType, event.getDescription(), event.getRecordedTimestamp(),event.getFieldNames() );
 
     }
 
@@ -113,7 +183,7 @@ public class MonitoringService {
      * @param type  Search for specific workload type
      * @param filter on select worklaod type
      *
-     * @return some event or statistic which can be immidiately used
+     * @return some event or statistic which can be immediately used
      */
     public String getWorkloadItem(String type, String filter){
         System.out.println("HENNLO: Looking for: '" + type +"' with filter: '" + filter + "'");
