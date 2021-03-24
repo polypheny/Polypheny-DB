@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.csv;
 
 
-import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -63,7 +62,7 @@ import org.polypheny.db.util.Util;
 /**
  * Schema mapped onto a directory of CSV files. Each table in the schema is a CSV file in that directory.
  */
-public class CsvSchema extends AbstractSchema implements Serializable {
+public class CsvSchema extends AbstractSchema {
 
     private final URL directoryUrl;
     private final CsvTable.Flavor flavor;

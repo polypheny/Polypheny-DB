@@ -35,7 +35,6 @@ package org.polypheny.db.rel.core;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import java.util.List;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.plan.RelOptCluster;
@@ -63,7 +62,7 @@ import org.polypheny.db.util.Litmus;
  *
  * @see org.polypheny.db.rel.logical.LogicalFilter
  */
-public abstract class Filter extends SingleRel implements Serializable {
+public abstract class Filter extends SingleRel {
 
     protected final RexNode condition;
 

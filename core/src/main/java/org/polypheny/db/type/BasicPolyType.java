@@ -35,7 +35,6 @@ package org.polypheny.db.type;
 
 
 import com.google.common.base.Preconditions;
-import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -48,7 +47,7 @@ import org.polypheny.db.util.SerializableCharset;
  * <p>
  * Instances of this class are immutable.
  */
-public class BasicPolyType extends AbstractPolyType implements Serializable {
+public class BasicPolyType extends AbstractPolyType {
 
     private final int precision;
     private final int scale;

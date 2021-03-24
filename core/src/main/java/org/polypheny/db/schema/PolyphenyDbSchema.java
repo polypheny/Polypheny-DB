@@ -136,7 +136,7 @@ public interface PolyphenyDbSchema extends Serializable {
     /**
      * Membership of a table in a schema.
      */
-    abstract class TableEntry extends Entry implements Serializable {
+    abstract class TableEntry extends Entry {
 
         public final ImmutableList<String> sqls;
 
@@ -183,7 +183,7 @@ public interface PolyphenyDbSchema extends Serializable {
     /**
      * Implementation of {@link PolyphenyDbSchema.TableEntry} where all properties are held in fields.
      */
-    class TableEntryImpl extends TableEntry implements Serializable {
+    class TableEntryImpl extends TableEntry {
 
         private final Table table;
 

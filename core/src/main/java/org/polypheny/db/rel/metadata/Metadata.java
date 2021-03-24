@@ -34,7 +34,6 @@
 package org.polypheny.db.rel.metadata;
 
 
-import java.io.Serializable;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.rel.RelNode;
 
@@ -54,7 +53,7 @@ import org.polypheny.db.rel.RelNode;
  * double rowCount = rel.metadata(RowCount.class).rowCount();
  * </code></pre></blockquote>
  */
-public interface Metadata extends Serializable {
+public interface Metadata {
 
     /**
      * Returns the relational expression that this metadata is about.

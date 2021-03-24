@@ -34,7 +34,6 @@
 package org.polypheny.db.rel.logical;
 
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -58,7 +57,7 @@ import org.polypheny.db.sql.validate.SqlValidatorUtil;
 /**
  * Sub-class of {@link Project} not targeted at any particular engine or calling convention.
  */
-public final class LogicalProject extends Project implements Serializable {
+public final class LogicalProject extends Project {
 
     /**
      * Creates a LogicalProject.

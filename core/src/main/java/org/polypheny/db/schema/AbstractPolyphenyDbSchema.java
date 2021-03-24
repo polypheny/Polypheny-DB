@@ -482,7 +482,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema, Se
     /**
      * Implementation of {@link SchemaPlus} based on a {@link AbstractPolyphenyDbSchema}.
      */
-    private class SchemaPlusImpl implements SchemaPlus, Serializable{
+    private class SchemaPlusImpl implements SchemaPlus {
 
         @Override
         public AbstractPolyphenyDbSchema polyphenyDbSchema() {

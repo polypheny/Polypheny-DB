@@ -17,7 +17,6 @@
 package org.polypheny.db.type.inference;
 
 
-import java.io.Serializable;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.sql.SqlOperatorBinding;
 
@@ -25,7 +24,7 @@ import org.polypheny.db.sql.SqlOperatorBinding;
 /**
  * Returns the type of the operand at a particular 0-based ordinal position.
  */
-public class OrdinalReturnTypeInference implements PolyReturnTypeInference, Serializable {
+public class OrdinalReturnTypeInference implements PolyReturnTypeInference {
 
     private final int ordinal;
 

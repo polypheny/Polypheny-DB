@@ -50,7 +50,7 @@ import org.polypheny.db.util.Util;
  *
  * The cache does not store metadata. It remembers which providers can provide which kinds of metadata, for which kinds of relational expressions.
  */
-public class MetadataFactoryImpl implements MetadataFactory, Serializable {
+public class MetadataFactoryImpl implements MetadataFactory {
 
     public static final UnboundMetadata<Metadata> DUMMY = (UnboundMetadata<Metadata> & Serializable)( rel, mq ) -> null;
 
