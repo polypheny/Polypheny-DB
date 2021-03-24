@@ -1314,7 +1314,7 @@ public class CatalogImpl extends Catalog {
                 modifiable );
 
         if ( tableType == TableType.VIEW ) {
-            table = table.generateView( ImmutableList.copyOf( underlyingTables ), fieldList );
+            table = CatalogView.generateView( table, ImmutableList.copyOf( underlyingTables ), fieldList );
         }
 
         synchronized ( this ) {

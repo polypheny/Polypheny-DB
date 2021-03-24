@@ -69,6 +69,11 @@ public class CatalogView extends CatalogTable {
     }
 
 
+    public static CatalogView generateView( CatalogTable table, ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
+        return new CatalogView( table.id, table.name, table.columnIds, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable, underlyingTables, fieldList );
+    }
+
+
     public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelTraitSet traitSet ) {
         if ( viewLogicalRoot instanceof LogicalProject ) {
             ((LogicalProject) viewLogicalRoot).setCluster( relOptCluster );

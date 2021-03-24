@@ -322,7 +322,7 @@ public abstract class RelOptUtil {
             if ( type1.getPolyType() == PolyType.ANY || type2.getPolyType() == PolyType.ANY ) {
                 continue;
             }
-            if ( !type1.equals( type2 ) ) {
+            if ( type1 != type2 ) {
                 return false;
             }
         }

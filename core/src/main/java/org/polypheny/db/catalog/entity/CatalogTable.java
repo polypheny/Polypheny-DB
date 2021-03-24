@@ -30,7 +30,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.type.RelDataType;
 
 
 @EqualsAndHashCode
@@ -196,11 +195,6 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             }
         }
         return -1;
-    }
-
-
-    public CatalogView generateView( ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
-        return new CatalogView( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, underlyingTables, fieldList );
     }
 
 

@@ -226,7 +226,7 @@ public enum RuntimeConfig {
 
     QUERY_PLAN_CACHING( "runtime/queryPlanCaching",
             "Cache planned and optimized query plans.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "queryPlanCachingGroup" ),
 
@@ -244,7 +244,7 @@ public enum RuntimeConfig {
 
     IMPLEMENTATION_CACHING( "runtime/implementationCaching",
             "Cache implemented query plans.",
-            false,
+            true,
             ConfigType.BOOLEAN,
             "implementationCachingGroup" ),
 
