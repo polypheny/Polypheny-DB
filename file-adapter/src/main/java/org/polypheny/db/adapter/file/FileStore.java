@@ -263,11 +263,12 @@ public class FileStore extends DataStore {
      * It will continue to execute the WAL entries
      */
     void trxRecovery() {
-        if ( WAL.listFiles() == null ) {
+        File[] walFiles = WAL.listFiles( file -> !file.isHidden() );
+        if ( walFiles == null ) {
             return;
         }
         try {
-            for ( File f : WAL.listFiles( file -> !file.isHidden() ) ) {
+            for ( File f : walFiles ) {
                 String GID;
                 String BID;
                 String action;

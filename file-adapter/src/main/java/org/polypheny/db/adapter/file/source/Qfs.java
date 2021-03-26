@@ -253,7 +253,7 @@ public class Qfs extends DataSource {
                 null,
                 null,
                 null,
-                false,
+                true,
                 physSchemaName,
                 physTableName,
                 "size",
