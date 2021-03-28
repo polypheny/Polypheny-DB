@@ -91,6 +91,7 @@ import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.logical.LogicalAggregate;
 import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalJoin;
@@ -1273,7 +1274,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createView( String viewName, long schemaId, RelNode relNode, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException {
+    public void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException {
 
         if ( catalog.checkIfExistsTable( schemaId, viewName ) ) {
             throw new TableAlreadyExistsException();
@@ -1284,9 +1285,9 @@ public class DdlManagerImpl extends DdlManager {
             stores = statement.getRouter().createTable( schemaId, statement );
         }
 
-        prepareView( relNode );
+        prepareView( relRoot.rel );
 
-        RelDataType fieldList = relNode.getRowType();
+        RelDataType fieldList = relRoot.rel.getRowType();
 
         List<ColumnInformation> columns = new ArrayList<>();
         if ( projectedColumns == null ) {
@@ -1317,8 +1318,8 @@ public class DdlManagerImpl extends DdlManager {
                 statement.getPrepareContext().getCurrentUserId(),
                 TableType.VIEW,
                 false,
-                relNode,
-                findUnderlyingTablesOfView( relNode ),
+                relRoot,
+                findUnderlyingTablesOfView( relRoot.rel ),
                 fieldList
         );
 
