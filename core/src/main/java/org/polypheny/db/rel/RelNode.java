@@ -338,12 +338,18 @@ public interface RelNode extends RelOptNode, Cloneable {
         return isCacheable;
     }
 
+    default boolean hasView() {
+        return false;
+    }
+
     /**
      * Context of a relational expression, for purposes of checking validity.
      */
     interface Context {
 
         Set<CorrelationId> correlationIds();
+
     }
+
 }
 

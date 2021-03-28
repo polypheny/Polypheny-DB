@@ -272,7 +272,8 @@ public class StreamRules {
                                 ImmutableList.<String>builder()
                                         .addAll( relOptTable.getQualifiedName() )
                                         .add( "(STREAM)" ).build() );
-                final RelNode newScan = LogicalTableScan.create( cluster, relOptTable2 );
+                //TODO IG: ViewTableScan needed??
+                final LogicalTableScan newScan = LogicalTableScan.create( cluster, relOptTable2 );
                 call.transformTo( newScan );
             }
         }

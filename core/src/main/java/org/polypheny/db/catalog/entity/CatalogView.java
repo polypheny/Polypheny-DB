@@ -31,7 +31,6 @@ import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
 
 public class CatalogView extends CatalogTable {
 
@@ -50,7 +49,7 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             @NonNull String ownerName,
             @NonNull Catalog.TableType type,
-            RelNode definition,
+            RelRoot definition,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
@@ -63,7 +62,7 @@ public class CatalogView extends CatalogTable {
 
 
     public RelRoot prepareView( RelOptCluster cluster, RelTraitSet traitSet ) {
-        RelRoot viewLogicalRoot = RelRoot.of( definition, SqlKind.SELECT );
+        RelRoot viewLogicalRoot = definition;
         prepareView( viewLogicalRoot.rel, cluster, traitSet );
         return viewLogicalRoot;
     }

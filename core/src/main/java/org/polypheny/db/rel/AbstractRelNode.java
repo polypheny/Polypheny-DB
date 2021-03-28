@@ -90,7 +90,6 @@ public abstract class AbstractRelNode implements RelNode {
     /**
      * Cached type of this relational expression.
      */
-    @Setter
     protected RelDataType rowType;
 
     /**

@@ -108,6 +108,7 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.logical.ViewTableScan;
 import org.polypheny.db.rel.metadata.JaninoRelMetadataProvider;
 import org.polypheny.db.rel.metadata.RelColumnMapping;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
@@ -133,6 +134,7 @@ import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.rex.RexWindowBound;
 import org.polypheny.db.schema.ColumnStrategy;
+import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.schema.ModifiableTable;
 import org.polypheny.db.schema.ModifiableView;
 import org.polypheny.db.schema.Table;
@@ -2081,6 +2083,9 @@ public class SqlToRelConverter {
         final RelNode tableRel;
         if ( config.isConvertTableAccess() ) {
             tableRel = toRel( table );
+            //TODO IG: ViewTableScan needed??
+        } else if ( (((RelOptTableImpl) table).getTable()) instanceof LogicalView ) {
+            tableRel = ViewTableScan.create( cluster, table );
         } else {
             tableRel = LogicalTableScan.create( cluster, table );
         }

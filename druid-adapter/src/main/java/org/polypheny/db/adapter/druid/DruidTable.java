@@ -237,7 +237,8 @@ public class DruidTable extends AbstractTable implements TranslatableTable {
     @Override
     public RelNode toRel( RelOptTable.ToRelContext context, RelOptTable relOptTable ) {
         final RelOptCluster cluster = context.getCluster();
-        final RelNode scan = LogicalTableScan.create( cluster, relOptTable );
+        //TODO IG: ViewTableScan needed??
+        final LogicalTableScan scan = LogicalTableScan.create( cluster, relOptTable );
         return DruidQuery.create( cluster, cluster.traitSetOf( BindableConvention.INSTANCE ), relOptTable, this, ImmutableList.of( scan ) );
     }
 

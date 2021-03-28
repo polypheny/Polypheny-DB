@@ -259,5 +259,12 @@ public abstract class Join extends BiRel {
                 (condition != null ? condition.hashCode() : "") + "$" +
                 (joinType != null ? joinType.name() : "") + "&";
     }
+
+
+    @Override
+    public boolean hasView() {
+        return left.hasView() || right.hasView();
+    }
+
 }
 

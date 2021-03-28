@@ -100,6 +100,7 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
+import org.polypheny.db.rel.logical.ViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -169,6 +170,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
     protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
+        RelRoot relRoot = logicalRoot;
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
@@ -178,6 +180,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             log.debug( "Preparing statement  ..." );
         }
         stopWatch.start();
+
+        if ( relRoot.rel.hasView() ) {
+            if ( relRoot.rel instanceof LogicalProject ) {
+                if ( ((LogicalProject) relRoot.rel).getInput() instanceof ViewTableScan ) {
+                    relRoot = ((ViewTableScan) ((LogicalProject) relRoot.rel).getInput()).getRelRoot();
+                }
+            }
+        }
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
 
@@ -197,7 +207,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
                     LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                     // Get locks for individual tables
-                    TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
+                    TableAccessMap accessMap = new TableAccessMap( relRoot.rel );
                     for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                         Mode mode = accessMap.getTableAccessMode( tableIdentifier );
                         if ( mode == Mode.READ_ACCESS ) {
@@ -216,7 +226,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getDuration().stop( "Locking" );
                 statement.getDuration().start( "Index Update" );
             }
-            RelRoot indexUpdateRoot = logicalRoot;
+            RelRoot indexUpdateRoot = relRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
                 IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
                 indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
@@ -259,7 +269,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getDuration().stop( "Routing" );
             }
         } else {
-            routedRoot = logicalRoot;
+            routedRoot = relRoot;
         }
 
         // Validate parameterValues

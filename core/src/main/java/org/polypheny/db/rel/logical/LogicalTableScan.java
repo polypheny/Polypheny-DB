@@ -36,10 +36,6 @@ package org.polypheny.db.rel.logical;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelOptTable;
@@ -48,7 +44,6 @@ import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelInput;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.core.TableScan;
-import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
 
@@ -108,7 +103,7 @@ public final class LogicalTableScan extends TableScan {
      * @param cluster Cluster
      * @param relOptTable Table
      */
-    public static RelNode create( RelOptCluster cluster, final RelOptTable relOptTable ) {
+    public static LogicalTableScan create( RelOptCluster cluster, final RelOptTable relOptTable ) {
         final Table table = relOptTable.unwrap( Table.class );
 
         final RelTraitSet traitSet =
@@ -121,16 +116,6 @@ public final class LogicalTableScan extends TableScan {
                                     }
                                     return ImmutableList.of();
                                 } );
-
-        if ( table instanceof LogicalTable ) {
-            Catalog catalog = Catalog.getInstance();
-
-            CatalogTable catalogTable = catalog.getTable( ((LogicalTable) table).getTableId() );
-            if ( catalogTable.tableType == TableType.VIEW ) {
-
-                return ((CatalogView) catalogTable).prepareView( cluster, traitSet ).rel;
-            }
-        }
 
         return new LogicalTableScan( cluster, traitSet, relOptTable );
     }
