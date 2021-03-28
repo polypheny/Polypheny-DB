@@ -322,7 +322,7 @@ public abstract class RelOptUtil {
             if ( type1.getPolyType() == PolyType.ANY || type2.getPolyType() == PolyType.ANY ) {
                 continue;
             }
-            if ( type1 != type2 ) {
+            if ( !type1.equals( type2 ) ) {
                 return false;
             }
         }
@@ -1459,7 +1459,7 @@ public abstract class RelOptUtil {
             }
         }
 
-        if ( !type1.equals( type2 ) ) {
+        if ( type1 != type2 ) {
             return litmus.fail( "type mismatch:\n{}:\n{}\n{}:\n{}", desc1, type1.getFullTypeString(), desc2, type2.getFullTypeString() );
         }
         return litmus.succeed();
