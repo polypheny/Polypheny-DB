@@ -1666,15 +1666,7 @@ public class Crud implements InformationObserver {
                 resultList.add( new TableConstraint( entry.getKey(), "UNIQUE", entry.getValue() ) );
             }
 
-            // get foreign keys
-            temp.clear();
-            List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
-            for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                temp.put( catalogForeignKey.name, new ArrayList<>( catalogForeignKey.getColumnNames() ) );
-            }
-            for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
-                resultList.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
-            }
+            // the foreign keys are listed separately
 
             DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
             ArrayList<String[]> data = new ArrayList<>();
@@ -2556,6 +2548,8 @@ public class Crud implements InformationObserver {
                                 .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
                                 .fkName( catalogForeignKey.name )
                                 .pkName( "" ) // TODO
+                                .update( catalogForeignKey.updateRule.toString() )
+                                .delete( catalogForeignKey.deleteRule.toString() )
                                 .build() );
                     }
                 }
