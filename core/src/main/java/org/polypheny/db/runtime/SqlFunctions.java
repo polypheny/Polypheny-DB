@@ -52,6 +52,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PushbackInputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -318,7 +319,14 @@ public class SqlFunctions {
                 return ImageMetadataReader.readMetadata( new ByteArrayInputStream( (byte[]) mm ) );
             } else if ( mm instanceof Blob || mm instanceof InputStream ) {
                 InputStream is;
-                if ( mm instanceof Blob ) {
+                if ( mm instanceof PushbackInputStream ) {
+                    byte[] buffer = new byte[10240];
+                    PushbackInputStream pbis = (PushbackInputStream) mm;
+                    int len = pbis.read( buffer );
+                    Metadata md = ImageMetadataReader.readMetadata( new ByteArrayInputStream( buffer ), len );
+                    pbis.unread( buffer );
+                    return md;
+                } else if ( mm instanceof Blob ) {
                     is = ((Blob) mm).getBinaryStream();
                 } else {
                     is = (InputStream) mm;

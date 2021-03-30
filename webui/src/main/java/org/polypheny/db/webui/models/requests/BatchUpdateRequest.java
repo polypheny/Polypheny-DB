@@ -50,7 +50,7 @@ public class BatchUpdateRequest {
 
         final Map<String, String> oldPkValues = new HashMap<>();
         final Map<String, Value> newValues = new HashMap<>();
-        int counter = 1;
+        long counter = 0;
 
 
         public String getQuery( String tableId, Statement statement, HttpServletRequest httpRequest ) throws IOException, ServletException {

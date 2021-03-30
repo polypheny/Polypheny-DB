@@ -60,6 +60,7 @@ public class FileEnumerator implements Enumerator<Object> {
     final Gson gson;
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
+    final File hardlinkFolder;
 
 
     /**
@@ -131,7 +132,7 @@ public class FileEnumerator implements Enumerator<Object> {
         // We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
         @SuppressWarnings("UnstableApiUsage")
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
-        FileFilter fileFilter = file -> !file.isHidden() && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
+        FileFilter fileFilter = file -> !file.isHidden() && !file.getName().startsWith( "~$" ) && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
         for ( Long colId : columnsToIterate ) {
             File columnFolder = FileStore.getColumnFolder( rootPath, colId );
             columnFolders.add( columnFolder );
@@ -144,6 +145,14 @@ public class FileEnumerator implements Enumerator<Object> {
             this.fileList = FileStore.getColumnFolder( rootPath, pkIds.get( 0 ) ).listFiles( fileFilter );
         }
         numOfCols = columnFolders.size();
+
+        //create folder for the hardlinks
+        this.hardlinkFolder = new File( rootPath, "hardlinks/" + xidHash );
+        if ( !hardlinkFolder.exists() ) {
+            if ( !hardlinkFolder.mkdirs() ) {
+                throw new RuntimeException( "Could not create hardlink directory " + hardlinkFolder.getAbsolutePath() );
+            }
+        }
     }
 
 
@@ -364,7 +373,12 @@ public class FileEnumerator implements Enumerator<Object> {
                 if ( dataContext.getStatement().getTransaction().getFlavor() == MultimediaFlavor.DEFAULT ) {
                     curr[i] = encoded;
                 } else {
-                    curr[i] = f;
+                    File hardLink = new File( hardlinkFolder, colFolder.getName() + "_" + f.getName() );
+                    if ( !hardLink.exists() ) {
+                        Files.createLink( hardLink.toPath(), f.toPath() );
+                    }
+                    //curr[i] = f;
+                    curr[i] = hardLink;
                 }
             } else {
                 curr[i] = PolyTypeUtil.stringToObject( s, columnTypes[i] );

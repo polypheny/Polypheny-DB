@@ -37,10 +37,9 @@ public class FileHelper {
                 .forEach( File::delete );
     }
 
-
-    /*
-     * DATE / TIME / TIMESTAMP HELPER FUNCTIONS
-     * */
+    ///
+    // DATE / TIME / TIMESTAMP HELPER FUNCTIONS
+    //
 
 
     static boolean isSqlDateOrTimeOrTS( final Object o ) {

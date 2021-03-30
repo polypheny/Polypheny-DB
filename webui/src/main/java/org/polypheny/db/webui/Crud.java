@@ -39,6 +39,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PushbackInputStream;
 import java.io.RandomAccessFile;
@@ -297,7 +298,7 @@ public class Crud implements InformationObserver {
         try {
             result = executeSqlSelect( transaction.createStatement(), request, query.toString(), request.noLimit );
             result.setXid( transaction.getXid().toString() );
-        } catch ( QueryExecutionException e ) {
+        } catch ( Exception e ) {
             if ( request.filter != null ) {
                 result = new Result( "Error while filtering table " + request.tableId );
             } else {
@@ -359,7 +360,7 @@ public class Crud implements InformationObserver {
         int tableSize = 0;
         try {
             tableSize = getTableSize( transaction, request );
-        } catch ( QueryExecutionException e ) {
+        } catch ( Exception e ) {
             log.error( "Caught exception while determining page size", e );
         }
         result.setHighestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
@@ -652,7 +653,7 @@ public class Crud implements InformationObserver {
             int numRows = executeSqlUpdate( statement, transaction, query );
             transaction.commit();
             return new Result( numRows ).setGeneratedQuery( query );
-        } catch ( QueryExecutionException | TransactionException e ) {
+        } catch ( Exception | TransactionException e ) {
             log.info( "Generated query: {}", query );
             log.error( "Could not insert row", e );
             try {
@@ -703,7 +704,7 @@ public class Crud implements InformationObserver {
         allQueries = allQueries.replaceAll( "(?m)(--.*?$)", "" );
         //remove whitespace at the end
         allQueries = allQueries.replaceAll( "(\\s*)$", "" );
-        String[] queries = allQueries.split(";(?=(?:[^\']*\'[^\']*\')*[^\']*$)");
+        String[] queries = allQueries.split( ";(?=(?:[^\']*\'[^\']*\')*[^\']*$)" );
         boolean noLimit;
         for ( String query : queries ) {
             Result result;
@@ -1345,7 +1346,7 @@ public class Crud implements InformationObserver {
             ImmutableMap<Integer, ImmutableList<Long>> placements = catalog.getTable( "APP", request.getSchemaName(), request.getTableName() ).placementsByAdapter;
             Set<Integer> adapterIds = placements.keySet();
             if ( adapterIds.size() > 1 ) {
-                log.warn( "The number of DataSources of a Table should not be > 1." );
+                log.warn( String.format( "The number of DataSources of a Table should not be > 1 (%s.%s)", request.getSchemaName(), request.getTableName() ) );
             }
             List<Result> exportedColumns = new ArrayList<>();
             for ( int adapterId : adapterIds ) {
@@ -1665,15 +1666,7 @@ public class Crud implements InformationObserver {
                 resultList.add( new TableConstraint( entry.getKey(), "UNIQUE", entry.getValue() ) );
             }
 
-            // get foreign keys
-            temp.clear();
-            List<CatalogForeignKey> foreignKeys = catalog.getForeignKeys( catalogTable.id );
-            for ( CatalogForeignKey catalogForeignKey : foreignKeys ) {
-                temp.put( catalogForeignKey.name, new ArrayList<>( catalogForeignKey.getColumnNames() ) );
-            }
-            for ( Map.Entry<String, ArrayList<String>> entry : temp.entrySet() ) {
-                resultList.add( new TableConstraint( entry.getKey(), "FOREIGN KEY", entry.getValue() ) );
-            }
+            // the foreign keys are listed separately
 
             DbColumn[] header = { new DbColumn( "Name" ), new DbColumn( "Type" ), new DbColumn( "Columns" ) };
             ArrayList<String[]> data = new ArrayList<>();
@@ -2302,7 +2295,7 @@ public class Crud implements InformationObserver {
     /**
      * Update the settings of an adapter
      */
-    Adapter updateAdapterSettings( final Request req, final Response res ) {
+    Result updateAdapterSettings( final Request req, final Response res ) {
         //see https://stackoverflow.com/questions/16872492/gson-and-abstract-superclasses-deserialization-issue
         JsonDeserializer<Adapter> storeDeserializer = ( json, typeOfT, context ) -> {
             JsonObject jsonObject = json.getAsJsonObject();
@@ -2315,10 +2308,15 @@ public class Crud implements InformationObserver {
         };
         Gson adapterGson = new GsonBuilder().registerTypeAdapter( Adapter.class, storeDeserializer ).create();
         Adapter adapter = adapterGson.fromJson( req.body(), Adapter.class );
-        if ( adapter instanceof DataStore ) {
-            AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
-        } else if ( adapter instanceof DataSource ) {
-            AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+        try {
+            if ( adapter instanceof DataStore ) {
+                AdapterManager.getInstance().getStore( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+            } else if ( adapter instanceof DataSource ) {
+                AdapterManager.getInstance().getSource( adapter.getAdapterId() ).updateSettings( adapter.getCurrentSettings() );
+            }
+            Catalog.getInstance().commit();
+        } catch ( Throwable t ) {
+            return new Result( "Could not update AdapterSettings", t );
         }
 
         // Reset caches (not a nice solution to create a transaction, statement and query processor for doing this but it
@@ -2336,10 +2334,10 @@ public class Crud implements InformationObserver {
                     log.error( "Exception while rollback", transactionException );
                 }
             }
-            throw new RuntimeException( "Error while resetting caches", e );
+            return new Result( "Error while resetting caches", e );
         }
 
-        return adapter;
+        return new Result( 1 );
     }
 
 
@@ -2433,7 +2431,7 @@ public class Crud implements InformationObserver {
             int numRows = executeSqlUpdate( transaction, query );
             transaction.commit();
             return new Result( numRows ).setGeneratedQuery( query );
-        } catch ( TransactionException | QueryExecutionException e ) {
+        } catch ( Throwable e ) {
             log.error( "Could not deploy data store", e );
             try {
                 transaction.rollback();
@@ -2550,6 +2548,8 @@ public class Crud implements InformationObserver {
                                 .fkColumnName( catalogForeignKey.getColumnNames().get( i ) )
                                 .fkName( catalogForeignKey.name )
                                 .pkName( "" ) // TODO
+                                .update( catalogForeignKey.updateRule.toString() )
+                                .delete( catalogForeignKey.deleteRule.toString() )
                                 .build() );
                     }
                 }
@@ -3153,6 +3153,8 @@ public class Crud implements InformationObserver {
         if ( !f.exists() ) {
             res.status( 404 );
             return "";
+        } else if ( f.isDirectory() ) {
+            return getDirectory( f, res );
         }
         ContentInfoUtil util = new ContentInfoUtil();
         ContentInfo info = null;
@@ -3165,16 +3167,16 @@ public class Crud implements InformationObserver {
         } else {
             res.header( "Content-Type", "application/octet-stream" );
         }
-        if ( info != null && info.getFileExtensions() != null ) {
+        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
             res.header( "Content-Disposition", "attachment; filename=" + "file." + info.getFileExtensions()[0] );
         } else {
             res.header( "Content-Disposition", "attachment; filename=" + "file" );
         }
+        long fileLength = f.length();
         String range = req.headers( "Range" );
         if ( range != null ) {
             long rangeStart;
             long rangeEnd;
-            long fileLength = f.length();
             Pattern pattern = Pattern.compile( "bytes=(\\d*)-(\\d*)" );
             Matcher m = pattern.matcher( range );
             if ( m.find() && m.groupCount() == 2 ) {
@@ -3201,7 +3203,6 @@ public class Crud implements InformationObserver {
                 res.status( 206 );//partial content
                 int len = Long.valueOf( rangeEnd - rangeStart ).intValue() + 1;
                 res.header( "Content-Range", String.format( "bytes %d-%d/%d", rangeStart, rangeEnd, fileLength ) );
-                res.header( "Content-Length", String.valueOf( len ) );
 
                 RandomAccessFile raf = new RandomAccessFile( f, "r" );
                 raf.seek( rangeStart );
@@ -3219,15 +3220,37 @@ public class Crud implements InformationObserver {
                 res.status( 500 );
             }
         } else {
-            try ( FileInputStream fis = new FileInputStream( f ) ) {
-                ServletOutputStream os = res.raw().getOutputStream();
+            res.header( "Content-Length", String.valueOf( fileLength ) );
+            try ( FileInputStream fis = new FileInputStream( f ); ServletOutputStream os = res.raw().getOutputStream() ) {
                 IOUtils.copyLarge( fis, os );
                 os.flush();
-                os.close();
             } catch ( IOException ignored ) {
                 res.status( 500 );
             }
         }
+        return "";
+    }
+
+
+    String getDirectory( File dir, Response res ) {
+        res.header( "Content-Type", "application/zip" );
+        res.header( "Content-Disposition", "attachment; filename=" + dir.getName() + ".zip" );
+        String zipFileName = UUID.randomUUID().toString() + ".zip";
+        File zipFile = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + zipFileName );
+        try ( ZipOutputStream zipOut = new ZipOutputStream( Files.newOutputStream( zipFile.toPath() ) ) ) {
+            zipDirectory( "", dir, zipOut );
+        } catch ( IOException e ) {
+            res.status( 500 );
+            log.error( "Could not zip directory", e );
+        }
+        res.header( "Content-Length", String.valueOf( zipFile.length() ) );
+        try ( OutputStream os = res.raw().getOutputStream(); InputStream is = new FileInputStream( zipFile ) ) {
+            IOUtils.copy( is, os );
+        } catch ( IOException e ) {
+            log.error( "Could not write zipOutputStream to response", e );
+            res.status( 500 );
+        }
+        zipFile.delete();
         return "";
     }
 
@@ -3396,23 +3419,27 @@ public class Crud implements InformationObserver {
                             if ( o instanceof File ) {
                                 File f = ((File) o);
                                 try {
-                                    ContentInfo info = util.findMatch( f );
+                                    ContentInfo info = null;
+                                    if ( !f.isDirectory() ) {
+                                        info = util.findMatch( f );
+                                    }
                                     String extension = "";
-                                    if ( info != null && info.getFileExtensions() != null ) {
+                                    if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
                                         extension = "." + info.getFileExtensions()[0];
                                     }
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added;
-                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() ) {
+                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );
                                     } else {
-                                        added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
+                                        added = Files.copy( f.toPath(), newLink.toPath() );
+                                        //added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
                                     }
                                     TemporalFileManager.addPath( transaction.getXid().toString(), added );
                                     temp[counter] = newLink.getName();
-                                } catch ( IOException e ) {
-                                    throw new RuntimeException( "Could not create link to mm file", e );
+                                } catch ( Exception e ) {
+                                    throw new RuntimeException( "Could not create link to mm file " + f.getAbsolutePath(), e );
                                 }
                                 break;
                             } else if ( o instanceof InputStream || o instanceof Blob ) {
@@ -3427,21 +3454,30 @@ public class Crud implements InformationObserver {
                                     is = (InputStream) o;
                                 }
                                 File f;
-                                try {
-                                    PushbackInputStream pbis = new PushbackInputStream( is, ContentInfoUtil.DEFAULT_READ_SIZE );
+                                FileOutputStream fos = null;
+                                try ( PushbackInputStream pbis = new PushbackInputStream( is, ContentInfoUtil.DEFAULT_READ_SIZE ) ) {
                                     byte[] buffer = new byte[ContentInfoUtil.DEFAULT_READ_SIZE];
                                     pbis.read( buffer );
                                     ContentInfo info = util.findMatch( buffer );
                                     pbis.unread( buffer );
                                     String extension = "";
-                                    if ( info != null && info.getFileExtensions() != null ) {
+                                    if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
                                         extension = "." + info.getFileExtensions()[0];
                                     }
                                     f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
-                                    IOUtils.copyLarge( pbis, new FileOutputStream( f.getPath() ) );
+                                    fos = new FileOutputStream( f.getPath() );
+                                    IOUtils.copyLarge( pbis, fos );
                                     TemporalFileManager.addFile( transaction.getXid().toString(), f );
                                 } catch ( IOException e ) {
                                     throw new RuntimeException( "Could not place file in mm folder", e );
+                                } finally {
+                                    if ( fos != null ) {
+                                        try {
+                                            fos.close();
+                                        } catch ( IOException ignored ) {
+                                            // ignore
+                                        }
+                                    }
                                 }
                                 temp[counter] = f.getName();
                                 break;
@@ -3454,7 +3490,7 @@ public class Crud implements InformationObserver {
                                 }
                                 ContentInfo info = util.findMatch( bytes );
                                 String extension = "";
-                                if ( info != null && info.getFileExtensions() != null ) {
+                                if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
                                     extension = "." + info.getFileExtensions()[0];
                                 }
                                 File f = new File( mmFolder, columnName + "_" + UUID.randomUUID().toString() + extension );
@@ -3532,7 +3568,7 @@ public class Crud implements InformationObserver {
                 analyzer.addGroup( exceptionGroup );
                 analyzer.registerInformation( exceptionElement );
             }
-            throw new QueryExecutionException( t );
+            throw new QueryExecutionException( t.getMessage(), t );
         }
 
         if ( signature.statementType == StatementType.OTHER_DDL ) {
@@ -3700,6 +3736,33 @@ public class Crud implements InformationObserver {
     }
 
 
+    /**
+     * Helper method to zip a directory
+     * from https://stackoverflow.com/questions/2403830
+     */
+    private static void zipDirectory( String basePath, File dir, ZipOutputStream zipOut ) throws IOException {
+        byte[] buffer = new byte[4096];
+        File[] files = dir.listFiles();
+        for ( File file : files ) {
+            if ( file.isDirectory() ) {
+                String path = basePath + file.getName() + "/";
+                zipOut.putNextEntry( new ZipEntry( path ) );
+                zipDirectory( path, file, zipOut );
+                zipOut.closeEntry();
+            } else {
+                FileInputStream fin = new FileInputStream( file );
+                zipOut.putNextEntry( new ZipEntry( basePath + file.getName() ) );
+                int length;
+                while ( (length = fin.read( buffer )) > 0 ) {
+                    zipOut.write( buffer, 0, length );
+                }
+                zipOut.closeEntry();
+                fin.close();
+            }
+        }
+    }
+
+
     static class QueryExecutionException extends Exception {
 
         QueryExecutionException( String message ) {
@@ -3707,8 +3770,8 @@ public class Crud implements InformationObserver {
         }
 
 
-        QueryExecutionException( String message, Exception e ) {
-            super( message, e );
+        QueryExecutionException( String message, Throwable t ) {
+            super( message, t );
         }
 
 

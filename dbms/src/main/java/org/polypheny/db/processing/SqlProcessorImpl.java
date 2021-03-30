@@ -162,7 +162,8 @@ public class SqlProcessorImpl implements SqlProcessor, ViewExpander {
             type = validator.getValidatedNodeType( validated );
         } catch ( RuntimeException e ) {
             log.error( "Exception while validating query", e );
-            throw new AvaticaRuntimeException( e.getLocalizedMessage(), -1, "", AvaticaSeverity.ERROR );
+            String message = e.getLocalizedMessage();
+            throw new AvaticaRuntimeException( message == null ? "null" : message, -1, "", AvaticaSeverity.ERROR );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {

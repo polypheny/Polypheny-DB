@@ -725,7 +725,27 @@ public abstract class AbstractRouter implements Router {
             RelDataTypeField field = node.getInput().getRowType().getFieldList().get( index );
             CatalogColumn column;
             try {
-                column = Catalog.getInstance().getColumn( catalogTable.id, field.getName() );
+                String columnName;
+                String[] columnNames = field.getName().split( "\\." );
+                if ( columnNames.length == 1 ) { // columnName
+                    columnName = columnNames[0];
+                } else if ( columnNames.length == 2 ) { // tableName.columnName
+                    if ( !catalogTable.name.equalsIgnoreCase( columnNames[0] ) ) {
+                        throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
+                    }
+                    columnName = columnNames[1];
+                } else if ( columnNames.length == 3 ) { // schemaName.tableName.columnName
+                    if ( !catalogTable.getSchemaName().equalsIgnoreCase( columnNames[0] ) ) {
+                        throw new RuntimeException( "Schema name does not match expected schema name: " + field.getName() );
+                    }
+                    if ( !catalogTable.name.equalsIgnoreCase( columnNames[1] ) ) {
+                        throw new RuntimeException( "Table name does not match expected table name: " + field.getName() );
+                    }
+                    columnName = columnNames[2];
+                } else {
+                    throw new RuntimeException( "Invalid column name: " + field.getName() );
+                }
+                column = Catalog.getInstance().getColumn( catalogTable.id, columnName );
             } catch ( UnknownColumnException e ) {
                 throw new RuntimeException( e );
             }

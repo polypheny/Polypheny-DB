@@ -271,6 +271,14 @@ public class HttpRestServer extends QueryInterface {
                     bodyReturn.put( "error", e.getErrorCode().name );
                     bodyReturn.put( "error_description", e.getErrorCode().description );
                     return gson.toJson( bodyReturn );
+                } finally {
+                    try {
+                        for ( Part part : req.raw().getParts() ) {
+                            part.delete();
+                        }
+                    } catch ( ServletException | IOException e ) {
+                        log.error( "Could not delete temporary files", e );
+                    }
                 }
         }
         log.error( "processMultipart should never reach this point in the code!" );
