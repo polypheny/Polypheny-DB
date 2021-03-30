@@ -58,7 +58,7 @@ public class Qfs extends DataSource {
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "QFS";
     @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "A data source that can query a file system";
+    public static final String DESCRIPTION = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.";
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingString( "rootDir", false, true, true, "" )

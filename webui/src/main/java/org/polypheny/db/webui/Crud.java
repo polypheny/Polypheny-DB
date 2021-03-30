@@ -2431,7 +2431,7 @@ public class Crud implements InformationObserver {
             int numRows = executeSqlUpdate( transaction, query );
             transaction.commit();
             return new Result( numRows ).setGeneratedQuery( query );
-        } catch ( TransactionException | QueryExecutionException e ) {
+        } catch ( Throwable e ) {
             log.error( "Could not deploy data store", e );
             try {
                 transaction.rollback();
@@ -3568,7 +3568,7 @@ public class Crud implements InformationObserver {
                 analyzer.addGroup( exceptionGroup );
                 analyzer.registerInformation( exceptionElement );
             }
-            throw new QueryExecutionException( t );
+            throw new QueryExecutionException( t.getMessage(), t );
         }
 
         if ( signature.statementType == StatementType.OTHER_DDL ) {
@@ -3770,8 +3770,8 @@ public class Crud implements InformationObserver {
         }
 
 
-        QueryExecutionException( String message, Exception e ) {
-            super( message, e );
+        QueryExecutionException( String message, Throwable t ) {
+            super( message, t );
         }
 
 
