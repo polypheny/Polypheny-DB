@@ -185,7 +185,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             if ( relRoot.rel instanceof LogicalProject ) {
                 if ( ((LogicalProject) relRoot.rel).getInput() instanceof ViewTableScan ) {
                     relRoot = ((ViewTableScan) ((LogicalProject) relRoot.rel).getInput()).getRelRoot();
+                } else if ( ((LogicalProject) relRoot.rel).getInput() instanceof LogicalJoin ) {
+                    if ( ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getLeft() instanceof ViewTableScan ) {
+                        relRoot = ((ViewTableScan) ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getLeft()).getRelRoot();
+                    } else if ( ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getRight() instanceof ViewTableScan ) {
+                        relRoot = ((ViewTableScan) ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getRight()).getRelRoot();
+                    }
                 }
+
             }
         }
 

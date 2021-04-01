@@ -1312,6 +1312,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
+        List<Long> underlyingTables = new ArrayList<>();
         long tableId = catalog.addTable(
                 viewName,
                 schemaId,
@@ -1319,7 +1320,7 @@ public class DdlManagerImpl extends DdlManager {
                 TableType.VIEW,
                 false,
                 relRoot,
-                findUnderlyingTablesOfView( relRoot.rel ),
+                findUnderlyingTablesOfView( relRoot.rel, underlyingTables ),
                 fieldList
         );
 
@@ -1365,13 +1366,12 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private List<Long> findUnderlyingTablesOfView( RelNode relNode ) {
-        List<Long> underlyingTables = new ArrayList<>();
+    private List<Long> findUnderlyingTablesOfView( RelNode relNode, List<Long> underlyingTables ) {
         if ( relNode instanceof LogicalProject ) {
-            underlyingTables.addAll( findUnderlyingTablesOfView( ((LogicalProject) relNode).getInput() ) );
+            findUnderlyingTablesOfView( ((LogicalProject) relNode).getInput(), underlyingTables );
         } else if ( relNode instanceof LogicalJoin ) {
-            underlyingTables.addAll( findUnderlyingTablesOfView( ((LogicalJoin) relNode).getLeft() ) );
-            underlyingTables.addAll( findUnderlyingTablesOfView( ((LogicalJoin) relNode).getRight() ) );
+            findUnderlyingTablesOfView( ((LogicalJoin) relNode).getLeft(), underlyingTables );
+            findUnderlyingTablesOfView( ((LogicalJoin) relNode).getRight(), underlyingTables );
         } else if ( relNode instanceof LogicalTableScan ) {
             underlyingTables.add( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
         }
@@ -1618,6 +1618,15 @@ public class DdlManagerImpl extends DdlManager {
     public void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
+
+        if ( catalogTable.connectedViews.size() > 0 ) {
+            List<String> views = new ArrayList<>();
+            for ( Long id : catalogTable.connectedViews ) {
+                views.add( catalog.getTable( id ).name );
+            }
+
+            throw new PolyphenyDbException( "Cannot drop table because of underlying View " + views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
+        }
 
         // Check if there are foreign keys referencing this table
         List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();

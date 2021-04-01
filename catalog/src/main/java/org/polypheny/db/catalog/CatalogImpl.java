@@ -1315,6 +1315,7 @@ public class CatalogImpl extends Catalog {
 
         if ( tableType == TableType.VIEW ) {
             table = CatalogView.generateView( table, ImmutableList.copyOf( underlyingTables ), fieldList );
+            addConnectedViews( underlyingTables, table.id );
         }
 
         synchronized ( this ) {
@@ -1333,6 +1334,44 @@ public class CatalogImpl extends Catalog {
 
         listeners.firePropertyChange( "table", null, table );
         return id;
+    }
+
+
+    /**
+     * Add additional Information to Table, what Views are connected to table
+     */
+    public void addConnectedViews( List<Long> underlyingTables, long viewId ) {
+        for ( long id : underlyingTables ) {
+            CatalogTable old = getTable( id );
+            List<Long> connectedViews;
+            connectedViews = new ArrayList<>( old.connectedViews );
+            connectedViews.add( viewId );
+
+            CatalogTable table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.definition,
+                    old.primaryKey,
+                    old.placementsByAdapter,
+                    old.modifiable,
+                    old.numPartitions,
+                    old.partitionType,
+                    old.partitionIds,
+                    old.partitionColumnId,
+                    old.isPartitioned,
+                    ImmutableList.copyOf( connectedViews ) );
+            synchronized ( this ) {
+                tables.replace( id, table );
+                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+            }
+            listeners.firePropertyChange( "table", old, table );
+        }
     }
 
 

@@ -205,7 +205,11 @@ public class SqlBinaryOperator extends SqlOperator {
     public boolean validRexOperands( int count, Litmus litmus ) {
         if ( count != 2 ) {
             // Special exception for AND and OR.
+            //TODO IG: Why is SqlStdOperatorTable.AND false within Views
             if ( (this == SqlStdOperatorTable.AND || this == SqlStdOperatorTable.OR) && count > 2 ) {
+                return true;
+
+            } else if ( (this.kind.belongsTo( SqlKind.ANDOR )) && count > 2 ) {
                 return true;
             }
             return litmus.fail( "wrong operand count {} for {}", count, this );

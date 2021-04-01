@@ -57,6 +57,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
     public final long numPartitions;
 
+    public final ImmutableList<Long> connectedViews;
 
     public CatalogTable(
             final long id,
@@ -89,6 +90,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.partitionIds = null;
         this.partitionColumnId = 0;
         this.numPartitions = 0;
+        this.connectedViews = ImmutableList.<Long>builder().build();
 
         if ( type == TableType.TABLE && !modifiable ) {
             throw new RuntimeException( "Tables of table type TABLE must be modifiable!" );
@@ -133,6 +135,50 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.numPartitions = numPartitions;
         this.isPartitioned = true;
 
+        this.connectedViews = ImmutableList.<Long>builder().build();
+
+    }
+
+
+    public CatalogTable(
+            final long id,
+            @NonNull final String name,
+            final ImmutableList<Long> columnIds,
+            final long schemaId,
+            final long databaseId,
+            final int ownerId,
+            @NonNull final String ownerName,
+            @NonNull final TableType type,
+            final RelRoot definition,
+            final Long primaryKey,
+            @NonNull final ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable,
+            final long numPartitions,
+            final PartitionType partitionType,
+            final ImmutableList<Long> partitionIds,
+            final long partitionColumnId,
+            boolean isPartitioned,
+            ImmutableList<Long> connectedViews ) {
+        this.id = id;
+        this.name = name;
+        this.columnIds = columnIds;
+        this.schemaId = schemaId;
+        this.databaseId = databaseId;
+        this.ownerId = ownerId;
+        this.ownerName = ownerName;
+        this.tableType = type;
+        this.definition = definition;
+        this.primaryKey = primaryKey;
+        this.placementsByAdapter = placementsByAdapter;
+        this.modifiable = modifiable;
+
+        this.isPartitioned = isPartitioned;
+        this.partitionType = partitionType;
+        this.partitionIds = partitionIds;
+        this.partitionColumnId = partitionColumnId;
+        this.numPartitions = numPartitions;
+
+        this.connectedViews = connectedViews;
     }
 
 

@@ -34,6 +34,8 @@ import org.polypheny.db.rel.type.RelDataType;
 
 public class CatalogView extends CatalogTable {
 
+    private static final long serialVersionUID = -4453089531698670528L;
+
     @Getter
     private final ImmutableList<Long> underlyingTables;
     @Getter
