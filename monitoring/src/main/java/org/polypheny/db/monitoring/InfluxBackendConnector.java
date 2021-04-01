@@ -71,7 +71,7 @@ public class InfluxBackendConnector implements BackendConnector{
 
 
     @Override
-    public void writeStatisticEvent( String incomingEvent ) {
+    public boolean writeStatisticEvent( long key, MonitorEvent incomingEvent ) {
         throw new RuntimeException("InfluxBackendConnector: Not implemented yet");
     }
 
