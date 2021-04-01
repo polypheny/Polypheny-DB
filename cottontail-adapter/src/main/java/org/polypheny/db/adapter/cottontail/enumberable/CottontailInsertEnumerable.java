@@ -20,9 +20,9 @@ package org.polypheny.db.adapter.cottontail.enumberable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
@@ -31,11 +31,10 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Tuple;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage.InsertElement;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
 
 
 public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
@@ -66,20 +65,18 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     public static CottontailInsertEnumerable<Object> fromValues(
             String from,
             String schema,
-            List<Map<String, CottontailGrpc.Data>> values,
+            List<Map<String, CottontailGrpc.Literal>> values,
             CottontailWrapper wrapper
     ) {
-        CottontailGrpc.From from_ = From.newBuilder().setEntity(
-                Entity.newBuilder().setName( from ).setSchema(
-                        Schema.newBuilder().setName( schema )
-                ) ).build();
+        final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
+        final List<InsertMessage> insertMessages = new ArrayList<>( values.size() );
 
-        List<InsertMessage> insertMessages = new ArrayList<>( values.size() );
-
-        for ( Map<String, CottontailGrpc.Data> value : values ) {
-            insertMessages.add( InsertMessage.newBuilder().setFrom( from_ ).setTuple(
-                    Tuple.newBuilder().putAllData( value ).build()
-            ).build() );
+        for ( Map<String, CottontailGrpc.Literal> value : values ) {
+            final InsertMessage.Builder message = InsertMessage.newBuilder().setFrom( from_ );
+            for ( Entry<String, Literal> e : value.entrySet() ) {
+                message.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ).build() );
+            }
+            insertMessages.add( message.build() );
         }
 
         return new CottontailInsertEnumerable<>( insertMessages, null, wrapper, false );
@@ -90,23 +87,26 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     public static CottontailInsertEnumerable<Object> fromPreparedStatements(
             String from,
             String schema,
-            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Data>> tupleBuilder,
+            Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
             DataContext dataContext,
             CottontailWrapper wrapper
     ) {
-        CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
-        List<InsertMessage> insertMessages = new ArrayList<>();
-
+        final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
+        final List<InsertMessage> insertMessages = new ArrayList<>();
         if ( dataContext.getParameterValues().size() == 0 ) {
-            Map<Long, Object> parameterValues = new HashMap<>();
-            Tuple tuple = Tuple.newBuilder().putAllData( tupleBuilder.apply( parameterValues ) ).build();
-            insertMessages.add(
-                    InsertMessage.newBuilder().setFrom( from_ ).setTuple( tuple ).build() );
+            final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ );
+            final Map<String, Literal> values = tupleBuilder.apply( new HashMap<>() );
+            for ( Entry<String, Literal> e : values.entrySet() ) {
+                insert.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
+            }
+            insertMessages.add( insert.build() );
         } else {
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-                Tuple tuple = Tuple.newBuilder().putAllData( tupleBuilder.apply( parameterValues ) ).build();
-                insertMessages.add(
-                        InsertMessage.newBuilder().setFrom( from_ ).setTuple( tuple ).build() );
+                final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ );
+                for ( Entry<String, CottontailGrpc.Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
+                    insert.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
+                }
+                insertMessages.add( insert.build() );
             }
         }
 
@@ -124,7 +124,6 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
         private List<InsertMessage> inserts;
         private CottontailWrapper wrapper;
-        private Iterator<InsertMessage> insertMessageIterator;
 
         private boolean wasSuccessful;
         private boolean executed;
@@ -135,7 +134,6 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
         public CottontailInsertResultEnumerator( List<InsertMessage> inserts, CottontailWrapper wrapper, boolean fromPrepared ) {
             this.inserts = inserts;
             this.wrapper = wrapper;
-            this.insertMessageIterator = inserts.iterator();
             this.checkCount = 0;
             this.fromPrepared = fromPrepared;
         }
@@ -155,10 +153,8 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
         @Override
         public boolean moveNext() {
             if ( !this.executed ) {
-//            if ( this.insertMessageIterator.hasNext() ) {
                 this.wasSuccessful = this.wrapper.insert( this.inserts );
-//                this.wasSuccessful = this.wrapper.insert( ImmutableList.of( this.insertMessageIterator.next() ) );
-                executed = true;
+                this.executed = true;
                 this.checkCount += 1;
                 return this.wasSuccessful;
             } else {
@@ -177,15 +173,12 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
         @Override
         public void reset() {
-
         }
 
 
         @Override
         public void close() {
-
         }
-
     }
 
 }

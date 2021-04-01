@@ -29,10 +29,8 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
+import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.DeleteMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
@@ -93,14 +91,9 @@ public class CottontailDeleteEnumerable<T> extends AbstractEnumerable<T> {
             Function1<Map<Long, Object>, Where> whereBuilder,
             Map<Long, Object> parameterValues
     ) {
-        DeleteMessage.Builder builder = DeleteMessage.newBuilder();
-
-        builder.setFrom(
-                From.newBuilder().setEntity( Entity.newBuilder().setName( entity ).setSchema(
-                        Schema.newBuilder().setName( schema ) ) ) );
-
+        final DeleteMessage.Builder builder = DeleteMessage.newBuilder();
+        builder.setFrom( CottontailTypeUtil.fromFromTableAndSchema( entity, schema ) );
         builder.setWhere( whereBuilder.apply( parameterValues ) );
-
         return builder.build();
     }
 

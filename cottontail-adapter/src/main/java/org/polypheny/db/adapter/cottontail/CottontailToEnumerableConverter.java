@@ -38,6 +38,7 @@ import org.polypheny.db.adapter.cottontail.enumberable.CottontailInsertEnumerabl
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailQueryEnumerable;
 import org.polypheny.db.adapter.cottontail.enumberable.CottontailUpdateEnumerable;
 import org.polypheny.db.adapter.cottontail.rel.CottontailRel.CottontailImplementContext;
+import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.adapter.cottontail.util.Linq4JFixer;
 import org.polypheny.db.adapter.enumerable.EnumerableRel;
 import org.polypheny.db.adapter.enumerable.EnumerableRelImplementor;
@@ -62,14 +63,13 @@ import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Knn;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Projection.ProjectionElement;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Schema;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
@@ -135,8 +135,9 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 BlockBuilder builder = new BlockBuilder();
 
                 final ParameterExpression resultMap_ = Expressions.parameter(
-                        TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Data.class ),
-                        builder.newName( "resultDataMap" ) );
+                        TypeUtils.parameterize( Map.class, String.class, CottontailGrpc.Literal.class ),
+                        builder.newName( "resultDataMap" )
+                );
 
                 if ( fieldCount == 1 ) {
                     final ParameterExpression value_ = Expressions.parameter( Object.class, builder.newName( "value" ) );
@@ -436,26 +437,26 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         if ( dataContext.getParameterValues().size() == 0 ) {
             Query query = Query.newBuilder()
 //                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( "tab4" ).setSchema( Schema.newBuilder().setName( "cottontail" ) ) ) )
-                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
+                    .setFrom( CottontailTypeUtil.fromFromTableAndSchema( from, schema ) )
 //                    .setKnn( (Knn) knn )
                     .setLimit( 6 )
 //                    .setSkip( offset )
-                    .setProjection( Projection.newBuilder().putAttributes( "*", "" ) )
+                    .setProjection( Projection.newBuilder().addColumns( ProjectionElement.newBuilder().setColumn( ColumnName.newBuilder().setName( "*" ) ) ) )
 //                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) ghettoProjection ) )
 //                    .setWhere( (Where) whereBuilder.apply( parameterValues ) )
                     .build();
-            queryResponseIterator = wrapper.query(
-                    QueryMessage.newBuilder().setQuery( query ).build() );
+
+            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
 
         } else if ( dataContext.getParameterValues().size() == 1 ) {
             Map parameterValues = dataContext.getParameterValues().get( 0 );
             // Single query case!
-            Query query = Query.newBuilder()
-                    .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema( Schema.newBuilder().setName( schema ).build() ).build() ).build() )
+            final Query query = Query.newBuilder()
+                    .setFrom( CottontailTypeUtil.fromFromTableAndSchema( from, schema ) )
                     .setKnn( (Knn) knn )
                     .setLimit( limit )
                     .setSkip( offset )
-                    .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
+                    .setProjection( CottontailTypeUtil.mapToProjection( (Map<String, String>) projection ) )
                     .setWhere( (Where) whereBuilder.apply( parameterValues ) )
                     .build();
             queryResponseIterator = wrapper.query(
@@ -464,22 +465,21 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         } else {
             BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
             for ( Map parameterValues : dataContext.getParameterValues() ) {
-                Query query = Query.newBuilder()
-                        .setFrom( From.newBuilder().setEntity( Entity.newBuilder().setName( from ).build() ).build() )
+                final Query query = Query.newBuilder()
+                        .setFrom( CottontailTypeUtil.fromFromTableAndSchema( from, schema ) )
                         .setKnn( (Knn) knn )
                         .setLimit( limit )
                         .setSkip( offset )
-                        .setProjection( Projection.newBuilder().putAllAttributes( (Map<String, String>) projection ).build() )
+                        .setProjection( CottontailTypeUtil.mapToProjection( (Map<String, String>) projection ) )
                         .setWhere( (Where) whereBuilder.apply( parameterValues ) )
                         .build();
-                batchedQueryMessageBuilder.addQueries( query );
+                batchedQueryMessageBuilder.addQuery( query );
             }
 
             queryResponseIterator = wrapper.batchedQuery( batchedQueryMessageBuilder.build() );
         }
         return new CottontailQueryEnumerable<>( queryResponseIterator, rowParser );
     }
-
 
     private static Expression expressionOrNullExpression( Expression expression ) {
         if ( expression == null ) {

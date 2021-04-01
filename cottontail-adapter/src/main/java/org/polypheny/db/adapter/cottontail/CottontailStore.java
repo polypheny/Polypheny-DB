@@ -22,8 +22,8 @@ import com.google.gson.annotations.Expose;
 import io.grpc.ManagedChannel;
 import io.grpc.netty.NettyChannelBuilder;
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -47,29 +47,38 @@ import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeConversionUtil;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.util.FileSystemManager;
 import org.vitrivr.cottontail.CottontailKt;
+import org.vitrivr.cottontail.config.CacheConfig;
 import org.vitrivr.cottontail.config.Config;
 import org.vitrivr.cottontail.config.ExecutionConfig;
 import org.vitrivr.cottontail.config.MapDBConfig;
 import org.vitrivr.cottontail.config.ServerConfig;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnDefinition;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Data;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Entity;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.CreateEntityMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.CreateIndexMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.DropEntityMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.DropIndexMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Engine;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityDefinition;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.EntityName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.From;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Index;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexDefinition;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexDefinition.Builder;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.IndexType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage.InsertElement;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
-import org.vitrivr.cottontail.grpc.CottontailGrpc.Tuple;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage.Tuple;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.Scan;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.SchemaName;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.TruncateEntityMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Type;
 import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 
@@ -77,9 +86,9 @@ import org.vitrivr.cottontail.server.grpc.CottontailGrpcServer;
 @Slf4j
 public class CottontailStore extends DataStore {
 
-    public static final String ADAPTER_NAME = "Cottontail-DB";
+    public static final String ADAPTER_NAME = "Cottontail DB";
 
-    public static final String DESCRIPTION = "Cottontail-DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.";
+    public static final String DESCRIPTION = "Cottontail DB is a column store aimed at multimedia retrieval. It is optimized for classical boolean as well as vector-space retrieval.";
 
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Embedded", "Standalone" ) ),
@@ -118,14 +127,18 @@ public class CottontailStore extends DataStore {
                 }
             }
 
-            File dataFolder = new File( embeddedDir, "data" );
-            Config config = new Config(
-                    dataFolder.toPath(),
+            final File dataFolder = new File( embeddedDir, "data" );
+            final Config config = new Config(
+                    Paths.get( dataFolder.getAbsolutePath() ),
                     false,
+                    false,
+                    null,
+                    new MapDBConfig( true, true, 22, 1000L ),
                     new ServerConfig(),
-                    new MapDBConfig(),
-                    new ExecutionConfig()
+                    new ExecutionConfig(),
+                    new CacheConfig()
             );
+
             this.embeddedServer = CottontailKt.embedded( config );
             this.dbHostname = "localhost";
         } else {
@@ -141,7 +154,9 @@ public class CottontailStore extends DataStore {
                 .maxInboundMessageSize( CottontailWrapper.maxMessageSize )
                 .build();
         this.wrapper = new CottontailWrapper( channel );
-        this.wrapper.checkedCreateSchemaBlocking( CottontailGrpc.Schema.newBuilder().setName( this.dbName ).build() );
+        this.wrapper.checkedCreateSchemaBlocking(
+                CottontailGrpc.CreateSchemaMessage.newBuilder().setSchema( SchemaName.newBuilder().setName( this.dbName ) ).build()
+        );
     }
 
 
@@ -197,30 +212,14 @@ public class CottontailStore extends DataStore {
     @Override
     public void createTable( Context context, CatalogTable combinedTable ) {
 
-//        ColumnDefinition.Builder columnBuilder = ColumnDefinition.newBuilder();
-        /*for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnStore( this.getStoreId(), combinedTable.id ) ) {
-            CatalogColumn catalogColumn;
-            catalogColumn = catalog.getColumn( placement.columnId );
-
-            columnBuilder.setName( CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation( catalogColumn.type, catalogColumn.collectionsType, ( catalogColumn.dimension != null) ? catalogColumn.dimension : 0 );
-            columnBuilder.setType( columnType );
-            if ( catalogColumn.dimension != null && catalogColumn.dimension == 1 && columnType.getNumber() != Type.STRING.getNumber() ) {
-                columnBuilder.setLength( catalogColumn.cardinality );
-            }
-            columns.add( columnBuilder.build() );
-        }*/
-
-        List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), combinedTable.id ) );
-
-        String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id );
-        Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
-
-        EntityDefinition message = EntityDefinition.newBuilder()
+        final List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), combinedTable.id ) );
+        final String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id );
+        final EntityName tableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
+        final EntityDefinition definition = EntityDefinition.newBuilder()
                 .setEntity( tableEntity )
                 .addAllColumns( columns ).build();
 
-        if ( !this.wrapper.createEntityBlocking( message ) ) {
+        if ( !this.wrapper.createEntityBlocking( CreateEntityMessage.newBuilder().setDefinition( definition ).build() ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
 
@@ -237,17 +236,13 @@ public class CottontailStore extends DataStore {
 
 
     private List<CottontailGrpc.ColumnDefinition> buildColumnDefinitions( List<CatalogColumnPlacement> placements ) {
-        List<ColumnDefinition> columns = new ArrayList<>();
-        ColumnDefinition.Builder columnBuilder = ColumnDefinition.newBuilder();
+        final List<ColumnDefinition> columns = new LinkedList<>();
 
         for ( CatalogColumnPlacement placement : placements ) {
-            CatalogColumn catalogColumn;
-            catalogColumn = catalog.getColumn( placement.columnId );
-
-            columnBuilder.clear();
-
+            final ColumnDefinition.Builder columnBuilder = ColumnDefinition.newBuilder();
+            final CatalogColumn catalogColumn = catalog.getColumn( placement.columnId );
             columnBuilder.setName( CottontailNameUtil.createPhysicalColumnName( placement.columnId ) );
-            CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation(
+            final CottontailGrpc.Type columnType = CottontailTypeUtil.getPhysicalTypeRepresentation(
                     catalogColumn.type,
                     catalogColumn.collectionsType,
                     (catalogColumn.dimension != null) ? catalogColumn.dimension : 0 );
@@ -256,6 +251,7 @@ public class CottontailStore extends DataStore {
                 columnBuilder.setLength( catalogColumn.cardinality );
             }
             columnBuilder.setNullable( catalogColumn.nullable );
+            columnBuilder.setEngine( Engine.MAPDB );
             columns.add( columnBuilder.build() );
         }
 
@@ -265,13 +261,13 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void dropTable( Context context, CatalogTable combinedTable ) {
-        String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), combinedTable.id );
-        Entity tableEntity = Entity.newBuilder()
+        final String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), combinedTable.id );
+        final EntityName tableEntity = EntityName.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( physicalTableName )
                 .build();
 
-        this.wrapper.dropEntityBlocking( tableEntity );
+        this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setEntity( tableEntity ).build() );
     }
 
 
@@ -289,23 +285,16 @@ public class CottontailStore extends DataStore {
         final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
         final String newPhysicalColumnName = CottontailNameUtil.createPhysicalColumnName( catalogColumn.id );
 
-        Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( currentPhysicalTableName ).build();
-        Entity newTableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( newPhysicalTableName ).build();
+        final EntityName tableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( currentPhysicalTableName ).build();
+        final EntityName newTableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( newPhysicalTableName ).build();
 
-        EntityDefinition message = EntityDefinition.newBuilder()
+        final CreateEntityMessage message = CreateEntityMessage.newBuilder().setDefinition( EntityDefinition.newBuilder()
                 .setEntity( newTableEntity )
-                .addAllColumns( columns ).build();
+                .addAllColumns( columns ) ).build();
 
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
-
-        Query query = Query.newBuilder().setFrom( From.newBuilder().setEntity( tableEntity ).build() ).build();
-
-        Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
-
-        List<InsertMessage> inserts = new ArrayList<>();
-        From from = From.newBuilder().setEntity( newTableEntity ).build();
 
         PolyType actualDefaultType;
         Object defaultValue;
@@ -316,20 +305,26 @@ public class CottontailStore extends DataStore {
             defaultValue = null;
             actualDefaultType = null;
         }
-        CottontailGrpc.Data defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType );
+        CottontailGrpc.Literal defaultData = CottontailTypeUtil.toData( defaultValue, actualDefaultType );
 
-        queryResponse.forEachRemaining( queryResponseMessage -> {
-            for ( Tuple tuple : queryResponseMessage.getResultsList() ) {
-                Map<String, Data> dataMap = new HashMap<>( tuple.getDataMap() );
-                dataMap.put( newPhysicalColumnName, defaultData );
+        final QueryMessage query = QueryMessage.newBuilder().setQuery( Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ) ).build();
+        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( query );
+        queryResponse.forEachRemaining( responseMessage -> {
+            for ( Tuple tuple : responseMessage.getTuplesList() ) {
+                final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom(
+                        From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ) )
+                );
+                int i = 0;
+                for ( CottontailGrpc.Literal literal : tuple.getDataList() ) {
+                    insert.addInsertsBuilder().setColumn( responseMessage.getColumns( i++ ) ).setValue( literal );
+                }
+                insert.addInsertsBuilder().setColumn( ColumnName.newBuilder().setName( newPhysicalColumnName ).build() ).setValue( defaultData );
 
-                inserts.add( InsertMessage.newBuilder().setTuple( Tuple.newBuilder().putAllData( dataMap ).build() ).setFrom( from ).build() );
+                if ( !this.wrapper.insert( insert.build() ) ) {
+                    throw new RuntimeException( "Unable to migrate data." );
+                }
             }
         } );
-
-        if ( !this.wrapper.insert( inserts ) ) {
-            throw new RuntimeException( "Unable to migrate data." );
-        }
 
         // Update column placement physical table names
         for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), catalogTable.id ) ) {
@@ -343,11 +338,17 @@ public class CottontailStore extends DataStore {
         }
 
         // Delete old table
-        this.wrapper.dropEntityBlocking( tableEntity );
+        this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setEntity( tableEntity ).build() );
 
     }
 
 
+    /**
+     * TODO: js(ct): Add dropColumn to cottontail
+     *
+     * @param context
+     * @param columnPlacement
+     */
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId );
@@ -359,36 +360,41 @@ public class CottontailStore extends DataStore {
         final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
         final String oldPhysicalColumnName = columnPlacement.physicalColumnName;
 
-        Entity tableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( currentPhysicalTableName ).build();
-        Entity newTableEntity = Entity.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( newPhysicalTableName ).build();
+        final EntityName tableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( currentPhysicalTableName ).build();
+        final EntityName newTableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( newPhysicalTableName ).build();
 
-        EntityDefinition message = EntityDefinition.newBuilder()
-                .setEntity( newTableEntity )
-                .addAllColumns( columns ).build();
+        final CreateEntityMessage message = CreateEntityMessage.newBuilder().setDefinition(
+                EntityDefinition.newBuilder().setEntity( newTableEntity ).addAllColumns( columns )
+        ).build();
 
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
 
-        Query query = Query.newBuilder().setFrom( From.newBuilder().setEntity( tableEntity ).build() ).build();
-
-        Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
-
-        List<InsertMessage> inserts = new ArrayList<>();
-        From from = From.newBuilder().setEntity( newTableEntity ).build();
-
-        queryResponse.forEachRemaining( queryResponseMessage -> {
-            for ( Tuple tuple : queryResponseMessage.getResultsList() ) {
-                Map<String, Data> dataMap = new HashMap<>( tuple.getDataMap() );
-                dataMap.remove( oldPhysicalColumnName );
-
-                inserts.add( InsertMessage.newBuilder().setTuple( Tuple.newBuilder().putAllData( dataMap ).build() ).setFrom( from ).build() );
+        final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ) ) ).build();
+        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
+        queryResponse.forEachRemaining( responseMessage -> {
+            int droppedIndex = 0;
+            for ( ColumnName c : responseMessage.getColumnsList() ) {
+                if ( c.getName().equals( oldPhysicalColumnName ) ) {
+                    break;
+                }
+                droppedIndex++;
+            }
+            for ( Tuple tuple : responseMessage.getTuplesList() ) {
+                final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ) ) );
+                int i = 0;
+                for ( Literal l : tuple.getDataList() ) {
+                    if ( i != droppedIndex ) {
+                        insert.addInsertsBuilder().setColumn( responseMessage.getColumns( i ) ).setValue( l );
+                    }
+                    i++;
+                }
+                if ( !this.wrapper.insert( insert.build() ) ) {
+                    throw new RuntimeException( "Failed to migrate data." );
+                }
             }
         } );
-
-        if ( !this.wrapper.insert( inserts ) ) {
-            throw new RuntimeException( "Unable to migrate data." );
-        }
 
         // Update column placement physical table names
         for ( CatalogColumnPlacement placement : this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId ) ) {
@@ -402,46 +408,45 @@ public class CottontailStore extends DataStore {
         }
 
         // Delete old table
-        this.wrapper.dropEntityBlocking( tableEntity );
+        this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setEntity( tableEntity ).build() );
     }
 
 
     @Override
     public void addIndex( Context context, CatalogIndex catalogIndex ) {
-        IndexType indexType;
+        final IndexType indexType;
         try {
             indexType = IndexType.valueOf( catalogIndex.method.toUpperCase() );
         } catch ( Exception e ) {
             throw new RuntimeException( "Unknown index type: " + catalogIndex.method );
         }
-        Builder indexBuilder = IndexDefinition.newBuilder();
-        Entity tableEntity = Entity.newBuilder()
-                .setSchema( this.currentSchema.getCottontailSchema() )
-                .setName( Catalog.getInstance().getColumnPlacement( getAdapterId(), catalogIndex.key.columnIds.get( 0 ) ).physicalTableName )
-                .build();
-        indexBuilder.getIndexBuilder()
-                .setEntity( tableEntity )
-                .setType( indexType )
-                .setName( "idx" + catalogIndex.id );
+        final IndexName.Builder indexName = IndexName.newBuilder()
+                .setName( "idx" + catalogIndex.id ).setEntity(
+                        EntityName.newBuilder()
+                                .setSchema( this.currentSchema.getCottontailSchema() )
+                                .setName( Catalog.getInstance().getColumnPlacement( getAdapterId(), catalogIndex.key.columnIds.get( 0 ) ).physicalTableName ) );
+
+        final IndexDefinition.Builder definition = IndexDefinition.newBuilder().setType( indexType ).setName( indexName );
         for ( long columnId : catalogIndex.key.columnIds ) {
             CatalogColumnPlacement placement = Catalog.getInstance().getColumnPlacement( getAdapterId(), columnId );
-            indexBuilder.addColumns( placement.physicalColumnName );
+            definition.addColumns( ColumnName.newBuilder().setName( placement.physicalColumnName ) );
         }
-        this.wrapper.createIndexBlocking( indexBuilder.build() );
+
+        final CreateIndexMessage createIndex = CreateIndexMessage.newBuilder().setDefinition( definition ).build();
+        this.wrapper.createIndexBlocking( createIndex );
     }
 
 
     @Override
     public void dropIndex( Context context, CatalogIndex catalogIndex ) {
-        Index.Builder indexBuilder = Index.newBuilder();
-        Entity tableEntity = Entity.newBuilder()
-                .setSchema( this.currentSchema.getCottontailSchema() )
-                .setName( Catalog.getInstance().getColumnPlacement( getAdapterId(), catalogIndex.key.columnIds.get( 0 ) ).physicalTableName )
+        final DropIndexMessage.Builder dropIndex = DropIndexMessage.newBuilder();
+        final IndexName indexName = IndexName.newBuilder()
+                .setEntity( EntityName.newBuilder().setName( Catalog.getInstance().getColumnPlacement( getAdapterId(), catalogIndex.key.columnIds.get( 0 ) ).physicalTableName ).setSchema( currentSchema.getCottontailSchema() ) )
+                .setName( "idx" + catalogIndex.id )
                 .build();
-        indexBuilder
-                .setEntity( tableEntity )
-                .setName( "idx" + catalogIndex.id );
-        this.wrapper.dropIndexBlocking( indexBuilder.build() );
+
+        dropIndex.setIndex( indexName );
+        this.wrapper.dropIndexBlocking( dropIndex.build() );
     }
 
 
@@ -466,13 +471,13 @@ public class CottontailStore extends DataStore {
 
     @Override
     public void truncate( Context context, CatalogTable table ) {
-        String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), table.id );
-        Entity tableEntity = Entity.newBuilder()
-                .setSchema( this.currentSchema.getCottontailSchema() )
-                .setName( physicalTableName )
-                .build();
-
-        this.wrapper.truncateEntityBlocking( tableEntity );
+        final String physicalTableName = CottontailNameUtil.getPhysicalTableName( this.getAdapterId(), table.id );
+        final TruncateEntityMessage truncate = TruncateEntityMessage.newBuilder().setEntity(
+                EntityName.newBuilder()
+                        .setSchema( this.currentSchema.getCottontailSchema() )
+                        .setName( physicalTableName )
+        ).buildPartial();
+        this.wrapper.truncateEntityBlocking( truncate );
     }
 
 
@@ -484,47 +489,39 @@ public class CottontailStore extends DataStore {
         final String currentPhysicalTableName = placements.get( 0 ).physicalTableName;
         final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
 
-        Entity tableEntity = Entity.newBuilder()
+        EntityName tableEntity = EntityName.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( currentPhysicalTableName )
                 .build();
-        Entity newTableEntity = Entity.newBuilder()
+        EntityName newTableEntity = EntityName.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( newPhysicalTableName )
                 .build();
 
-        EntityDefinition message = EntityDefinition.newBuilder()
-                .setEntity( newTableEntity )
-                .addAllColumns( columns )
+        final CreateEntityMessage message = CreateEntityMessage.newBuilder()
+                .setDefinition( EntityDefinition.newBuilder().setEntity( newTableEntity ).addAllColumns( columns ) )
                 .build();
 
         if ( !this.wrapper.createEntityBlocking( message ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
 
-        Query query = Query.newBuilder().setFrom( From.newBuilder().setEntity( tableEntity ).build() ).build();
+        final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ).build() ) ).build();
+        final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
 
-        Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
+        final List<InsertMessage> inserts = new ArrayList<>();
+        final From from = From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ).build() ).build();
 
-        List<InsertMessage> inserts = new ArrayList<>();
-        From from = From.newBuilder().setEntity( newTableEntity ).build();
-
-        queryResponse.forEachRemaining( queryResponseMessage -> {
-            for ( Tuple tuple : queryResponseMessage.getResultsList() ) {
-                Map<String, Data> dataMap = new HashMap<>( tuple.getDataMap() );
-                Object o = PolyTypeConversionUtil.convertValue(
-                        CottontailTypeUtil.dataToValue( dataMap.get( columnPlacement.physicalColumnName ), oldType ),
-                        oldType,
-                        catalogColumn.type );
-
-                dataMap.put( columnPlacement.physicalColumnName, CottontailTypeUtil.toData( o, catalogColumn.type ) );
-
-                InsertMessage insertMessage = InsertMessage.newBuilder()
-                        .setTuple( Tuple.newBuilder().putAllData( dataMap ).build() )
-                        .setFrom( from )
-                        .build();
-                inserts.add( insertMessage );
-
+        queryResponse.forEachRemaining( response -> {
+            for ( Tuple tuple : response.getTuplesList() ) {
+                final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from );
+                int i = 0;
+                for ( Literal d : tuple.getDataList() ) {
+                    insert.addInserts( InsertElement.newBuilder()
+                            .setColumn( response.getColumns( i++ ) )
+                            .setValue( d ) );
+                }
+                inserts.add( insert.build() );
                 if ( inserts.size() > 100 ) {
                     this.wrapper.insert( inserts );
                 }
@@ -545,7 +542,7 @@ public class CottontailStore extends DataStore {
                     false );
         }
 
-        this.wrapper.dropEntityBlocking( tableEntity );
+        this.wrapper.dropEntityBlocking( DropEntityMessage.newBuilder().setEntity( tableEntity ).build() );
     }
 
 
