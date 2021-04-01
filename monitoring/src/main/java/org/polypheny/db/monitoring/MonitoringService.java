@@ -19,7 +19,6 @@ package org.polypheny.db.monitoring;
 
 import java.io.File;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -45,19 +44,28 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 // * File
 // * map db
 // * etc
+
+// Todo eventual MOM outsourced to other hosts
 @Slf4j
 public class MonitoringService {
 
     public static final MonitoringService INSTANCE = new MonitoringService();
     private static final long serialVersionUID = 2312903251112906177L;
 
+    // Configurable via central CONFIG
     private final String MONITORING_BACKEND = "simple"; //InfluxDB
+        // number of elements beeing processed from the queue to the backend per "batch"
+    private final int QUEUE_PROCESSING_ELEMENTS = 50;
+    //TODO: Add to central configuration
+    private boolean isPeristend = true;
+
     private BackendConnector backendConnector;
     BackendConnectorFactory backendConnectorFactory = new BackendConnectorFactory();
 
 
+
     private static final String FILE_PATH = "queueMapDB";
-    private static DB db;
+    private static DB queueDb;
 
     private static final AtomicLong queueIdBuilder = new AtomicLong();
     private static BTreeMap<Long, MonitorEvent> eventQueue;
@@ -103,23 +111,23 @@ public class MonitoringService {
     private void initPersistentDBQueue() {
 
 
-        if ( db != null ) {
-            db.close();
+        if ( queueDb != null ) {
+            queueDb.close();
         }
         synchronized ( this ) {
 
             File folder = FileSystemManager.getInstance().registerNewFolder( "monitoring" );
 
-            db = DBMaker.fileDB( new File( folder, this.FILE_PATH ) )
+            queueDb = DBMaker.fileDB( new File( folder, this.FILE_PATH ) )
                             .closeOnJvmShutdown()
                             .transactionEnable()
                             .fileMmapEnableIfSupported()
                             .fileMmapPreclearDisable()
                             .make();
 
-            db.getStore().fileLoad();
+            queueDb.getStore().fileLoad();
 
-            eventQueue = db.treeMap( "partitions", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+            eventQueue = queueDb.treeMap( "queue", Serializer.LONG, Serializer.JAVA ).createOrOpen();
 
             try{
 
@@ -155,6 +163,7 @@ public class MonitoringService {
 
         long id = queueIdBuilder.getAndIncrement();
 
+
         System.out.println("\nHENNLO: Added new Worklaod event:"
                 + "\n\t STMT_TYPE:" + event.monitoringType + " "
                 + "\n\t Description: " + event.getDescription() + " "
@@ -165,23 +174,52 @@ public class MonitoringService {
 
         //Add event to persitent queue
         synchronized ( this ) {
-            //eventQueue.put( id, event );
+            eventQueue.put( id, event );
         }
 
         queueOverviewTable.addRow( id, event.monitoringType, event.getDescription(), event.getRecordedTimestamp(),event.getFieldNames() );
-
     }
 
+    //Queue processing FIFO
+    //ToDO mabye add more intelligent scheduling later on or introduce config to change procssing
+
+    //Will be executed every 5seconds due to Background Task Manager and checks the queue and then asyncronously writes them to backend
     public void executeEventInQueue(){
-        //Will be executed every 5seconds due to Background Task Manager and checks the queue and then asyncronously writes them to backend
+
+        long currentKey = -1;
+        for ( int i = 0; i < this.QUEUE_PROCESSING_ELEMENTS; i++ ) {
+
+            try {
+                currentKey = eventQueue.firstEntry().getKey();
+            }catch ( NullPointerException e ){
+                System.out.println("QUEUE is empty...skipping now");
+                break;
+            }
+
+            synchronized ( this ) {
+                if ( backendConnector.writeStatisticEvent( currentKey, eventQueue.get( currentKey ) ) ){
+                    //Remove processed entry from queue
+                    eventQueue.remove( currentKey );
+                    log.debug( "Processed Event in Queue: '{}'.", currentKey );
+                }
+                else{
+                    log.info( "Problem writing Event in Queue: '{}'. Skipping entry.", currentKey );
+                    continue;
+                }
+
+            }
+        }
+
         System.out.println("Executed Background Task at: " + new Timestamp(System.currentTimeMillis()) );
+        //backendConnector.writeStatisticEvent( eventQueue.p);
     }
+
 
     /**
      * This is currently a dummy Service mimicking the final retrieval of monitoring data
      *
      * @param type  Search for specific workload type
-     * @param filter on select worklaod type
+     * @param filter on select workload type
      *
      * @return some event or statistic which can be immediately used
      */

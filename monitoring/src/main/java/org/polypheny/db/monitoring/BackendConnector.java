@@ -7,7 +7,7 @@ public interface BackendConnector {
 
     void monitorEvent();
 
-    void writeStatisticEvent(String incomingEvent);
+    boolean writeStatisticEvent(long key, MonitorEvent incomingEvent);
 
     void readStatisticEvent(String outgoingEvent);
 

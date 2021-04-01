@@ -415,11 +415,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
 
-
-
         MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
                 .description( "Test description" )
-                .fieldNames( signature.rowType.getFieldNames() )
+                .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
                 .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
                 .build() );
         //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
