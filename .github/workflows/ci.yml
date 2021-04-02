@@ -23,7 +23,7 @@ jobs:
           
       -   name: Install docker-compose for MacOs
           if: startsWith(matrix.os, 'macOS')
-          run:
+          run: |
               brew install --cask docker
               brew install docker-compose
             
