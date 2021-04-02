@@ -157,8 +157,9 @@ public class AdapterManager {
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
         }
+        // for clarity we add the default mode if none is specified
         if ( !settings.containsKey( "mode" ) ) {
-            throw new RuntimeException( "Please specify a deployment mode, when adding a store" );
+            settings.put( "mode", "default" );
         }
 
         Constructor<?> ctor;
