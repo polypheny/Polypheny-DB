@@ -12,19 +12,7 @@ buildscript {
 }
 
 
-apply plugin: "java-library"
-apply plugin: "idea"
-apply plugin: "io.freefair.lombok"
 apply plugin: "com.github.johnrengelman.shadow"
-
-
-compileJava.options.encoding = "UTF-8"
-compileTestJava.options.encoding = "UTF-8"
-javadoc.options.encoding = "UTF-8"
-
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
 
 
 dependencies {
@@ -57,7 +45,7 @@ dependencies {
 
 
     // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version  // Apache 2.0
 
@@ -103,20 +91,6 @@ sourceSets {
 
 
 /**
- * JavaDoc
- */
-javadoc {
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption("html5", true)
-    }
-    // suppress most of the warnings
-    options.addStringOption("Xdoclint:none", "-quiet")
-    // Include private fields in JavaDoc
-    options.memberLevel = JavadocMemberLevel.PRIVATE
-}
-
-
-/**
  * JARs
  */
 jar {
@@ -149,19 +123,4 @@ artifacts {
     archives shadowJar // fat jar which additionally contains all dependencies
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
-}
-
-
-/**
- * IntelliJ
- */
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
-    }
 }

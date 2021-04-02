@@ -4,20 +4,6 @@ group "org.polypheny"
 version = versionMajor + "." + versionMinor + versionQualifier
 
 
-apply plugin: "java-library"
-apply plugin: "idea"
-apply plugin: "io.freefair.lombok"
-
-
-compileJava.options.encoding = "UTF-8"
-compileTestJava.options.encoding = "UTF-8"
-javadoc.options.encoding = "UTF-8"
-
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-
 dependencies {
     implementation project(":core")
 
@@ -29,7 +15,7 @@ dependencies {
     }
 
     // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
 
@@ -61,21 +47,6 @@ sourceSets {
 
 
 /**
- * JavaDoc
- */
-javadoc {
-    // suppress most of the warnings
-    options.addStringOption("Xdoclint:none", "-quiet")
-    // Include private fields in JavaDoc
-    options.memberLevel = JavadocMemberLevel.PRIVATE
-    // Use HTML 5 for JavaDoc
-    if (JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption("html5", true)
-    }
-}
-
-
-/**
  * JARs
  */
 jar {
@@ -89,19 +60,4 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
-}
-
-
-/**
- * IntelliJ
- */
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
-    }
 }
