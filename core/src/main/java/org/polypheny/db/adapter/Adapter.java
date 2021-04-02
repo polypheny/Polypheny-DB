@@ -31,12 +31,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.Config;
+import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigObject;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -60,6 +66,7 @@ public abstract class Adapter {
     protected final InformationPage informationPage;
     protected final List<InformationGroup> informationGroups;
     protected final List<Information> informationElements;
+    private ConfigListener listener;
 
 
     public Adapter( int adapterId, String uniqueName, Map<String, String> settings ) {
@@ -72,6 +79,11 @@ public abstract class Adapter {
         informationPage = new InformationPage( uniqueName );
         informationGroups = new ArrayList<>();
         informationElements = new ArrayList<>();
+
+        // this is need for docker deployable stores and should not interfere too much with other adapters
+        if ( this instanceof DockerDeployable && settings.containsKey( "mode" ) && settings.get( "mode" ).equals( "docker" ) ) {
+            this.listener = ((DockerDeployable) this).attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
+        }
     }
 
 
@@ -94,6 +106,14 @@ public abstract class Adapter {
     public abstract List<AdapterSetting> getAvailableSettings();
 
     public abstract void shutdown();
+
+
+    public void removeListener() {
+        if ( this instanceof DockerDeployable ) {
+            RuntimeConfig.DOCKER_INSTANCES.removeObserver( this.listener );
+        }
+    }
+
 
     /**
      * Informs a store that its settings have changed.
@@ -208,6 +228,7 @@ public abstract class Adapter {
         public final boolean modifiable;
         @Setter
         public String description;
+        public RuntimeConfig boundConfig;
 
 
         public AdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable ) {
@@ -223,13 +244,42 @@ public abstract class Adapter {
          */
         public abstract String getValue();
 
+        public abstract void refreshFromConfig();
+
+
+        /**
+         * This allows to bind this option to an existing RuntimeConfig,
+         * which will update when the bound option changes
+         *
+         * @param config the RuntimeConfig which is bound
+         * @return chain method to use the object
+         */
+        public AdapterSetting bind( RuntimeConfig config ) {
+            this.boundConfig = config;
+            ConfigListener listener = new ConfigListener() {
+                @Override
+                public void onConfigChange( Config c ) {
+                    refreshFromConfig();
+                }
+
+
+                @Override
+                public void restart( Config c ) {
+                    refreshFromConfig();
+                }
+            };
+            config.addObserver( listener );
+
+            return this;
+        }
+
     }
 
 
     public static class AdapterSettingInteger extends AdapterSetting {
 
         private final String type = "Integer";
-        public final Integer defaultValue;
+        private Integer defaultValue;
 
 
         public AdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue ) {
@@ -243,13 +293,21 @@ public abstract class Adapter {
             return defaultValue.toString();
         }
 
+
+        @Override
+        public void refreshFromConfig() {
+            if ( boundConfig != null ) {
+                defaultValue = boundConfig.getInteger();
+            }
+        }
+
     }
 
 
     public static class AdapterSettingString extends AdapterSetting {
 
         private final String type = "String";
-        public final String defaultValue;
+        private String defaultValue;
 
 
         public AdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue ) {
@@ -263,13 +321,21 @@ public abstract class Adapter {
             return defaultValue;
         }
 
+
+        @Override
+        public void refreshFromConfig() {
+            if ( boundConfig != null ) {
+                defaultValue = boundConfig.getString();
+            }
+        }
+
     }
 
 
     public static class AdapterSettingBoolean extends AdapterSetting {
 
         private final String type = "Boolean";
-        public final boolean defaultValue;
+        private boolean defaultValue;
 
 
         public AdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue ) {
@@ -283,6 +349,14 @@ public abstract class Adapter {
             return Boolean.toString( defaultValue );
         }
 
+
+        @Override
+        public void refreshFromConfig() {
+            if ( boundConfig != null ) {
+                defaultValue = boundConfig.getBoolean();
+            }
+        }
+
     }
 
 
@@ -290,9 +364,10 @@ public abstract class Adapter {
     public static class AdapterSettingList extends AdapterSetting {
 
         private final String type = "List";
-        public final List<String> options;
+        public List<String> options;
         @Setter
-        public String defaultValue;
+        String defaultValue;
+        public boolean dynamic = false;
 
 
         public AdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
@@ -309,6 +384,57 @@ public abstract class Adapter {
             return defaultValue;
         }
 
+
+        @Override
+        public void refreshFromConfig() {
+            if ( boundConfig != null ) {
+                options = boundConfig.getStringList();
+                if ( options.size() > 0 ) {
+                    this.defaultValue = options.get( 0 );
+                }
+            }
+        }
+
+    }
+
+
+    /**
+     * DynamicSettingsList which allows to configure mapped AdapterSettings, which expose an alias in the frontend
+     * but assign an corresponding id when the value is chosen
+     *
+     * @param <T>
+     */
+    @Accessors(chain = true)
+    public static class DynamicAdapterSettingsList<T extends ConfigObject> extends AdapterSettingList {
+
+        private final transient Function<T, String> mapper;
+        private final transient Class<T> clazz;
+        private Map<Integer, String> alias;
+        private final String nameAlias;
+
+
+        public DynamicAdapterSettingsList( String name, String nameAlias, boolean canBeNull, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
+            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ) );
+            this.mapper = mapper;
+            this.clazz = clazz;
+            this.dynamic = true;
+            this.nameAlias = nameAlias;
+            this.alias = options.stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
+        }
+
+
+        @Override
+        public void refreshFromConfig() {
+            if ( boundConfig != null ) {
+                options = boundConfig.getList( clazz ).stream().map( ( el ) -> String.valueOf( el.id ) ).collect( Collectors.toList() );
+                alias = boundConfig.getList( clazz ).stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
+                if ( options.size() > 0 ) {
+                    this.defaultValue = options.get( 0 );
+                }
+            }
+        }
+
+
     }
 
 
@@ -317,7 +443,7 @@ public abstract class Adapter {
 
         private final String type = "Directory";
         @Setter
-        public String directory;
+        private String directory;
         //This field is necessary for the the UI and needs to be initialized to be serialized to JSON.
         @Setter
         public String[] fileNames = new String[]{ "" };
@@ -335,6 +461,12 @@ public abstract class Adapter {
         @Override
         public String getValue() {
             return directory;
+        }
+
+
+        @Override
+        public void refreshFromConfig() {
+            throw new UnsupportedOperationException( "Dictionaries can not be bind to RuntimeConfigs!" );
         }
 
     }

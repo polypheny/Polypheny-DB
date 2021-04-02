@@ -5,6 +5,8 @@ import com.google.common.collect.ImmutableSet;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,6 +15,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -130,7 +133,15 @@ public class AdapterManager {
                 if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
                     String name = (String) clazz.getDeclaredField( "ADAPTER_NAME" ).get( null );
                     String description = (String) clazz.getDeclaredField( "DESCRIPTION" ).get( null );
-                    List<AdapterSetting> settings = (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_SETTINGS" ).get( null );
+                    Map<String, List<AdapterSetting>> settings = new HashMap<>();
+                    settings.put( "default", (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_SETTINGS" ).get( null ) );
+                    if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( DockerDeployable.class ) ) {
+                        settings.put( "docker", (List<AdapterSetting>) clazz.getField( "AVAILABLE_DOCKER_SETTINGS" ).get( null ) );
+                    }
+                    if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( RemoteDeployable.class ) ) {
+                        settings.put( "remote", (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_REMOTE_SETTINGS" ).get( null ) );
+                    }
+                    settings.put( "mode", Collections.singletonList( new AdapterSettingList( "mode", false, true, true, Collections.singletonList( "docker" ) ) ) );
                     result.add( new AdapterInformation( name, description, clazz, settings ) );
                 }
             }
@@ -146,6 +157,10 @@ public class AdapterManager {
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
         }
+        if ( !settings.containsKey( "mode" ) ) {
+            throw new RuntimeException( "Please specify a deployment mode, when adding a store" );
+        }
+
         Constructor<?> ctor;
         AdapterType adapterType;
         try {
@@ -175,6 +190,8 @@ public class AdapterManager {
                 if ( t instanceof RuntimeException ) {
                     throw (RuntimeException) t;
                 }
+            } else {
+                Catalog.getInstance().deleteAdapter( adapterId );
             }
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
@@ -196,6 +213,11 @@ public class AdapterManager {
         List<CatalogColumnPlacement> placements = Catalog.getInstance().getColumnPlacementsOnAdapter( catalogAdapter.id );
         if ( placements.size() != 0 ) {
             throw new RuntimeException( "There is still data placed on this data store" );
+        }
+
+        // Remove used listener
+        if ( adapterInstance instanceof DockerDeployable ) {
+            adapterInstance.removeListener();
         }
 
         // Shutdown store
@@ -235,7 +257,7 @@ public class AdapterManager {
         public final String name;
         public final String description;
         public final Class clazz;
-        public final List<AdapterSetting> settings;
+        public final Map<String, List<AdapterSetting>> settings;
 
     }
 

@@ -19,9 +19,10 @@ package org.polypheny.db.config;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
+import lombok.EqualsAndHashCode;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
-
+@EqualsAndHashCode(callSuper = true)
 public class ConfigString extends ConfigScalar {
 
     private String value;

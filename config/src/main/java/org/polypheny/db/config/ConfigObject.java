@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,18 @@
 
 package org.polypheny.db.config;
 
+import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Getter;
 
-/**
- * The type of the config for the WebUi to specify how it should be rendered in the UI (&lt;input type="text/number/etc."&gt;) e.g. text or number
- */
-public enum WebUiFormType {
-    TEXT( "text" ),
-    NUMBER( "number" ),
-    BOOLEAN( "boolean" ),
-    SELECT( "select" ),
-    CHECKBOXES( "checkboxes" ),
-    LIST( "list" ),
-    DOCKER_INSTANCE( "docker" );
+public abstract class ConfigObject extends ConfigScalar {
 
-    private final String type;
+    static protected final transient AtomicInteger idBuilder = new AtomicInteger();
+    @Getter
+    public int id = idBuilder.getAndIncrement();
 
 
-    WebUiFormType( final String t ) {
-        this.type = t;
+    protected ConfigObject( String key ) {
+        super( key );
     }
 
-
-    @Override
-    public String toString() {
-        return this.type;
-    }
 }

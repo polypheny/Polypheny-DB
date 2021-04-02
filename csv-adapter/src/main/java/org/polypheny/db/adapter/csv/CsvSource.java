@@ -68,6 +68,7 @@ public class CsvSource extends DataSource {
 
         setCsvDir( settings );
         registerInformationPage( uniqueName );
+        enableInformationPage();
     }
 
 

@@ -67,7 +67,11 @@ dependencies {
     api (group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version) { exclude(module: "protobuf-java") } // Apache 2.0
 
     api group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
-    
+
+    // https://github.com/docker-java/docker-java
+    implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0
+    implementation group: 'com.github.docker-java', name: 'docker-java-transport-httpclient5', version: java_docker_version //TODO: should probably be independent version in future
+
 
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version

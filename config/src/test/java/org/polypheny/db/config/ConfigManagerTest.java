@@ -381,6 +381,19 @@ public class ConfigManagerTest implements ConfigListener {
     }
 
 
+    @Test
+    public void configDocker() {
+        String url = "test";
+        String alias = "name";
+        ConfigDocker c = new ConfigDocker( 0, url, null, null, alias );
+        Assert.assertEquals( c.getAlias(), alias );
+        Assert.assertEquals( c.getUrl(), url );
+
+        cm.registerConfig( c );
+        Assert.assertEquals( cm.getConfig( c.getKey() ), c );
+    }
+
+
     @Override
     public void onConfigChange( Config c ) {
         System.out.println( "configChange: " + c.getKey() );
