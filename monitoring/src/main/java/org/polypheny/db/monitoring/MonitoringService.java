@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
@@ -94,6 +95,8 @@ public class MonitoringService {
                 informationGroupOverview,
                 Arrays.asList( "Queue ID", "STMT", "Description", " Recorded Timestamp", "Field Names") );
         im.registerInformation( queueOverviewTable );
+
+        informationGroupOverview.setRefreshFunction( this::updateInformation );
 
 
 
@@ -176,8 +179,6 @@ public class MonitoringService {
         synchronized ( this ) {
             eventQueue.put( id, event );
         }
-
-        queueOverviewTable.addRow( id, event.monitoringType, event.getDescription(), event.getRecordedTimestamp(),event.getFieldNames() );
     }
 
     //Queue processing FIFO
@@ -234,6 +235,22 @@ public class MonitoringService {
 
     private void initializeMonitoringBackend(){
         backendConnector = backendConnectorFactory.getBackendInstance(MONITORING_BACKEND);
+    }
+
+
+
+    /*
+    * Updates InformationTable with current elements in event queue
+     */
+    private void updateInformation(){
+
+        queueOverviewTable.reset();
+        for ( Entry currentEvent: eventQueue.getEntries() ) {
+            long eventId = (long) currentEvent.getKey();
+            MonitorEvent queueEvent = (MonitorEvent) currentEvent.getValue();
+            queueOverviewTable.addRow( eventId, queueEvent.monitoringType, queueEvent.getDescription(), queueEvent.getRecordedTimestamp(),queueEvent.getFieldNames() );
+        }
+        log.info( "REFRESHED" );
     }
 
     private class BackendConnectorFactory {
