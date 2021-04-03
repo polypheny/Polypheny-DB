@@ -18,8 +18,8 @@ package org.polypheny.db.docker;
 
 import java.util.Collections;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerManager.Container;
@@ -27,7 +27,7 @@ import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.docker.DockerManager.ContainerStatus;
 import org.polypheny.db.docker.DockerManager.Image;
 
-@Ignore
+@Category(DockerManagerTest.class)
 public class DockerInstanceTest {
 
     private static ConfigDocker config;
