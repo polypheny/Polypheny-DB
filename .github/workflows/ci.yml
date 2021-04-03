@@ -18,17 +18,6 @@ jobs:
           uses: actions/setup-java@v1
           with:
             java-version: ${{ matrix.java }}
-      -   run:
-            mkdir -p ~/.polypheny/certs
-          
-      -   name: Install docker-compose for MacOs
-          if: startsWith(matrix.os, 'macOS')
-          run: |
-              brew install --cask docker
-              brew install docker-compose
-            
-      -   name: Initialize Docker connector
-          run: docker-compose up -d
       -   name: Assemble
           run: ./gradlew assemble
       -   name: Execute tests
