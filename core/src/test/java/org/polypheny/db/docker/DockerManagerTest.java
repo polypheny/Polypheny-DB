@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
@@ -32,6 +33,7 @@ import org.polypheny.db.util.Pair;
  * DockerManager and its functionality, the functionality of
  * the underlying java-docker library should not be tested
  */
+@Ignore
 public class DockerManagerTest {
 
     private static ConfigDocker config;
