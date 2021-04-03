@@ -14,43 +14,34 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.adapter.file;
+package org.polypheny.db.adapter.file.source;
 
 
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.calcite.linq4j.tree.Expression;
+import org.polypheny.db.adapter.file.FileConvention;
+import org.polypheny.db.adapter.file.FileMethod;
+import org.polypheny.db.adapter.file.FileSchema;
 import org.polypheny.db.adapter.file.rel.FileRules;
-import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptPlanner;
 import org.polypheny.db.plan.RelOptRule;
 
 
-public class FileConvention extends Convention.Impl {
+public class QfsConvention extends FileConvention {
 
     @Getter
     private final Expression fileSchemaExpression;
-    @Getter
-    private final FileSchema fileSchema;
-    /**
-     * Whether the query is a modification (insert, update, delete) or a select query.
-     * Needed for the {@see org.polypheny.db.adapter.file.rel.FileRules.FileUnionRule}
-     */
-    @Getter
-    @Setter
-    private boolean isModification = false;
 
 
-    public FileConvention( String name, Expression fileSchemaExpression, FileSchema fileSchema ) {
-        super( "FileConvention." + name, FileRel.class );
+    public QfsConvention( String name, Expression fileSchemaExpression, FileSchema fileSchema ) {
+        super( "QfsConvention." + name, fileSchemaExpression, fileSchema );
         this.fileSchemaExpression = fileSchemaExpression;
-        this.fileSchema = fileSchema;
     }
 
 
     @Override
     public void register( RelOptPlanner planner ) {
-        for ( RelOptRule rule : FileRules.rules( this, FileMethod.EXECUTE.method, fileSchema ) ) {
+        for ( RelOptRule rule : FileRules.rules( this, FileMethod.EXECUTE_QFS.method, getFileSchema() ) ) {
             planner.addRule( rule );
         }
     }

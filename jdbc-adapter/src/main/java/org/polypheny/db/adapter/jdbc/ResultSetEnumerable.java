@@ -35,6 +35,9 @@ package org.polypheny.db.adapter.jdbc;
 
 
 import com.google.gson.Gson;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URL;
@@ -300,6 +303,12 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             preparedStatement.setBlob( i, (Blob) value );
         } else if ( value instanceof Byte ) {
             preparedStatement.setByte( i, (Byte) value );
+        } else if ( value instanceof File ) {
+            try {
+                preparedStatement.setBinaryStream( i, new FileInputStream( (File) value ) );
+            } catch ( FileNotFoundException e ) {
+                throw new RuntimeException( "Could not generate FileInputStream", e );
+            }
         } else if ( value instanceof NClob ) {
             preparedStatement.setNClob( i, (NClob) value );
         } else if ( value instanceof Clob ) {

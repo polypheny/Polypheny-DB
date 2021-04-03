@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.file;
 
 
+import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -25,10 +26,12 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexInputRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -43,6 +46,7 @@ public class Value {
     private Integer columnReference;
     private Object literal;
     private Long literalIndex;
+    private static final Gson gson = new Gson();
 
 
     /**
@@ -123,12 +127,23 @@ public class Value {
                     valueList.add( new Value( null, ((RexDynamicParam) lit).getIndex(), true ) );
                 } else if ( lit instanceof RexInputRef ) {
                     valueList.add( new Value( ((RexInputRef) lit).getIndex(), null, false ) );
+                } else if ( lit instanceof RexCall && lit.getType().getPolyType() == PolyType.ARRAY ) {
+                    valueList.add( fromArrayRexCall( (RexCall) lit ) );
                 } else {
                     throw new RuntimeException( "Could not implement " + lit.getClass().getSimpleName() + " " + lit.toString() );
                 }
             }
         }
         return valueList;
+    }
+
+
+    public static Value fromArrayRexCall( final RexCall call ) {
+        ArrayList<Object> arrayValues = new ArrayList<>();
+        for ( RexNode node : call.getOperands() ) {
+            arrayValues.add( ((RexLiteral) node).getValueForFileCondition() );
+        }
+        return new Value( null, gson.toJson( arrayValues ), false );
     }
 
 }

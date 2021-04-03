@@ -34,6 +34,7 @@
 package org.polypheny.db.adapter.jdbc;
 
 
+import java.io.PushbackInputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.sql.ResultSet;
@@ -356,7 +357,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
                     Expression getBytes = Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
                     builder.add( Expressions.ifThenElse( Expressions.equal( getFlavor, Expressions.constant( MultimediaFlavor.DEFAULT ) ),
                             Expressions.statement( Expressions.assign( target, getBytes ) ),
-                            Expressions.statement( Expressions.assign( target, getBinaryStream ) ) ) );
+                            //assign a PushbackInputStream for the SQL META function
+                            Expressions.statement( Expressions.assign( target, Expressions.new_( PushbackInputStream.class, getBinaryStream, Expressions.constant( 10240 ) ) ) ) ) );
                     source = null;
                 } else {
                     source = Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );

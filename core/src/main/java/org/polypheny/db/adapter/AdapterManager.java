@@ -170,6 +170,12 @@ public class AdapterManager {
             instance = (Adapter) ctor.newInstance( adapterId, uniqueName, settings );
         } catch ( Exception e ) {
             Catalog.getInstance().deleteAdapter( adapterId );
+            if ( e instanceof InvocationTargetException ) {
+                Throwable t = ((InvocationTargetException) e).getTargetException();
+                if ( t instanceof RuntimeException ) {
+                    throw (RuntimeException) t;
+                }
+            }
             throw new RuntimeException( "Something went wrong while adding a new adapter", e );
         }
         adapterByName.put( instance.getUniqueName(), instance );
