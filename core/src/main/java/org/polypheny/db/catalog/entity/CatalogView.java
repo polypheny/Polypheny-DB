@@ -31,9 +31,10 @@ import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.type.RelDataType;
-import org.polypheny.db.sql.SqlKind;
 
 public class CatalogView extends CatalogTable {
+
+    private static final long serialVersionUID = -4453089531698670528L;
 
     @Getter
     private final ImmutableList<Long> underlyingTables;
@@ -50,7 +51,7 @@ public class CatalogView extends CatalogTable {
             int ownerId,
             @NonNull String ownerName,
             @NonNull Catalog.TableType type,
-            RelNode definition,
+            RelRoot definition,
             Long primaryKey,
             @NonNull ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
             boolean modifiable,
@@ -63,9 +64,14 @@ public class CatalogView extends CatalogTable {
 
 
     public RelRoot prepareView( RelOptCluster cluster, RelTraitSet traitSet ) {
-        RelRoot viewLogicalRoot = RelRoot.of( definition, SqlKind.SELECT );
+        RelRoot viewLogicalRoot = definition;
         prepareView( viewLogicalRoot.rel, cluster, traitSet );
         return viewLogicalRoot;
+    }
+
+
+    public static CatalogView generateView( CatalogTable table, ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
+        return new CatalogView( table.id, table.name, table.columnIds, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable, underlyingTables, fieldList );
     }
 
 

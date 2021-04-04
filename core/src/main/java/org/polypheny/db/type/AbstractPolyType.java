@@ -34,7 +34,6 @@
 package org.polypheny.db.type;
 
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
@@ -47,7 +46,7 @@ import org.polypheny.db.rel.type.RelDataTypePrecedenceList;
 /**
  * Abstract base class for SQL implementations of {@link RelDataType}.
  */
-public abstract class AbstractPolyType extends RelDataTypeImpl implements Cloneable, Serializable {
+public abstract class AbstractPolyType extends RelDataTypeImpl implements Cloneable {
 
     protected final PolyType typeName;
     protected boolean isNullable;

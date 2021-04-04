@@ -32,6 +32,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -100,15 +101,28 @@ public class PolySchemaBuilder implements PropertyChangeListener, Serializable {
                 }
                 List<Long> columnIds = new LinkedList<>();
                 catalog.getColumns( catalogTable.id ).forEach( c -> columnIds.add( c.id ) );
-                LogicalTable table = new LogicalTable(
-                        catalogTable.id,
-                        catalogTable.getSchemaName(),
-                        catalogTable.name,
-                        columnIds,
-                        columnNames,
-                        RelDataTypeImpl.proto( fieldInfo.build() ) );
-                s.add( catalogTable.name, table );
-                tableMap.put( catalogTable.name, table );
+                if ( catalogTable.tableType == TableType.VIEW ) {
+                    LogicalView view = new LogicalView(
+                            catalogTable.id,
+                            catalogTable.getSchemaName(),
+                            catalogTable.name,
+                            columnIds,
+                            columnNames,
+                            RelDataTypeImpl.proto( fieldInfo.build() ) );
+                    s.add( catalogTable.name, view );
+                    tableMap.put( catalogTable.name, view );
+                } else {
+                    LogicalTable table = new LogicalTable(
+                            catalogTable.id,
+                            catalogTable.getSchemaName(),
+                            catalogTable.name,
+                            columnIds,
+                            columnNames,
+                            RelDataTypeImpl.proto( fieldInfo.build() ) );
+                    s.add( catalogTable.name, table );
+                    tableMap.put( catalogTable.name, table );
+                }
+
 
             }
             rootSchema.add( catalogSchema.name, s );
@@ -173,7 +187,7 @@ public class PolySchemaBuilder implements PropertyChangeListener, Serializable {
     /**
      * Schema that has no parents.
      */
-    private static class RootSchema extends AbstractSchema implements Serializable {
+    private static class RootSchema extends AbstractSchema {
 
         RootSchema() {
             super();

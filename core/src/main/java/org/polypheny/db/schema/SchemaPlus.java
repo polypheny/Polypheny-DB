@@ -35,7 +35,6 @@ package org.polypheny.db.schema;
 
 
 import com.google.common.collect.ImmutableList;
-import java.io.Serializable;
 import org.polypheny.db.rel.type.RelProtoDataType;
 
 
@@ -51,7 +50,7 @@ import org.polypheny.db.rel.type.RelProtoDataType;
  * Users should only use the SchemaPlus they are given by the system.
  * The purpose of SchemaPlus is to expose to user code, in a read only manner, some of the extra information about schemas that Polypheny-DB builds up when a schema is registered.
  */
-public interface SchemaPlus extends Schema, Serializable {
+public interface SchemaPlus extends Schema {
 
 
     PolyphenyDbSchema polyphenyDbSchema();

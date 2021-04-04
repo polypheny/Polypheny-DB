@@ -87,7 +87,7 @@ import org.polypheny.db.catalog.exceptions.UnknownUserIdRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
-import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
@@ -1276,7 +1276,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition ) {
         return addTable( name, schemaId, ownerId, tableType, modifiable, definition, null, null );
     }
 
@@ -1295,7 +1295,7 @@ public class CatalogImpl extends Catalog {
      * @return The id of the inserted table
      */
     @Override
-    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelNode definition, List<Long> underlyingTables, RelDataType fieldList ) {
+    public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, RelRoot definition, List<Long> underlyingTables, RelDataType fieldList ) {
         long id = tableIdBuilder.getAndIncrement();
         CatalogSchema schema = getSchema( schemaId );
         CatalogUser owner = getUser( ownerId );
@@ -1314,7 +1314,8 @@ public class CatalogImpl extends Catalog {
                 modifiable );
 
         if ( tableType == TableType.VIEW ) {
-            table = table.generateView( ImmutableList.copyOf( underlyingTables ), fieldList );
+            table = CatalogView.generateView( table, ImmutableList.copyOf( underlyingTables ), fieldList );
+            addConnectedViews( underlyingTables, table.id );
         }
 
         synchronized ( this ) {
@@ -1333,6 +1334,44 @@ public class CatalogImpl extends Catalog {
 
         listeners.firePropertyChange( "table", null, table );
         return id;
+    }
+
+
+    /**
+     * Add additional Information to Table, what Views are connected to table
+     */
+    public void addConnectedViews( List<Long> underlyingTables, long viewId ) {
+        for ( long id : underlyingTables ) {
+            CatalogTable old = getTable( id );
+            List<Long> connectedViews;
+            connectedViews = new ArrayList<>( old.connectedViews );
+            connectedViews.add( viewId );
+
+            CatalogTable table = new CatalogTable(
+                    old.id,
+                    old.name,
+                    old.columnIds,
+                    old.schemaId,
+                    old.databaseId,
+                    old.ownerId,
+                    old.ownerName,
+                    old.tableType,
+                    old.definition,
+                    old.primaryKey,
+                    old.placementsByAdapter,
+                    old.modifiable,
+                    old.numPartitions,
+                    old.partitionType,
+                    old.partitionIds,
+                    old.partitionColumnId,
+                    old.isPartitioned,
+                    ImmutableList.copyOf( connectedViews ) );
+            synchronized ( this ) {
+                tables.replace( id, table );
+                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+            }
+            listeners.firePropertyChange( "table", old, table );
+        }
     }
 
 

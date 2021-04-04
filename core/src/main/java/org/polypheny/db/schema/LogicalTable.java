@@ -16,7 +16,6 @@
 
 package org.polypheny.db.schema;
 
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
@@ -38,7 +37,7 @@ import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelProtoDataType;
 import org.polypheny.db.rex.RexNode;
 
-public class LogicalTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable, Serializable {
+public class LogicalTable extends AbstractQueryableTable implements TranslatableTable, ScannableTable, ModifiableTable {
 
     private RelProtoDataType protoRowType;
 

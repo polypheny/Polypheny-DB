@@ -138,7 +138,7 @@ public class SqlCreateView extends SqlCreate implements SqlExecutableStatement {
             DdlManager.getInstance().createView(
                     viewName,
                     schemaId,
-                    relRoot.rel,
+                    relRoot,
                     statement,
                     store,
                     placementType,

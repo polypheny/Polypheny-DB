@@ -34,7 +34,6 @@
 package org.polypheny.db.adapter.csv;
 
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -51,7 +50,7 @@ import org.polypheny.db.util.Source;
  *
  * It implements the {@link ScannableTable} interface, so Polypheny-DB gets data by calling the {@link #scan(DataContext)} method.
  */
-public class CsvScannableTable extends CsvTable implements ScannableTable, Serializable {
+public class CsvScannableTable extends CsvTable implements ScannableTable {
 
     /**
      * Creates a CsvScannableTable.

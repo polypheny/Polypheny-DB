@@ -63,7 +63,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema, Se
     protected final NameMap<TypeEntry> typeMap;
     protected final NameSet functionNames;
     protected final NameMap<FunctionEntry> nullaryFunctionMap;
-    protected final NameMap<PolyphenyDbSchema> subSchemaMap;
+    protected transient final NameMap<PolyphenyDbSchema> subSchemaMap;
     private List<? extends List<String>> path;
 
 
@@ -482,7 +482,7 @@ public abstract class AbstractPolyphenyDbSchema implements PolyphenyDbSchema, Se
     /**
      * Implementation of {@link SchemaPlus} based on a {@link AbstractPolyphenyDbSchema}.
      */
-    private class SchemaPlusImpl implements SchemaPlus, Serializable{
+    private class SchemaPlusImpl implements SchemaPlus {
 
         @Override
         public AbstractPolyphenyDbSchema polyphenyDbSchema() {

@@ -55,7 +55,7 @@ import org.polypheny.db.util.Util;
  *
  * Identity is based upon the {@link #digest} field, which each derived class should set during construction.
  */
-public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily, Serializable {
+public abstract class RelDataTypeImpl implements RelDataType, RelDataTypeFamily {
 
     protected final List<RelDataTypeField> fieldList;
     protected String digest;

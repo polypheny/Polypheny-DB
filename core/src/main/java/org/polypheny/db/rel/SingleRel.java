@@ -105,4 +105,11 @@ public abstract class SingleRel extends AbstractRelNode {
     protected RelDataType deriveRowType() {
         return input.getRowType();
     }
+
+
+    @Override
+    public boolean hasView() {
+        return input.hasView();
+    }
+
 }

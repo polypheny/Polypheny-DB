@@ -17,7 +17,6 @@
 package org.polypheny.db.type.checker;
 
 
-import java.io.Serializable;
 import java.util.Objects;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeComparability;
@@ -29,7 +28,7 @@ import org.polypheny.db.sql.SqlOperatorBinding;
  * Type checking strategy which verifies that types have the required attributes to be used as arguments to
  * comparison operators.
  */
-public class ComparableOperandTypeChecker extends SameOperandTypeChecker implements Serializable {
+public class ComparableOperandTypeChecker extends SameOperandTypeChecker {
 
     private final RelDataTypeComparability requiredComparability;
     private final Consistency consistency;

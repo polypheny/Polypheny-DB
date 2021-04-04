@@ -35,7 +35,6 @@ package org.polypheny.db.jdbc;
 
 
 import com.google.common.collect.Lists;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
@@ -74,7 +73,7 @@ import org.polypheny.db.util.Util;
  *
  * <strong>NOTE: This class is experimental and subject to change/removal without notice</strong>.</p>
  */
-public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaTypeFactory, Serializable {
+public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaTypeFactory{
 
     private final Map<List<Pair<Type, Boolean>>, SyntheticRecordType> syntheticTypes = new HashMap<>();
 
