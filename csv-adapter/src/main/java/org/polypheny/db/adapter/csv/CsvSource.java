@@ -22,7 +22,6 @@ import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.csv.CsvTable.Flavor;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationTable;
@@ -254,14 +253,7 @@ public class CsvSource extends DataSource implements Serializable {
 
     @Override
     public void shutdown() {
-        InformationManager im = InformationManager.getInstance();
-        if ( informationElements.size() > 0 ) {
-            im.removeInformation( informationElements.toArray( new Information[0] ) );
-        }
-        if ( informationGroups.size() > 0 ) {
-            im.removeGroup( informationGroups.toArray( new InformationGroup[0] ) );
-        }
-        im.removePage( informationPage );
+        removeInformationPage();
     }
 
 

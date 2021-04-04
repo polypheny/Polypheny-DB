@@ -23,13 +23,15 @@ import java.util.List;
 import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
+import org.polypheny.db.adapter.file.source.QfsSchema;
 import org.polypheny.db.type.PolyType;
 
 
 public enum FileMethod {
 
-    EXECUTE( FileSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class ),
-    EXECUTE_MODIFY( FileSchema.class, "executeModify", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, Condition.class );
+    EXECUTE( FileStoreSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class ),
+    EXECUTE_MODIFY( FileStoreSchema.class, "executeModify", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Boolean.class, Object[].class, Condition.class ),
+    EXECUTE_QFS( QfsSchema.class, "execute", Operation.class, Integer.class, DataContext.class, String.class, Long[].class, PolyType[].class, List.class, Integer[].class, Condition.class, Value[].class );
 
     public final Method method;
     public static final ImmutableMap<Method, FileMethod> MAP;

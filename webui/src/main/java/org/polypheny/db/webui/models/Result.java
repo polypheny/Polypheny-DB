@@ -170,6 +170,12 @@ public class Result {
     }
 
 
+    public Result( String errorMessage, Throwable e ) {
+        this.exception = e;
+        this.error = errorMessage;
+    }
+
+
     public Result() {
         //intentionally empty
     }

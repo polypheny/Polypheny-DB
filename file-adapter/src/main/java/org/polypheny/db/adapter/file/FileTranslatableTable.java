@@ -51,29 +51,26 @@ import org.polypheny.db.type.PolyType;
 
 public class FileTranslatableTable extends AbstractQueryableTable implements TranslatableTable, ModifiableTable {
 
-    final File rootDir;
+    private final File rootDir;
     @Getter
     private final String tableName;
-    long tableId;
+    private final long tableId;
     @Getter
-    List<String> columnNames;
+    private final List<String> columnNames;
     @Getter
-    final Map<String, Long> columnIdMap;
+    private final Map<String, Long> columnIdMap;
     @Getter
-    final Map<String, PolyType> columnTypeMap;
-    /**
-     * Ids of the columns that are part of the primary key
-     */
+    private final Map<String, PolyType> columnTypeMap;
     @Getter
-    final List<Long> pkIds;
+    private final List<Long> pkIds; // Ids of the columns that are part of the primary key
     @Getter
-    FileStore store;
+    private final int adapterId;
     @Getter
-    FileSchema fileSchema;
-    RelProtoDataType protoRowType;
+    private final FileSchema fileSchema;
+    private final RelProtoDataType protoRowType;
 
 
-    protected FileTranslatableTable( final FileSchema fileSchema,
+    public FileTranslatableTable( final FileSchema fileSchema,
             final String tableName,
             final long tableId,
             final List<Long> columnIds,
@@ -81,12 +78,12 @@ public class FileTranslatableTable extends AbstractQueryableTable implements Tra
             final List<String> columnNames,
             final List<Long> pkIds,
             final RelProtoDataType protoRowType ) {
-        super( Object.class );
-        this.rootDir = fileSchema.getStore().getRootDir();
+        super( Object[].class );
+        this.fileSchema = fileSchema;
+        this.rootDir = fileSchema.getRootDir();
         this.tableName = tableName;
         this.tableId = tableId;
-        this.store = fileSchema.getStore();
-        this.fileSchema = fileSchema;
+        this.adapterId = fileSchema.getAdapterId();
         this.pkIds = pkIds;
         this.protoRowType = protoRowType;
 

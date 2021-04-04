@@ -222,7 +222,7 @@ public class RestResult {
         } else {
             throw new RuntimeException( "Unexpected data for content type detection: " + o.getClass().getSimpleName() );
         }
-        if ( info != null && info.getFileExtensions() != null ) {
+        if ( info != null && info.getFileExtensions() != null && info.getFileExtensions().length > 0 ) {
             return "." + info.getFileExtensions()[0];
         } else {
             return "";

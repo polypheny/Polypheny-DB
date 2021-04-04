@@ -22,12 +22,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.SystemUtils;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.information.Information;
+import org.polypheny.db.information.InformationGraph;
+import org.polypheny.db.information.InformationGraph.GraphData;
+import org.polypheny.db.information.InformationGraph.GraphType;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -47,16 +54,9 @@ public class FileStore extends DataStore {
     @SuppressWarnings("WeakerAccess")
     public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of();
 
-    @Getter
-    private File rootDir;
-    private FileSchema currentSchema;
-    /**
-     * A folder containing the write ahead log
-     */
-    private File WAL;
-
     // Standards
     public static final Charset CHARSET = StandardCharsets.UTF_8;
+
     /**
      * Hash function to use the hash of a primary key to name a file.
      * If you change this function, make sure to change the offset in the {@link FileStore#commitOrRollback} method!
@@ -64,15 +64,16 @@ public class FileStore extends DataStore {
     @SuppressWarnings("UnstableApiUsage") // see https://stackoverflow.com/questions/53060907/is-it-safe-to-use-hashing-class-from-com-google-common-hash
     public static final HashFunction SHA = Hashing.sha256();
 
+    @Getter
+    private final File rootDir;
+    private FileStoreSchema currentSchema;
+
+    private final File WAL; // A folder containing the write ahead log
+
 
     public FileStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, true );
-        setRootDir();
-        trxRecovery();
-    }
 
-
-    private void setRootDir() {
         File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/file-store" );
         rootDir = new File( adapterRoot, "store" + getAdapterId() );
 
@@ -81,13 +82,39 @@ public class FileStore extends DataStore {
                 throw new RuntimeException( "Could not create root directory" );
             }
         }
-        //subfolder for the write ahead log
+        // Subfolder for the write ahead log
         this.WAL = new File( rootDir, "WAL" );
         if ( !WAL.exists() ) {
             if ( !WAL.mkdirs() ) {
                 throw new RuntimeException( "Could not create WAL folder" );
             }
         }
+
+        trxRecovery();
+        setInformationPage();
+    }
+
+
+    private void setInformationPage() {
+        InformationGroup infoGroup = new InformationGroup( informationPage, "Disk usage in GB" );
+        informationGroups.add( infoGroup );
+        File root = rootDir.toPath().getRoot().toFile();
+        int base = 1024;
+        if ( SystemUtils.IS_OS_MAC ) {
+            base = 1000;
+        }
+        Double[] diskUsage = new Double[]{
+                (double) ((root.getTotalSpace() - root.getUsableSpace()) / (long) Math.pow( base, 3 )),
+                (double) (root.getUsableSpace() / (long) Math.pow( base, 3 )) };
+        Information infoElement = new InformationGraph(
+                infoGroup,
+                GraphType.DOUGHNUT,
+                new String[]{ "used", "free" },
+                new GraphData<>( "disk-usage", diskUsage ) );
+        InformationManager im = InformationManager.getInstance();
+        im.addPage( informationPage );
+        im.addGroup( infoGroup );
+        im.registerInformation( infoElement );
     }
 
 
@@ -95,7 +122,7 @@ public class FileStore extends DataStore {
     public void createNewSchema( SchemaPlus rootSchema, String name ) {
         // it might be worth it to check why createNewSchema is called multiple times with different names
         if ( currentSchema == null ) {
-            currentSchema = new FileSchema( rootSchema, name, this );
+            currentSchema = new FileStoreSchema( rootSchema, name, this );
         }
     }
 
@@ -236,11 +263,12 @@ public class FileStore extends DataStore {
      * It will continue to execute the WAL entries
      */
     void trxRecovery() {
-        if ( WAL.listFiles() == null ) {
+        File[] walFiles = WAL.listFiles( file -> !file.isHidden() );
+        if ( walFiles == null ) {
             return;
         }
         try {
-            for ( File f : WAL.listFiles( file -> !file.isHidden() ) ) {
+            for ( File f : walFiles ) {
                 String GID;
                 String BID;
                 String action;
@@ -284,20 +312,46 @@ public class FileStore extends DataStore {
                 for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
                     data.delete();
                 }
+                File data = null;
+                File target = null;
+                File[] fileList = columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) );
+                if ( fileList == null ) {
+                    return;
+                }
                 try {
-                    for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
+                    //for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) ) ) {
+                    for ( int i = 0; i < fileList.length; i++ ) {
+                        data = fileList[i];
                         String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
-                        File target = new File( columnFolder, hash );
+                        target = new File( columnFolder, hash );
                         if ( commit ) {
                             Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
                         } else {
                             Files.move( data.toPath(), target.toPath() );
                         }
-
+                        i++;
                     }
                 } catch ( IOException e ) {
-                    throw new RuntimeException( "Could not commit because moving of files failed", e );
+                    if ( target == null ) {
+                        throw new RuntimeException( "Could not commit because moving of files failed", e );
+                    } else {
+                        throw new RuntimeException( "Could not commit because moving of files failed, trying to move "
+                                + data.getAbsolutePath() + " to " + target.getAbsolutePath(), e );
+                    }
                 }
+            }
+        }
+        cleanupHardlinks( xid );
+    }
+
+
+    private void cleanupHardlinks( final PolyXid xid ) {
+        File hardlinkFolder = new File( rootDir, "hardlinks/" + SHA.hashString( xid.toString(), FileStore.CHARSET ).toString() );
+        if ( hardlinkFolder.exists() ) {
+            try {
+                FileHelper.deleteDirRecursively( hardlinkFolder );
+            } catch ( IOException e ) {
+                throw new RuntimeException( "Could not cleanup hardlink-folder " + hardlinkFolder.getAbsolutePath(), e );
             }
         }
     }
@@ -309,7 +363,7 @@ public class FileStore extends DataStore {
         FileTranslatableTable fileTable = (FileTranslatableTable) currentSchema.getTable( table.name );
         try {
             for ( String colName : fileTable.getColumnNames() ) {
-                File columnFolder = getColumnFolder( fileTable.columnIdMap.get( colName ) );
+                File columnFolder = getColumnFolder( fileTable.getColumnIdMap().get( colName ) );
                 FileUtils.cleanDirectory( columnFolder );
             }
         } catch ( IOException e ) {
@@ -360,6 +414,7 @@ public class FileStore extends DataStore {
     @Override
     public void shutdown() {
         log.info( "shutting down file store '{}'", getUniqueName() );
+        removeInformationPage();
         try {
             FileHelper.deleteDirRecursively( rootDir );
         } catch ( IOException e ) {
