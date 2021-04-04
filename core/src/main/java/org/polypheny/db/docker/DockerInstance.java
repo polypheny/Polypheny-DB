@@ -126,9 +126,9 @@ public class DockerInstance extends DockerManager {
             if ( settings.getUsername() == null ) {
                 throw new RuntimeException( "To use a ssh connection for Docker a username is needed." );
             }
-            host = "ssh://" + settings.getUsername() + "@" + settings.getUrl();
+            host = "ssh://" + settings.getUsername() + "@" + settings.getHost();
         } else {
-            host = "tcp://" + settings.getUrl() + ":" + settings.getPort();
+            host = "tcp://" + settings.getHost() + ":" + settings.getPort();
         }
 
         Builder builder = DefaultDockerClientConfig
@@ -137,7 +137,7 @@ public class DockerInstance extends DockerManager {
         if ( !settings.isUsingInsecure() ) {
             builder
                     .withDockerTlsVerify( true )
-                    .withDockerCertPath( FileSystemManager.getInstance().registerNewFolder( "certs/" + settings.getUrl() + "/client" ).getPath() );
+                    .withDockerCertPath( FileSystemManager.getInstance().registerNewFolder( "certs/" + settings.getHost() + "/client" ).getPath() );
         }
 
         DockerClientConfig config = builder.build();

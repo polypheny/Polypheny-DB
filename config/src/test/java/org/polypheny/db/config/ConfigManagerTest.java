@@ -387,7 +387,7 @@ public class ConfigManagerTest implements ConfigListener {
         String alias = "name";
         ConfigDocker c = new ConfigDocker( 0, url, null, null, alias );
         Assert.assertEquals( c.getAlias(), alias );
-        Assert.assertEquals( c.getUrl(), url );
+        Assert.assertEquals( c.getHost(), url );
 
         cm.registerConfig( c );
         Assert.assertEquals( cm.getConfig( c.getKey() ), c );

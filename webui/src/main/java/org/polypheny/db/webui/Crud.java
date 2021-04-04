@@ -2233,7 +2233,6 @@ public class Crud implements InformationObserver {
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.addProperty( "usesDocker", src.isUsesDocker() );
             jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );

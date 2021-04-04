@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
+import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigObject;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.Information;
@@ -145,6 +146,13 @@ public abstract class Adapter {
 
 
     public Map<String, String> getCurrentSettings() {
+        // to access the associated settings the have to be unwrapped
+        if ( this instanceof DockerDeployable ) {
+            Map<String, String> dockerSettings = RuntimeConfig.DOCKER_INSTANCES
+                    .getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ).getSettings();
+            settings.forEach( dockerSettings::put );
+            return dockerSettings;
+        }
         return settings;
     }
 

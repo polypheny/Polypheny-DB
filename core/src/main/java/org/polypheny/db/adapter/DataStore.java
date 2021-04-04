@@ -35,20 +35,11 @@ public abstract class DataStore extends Adapter {
 
     @Getter
     private final boolean persistent;
-    @Getter
-    private final boolean usesDocker;
 
     protected final Catalog catalog = Catalog.getInstance();
 
-
     public DataStore( final int adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent ) {
-        this( adapterId, uniqueName, settings, persistent, false );
-    }
-
-
-    public DataStore( final int adapterId, final String uniqueName, final Map<String, String> settings, final boolean persistent, boolean usesDocker ) {
         super( adapterId, uniqueName, settings );
-        this.usesDocker = usesDocker;
         this.persistent = persistent;
 
         informationPage.setLabel( "Stores" );

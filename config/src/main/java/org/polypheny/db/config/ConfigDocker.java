@@ -17,6 +17,7 @@
 package org.polypheny.db.config;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -40,7 +41,7 @@ public class ConfigDocker extends ConfigObject {
     private String alias;
     @Getter
     @Setter
-    private String url;
+    private String host;
     @Getter
     @Setter
     private String protocol = DEFAULT_PROTOCOL;
@@ -59,23 +60,23 @@ public class ConfigDocker extends ConfigObject {
     private boolean usingInsecure;
 
 
-    public ConfigDocker( String url, String username, String password, String alias ) {
-        this( idBuilder.getAndIncrement(), url, username, password, alias );
+    public ConfigDocker( String host, String username, String password, String alias ) {
+        this( idBuilder.getAndIncrement(), host, username, password, alias );
     }
 
 
-    public ConfigDocker( String url, String username, String password ) {
-        this( idBuilder.getAndIncrement(), url, username, password, url );
+    public ConfigDocker( String host, String username, String password ) {
+        this( idBuilder.getAndIncrement(), host, username, password, host );
     }
 
 
-    public ConfigDocker( int id, String url, String username, String password, String alias ) {
+    public ConfigDocker( int id, String host, String username, String password, String alias ) {
         super( "dockerConfig" + id );
         this.id = id;
         if ( idBuilder.get() <= id ) {
             idBuilder.set( id + 1 );
         }
-        this.url = url;
+        this.host = host;
         this.alias = alias;
         this.username = username;
         this.password = password;
@@ -87,7 +88,7 @@ public class ConfigDocker extends ConfigObject {
     public static ConfigDocker fromMap( Map<String, Object> value ) {
         ConfigDocker config = new ConfigDocker(
                 ((Double) value.get( "id" )).intValue(),
-                (String) value.get( "url" ),
+                (String) value.get( "host" ),
                 (String) value.getOrDefault( "username", "" ),
                 (String) value.getOrDefault( "password", null ),
                 (String) value.get( "alias" ) );
@@ -97,6 +98,14 @@ public class ConfigDocker extends ConfigObject {
         config.setUsingInsecure( (Boolean) value.get( "usingInsecure" ) );
 
         return config;
+    }
+
+
+    public Map<String, String> getSettings() {
+        Map<String, String> settings = new HashMap<>();
+        settings.put( "host", host );
+        return settings;
+
     }
 
 
@@ -123,7 +132,7 @@ public class ConfigDocker extends ConfigObject {
         ConfigDocker that = (ConfigDocker) o;
         return port == that.port &&
                 dockerRunning == that.dockerRunning &&
-                url.equals( that.url ) &&
+                host.equals( that.host ) &&
                 alias.equals( that.alias ) &&
                 protocol.equals( that.protocol ) &&
                 usingInsecure == that.usingInsecure &&

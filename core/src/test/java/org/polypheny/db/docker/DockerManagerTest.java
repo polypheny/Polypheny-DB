@@ -123,8 +123,8 @@ public class DockerManagerTest {
         assert (manager.getDockerInstances().get( c.id ).getCurrentConfig().getAlias().equals( newAlias ));
 
         String newUrl = "localhost2";
-        RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, c.id ).setUrl( newUrl );
-        assert (manager.getDockerInstances().get( c.id ).getCurrentConfig().getUrl().equals( newUrl ));
+        RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, c.id ).setHost( newUrl );
+        assert (manager.getDockerInstances().get( c.id ).getCurrentConfig().getHost().equals( newUrl ));
 
         // when we replace the configs, they corresponding clients should automatically be removed
         ConfigDocker newC = new ConfigDocker( url, null, null, alias );

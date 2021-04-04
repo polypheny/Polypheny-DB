@@ -22,15 +22,14 @@ import org.polypheny.db.adapter.Adapter.AdapterSetting;
 
 /**
  * This interface can be used to add the needed configuration
- * settings and logic to an adapter to define it as remote.
+ * settings and logic to an adapter to define it as embedded.
  */
-public interface RemoteDeployable {
+public interface EmbeddedDeployable {
 
-    List<AdapterSetting> AVAILABLE_REMOTE_SETTINGS = ImmutableList.of();
+    List<AdapterSetting> AVAILABLE_EMBEDDED_SETTINGS = ImmutableList.of();
 
-
-    default List<AdapterSetting> getRemoteSettings() {
-        return AVAILABLE_REMOTE_SETTINGS;
+    default List<AdapterSetting> geteEmbeddedSettings() {
+        return AVAILABLE_EMBEDDED_SETTINGS;
     }
 
 }
