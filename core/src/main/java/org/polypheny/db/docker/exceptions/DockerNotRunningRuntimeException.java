@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker.Exceptions;
+package org.polypheny.db.docker.exceptions;
 
-public class PortExistsException extends DockerException {
+public class DockerNotRunningRuntimeException extends DockerRuntimeException {
 
-    public PortExistsException() {
-        super( "There is already a container running which exposes that port." );
+    public DockerNotRunningRuntimeException() {
+        super( "Docker is either not installed or not running at the moment." );
     }
 
 }

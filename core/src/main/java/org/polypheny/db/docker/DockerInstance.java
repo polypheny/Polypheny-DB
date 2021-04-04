@@ -45,8 +45,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.docker.Exceptions.NameExistsException;
-import org.polypheny.db.docker.Exceptions.PortExistsException;
+import org.polypheny.db.docker.exceptions.NameExistsRuntimeException;
+import org.polypheny.db.docker.exceptions.PortInUseRuntimeException;
 import org.polypheny.db.util.FileSystemManager;
 
 
@@ -266,12 +266,12 @@ public class DockerInstance extends DockerManager {
             // ExposedPort is exposed from container and Binding is port from outside
             bindings.bind( ExposedPort.tcp( mapping.getKey() ), Ports.Binding.bindPort( mapping.getValue() ) );
             if ( usedPorts.contains( mapping.getValue() ) ) {
-                throw new PortExistsException();
+                throw new PortInUseRuntimeException();
             }
         }
 
         if ( usedNames.contains( container.uniqueName ) ) {
-            throw new NameExistsException();
+            throw new NameExistsRuntimeException();
         }
 
         CreateContainerCmd cmd = client.createContainerCmd( container.image.getFullName() )

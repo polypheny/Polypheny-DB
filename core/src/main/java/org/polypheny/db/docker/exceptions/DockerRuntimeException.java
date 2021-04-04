@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker.Exceptions;
+package org.polypheny.db.docker.exceptions;
 
-public class DockerException extends RuntimeException {
+public class DockerRuntimeException extends RuntimeException {
 
-    public DockerException( String message ) {
+    public DockerRuntimeException( String message ) {
         super( message );
     }
 
