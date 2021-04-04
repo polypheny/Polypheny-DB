@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerManager.Container;
 import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.docker.DockerManager.Image;
 import org.polypheny.db.util.Pair;
@@ -58,7 +59,10 @@ public class DockerManagerTest {
         int adapterId = 1;
 
         Pair.zip( uniqueNames, uniquePorts ).forEach( namePortPairs -> {
-            manager.initialize( new ContainerBuilder( adapterId, Image.MONGODB, namePortPairs.left, config.id ).withMappedPort( namePortPairs.right, namePortPairs.right ).build() );
+            Container container = new ContainerBuilder( adapterId, Image.MONGODB, namePortPairs.left, config.id )
+                    .withMappedPort( namePortPairs.right, namePortPairs.right )
+                    .build();
+            manager.initialize( container );
         } );
         assert (manager.getUsedNames().containsAll( uniqueNames ));
         assert (manager.getUsedPorts().containsAll( uniquePorts ));

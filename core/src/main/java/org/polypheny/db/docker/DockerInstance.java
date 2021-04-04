@@ -111,9 +111,7 @@ public class DockerInstance extends DockerManager {
         } );
 
         client.listContainersCmd().withShowAll( true ).exec().forEach( container -> {
-            Arrays.stream( container.getPorts() ).forEach( containerPort -> {
-                usedPorts.add( containerPort.getPublicPort() );
-            } );
+            Arrays.stream( container.getPorts() ).forEach( containerPort -> usedPorts.add( containerPort.getPublicPort() ) );
             // docker returns the names with a prefixed "/", so we remove it
             usedNames.addAll( Arrays.stream( container.getNames() ).map( cont -> cont.substring( 1 ) ).collect( Collectors.toList() ) );
         } );

@@ -946,7 +946,7 @@ public abstract class Config {
     /**
      * Parse the string and set as value.
      *
-     * @param value
+     * @param value The string to be parsed as value
      */
     public abstract boolean parseStringAndSetValue( String value );
 

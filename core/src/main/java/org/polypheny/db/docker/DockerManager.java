@@ -32,7 +32,7 @@ import lombok.Setter;
  * these instances at the same time.
  *
  * For now, we have no way to determent if a previously created/running container with the same name
- * was created by Polypheny, so we try to reuse it
+ * was created by Polypheny, so we try to reuse it.
  */
 public abstract class DockerManager {
 
@@ -48,7 +48,7 @@ public abstract class DockerManager {
 
 
     /**
-     * This method generates a new Polypheny specific Container it additionally initializes said container in Docker itself
+     * This method generates a new Polypheny specific container and additionally initializes this container in Docker itself.
      *
      * @return the Container instance
      */
@@ -57,7 +57,7 @@ public abstract class DockerManager {
     /**
      * Starts the provided container,
      * if the container already runs it does nothing,
-     * if the container was destroyed it recreates first
+     * if the container was destroyed it recreates first.
      *
      * @param container the container which is started
      */
@@ -152,7 +152,7 @@ public abstract class DockerManager {
         STOPPED,
         RUNNING,
         ERROR,
-        DESTROYED;
+        DESTROYED
     }
 
 
