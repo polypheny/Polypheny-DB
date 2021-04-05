@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
+import org.polypheny.db.rel.RelRoot;
 
 
 @Getter
@@ -19,6 +20,7 @@ public class MonitorEvent implements Serializable {
     private String description;
     private List<String> fieldNames;
     private Timestamp recordedTimestamp;
+    //private RelRoot rel;
 
 
 }

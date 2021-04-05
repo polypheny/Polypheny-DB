@@ -152,8 +152,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
     protected static final boolean CONSTANT_REDUCTION = false;
     protected static final boolean ENABLE_STREAM = true;
 
-    //MonitoringService monitoringService = new MonitoringService();
-
 
     protected AbstractQueryProcessor( Statement statement ) {
         this.statement = statement;
@@ -269,6 +267,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
             routedRoot = logicalRoot;
         }
 
+
         // Validate parameterValues
         ParameterValueValidator pmValidator = new ParameterValueValidator( routedRoot.validatedRowType, statement.getDataContext() );
         pmValidator.visit( routedRoot.rel );
@@ -295,7 +294,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
 
-
+                MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
+                        .description( "Test description" )
+                        .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
+                        .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
+                        //.rel( routedRoot )
+                        .build() );
                 //MonitoringService.MonitorEvent( InfluxPojo.Create(  routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ) );
                 return signature;
             }
@@ -383,6 +387,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 .description( "Test description" )
                 .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
                 .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
+                //.rel( routedRoot )
                 .build() );
         //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
         return signature;
