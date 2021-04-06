@@ -80,11 +80,10 @@ public class TestHelper {
                 TimeUnit.SECONDS.sleep( 1 );
                 if ( i++ > 180 ) {
                     if ( thread.getStackTrace().length > 0 ) {
-                        StringBuilder stackTrace = new StringBuilder();
+                        System.err.println( "Stacktrace of Polypheny-DB thread:" );
                         for ( int j = 0; j < thread.getStackTrace().length; j++ ) {
-                            stackTrace.append( "\tat " ).append( thread.getStackTrace()[j] );
+                            System.err.println( "\tat " + thread.getStackTrace()[j] );
                         }
-                        log.error( "Stacktrace of Polypheny-DB thread: {}", stackTrace );
                     }
                     throw new RuntimeException( "There seems to be an issue with Polypheny-DB. Waited 3 minutes for Polypheny-DB to get ready. Aborting tests." );
                 }
