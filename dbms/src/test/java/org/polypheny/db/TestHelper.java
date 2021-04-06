@@ -79,7 +79,14 @@ public class TestHelper {
             try {
                 TimeUnit.SECONDS.sleep( 1 );
                 if ( i++ > 180 ) {
-                    throw new RuntimeException( "There seems to be an issue with Polypheny-DB. Waited for 3 minutes for Polypheny-DB to get ready. Aborting tests." );
+                    if ( thread.getStackTrace().length > 0 ) {
+                        StringBuilder stackTrace = new StringBuilder();
+                        for ( int j = 0; j < thread.getStackTrace().length; j++ ) {
+                            stackTrace.append( "\tat " ).append( thread.getStackTrace()[j] );
+                        }
+                        log.error( "Stacktrace of Polypheny-DB thread: {}", stackTrace );
+                    }
+                    throw new RuntimeException( "There seems to be an issue with Polypheny-DB. Waited 3 minutes for Polypheny-DB to get ready. Aborting tests." );
                 }
             } catch ( InterruptedException e ) {
                 log.error( "Interrupted exception", e );
