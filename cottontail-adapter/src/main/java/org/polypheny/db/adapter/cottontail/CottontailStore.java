@@ -95,7 +95,7 @@ public class CottontailStore extends DataStore {
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 1865 ),
             new AdapterSettingString( "database", false, true, false, "cottontail" ),
-            new AdapterSettingList( "engine", false, true, false, ImmutableList.of( "MAPDB", "HARE" ) )
+            new AdapterSettingList( "engine", false, true, false, ImmutableList.of( Engine.MAPDB.name(), Engine.HARE.name() ) )
     );
 
     // Running embedded
