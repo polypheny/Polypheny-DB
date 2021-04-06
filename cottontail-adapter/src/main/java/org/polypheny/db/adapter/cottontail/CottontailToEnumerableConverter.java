@@ -76,6 +76,8 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 public class CottontailToEnumerableConverter extends ConverterImpl implements EnumerableRel {
 
     public static final List<PolyType> SUPPORTED_ARRAY_COMPONENT_TYPES = ImmutableList.of(
+            PolyType.TINYINT,
+            PolyType.SMALLINT,
             PolyType.INTEGER,
             PolyType.DOUBLE,
             PolyType.FLOAT,
@@ -357,6 +359,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         switch ( polyType ) {
             case BOOLEAN:
                 return Types.lookupMethod( Linq4JFixer.class, "getBooleanData", Object.class );
+            case TINYINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntData", Object.class );
+            case SMALLINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class );
             case INTEGER:
                 return Types.lookupMethod( Linq4JFixer.class, "getIntData", Object.class );
             case BIGINT:
@@ -386,10 +392,6 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
                 return Types.lookupMethod( Linq4JFixer.class, "getDateData", Object.class );
             case TIMESTAMP:
                 return Types.lookupMethod( Linq4JFixer.class, "getTimestampData", Object.class );
-            case TINYINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntData", Object.class );
-            case SMALLINT:
-                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntData", Object.class );
             case ANY:
             default:
                 throw new AssertionError( "No primitive access method for type: " + polyType );
@@ -401,6 +403,10 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
         switch ( polyType ) {
             case BOOLEAN:
                 return Types.lookupMethod( Linq4JFixer.class, "getBoolVector", Object.class );
+            case SMALLINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getSmallIntVector", Object.class );
+            case TINYINT:
+                return Types.lookupMethod( Linq4JFixer.class, "getTinyIntVector", Object.class );
             case INTEGER:
                 return Types.lookupMethod( Linq4JFixer.class, "getIntVector", Object.class );
             case FLOAT:

@@ -101,35 +101,7 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             }
 
             final Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
-
-            /*Query.Builder queryBuilder = Query.newBuilder();
-
-            queryBuilder.setFrom(
-                    From.newBuilder().setEntity( Entity.newBuilder().setName( from ).setSchema(
-                            Schema.newBuilder().setName( schema ) ) ) );
-
-            if ( limit != null ) {
-                queryBuilder.setLimit( limit );
-            }
-
-            if ( offset != null ) {
-                queryBuilder.setSkip( offset );
-            }
-
-            if ( projection != null ) {
-                queryBuilder.setProjection( Projection.newBuilder().putAllAttributes( projection ) );
-            }
-
-            if ( whereBuilder != null ) {
-                queryBuilder.setWhere( whereBuilder.apply( parameterValues ) );
-            }
-
-            if ( knnBuilder != null ) {
-                queryBuilder.setKnn( knnBuilder.apply( parameterValues ) );
-            }*/
-
             queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
-
         } else {
             BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {

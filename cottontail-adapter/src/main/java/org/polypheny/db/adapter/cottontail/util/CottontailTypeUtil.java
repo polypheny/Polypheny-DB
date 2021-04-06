@@ -129,16 +129,17 @@ public class CottontailTypeUtil {
             }
 
             switch ( logicalType ) {
+                case TINYINT:
+                case SMALLINT:
                 case INTEGER:
                     return Type.INT_VEC;
-                case DOUBLE:
-                case DECIMAL:
-                    return Type.DOUBLE_VEC;
                 case BIGINT:
                     return Type.LONG_VEC;
                 case FLOAT:
                 case REAL:
                     return Type.FLOAT_VEC;
+                case DOUBLE:
+                    return Type.DOUBLE_VEC;
                 case BOOLEAN:
                     return Type.BOOL_VEC;
                 default:
@@ -165,7 +166,6 @@ public class CottontailTypeUtil {
                 // Types that require special treatment.
                 case TINYINT:
                 case SMALLINT:
-                    return Type.INTEGER;
                 case DATE:
                 case TIME:
                     return Type.INTEGER;
@@ -255,12 +255,7 @@ public class CottontailTypeUtil {
 
 
     public static Expression rexArrayConstructorToExpression( RexCall rexCall, PolyType innerType ) {
-        Expression constantExpression;
-//        List<Object> objectList = arrayCallToList( rexCall.getOperands(), innerType );
-
-//        constantExpression = Expressions.constant( objectList );
-        constantExpression = arrayListToExpression( rexCall.getOperands(), innerType );
-
+        Expression constantExpression = arrayListToExpression( rexCall.getOperands(), innerType );
         return Expressions.call( COTTONTAIL_SIMPLE_CONSTANT_TO_DATA_METHOD, constantExpression, Expressions.constant( innerType ) );
     }
 
@@ -276,10 +271,11 @@ public class CottontailTypeUtil {
         if ( value instanceof List ) {
             log.trace( "Attempting to convert an array to data." );
             // TODO js(ct): add list.size() == 0 handling
-            Vector vector = toVectorData( value );
+            final Vector vector = toVectorData( value );
             if ( vector != null ) {
                 return builder.setVectorData( vector ).build();
             } else {
+                /* TODO (RG): BigDecimals are currently handled by this branch, which excludes them from being usable for native NNS. */
                 return builder.setStringData( org.polypheny.db.adapter.cottontail.util.CottontailSerialisation.GSON.toJson( (List<Object>) value ) ).build();
             }
         }
@@ -416,28 +412,41 @@ public class CottontailTypeUtil {
     }
 
 
+    /**
+     * Converts List of primitive data types (i.e. {@link Double}, {@link Float}, {@link Long}, {@link Integer} or
+     * {@link Boolean}) to a {@link Vector} usable by Cottontail DB.
+     *
+     * <strong>Important: </strong> {@link BigDecimal} cannot be converted to native Cottontail DB {@link Vector}
+     * objects and are therefore stored as {@link String}s.
+     *
+     * @param vectorObject List of {@link Object}s that need to be converted.
+     * @return Converted object or null if conversion is not possible.
+     */
     public static Vector toVectorData( Object vectorObject ) {
         final Vector.Builder vectorBuilder = Vector.newBuilder();
         // TODO js(ct): add list.size() == 0 handling
         final Object firstItem = ((List) vectorObject).get( 0 );
-        if ( firstItem instanceof Integer ) {
+        if ( firstItem instanceof Byte ) {
             return vectorBuilder.setIntVector(
-                    IntVector.newBuilder().addAllVector( (List<Integer>) vectorObject ).build() ).build();
+                IntVector.newBuilder().addAllVector( ((List<Byte>) vectorObject).stream().map(Byte::intValue).collect(Collectors.toList()) ).build() ).build();
+        } else if ( firstItem instanceof Short ) {
+            return vectorBuilder.setIntVector(
+                IntVector.newBuilder().addAllVector( ((List<Short>) vectorObject).stream().map(Short::intValue).collect(Collectors.toList()) ).build() ).build();
+        } else if ( firstItem instanceof Integer) {
+            return vectorBuilder.setIntVector(
+                    IntVector.newBuilder().addAllVector( (List<Integer>) vectorObject ) ).build();
         } else if ( firstItem instanceof Double ) {
             return vectorBuilder.setDoubleVector(
-                    DoubleVector.newBuilder().addAllVector( (List<Double>) vectorObject ).build() ).build();
+                    DoubleVector.newBuilder().addAllVector( (List<Double>) vectorObject ) ).build();
         } else if ( firstItem instanceof Long ) {
             return vectorBuilder.setLongVector(
-                    LongVector.newBuilder().addAllVector( (List<Long>) vectorObject ).build() ).build();
+                    LongVector.newBuilder().addAllVector( (List<Long>) vectorObject ) ).build();
         } else if ( firstItem instanceof Float ) {
             return vectorBuilder.setFloatVector(
-                    FloatVector.newBuilder().addAllVector( (List<Float>) vectorObject ).build() ).build();
+                    FloatVector.newBuilder().addAllVector( (List<Float>) vectorObject ) ).build();
         } else if ( firstItem instanceof Boolean ) {
             return vectorBuilder.setBoolVector(
-                    BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ).build() ).build();
-        } else if ( firstItem instanceof BigDecimal ) {
-            List<Double> doubleList = ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList() );
-            return vectorBuilder.setDoubleVector( DoubleVector.newBuilder().addAllVector( doubleList ).build() ).build();
+                BoolVector.newBuilder().addAllVector( (List<Boolean>) vectorObject ) ).build();
         } else {
             return null;
         }

@@ -20,6 +20,7 @@ package org.polypheny.db.adapter.cottontail.util;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.calcite.avatica.util.ByteString;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.AtomicBooleanOperand;
@@ -157,6 +158,19 @@ public class Linq4JFixer {
         return ((CottontailGrpc.Literal) data).getVectorData().getBoolVector().getVectorList();
     }
 
+    public static Object getTinyIntVector( Object data ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+            return null;
+        }
+        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map(Integer::byteValue).collect(Collectors.toList());
+    }
+
+    public static Object getSmallIntVector( Object data ) {
+        if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
+            return null;
+        }
+        return ((CottontailGrpc.Literal) data).getVectorData().getIntVector().getVectorList().stream().map(Integer::shortValue).collect(Collectors.toList());
+    }
 
     public static Object getIntVector( Object data ) {
         if ( ((CottontailGrpc.Literal) data).hasNullData() ) {
