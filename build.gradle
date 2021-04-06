@@ -1,18 +1,4 @@
-/*
- * Copyright 2019-2020 The Polypheny Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import org.jetbrains.gradle.ext.*
 
 buildscript {
     repositories {
@@ -25,6 +11,12 @@ buildscript {
         classpath group: "com.adarshr", name: "gradle-test-logger-plugin", version: gradle_test_logger_version
     }
 }
+
+
+plugins {
+    id "org.jetbrains.gradle.plugin.idea-ext" version "1.0"
+}
+
 
 allprojects {
 
@@ -41,10 +33,27 @@ allprojects {
         }
     }
 
-    apply plugin: 'com.adarshr.test-logger'
+    apply plugin: "java-library"
+    apply plugin: "io.freefair.lombok"
+    apply plugin: "com.adarshr.test-logger"
+
+    compileJava.options.encoding = "UTF-8"
+    compileTestJava.options.encoding = "UTF-8"
+    javadoc.options.encoding = "UTF-8"
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
+    }
 
     repositories {
         mavenLocal()
+        mavenCentral()
+        maven {
+            url "https://clojars.org/repo/"
+        }
         maven {
             // DBIS Nexus
             url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
@@ -52,11 +61,11 @@ allprojects {
         maven {
             url "https://clojars.org/repo/"
         }
+        jcenter()
+        mavenCentral()
         maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
-        jcenter()
-        mavenCentral()
     }
 
     tasks.withType(JavaCompile) {
@@ -66,6 +75,16 @@ allprojects {
     configurations.all {
         // check for updates every build
         resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+    }
+
+    javadoc {
+        if (JavaVersion.current().isJava9Compatible()) {
+            options.addBooleanOption("html5", true)
+        }
+        // suppress most of the warnings
+        options.addStringOption("Xdoclint:none", "-quiet")
+        // Include private fields in JavaDoc
+        options.memberLevel = JavadocMemberLevel.PRIVATE
     }
 
     testlogger {
@@ -87,8 +106,61 @@ allprojects {
         logLevel 'lifecycle'
     }
 
+    idea {
+        module {
+            downloadJavadoc = true
+            downloadSources = true
+
+            inheritOutputDirs = false
+            outputDir = file("${project.buildDir}/classes")
+            testOutputDir = file("${project.buildDir}/test-classes")
+
+            generatedSourceDirs += file("${project.buildDir}/generated-sources")
+            generatedSourceDirs += file("${project.buildDir}/generated-test-sources")
+        }
+    }
+
 }
 
+
+idea {
+    project {
+        settings {
+            runConfigurations {
+                "Polypheny-DB"(Application) {
+                    mainClass = 'org.polypheny.db.PolyphenyDb'
+                    moduleName = getProject().idea.module.name + ".dbms.main"
+                }
+                "Polypheny-DB (reset)"(Application) {
+                    mainClass = 'org.polypheny.db.PolyphenyDb'
+                    moduleName = getProject().idea.module.name + ".dbms.main"
+                    programParameters = '-resetCatalog'
+                }
+            }
+            copyright {
+                useDefault = "ApacheLicense"
+                profiles {
+                    ApacheLicense {
+                        notice = 'Copyright 2019-$today.year The Polypheny Project\n' +
+                                '\n' +
+                                'Licensed under the Apache License, Version 2.0 (the \"License\");\n' +
+                                'you may not use this file except in compliance with the License.\n' +
+                                'You may obtain a copy of the License at\n' +
+                                '\n' +
+                                'http://www.apache.org/licenses/LICENSE-2.0\n' +
+                                '\n' +
+                                'Unless required by applicable law or agreed to in writing, software\n' +
+                                'distributed under the License is distributed on an \"AS IS\" BASIS,\n' +
+                                'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n' +
+                                'See the License for the specific language governing permissions and\n' +
+                                'limitations under the License.'
+                        keyword = "Copyright"
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 
