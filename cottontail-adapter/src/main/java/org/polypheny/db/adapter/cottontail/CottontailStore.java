@@ -94,7 +94,8 @@ public class CottontailStore extends DataStore {
             new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Embedded", "Standalone" ) ),
             new AdapterSettingString( "host", false, true, false, "localhost" ),
             new AdapterSettingInteger( "port", false, true, false, 1865 ),
-            new AdapterSettingString( "database", false, true, false, "cottontail" )
+            new AdapterSettingString( "database", false, true, false, "cottontail" ),
+            new AdapterSettingList( "engine", false, true, false, ImmutableList.of( "MAPDB, HARE" ) )
     );
 
     // Running embedded
@@ -105,6 +106,7 @@ public class CottontailStore extends DataStore {
     private final String dbHostname;
     private final int dbPort;
     private final String dbName;
+    private final Engine engine;
 
     private CottontailSchema currentSchema;
     @Expose(serialize = false, deserialize = false)
@@ -116,6 +118,11 @@ public class CottontailStore extends DataStore {
         this.dbName = settings.get( "database" );
         this.isEmbedded = settings.get( "type" ).equalsIgnoreCase( "Embedded" );
         this.dbPort = Integer.parseInt( settings.get( "port" ) );
+
+        engine = Engine.valueOf( settings.get( "engine" ).trim() );
+        if ( engine == null ) {
+            throw new RuntimeException( "Unknown engine: " + engine );
+        }
 
         if ( this.isEmbedded ) {
             File adapterRoot = FileSystemManager.getInstance().registerNewFolder( "data/cottontaildb-store" );
@@ -214,10 +221,14 @@ public class CottontailStore extends DataStore {
 
         final List<ColumnDefinition> columns = this.buildColumnDefinitions( this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), combinedTable.id ) );
         final String physicalTableName = CottontailNameUtil.createPhysicalTableName( combinedTable.id );
-        final EntityName tableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( physicalTableName ).build();
+        final EntityName tableEntity = EntityName.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( physicalTableName )
+                .build();
         final EntityDefinition definition = EntityDefinition.newBuilder()
                 .setEntity( tableEntity )
-                .addAllColumns( columns ).build();
+                .addAllColumns( columns )
+                .build();
 
         if ( !this.wrapper.createEntityBlocking( CreateEntityMessage.newBuilder().setDefinition( definition ).build() ) ) {
             throw new RuntimeException( "Unable to create table." );
@@ -251,7 +262,7 @@ public class CottontailStore extends DataStore {
                 columnBuilder.setLength( catalogColumn.cardinality );
             }
             columnBuilder.setNullable( catalogColumn.nullable );
-            columnBuilder.setEngine( Engine.MAPDB );
+            columnBuilder.setEngine( engine );
             columns.add( columnBuilder.build() );
         }
 
@@ -285,8 +296,14 @@ public class CottontailStore extends DataStore {
         final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
         final String newPhysicalColumnName = CottontailNameUtil.createPhysicalColumnName( catalogColumn.id );
 
-        final EntityName tableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( currentPhysicalTableName ).build();
-        final EntityName newTableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( newPhysicalTableName ).build();
+        final EntityName tableEntity = EntityName.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( currentPhysicalTableName )
+                .build();
+        final EntityName newTableEntity = EntityName.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( newPhysicalTableName )
+                .build();
 
         final CreateEntityMessage message = CreateEntityMessage.newBuilder().setDefinition( EntityDefinition.newBuilder()
                 .setEntity( newTableEntity )
@@ -299,7 +316,9 @@ public class CottontailStore extends DataStore {
         PolyType actualDefaultType;
         Object defaultValue;
         if ( catalogColumn.defaultValue != null ) {
-            actualDefaultType = (catalogColumn.collectionsType != null) ? catalogColumn.collectionsType : catalogColumn.type;
+            actualDefaultType = (catalogColumn.collectionsType != null)
+                    ? catalogColumn.collectionsType
+                    : catalogColumn.type;
             defaultValue = CottontailTypeUtil.defaultValueParser( catalogColumn.defaultValue, actualDefaultType );
         } else {
             defaultValue = null;
@@ -318,7 +337,9 @@ public class CottontailStore extends DataStore {
                 for ( CottontailGrpc.Literal literal : tuple.getDataList() ) {
                     insert.addInsertsBuilder().setColumn( responseMessage.getColumns( i++ ) ).setValue( literal );
                 }
-                insert.addInsertsBuilder().setColumn( ColumnName.newBuilder().setName( newPhysicalColumnName ).build() ).setValue( defaultData );
+                insert.addInsertsBuilder()
+                        .setColumn( ColumnName.newBuilder().setName( newPhysicalColumnName ).build() )
+                        .setValue( defaultData );
 
                 if ( !this.wrapper.insert( insert.build() ) ) {
                     throw new RuntimeException( "Unable to migrate data." );
@@ -343,12 +364,6 @@ public class CottontailStore extends DataStore {
     }
 
 
-    /**
-     * TODO: js(ct): Add dropColumn to cottontail
-     *
-     * @param context
-     * @param columnPlacement
-     */
     @Override
     public void dropColumn( Context context, CatalogColumnPlacement columnPlacement ) {
         final List<CatalogColumnPlacement> placements = this.catalog.getColumnPlacementsOnAdapter( this.getAdapterId(), columnPlacement.tableId );
@@ -360,8 +375,14 @@ public class CottontailStore extends DataStore {
         final String newPhysicalTableName = CottontailNameUtil.incrementNameRevision( currentPhysicalTableName );
         final String oldPhysicalColumnName = columnPlacement.physicalColumnName;
 
-        final EntityName tableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( currentPhysicalTableName ).build();
-        final EntityName newTableEntity = EntityName.newBuilder().setSchema( this.currentSchema.getCottontailSchema() ).setName( newPhysicalTableName ).build();
+        final EntityName tableEntity = EntityName.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( currentPhysicalTableName )
+                .build();
+        final EntityName newTableEntity = EntityName.newBuilder()
+                .setSchema( this.currentSchema.getCottontailSchema() )
+                .setName( newPhysicalTableName )
+                .build();
 
         final CreateEntityMessage message = CreateEntityMessage.newBuilder().setDefinition(
                 EntityDefinition.newBuilder().setEntity( newTableEntity ).addAllColumns( columns )

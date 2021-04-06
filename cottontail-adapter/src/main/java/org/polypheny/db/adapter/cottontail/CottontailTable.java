@@ -93,7 +93,10 @@ public class CottontailTable extends AbstractQueryableTable implements Translata
         this.physicalTableName = physicalTableName;
         this.physicalColumnNames = physicalColumnNames;
 
-        this.entity = EntityName.newBuilder().setName( this.physicalTableName ).setSchema( SchemaName.newBuilder().setName( physicalSchemaName ).build() ).build();
+        this.entity = EntityName.newBuilder()
+                .setName( this.physicalTableName )
+                .setSchema( SchemaName.newBuilder().setName( physicalSchemaName ).build() )
+                .build();
     }
 
 

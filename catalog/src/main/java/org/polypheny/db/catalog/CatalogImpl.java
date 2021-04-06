@@ -611,6 +611,7 @@ public class CatalogImpl extends Catalog {
             hsqldbSettings.put( "host", "localhost" );
             hsqldbSettings.put( "port", "1865" );
             hsqldbSettings.put( "database", "cottontail" );
+            hsqldbSettings.put( "engine", "MAPDB" );
             addAdapter( "hsqldb", "org.polypheny.db.adapter.cottontail.CottontailStore", AdapterType.STORE, hsqldbSettings );
 
             /*Map<String, String> hsqldbSettings = new HashMap<>();
