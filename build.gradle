@@ -87,9 +87,9 @@ allprojects {
         showPassed false
         showSkipped false
         showFailed true
-        showStandardStreams false
-        showPassedStandardStreams true
-        showSkippedStandardStreams true
+        showStandardStreams true
+        showPassedStandardStreams false
+        showSkippedStandardStreams false
         showFailedStandardStreams true
         logLevel 'lifecycle'
     }
