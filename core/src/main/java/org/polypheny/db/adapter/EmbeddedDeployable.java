@@ -28,7 +28,7 @@ public interface EmbeddedDeployable {
 
     List<AdapterSetting> AVAILABLE_EMBEDDED_SETTINGS = ImmutableList.of();
 
-    default List<AdapterSetting> geteEmbeddedSettings() {
+    default List<AdapterSetting> getEmbeddedSettings() {
         return AVAILABLE_EMBEDDED_SETTINGS;
     }
 

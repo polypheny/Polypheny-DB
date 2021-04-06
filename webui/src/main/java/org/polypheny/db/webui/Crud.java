@@ -105,6 +105,8 @@ import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
 import org.polypheny.db.adapter.DockerDeployable;
+import org.polypheny.db.adapter.EmbeddedDeployable;
+import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -2223,12 +2225,10 @@ public class Crud implements InformationObserver {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<DataStore> storeSerializer = ( src, typeOfSrc, context ) -> {
             List<AdapterSetting> mergedSettings = src.getAvailableSettings();
-            if ( src instanceof DockerDeployable ) {
-                mergedSettings = Stream.concat(
-                        mergedSettings.stream(), ((DockerDeployable) src).getDockerSettings().stream() )
-                        .collect( Collectors.toList() );
-            }
-            List<AdapterSetting> adapterSettings = serializeSettings( mergedSettings, src.getCurrentSettings() );
+
+            List<AdapterSetting> adapterSettings = serializeSettings(
+                    getAdditionalSettings( src, mergedSettings ),
+                    src.getCurrentSettings() );
 
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
@@ -2243,12 +2243,10 @@ public class Crud implements InformationObserver {
         };
         JsonSerializer<DataSource> sourceSerializer = ( src, typeOfSrc, context ) -> {
             List<AdapterSetting> mergedSettings = src.getAvailableSettings();
-            if ( src instanceof DockerDeployable ) {
-                mergedSettings = Stream.concat(
-                        mergedSettings.stream(), ((DockerDeployable) src).getDockerSettings().stream() )
-                        .collect( Collectors.toList() );
-            }
-            List<AdapterSetting> adapterSettings = serializeSettings( mergedSettings, src.getCurrentSettings() );
+
+            List<AdapterSetting> adapterSettings = serializeSettings(
+                    getAdditionalSettings( src, mergedSettings ),
+                    src.getCurrentSettings() );
 
             JsonObject jsonSource = new JsonObject();
             jsonSource.addProperty( "adapterId", src.getAdapterId() );
@@ -2261,6 +2259,26 @@ public class Crud implements InformationObserver {
             return jsonSource;
         };
         return new GsonBuilder().registerTypeAdapter( DataStore.class, storeSerializer ).registerTypeAdapter( DataSource.class, sourceSerializer ).create();
+    }
+
+
+    private List<AdapterSetting> getAdditionalSettings( Adapter src, List<AdapterSetting> mergedSettings ) {
+        if ( src instanceof DockerDeployable ) {
+            mergedSettings = Stream.concat(
+                    mergedSettings.stream(), ((DockerDeployable) src).getDockerSettings().stream() )
+                    .collect( Collectors.toList() );
+        }
+        if ( src instanceof EmbeddedDeployable ) {
+            mergedSettings = Stream.concat(
+                    mergedSettings.stream(), ((EmbeddedDeployable) src).getEmbeddedSettings().stream() )
+                    .collect( Collectors.toList() );
+        }
+        if ( src instanceof RemoteDeployable ) {
+            mergedSettings = Stream.concat(
+                    mergedSettings.stream(), ((RemoteDeployable) src).getRemoteSettings().stream() )
+                    .collect( Collectors.toList() );
+        }
+        return mergedSettings;
     }
 
 
