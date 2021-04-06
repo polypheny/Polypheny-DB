@@ -27,6 +27,7 @@ import org.polypheny.db.rel.core.Filter;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.sql.SqlKind;
 import org.polypheny.db.tools.RelBuilderFactory;
 import org.polypheny.db.type.PolyType;
 
@@ -106,29 +107,15 @@ public class CottontailFilterRule extends CottontailConverterRule {
         }
     }
 
-
     private boolean checkAtomicConditionArguments( RexNode left, RexNode right ) {
         switch ( right.getKind() ) {
             case LITERAL:
-                break;
-            case DYNAMIC_PARAM: {
-                RexDynamicParam rightDynamic = (RexDynamicParam) right;
-                if ( rightDynamic.getType().getPolyType() != PolyType.ARRAY ) {
-                    break;
-                }
-            }
+            case DYNAMIC_PARAM:
             case ARRAY_VALUE_CONSTRUCTOR:
-                // Array comparisons are not supported by cottontail at the moment
+                break;
             default:
                 return false;
         }
-
-        switch ( left.getKind() ) {
-            case INPUT_REF:
-                return true;
-            default:
-                return false;
-        }
+        return left.getKind() == SqlKind.INPUT_REF;
     }
-
 }
