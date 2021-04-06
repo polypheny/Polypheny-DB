@@ -45,6 +45,7 @@ import org.polypheny.db.plan.RelOptTable;
 import org.polypheny.db.plan.RelTraitSet;
 import org.polypheny.db.rel.core.Correlate;
 import org.polypheny.db.rel.core.CorrelationId;
+import org.polypheny.db.rel.logical.ViewTableScan;
 import org.polypheny.db.rel.metadata.Metadata;
 import org.polypheny.db.rel.metadata.RelMetadataQuery;
 import org.polypheny.db.rel.type.RelDataType;
@@ -340,6 +341,14 @@ public interface RelNode extends RelOptNode, Cloneable {
 
     default boolean hasView() {
         return false;
+    }
+
+    default void tryExpandView( RelNode input ) {
+        if ( input instanceof ViewTableScan ) {
+            input = ((ViewTableScan) input).expandViewNode( this );
+        } else {
+            input.tryExpandView( input );
+        }
     }
 
     /**
