@@ -493,25 +493,24 @@ public class CottontailStore extends DataStore {
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( currentPhysicalTableName )
                 .build();
+
         EntityName newTableEntity = EntityName.newBuilder()
                 .setSchema( this.currentSchema.getCottontailSchema() )
                 .setName( newPhysicalTableName )
                 .build();
 
-        final CreateEntityMessage message = CreateEntityMessage.newBuilder()
+        final CreateEntityMessage create = CreateEntityMessage.newBuilder()
                 .setDefinition( EntityDefinition.newBuilder().setEntity( newTableEntity ).addAllColumns( columns ) )
                 .build();
 
-        if ( !this.wrapper.createEntityBlocking( message ) ) {
+        if ( !this.wrapper.createEntityBlocking( create ) ) {
             throw new RuntimeException( "Unable to create table." );
         }
 
         final Query query = Query.newBuilder().setFrom( From.newBuilder().setScan( Scan.newBuilder().setEntity( tableEntity ).build() ) ).build();
         final Iterator<QueryResponseMessage> queryResponse = this.wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
 
-        final List<InsertMessage> inserts = new ArrayList<>();
         final From from = From.newBuilder().setScan( Scan.newBuilder().setEntity( newTableEntity ).build() ).build();
-
         queryResponse.forEachRemaining( response -> {
             for ( Tuple tuple : response.getTuplesList() ) {
                 final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from );
@@ -521,16 +520,9 @@ public class CottontailStore extends DataStore {
                             .setColumn( response.getColumns( i++ ) )
                             .setValue( d ) );
                 }
-                inserts.add( insert.build() );
-                if ( inserts.size() > 100 ) {
-                    this.wrapper.insert( inserts );
-                }
+                this.wrapper.insert( insert.build() );
             }
         } );
-
-        if ( inserts.size() > 0 ) {
-            this.wrapper.insert( inserts );
-        }
 
         for ( CatalogColumnPlacement ccp : placements ) {
             catalog.updateColumnPlacementPhysicalNames(
