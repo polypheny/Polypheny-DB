@@ -7,7 +7,9 @@ version = versionMajor + "." + versionMinor + versionQualifier
 
 configurations {
     javacc
-    testClasses
+    tests {
+        extendsFrom testRuntime
+    }
 }
 
 
@@ -20,20 +22,6 @@ buildscript {
     }
     ant.taskdef(name: "fmpp", classname:"fmpp.tools.AntTask", classpath: buildscript.configurations.classpath.asPath)
 }
-
-
-apply plugin: "java-library"
-apply plugin: "idea"
-apply plugin: "io.freefair.lombok"
-
-
-compileJava.options.encoding = "UTF-8"
-compileTestJava.options.encoding = "UTF-8"
-javadoc.options.encoding = "UTF-8"
-
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
 
 
 dependencies {
@@ -66,12 +54,11 @@ dependencies {
     api (group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version) { exclude(module: "guava") } // Apache 2.0
     api (group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version) { exclude(module: "protobuf-java") } // Apache 2.0
 
-    api group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
+    implementation group: "com.drewnoakes", name: "metadata-extractor", version: metadata_extractor_version // Apache 2.0
 
     // https://github.com/docker-java/docker-java
     implementation group: 'com.github.docker-java', name: 'docker-java', version: java_docker_version // Apache 2.0
     implementation group: 'com.github.docker-java', name: 'docker-java-transport-httpclient5', version: java_docker_version //TODO: should probably be independent version in future
-
 
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
@@ -86,9 +73,7 @@ dependencies {
     //testImplementation group: "mysql", name: "mysql-connector-java", version: mysql_connector_java_version
     //testImplementation group: "org.hsqldb", name: "hsqldb", version: hsqldb_version
     //testImplementation group: "org.postgresql", name: "postgresql", version: postgresql_version
-
 }
-
 
 
 sourceSets {
@@ -110,13 +95,11 @@ sourceSets {
         }
         resources {
             // We need the main resources for the tests as well.
-            // TODO(jan): Investigate further why this is required
             srcDirs = ["src/test/resources", "src/main/resources"]
         }
         output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
     }
 }
-
 
 
 /**
@@ -178,7 +161,6 @@ test {
 }
 
 
-
 /**
  * JARs
  */
@@ -197,34 +179,13 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier "javadoc"
     from javadoc.destinationDir
 }
-task testJar (type: Jar) {
-    classifier = "test"
+task testJar(type: Jar, dependsOn: testClasses) {
+    classifier 'tests'
     from sourceSets.test.output
 }
 artifacts {
     //archives jar // regular jar containing only the compiled source
     archives sourcesJar // jar file containing the java doc files
     archives javadocJar // jar file containing the source files
-    testClasses testJar // jar file containing the test classes
+    tests testJar // jar file containing the test classes
 }
-
-
-
-/**
- * IntelliJ
- */
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
-
-        generatedSourceDirs += file("${project.buildDir}/generated-sources")
-        generatedSourceDirs += file("${project.buildDir}/generated-test-sources")
-    }
-}
-
-
