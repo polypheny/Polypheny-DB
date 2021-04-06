@@ -1,11 +1,6 @@
-
 group "org.polypheny"
 
-
 version = versionMajor + "." + versionMinor + versionQualifier
-
-
-apply plugin: "io.freefair.lombok"
 
 
 dependencies {
@@ -22,7 +17,6 @@ dependencies {
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
 }
-
 
 
 sourceSets {
@@ -49,7 +43,6 @@ sourceSets {
 }
 
 
-
 /**
  * JavaDoc
  */
@@ -62,7 +55,6 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
-
 
 
 /**

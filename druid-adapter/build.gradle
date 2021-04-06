@@ -1,6 +1,4 @@
-
 group "org.polypheny"
-
 
 version = versionMajor + "." + versionMinor + versionQualifier
 
@@ -19,7 +17,6 @@ dependencies {
 
     testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version  // MIT
 }
-
 
 
 sourceSets {
@@ -46,7 +43,6 @@ sourceSets {
 }
 
 
-
 /**
  * Tests
  */
@@ -69,4 +65,3 @@ java {
     withJavadocJar()
     withSourcesJar()
 }
-
