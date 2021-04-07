@@ -117,7 +117,7 @@ public abstract class SingleRel extends AbstractRelNode {
     @Override
     public void tryExpandView( RelNode node ) {
         if ( input instanceof ViewTableScan ) {
-            input = ((ViewTableScan) input).expandViewNode( this );
+            input = ((ViewTableScan) input).expandViewNode();
         } else {
             input.tryExpandView( this );
         }

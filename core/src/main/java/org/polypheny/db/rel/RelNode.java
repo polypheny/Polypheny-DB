@@ -345,7 +345,7 @@ public interface RelNode extends RelOptNode, Cloneable {
 
     default void tryExpandView( RelNode input ) {
         if ( input instanceof ViewTableScan ) {
-            input = ((ViewTableScan) input).expandViewNode( this );
+            input = ((ViewTableScan) input).expandViewNode();
         } else {
             input.tryExpandView( input );
         }

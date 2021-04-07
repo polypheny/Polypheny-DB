@@ -84,17 +84,17 @@ public class ViewTableScan extends TableScan {
     }
 
 
-    public RelNode expandViewNode( RelNode parent ) {
+    public RelNode expandViewNode() {
 
-        RexBuilder rexBuilder = parent.getCluster().getRexBuilder();
+        RexBuilder rexBuilder = this.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
-        final RelDataType rowType = parent.getRowType();
+        final RelDataType rowType = this.getRowType();
         final int fieldCount = rowType.getFieldCount();
         for ( int i = 0; i < fieldCount; i++ ) {
-            exprs.add( rexBuilder.makeInputRef( parent, i ) );
+            exprs.add( rexBuilder.makeInputRef( this, i ) );
         }
 
-        return LogicalProject.create( relRoot.rel, exprs, parent.getRowType().getFieldNames() );
+        return LogicalProject.create( relRoot.rel, exprs, this.getRowType().getFieldNames() );
 
     }
 

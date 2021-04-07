@@ -115,9 +115,9 @@ public abstract class BiRel extends AbstractRelNode {
     @Override
     public void tryExpandView( RelNode node ) {
         if ( left instanceof ViewTableScan ) {
-            left = ((ViewTableScan) left).expandViewNode( left );
+            left = ((ViewTableScan) left).expandViewNode();
         } else if ( right instanceof ViewTableScan ) {
-            right = (((ViewTableScan) right).expandViewNode( right ));
+            right = (((ViewTableScan) right).expandViewNode());
         } else {
             left.tryExpandView( this );
             right.tryExpandView( this );
