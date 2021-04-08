@@ -74,7 +74,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -2264,19 +2263,13 @@ public class Crud implements InformationObserver {
 
     private List<AdapterSetting> getAdditionalSettings( Adapter src, List<AdapterSetting> mergedSettings ) {
         if ( src instanceof DockerDeployable ) {
-            mergedSettings = Stream.concat(
-                    mergedSettings.stream(), ((DockerDeployable) src).getDockerSettings().stream() )
-                    .collect( Collectors.toList() );
+            mergedSettings.addAll( ((DockerDeployable) src).getDockerSettings() );
         }
         if ( src instanceof EmbeddedDeployable ) {
-            mergedSettings = Stream.concat(
-                    mergedSettings.stream(), ((EmbeddedDeployable) src).getEmbeddedSettings().stream() )
-                    .collect( Collectors.toList() );
+            mergedSettings.addAll( ((EmbeddedDeployable) src).getEmbeddedSettings() );
         }
         if ( src instanceof RemoteDeployable ) {
-            mergedSettings = Stream.concat(
-                    mergedSettings.stream(), ((RemoteDeployable) src).getRemoteSettings().stream() )
-                    .collect( Collectors.toList() );
+            mergedSettings.addAll( ((RemoteDeployable) src).getRemoteSettings() );
         }
         return mergedSettings;
     }
