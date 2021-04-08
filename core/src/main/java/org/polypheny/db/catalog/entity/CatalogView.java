@@ -21,15 +21,16 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PartitionType;
+import org.polypheny.db.catalog.Catalog.TableType;
 import org.polypheny.db.plan.RelOptCluster;
 import org.polypheny.db.plan.RelTraitSet;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalProject;
-import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.SingleRel;
+import org.polypheny.db.rel.logical.ViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 
 public class CatalogView extends CatalogTable {
@@ -63,6 +64,33 @@ public class CatalogView extends CatalogTable {
     }
 
 
+    public CatalogView(
+            long id,
+            String name,
+            ImmutableList<Long> columnIds,
+            long schemaId,
+            long databaseId,
+            int ownerId,
+            String ownerName,
+            TableType tableType,
+            RelRoot definition,
+            Long primaryKey,
+            ImmutableMap<Integer, ImmutableList<Long>> placementsByAdapter,
+            boolean modifiable,
+            long numPartitions,
+            PartitionType partitionType,
+            ImmutableList<Long> partitionIds,
+            long partitionColumnId,
+            boolean isPartitioned,
+            ImmutableList<Long> connectedViews,
+            ImmutableList<Long> underlyingTables,
+            RelDataType fieldList ) {
+        super( id, name, columnIds, schemaId, databaseId, ownerId, ownerName, tableType, definition, primaryKey, placementsByAdapter, modifiable, numPartitions, partitionType, partitionIds, partitionColumnId, isPartitioned, connectedViews );
+        this.underlyingTables = underlyingTables;
+        this.fieldList = fieldList;
+    }
+
+
     public RelRoot prepareView( RelOptCluster cluster, RelTraitSet traitSet ) {
         RelRoot viewLogicalRoot = definition;
         prepareView( viewLogicalRoot.rel, cluster, traitSet );
@@ -76,26 +104,18 @@ public class CatalogView extends CatalogTable {
 
 
     public void prepareView( RelNode viewLogicalRoot, RelOptCluster relOptCluster, RelTraitSet traitSet ) {
-        if ( viewLogicalRoot instanceof LogicalProject ) {
-            ((LogicalProject) viewLogicalRoot).setCluster( relOptCluster );
-            ((LogicalProject) viewLogicalRoot).setTraitSet( traitSet );
-            prepareView( ((LogicalProject) viewLogicalRoot).getInput(), relOptCluster, traitSet );
-        } else if ( viewLogicalRoot instanceof LogicalFilter ) {
-            ((LogicalFilter) viewLogicalRoot).setCluster( relOptCluster );
-            ((LogicalFilter) viewLogicalRoot).setTraitSet( traitSet );
-            prepareView( ((LogicalFilter) viewLogicalRoot).getInput(), relOptCluster, traitSet );
-        } else if ( viewLogicalRoot instanceof LogicalJoin ) {
-            ((LogicalJoin) viewLogicalRoot).setCluster( relOptCluster );
-            ((LogicalJoin) viewLogicalRoot).setTraitSet( traitSet );
-            prepareView( ((LogicalJoin) viewLogicalRoot).getLeft(), relOptCluster, traitSet );
-            prepareView( ((LogicalJoin) viewLogicalRoot).getRight(), relOptCluster, traitSet );
-        } else if ( viewLogicalRoot instanceof LogicalTableScan ) {
-            ((LogicalTableScan) viewLogicalRoot).setCluster( relOptCluster );
-            ((LogicalTableScan) viewLogicalRoot).setTraitSet( traitSet );
-        } else if ( viewLogicalRoot instanceof LogicalAggregate ) {
-            ((LogicalAggregate) viewLogicalRoot).setCluster( relOptCluster );
-            ((LogicalAggregate) viewLogicalRoot).setTraitSet( traitSet );
-            prepareView( ((LogicalAggregate) viewLogicalRoot).getInput(), relOptCluster, traitSet );
+        if ( viewLogicalRoot instanceof AbstractRelNode ) {
+            ((AbstractRelNode) viewLogicalRoot).setCluster( relOptCluster );
+            ((AbstractRelNode) viewLogicalRoot).setTraitSet( traitSet );
+        }
+        if ( viewLogicalRoot instanceof BiRel ) {
+            prepareView( ((BiRel) viewLogicalRoot).getLeft(), relOptCluster, traitSet );
+            prepareView( ((BiRel) viewLogicalRoot).getRight(), relOptCluster, traitSet );
+        } else if ( viewLogicalRoot instanceof SingleRel ) {
+            prepareView( ((SingleRel) viewLogicalRoot).getInput(), relOptCluster, traitSet );
+        }
+        if ( viewLogicalRoot instanceof ViewTableScan ) {
+            prepareView( ((ViewTableScan) viewLogicalRoot).getRelRoot().rel, relOptCluster, traitSet );
         }
     }
 

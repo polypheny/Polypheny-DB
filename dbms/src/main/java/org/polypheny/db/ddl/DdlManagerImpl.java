@@ -90,12 +90,11 @@ import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.processing.DataMigrator;
+import org.polypheny.db.rel.AbstractRelNode;
+import org.polypheny.db.rel.BiRel;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
-import org.polypheny.db.rel.logical.LogicalAggregate;
-import org.polypheny.db.rel.logical.LogicalFilter;
-import org.polypheny.db.rel.logical.LogicalJoin;
-import org.polypheny.db.rel.logical.LogicalProject;
+import org.polypheny.db.rel.SingleRel;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.ViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
@@ -1304,14 +1303,12 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         prepareView( relRoot.rel );
-
         RelDataType fieldList = relRoot.rel.getRowType();
 
         List<ColumnInformation> columns = new ArrayList<>();
         if ( projectedColumns == null ) {
             int position = 1;
             for ( RelDataTypeField rel : fieldList.getFieldList() ) {
-
                 columns.add( new ColumnInformation(
                         rel.getName(),
                         new ColumnTypeInformation(
@@ -1325,7 +1322,6 @@ public class DdlManagerImpl extends DdlManager {
                         Collation.getDefaultCollation(),
                         null,
                         position ) );
-
                 position++;
             }
         }
@@ -1357,48 +1353,34 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.cardinality,
                     column.typeInformation.nullable,
                     column.collation );
-
         }
-
     }
 
 
     private void prepareView( RelNode viewNode ) {
-        if ( viewNode instanceof LogicalProject ) {
-            ((LogicalProject) viewNode).setCluster( null );
-            prepareView( ((LogicalProject) viewNode).getInput() );
-        } else if ( viewNode instanceof LogicalFilter ) {
-            ((LogicalFilter) viewNode).setCluster( null );
-            prepareView( ((LogicalFilter) viewNode).getInput() );
-        } else if ( viewNode instanceof LogicalJoin ) {
-            ((LogicalJoin) viewNode).setCluster( null );
-            prepareView( ((LogicalJoin) viewNode).getLeft() );
-            prepareView( ((LogicalJoin) viewNode).getRight() );
-        } else if ( viewNode instanceof LogicalTableScan ) {
-            ((LogicalTableScan) viewNode).setCluster( null );
-        } else if ( viewNode instanceof ViewTableScan ) {
-            ((ViewTableScan) viewNode).setCluster( null );
-        } else if ( viewNode instanceof LogicalAggregate ) {
-            ((LogicalAggregate) viewNode).setCluster( null );
-            prepareView( ((LogicalAggregate) viewNode).getInput() );
+        if ( viewNode instanceof AbstractRelNode ) {
+            ((AbstractRelNode) viewNode).setCluster( null );
+        }
+        if ( viewNode instanceof BiRel ) {
+            prepareView( ((BiRel) viewNode).getLeft() );
+            prepareView( ((BiRel) viewNode).getRight() );
+        } else if ( viewNode instanceof SingleRel ) {
+            prepareView( ((SingleRel) viewNode).getInput() );
         }
     }
 
 
     private List<Long> findUnderlyingTablesOfView( RelNode relNode, List<Long> underlyingTables ) {
-        if ( relNode instanceof LogicalProject ) {
-            findUnderlyingTablesOfView( ((LogicalProject) relNode).getInput(), underlyingTables );
-        } else if ( relNode instanceof LogicalJoin ) {
-            findUnderlyingTablesOfView( ((LogicalJoin) relNode).getLeft(), underlyingTables );
-            findUnderlyingTablesOfView( ((LogicalJoin) relNode).getRight(), underlyingTables );
-        } else if ( relNode instanceof LogicalFilter ) {
-            findUnderlyingTablesOfView( ((LogicalFilter) relNode).getInput(), underlyingTables );
-        } else if ( relNode instanceof LogicalAggregate ) {
-            findUnderlyingTablesOfView( ((LogicalAggregate) relNode).getInput(), underlyingTables );
-        } else if ( relNode instanceof LogicalTableScan ) {
+        if ( relNode instanceof LogicalTableScan ) {
             underlyingTables.add( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
         } else if ( relNode instanceof ViewTableScan ) {
             underlyingTables.add( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
+        }
+        if ( relNode instanceof BiRel ) {
+            findUnderlyingTablesOfView( ((BiRel) relNode).getLeft(), underlyingTables );
+            findUnderlyingTablesOfView( ((BiRel) relNode).getRight(), underlyingTables );
+        } else if ( relNode instanceof SingleRel ) {
+            findUnderlyingTablesOfView( ((SingleRel) relNode).getInput(), underlyingTables );
         }
         return underlyingTables;
     }
