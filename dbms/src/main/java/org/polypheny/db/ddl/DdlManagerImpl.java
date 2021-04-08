@@ -97,13 +97,13 @@ import org.polypheny.db.rel.logical.LogicalFilter;
 import org.polypheny.db.rel.logical.LogicalJoin;
 import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.rel.logical.LogicalTableScan;
+import org.polypheny.db.rel.logical.ViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
-import org.polypheny.db.rex.RexCall;
-import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.LogicalView;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
@@ -122,6 +122,24 @@ public class DdlManagerImpl extends DdlManager {
     private void checkIfTableType( TableType tableType ) throws DdlOnSourceException {
         if ( tableType != TableType.TABLE ) {
             throw new DdlOnSourceException();
+        }
+    }
+
+
+    private void checkIfViewType( TableType tableType ) throws DdlOnSourceException {
+        if ( tableType != TableType.VIEW ) {
+            throw new DdlOnSourceException();
+        }
+    }
+
+
+    private void checkViewDependencies( CatalogTable catalogTable ) {
+        if ( catalogTable.connectedViews.size() > 0 ) {
+            List<String> views = new ArrayList<>();
+            for ( Long id : catalogTable.connectedViews ) {
+                views.add( catalog.getTable( id ).name );
+            }
+            throw new PolyphenyDbException( "Cannot drop table because of underlying View " + views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
         }
     }
 
@@ -1351,7 +1369,6 @@ public class DdlManagerImpl extends DdlManager {
             prepareView( ((LogicalProject) viewNode).getInput() );
         } else if ( viewNode instanceof LogicalFilter ) {
             ((LogicalFilter) viewNode).setCluster( null );
-            List<RexNode> rexNodes = ((RexCall) ((LogicalFilter) viewNode).getCondition()).getOperands();
             prepareView( ((LogicalFilter) viewNode).getInput() );
         } else if ( viewNode instanceof LogicalJoin ) {
             ((LogicalJoin) viewNode).setCluster( null );
@@ -1359,6 +1376,8 @@ public class DdlManagerImpl extends DdlManager {
             prepareView( ((LogicalJoin) viewNode).getRight() );
         } else if ( viewNode instanceof LogicalTableScan ) {
             ((LogicalTableScan) viewNode).setCluster( null );
+        } else if ( viewNode instanceof ViewTableScan ) {
+            ((ViewTableScan) viewNode).setCluster( null );
         } else if ( viewNode instanceof LogicalAggregate ) {
             ((LogicalAggregate) viewNode).setCluster( null );
             prepareView( ((LogicalAggregate) viewNode).getInput() );
@@ -1372,8 +1391,14 @@ public class DdlManagerImpl extends DdlManager {
         } else if ( relNode instanceof LogicalJoin ) {
             findUnderlyingTablesOfView( ((LogicalJoin) relNode).getLeft(), underlyingTables );
             findUnderlyingTablesOfView( ((LogicalJoin) relNode).getRight(), underlyingTables );
+        } else if ( relNode instanceof LogicalFilter ) {
+            findUnderlyingTablesOfView( ((LogicalFilter) relNode).getInput(), underlyingTables );
+        } else if ( relNode instanceof LogicalAggregate ) {
+            findUnderlyingTablesOfView( ((LogicalAggregate) relNode).getInput(), underlyingTables );
         } else if ( relNode instanceof LogicalTableScan ) {
             underlyingTables.add( ((LogicalTable) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
+        } else if ( relNode instanceof ViewTableScan ) {
+            underlyingTables.add( ((LogicalView) ((RelOptTableImpl) relNode.getTable()).getTable()).getTableId() );
         }
         return underlyingTables;
     }
@@ -1615,18 +1640,34 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
+    public void dropView( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
+        // Make sure that this is a table of type TABLE (and not SOURCE)
+        checkIfViewType( catalogTable.tableType );
+
+        //check if views are dependent from this view
+        checkViewDependencies( catalogTable );
+
+        // Delete columns
+        for ( Long columnId : catalogTable.columnIds ) {
+            catalog.deleteColumn( columnId );
+        }
+
+        // Delete the table
+        catalog.deleteTable( catalogTable.id );
+
+        // Rest plan cache and implementation cache
+        statement.getQueryProcessor().resetCaches();
+
+    }
+
+
+    @Override
     public void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
         checkIfTableType( catalogTable.tableType );
 
-        if ( catalogTable.connectedViews.size() > 0 ) {
-            List<String> views = new ArrayList<>();
-            for ( Long id : catalogTable.connectedViews ) {
-                views.add( catalog.getTable( id ).name );
-            }
-
-            throw new PolyphenyDbException( "Cannot drop table because of underlying View " + views.stream().map( String::valueOf ).collect( Collectors.joining( (", ") ) ) );
-        }
+        //check if tables are dependent from this table
+        checkViewDependencies( catalogTable );
 
         // Check if there are foreign keys referencing this table
         List<CatalogForeignKey> selfRefsToDelete = new LinkedList<>();

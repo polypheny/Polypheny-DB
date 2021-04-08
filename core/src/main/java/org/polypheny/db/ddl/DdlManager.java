@@ -437,7 +437,7 @@ public abstract class DdlManager {
      *
      * @param viewName the name of the new view
      * @param schemaId the id of the schema to which the view belongs
-     * @param relNode the relNode which was built form the Select part of the view
+     * @param relRoot the relNode which was built form the Select part of the view
      * @param statement the used Statement
      */
     public abstract void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException;
@@ -476,6 +476,11 @@ public abstract class DdlManager {
      * @param statement the used statement
      */
     public abstract void dropTable( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException;
+
+    /**
+     * Drop View
+     */
+    public abstract void dropView( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException;
 
     /**
      * Truncate a table
