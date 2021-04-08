@@ -39,6 +39,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -230,25 +231,34 @@ public class DockerInstance extends DockerManager {
     }
 
 
+    /**
+     * This executes multiple defined commands after a delay in the given container
+     *
+     * @param container the container with specifies the afterCommands and to which they are applied
+     */
     private void execAfterInitCommands( Container container ) {
-        try {
-            Thread.sleep( container.timeout );
-            ExecCreateCmdResponse cmd = client
-                    .execCreateCmd( container.getContainerId() )
-                    .withAttachStdout( true )
-                    .withCmd( container.afterCommands.toArray( new String[0] ) )
-                    .exec();
+        int offset = 0;
+        for ( Entry<Integer, List<String>> entry : container.afterCommands.entrySet() ) {
+            offset = entry.getKey() - offset;
+            try {
+                Thread.sleep( offset );
+                ExecCreateCmdResponse cmd = client
+                        .execCreateCmd( container.getContainerId() )
+                        .withAttachStdout( true )
+                        .withCmd( entry.getValue().toArray( new String[0] ) )
+                        .exec();
 
-            ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<ResultCallback<Frame>, Frame>() {
-                @Override
-                public void onNext( Frame event ) {
+                ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<ResultCallback<Frame>, Frame>() {
+                    @Override
+                    public void onNext( Frame event ) {
 
-                }
-            };
+                    }
+                };
 
-            client.execStartCmd( cmd.getId() ).exec( callback ).awaitCompletion();
-        } catch ( InterruptedException e ) {
-            throw new RuntimeException( e );
+                client.execStartCmd( cmd.getId() ).exec( callback ).awaitCompletion();
+            } catch ( InterruptedException e ) {
+                throw new RuntimeException( e );
+            }
         }
     }
 

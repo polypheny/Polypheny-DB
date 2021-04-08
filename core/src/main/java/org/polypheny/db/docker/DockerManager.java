@@ -17,10 +17,12 @@
 package org.polypheny.db.docker;
 
 import com.github.dockerjava.api.model.ExposedPort;
+import com.google.common.collect.Streams;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -166,9 +168,8 @@ public abstract class DockerManager {
         public List<String> initCommands = new ArrayList<>();
         public int dockerInstanceId;
 
-
-        public int timeout;
-        public List<String> afterCommands = new ArrayList<>();
+        // map with timeouts matched to the commands
+        public Map<Integer, List<String>> orderAfterCommands = new TreeMap<>();
 
 
         public ContainerBuilder( Integer adapterId, Image image, String uniqueName, int dockerInstanceId ) {
@@ -186,22 +187,39 @@ public abstract class DockerManager {
         }
 
 
+        /**
+         * This allows to define specific commands which are executed when the container is initialized
+         *
+         * @param commands a collection of the commands to execute
+         * @return the builder
+         */
         public ContainerBuilder withInitCommands( List<String> commands ) {
-            this.initCommands = commands;
+            this.initCommands = Streams.concat( this.initCommands.stream(), commands.stream() ).collect( Collectors.toList() );
 
             return this;
         }
 
 
+        /**
+         * This allows to specify commands which are executed after a give delay
+         *
+         * @param commands the collection of commands to execute
+         * @param timeout the absolute timeout after the creation
+         * @return the builder
+         */
         public ContainerBuilder withAfterCommands( List<String> commands, int timeout ) {
-            this.afterCommands = commands;
-            this.timeout = timeout;
+            if ( this.orderAfterCommands.containsKey( timeout ) ) {
+                this.orderAfterCommands.get( timeout ).addAll( commands );
+            } else {
+                this.orderAfterCommands.put( timeout, commands );
+            }
 
             return this;
         }
 
 
         public Container build() {
+
             return new Container(
                     adapterId,
                     uniqueName,
@@ -210,8 +228,7 @@ public abstract class DockerManager {
                     internalExternalPortMapping,
                     checkUnique,
                     initCommands,
-                    timeout,
-                    afterCommands );
+                    orderAfterCommands );
         }
 
 
@@ -241,8 +258,8 @@ public abstract class DockerManager {
         public final List<String> initCommands;
 
         public final boolean usesAfterCommands;
-        public final Integer timeout;
-        public final List<String> afterCommands;
+
+        public final Map<Integer, List<String>> afterCommands;
 
 
         private Container(
@@ -253,8 +270,7 @@ public abstract class DockerManager {
                 Map<Integer, Integer> internalExternalPortMapping,
                 boolean checkUnique,
                 List<String> initCommands,
-                Integer timeout,
-                List<String> afterCommands
+                Map<Integer, List<String>> afterCommands
         ) {
             this.adapterId = adapterId;
             this.image = image;
@@ -263,7 +279,6 @@ public abstract class DockerManager {
             this.internalExternalPortMapping = internalExternalPortMapping;
             this.status = ContainerStatus.INIT;
             this.initCommands = initCommands;
-            this.timeout = timeout;
             this.usesInitCommands = !initCommands.isEmpty();
             this.afterCommands = afterCommands;
             this.usesAfterCommands = !afterCommands.isEmpty();
