@@ -136,19 +136,19 @@ public class AdapterManager {
                     Map<String, List<AdapterSetting>> settings = new HashMap<>();
                     settings.put( "default", (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_SETTINGS" ).get( null ) );
                     if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( DockerDeployable.class ) ) {
-                        settings.put( "docker", (List<AdapterSetting>) clazz.getField( "AVAILABLE_DOCKER_SETTINGS" ).get( null ) );
+                        settings.put( "docker", (List<AdapterSetting>) clazz.getDeclaredMethod( "getAvailableRemoteSettings" ).invoke( null ) );
                     }
                     if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( RemoteDeployable.class ) ) {
-                        settings.put( "remote", (List<AdapterSetting>) clazz.getField( "AVAILABLE_REMOTE_SETTINGS" ).get( null ) );
+                        settings.put( "remote", (List<AdapterSetting>) clazz.getDeclaredMethod( "getAvailableRemoteSettings" ).invoke( null ) );
                     }
                     if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( EmbeddedDeployable.class ) ) {
-                        settings.put( "embedded", (List<AdapterSetting>) clazz.getField( "AVAILABLE_EMBEDDED_SETTINGS" ).get( null ) );
+                        settings.put( "embedded", (List<AdapterSetting>) clazz.getDeclaredMethod( "getAvailableEmbeddedSettings" ).invoke( null ) );
                     }
                     settings.put( "mode", Collections.singletonList( new AdapterSettingList( "mode", false, true, true, Collections.singletonList( "docker" ) ) ) );
                     result.add( new AdapterInformation( name, description, clazz, settings ) );
                 }
             }
-        } catch ( NoSuchFieldException | IllegalAccessException e ) {
+        } catch ( NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e ) {
             throw new RuntimeException( "Something went wrong while retrieving list of available store adapters.", e );
         }
         return result;
