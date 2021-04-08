@@ -100,7 +100,6 @@ import org.polypheny.db.rel.logical.LogicalTableModify;
 import org.polypheny.db.rel.logical.LogicalTableScan;
 import org.polypheny.db.rel.logical.LogicalUnion;
 import org.polypheny.db.rel.logical.LogicalValues;
-import org.polypheny.db.rel.logical.ViewTableScan;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeFactory;
 import org.polypheny.db.rel.type.RelDataTypeField;
@@ -170,7 +169,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
     protected PolyphenyDbSignature prepareQuery( RelRoot logicalRoot, RelDataType parameterRowType, boolean isRouted, boolean isSubquery ) {
-        RelRoot relRoot = logicalRoot;
         boolean isAnalyze = statement.getTransaction().isAnalyze() && !isSubquery;
         boolean lock = !isSubquery;
 
@@ -181,19 +179,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
         stopWatch.start();
 
-        if ( relRoot.rel.hasView() ) {
-            if ( relRoot.rel instanceof LogicalProject ) {
-                if ( ((LogicalProject) relRoot.rel).getInput() instanceof ViewTableScan ) {
-                    relRoot = ((ViewTableScan) ((LogicalProject) relRoot.rel).getInput()).getRelRoot();
-                } else if ( ((LogicalProject) relRoot.rel).getInput() instanceof LogicalJoin ) {
-                    if ( ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getLeft() instanceof ViewTableScan ) {
-                        relRoot = ((ViewTableScan) ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getLeft()).getRelRoot();
-                    } else if ( ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getRight() instanceof ViewTableScan ) {
-                        relRoot = ((ViewTableScan) ((LogicalJoin) ((LogicalProject) relRoot.rel).getInput()).getRight()).getRelRoot();
-                    }
-                }
-
-            }
+        if ( logicalRoot.rel.hasView() ) {
+            logicalRoot.rel.tryExpandView( logicalRoot.rel );
         }
 
         ExecutionTimeMonitor executionTimeMonitor = new ExecutionTimeMonitor();
@@ -214,7 +201,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     // Get a shared global schema lock (only DDLs acquire a exclusive global schema lock)
                     LockManager.INSTANCE.lock( LockManager.GLOBAL_LOCK, (TransactionImpl) statement.getTransaction(), LockMode.SHARED );
                     // Get locks for individual tables
-                    TableAccessMap accessMap = new TableAccessMap( relRoot.rel );
+                    TableAccessMap accessMap = new TableAccessMap( logicalRoot.rel );
                     for ( TableIdentifier tableIdentifier : accessMap.getTablesAccessed() ) {
                         Mode mode = accessMap.getTableAccessMode( tableIdentifier );
                         if ( mode == Mode.READ_ACCESS ) {
@@ -233,7 +220,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getDuration().stop( "Locking" );
                 statement.getDuration().start( "Index Update" );
             }
-            RelRoot indexUpdateRoot = relRoot;
+            RelRoot indexUpdateRoot = logicalRoot;
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
                 IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
                 indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
@@ -276,7 +263,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 statement.getDuration().stop( "Routing" );
             }
         } else {
-            routedRoot = relRoot;
+            routedRoot = logicalRoot;
         }
 
         // Validate parameterValues

@@ -17,6 +17,8 @@
 package org.polypheny.db.rel.logical;
 
 import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -30,6 +32,9 @@ import org.polypheny.db.rel.RelCollationTraitDef;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.RelRoot;
 import org.polypheny.db.rel.core.TableScan;
+import org.polypheny.db.rel.type.RelDataType;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.schema.Table;
 
@@ -76,6 +81,21 @@ public class ViewTableScan extends TableScan {
     @Override
     public boolean hasView() {
         return true;
+    }
+
+
+    public RelNode expandViewNode() {
+
+        RexBuilder rexBuilder = this.getCluster().getRexBuilder();
+        final List<RexNode> exprs = new ArrayList<>();
+        final RelDataType rowType = this.getRowType();
+        final int fieldCount = rowType.getFieldCount();
+        for ( int i = 0; i < fieldCount; i++ ) {
+            exprs.add( rexBuilder.makeInputRef( this, i ) );
+        }
+
+        return LogicalProject.create( relRoot.rel, exprs, this.getRowType().getFieldNames() );
+
     }
 
 }
