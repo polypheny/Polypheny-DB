@@ -302,6 +302,22 @@ public abstract class DockerManager {
             return internalExternalPortMapping.values().stream().map( ExposedPort::tcp ).collect( Collectors.toList() );
         }
 
+
+        public String getPhysicalName() {
+            return Container.getPhysicalUniqueName( this );
+        }
+
+
+        public static String getPhysicalUniqueName( Container container ) {
+            // while not all Docker containers belong to an adapter we annotate it anyway
+            return container.uniqueName + "_polypheny_" + container.adapterId;
+        }
+
+
+        public static String getFromPhysicalName( String physicalUniqueName ) {
+            return physicalUniqueName.split( "_" )[0];
+        }
+
     }
 
 }

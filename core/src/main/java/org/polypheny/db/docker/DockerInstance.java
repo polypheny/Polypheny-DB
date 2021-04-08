@@ -113,7 +113,7 @@ public class DockerInstance extends DockerManager {
         client.listContainersCmd().withShowAll( true ).exec().forEach( container -> {
             Arrays.stream( container.getPorts() ).forEach( containerPort -> usedPorts.add( containerPort.getPublicPort() ) );
             // docker returns the names with a prefixed "/", so we remove it
-            usedNames.addAll( Arrays.stream( container.getNames() ).map( cont -> cont.substring( 1 ) ).collect( Collectors.toList() ) );
+            usedNames.addAll( Arrays.stream( container.getNames() ).map( cont -> Container.getFromPhysicalName( cont.substring( 1 ) ) ).collect( Collectors.toList() ) );
         } );
     }
 
@@ -215,12 +215,12 @@ public class DockerInstance extends DockerManager {
         }
 
         // we have to check if the container is running and start it if its not
-        InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.uniqueName ).exec();
+        InspectContainerResponse containerInfo = client.inspectContainerCmd( "/" + container.getPhysicalName() ).exec();
         ContainerState state = containerInfo.getState();
         if ( Objects.equals( state.getStatus(), "exited" ) ) {
-            client.startContainerCmd( container.uniqueName ).exec();
+            client.startContainerCmd( container.getPhysicalName() ).exec();
         } else if ( Objects.equals( state.getStatus(), "created" ) ) {
-            client.startContainerCmd( container.uniqueName ).exec();
+            client.startContainerCmd( container.getPhysicalName() ).exec();
             if ( container.afterCommands.size() != 0 ) {
                 execAfterInitCommands( container );
             }
@@ -273,7 +273,7 @@ public class DockerInstance extends DockerManager {
         }
 
         CreateContainerCmd cmd = client.createContainerCmd( container.image.getFullName() )
-                .withName( container.uniqueName )
+                .withName( Container.getPhysicalUniqueName( container ) )
                 .withCmd( container.initCommands )
                 .withExposedPorts( container.getExposedPorts() );
 
@@ -345,7 +345,7 @@ public class DockerInstance extends DockerManager {
 
     @Override
     public void stop( Container container ) {
-        client.stopContainerCmd( container.uniqueName ).exec();
+        client.stopContainerCmd( container.getPhysicalName() ).exec();
         container.setStatus( ContainerStatus.STOPPED );
     }
 
@@ -355,7 +355,7 @@ public class DockerInstance extends DockerManager {
         if ( container.getStatus() == ContainerStatus.RUNNING ) {
             stop( container );
         }
-        client.removeContainerCmd( container.uniqueName ).exec();
+        client.removeContainerCmd( container.getPhysicalName() ).exec();
         container.setStatus( ContainerStatus.DESTROYED );
 
         usedNames.remove( container.uniqueName );
