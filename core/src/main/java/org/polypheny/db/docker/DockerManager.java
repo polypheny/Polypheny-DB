@@ -110,16 +110,14 @@ public abstract class DockerManager {
      * This enum unifies the name building and provides additional information of an image
      * If one wants to add a new image it has to be added here
      */
-    public enum Image {
-        MONGODB( "mongo", 27017 ),
-        COTTONTAILDB( "cottontaildb", 1865 );
+    public static class Image {
+
 
         @Getter
         private final String name;
         @Getter
+        @Setter
         private String version;
-        @Getter
-        final int internalPort;
 
 
         public String getFullName() {
@@ -127,23 +125,15 @@ public abstract class DockerManager {
         }
 
 
-        public Image setVersion( String version ) {
-            this.version = version;
-            return this;
-        }
-
-
-        Image( String name, String version, int internalPort ) {
+        Image( String name, String version ) {
             this.name = name;
             this.version = version;
-            this.internalPort = internalPort;
         }
 
 
-        Image( String name, int internalPort ) {
+        Image( String name ) {
             this.name = name;
             this.version = "latest";
-            this.internalPort = internalPort;
         }
 
     }
@@ -172,9 +162,9 @@ public abstract class DockerManager {
         public Map<Integer, List<String>> orderAfterCommands = new TreeMap<>();
 
 
-        public ContainerBuilder( Integer adapterId, Image image, String uniqueName, int dockerInstanceId ) {
+        public ContainerBuilder( Integer adapterId, String image, String uniqueName, int dockerInstanceId ) {
             this.adapterId = adapterId;
-            this.image = image;
+            this.image = new Image( image );
             this.uniqueName = uniqueName;
             this.dockerInstanceId = dockerInstanceId;
         }
@@ -195,6 +185,19 @@ public abstract class DockerManager {
          */
         public ContainerBuilder withInitCommands( List<String> commands ) {
             this.initCommands = Streams.concat( this.initCommands.stream(), commands.stream() ).collect( Collectors.toList() );
+
+            return this;
+        }
+
+
+        /**
+         * Change the used image version
+         *
+         * @param version the new version of the image
+         * @return the builder
+         */
+        public ContainerBuilder withImageVersion( String version ) {
+            image.setVersion( version );
 
             return this;
         }

@@ -146,7 +146,7 @@ public abstract class Adapter {
 
 
     public Map<String, String> getCurrentSettings() {
-        // to access the associated settings the have to be unwrapped
+        // we unwrap the dockerInstance details here, for convenience
         if ( this instanceof DockerDeployable ) {
             Map<String, String> dockerSettings = RuntimeConfig.DOCKER_INSTANCES
                     .getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ).getSettings();

@@ -104,9 +104,7 @@ public class DockerInstance extends DockerManager {
                 for ( String tag : image.getRepoTags() ) {
                     String[] splits = tag.split( ":" );
 
-                    if ( splits[0].equals( Image.MONGODB.getName() ) ) {
-                        availableImages.add( Image.MONGODB.setVersion( splits[1] ) );
-                    }
+                    availableImages.add( new Image( splits[0], splits[1] ) );
                 }
             }
         } );
