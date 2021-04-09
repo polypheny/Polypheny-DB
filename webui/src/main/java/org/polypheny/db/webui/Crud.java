@@ -3429,7 +3429,9 @@ public class Crud implements InformationObserver {
                                     File newLink = new File( mmFolder, columnName + "_" + f.getName() + extension );
                                     newLink.delete();//delete to override
                                     Path added;
-                                    if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
+                                    if ( f.isDirectory() && transaction.getInvolvedAdapters().stream().anyMatch( a -> a.getAdapterName().equals( "QFS" ) ) ) {
+                                        added = Files.createSymbolicLink( newLink.toPath(), f.toPath() );
+                                    } else if ( RuntimeConfig.UI_USE_HARDLINKS.getBoolean() && !f.isDirectory() ) {
                                         added = Files.createLink( newLink.toPath(), f.toPath() );
                                     } else {
                                         added = Files.copy( f.toPath(), newLink.toPath() );
