@@ -59,7 +59,6 @@ public class DockerInstanceTest {
         assert (managerThisSession.getUsedPorts().contains( usedPort ));
 
         managerThisSession.destroy( restoredContainer );
-
     }
 
 

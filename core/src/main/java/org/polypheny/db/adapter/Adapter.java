@@ -474,7 +474,7 @@ public abstract class Adapter {
 
         @Override
         public void refreshFromConfig() {
-            throw new UnsupportedOperationException( "Dictionaries can not be bind to RuntimeConfigs!" );
+            throw new UnsupportedOperationException( "Directories can not be bind to RuntimeConfigs!" );
         }
 
     }

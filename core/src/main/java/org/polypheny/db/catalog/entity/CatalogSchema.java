@@ -76,9 +76,9 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
     public int compareTo( CatalogSchema o ) {
         if ( o != null ) {
             int comp = (int) (this.databaseId - o.databaseId);
-            if( comp == 0 ){
+            if ( comp == 0 ) {
                 return (int) (this.id - o.id);
-            }else {
+            } else {
                 return comp;
             }
 
@@ -94,6 +94,7 @@ public final class CatalogSchema implements CatalogEntity, Comparable<CatalogSch
         public final String tableCatalog;
         public final String owner;
         public final String schemaType;
+
     }
 
 }

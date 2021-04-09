@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,24 +184,28 @@ public class ConfigManagerTest implements ConfigListener {
     private static class TestClass {
 
         int a;
+
     }
 
 
     private static class FooImplementation extends TestClass {
 
         int b;
+
     }
 
 
     private static class BarImplementation extends TestClass {
 
         int c;
+
     }
 
 
     private static class FooBarImplementation extends TestClass {
 
         int d;
+
     }
 
 
@@ -433,6 +437,7 @@ public class ConfigManagerTest implements ConfigListener {
         public boolean wasNotified() {
             return this.wasNotified;
         }
+
     }
 
 }

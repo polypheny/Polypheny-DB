@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2020 The Polypheny Project
+ * Copyright 2019-2021 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -970,6 +970,7 @@ public abstract class Config {
         void onConfigChange( Config c );
 
         void restart( Config c );
+
     }
 
 
@@ -979,6 +980,7 @@ public abstract class Config {
     public interface ConfigValidator {
 
         boolean validate( Object a );
+
     }
 
 }
