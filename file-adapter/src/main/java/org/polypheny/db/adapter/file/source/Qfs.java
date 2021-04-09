@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.file.source;
 
 
-import com.google.common.collect.ImmutableList;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +32,10 @@ import java.util.Map;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.EmbeddedDeployable;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
@@ -53,16 +55,13 @@ import org.polypheny.db.util.FileSystemManager;
  * A data source that can Query a File System
  */
 @Slf4j
-public class Qfs extends DataSource {
+@AdapterSettingString(name = "rootDir", defaultValue = "", appliesTo = DeployMode.DEFAULT)
+public class Qfs extends DataSource implements EmbeddedDeployable {
 
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "QFS";
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.";
-    @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "rootDir", false, true, true, "" )
-    );
 
     @Getter
     private File rootDir;
@@ -131,13 +130,6 @@ public class Qfs extends DataSource {
     public void rollback( PolyXid xid ) {
         log.debug( "QFS does not support rollback" );
     }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
-    }
-
 
     @Override
     public void shutdown() {

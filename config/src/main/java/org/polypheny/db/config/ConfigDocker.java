@@ -141,9 +141,4 @@ public class ConfigDocker extends ConfigObject {
     }
 
 
-    @Override
-    public int hashCode() {
-        return 0;
-    }
-
 }

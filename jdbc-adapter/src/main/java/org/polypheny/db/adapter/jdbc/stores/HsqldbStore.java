@@ -4,11 +4,15 @@ package org.polypheny.db.adapter.jdbc.stores;
 import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingList;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.EmbeddedDeployable;
+import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
@@ -31,20 +35,17 @@ import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
-public class HsqldbStore extends AbstractJdbcStore {
+@AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, appliesTo = DeployMode.DEFAULT)
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, appliesTo = DeployMode.DEFAULT)
+@AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" }, appliesTo = DeployMode.DEFAULT)
+@AdapterSettingList(name = "trxIsolationLevel", options = { "read_committed", "serializable" }, appliesTo = DeployMode.DEFAULT)
+@AdapterSettingList(name = "type", options = { "Memory", "File" }, appliesTo = DeployMode.DEFAULT)
+public class HsqldbStore extends AbstractJdbcStore implements RemoteDeployable, EmbeddedDeployable {
 
     @SuppressWarnings("WeakerAccess")
     public static final String ADAPTER_NAME = "HSQLDB";
     @SuppressWarnings("WeakerAccess")
     public static final String DESCRIPTION = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.";
-    @SuppressWarnings("WeakerAccess")
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingList( "type", false, true, false, ImmutableList.of( "Memory", "File" ) ),
-            new AdapterSettingList( "tableType", false, true, false, ImmutableList.of( "Memory", "Cached" ) ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 ),
-            new AdapterSettingList( "trxControlMode", false, true, false, Arrays.asList( "locks", "mvlocks", "mvcc" ) ),
-            new AdapterSettingList( "trxIsolationLevel", false, true, false, Arrays.asList( "read_committed", "serializable" ) )
-    );
 
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
@@ -138,12 +139,6 @@ public class HsqldbStore extends AbstractJdbcStore {
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

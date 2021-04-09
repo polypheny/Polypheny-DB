@@ -18,7 +18,7 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 
 /**
  * This interface can be used to add the needed configuration
@@ -26,9 +26,9 @@ import org.polypheny.db.adapter.Adapter.AdapterSetting;
  */
 public interface EmbeddedDeployable {
 
-    List<AdapterSetting> AVAILABLE_EMBEDDED_SETTINGS = ImmutableList.of();
+    List<AbstractAdapterSetting> AVAILABLE_EMBEDDED_SETTINGS = ImmutableList.of();
 
-    default List<AdapterSetting> getEmbeddedSettings() {
+    default List<AbstractAdapterSetting> getEmbeddedSettings() {
         return AVAILABLE_EMBEDDED_SETTINGS;
     }
 

@@ -17,9 +17,11 @@
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import java.util.List;
-import org.polypheny.db.adapter.Adapter.AdapterSetting;
-import org.polypheny.db.adapter.Adapter.DynamicAdapterSettingsList;
+import java.util.stream.Collectors;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
+import org.polypheny.db.adapter.Adapter.DynamicAbstractAdapterSettingsList;
 import org.polypheny.db.config.Config;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
@@ -39,14 +41,16 @@ import org.polypheny.db.config.RuntimeConfig;
  */
 public interface DockerDeployable {
 
-    List<AdapterSetting> AVAILABLE_DOCKER_SETTINGS = ImmutableList.of(
-            new DynamicAdapterSettingsList<>( "instanceId", "DockerInstance", false, true, false, RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ), ConfigDocker::getAlias, ConfigDocker.class )
+    List<AbstractAdapterSetting> DOCKER_INSTANCE_SETTINGS = ImmutableList.of(
+            new DynamicAbstractAdapterSettingsList<>( "instanceId", "DockerInstance", false, true, false, RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ), ConfigDocker::getAlias, ConfigDocker.class )
                     .bind( RuntimeConfig.DOCKER_INSTANCES )
                     .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." )
     );
 
-    default List<AdapterSetting> getDockerSettings() {
-        return AVAILABLE_DOCKER_SETTINGS;
+    List<AbstractAdapterSetting> AVAILABLE_DOCKER_SETTINGS = ImmutableList.of();
+
+    default List<AbstractAdapterSetting> getDockerSettings() {
+        return Streams.concat( AVAILABLE_DOCKER_SETTINGS.stream(), DOCKER_INSTANCE_SETTINGS.stream() ).collect( Collectors.toList() );
     }
 
     /**

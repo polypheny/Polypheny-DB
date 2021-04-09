@@ -24,6 +24,10 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
@@ -41,20 +45,23 @@ import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
-public class PostgresqlStore extends AbstractJdbcStore {
+@AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeployMode.DEFAULT,
+        description = "Hostname or IP address of the remote PostgreSQL instance.")
+@AdapterSettingInteger(name = "port", defaultValue = 3306, appliesTo = DeployMode.DEFAULT,
+        description = "JDBC port number on the remote PostgreSQL instance.")
+@AdapterSettingString(name = "database", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+        description = "Name of the database to connect to.")
+@AdapterSettingString(name = "username", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+        description = "Username to be used for authenticating at the remote instance")
+@AdapterSettingString(name = "password", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+        description = "Password to be used for authenticating at the remote instance")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, appliesTo = DeployMode.DEFAULT,
+        description = "Maximum number of concurrent JDBC connections.")
+public class PostgresqlStore extends AbstractJdbcStore implements RemoteDeployable {
 
     public static final String ADAPTER_NAME = "PostgreSQL";
 
     public static final String DESCRIPTION = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.";
-
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 5432 ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" ),
-            new AdapterSettingString( "password", false, true, false, "polypheny" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
-    );
 
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -187,12 +194,6 @@ public class PostgresqlStore extends AbstractJdbcStore {
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

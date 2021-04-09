@@ -612,7 +612,6 @@ public class CatalogImpl extends Catalog {
             hsqldbSettings.put( "maxConnections", "25" );
             hsqldbSettings.put( "trxControlMode", "mvcc" );
             hsqldbSettings.put( "trxIsolationLevel", "read_committed" );
-            hsqldbSettings.put( "mode", "default" );
             addAdapter( "hsqldb", "org.polypheny.db.adapter.jdbc.stores.HsqldbStore", AdapterType.STORE, hsqldbSettings );
 
             // Deploy default CSV view

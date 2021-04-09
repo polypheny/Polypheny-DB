@@ -17,12 +17,15 @@
 package org.polypheny.db.adapter.jdbc.sources;
 
 
-import com.google.common.collect.ImmutableList;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -34,28 +37,25 @@ import org.polypheny.db.sql.dialect.MonetdbSqlDialect;
 
 
 @Slf4j
-public class MonetdbSource extends AbstractJdbcSource {
+@AdapterSettingString(name = "hose", defaultValue = "localhost", appliesTo = DeployMode.DEFAULT,
+        description = "Hostname or IP address of the remote MonetDB instance.")
+@AdapterSettingInteger(name = "port", defaultValue = 50000, appliesTo = DeployMode.DEFAULT,
+        description = "JDBC port number on the remote MonetDB instance.")
+@AdapterSettingString(name = "database", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+        description = "JDBC port number on the remote MonetDB instance.")
+@AdapterSettingString(name = "username", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+        description = "Name of the database to connect to.")
+@AdapterSettingString(name = "password", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+        description = "Username to be used for authenticating at the remote instance")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, appliesTo = DeployMode.DEFAULT,
+        description = "Password to be used for authenticating at the remote instance")
+@AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", appliesTo = DeployMode.DEFAULT,
+        description = "Maximum number of concurrent JDBC connections.")
+public class MonetdbSource extends AbstractJdbcSource implements RemoteDeployable {
 
     public static final String ADAPTER_NAME = "MonetDB";
 
     public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.";
-
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" )
-                    .setDescription( "Hostname or IP address of the remote MonetDB instance." ),
-            new AdapterSettingInteger( "port", false, true, false, 50000 )
-                    .setDescription( "JDBC port number on the remote MonetDB instance." ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" )
-                    .setDescription( "Name of the database to connect to." ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" )
-                    .setDescription( "Username to be used for authenticating at the remote instance" ),
-            new AdapterSettingString( "password", false, true, false, "polypheny" )
-                    .setDescription( "Password to be used for authenticating at the remote instance" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
-                    .setDescription( "Maximum number of concurrent JDBC connections." ),
-            new AdapterSettingString( "tables", false, true, false, "public.foo,public.bar" )
-                    .setDescription( "List of tables which should be imported. The names must to be in the format schemaName.tableName and separated by a comma." )
-    );
 
 
     public MonetdbSource( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -99,12 +99,6 @@ public class MonetdbSource extends AbstractJdbcSource {
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

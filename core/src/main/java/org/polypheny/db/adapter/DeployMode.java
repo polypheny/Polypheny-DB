@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.webui.models;
+package org.polypheny.db.adapter;
+
+import lombok.Getter;
+
+public enum DeployMode {
+    REMOTE( "remote" ),
+    DOCKER( "docker" ),
+    EMBEDDED( "embedded" ),
+    DEFAULT( "default" );
+
+    @Getter
+    private final String name;
 
 
-import java.util.Map;
-import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
-
-
-public class AdapterModel {
-
-    public String uniqueName;
-    public String clazzName;
-    public Map<String, AbstractAdapterSetting> settings;
-
+    DeployMode( String name ) {
+        this.name = name;
+    }
 }

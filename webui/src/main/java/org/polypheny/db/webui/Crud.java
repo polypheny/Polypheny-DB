@@ -94,18 +94,15 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.Adapter.AdapterSetting;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.Adapter.AdapterSettingDeserializer;
-import org.polypheny.db.adapter.Adapter.AdapterSettingDirectory;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataSource.ExportedColumn;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.FunctionalIndexInfo;
-import org.polypheny.db.adapter.DockerDeployable;
-import org.polypheny.db.adapter.EmbeddedDeployable;
-import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.Catalog.ConstraintType;
@@ -2223,16 +2220,11 @@ public class Crud implements InformationObserver {
     private Gson adapterSerializer() {
         //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
         JsonSerializer<DataStore> storeSerializer = ( src, typeOfSrc, context ) -> {
-            List<AdapterSetting> mergedSettings = src.getAvailableSettings();
-
-            List<AdapterSetting> adapterSettings = serializeSettings(
-                    getAdditionalSettings( src, mergedSettings ),
-                    src.getCurrentSettings() );
 
             JsonObject jsonStore = new JsonObject();
             jsonStore.addProperty( "adapterId", src.getAdapterId() );
             jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonStore.add( "adapterSettings", context.serialize( serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
             jsonStore.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonStore.addProperty( "adapterName", src.getAdapterName() );
             jsonStore.addProperty( "type", src.getClass().getCanonicalName() );
@@ -2241,17 +2233,12 @@ public class Crud implements InformationObserver {
             return jsonStore;
         };
         JsonSerializer<DataSource> sourceSerializer = ( src, typeOfSrc, context ) -> {
-            List<AdapterSetting> mergedSettings = src.getAvailableSettings();
-
-            List<AdapterSetting> adapterSettings = serializeSettings(
-                    getAdditionalSettings( src, mergedSettings ),
-                    src.getCurrentSettings() );
 
             JsonObject jsonSource = new JsonObject();
             jsonSource.addProperty( "adapterId", src.getAdapterId() );
             jsonSource.addProperty( "uniqueName", src.getUniqueName() );
             jsonSource.addProperty( "adapterName", src.getAdapterName() );
-            jsonSource.add( "adapterSettings", context.serialize( adapterSettings ) );
+            jsonSource.add( "adapterSettings", context.serialize( serializeSettings( src.getAvailableSettings(), src.getCurrentSettings() ) ) );
             jsonSource.add( "currentSettings", context.serialize( src.getCurrentSettings() ) );
             jsonSource.add( "dataReadOnly", context.serialize( src.isDataReadOnly() ) );
             jsonSource.addProperty( "type", src.getClass().getCanonicalName() );
@@ -2261,30 +2248,16 @@ public class Crud implements InformationObserver {
     }
 
 
-    private List<AdapterSetting> getAdditionalSettings( Adapter src, List<AdapterSetting> mergedSettings ) {
-        if ( src instanceof DockerDeployable ) {
-            mergedSettings.addAll( ((DockerDeployable) src).getDockerSettings() );
-        }
-        if ( src instanceof EmbeddedDeployable ) {
-            mergedSettings.addAll( ((EmbeddedDeployable) src).getEmbeddedSettings() );
-        }
-        if ( src instanceof RemoteDeployable ) {
-            mergedSettings.addAll( ((RemoteDeployable) src).getRemoteSettings() );
-        }
-        return mergedSettings;
-    }
-
-
-    private List<AdapterSetting> serializeSettings( List<AdapterSetting> availableSettings, Map<String, String> currentSettings ) {
-        ArrayList<AdapterSetting> adapterSettings = new ArrayList<>();
-        for ( AdapterSetting s : availableSettings ) {
+    private List<AbstractAdapterSetting> serializeSettings( List<AbstractAdapterSetting> availableSettings, Map<String, String> currentSettings ) {
+        ArrayList<AbstractAdapterSetting> abstractAdapterSettings = new ArrayList<>();
+        for ( AbstractAdapterSetting s : availableSettings ) {
             for ( String current : currentSettings.keySet() ) {
                 if ( s.name.equals( current ) ) {
-                    adapterSettings.add( s );
+                    abstractAdapterSettings.add( s );
                 }
             }
         }
-        return adapterSettings;
+        return abstractAdapterSettings;
     }
 
 
@@ -2425,12 +2398,12 @@ public class Crud implements InformationObserver {
             log.error( "Could not get form data to add a new Adapter", e );
             return new Result( e );
         }
-        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( AdapterSetting.class, new AdapterSettingDeserializer() );
+        GsonBuilder gsonBuilder = new GsonBuilder().registerTypeAdapter( AbstractAdapterSetting.class, new AdapterSettingDeserializer() );
         AdapterModel a = gsonBuilder.create().fromJson( body, AdapterModel.class );
         Map<String, String> settings = new HashMap<>();
-        for ( Entry<String, AdapterSetting> entry : a.settings.entrySet() ) {
-            if ( entry.getValue() instanceof AdapterSettingDirectory ) {
-                AdapterSettingDirectory setting = ((AdapterSettingDirectory) entry.getValue());
+        for ( Entry<String, AbstractAdapterSetting> entry : a.settings.entrySet() ) {
+            if ( entry.getValue() instanceof AbstractAdapterSettingDirectory ) {
+                AbstractAdapterSettingDirectory setting = ((AbstractAdapterSettingDirectory) entry.getValue());
                 for ( String fileName : setting.fileNames ) {
                     setting.inputStreams.put( fileName, inputStreams.get( fileName ) );
                 }

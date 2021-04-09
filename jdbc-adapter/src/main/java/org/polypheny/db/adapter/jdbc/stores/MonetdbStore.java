@@ -23,6 +23,10 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
+import org.polypheny.db.adapter.Adapter.AdapterSettingString;
+import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
@@ -45,20 +49,17 @@ import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
-public class MonetdbStore extends AbstractJdbcStore {
+@AdapterSettingString(name = "hose", defaultValue = "localhost", appliesTo = DeployMode.DEFAULT, description = "Hostname or IP address of the remote MonetDB instance.")
+@AdapterSettingInteger(name = "port", defaultValue = 50000, appliesTo = DeployMode.DEFAULT, description = "JDBC port number on the remote MonetDB instance.")
+@AdapterSettingString(name = "database", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT, description = "JDBC port number on the remote MonetDB instance.")
+@AdapterSettingString(name = "username", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT, description = "Name of the database to connect to.")
+@AdapterSettingString(name = "password", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT, description = "Username to be used for authenticating at the remote instance")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, appliesTo = DeployMode.DEFAULT, description = "Password to be used for authenticating at the remote instance")
+public class MonetdbStore extends AbstractJdbcStore implements RemoteDeployable {
 
     public static final String ADAPTER_NAME = "MonetDB";
 
     public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.";
-
-    public static final List<AdapterSetting> AVAILABLE_SETTINGS = ImmutableList.of(
-            new AdapterSettingString( "host", false, true, false, "localhost" ),
-            new AdapterSettingInteger( "port", false, true, false, 50000 ),
-            new AdapterSettingString( "database", false, true, false, "polypheny" ),
-            new AdapterSettingString( "username", false, true, false, "polypheny" ),
-            new AdapterSettingString( "password", false, true, false, "" ),
-            new AdapterSettingInteger( "maxConnections", false, true, false, 25 )
-    );
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
@@ -198,12 +199,6 @@ public class MonetdbStore extends AbstractJdbcStore {
     @Override
     public String getAdapterName() {
         return ADAPTER_NAME;
-    }
-
-
-    @Override
-    public List<AdapterSetting> getAvailableSettings() {
-        return AVAILABLE_SETTINGS;
     }
 
 

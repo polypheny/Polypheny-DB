@@ -23,9 +23,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.annotation.Repeatable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +61,154 @@ import org.polypheny.db.schema.Table;
 import org.polypheny.db.transaction.PolyXid;
 
 public abstract class Adapter {
+
+    @Repeatable(AdapterSettingString.List.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface AdapterSettingString {
+
+        String type = "String";
+
+        String name();
+
+        boolean canBeNull() default false;
+
+        boolean required() default true;
+
+        boolean modifiable() default false;
+
+        String description() default "";
+
+        String defaultValue();
+
+        DeployMode[] appliesTo();
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface List {
+
+            AdapterSettingString[] value();
+
+        }
+
+    }
+
+
+    @Repeatable(AdapterSettingInteger.List.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface AdapterSettingInteger {
+
+        String type = "Integer";
+
+        String name();
+
+        boolean canBeNull() default false;
+
+        boolean required() default true;
+
+        boolean modifiable() default false;
+
+        String description() default "";
+
+        int defaultValue();
+
+        DeployMode[] appliesTo();
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface List {
+
+            AdapterSettingInteger[] value();
+
+        }
+
+    }
+
+
+    @Repeatable(AdapterSettingBoolean.List.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface AdapterSettingBoolean {
+
+        String type = "Boolean";
+
+        String name();
+
+        boolean canBeNull() default false;
+
+        boolean required() default true;
+
+        boolean modifiable() default false;
+
+        String description() default "";
+
+        boolean defaultValue();
+
+        DeployMode[] appliesTo();
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface List {
+
+            AdapterSettingBoolean[] value();
+
+        }
+
+    }
+
+
+    @Repeatable(AdapterSettingList.List.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface AdapterSettingList {
+
+        String type = "List";
+
+        String name();
+
+        boolean canBeNull() default false;
+
+        boolean required() default true;
+
+        boolean modifiable() default false;
+
+        String description() default "";
+
+        String[] options();
+
+        DeployMode[] appliesTo();
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface List {
+
+            AdapterSettingList[] value();
+
+        }
+
+    }
+
+
+    @Repeatable(AdapterSettingDirectory.List.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface AdapterSettingDirectory {
+
+        String type = "Directory";
+
+        String name();
+
+        boolean canBeNull() default false;
+
+        boolean required() default true;
+
+        boolean modifiable() default false;
+
+        String description() default "";
+
+        DeployMode[] appliesTo();
+
+        @Retention(RetentionPolicy.RUNTIME)
+        @interface List {
+
+            AdapterSettingDirectory[] value();
+
+        }
+
+    }
+
 
     @Getter
     private final int adapterId;
@@ -104,7 +257,15 @@ public abstract class Adapter {
 
     public abstract void rollback( PolyXid xid );
 
-    public abstract List<AdapterSetting> getAvailableSettings();
+
+    public List<AbstractAdapterSetting> getAvailableSettings() {
+        return AbstractAdapterSetting.fromAnnotations( this.getClass().getAnnotations() )
+                .values()
+                .stream()
+                .flatMap( Collection::stream )
+                .collect( Collectors.toList() );
+    }
+
 
     public abstract void shutdown();
 
@@ -158,7 +319,7 @@ public abstract class Adapter {
 
 
     protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
-        for ( AdapterSetting s : getAvailableSettings() ) {
+        for ( AbstractAdapterSetting s : getAvailableSettings() ) {
             if ( newSettings.containsKey( s.name ) ) {
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
@@ -228,7 +389,7 @@ public abstract class Adapter {
 
 
     @Accessors(chain = true)
-    public static abstract class AdapterSetting {
+    public static abstract class AbstractAdapterSetting {
 
         public final String name;
         public final boolean canBeNull;
@@ -238,12 +399,62 @@ public abstract class Adapter {
         public String description;
         public RuntimeConfig boundConfig;
 
+        @Getter
+        private final List<DeployMode> modes;
 
-        public AdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable ) {
+
+        public AbstractAdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable, List<DeployMode> modes ) {
             this.name = name;
             this.canBeNull = canBeNull;
             this.required = required;
             this.modifiable = modifiable;
+            this.modes = modes;
+        }
+
+
+        public static Map<String, List<AbstractAdapterSetting>> fromAnnotations( Annotation[] annotations ) {
+            Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
+
+            for ( Annotation annotation : annotations ) {
+                if ( annotation instanceof AdapterSettingString ) {
+                    mergeSettings( settings, AbstractAdapterSettingString.fromAnnotation( (AdapterSettingString) annotation ) );
+                } else if ( annotation instanceof AdapterSettingString.List ) {
+                    Arrays.stream( ((AdapterSettingString.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingString.fromAnnotation( el ) ) );
+                } else if ( annotation instanceof AdapterSettingBoolean ) {
+                    mergeSettings( settings, AbstractAdapterSettingBoolean.fromAnnotation( (AdapterSettingBoolean) annotation ) );
+                } else if ( annotation instanceof AdapterSettingBoolean.List ) {
+                    Arrays.stream( ((AdapterSettingBoolean.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingBoolean.fromAnnotation( el ) ) );
+                } else if ( annotation instanceof AdapterSettingInteger ) {
+                    mergeSettings( settings, AbstractAdapterSettingInteger.fromAnnotation( (AdapterSettingInteger) annotation ) );
+                } else if ( annotation instanceof AdapterSettingInteger.List ) {
+                    Arrays.stream( ((AdapterSettingInteger.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingInteger.fromAnnotation( el ) ) );
+                } else if ( annotation instanceof AdapterSettingList ) {
+                    mergeSettings( settings, AbstractAdapterSettingList.fromAnnotation( (AdapterSettingList) annotation ) );
+                } else if ( annotation instanceof AdapterSettingList.List ) {
+                    Arrays.stream( ((AdapterSettingList.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingList.fromAnnotation( el ) ) );
+                } else if ( annotation instanceof AdapterSettingDirectory ) {
+                    mergeSettings( settings, AbstractAdapterSettingDirectory.fromAnnotation( (AdapterSettingDirectory) annotation ) );
+                } else if ( annotation instanceof AdapterSettingDirectory.List ) {
+                    Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
+                } else {
+                    throw new RuntimeException();
+                }
+            }
+
+            return settings;
+        }
+
+
+        private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, AbstractAdapterSetting setting ) {
+            for ( DeployMode mode : setting.modes ) {
+                if ( settings.containsKey( mode.getName() ) ) {
+                    settings.get( mode.getName() ).add( setting );
+                } else {
+                    List<AbstractAdapterSetting> temp = new ArrayList<>();
+                    temp.add( setting );
+                    settings.put( mode.getName(), temp );
+                }
+            }
         }
 
 
@@ -262,7 +473,7 @@ public abstract class Adapter {
          * @param config the RuntimeConfig which is bound
          * @return chain method to use the object
          */
-        public AdapterSetting bind( RuntimeConfig config ) {
+        public AbstractAdapterSetting bind( RuntimeConfig config ) {
             this.boundConfig = config;
             ConfigListener listener = new ConfigListener() {
                 @Override
@@ -284,15 +495,32 @@ public abstract class Adapter {
     }
 
 
-    public static class AdapterSettingInteger extends AdapterSetting {
+    public static class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 
         private final String type = "Integer";
         private Integer defaultValue;
 
 
-        public AdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue ) {
-            super( name, canBeNull, required, modifiable );
+        public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue ) {
+            super( name, canBeNull, required, modifiable, new ArrayList<>() );
             this.defaultValue = defaultValue;
+        }
+
+
+        public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue, List<DeployMode> modes ) {
+            super( name, canBeNull, required, modifiable, modes );
+            this.defaultValue = defaultValue;
+        }
+
+
+        public static AbstractAdapterSetting fromAnnotation( AdapterSettingInteger annotation ) {
+            return new AbstractAdapterSettingInteger(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    annotation.defaultValue(),
+                    Arrays.asList( annotation.appliesTo() ) );
         }
 
 
@@ -312,15 +540,32 @@ public abstract class Adapter {
     }
 
 
-    public static class AdapterSettingString extends AdapterSetting {
+    public static class AbstractAdapterSettingString extends AbstractAdapterSetting {
 
         private final String type = "String";
         private String defaultValue;
 
 
-        public AdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue ) {
-            super( name, canBeNull, required, modifiable );
+        public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue ) {
+            super( name, canBeNull, required, modifiable, new ArrayList<>() );
             this.defaultValue = defaultValue;
+        }
+
+
+        public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeployMode> modes ) {
+            super( name, canBeNull, required, modifiable, modes );
+            this.defaultValue = defaultValue;
+        }
+
+
+        public static AbstractAdapterSetting fromAnnotation( AdapterSettingString annotation ) {
+            return new AbstractAdapterSettingString(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    annotation.defaultValue(),
+                    Arrays.asList( annotation.appliesTo() ) );
         }
 
 
@@ -340,15 +585,32 @@ public abstract class Adapter {
     }
 
 
-    public static class AdapterSettingBoolean extends AdapterSetting {
+    public static class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
 
         private final String type = "Boolean";
         private boolean defaultValue;
 
 
-        public AdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue ) {
-            super( name, canBeNull, required, modifiable );
+        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue, List<DeployMode> modes ) {
+            super( name, canBeNull, required, modifiable, modes );
             this.defaultValue = defaultValue;
+        }
+
+
+        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue ) {
+            super( name, canBeNull, required, modifiable, new ArrayList<>() );
+            this.defaultValue = defaultValue;
+        }
+
+
+        public static AbstractAdapterSettingBoolean fromAnnotation( AdapterSettingBoolean annotation ) {
+            return new AbstractAdapterSettingBoolean(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    annotation.defaultValue(),
+                    Arrays.asList( annotation.appliesTo() ) );
         }
 
 
@@ -369,7 +631,7 @@ public abstract class Adapter {
 
 
     @Accessors(chain = true)
-    public static class AdapterSettingList extends AdapterSetting {
+    public static class AbstractAdapterSettingList extends AbstractAdapterSetting {
 
         private final String type = "List";
         public List<String> options;
@@ -378,12 +640,28 @@ public abstract class Adapter {
         public boolean dynamic = false;
 
 
-        public AdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
-            super( name, canBeNull, required, modifiable );
+        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
+            this( name, canBeNull, required, modifiable, options, new ArrayList<>() );
+        }
+
+
+        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, List<DeployMode> modes ) {
+            super( name, canBeNull, required, modifiable, modes );
             this.options = options;
             if ( options.size() > 0 ) {
                 this.defaultValue = options.get( 0 );
             }
+        }
+
+
+        public static AbstractAdapterSetting fromAnnotation( AdapterSettingList annotation ) {
+            return new AbstractAdapterSettingList(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    Arrays.asList( annotation.options() ),
+                    Arrays.asList( annotation.appliesTo() ) );
         }
 
 
@@ -413,7 +691,7 @@ public abstract class Adapter {
      * @param <T>
      */
     @Accessors(chain = true)
-    public static class DynamicAdapterSettingsList<T extends ConfigObject> extends AdapterSettingList {
+    public static class DynamicAbstractAdapterSettingsList<T extends ConfigObject> extends AbstractAdapterSettingList {
 
         private final transient Function<T, String> mapper;
         private final transient Class<T> clazz;
@@ -421,8 +699,8 @@ public abstract class Adapter {
         private final String nameAlias;
 
 
-        public DynamicAdapterSettingsList( String name, String nameAlias, boolean canBeNull, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
-            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ) );
+        public DynamicAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
+            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>() );
             this.mapper = mapper;
             this.clazz = clazz;
             this.dynamic = true;
@@ -447,7 +725,7 @@ public abstract class Adapter {
 
 
     @Accessors(chain = true)
-    public static class AdapterSettingDirectory extends AdapterSetting {
+    public static class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
 
         private final String type = "Directory";
         @Setter
@@ -458,11 +736,21 @@ public abstract class Adapter {
         public transient final Map<String, InputStream> inputStreams;
 
 
-        public AdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable ) {
-            super( name, canBeNull, required, modifiable );
+        public AbstractAdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable ) {
+            super( name, canBeNull, required, modifiable, new ArrayList<>() );
             //so it will be serialized
             this.directory = "";
             this.inputStreams = new HashMap<>();
+        }
+
+
+        public static AbstractAdapterSetting fromAnnotation( AdapterSettingDirectory annotation ) {
+            return new AbstractAdapterSettingDirectory(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable()
+            );
         }
 
 
@@ -481,10 +769,10 @@ public abstract class Adapter {
 
 
     //see https://stackoverflow.com/questions/19588020/gson-serialize-a-list-of-polymorphic-objects/22081826#22081826
-    public static class AdapterSettingDeserializer implements JsonDeserializer<AdapterSetting> {
+    public static class AdapterSettingDeserializer implements JsonDeserializer<AbstractAdapterSetting> {
 
         @Override
-        public AdapterSetting deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
+        public AbstractAdapterSetting deserialize( JsonElement json, Type typeOfT, JsonDeserializationContext context ) throws JsonParseException {
             JsonObject jsonObject = json.getAsJsonObject();
             String type = jsonObject.get( "type" ).getAsString();
             String name = jsonObject.get( "name" ).getAsString();
@@ -496,29 +784,29 @@ public abstract class Adapter {
                 description = jsonObject.get( "description" ).getAsString();
             }
 
-            AdapterSetting out;
+            AbstractAdapterSetting out;
             switch ( type ) {
                 case "Integer":
                     Integer integer = jsonObject.get( "defaultValue" ).getAsInt();
-                    out = new AdapterSettingInteger( name, canBeNull, required, modifiable, integer );
+                    out = new AbstractAdapterSettingInteger( name, canBeNull, required, modifiable, integer, new ArrayList<>() );
                     break;
                 case "String":
                     String string = jsonObject.get( "defaultValue" ).getAsString();
-                    out = new AdapterSettingString( name, canBeNull, required, modifiable, string );
+                    out = new AbstractAdapterSettingString( name, canBeNull, required, modifiable, string, new ArrayList<>() );
                     break;
                 case "Boolean":
                     boolean bool = jsonObject.get( "defaultValue" ).getAsBoolean();
-                    out = new AdapterSettingBoolean( name, canBeNull, required, modifiable, bool );
+                    out = new AbstractAdapterSettingBoolean( name, canBeNull, required, modifiable, bool, new ArrayList<>() );
                     break;
                 case "List":
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
                     String defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
-                    out = new AdapterSettingList( name, canBeNull, required, modifiable, options ).setDefaultValue( defaultValue );
+                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>() ).setDefaultValue( defaultValue );
                     break;
                 case "Directory":
                     String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
                     String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
-                    out = new AdapterSettingDirectory( name, canBeNull, required, modifiable ).setDirectory( directory ).setFileNames( fileNames );
+                    out = new AbstractAdapterSettingDirectory( name, canBeNull, required, modifiable ).setDirectory( directory ).setFileNames( fileNames );
                     break;
                 default:
                     throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );

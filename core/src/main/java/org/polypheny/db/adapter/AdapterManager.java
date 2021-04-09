@@ -2,9 +2,12 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,8 +17,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import lombok.AllArgsConstructor;
-import org.polypheny.db.adapter.Adapter.AdapterSetting;
-import org.polypheny.db.adapter.Adapter.AdapterSettingList;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
+import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingList;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -133,18 +136,27 @@ public class AdapterManager {
                 if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
                     String name = (String) clazz.getDeclaredField( "ADAPTER_NAME" ).get( null );
                     String description = (String) clazz.getDeclaredField( "DESCRIPTION" ).get( null );
-                    Map<String, List<AdapterSetting>> settings = new HashMap<>();
-                    settings.put( "default", (List<AdapterSetting>) clazz.getDeclaredField( "AVAILABLE_SETTINGS" ).get( null ) );
-                    if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( DockerDeployable.class ) ) {
-                        settings.put( "docker", (List<AdapterSetting>) clazz.getField( "AVAILABLE_DOCKER_SETTINGS" ).get( null ) );
+                    Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
+
+                    settings.put( "mode", Collections.singletonList( new AbstractAdapterSettingList( "mode", false, true, true, Collections.singletonList( "default" ) ) ) );
+
+                    List<Type> interfaces = Arrays.asList( clazz.getGenericInterfaces() );
+                    settings.put( "default", new ArrayList<>() );
+                    if ( interfaces.contains( DockerDeployable.class ) ) {
+                        settings.put( "docker", new ArrayList<>() );
                     }
-                    if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( RemoteDeployable.class ) ) {
-                        settings.put( "remote", (List<AdapterSetting>) clazz.getField( "AVAILABLE_REMOTE_SETTINGS" ).get( null ) );
+                    if ( interfaces.contains( RemoteDeployable.class ) ) {
+                        settings.put( "remote", new ArrayList<>() );
                     }
-                    if ( Arrays.asList( clazz.getGenericInterfaces() ).contains( EmbeddedDeployable.class ) ) {
-                        settings.put( "embedded", (List<AdapterSetting>) clazz.getField( "AVAILABLE_EMBEDDED_SETTINGS" ).get( null ) );
+                    if ( interfaces.contains( EmbeddedDeployable.class ) ) {
+                        settings.put( "embedded", new ArrayList<>() );
                     }
-                    settings.put( "mode", Collections.singletonList( new AdapterSettingList( "mode", false, true, true, Collections.singletonList( "docker" ) ) ) );
+
+                    Annotation[] annotations = clazz.getAnnotations();
+
+                    Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( annotations );
+
+                    annotatedSettings.forEach( settings::put );
                     result.add( new AdapterInformation( name, description, clazz, settings ) );
                 }
             }
@@ -261,7 +273,7 @@ public class AdapterManager {
         public final String name;
         public final String description;
         public final Class clazz;
-        public final Map<String, List<AdapterSetting>> settings;
+        public final Map<String, List<AbstractAdapterSetting>> settings;
 
     }
 
