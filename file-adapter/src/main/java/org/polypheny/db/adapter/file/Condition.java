@@ -285,14 +285,39 @@ public class Condition {
                 return comparison < 0;
             case LESS_THAN_OR_EQUAL:
                 return comparison <= 0;
-            case LIKE:
+            case CONTAINS:
                 //todo maybe replace '%' by '(.*)' etc.
-                Pattern pattern = Pattern.compile( parameterValue.toString() );
-                Matcher matcher = pattern.matcher( columnValue.toString() );
-                return matcher.matches();
-            default:
-                throw new RuntimeException( operator + " comparison not supported by file adapter." );
+                Pattern pattern = Pattern.compile(parameterValue.toString());
+                Matcher matcher = pattern.matcher(columnValue.toString());
+                if (columnValue.toString().contains(parameterValue.toString())) {
+                    return matcher.matches();
+                } else {
+                    return false;
+                }
+            case LIKE:
+                Pattern pattern1 = Pattern.compile(parameterValue.toString());
+                Matcher m1 = pattern1.matcher(columnValue.toString());
+                boolean b2 = pattern1.matches(parameterValue.toString(), columnValue.toString());
+                return true;
+            case FIRST:
+                Pattern pattern2 = Pattern.compile(parameterValue.toString());
+                Matcher m2 = pattern2.matcher(columnValue.toString());
+                if (columnValue.toString().startsWith(parameterValue.toString())) {
+                    return m2.matches();
+                } else {
+                    return false;
+                }
+            case LAST:
+                Pattern pattern3 = Pattern.compile(parameterValue.toString());
+                Matcher m3 = pattern3.matcher(columnValue.toString());
+                if (columnValue.toString().endsWith(parameterValue.toString())) {
+                    return m3.matches();
+                } else {
+                    return false;
+                }
+
         }
+        return true;
     }
 
 }
