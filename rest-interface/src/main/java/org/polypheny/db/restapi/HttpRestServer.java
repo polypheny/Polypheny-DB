@@ -273,6 +273,7 @@ public class HttpRestServer extends QueryInterface {
                     return gson.toJson( bodyReturn );
                 } finally {
                     try {
+                        inputStreams.clear();
                         for ( Part part : req.raw().getParts() ) {
                             part.delete();
                         }

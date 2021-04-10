@@ -169,6 +169,7 @@ import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.SharedInputStream;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.models.AdapterModel;
@@ -639,7 +640,8 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
-                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( part.getInputStream() ) );
+                        SharedInputStream shis = new SharedInputStream( transaction.getXid(), part.getInputStream() );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( shis.getData() ) );
                     }
                 }
             }

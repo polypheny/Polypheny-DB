@@ -46,6 +46,7 @@ import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.statistic.StatisticsManager;
+import org.polypheny.db.util.SharedInputStream;
 
 
 @Slf4j
@@ -166,6 +167,7 @@ public class TransactionImpl implements Transaction, Comparable {
         LockManager.INSTANCE.removeTransaction( this );
         // Remove transaction
         transactionManager.removeTransaction( xid );
+        SharedInputStream.close( xid );
     }
 
 
@@ -187,6 +189,7 @@ public class TransactionImpl implements Transaction, Comparable {
             LockManager.INSTANCE.removeTransaction( this );
             // Remove transaction
             transactionManager.removeTransaction( xid );
+            SharedInputStream.close( xid );
         }
     }
 
