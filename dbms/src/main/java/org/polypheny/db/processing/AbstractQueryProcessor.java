@@ -117,6 +117,7 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
+import org.polypheny.db.schema.LogicalTable;
 import org.polypheny.db.sql.SqlExplainFormat;
 import org.polypheny.db.sql.SqlExplainLevel;
 import org.polypheny.db.sql.SqlKind;
@@ -294,11 +295,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
 
-                MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
-                        .description( "Test description" )
+                MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder()
+                        .monitoringType( signature.statementType.toString() )
+                        .description( "Test description:"+ parameterizedRoot.kind.sql )
                         .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
                         .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
-                        //.rel( routedRoot )
+                        .routed( parameterizedRoot )
                         .build() );
                 //MonitoringService.MonitorEvent( InfluxPojo.Create(  routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ) );
                 return signature;
@@ -383,11 +385,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         }
 
 
+
         MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
                 .description( "Test description" )
                 .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
                 .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
-                //.rel( routedRoot )
+                .routed( parameterizedRoot )
                 .build() );
         //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
         return signature;

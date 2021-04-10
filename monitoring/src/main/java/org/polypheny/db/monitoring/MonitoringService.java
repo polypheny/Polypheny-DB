@@ -17,19 +17,14 @@
 package org.polypheny.db.monitoring;
 
 
-import java.io.File;
 import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import org.mapdb.BTreeMap;
-import org.mapdb.DB;
 import org.mapdb.DBException.SerializationError;
-import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
@@ -37,8 +32,8 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
+import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -69,11 +64,12 @@ public class MonitoringService {
 
 
 
-    private static final String FILE_PATH = "queueMapDB";
-    private static DB queueDb;
+    //private static final String FILE_PATH = "queueMapDB";
+    //private static DB queueDb;
 
     private static final AtomicLong queueIdBuilder = new AtomicLong();
-    private static BTreeMap<Long, MonitorEvent> eventQueue;
+    //private static BTreeMap<Long, MonitorEvent> eventQueue;
+    private final TreeMap<Long, MonitorEvent> eventQueue = new TreeMap<>();
 
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
@@ -104,7 +100,7 @@ public class MonitoringService {
 
         // Background Task
         String taskId = BackgroundTaskManager.INSTANCE.registerTask(
-                this::executeEventInQueue,
+                this::processEventsInQueue,
                 "Add monitoring events from queue to backend",
                 TaskPriority.LOW,
                 TaskSchedulingType.EVERY_TEN_SECONDS
@@ -114,7 +110,7 @@ public class MonitoringService {
     }
 
     private void initPersistentDBQueue() {
-        if ( queueDb != null ) {
+        /*if ( queueDb != null ) {
             queueDb.close();
         }
         synchronized ( this ) {
@@ -130,8 +126,8 @@ public class MonitoringService {
 
             queueDb.getStore().fileLoad();
 
-            eventQueue = queueDb.treeMap( "queue", Serializer.LONG, Serializer.JAVA ).createOrOpen();
-
+            eventQueue = treeMap( "queue", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+            */
             try{
 
                 restoreIdBuilder(eventQueue, queueIdBuilder);
@@ -143,7 +139,7 @@ public class MonitoringService {
             }
 
 
-        }
+       // }
 
     }
 
@@ -176,7 +172,7 @@ public class MonitoringService {
     //Queue processing FIFO
     //ToDO mabye add more intelligent scheduling later on or introduce config to change processing
     //Will be executed every 5seconds due to Background Task Manager and checks the queue and then asyncronously writes them to backend
-    public void executeEventInQueue(){
+    public void processEventsInQueue(){
 
         long currentKey = -1;
         for ( int i = 0; i < this.QUEUE_PROCESSING_ELEMENTS; i++ ) {
@@ -190,17 +186,34 @@ public class MonitoringService {
 
             //Temporary testing //ToDO outsource to separate method
             MonitorEvent procEvent = eventQueue.get( currentKey );
-            /* if ( procEvent.getRel().rel.getTable() != null ) {
+
+            System.out.println("\n\n\n\n");
+            System.out.println("\n-----> " + procEvent);
+            System.out.println("\t\t-----> " + procEvent.getRouted());
+
+            for ( RelNode node :procEvent.getRouted().rel.getInputs() ) {
+                System.out.println(node);
+            }
+
+            System.out.println("\n\n\n\n");
+
+             if ( procEvent.getRouted().rel.getTable() != null ) {
               //extract information from table
-                RelOptTableImpl table = (RelOptTableImpl) procEvent.getRel().rel.getTable();
-                LogicalTable t = ((LogicalTable) table.getTable());
-                // Get placements of this table
-                CatalogTable catalogTable = Catalog.getInstance().getTable( t.getTableId() );
-                System.out.println("Added Event for table: " + catalogTable.name);
+                RelOptTableImpl table = (RelOptTableImpl) procEvent.getRouted().rel.getTable();
+                 if ( table.getTable() instanceof LogicalTable ) {
+                     LogicalTable t = ((LogicalTable) table.getTable());
+                     // Get placements of this table
+                     CatalogTable catalogTable = Catalog.getInstance().getTable( t.getTableId() );
+                     System.out.println( "Added Event for table: " + catalogTable.name );
+                 }else {
+                     log.info( "Unexpected table. Only logical tables expected here! {}", table.getTable() );
+                     //throw new RuntimeException( "Unexpected table. Only logical tables expected here!" );
+                 }
             }
             else{
-                throw new RuntimeException( "Unexpected operator!" );
-            }*/
+                log.info(" Unusual processing {} ",  procEvent.getRouted().rel );
+                //throw new RuntimeException( "Unexpected operator!" );
+            }
 
             synchronized ( this ) {
                 if ( backendConnector.writeStatisticEvent( currentKey, eventQueue.get( currentKey ) ) ){
@@ -212,7 +225,6 @@ public class MonitoringService {
                     log.info( "Problem writing Event in Queue: '{}'. Skipping entry.", currentKey );
                     continue;
                 }
-
             }
         }
 
@@ -249,9 +261,9 @@ public class MonitoringService {
     private void updateInformationTable(){
 
         queueOverviewTable.reset();
-        for ( Entry currentEvent: eventQueue.getEntries() ) {
-            long eventId = (long) currentEvent.getKey();
-            MonitorEvent queueEvent = (MonitorEvent) currentEvent.getValue();
+        for ( long eventId: eventQueue.keySet() ) {
+
+            MonitorEvent queueEvent = eventQueue.get( eventId );
             queueOverviewTable.addRow( eventId, queueEvent.monitoringType, queueEvent.getDescription(), queueEvent.getRecordedTimestamp(),queueEvent.getFieldNames() );
         }
         log.info( "REFRESHED" );

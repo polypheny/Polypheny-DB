@@ -73,7 +73,8 @@ public class SimpleBackendConnector implements BackendConnector{
         //throw new RuntimeException("SimpleBackendConnector: Not implemented yet");
 
         synchronized ( this ){
-            events.put(key, incomingEvent);
+            //events.put(key, incomingEvent);
+            log.info( "Write is ncurrently not implemented: See... SimpleBackendConnector.writeStatisticEvent()" );
             simpleBackendDb.commit();
         }
         return true;
