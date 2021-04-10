@@ -2519,6 +2519,7 @@ public class CatalogImpl extends Catalog {
                     }
                 }
             }
+            throw new GenericCatalogException( "There is no key over the referenced columns." );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }
