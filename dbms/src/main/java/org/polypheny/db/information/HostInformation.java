@@ -20,9 +20,11 @@ package org.polypheny.db.information;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.commons.lang.SystemUtils;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
 import oshi.SystemInfo;
+import oshi.hardware.GlobalMemory;
 import oshi.hardware.HWDiskStore;
 import oshi.hardware.HardwareAbstractionLayer;
 import oshi.hardware.NetworkIF;
@@ -93,7 +95,7 @@ public class HostInformation {
 
         //
         // Network
-        InformationGroup networkGroup = new InformationGroup( page, "Network Interfaces" ).setOrder( 5 );
+        InformationGroup networkGroup = new InformationGroup( page, "Network Interfaces" ).setOrder( 6 );
         im.addGroup( networkGroup );
 
         InformationTable networkInformation = new InformationTable( networkGroup, Arrays.asList( "Name", "IPv4" ) );
@@ -123,7 +125,23 @@ public class HostInformation {
         }, 5000, 5000 );
 */
 
-        // TODO: Memory
+        //Memory Information
+        final int base;
+        if ( SystemUtils.IS_OS_MAC ) {
+            base = 1000;
+        } else {
+            base = 1024;
+        }
+        final double div = Math.pow( base, 3 );
+        InformationGroup memoryGroup = new InformationGroup( page, "Memory" ).setOrder( 5 );
+        im.addGroup( memoryGroup );
+        GlobalMemory mem = hal.getMemory();
+        final String[] labels = new String[]{ "used", "free" };
+        InformationGraph memoryGraph = new InformationGraph( memoryGroup, GraphType.PIE, labels );
+        memoryGroup.setRefreshFunction( () -> {
+            memoryGraph.updateGraph( labels, new GraphData<>( "memory", new Double[]{ (mem.getTotal() - mem.getAvailable()) / div, mem.getAvailable() / div } ) );
+        } );
+        im.registerInformation( memoryGraph );
 
         //
         // Processes
