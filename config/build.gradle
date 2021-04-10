@@ -1,22 +1,6 @@
-
 group "org.polypheny"
 
-
 version = versionMajor + "." + versionMinor + versionQualifier
-
-
-apply plugin: "java-library"
-apply plugin: "idea"
-apply plugin: "io.freefair.lombok"
-
-
-compileJava.options.encoding = "UTF-8"
-compileTestJava.options.encoding = "UTF-8"
-javadoc.options.encoding = "UTF-8"
-
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
 
 
 dependencies {
@@ -33,7 +17,6 @@ dependencies {
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
 }
-
 
 
 sourceSets {
@@ -60,7 +43,6 @@ sourceSets {
 }
 
 
-
 /**
  * JavaDoc
  */
@@ -73,7 +55,6 @@ javadoc {
     // Include private fields in JavaDoc
     options.memberLevel = JavadocMemberLevel.PRIVATE
 }
-
 
 
 /**
@@ -89,20 +70,4 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
-}
-
-
-
-/**
- * IntelliJ
- */
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
-    }
 }
