@@ -18,12 +18,17 @@ package org.polypheny.db.monitoring;
 
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.linq4j.Enumerable;
 import org.mapdb.DBException.SerializationError;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -33,11 +38,13 @@ import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
-
+import org.polypheny.db.util.mapping.Mappings;
 
 //ToDo add some kind of configuration which can for one decide on which backend to select, if we might have severall like
 // * InfluxDB
@@ -46,6 +53,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 // * etc
 
 // Todo eventual MOM outsourced to other hosts
+//ToDO think about managing retention times to save storage
 @Slf4j
 public class MonitoringService {
 
@@ -169,6 +177,19 @@ public class MonitoringService {
         }
     }
 
+
+    private MonitorEvent processRelNode(RelNode node, MonitorEvent currentEvent){
+        for ( int i = 0; i < node.getInputs().size(); i++ ) {
+            processRelNode(node.getInput( i ),currentEvent);
+        }
+        System.out.println(node);
+        if ( node.getTable() != null ){
+            System.out.println("FOUND TABLE : " + node.getTable());
+            currentEvent.setTable( node.getTable() );
+        }
+        return currentEvent;
+    }
+
     //Queue processing FIFO
     //ToDO mabye add more intelligent scheduling later on or introduce config to change processing
     //Will be executed every 5seconds due to Background Task Manager and checks the queue and then asyncronously writes them to backend
@@ -190,16 +211,22 @@ public class MonitoringService {
             System.out.println("\n\n\n\n");
             System.out.println("\n-----> " + procEvent);
             System.out.println("\t\t-----> " + procEvent.getRouted());
+            System.out.println("\t\t\t-----> " + procEvent.getRows());
 
-            for ( RelNode node :procEvent.getRouted().rel.getInputs() ) {
-                System.out.println(node);
-            }
+
+
+            procEvent = processRelNode( procEvent.getRouted().rel, procEvent );
+
+
 
             System.out.println("\n\n\n\n");
 
-             if ( procEvent.getRouted().rel.getTable() != null ) {
+             if ( procEvent.getTable() != null ) {
               //extract information from table
-                RelOptTableImpl table = (RelOptTableImpl) procEvent.getRouted().rel.getTable();
+                RelOptTableImpl table = (RelOptTableImpl) procEvent.getTable();
+
+                 System.out.println(table.getTable());
+
                  if ( table.getTable() instanceof LogicalTable ) {
                      LogicalTable t = ((LogicalTable) table.getTable());
                      // Get placements of this table
@@ -218,7 +245,7 @@ public class MonitoringService {
             synchronized ( this ) {
                 if ( backendConnector.writeStatisticEvent( currentKey, eventQueue.get( currentKey ) ) ){
                     //Remove processed entry from queue
-                    eventQueue.remove( currentKey );
+                    //TODO reenable eventQueue.remove( currentKey );
                     log.debug( "Processed Event in Queue: '{}'.", currentKey );
                 }
                 else{
@@ -226,6 +253,7 @@ public class MonitoringService {
                     continue;
                 }
             }
+            eventQueue.remove( currentKey );
         }
 
         System.out.println("Executed Background Task at: " + new Timestamp(System.currentTimeMillis()) );

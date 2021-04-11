@@ -18,8 +18,25 @@ public class SimpleBackendConnector implements BackendConnector{
     private static final String FILE_PATH = "simpleBackendDb";
     private static DB simpleBackendDb;
 
-    //Long ID essentially corresponds to Atomic ID generated from EventQueue in MonitoringService for better traceability
+
+
+    //table name as String mapped to column name of table
+    private static BTreeMap<String, String> tableEvents;
+
+    //column_name to distinct entries in column
+    private static BTreeMap<String, String> tableColumnEvents;
+
+
+    //Maybe dynamically added via partition method to make class somewhat exetndable and reusable for other modules
+    //ToDO: Think about Register event monitoring?
+    //e.g. distinct value of partition column as String to map of epoch and the event
+    private static BTreeMap<String, Long> tableValueEvents;
+
+
+    //Long ID essentially corresponds to EPOCH TIMESTAMP of recorded Time for better traceability
+    //from that event get OPERATION = (SELECT|UPDATE|...), DURATION=,...
     private static BTreeMap<Long, MonitorEvent> events;
+
 
 
     public SimpleBackendConnector(){
@@ -46,6 +63,10 @@ public class SimpleBackendConnector implements BackendConnector{
 
             simpleBackendDb.getStore().fileLoad();
 
+
+            tableEvents = simpleBackendDb.treeMap( "tableEvents", Serializer.STRING, Serializer.STRING ).createOrOpen();
+            tableColumnEvents = simpleBackendDb.treeMap( "tableColumnEvents", Serializer.STRING, Serializer.STRING ).createOrOpen();
+            tableValueEvents = simpleBackendDb.treeMap( "tableValueEvents", Serializer.STRING, Serializer.LONG ).createOrOpen();
             events = simpleBackendDb.treeMap( "events", Serializer.LONG, Serializer.JAVA ).createOrOpen();
         }
 
@@ -69,12 +90,13 @@ public class SimpleBackendConnector implements BackendConnector{
     public boolean writeStatisticEvent( long key, MonitorEvent incomingEvent ) {
 
 
-        log.info( "SimpleBackendConnector received Queue event: " + incomingEvent.monitoringType.toString() );
+        log.info( "SimpleBackendConnector received Queue event: " + incomingEvent.monitoringType );
         //throw new RuntimeException("SimpleBackendConnector: Not implemented yet");
-
+        System.out.println("\n");
         synchronized ( this ){
             //events.put(key, incomingEvent);
-            log.info( "Write is ncurrently not implemented: See... SimpleBackendConnector.writeStatisticEvent()" );
+
+            log.info( "Write is currently not implemented: See... SimpleBackendConnector.writeStatisticEvent()" );
             simpleBackendDb.commit();
         }
         return true;

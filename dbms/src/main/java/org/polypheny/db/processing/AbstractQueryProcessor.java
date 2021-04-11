@@ -24,6 +24,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.time.Instant;
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +44,7 @@ import org.apache.calcite.avatica.ColumnMetaData.Rep;
 import org.apache.calcite.avatica.Meta.CursorFactory;
 import org.apache.calcite.avatica.Meta.StatementType;
 import org.apache.calcite.avatica.MetaImpl;
+import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.adapter.DataContext;
@@ -138,6 +140,7 @@ import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.ExtraPolyTypes;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.ImmutableIntList;
+import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Util;
 
@@ -295,13 +298,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                     statement.getDuration().stop( "Implementation Caching" );
                 }
 
+
+                //needed for row results
+                final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+                Iterator<Object> iterator = enumerable.iterator();
+
+
+
                 MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder()
                         .monitoringType( signature.statementType.toString() )
                         .description( "Test description:"+ parameterizedRoot.kind.sql )
                         .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
-                        .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
-                        .routed( parameterizedRoot )
+                        .recordedTimestamp( System.currentTimeMillis() )
+                        .routed( routedRoot )
+                        .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
                         .build() );
+
+
                 //MonitoringService.MonitorEvent( InfluxPojo.Create(  routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ) );
                 return signature;
             }
@@ -386,12 +399,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
 
 
 
-        MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder().monitoringType( signature.statementType.toString() )
-                .description( "Test description" )
+
+        //needed for row results
+        final Enumerable enumerable = signature.enumerable( statement.getDataContext() );
+        Iterator<Object> iterator = enumerable.iterator();
+
+
+        MonitoringService.INSTANCE.addWorkloadEventToQueue( MonitorEvent.builder()
+                .monitoringType( signature.statementType.toString() )
+                .description( "Test description:"+ parameterizedRoot.kind.sql )
                 .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
-                .recordedTimestamp( new Timestamp( System.currentTimeMillis() ) )
-                .routed( parameterizedRoot )
+                .recordedTimestamp( System.currentTimeMillis() )
+                .routed( routedRoot )
+                .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
                 .build() );
+
         //MonitoringService.MonitorEvent( InfluxPojo.Create( routedRoot.rel.relCompareString(), signature.statementType.toString(), Long.valueOf( signature.columns.size() ) ));
         return signature;
     }
