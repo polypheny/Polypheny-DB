@@ -8,11 +8,10 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.EmbeddedDeployable;
-import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
@@ -35,18 +34,16 @@ import org.polypheny.db.util.FileSystemManager;
 
 
 @Slf4j
-@AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, appliesTo = DeployMode.DEFAULT)
-@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, appliesTo = DeployMode.DEFAULT)
-@AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" }, appliesTo = DeployMode.DEFAULT)
-@AdapterSettingList(name = "trxIsolationLevel", options = { "read_committed", "serializable" }, appliesTo = DeployMode.DEFAULT)
-@AdapterSettingList(name = "type", options = { "Memory", "File" }, appliesTo = DeployMode.DEFAULT)
-public class HsqldbStore extends AbstractJdbcStore implements RemoteDeployable, EmbeddedDeployable {
-
-    @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "HSQLDB";
-    @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.";
-
+@AdapterProperties(
+        name = "HSQLDB",
+        description = "Java-based relational database system. It supports an in-memory and a persistent file based mode. Deploying a HSQLDB instance requires no additional dependencies to be installed or servers to be set up.",
+        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE })
+@AdapterSettingList(name = "tableType", options = { "Memory", "Cached" }, position = 1)
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25)
+@AdapterSettingList(name = "trxControlMode", options = { "locks", "mvlocks", "mvcc" })
+@AdapterSettingList(name = "trxIsolationLevel", options = { "read_committed", "serializable" })
+@AdapterSettingList(name = "type", options = { "Memory", "File" })
+public class HsqldbStore extends AbstractJdbcStore {
 
     public HsqldbStore( final int storeId, final String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, createConnectionFactory( storeId, uniqueName, settings, HsqldbSqlDialect.DEFAULT ), HsqldbSqlDialect.DEFAULT, settings.get( "type" ).equals( "File" ) );
@@ -133,12 +130,6 @@ public class HsqldbStore extends AbstractJdbcStore implements RemoteDeployable, 
         builder.append( "DROP INDEX " );
         builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
         executeUpdate( builder, context );
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
     }
 
 

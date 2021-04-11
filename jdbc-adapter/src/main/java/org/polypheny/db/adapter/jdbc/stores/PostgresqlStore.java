@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
@@ -45,24 +46,23 @@ import org.polypheny.db.type.PolyTypeFamily;
 
 
 @Slf4j
-@AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeployMode.DEFAULT,
+@AdapterProperties(
+        name = "PostgreSQL",
+        description = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.",
+        usedModes = DeployMode.REMOTE)
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 1,
         description = "Hostname or IP address of the remote PostgreSQL instance.")
-@AdapterSettingInteger(name = "port", defaultValue = 3306, appliesTo = DeployMode.DEFAULT,
+@AdapterSettingInteger(name = "port", defaultValue = 3306, position = 2,
         description = "JDBC port number on the remote PostgreSQL instance.")
-@AdapterSettingString(name = "database", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+@AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
         description = "Name of the database to connect to.")
-@AdapterSettingString(name = "username", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+@AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
         description = "Username to be used for authenticating at the remote instance")
-@AdapterSettingString(name = "password", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
+@AdapterSettingString(name = "password", defaultValue = "polypheny", position = 5,
         description = "Password to be used for authenticating at the remote instance")
-@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, appliesTo = DeployMode.DEFAULT,
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
         description = "Maximum number of concurrent JDBC connections.")
 public class PostgresqlStore extends AbstractJdbcStore implements RemoteDeployable {
-
-    public static final String ADAPTER_NAME = "PostgreSQL";
-
-    public static final String DESCRIPTION = "Relational database system optimized for transactional workload that provides an advanced set of features. PostgreSQL is fully ACID compliant and ensures that all requirements are met.";
-
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, createConnectionFactory( settings, PostgresqlSqlDialect.DEFAULT ), PostgresqlSqlDialect.DEFAULT, true );
@@ -188,12 +188,6 @@ public class PostgresqlStore extends AbstractJdbcStore implements RemoteDeployab
         builder.append( "DROP INDEX " );
         builder.append( dialect.quoteIdentifier( catalogIndex.physicalName ) );
         executeUpdate( builder, context );
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
     }
 
 

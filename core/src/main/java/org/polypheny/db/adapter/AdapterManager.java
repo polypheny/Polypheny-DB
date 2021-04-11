@@ -2,11 +2,9 @@ package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,10 +17,15 @@ import java.util.Set;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingList;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
+import org.polypheny.db.adapter.Adapter.BindableAbstractAdapterSettingsList;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
+import org.polypheny.db.config.ConfigDocker;
+import org.polypheny.db.config.RuntimeConfig;
 import org.reflections.Reflections;
 
 public class AdapterManager {
@@ -129,40 +132,61 @@ public class AdapterManager {
             throw new RuntimeException( "Unknown adapter type: " + adapterType );
         }
         List<AdapterInformation> result = new LinkedList<>();
-        try {
-            //noinspection unchecked
-            for ( Class<DataStore> clazz : classes ) {
-                // Exclude abstract classes
-                if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
-                    String name = (String) clazz.getDeclaredField( "ADAPTER_NAME" ).get( null );
-                    String description = (String) clazz.getDeclaredField( "DESCRIPTION" ).get( null );
-                    Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
-                    settings.put( "mode", Collections.singletonList( new AbstractAdapterSettingList( "mode", false, true, true, Collections.singletonList( "default" ) ) ) );
+        //noinspection unchecked
+        for ( Class<DataStore> clazz : classes ) {
+            // Exclude abstract classes
+            if ( !Modifier.isAbstract( clazz.getModifiers() ) ) {
+                Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
-                    List<Type> interfaces = Arrays.asList( clazz.getGenericInterfaces() );
-                    settings.put( "default", new ArrayList<>() );
-                    if ( interfaces.contains( DockerDeployable.class ) ) {
-                        settings.put( "docker", new ArrayList<>() );
-                    }
-                    if ( interfaces.contains( RemoteDeployable.class ) ) {
-                        settings.put( "remote", new ArrayList<>() );
-                    }
-                    if ( interfaces.contains( EmbeddedDeployable.class ) ) {
-                        settings.put( "embedded", new ArrayList<>() );
-                    }
-
-                    Annotation[] annotations = clazz.getAnnotations();
-
-                    Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( annotations );
-
-                    annotatedSettings.forEach( settings::put );
-                    result.add( new AdapterInformation( name, description, clazz, settings ) );
+                AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
+                if ( properties == null ) {
+                    throw new RuntimeException( clazz.getSimpleName() + " does not annotate the adapter correctly" );
                 }
+
+                // used to evaluate which mode is used when deploying the adapter
+                settings.put( "mode",
+                        Collections.singletonList(
+                                new AbstractAdapterSettingList(
+                                        "mode",
+                                        false,
+                                        true,
+                                        true,
+                                        Collections.singletonList( "default" ),
+                                        Collections.singletonList( DeploySetting.DEFAULT ),
+                                        0 ) ) );
+
+                // add empty list for each available mode
+                Arrays.stream( properties.usedModes() ).forEach( mode -> settings.put( mode.getName(), new ArrayList<>() ) );
+
+                // if the adapter uses docker add the dynamic docker setting
+                if ( settings.containsKey( "docker" ) ) {
+                    settings
+                            .get( "docker" )
+                            .add( new BindableAbstractAdapterSettingsList<>(
+                                    "instanceId",
+                                    "DockerInstance",
+                                    false,
+                                    true,
+                                    false,
+                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ),
+                                    ConfigDocker::getAlias,
+                                    ConfigDocker.class )
+                                    .bind( RuntimeConfig.DOCKER_INSTANCES )
+                                    .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." ) );
+                }
+
+                // add default which is used by all available modes
+                settings.put( "default", new ArrayList<>() );
+
+                // merge annotated AdapterSettings into settings
+                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) );
+                annotatedSettings.forEach( settings::put );
+
+                result.add( new AdapterInformation( properties.name(), properties.description(), clazz, settings ) );
             }
-        } catch ( NoSuchFieldException | IllegalAccessException e ) {
-            throw new RuntimeException( "Something went wrong while retrieving list of available store adapters.", e );
         }
+
         return result;
     }
 
@@ -231,13 +255,8 @@ public class AdapterManager {
             throw new RuntimeException( "There is still data placed on this data store" );
         }
 
-        // Remove used listener
-        if ( adapterInstance instanceof DockerDeployable ) {
-            adapterInstance.removeListener();
-        }
-
         // Shutdown store
-        adapterInstance.shutdown();
+        adapterInstance.shutdownAndRemoveListeners();
 
         // Remove store from maps
         adapterById.remove( adapterInstance.getAdapterId() );

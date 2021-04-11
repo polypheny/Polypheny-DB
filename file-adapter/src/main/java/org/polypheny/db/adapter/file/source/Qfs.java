@@ -32,10 +32,10 @@ import java.util.Map;
 import java.util.StringJoiner;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.EmbeddedDeployable;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.information.InformationGroup;
@@ -55,13 +55,12 @@ import org.polypheny.db.util.FileSystemManager;
  * A data source that can Query a File System
  */
 @Slf4j
-@AdapterSettingString(name = "rootDir", defaultValue = "", appliesTo = DeployMode.DEFAULT)
-public class Qfs extends DataSource implements EmbeddedDeployable {
-
-    @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "QFS";
-    @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.";
+@AdapterProperties(
+        name = "QFS",
+        description = "This data source maps a file system on the Polypheny-DB host system as a relational table and allows to query it.",
+        usedModes = DeployMode.EMBEDDED)
+@AdapterSettingString(name = "rootDir", defaultValue = "")
+public class Qfs extends DataSource {
 
     @Getter
     private File rootDir;
@@ -80,12 +79,6 @@ public class Qfs extends DataSource implements EmbeddedDeployable {
         if ( !rootDir.exists() ) {
             throw new RuntimeException( "The specified root dir does not exist!" );
         }
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
     }
 
 
@@ -130,6 +123,7 @@ public class Qfs extends DataSource implements EmbeddedDeployable {
     public void rollback( PolyXid xid ) {
         log.debug( "QFS does not support rollback" );
     }
+
 
     @Override
     public void shutdown() {

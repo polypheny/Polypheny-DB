@@ -16,13 +16,14 @@
 
 package org.polypheny.db.adapter;
 
+import java.util.Collections;
+import java.util.List;
 import lombok.Getter;
 
 public enum DeployMode {
     REMOTE( "remote" ),
     DOCKER( "docker" ),
-    EMBEDDED( "embedded" ),
-    DEFAULT( "default" );
+    EMBEDDED( "embedded" );
 
     @Getter
     private final String name;
@@ -30,5 +31,56 @@ public enum DeployMode {
 
     DeployMode( String name ) {
         this.name = name;
+    }
+
+
+    public static DeployMode fromString( String mode ) {
+        if ( mode.equals( "remote" ) ) {
+            return REMOTE;
+        } else if ( mode.equals( "docker" ) ) {
+            return DOCKER;
+        } else {
+            return EMBEDDED;
+        }
+    }
+
+
+    public enum DeploySetting {
+        REMOTE( DeployMode.REMOTE ),
+        DOCKER( DeployMode.DOCKER ),
+        EMBEDDED( DeployMode.EMBEDDED ),
+        DEFAULT;
+
+        private final DeployMode mode;
+        @Getter
+        private boolean usedByAll = false;
+
+
+        DeploySetting( DeployMode mode ) {
+            this.mode = mode;
+        }
+
+
+        DeploySetting() {
+            usedByAll = true;
+            mode = DeployMode.EMBEDDED;
+        }
+
+
+        /**
+         * DeploySettings can wrap multiple underlying DeployModes
+         * this method returns them
+         *
+         * @param availableModes all available modes, to which this setting could belong
+         * @return the modes for which this setting is available
+         */
+        List<DeployMode> getModes( List<DeployMode> availableModes ) {
+            if ( usedByAll ) {
+                return availableModes;
+            } else {
+                return Collections.singletonList( mode );
+            }
+        }
+
     }
 }

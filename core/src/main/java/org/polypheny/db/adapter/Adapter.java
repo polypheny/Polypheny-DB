@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter;
 
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -24,13 +25,17 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +46,7 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
@@ -62,11 +68,28 @@ import org.polypheny.db.transaction.PolyXid;
 
 public abstract class Adapter {
 
+    private final AdapterProperties properties;
+    private final DeployMode deployMode;
+
+
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface AdapterProperties {
+
+        String name();
+
+        String description();
+
+        DeployMode[] usedModes();
+
+    }
+
+
+    @Inherited
+    @Target(ElementType.TYPE)
     @Repeatable(AdapterSettingString.List.class)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface AdapterSettingString {
-
-        String type = "String";
 
         String name();
 
@@ -80,8 +103,12 @@ public abstract class Adapter {
 
         String defaultValue();
 
-        DeployMode[] appliesTo();
+        int position() default 100;
 
+        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        @Inherited
+        @Target(ElementType.TYPE)
         @Retention(RetentionPolicy.RUNTIME)
         @interface List {
 
@@ -92,11 +119,11 @@ public abstract class Adapter {
     }
 
 
+    @Inherited
     @Repeatable(AdapterSettingInteger.List.class)
+    @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface AdapterSettingInteger {
-
-        String type = "Integer";
 
         String name();
 
@@ -110,8 +137,12 @@ public abstract class Adapter {
 
         int defaultValue();
 
-        DeployMode[] appliesTo();
+        int position() default 100;
 
+        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        @Inherited
+        @Target(ElementType.TYPE)
         @Retention(RetentionPolicy.RUNTIME)
         @interface List {
 
@@ -122,11 +153,11 @@ public abstract class Adapter {
     }
 
 
+    @Inherited
     @Repeatable(AdapterSettingBoolean.List.class)
+    @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface AdapterSettingBoolean {
-
-        String type = "Boolean";
 
         String name();
 
@@ -140,8 +171,12 @@ public abstract class Adapter {
 
         boolean defaultValue();
 
-        DeployMode[] appliesTo();
+        int position() default 100;
 
+        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        @Inherited
+        @Target(ElementType.TYPE)
         @Retention(RetentionPolicy.RUNTIME)
         @interface List {
 
@@ -152,11 +187,11 @@ public abstract class Adapter {
     }
 
 
+    @Inherited
     @Repeatable(AdapterSettingList.List.class)
+    @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface AdapterSettingList {
-
-        String type = "List";
 
         String name();
 
@@ -170,8 +205,12 @@ public abstract class Adapter {
 
         String[] options();
 
-        DeployMode[] appliesTo();
+        int position() default 100;
 
+        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        @Inherited
+        @Target(ElementType.TYPE)
         @Retention(RetentionPolicy.RUNTIME)
         @interface List {
 
@@ -182,11 +221,11 @@ public abstract class Adapter {
     }
 
 
+    @Inherited
+    @Target(ElementType.TYPE)
     @Repeatable(AdapterSettingDirectory.List.class)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface AdapterSettingDirectory {
-
-        String type = "Directory";
 
         String name();
 
@@ -198,8 +237,12 @@ public abstract class Adapter {
 
         String description() default "";
 
-        DeployMode[] appliesTo();
+        int position() default 100;
 
+        DeploySetting[] appliesTo() default DeploySetting.DEFAULT;
+
+        @Inherited
+        @Target(ElementType.TYPE)
         @Retention(RetentionPolicy.RUNTIME)
         @interface List {
 
@@ -208,6 +251,13 @@ public abstract class Adapter {
         }
 
     }
+
+
+    public static List<AbstractAdapterSetting> DOCKER_INSTANCE_SETTINGS = ImmutableList.of(
+            new BindableAbstractAdapterSettingsList<>( "instanceId", "DockerInstance", false, true, false, RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ), ConfigDocker::getAlias, ConfigDocker.class )
+                    .bind( RuntimeConfig.DOCKER_INSTANCES )
+                    .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." )
+    );
 
 
     @Getter
@@ -224,6 +274,12 @@ public abstract class Adapter {
 
 
     public Adapter( int adapterId, String uniqueName, Map<String, String> settings ) {
+        this.properties = getClass().getAnnotation( AdapterProperties.class );
+        if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
+            throw new RuntimeException( "The used adapter does not annotate its properties correctly." );
+        }
+        this.deployMode = settings.containsKey( "mode" ) ? DeployMode.fromString( settings.get( "mode" ) ) : DeployMode.EMBEDDED;
+
         this.adapterId = adapterId;
         this.uniqueName = uniqueName;
         // Make sure the settings are actually valid
@@ -235,13 +291,19 @@ public abstract class Adapter {
         informationElements = new ArrayList<>();
 
         // this is need for docker deployable stores and should not interfere too much with other adapters
-        if ( this instanceof DockerDeployable && settings.containsKey( "mode" ) && settings.get( "mode" ).equals( "docker" ) ) {
-            this.listener = ((DockerDeployable) this).attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
+        if ( Arrays.asList( properties.usedModes() ).contains( DeployMode.DOCKER ) && settings.get( "mode" ).equals( "docker" ) ) {
+            this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
     }
 
 
-    public abstract String getAdapterName();
+    public String getAdapterName() {
+        return getClass().getAnnotation( AdapterProperties.class ).name();
+    }
+
+
+    ;
+
 
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
@@ -259,7 +321,7 @@ public abstract class Adapter {
 
 
     public List<AbstractAdapterSetting> getAvailableSettings() {
-        return AbstractAdapterSetting.fromAnnotations( this.getClass().getAnnotations() )
+        return AbstractAdapterSetting.fromAnnotations( this.getClass().getAnnotations(), getClass().getAnnotation( AdapterProperties.class ) )
                 .values()
                 .stream()
                 .flatMap( Collection::stream )
@@ -267,14 +329,15 @@ public abstract class Adapter {
     }
 
 
-    public abstract void shutdown();
-
-
-    public void removeListener() {
-        if ( this instanceof DockerDeployable ) {
+    public void shutdownAndRemoveListeners() {
+        if ( settings.get( "mode" ).equals( "docker" ) ) {
             RuntimeConfig.DOCKER_INSTANCES.removeObserver( this.listener );
         }
+        shutdown();
     }
+
+
+    public abstract void shutdown();
 
 
     /**
@@ -308,7 +371,7 @@ public abstract class Adapter {
 
     public Map<String, String> getCurrentSettings() {
         // we unwrap the dockerInstance details here, for convenience
-        if ( this instanceof DockerDeployable ) {
+        if ( deployMode == DeployMode.DOCKER ) {
             Map<String, String> dockerSettings = RuntimeConfig.DOCKER_INSTANCES
                     .getWithId( ConfigDocker.class, Integer.parseInt( settings.get( "instanceId" ) ) ).getSettings();
             settings.forEach( dockerSettings::put );
@@ -388,6 +451,45 @@ public abstract class Adapter {
     }
 
 
+    /**
+     * This function attaches the callee to the specified docker instance,
+     * it will call the appropriate resetConnection function when the Docker configuration changes
+     *
+     * @param dockerInstanceId the id of the corresponding Docker instance
+     */
+    ConfigListener attachListener( int dockerInstanceId ) {
+        // we have to track the used docker url we attach a listener
+        ConfigListener listener = new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ) );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+                resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ) );
+            }
+        };
+        RuntimeConfig.DOCKER_INSTANCES.addObserver( listener );
+        return listener;
+    }
+
+
+    /**
+     * This function is called automatically if the configuration of connected Docker instance changes,
+     * it is responsible for handling regenerating the connection if the Docker changes demand it
+     *
+     * @param c the new configuration of the corresponding Docker instance
+     */
+    void resetDockerConnection( ConfigDocker c ) {
+        throw new RuntimeException( getAdapterName() + " uses this Docker instance and does not support to dynamically change it." );
+    }
+
+
+    ;
+
+
     @Accessors(chain = true)
     public static abstract class AbstractAdapterSetting {
 
@@ -395,58 +497,63 @@ public abstract class Adapter {
         public final boolean canBeNull;
         public final boolean required;
         public final boolean modifiable;
+        private final int position;
         @Setter
         public String description;
-        public RuntimeConfig boundConfig;
 
         @Getter
-        private final List<DeployMode> modes;
+        private final List<DeploySetting> appliesTo;
 
 
-        public AbstractAdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable, List<DeployMode> modes ) {
+        public AbstractAdapterSetting( final String name, final boolean canBeNull, final boolean required, final boolean modifiable, List<DeploySetting> appliesTo, int position ) {
             this.name = name;
             this.canBeNull = canBeNull;
             this.required = required;
             this.modifiable = modifiable;
-            this.modes = modes;
+            this.position = position;
+            this.appliesTo = appliesTo;
         }
 
 
-        public static Map<String, List<AbstractAdapterSetting>> fromAnnotations( Annotation[] annotations ) {
+        public static Map<String, List<AbstractAdapterSetting>> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
             Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
             for ( Annotation annotation : annotations ) {
                 if ( annotation instanceof AdapterSettingString ) {
-                    mergeSettings( settings, AbstractAdapterSettingString.fromAnnotation( (AdapterSettingString) annotation ) );
+                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingString.fromAnnotation( (AdapterSettingString) annotation ) );
                 } else if ( annotation instanceof AdapterSettingString.List ) {
-                    Arrays.stream( ((AdapterSettingString.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingString.fromAnnotation( el ) ) );
+                    Arrays.stream( ((AdapterSettingString.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingString.fromAnnotation( el ) ) );
                 } else if ( annotation instanceof AdapterSettingBoolean ) {
-                    mergeSettings( settings, AbstractAdapterSettingBoolean.fromAnnotation( (AdapterSettingBoolean) annotation ) );
+                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingBoolean.fromAnnotation( (AdapterSettingBoolean) annotation ) );
                 } else if ( annotation instanceof AdapterSettingBoolean.List ) {
-                    Arrays.stream( ((AdapterSettingBoolean.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingBoolean.fromAnnotation( el ) ) );
+                    Arrays.stream( ((AdapterSettingBoolean.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingBoolean.fromAnnotation( el ) ) );
                 } else if ( annotation instanceof AdapterSettingInteger ) {
-                    mergeSettings( settings, AbstractAdapterSettingInteger.fromAnnotation( (AdapterSettingInteger) annotation ) );
+                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingInteger.fromAnnotation( (AdapterSettingInteger) annotation ) );
                 } else if ( annotation instanceof AdapterSettingInteger.List ) {
-                    Arrays.stream( ((AdapterSettingInteger.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingInteger.fromAnnotation( el ) ) );
+                    Arrays.stream( ((AdapterSettingInteger.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingInteger.fromAnnotation( el ) ) );
                 } else if ( annotation instanceof AdapterSettingList ) {
-                    mergeSettings( settings, AbstractAdapterSettingList.fromAnnotation( (AdapterSettingList) annotation ) );
+                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingList.fromAnnotation( (AdapterSettingList) annotation ) );
                 } else if ( annotation instanceof AdapterSettingList.List ) {
-                    Arrays.stream( ((AdapterSettingList.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingList.fromAnnotation( el ) ) );
+                    Arrays.stream( ((AdapterSettingList.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingList.fromAnnotation( el ) ) );
                 } else if ( annotation instanceof AdapterSettingDirectory ) {
-                    mergeSettings( settings, AbstractAdapterSettingDirectory.fromAnnotation( (AdapterSettingDirectory) annotation ) );
+                    mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingDirectory.fromAnnotation( (AdapterSettingDirectory) annotation ) );
                 } else if ( annotation instanceof AdapterSettingDirectory.List ) {
-                    Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> mergeSettings( settings, AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
-                } else {
-                    throw new RuntimeException();
+                    Arrays.stream( ((AdapterSettingDirectory.List) annotation).value() ).forEach( el -> mergeSettings( settings, properties.usedModes(), AbstractAdapterSettingDirectory.fromAnnotation( el ) ) );
                 }
             }
 
+            settings.forEach( ( key, values ) -> values.sort( Comparator.comparingInt( value -> value.position ) ) );
             return settings;
         }
 
 
-        private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, AbstractAdapterSetting setting ) {
-            for ( DeployMode mode : setting.modes ) {
+        private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, DeployMode[] deployModes, AbstractAdapterSetting setting ) {
+            // we need to unpack the underlying DeployModes
+            for ( DeployMode mode : setting.appliesTo
+                    .stream()
+                    .flatMap( mode -> mode.getModes( Arrays.asList( deployModes ) ).stream() )
+                    .collect( Collectors.toList() ) ) {
+
                 if ( settings.containsKey( mode.getName() ) ) {
                     settings.get( mode.getName() ).add( setting );
                 } else {
@@ -463,7 +570,169 @@ public abstract class Adapter {
          */
         public abstract String getValue();
 
-        public abstract void refreshFromConfig();
+
+    }
+
+
+    public static class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
+
+        private final String type = "Integer";
+        private Integer defaultValue;
+
+
+        public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, required, modifiable, modes, position );
+            this.defaultValue = defaultValue;
+        }
+
+
+        public static AbstractAdapterSetting fromAnnotation( AdapterSettingInteger annotation ) {
+            return new AbstractAdapterSettingInteger(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    annotation.defaultValue(),
+                    Arrays.asList( annotation.appliesTo() ),
+                    annotation.position() );
+        }
+
+
+        @Override
+        public String getValue() {
+            return defaultValue.toString();
+        }
+
+    }
+
+
+    public static class AbstractAdapterSettingString extends AbstractAdapterSetting {
+
+        private final String type = "String";
+        private String defaultValue;
+
+
+        public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, required, modifiable, modes, position );
+            this.defaultValue = defaultValue;
+        }
+
+
+        public static AbstractAdapterSetting fromAnnotation( AdapterSettingString annotation ) {
+            return new AbstractAdapterSettingString(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    annotation.defaultValue(),
+                    Arrays.asList( annotation.appliesTo() ),
+                    annotation.position() );
+        }
+
+
+        @Override
+        public String getValue() {
+            return defaultValue;
+        }
+
+    }
+
+
+    public static class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
+
+        private final String type = "Boolean";
+        private boolean defaultValue;
+
+
+        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, required, modifiable, modes, position );
+            this.defaultValue = defaultValue;
+        }
+
+
+        public static AbstractAdapterSettingBoolean fromAnnotation( AdapterSettingBoolean annotation ) {
+            return new AbstractAdapterSettingBoolean(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    annotation.defaultValue(),
+                    Arrays.asList( annotation.appliesTo() ),
+                    annotation.position() );
+        }
+
+
+        @Override
+        public String getValue() {
+            return Boolean.toString( defaultValue );
+        }
+
+    }
+
+
+    @Accessors(chain = true)
+    public static class AbstractAdapterSettingList extends AbstractAdapterSetting {
+
+        private final String type = "List";
+        public List<String> options;
+        @Setter
+        String defaultValue;
+        public boolean dynamic = false;
+
+
+        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, required, modifiable, modes, position );
+            this.options = options;
+            if ( options.size() > 0 ) {
+                this.defaultValue = options.get( 0 );
+            }
+        }
+
+
+        public static AbstractAdapterSetting fromAnnotation( AdapterSettingList annotation ) {
+            return new AbstractAdapterSettingList(
+                    annotation.name(),
+                    annotation.canBeNull(),
+                    annotation.required(),
+                    annotation.modifiable(),
+                    Arrays.asList( annotation.options() ),
+                    Arrays.asList( annotation.appliesTo() ),
+                    annotation.position() );
+        }
+
+
+        @Override
+        public String getValue() {
+            return defaultValue;
+        }
+
+    }
+
+
+    /**
+     * DynamicSettingsList which allows to configure mapped AdapterSettings, which expose an alias in the frontend
+     * but assign an corresponding id when the value is chosen
+     *
+     * @param <T>
+     */
+    @Accessors(chain = true)
+    public static class BindableAbstractAdapterSettingsList<T extends ConfigObject> extends AbstractAdapterSettingList {
+
+        private final transient Function<T, String> mapper;
+        private final transient Class<T> clazz;
+        private Map<Integer, String> alias;
+        private final String nameAlias;
+        public RuntimeConfig boundConfig;
+
+
+        public BindableAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
+            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>(), 1000 );
+            this.mapper = mapper;
+            this.clazz = clazz;
+            this.dynamic = true;
+            this.nameAlias = nameAlias;
+            this.alias = options.stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
+        }
 
 
         /**
@@ -492,224 +761,7 @@ public abstract class Adapter {
             return this;
         }
 
-    }
 
-
-    public static class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
-
-        private final String type = "Integer";
-        private Integer defaultValue;
-
-
-        public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue ) {
-            super( name, canBeNull, required, modifiable, new ArrayList<>() );
-            this.defaultValue = defaultValue;
-        }
-
-
-        public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue, List<DeployMode> modes ) {
-            super( name, canBeNull, required, modifiable, modes );
-            this.defaultValue = defaultValue;
-        }
-
-
-        public static AbstractAdapterSetting fromAnnotation( AdapterSettingInteger annotation ) {
-            return new AbstractAdapterSettingInteger(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    annotation.defaultValue(),
-                    Arrays.asList( annotation.appliesTo() ) );
-        }
-
-
-        @Override
-        public String getValue() {
-            return defaultValue.toString();
-        }
-
-
-        @Override
-        public void refreshFromConfig() {
-            if ( boundConfig != null ) {
-                defaultValue = boundConfig.getInteger();
-            }
-        }
-
-    }
-
-
-    public static class AbstractAdapterSettingString extends AbstractAdapterSetting {
-
-        private final String type = "String";
-        private String defaultValue;
-
-
-        public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue ) {
-            super( name, canBeNull, required, modifiable, new ArrayList<>() );
-            this.defaultValue = defaultValue;
-        }
-
-
-        public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeployMode> modes ) {
-            super( name, canBeNull, required, modifiable, modes );
-            this.defaultValue = defaultValue;
-        }
-
-
-        public static AbstractAdapterSetting fromAnnotation( AdapterSettingString annotation ) {
-            return new AbstractAdapterSettingString(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    annotation.defaultValue(),
-                    Arrays.asList( annotation.appliesTo() ) );
-        }
-
-
-        @Override
-        public String getValue() {
-            return defaultValue;
-        }
-
-
-        @Override
-        public void refreshFromConfig() {
-            if ( boundConfig != null ) {
-                defaultValue = boundConfig.getString();
-            }
-        }
-
-    }
-
-
-    public static class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
-
-        private final String type = "Boolean";
-        private boolean defaultValue;
-
-
-        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue, List<DeployMode> modes ) {
-            super( name, canBeNull, required, modifiable, modes );
-            this.defaultValue = defaultValue;
-        }
-
-
-        public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue ) {
-            super( name, canBeNull, required, modifiable, new ArrayList<>() );
-            this.defaultValue = defaultValue;
-        }
-
-
-        public static AbstractAdapterSettingBoolean fromAnnotation( AdapterSettingBoolean annotation ) {
-            return new AbstractAdapterSettingBoolean(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    annotation.defaultValue(),
-                    Arrays.asList( annotation.appliesTo() ) );
-        }
-
-
-        @Override
-        public String getValue() {
-            return Boolean.toString( defaultValue );
-        }
-
-
-        @Override
-        public void refreshFromConfig() {
-            if ( boundConfig != null ) {
-                defaultValue = boundConfig.getBoolean();
-            }
-        }
-
-    }
-
-
-    @Accessors(chain = true)
-    public static class AbstractAdapterSettingList extends AbstractAdapterSetting {
-
-        private final String type = "List";
-        public List<String> options;
-        @Setter
-        String defaultValue;
-        public boolean dynamic = false;
-
-
-        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options ) {
-            this( name, canBeNull, required, modifiable, options, new ArrayList<>() );
-        }
-
-
-        public AbstractAdapterSettingList( String name, boolean canBeNull, boolean required, boolean modifiable, List<String> options, List<DeployMode> modes ) {
-            super( name, canBeNull, required, modifiable, modes );
-            this.options = options;
-            if ( options.size() > 0 ) {
-                this.defaultValue = options.get( 0 );
-            }
-        }
-
-
-        public static AbstractAdapterSetting fromAnnotation( AdapterSettingList annotation ) {
-            return new AbstractAdapterSettingList(
-                    annotation.name(),
-                    annotation.canBeNull(),
-                    annotation.required(),
-                    annotation.modifiable(),
-                    Arrays.asList( annotation.options() ),
-                    Arrays.asList( annotation.appliesTo() ) );
-        }
-
-
-        @Override
-        public String getValue() {
-            return defaultValue;
-        }
-
-
-        @Override
-        public void refreshFromConfig() {
-            if ( boundConfig != null ) {
-                options = boundConfig.getStringList();
-                if ( options.size() > 0 ) {
-                    this.defaultValue = options.get( 0 );
-                }
-            }
-        }
-
-    }
-
-
-    /**
-     * DynamicSettingsList which allows to configure mapped AdapterSettings, which expose an alias in the frontend
-     * but assign an corresponding id when the value is chosen
-     *
-     * @param <T>
-     */
-    @Accessors(chain = true)
-    public static class DynamicAbstractAdapterSettingsList<T extends ConfigObject> extends AbstractAdapterSettingList {
-
-        private final transient Function<T, String> mapper;
-        private final transient Class<T> clazz;
-        private Map<Integer, String> alias;
-        private final String nameAlias;
-
-
-        public DynamicAbstractAdapterSettingsList( String name, String nameAlias, boolean canBeNull, boolean required, boolean modifiable, List<T> options, Function<T, String> mapper, Class<T> clazz ) {
-            super( name, canBeNull, required, modifiable, options.stream().map( ( el ) -> String.valueOf( el.getId() ) ).collect( Collectors.toList() ), new ArrayList<>() );
-            this.mapper = mapper;
-            this.clazz = clazz;
-            this.dynamic = true;
-            this.nameAlias = nameAlias;
-            this.alias = options.stream().collect( Collectors.toMap( ConfigObject::getId, mapper ) );
-        }
-
-
-        @Override
         public void refreshFromConfig() {
             if ( boundConfig != null ) {
                 options = boundConfig.getList( clazz ).stream().map( ( el ) -> String.valueOf( el.id ) ).collect( Collectors.toList() );
@@ -736,8 +788,8 @@ public abstract class Adapter {
         public transient final Map<String, InputStream> inputStreams;
 
 
-        public AbstractAdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable ) {
-            super( name, canBeNull, required, modifiable, new ArrayList<>() );
+        public AbstractAdapterSettingDirectory( String name, boolean canBeNull, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
+            super( name, canBeNull, required, modifiable, modes, position );
             //so it will be serialized
             this.directory = "";
             this.inputStreams = new HashMap<>();
@@ -749,7 +801,9 @@ public abstract class Adapter {
                     annotation.name(),
                     annotation.canBeNull(),
                     annotation.required(),
-                    annotation.modifiable()
+                    annotation.modifiable(),
+                    Arrays.asList( annotation.appliesTo() ),
+                    annotation.position()
             );
         }
 
@@ -757,12 +811,6 @@ public abstract class Adapter {
         @Override
         public String getValue() {
             return directory;
-        }
-
-
-        @Override
-        public void refreshFromConfig() {
-            throw new UnsupportedOperationException( "Directories can not be bind to RuntimeConfigs!" );
         }
 
     }
@@ -779,6 +827,7 @@ public abstract class Adapter {
             boolean canBeNull = jsonObject.get( "canBeNull" ).getAsBoolean();
             boolean required = jsonObject.get( "required" ).getAsBoolean();
             boolean modifiable = jsonObject.get( "modifiable" ).getAsBoolean();
+            int position = jsonObject.get( "position" ).getAsInt();
             String description = null;
             if ( jsonObject.get( "description" ) != null ) {
                 description = jsonObject.get( "description" ).getAsString();
@@ -788,25 +837,25 @@ public abstract class Adapter {
             switch ( type ) {
                 case "Integer":
                     Integer integer = jsonObject.get( "defaultValue" ).getAsInt();
-                    out = new AbstractAdapterSettingInteger( name, canBeNull, required, modifiable, integer, new ArrayList<>() );
+                    out = new AbstractAdapterSettingInteger( name, canBeNull, required, modifiable, integer, new ArrayList<>(), position );
                     break;
                 case "String":
                     String string = jsonObject.get( "defaultValue" ).getAsString();
-                    out = new AbstractAdapterSettingString( name, canBeNull, required, modifiable, string, new ArrayList<>() );
+                    out = new AbstractAdapterSettingString( name, canBeNull, required, modifiable, string, new ArrayList<>(), position );
                     break;
                 case "Boolean":
                     boolean bool = jsonObject.get( "defaultValue" ).getAsBoolean();
-                    out = new AbstractAdapterSettingBoolean( name, canBeNull, required, modifiable, bool, new ArrayList<>() );
+                    out = new AbstractAdapterSettingBoolean( name, canBeNull, required, modifiable, bool, new ArrayList<>(), position );
                     break;
                 case "List":
                     List<String> options = context.deserialize( jsonObject.get( "options" ), List.class );
                     String defaultValue = context.deserialize( jsonObject.get( "defaultValue" ), String.class );
-                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>() ).setDefaultValue( defaultValue );
+                    out = new AbstractAdapterSettingList( name, canBeNull, required, modifiable, options, new ArrayList<>(), position ).setDefaultValue( defaultValue );
                     break;
                 case "Directory":
                     String directory = context.deserialize( jsonObject.get( "directory" ), String.class );
                     String[] fileNames = context.deserialize( jsonObject.get( "fileNames" ), String[].class );
-                    out = new AbstractAdapterSettingDirectory( name, canBeNull, required, modifiable ).setDirectory( directory ).setFileNames( fileNames );
+                    out = new AbstractAdapterSettingDirectory( name, canBeNull, required, modifiable, new ArrayList<>(), position ).setDirectory( directory ).setFileNames( fileNames );
                     break;
                 default:
                     throw new RuntimeException( "Could not deserialize AdapterSetting of type " + type );

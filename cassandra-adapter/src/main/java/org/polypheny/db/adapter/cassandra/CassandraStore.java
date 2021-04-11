@@ -43,12 +43,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.EmbeddedDeployable;
-import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -65,17 +64,16 @@ import org.polypheny.db.type.PolyType;
 
 
 @Slf4j
-@AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeployMode.DEFAULT)
-@AdapterSettingInteger(name = "port", defaultValue = 9042, appliesTo = DeployMode.DEFAULT)
-@AdapterSettingString(name = "keyspace", defaultValue = "cassandra", appliesTo = DeployMode.DEFAULT)
-@AdapterSettingString(name = "username", defaultValue = "cassandra", appliesTo = DeployMode.DEFAULT)
-@AdapterSettingString(name = "password", defaultValue = "", appliesTo = DeployMode.DEFAULT)
-public class CassandraStore extends DataStore implements RemoteDeployable, EmbeddedDeployable {
-
-    @SuppressWarnings("WeakerAccess")
-    public static final String ADAPTER_NAME = "Cassandra";
-    @SuppressWarnings("WeakerAccess")
-    public static final String DESCRIPTION = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.";
+@AdapterProperties(
+        name = "Cassandra",
+        description = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.",
+        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE })
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 0)
+@AdapterSettingInteger(name = "port", defaultValue = 9042, position = 1)
+@AdapterSettingString(name = "keyspace", defaultValue = "cassandra", position = 2)
+@AdapterSettingString(name = "username", defaultValue = "cassandra", position = 3)
+@AdapterSettingString(name = "password", defaultValue = "", position = 4)
+public class CassandraStore extends DataStore {
 
     // Running embedded
     private final boolean isEmbedded;
@@ -430,12 +428,6 @@ public class CassandraStore extends DataStore implements RemoteDeployable, Embed
                 .dropColumn( physicalColumnName ).build() );
 
         physicalNameProvider.updatePhysicalColumnName( catalogColumn.id, newPhysicalColumnName, true );
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
     }
 
 

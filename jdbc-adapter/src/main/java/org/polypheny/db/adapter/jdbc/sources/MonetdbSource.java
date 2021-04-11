@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
@@ -37,26 +37,18 @@ import org.polypheny.db.sql.dialect.MonetdbSqlDialect;
 
 
 @Slf4j
-@AdapterSettingString(name = "hose", defaultValue = "localhost", appliesTo = DeployMode.DEFAULT,
-        description = "Hostname or IP address of the remote MonetDB instance.")
-@AdapterSettingInteger(name = "port", defaultValue = 50000, appliesTo = DeployMode.DEFAULT,
-        description = "JDBC port number on the remote MonetDB instance.")
-@AdapterSettingString(name = "database", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
-        description = "JDBC port number on the remote MonetDB instance.")
-@AdapterSettingString(name = "username", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
-        description = "Name of the database to connect to.")
-@AdapterSettingString(name = "password", defaultValue = "polypheny", appliesTo = DeployMode.DEFAULT,
-        description = "Username to be used for authenticating at the remote instance")
-@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, appliesTo = DeployMode.DEFAULT,
-        description = "Password to be used for authenticating at the remote instance")
-@AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", appliesTo = DeployMode.DEFAULT,
-        description = "Maximum number of concurrent JDBC connections.")
-public class MonetdbSource extends AbstractJdbcSource implements RemoteDeployable {
-
-    public static final String ADAPTER_NAME = "MonetDB";
-
-    public static final String DESCRIPTION = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.";
-
+@AdapterProperties(
+        name = "MonetDB",
+        description = "MonetDB is an open-source column-oriented database management system. It is based on an optimistic concurrency control.",
+        usedModes = DeployMode.REMOTE)
+@AdapterSettingString(name = "hose", defaultValue = "localhost", description = "Hostname or IP address of the remote MonetDB instance.", position = 1)
+@AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
+@AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3)
+@AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4)
+@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance", position = 5)
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance")
+@AdapterSettingString(name = "table", defaultValue = "public.foo,public.bar", description = "Maximum number of concurrent JDBC connections.")
+public class MonetdbSource extends AbstractJdbcSource {
 
     public MonetdbSource( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "nl.cwi.monetdb.jdbc.MonetDriver", MonetdbSqlDialect.DEFAULT, false );
@@ -93,12 +85,6 @@ public class MonetdbSource extends AbstractJdbcSource implements RemoteDeployabl
     @Override
     public Schema getCurrentSchema() {
         return currentJdbcSchema;
-    }
-
-
-    @Override
-    public String getAdapterName() {
-        return ADAPTER_NAME;
     }
 
 
