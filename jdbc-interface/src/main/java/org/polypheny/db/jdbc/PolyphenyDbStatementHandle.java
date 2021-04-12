@@ -91,6 +91,8 @@ public class PolyphenyDbStatementHandle {
     public void unset() {
         this.openResultSet = null;
         this.signature = null;
-        statement.close();
+        if ( statement != null ) {
+            statement.close();
+        }
     }
 }
