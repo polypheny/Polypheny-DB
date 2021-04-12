@@ -640,8 +640,8 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
-                        FileInputHandle shis = new FileInputHandle( statement, part.getInputStream() );
-                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( shis ) );
+                        FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( fih ) );
                     }
                 }
             }
@@ -1184,8 +1184,8 @@ public class Crud implements InformationObserver {
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    FileInputHandle shis = new FileInputHandle( statement, part.getInputStream() );
-                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( shis ) );
+                    FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
+                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( fih ) );
                 }
             }
         } catch ( IOException | ServletException e ) {

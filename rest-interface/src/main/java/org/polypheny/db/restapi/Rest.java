@@ -394,8 +394,8 @@ public class Rest {
                 int columnPosition = insertValue.left.getLogicalIndex();
                 RelDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    FileInputHandle shis = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
-                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( shis ) );
+                    FileInputHandle fih = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( fih ) );
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;
                 } else {
