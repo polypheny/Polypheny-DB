@@ -23,8 +23,13 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.jdbc.Context;
+import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Transaction;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.CreateEntityMessage;
@@ -52,63 +57,91 @@ import org.vitrivr.cottontail.grpc.DQLGrpc.DQLBlockingStub;
 import org.vitrivr.cottontail.grpc.TXNGrpc;
 import org.vitrivr.cottontail.grpc.TXNGrpc.TXNBlockingStub;
 
-
+/**
+ * A wrapper class that provides all functionality exposed by the Cottontail DB gRPC endpoint.
+ *
+ * @author Jan Schönholz & Ralph Gasser
+ * @version 1.1.0
+ */
 @Slf4j
 public class CottontailWrapper implements AutoCloseable {
 
     private final ManagedChannel channel;
     public static final int maxMessageSize = 150_000_000;
     private static final long MAX_QUERY_CALL_TIMEOUT = 300_000; // TODO expose to config
-    private static final long MAX_CALL_TIMEOUT = 5000; // TODO expose to config
 
+    /** A map of all the {@link PolyXid} and the Cottontail DB {@link TransactionId} of all ongoing transactions. */
+    private final ConcurrentHashMap<PolyXid, TransactionId> transactions = new ConcurrentHashMap<>();
 
-    public CottontailWrapper( ManagedChannel channel ) {
+    /** Reference to the {@link CottontailStore} this {@link CottontailWrapper} belongs to. */
+    private final CottontailStore store;
+
+    /**
+     * Default constructor.
+     *
+     * @param channel The {@link ManagedChannel} used by this {@link CottontailWrapper}. Only one channel per instance should be used.
+     * @param store The {@link CottontailStore} this {@link CottontailWrapper} is created for.
+     */
+    public CottontailWrapper( ManagedChannel channel, CottontailStore store ) {
         this.channel = channel;
+        this.store = store;
     }
-
 
     /**
      * Begins a new transaction and returns its {@link TransactionId}.
      *
-     * @return {@link TransactionId} or null, if transaction couldn't be started.
+     * @param transaction The {@link Transaction} to begin / continue.
+     * @return The Cottontail DB {@link TransactionId}.
      */
-    public TransactionId begin() {
-        try {
-            final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
-            return stub.begin( Empty.getDefaultInstance() );
-        } catch ( StatusRuntimeException e ) {
-            log.error( "Could not start transaction due to error", e );
-            return null;
-        }
+    public TransactionId beginOrContinue( Transaction transaction ) {
+        final PolyXid xid = transaction.getXid();
+        transaction.registerInvolvedAdapter( this.store );
+        return this.transactions.computeIfAbsent(xid, polyXid -> {
+            try {
+                final TXNBlockingStub stub = TXNGrpc.newBlockingStub(this.channel);
+                return stub.begin(Empty.getDefaultInstance());
+            } catch ( StatusRuntimeException e ) {
+                log.error( "Could not start transaction due to error", e );
+                return null;
+            }
+        });
     }
-
 
     /**
      * Commits a transaction for the given {@link TransactionId}.
      *
-     * @param txId {@link TransactionId} of transaction to commit.
+     * @param xid {@link TransactionId} of transaction to commit.
      */
-    public void commit( TransactionId txId ) {
-        try {
-            final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
-            stub.commit( txId );
-        } catch ( StatusRuntimeException e ) {
-            log.error( "Could not COMMIT transaction {} due to error.", txId.getValue(), e );
+    public void commit( PolyXid xid ) {
+        final TransactionId txId = this.transactions.remove( xid );
+        if (txId != null) {
+            try {
+                final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
+                final Empty result = stub.commit( txId );
+            } catch ( StatusRuntimeException e ) {
+                log.error( "Could not COMMIT Cottontail DB transaction {} due to error.", txId, e );
+            }
+        } else {
+            log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
         }
     }
-
 
     /**
      * Rolls back the transaction for the given {@link TransactionId}.
      *
-     * @param txId {@link TransactionId} of transaction to commit.
+     * @param xid {@link TransactionId} of transaction to commit.
      */
-    public void rollback( TransactionId txId ) {
-        try {
-            final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
-            stub.rollback( txId );
-        } catch ( StatusRuntimeException e ) {
-            log.error( "Could not ROLLBACK transaction {} due to error.", txId.getValue(), e );
+    public void rollback( PolyXid xid ) {
+        final TransactionId txId = this.transactions.remove( xid );
+        if (txId != null) {
+            try {
+                final TXNBlockingStub stub = TXNGrpc.newBlockingStub( this.channel );
+                final Empty result = stub.rollback( txId );
+            } catch ( StatusRuntimeException e ) {
+                log.error( "Could not ROLLBACK Cottontail DB transaction {} due to error.", txId, e );
+            }
+        } else {
+            log.warn( "No Cottontail DB transaction for Xid {} could be found.", xid );
         }
     }
 

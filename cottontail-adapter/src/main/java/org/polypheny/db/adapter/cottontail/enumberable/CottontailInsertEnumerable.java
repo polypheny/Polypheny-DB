@@ -30,20 +30,24 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.transaction.PolyXid;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.InsertMessage.InsertElement;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 
 
 public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
 
+    /** Method signature for INSERT of values. */
     public static final Method CREATE_INSERT_VALUES = Types.lookupMethod(
             CottontailInsertEnumerable.class,
             "fromValues",
-            String.class, String.class, List.class, CottontailWrapper.class );
+            String.class, String.class, List.class, DataContext.class, CottontailWrapper.class );
 
+    /** Method signature for INSERT for prepared statements. */
     public static final Method CREATE_INSERT_PREPARED = Types.lookupMethod(
             CottontailInsertEnumerable.class,
             "fromPreparedStatements",
@@ -53,7 +57,6 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     private final CottontailWrapper wrapper;
     private final boolean fromPrepared;
 
-
     public CottontailInsertEnumerable( List<InsertMessage> inserts, DataContext dataContext, CottontailWrapper wrapper, boolean fromPrepared ) {
         this.inserts = inserts;
         this.wrapper = wrapper;
@@ -61,18 +64,22 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    @SuppressWarnings("unused") // Used via reflections
+    @SuppressWarnings("unused") // Used via reflection
     public static CottontailInsertEnumerable<Object> fromValues(
-            String from,
-            String schema,
-            List<Map<String, CottontailGrpc.Literal>> values,
-            CottontailWrapper wrapper
+        String from,
+        String schema,
+        List<Map<String, CottontailGrpc.Literal>> values,
+        DataContext dataContext,
+        CottontailWrapper wrapper
     ) {
+        /* Begin or continue Cottontail DB transaction. */
+        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+
+        /* Build INSERT messages and create enumerable. */
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
         final List<InsertMessage> insertMessages = new ArrayList<>( values.size() );
-
         for ( Map<String, CottontailGrpc.Literal> value : values ) {
-            final InsertMessage.Builder message = InsertMessage.newBuilder().setFrom( from_ );
+            final InsertMessage.Builder message = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
             for ( Entry<String, Literal> e : value.entrySet() ) {
                 message.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ).build() );
             }
@@ -83,7 +90,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
     }
 
 
-    @SuppressWarnings("unused") // Used via reflections
+    @SuppressWarnings("unused") // Used via reflection
     public static CottontailInsertEnumerable<Object> fromPreparedStatements(
             String from,
             String schema,
@@ -91,10 +98,14 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
             DataContext dataContext,
             CottontailWrapper wrapper
     ) {
+        /* Begin or continue Cottontail DB transaction. */
+        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+
+        /* Build INSERT messages and create enumerable. */
         final CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( from, schema );
         final List<InsertMessage> insertMessages = new ArrayList<>();
         if ( dataContext.getParameterValues().size() == 0 ) {
-            final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ );
+            final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
             final Map<String, Literal> values = tupleBuilder.apply( new HashMap<>() );
             for ( Entry<String, Literal> e : values.entrySet() ) {
                 insert.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );

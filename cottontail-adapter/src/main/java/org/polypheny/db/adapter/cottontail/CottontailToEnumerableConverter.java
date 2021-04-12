@@ -190,10 +190,11 @@ public class CottontailToEnumerableConverter extends ConverterImpl implements En
 
                 if ( cottontailContext.valuesHashMapList != null ) {
                     enumerable = list.append( "enumerable",
-                            Expressions.call( Types.lookupMethod( CottontailInsertEnumerable.class, "fromValues", String.class, String.class, List.class, CottontailWrapper.class ),
+                            Expressions.call( CottontailInsertEnumerable.CREATE_INSERT_VALUES,
                                     Expressions.constant( cottontailContext.tableName ),
                                     Expressions.constant( cottontailContext.schemaName ),
                                     cottontailContext.valuesHashMapList,
+                                    DataContext.ROOT,
                                     Expressions.call( Schemas.unwrap( convention.expression, CottontailSchema.class ), "getWrapper" )
                             )
                     );

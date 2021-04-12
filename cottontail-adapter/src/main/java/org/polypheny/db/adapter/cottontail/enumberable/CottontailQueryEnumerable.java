@@ -36,6 +36,7 @@ import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeField;
 import org.polypheny.db.sql.fun.SqlArrayValueConstructor;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.ArrayType;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.BatchedQueryMessage;
@@ -48,6 +49,7 @@ import org.vitrivr.cottontail.grpc.CottontailGrpc.Query;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.QueryResponseMessage.Tuple;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
 
 
@@ -80,8 +82,12 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             Function1 rowParser,
             CottontailWrapper wrapper
     ) {
-        Iterator<QueryResponseMessage> queryResponseIterator;
 
+        /* Begin or continue Cottontail DB transaction. */
+        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+
+        /* Build SELECT messages and create enumerable. */
+        Iterator<QueryResponseMessage> queryResponseIterator;
         if ( dataContext.getParameterValues().size() < 2 ) {
             final Map<Long, Object> parameterValues;
             if ( dataContext.getParameterValues().size() == 0 ) {
@@ -101,9 +107,9 @@ public class CottontailQueryEnumerable<T> extends AbstractEnumerable<T> {
             }
 
             final Query query = buildSingleQuery( from, schema, projection, whereBuilder, knnBuilder, limit, offset, parameterValues );
-            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setQuery( query ).build() );
+            queryResponseIterator = wrapper.query( QueryMessage.newBuilder().setTxId( txId ).setQuery( query ).build() );
         } else {
-            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder();
+            BatchedQueryMessage.Builder batchedQueryMessageBuilder = BatchedQueryMessage.newBuilder().setTxId( txId );
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
 
                 Integer limit = null;

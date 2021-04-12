@@ -32,9 +32,11 @@ import org.apache.calcite.linq4j.tree.Types;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.cottontail.CottontailWrapper;
 import org.polypheny.db.adapter.cottontail.util.CottontailTypeUtil;
+import org.polypheny.db.transaction.PolyXid;
 import org.vitrivr.cottontail.grpc.CottontailGrpc;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.ColumnName;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Literal;
+import org.vitrivr.cottontail.grpc.CottontailGrpc.TransactionId;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.UpdateMessage.UpdateElement;
 import org.vitrivr.cottontail.grpc.CottontailGrpc.Where;
@@ -66,6 +68,10 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
             DataContext dataContext,
             CottontailWrapper wrapper
     ) {
+        /* Begin or continue Cottontail DB transaction. */
+        final TransactionId txId = wrapper.beginOrContinue( dataContext.getStatement().getTransaction() );
+
+        /* Build UPDATE messages and create enumerable. */
         List<UpdateMessage> updateMessages;
         if ( dataContext.getParameterValues().size() < 2 ) {
             Map<Long, Object> parameterValues;
@@ -75,11 +81,11 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
                 parameterValues = dataContext.getParameterValues().get( 0 );
             }
             updateMessages = new ArrayList<>( 1 );
-            updateMessages.add( buildSingleUpdate( entity, schema, whereBuilder, tupleBuilder, parameterValues ) );
+            updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
         } else {
             updateMessages = new ArrayList<>();
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-                updateMessages.add( buildSingleUpdate( entity, schema, whereBuilder, tupleBuilder, parameterValues ) );
+                updateMessages.add( buildSingleUpdate( entity, schema, txId, whereBuilder, tupleBuilder, parameterValues ) );
             }
         }
 
@@ -90,11 +96,12 @@ public class CottontailUpdateEnumerable<T> extends AbstractEnumerable<T> {
     private static UpdateMessage buildSingleUpdate(
             String entity,
             String schema,
+            TransactionId txId,
             Function1<Map<Long, Object>, Where> whereBuilder,
             Function1<Map<Long, Object>, Map<String, CottontailGrpc.Literal>> tupleBuilder,
             Map<Long, Object> parameterValues
     ) {
-        UpdateMessage.Builder builder = UpdateMessage.newBuilder();
+        UpdateMessage.Builder builder = UpdateMessage.newBuilder().setTxId( txId );
 
         CottontailGrpc.From from_ = CottontailTypeUtil.fromFromTableAndSchema( entity, schema );
 
