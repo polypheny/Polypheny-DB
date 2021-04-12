@@ -39,7 +39,7 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.SharedInputStream;
+import org.polypheny.db.util.FileInputHandle;
 
 
 public class ParameterValueValidator extends RelShuttleImpl {
@@ -122,7 +122,7 @@ public class ParameterValueValidator extends RelShuttleImpl {
                         break;
                     case MULTIMEDIA:
                         if ( polyType == PolyType.FILE || !RuntimeConfig.VALIDATE_MM_CONTENT_TYPE.getBoolean() ) {
-                            if ( o instanceof byte[] || o instanceof InputStream || o instanceof File || o instanceof SharedInputStream ) {
+                            if ( o instanceof byte[] || o instanceof InputStream || o instanceof File || o instanceof FileInputHandle ) {
                                 return super.visitDynamicParam( dynamicParam );
                             } else {
                                 throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ) );
@@ -149,9 +149,9 @@ public class ParameterValueValidator extends RelShuttleImpl {
                             } catch ( IOException e ) {
                                 throw new InvalidParameterValueException( "Exception while trying to determine File content type", e );
                             }
-                        } else if ( o instanceof SharedInputStream ) {
+                        } else if ( o instanceof FileInputHandle ) {
                             try {
-                                info = ((SharedInputStream) o).getContentType( util );
+                                info = ((FileInputHandle) o).getContentType( util );
                             } catch ( IOException e ) {
                                 throw new InvalidParameterValueException( "Exception while trying to determine File content type", e );
                             }

@@ -37,7 +37,7 @@ import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
 import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.util.SharedInputStream;
+import org.polypheny.db.util.FileInputHandle;
 
 public class StatementImpl implements Statement {
 
@@ -53,7 +53,7 @@ public class StatementImpl implements Statement {
 
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
-    private final List<SharedInputStream> sharedInputStreams = new ArrayList<>();
+    private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
     private InformationDuration duration;
 
@@ -138,14 +138,14 @@ public class StatementImpl implements Statement {
         if ( dataContext != null ) {
             dataContext.getParameterValues().clear();
         }
-        sharedInputStreams.forEach( SharedInputStream::close );
+        fileInputHandles.forEach( FileInputHandle::close );
         dataContext = null;
     }
 
 
     @Override
-    public void registerSharedInputStream( SharedInputStream sharedInputStream ) {
-        sharedInputStreams.add( sharedInputStream );
+    public void registerFileInputHandle( FileInputHandle fileInputHandle ) {
+        fileInputHandles.add( fileInputHandle );
     }
 
 }

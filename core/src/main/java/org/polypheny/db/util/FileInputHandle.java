@@ -37,7 +37,7 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 
 
-public class SharedInputStream {
+public class FileInputHandle {
 
     private final File file;
     private final List<InputStream> inputStreams = new ArrayList<>();
@@ -55,8 +55,8 @@ public class SharedInputStream {
     }
 
 
-    public SharedInputStream( Statement statement, InputStream is ) {
-        statement.registerSharedInputStream( this );
+    public FileInputHandle( Statement statement, InputStream is ) {
+        statement.registerFileInputHandle( this );
         PolyXid xid = statement.getTransaction().getXid();
         // todo
         // Write to byte array as long as cache.length <= MAGIC NUMBER

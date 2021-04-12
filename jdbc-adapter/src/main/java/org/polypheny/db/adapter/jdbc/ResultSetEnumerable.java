@@ -74,8 +74,8 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Primitive;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.NlsString;
-import org.polypheny.db.util.SharedInputStream;
 import org.polypheny.db.util.Static;
 
 
@@ -310,8 +310,8 @@ public class ResultSetEnumerable<T> extends AbstractEnumerable<T> {
             } catch ( FileNotFoundException e ) {
                 throw new RuntimeException( "Could not generate FileInputStream", e );
             }
-        } else if ( value instanceof SharedInputStream ) {
-            preparedStatement.setBinaryStream( i, ((SharedInputStream) value).getData() );
+        } else if ( value instanceof FileInputHandle ) {
+            preparedStatement.setBinaryStream( i, ((FileInputHandle) value).getData() );
         } else if ( value instanceof NClob ) {
             preparedStatement.setNClob( i, (NClob) value );
         } else if ( value instanceof Clob ) {

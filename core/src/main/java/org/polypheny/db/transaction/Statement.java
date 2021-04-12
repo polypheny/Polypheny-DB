@@ -21,7 +21,7 @@ import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.routing.Router;
-import org.polypheny.db.util.SharedInputStream;
+import org.polypheny.db.util.FileInputHandle;
 
 public interface Statement {
 
@@ -39,6 +39,6 @@ public interface Statement {
 
     void close();
 
-    void registerSharedInputStream( SharedInputStream sharedInputStream );
+    void registerFileInputHandle( FileInputHandle fileInputHandle );
 
 }

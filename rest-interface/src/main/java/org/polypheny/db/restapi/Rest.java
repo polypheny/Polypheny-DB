@@ -71,10 +71,10 @@ import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateString;
+import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.SharedInputStream;
 import org.polypheny.db.util.TimeString;
 import org.polypheny.db.util.TimestampString;
 import spark.Request;
@@ -394,7 +394,7 @@ public class Rest {
                 int columnPosition = insertValue.left.getLogicalIndex();
                 RelDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
-                    SharedInputStream shis = new SharedInputStream( statement, inputStreams.get( insertValue.left.getColumn().name ) );
+                    FileInputHandle shis = new FileInputHandle( statement, inputStreams.get( insertValue.left.getColumn().name ) );
                     statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( shis ) );
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;

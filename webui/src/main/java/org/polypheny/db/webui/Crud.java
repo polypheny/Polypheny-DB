@@ -165,11 +165,11 @@ import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.util.DateTimeStringUtils;
+import org.polypheny.db.util.FileInputHandle;
 import org.polypheny.db.util.FileSystemManager;
 import org.polypheny.db.util.ImmutableIntList;
 import org.polypheny.db.util.LimitIterator;
 import org.polypheny.db.util.Pair;
-import org.polypheny.db.util.SharedInputStream;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonColumn;
 import org.polypheny.db.webui.SchemaToJsonMapper.JsonTable;
 import org.polypheny.db.webui.models.AdapterModel;
@@ -640,7 +640,7 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
-                        SharedInputStream shis = new SharedInputStream( statement, part.getInputStream() );
+                        FileInputHandle shis = new FileInputHandle( statement, part.getInputStream() );
                         statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( shis ) );
                     }
                 }
@@ -1184,7 +1184,7 @@ public class Crud implements InformationObserver {
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    SharedInputStream shis = new SharedInputStream( statement, part.getInputStream() );
+                    FileInputHandle shis = new FileInputHandle( statement, part.getInputStream() );
                     statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( shis ) );
                 }
             }
