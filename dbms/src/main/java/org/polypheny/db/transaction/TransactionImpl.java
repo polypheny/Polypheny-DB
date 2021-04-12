@@ -163,7 +163,7 @@ public class TransactionImpl implements Transaction, Comparable {
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
         // Free resources hold by statements
-        statements.forEach( Statement::unset );
+        statements.forEach( Statement::close );
 
         // Release locks
         LockManager.INSTANCE.removeTransaction( this );
@@ -187,7 +187,7 @@ public class TransactionImpl implements Transaction, Comparable {
             IndexManager.getInstance().rollback( this.xid );
             Catalog.getInstance().rollback();
             // Free resources hold by statements
-            statements.forEach( Statement::unset );
+            statements.forEach( Statement::close );
         } finally {
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );

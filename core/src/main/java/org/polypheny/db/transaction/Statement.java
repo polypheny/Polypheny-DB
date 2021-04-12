@@ -36,6 +36,6 @@ public interface Statement {
 
     Router getRouter();
 
-    void unset();
+    void close();
 
 }

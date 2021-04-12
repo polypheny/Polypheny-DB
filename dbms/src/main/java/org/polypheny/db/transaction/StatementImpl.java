@@ -129,9 +129,11 @@ public class StatementImpl implements Statement {
 
 
     @Override
-    public void unset() {
+    public void close() {
         prepareContext = null;
-        dataContext.getParameterValues().clear();
+        if ( dataContext != null ) {
+            dataContext.getParameterValues().clear();
+        }
         dataContext = null;
     }
 
