@@ -27,6 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileRel.FileImplementor.Operation;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.SharedInputStream;
 
 
 public class FileModifier extends FileEnumerator {
@@ -80,6 +81,15 @@ public class FileModifier extends FileEnumerator {
                         }
 
                         File newFile = new File( columnFolders.get( i ), getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
+                        if ( value instanceof SharedInputStream ) {
+                            if ( newFile.exists() ) {
+                                if ( !newFile.delete() ) {
+                                    throw new RuntimeException( "Could not delete file" );
+                                }
+                            }
+                            ((SharedInputStream) value).materializeAsFile( newFile.toPath() );
+                            continue;
+                        }
                         if ( !newFile.createNewFile() ) {
                             throw new RuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
                         }

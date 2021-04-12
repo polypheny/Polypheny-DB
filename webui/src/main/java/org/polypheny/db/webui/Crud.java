@@ -641,7 +641,7 @@ public class Crud implements InformationObserver {
                     } else {
                         values.add( "?" );
                         SharedInputStream shis = new SharedInputStream( transaction.getXid(), part.getInputStream() );
-                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( shis.getData() ) );
+                        statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( shis ) );
                     }
                 }
             }
@@ -1184,7 +1184,8 @@ public class Crud implements InformationObserver {
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( part.getInputStream() ) );
+                    SharedInputStream shis = new SharedInputStream( transaction.getXid(), part.getInputStream() );
+                    statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( shis ) );
                 }
             }
         } catch ( IOException | ServletException e ) {

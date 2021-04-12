@@ -19,12 +19,18 @@ package org.polypheny.db.util;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import com.google.common.io.ByteStreams;
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,14 +41,13 @@ import org.polypheny.db.transaction.PolyXid;
 public class SharedInputStream {
 
     private final PolyXid xid;
-    //private final File file;
+    private final File file;
     static AtomicInteger counter = new AtomicInteger();
     private static final Map<String, List<InputStream>> inputStream = new HashMap<>();
     private static final Map<String, List<File>> files = new HashMap<>();
     private final static HashFunction SHA = Hashing.sha256();
     private final static Charset CHARSET = StandardCharsets.UTF_8;
-    private final byte[] cache;
-    //private final byte[] cache;
+    //private byte[] cache;
 
     public SharedInputStream( PolyXid xid, InputStream is ) {
         this.xid = xid;
@@ -51,7 +56,7 @@ public class SharedInputStream {
         // If cache.length > MAGIC NUMBER, create tmp file, write all data in cache to the file and continue
         // writing stream data to the file and set cache = null.
 
-        try {
+        /*try {
             this.cache = ByteStreams.toByteArray( is );
         } catch ( IOException e ) {
             throw new RuntimeException( "Could not read shared InputStream", e );
@@ -60,9 +65,9 @@ public class SharedInputStream {
                 is.close();
             } catch ( IOException ignored ) {
             }
-        }
+        }*/
 
-        /*File folder = FileSystemManager.getInstance().registerNewFolder( "tmp/" + SHA.hashString( xid.toString(), CHARSET ).toString() );
+        File folder = FileSystemManager.getInstance().registerNewFolder( "tmp/" + SHA.hashString( xid.toString(), CHARSET ).toString() );
         File f = new File( folder, "sharedInputStream" + counter.incrementAndGet() );
         this.file = f;
         try {
@@ -79,22 +84,23 @@ public class SharedInputStream {
             files.put( xid.toString(), new ArrayList<>() );
         }
         files.get( xid.toString() ).add( f );
-        */
     }
 
 
-    public byte[] getData() {
-        return cache;
-        /*try {
+    public InputStream getData() {
+        //return cache;
+        try {
             InputStream is = new FileInputStream( file );
             if ( !inputStream.containsKey( xid.toString() ) ) {
                 inputStream.put( xid.toString(), new ArrayList<>() );
+                inputStream.get( xid.toString() ).add( is );
+            } else {
                 inputStream.get( xid.toString() ).add( is );
             }
             return is;
         } catch ( FileNotFoundException e ) {
             throw new RuntimeException( "Temporal file does not exist" );
-        }*/
+        }
         //if (file != null ) {
         // read from file
         //} else {
@@ -102,8 +108,14 @@ public class SharedInputStream {
         //}
     }
 
+
+    public Path materializeAsFile( Path path ) throws IOException {
+        //todo check if same filesystem
+        return Files.createLink( path, file.toPath() );
+    }
+
     public static void close( PolyXid xid ) {
-        /*if ( inputStream.containsKey( xid.toString() ) ) {
+        if ( inputStream.containsKey( xid.toString() ) ) {
             inputStream.get( xid.toString() ).forEach( is -> {
                 try {
                     is.close();
@@ -115,7 +127,10 @@ public class SharedInputStream {
         }
         //File f = new File( System.getProperty( "user.home" ), ".polypheny/tmp/" + SHA.hashString( xid.toString(), CHARSET ).toString() );
         FileSystemManager.getInstance().recursiveDeleteFolder( "tmp/" + SHA.hashString( xid.toString(), CHARSET ).toString() );
-        */
+    }
+
+    public ContentInfo getContentType( final ContentInfoUtil util ) throws IOException {
+        return util.findMatch( file );
     }
 
 }

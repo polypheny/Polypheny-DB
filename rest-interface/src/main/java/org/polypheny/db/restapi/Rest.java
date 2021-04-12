@@ -395,7 +395,7 @@ public class Rest {
                 RelDataTypeField typeField = tableRows.get( columnPosition );
                 if ( inputStreams != null && request.useDynamicParams && typeField.getType().getPolyType().getFamily() == PolyTypeFamily.MULTIMEDIA ) {
                     SharedInputStream shis = new SharedInputStream( statement.getTransaction().getXid(), inputStreams.get( insertValue.left.getColumn().name ) );
-                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( shis.getData() ) );
+                    statement.getDataContext().addParameterValues( index, typeField.getType(), ImmutableList.of( shis ) );
                     rexValues.add( rexBuilder.makeDynamicParam( typeField.getType(), index ) );
                     index++;
                 } else {

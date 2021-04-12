@@ -40,6 +40,7 @@ import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.SharedInputStream;
 
 
 @Slf4j
@@ -305,7 +306,12 @@ public class FileEnumerator implements Enumerator<Object> {
                                 Files.copy( source.toPath(), insertFile.toPath() );
                             } else {
                                 //Write updated value. Overrides file if it exists (if you have a double update on the same item)
-                                if ( updateObj[j] instanceof InputStream ) {
+                                if ( updateObj[j] instanceof SharedInputStream ) {
+                                    if ( insertFile.exists() && !insertFile.delete() ) {
+                                        throw new RuntimeException( "Could not delete temporary insert file" );
+                                    }
+                                    ((SharedInputStream) updateObj[j]).materializeAsFile( insertFile.toPath() );
+                                } else if ( updateObj[j] instanceof InputStream ) {
                                     FileUtils.copyInputStreamToFile( ((InputStream) updateObj[j]), insertFile );
                                 } else {
                                     Files.write( insertFile.toPath(), updateObj[j].toString().getBytes( FileStore.CHARSET ) );
