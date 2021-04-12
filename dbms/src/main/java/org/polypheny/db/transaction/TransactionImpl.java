@@ -81,7 +81,7 @@ public class TransactionImpl implements Transaction, Comparable {
     @Getter
     private final boolean analyze;
 
-    private final AtomicLong statementCounter = new AtomicLong();
+    private final List<Statement> statements = new ArrayList<>();
 
     private final List<String> changedTables = new ArrayList<>();
 
@@ -162,6 +162,8 @@ public class TransactionImpl implements Transaction, Comparable {
             rollback();
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
+        // Free resources hold by statements
+        statements.forEach( Statement::unset );
 
         // Release locks
         LockManager.INSTANCE.removeTransaction( this );
@@ -184,6 +186,8 @@ public class TransactionImpl implements Transaction, Comparable {
             }
             IndexManager.getInstance().rollback( this.xid );
             Catalog.getInstance().rollback();
+            // Free resources hold by statements
+            statements.forEach( Statement::unset );
         } finally {
             // Release locks
             LockManager.INSTANCE.removeTransaction( this );
@@ -224,8 +228,9 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Override
     public StatementImpl createStatement() {
-        statementCounter.incrementAndGet();
-        return new StatementImpl( this );
+        StatementImpl statement = new StatementImpl( this );
+        statements.add( statement );
+        return statement;
     }
 
 
@@ -288,7 +293,7 @@ public class TransactionImpl implements Transaction, Comparable {
 
     @Override
     public long getNumberOfStatements() {
-        return statementCounter.get();
+        return statements.size();
     }
 
 

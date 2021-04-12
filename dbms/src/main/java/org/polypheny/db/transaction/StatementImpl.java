@@ -126,4 +126,13 @@ public class StatementImpl implements Statement {
     public Router getRouter() {
         return RouterManager.getInstance().getRouter();
     }
+
+
+    @Override
+    public void unset() {
+        prepareContext = null;
+        dataContext.getParameterValues().clear();
+        dataContext = null;
+    }
+
 }
