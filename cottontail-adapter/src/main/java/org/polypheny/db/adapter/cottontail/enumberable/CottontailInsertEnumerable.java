@@ -113,7 +113,7 @@ public class CottontailInsertEnumerable<T> extends AbstractEnumerable<T> {
             insertMessages.add( insert.build() );
         } else {
             for ( Map<Long, Object> parameterValues : dataContext.getParameterValues() ) {
-                final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ );
+                final InsertMessage.Builder insert = InsertMessage.newBuilder().setFrom( from_ ).setTxId( txId );
                 for ( Entry<String, CottontailGrpc.Literal> e : tupleBuilder.apply( parameterValues ).entrySet() ) {
                     insert.addInserts( InsertElement.newBuilder().setColumn( ColumnName.newBuilder().setName( e.getKey() ) ).setValue( e.getValue() ) );
                 }
