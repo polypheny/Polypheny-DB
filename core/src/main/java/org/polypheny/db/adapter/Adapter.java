@@ -383,6 +383,13 @@ public abstract class Adapter {
 
     protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
         for ( AbstractAdapterSetting s : getAvailableSettings() ) {
+            // we only need to check settings which apply to the used mode
+            if ( !s.appliesTo
+                    .stream()
+                    .map( setting -> setting.getModes( Arrays.asList( properties.usedModes() ) ) )
+                    .collect( Collectors.toList() ).contains( deployMode ) ) {
+                continue;
+            }
             if ( newSettings.containsKey( s.name ) ) {
                 if ( s.modifiable || initialSetup ) {
                     String newValue = newSettings.get( s.name );
