@@ -1,21 +1,6 @@
 group "org.polypheny"
 
-
 version = versionMajor + "." + versionMinor + versionQualifier
-
-
-apply plugin: "java-library"
-apply plugin: "idea"
-apply plugin: "io.freefair.lombok"
-
-
-compileJava.options.encoding = "UTF-8"
-compileTestJava.options.encoding = "UTF-8"
-javadoc.options.encoding = "UTF-8"
-
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
 
 
 dependencies {
@@ -27,7 +12,7 @@ dependencies {
 
 
     // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
@@ -38,7 +23,6 @@ dependencies {
     //testImplementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4j_api_version
     //testImplementation group: "org.apache.logging.log4j", name: "log4j-core", version: log4j_core_version
 }
-
 
 
 sourceSets {
@@ -65,29 +49,12 @@ sourceSets {
 }
 
 
-
 /**
  * Tests
  */
 test {
     include "**/*Test.class"
 }
-
-
-
-/**
- * JavaDoc
- */
-javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption("html5", true)
-    }
-    // suppress most of the warnings
-    options.addStringOption("Xdoclint:none", "-quiet")
-    // Include private fields in JavaDoc
-    options.memberLevel = JavadocMemberLevel.PRIVATE
-}
-
 
 
 /**
@@ -103,20 +70,4 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
-}
-
-
-
-/**
- * IntelliJ
- */
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
-    }
 }

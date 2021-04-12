@@ -74,9 +74,19 @@ public class TestHelper {
         thread.start();
 
         // Wait until Polypheny-DB is ready to process queries
+        int i = 0;
         while ( !polyphenyDb.isReady() ) {
             try {
                 TimeUnit.SECONDS.sleep( 1 );
+                if ( i++ > 180 ) {
+                    if ( thread.getStackTrace().length > 0 ) {
+                        System.err.println( "Stacktrace of Polypheny-DB thread:" );
+                        for ( int j = 0; j < thread.getStackTrace().length; j++ ) {
+                            System.err.println( "\tat " + thread.getStackTrace()[j] );
+                        }
+                    }
+                    throw new RuntimeException( "There seems to be an issue with Polypheny-DB. Waited 3 minutes for Polypheny-DB to get ready. Aborting tests." );
+                }
             } catch ( InterruptedException e ) {
                 log.error( "Interrupted exception", e );
             }

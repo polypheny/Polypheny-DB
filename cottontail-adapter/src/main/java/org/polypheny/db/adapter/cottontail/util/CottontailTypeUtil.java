@@ -413,7 +413,7 @@ public class CottontailTypeUtil {
 
 
     /**
-     * Converts List of primitive data types (i.e. {@link Double}, {@link Float}, {@link Long}, {@link Integer} or
+     * Converts list of primitive data types (i.e. {@link Double}, {@link Float}, {@link Long}, {@link Integer} or
      * {@link Boolean}) to a {@link Vector} usable by Cottontail DB.
      *
      * <strong>Important: </strong> {@link BigDecimal} cannot be converted to native Cottontail DB {@link Vector}
