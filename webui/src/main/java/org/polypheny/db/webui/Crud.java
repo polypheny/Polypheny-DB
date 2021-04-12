@@ -640,7 +640,7 @@ public class Crud implements InformationObserver {
                         values.add( uiValueToSql( value, catalogColumn.type, catalogColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
-                        SharedInputStream shis = new SharedInputStream( transaction.getXid(), part.getInputStream() );
+                        SharedInputStream shis = new SharedInputStream( statement, part.getInputStream() );
                         statement.getDataContext().addParameterValues( i++, catalogColumn.getRelDataType( transaction.getTypeFactory() ), ImmutableList.of( shis ) );
                     }
                 }
@@ -1184,7 +1184,7 @@ public class Crud implements InformationObserver {
                     }
                 } else {
                     setStatements.add( String.format( "\"%s\" = ?", catalogColumn.name ) );
-                    SharedInputStream shis = new SharedInputStream( transaction.getXid(), part.getInputStream() );
+                    SharedInputStream shis = new SharedInputStream( statement, part.getInputStream() );
                     statement.getDataContext().addParameterValues( i++, null, ImmutableList.of( shis ) );
                 }
             }

@@ -16,7 +16,9 @@
 
 package org.polypheny.db.transaction;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -35,6 +37,7 @@ import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
 import org.polypheny.db.router.RouterManager;
 import org.polypheny.db.routing.Router;
+import org.polypheny.db.util.SharedInputStream;
 
 public class StatementImpl implements Statement {
 
@@ -50,6 +53,7 @@ public class StatementImpl implements Statement {
 
     private DataContext dataContext = null;
     private ContextImpl prepareContext = null;
+    private final List<SharedInputStream> sharedInputStreams = new ArrayList<>();
 
     private InformationDuration duration;
 
@@ -134,7 +138,14 @@ public class StatementImpl implements Statement {
         if ( dataContext != null ) {
             dataContext.getParameterValues().clear();
         }
+        sharedInputStreams.forEach( SharedInputStream::close );
         dataContext = null;
+    }
+
+
+    @Override
+    public void registerSharedInputStream( SharedInputStream sharedInputStream ) {
+        sharedInputStreams.add( sharedInputStream );
     }
 
 }
