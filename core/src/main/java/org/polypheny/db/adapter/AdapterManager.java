@@ -196,9 +196,8 @@ public class AdapterManager {
         if ( getAdapters().containsKey( uniqueName ) ) {
             throw new RuntimeException( "There is already an adapter with this unique name" );
         }
-        // for clarity we add the default mode if none is specified
         if ( !settings.containsKey( "mode" ) ) {
-            settings.put( "mode", "default" );
+            throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
         }
 
         Constructor<?> ctor;

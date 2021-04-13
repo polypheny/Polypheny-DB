@@ -28,7 +28,6 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
@@ -62,7 +61,7 @@ import org.polypheny.db.type.PolyTypeFamily;
         description = "Password to be used for authenticating at the remote instance")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
         description = "Maximum number of concurrent JDBC connections.")
-public class PostgresqlStore extends AbstractJdbcStore implements RemoteDeployable {
+public class PostgresqlStore extends AbstractJdbcStore {
 
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, createConnectionFactory( settings, PostgresqlSqlDialect.DEFAULT ), PostgresqlSqlDialect.DEFAULT, true );

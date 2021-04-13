@@ -26,7 +26,6 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingList;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.schema.Schema;
@@ -55,7 +54,7 @@ import org.polypheny.db.sql.dialect.MysqlSqlDialect;
         description = "Which level of transaction isolation should be used.")
 @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
         description = "List of tables which should be imported. The names must to be separated by a comma.")
-public class MysqlSource extends AbstractJdbcSource implements RemoteDeployable {
+public class MysqlSource extends AbstractJdbcSource {
 
     public MysqlSource( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );

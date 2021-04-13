@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter;
 
 
-import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -253,13 +252,6 @@ public abstract class Adapter {
     }
 
 
-    public static List<AbstractAdapterSetting> DOCKER_INSTANCE_SETTINGS = ImmutableList.of(
-            new BindableAbstractAdapterSettingsList<>( "instanceId", "DockerInstance", false, true, false, RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ), ConfigDocker::getAlias, ConfigDocker.class )
-                    .bind( RuntimeConfig.DOCKER_INSTANCES )
-                    .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." )
-    );
-
-
     @Getter
     private final int adapterId;
     @Getter
@@ -321,7 +313,7 @@ public abstract class Adapter {
 
 
     public List<AbstractAdapterSetting> getAvailableSettings() {
-        return AbstractAdapterSetting.fromAnnotations( this.getClass().getAnnotations(), getClass().getAnnotation( AdapterProperties.class ) )
+        return AbstractAdapterSetting.fromAnnotations( getClass().getAnnotations(), properties )
                 .values()
                 .stream()
                 .flatMap( Collection::stream )
@@ -522,6 +514,16 @@ public abstract class Adapter {
         }
 
 
+        /**
+         * Method generates the correlated AdapterSettings from the provided AdapterAnnotations,
+         * Repeatable Annotations are packed inside the underlying Lists of each AdapterSetting
+         * as those AdapterSettings belong to a specific adapter the AdapterProperties are used to
+         * unpack DeploySettings.ALL to the available modes correctly
+         *
+         * @param annotations collection of annotations
+         * @param properties which are defined by the corresponding Adapter
+         * @return a map containing the available modes and the corresponding collections of AdapterSettings
+         */
         public static Map<String, List<AbstractAdapterSetting>> fromAnnotations( Annotation[] annotations, AdapterProperties properties ) {
             Map<String, List<AbstractAdapterSetting>> settings = new HashMap<>();
 
@@ -554,6 +556,13 @@ public abstract class Adapter {
         }
 
 
+        /**
+         * Merges the provided setting into the provided map of AdapterSettings
+         *
+         * @param settings already correctly sorted settings
+         * @param deployModes the deployment modes which are supported by this specific adapter
+         * @param setting the setting which is merge into the map
+         */
         private static void mergeSettings( Map<String, List<AbstractAdapterSetting>> settings, DeployMode[] deployModes, AbstractAdapterSetting setting ) {
             // we need to unpack the underlying DeployModes
             for ( DeployMode mode : setting.appliesTo
@@ -717,7 +726,7 @@ public abstract class Adapter {
 
 
     /**
-     * DynamicSettingsList which allows to configure mapped AdapterSettings, which expose an alias in the frontend
+     * BindableSettingsList which allows to configure mapped AdapterSettings, which expose an alias in the frontend
      * but assign an corresponding id when the value is chosen
      *
      * @param <T>
@@ -788,7 +797,7 @@ public abstract class Adapter {
 
         private final String type = "Directory";
         @Setter
-        private String directory;
+        public String directory;
         //This field is necessary for the the UI and needs to be initialized to be serialized to JSON.
         @Setter
         public String[] fileNames = new String[]{ "" };

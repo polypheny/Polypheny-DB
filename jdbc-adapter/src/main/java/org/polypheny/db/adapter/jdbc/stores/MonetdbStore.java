@@ -27,7 +27,6 @@ import org.polypheny.db.adapter.Adapter.AdapterProperties;
 import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
-import org.polypheny.db.adapter.RemoteDeployable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
@@ -60,7 +59,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4)
 @AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance", position = 5)
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance")
-public class MonetdbStore extends AbstractJdbcStore implements RemoteDeployable {
+public class MonetdbStore extends AbstractJdbcStore {
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
