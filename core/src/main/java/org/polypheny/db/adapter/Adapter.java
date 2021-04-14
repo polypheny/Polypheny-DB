@@ -270,7 +270,11 @@ public abstract class Adapter {
         if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
             throw new RuntimeException( "The used adapter does not annotate its properties correctly." );
         }
-        this.deployMode = settings.containsKey( "mode" ) ? DeployMode.fromString( settings.get( "mode" ) ) : DeployMode.EMBEDDED;
+        if ( !settings.containsKey( "mode" ) ) {
+            throw new RuntimeException( "The adapter does not specify a mode which is necessary." );
+        }
+
+        this.deployMode = DeployMode.fromString( settings.get( "mode" ) );
 
         this.adapterId = adapterId;
         this.uniqueName = uniqueName;
@@ -283,14 +287,14 @@ public abstract class Adapter {
         informationElements = new ArrayList<>();
 
         // this is need for docker deployable stores and should not interfere too much with other adapters
-        if ( Arrays.asList( properties.usedModes() ).contains( DeployMode.DOCKER ) && settings.get( "mode" ).equals( "docker" ) ) {
+        if ( deployMode == DeployMode.DOCKER ) {
             this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
     }
 
 
     public String getAdapterName() {
-        return getClass().getAnnotation( AdapterProperties.class ).name();
+        return properties.name();
     }
 
 
@@ -322,7 +326,7 @@ public abstract class Adapter {
 
 
     public void shutdownAndRemoveListeners() {
-        if ( settings.get( "mode" ).equals( "docker" ) ) {
+        if ( deployMode == DeployMode.DOCKER ) {
             RuntimeConfig.DOCKER_INSTANCES.removeObserver( this.listener );
         }
         shutdown();
