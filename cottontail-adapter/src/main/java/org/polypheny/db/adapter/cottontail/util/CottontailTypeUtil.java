@@ -412,12 +412,26 @@ public class CottontailTypeUtil {
     }
 
 
+    public static Vector toVectorCallData( Object vectorObject ) {
+        Vector vector = toVectorData( vectorObject );
+        if ( vector != null ) {
+            return vector;
+        } else {
+            final Vector.Builder vectorBuilder = Vector.newBuilder();
+            final Object firstItem = ((List) vectorObject).get( 0 );
+            if ( firstItem instanceof BigDecimal ) {
+                return vectorBuilder.setDoubleVector(
+                        DoubleVector.newBuilder().addAllVector( ((List<BigDecimal>) vectorObject).stream().map( BigDecimal::doubleValue ).collect( Collectors.toList() ) ).build() ).build();
+            } else {
+                throw new RuntimeException( "Unsupported type: " + firstItem.getClass().getName() );
+            }
+        }
+    }
+
+
     /**
      * Converts list of primitive data types (i.e. {@link Double}, {@link Float}, {@link Long}, {@link Integer} or
      * {@link Boolean}) to a {@link Vector} usable by Cottontail DB.
-     *
-     * <strong>Important: </strong> {@link BigDecimal} cannot be converted to native Cottontail DB {@link Vector}
-     * objects and are therefore stored as {@link String}s.
      *
      * @param vectorObject List of {@link Object}s that need to be converted.
      * @return Converted object or null if conversion is not possible.
@@ -563,8 +577,10 @@ public class CottontailTypeUtil {
 
         return Expressions.lambda(
                 Expressions.block(
-                        Expressions.return_( null,
-                                Expressions.call( COTTONTAIL_KNN_BUILDER_METHOD,
+                        Expressions.return_(
+                                null,
+                                Expressions.call(
+                                        COTTONTAIL_KNN_BUILDER_METHOD,
                                         targetColumn,
                                         optimisationFactor,
                                         distance,
@@ -581,8 +597,7 @@ public class CottontailTypeUtil {
             return Expressions.constant( physicalColumnNames.get( inputRef.getIndex() ) );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
-                    Expressions.constant( dynamicParam.getIndex() ) );
+            return Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) );
         }
 
         throw new RuntimeException( "first argument is neither an input ref nor a dynamic parameter" );
@@ -593,11 +608,13 @@ public class CottontailTypeUtil {
         if ( (node instanceof RexCall) && (((RexCall) node).getOperator() instanceof SqlArrayValueConstructor) ) {
 //            List<Object> arrayList = arrayCallToList( ((RexCall) node).getOperands(), node.getType().getComponentType().getPolyType() );
             Expression arrayList = arrayListToExpression( ((RexCall) node).getOperands(), actualType );
-            return Expressions.call( CottontailTypeUtil.class, "toVectorData", arrayList );
+            return Expressions.call( CottontailTypeUtil.class, "toVectorCallData", arrayList );
         } else if ( node instanceof RexDynamicParam ) {
             RexDynamicParam dynamicParam = (RexDynamicParam) node;
-            return Expressions.call( CottontailTypeUtil.class, "toVectorData", Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method,
-                    Expressions.constant( dynamicParam.getIndex() ) ) );
+            return Expressions.call(
+                    CottontailTypeUtil.class,
+                    "toVectorCallData",
+                    Expressions.call( dynamicParamMap, BuiltInMethod.MAP_GET.method, Expressions.constant( dynamicParam.getIndex() ) ) );
         }
 
         throw new RuntimeException( "argument is neither an array call nor a dynamic parameter" );
