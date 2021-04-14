@@ -421,7 +421,12 @@ public class Crud implements InformationObserver {
                     schemaTree.addChildren( tableTree ).setRouterLink( "" );
                 }
                 if ( request.views ) {
-                    schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                    if (request.showTable){
+                        schemaTree.addChild( new SidebarElement( schema.name + ".views", "views", request.routerLinkRoot, "icon-eye" ).addChildren( viewTree ).setRouterLink( "" ) );
+                    } else{
+                        schemaTree.addChildren( viewTree ).setRouterLink( "" );
+                    }
+
                 }
             }
             result.add( schemaTree );
