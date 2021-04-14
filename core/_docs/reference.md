@@ -80,6 +80,7 @@ statement:
 alterStatement:
 ALTER ( SYSTEM | SESSION ) SET identifier '=' expression | ALTER ( SYSTEM | SESSION ) RESET identifier | ALTER ( SYSTEM | SESSION ) RESET ALL | ALTER SCHEMA [ databaseName . ] schemaName RENAME TO newSchemaName  
 | ALTER SCHEMA [ databaseName . ] schemaName OWNER TO userName  
+| ALTER VIEW [ databaseName . ] [ schemaName . ] tableName RENAME TO newTableName
 | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME TO newTableName  
 | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName OWNER TO userName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName RENAME COLUMN columnName TO newColumnName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName DROP COLUMN columnName | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName type [ NULL | NOT NULL ] [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
 | ALTER TABLE [ databaseName . ] [ schemaName . ] tableName ADD COLUMN columnName physicalName AS name [DEFAULT defaultValue] [(BEFORE | AFTER) columnName]
