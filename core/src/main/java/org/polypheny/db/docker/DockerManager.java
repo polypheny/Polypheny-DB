@@ -132,10 +132,15 @@ public abstract class DockerManager {
 
 
         Image( String name ) {
-            this.name = name;
-            this.version = "latest";
+            if ( name.contains( ":" ) ) {
+                String[] splits = name.split( ":" );
+                this.name = splits[0];
+                this.version = splits[1];
+            } else {
+                this.name = name;
+                this.version = "latest";
+            }
         }
-
     }
 
 
