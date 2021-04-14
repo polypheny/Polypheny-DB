@@ -58,7 +58,7 @@ public class StatisticResult {
             String[][] rotated = rotate2dArray( data );
 
             for ( int i = 0; i < rotated.length; i++ ) {
-                this.columns[i] = new StatisticQueryColumn( names.get( i ), type.get( i ), rotated[i] );
+                this.columns[i] = new StatisticQueryColumn( names.get( i ), type.get( i ), null, rotated[i] );
             }
         }
 

@@ -41,17 +41,21 @@ class QueryColumn {
     @Getter
     private PolyType type;
 
+    @Getter
+    private PolyType collectionType;
 
-    QueryColumn( String schema, String table, String name, PolyType type ) {
+
+    QueryColumn( String schema, String table, String name, PolyType type, PolyType collectionType ) {
         this.schema = schema.replace( "\\", "" ).replace( "\"", "" );
         this.table = table.replace( "\\", "" ).replace( "\"", "" );
         this.name = name.replace( "\\", "" ).replace( "\"", "" );
         this.type = type;
+        this.collectionType = collectionType;
     }
 
 
-    QueryColumn( String schemaTableName, PolyType type ) {
-        this( schemaTableName.split( "\\." )[0], schemaTableName.split( "\\." )[1], schemaTableName.split( "\\." )[2], type );
+    QueryColumn( String schemaTableName, PolyType type, PolyType collectionType ) {
+        this( schemaTableName.split( "\\." )[0], schemaTableName.split( "\\." )[1], schemaTableName.split( "\\." )[2], type, collectionType );
     }
 
 
@@ -91,7 +95,7 @@ class QueryColumn {
 
 
     public static QueryColumn fromCatalogColumn( CatalogColumn column ) {
-        return new QueryColumn( column.getSchemaName(), column.getTableName(), column.name, column.type );
+        return new QueryColumn( column.getSchemaName(), column.getTableName(), column.name, column.type, column.collectionsType );
     }
 
 
