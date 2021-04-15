@@ -159,6 +159,13 @@ public class AdapterManager {
                 // add empty list for each available mode
                 Arrays.stream( properties.usedModes() ).forEach( mode -> settings.put( mode.getName(), new ArrayList<>() ) );
 
+                // add default which is used by all available modes
+                settings.put( "default", new ArrayList<>() );
+
+                // merge annotated AdapterSettings into settings
+                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) );
+                annotatedSettings.forEach( settings::put );
+
                 // if the adapter uses docker add the dynamic docker setting
                 if ( settings.containsKey( "docker" ) ) {
                     settings
@@ -175,13 +182,6 @@ public class AdapterManager {
                                     .bind( RuntimeConfig.DOCKER_INSTANCES )
                                     .setDescription( "To configure additional Docker instances, use the Docker Config in the Config Manager." ) );
                 }
-
-                // add default which is used by all available modes
-                settings.put( "default", new ArrayList<>() );
-
-                // merge annotated AdapterSettings into settings
-                Map<String, List<AbstractAdapterSetting>> annotatedSettings = AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), clazz.getAnnotation( AdapterProperties.class ) );
-                annotatedSettings.forEach( settings::put );
 
                 result.add( new AdapterInformation( properties.name(), properties.description(), clazz, settings ) );
             }
