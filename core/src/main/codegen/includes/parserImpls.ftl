@@ -77,7 +77,7 @@ SqlAlterView SqlAlterView(Span s) :
         <RENAME><TO>
         name = SimpleIdentifier()
         {
-            return new SqlAlterViewRename(s.end(this), table, name);
+            return new SqlAlterViewRename(s.end(this), view, name);
         }
     )
 }

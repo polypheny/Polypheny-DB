@@ -56,6 +56,7 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -1354,6 +1355,19 @@ public class DdlManagerImpl extends DdlManager {
                     column.typeInformation.nullable,
                     column.collation );
         }
+    }
+
+
+    @Override
+    public void renameView( CatalogView catalogView, String newViewName, Statement statement ) throws TableAlreadyExistsException {
+
+        if ( catalog.checkIfExistsTable( catalogView.schemaId, newViewName ) ) {
+            throw new TableAlreadyExistsException();
+        }
+        catalog.renameView( catalogView.id, newViewName );
+
+        // Rest plan cache and implementation cache (not sure if required in this case)
+        statement.getQueryProcessor().resetCaches();
     }
 
 
