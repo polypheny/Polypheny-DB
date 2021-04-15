@@ -45,9 +45,9 @@ import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 @AdapterSettingString(name = "database", defaultValue = "polypheny", position = 3,
         description = "Name of the database to connect to.")
 @AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
-        description = "Username to be used for authenticating at the remote instance")
+        description = "Username to be used for authenticating at the remote instance.")
 @AdapterSettingString(name = "password", defaultValue = "polypheny", position = 5,
-        description = "Password to be used for authenticating at the remote instance")
+        description = "Password to be used for authenticating at the remote instance.")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
         description = "Maximum number of concurrent JDBC connections.")
 @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" },

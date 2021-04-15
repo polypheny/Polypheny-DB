@@ -41,7 +41,6 @@ import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
@@ -66,39 +65,49 @@ import org.polypheny.db.type.PolyTypeFamily;
         description = "Maximum number of concurrent JDBC connections.")
 public class PostgresqlStore extends AbstractJdbcStore {
 
+    private String host;
+    private String database;
+    private String username;
+
+
     public PostgresqlStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, PostgresqlSqlDialect.DEFAULT, true );
     }
 
 
     @Override
-    public void deployDocker( int instanceId ) {
+    public ConnectionFactory deployDocker( int instanceId ) {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:13.2", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
-                .withInitCommands( Arrays.asList( "-e", "POSTGRES_PASSWORD", "docker" ) )
-                //.withAfterCommands( Arrays.asList( "mongo", "--eval", "rs.initiate()" ), 2000 )
+                .withInitCommands( Arrays.asList( "-e POSTGRES_PASSWORD=" + settings.get( "password" ) ) )
                 .build();
         DockerManager.getInstance().initialize( container ).start();
+
+        host = "localhost"; // TODO
+        database = "postgres";
+        username = "postgres";
+
+        return createConnectionFactory();
     }
 
 
     @Override
-    protected void deployRemote() {
-        // nothing to do
+    protected ConnectionFactory deployRemote() {
+        host = settings.get( "host" );
+        database = settings.get( "database" );
+        username = settings.get( "username" );
+        return createConnectionFactory();
     }
 
 
-    @Override
-    protected ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect ) {
+    private ConnectionFactory createConnectionFactory() {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "org.postgresql.Driver" );
 
-        final String connectionUrl = getConnectionUrl( settings.get( "host" ), Integer.parseInt( settings.get( "port" ) ), settings.get( "database" ) );
+        final String connectionUrl = getConnectionUrl( host, Integer.parseInt( settings.get( "port" ) ), database );
         dataSource.setUrl( connectionUrl );
-        if ( log.isInfoEnabled() ) {
-            log.info( "Postgres Connection URL: {}", connectionUrl );
-        }
-        dataSource.setUsername( settings.get( "username" ) );
+        log.info( "Postgres Connection URL: {}", connectionUrl );
+        dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
         dataSource.setDefaultAutoCommit( false );
         dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_UNCOMMITTED );

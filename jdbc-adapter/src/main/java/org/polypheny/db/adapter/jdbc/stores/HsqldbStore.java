@@ -23,7 +23,6 @@ import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
-import org.polypheny.db.sql.SqlDialect;
 import org.polypheny.db.sql.dialect.HsqldbSqlDialect;
 import org.polypheny.db.transaction.PUID;
 import org.polypheny.db.transaction.PUID.Type;
@@ -51,13 +50,7 @@ public class HsqldbStore extends AbstractJdbcStore {
 
 
     @Override
-    protected void deployEmbedded() {
-        // Nothing to do
-    }
-
-
-    @Override
-    public ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect ) {
+    protected ConnectionFactory deployEmbedded() {
         if ( RuntimeConfig.TWO_PC_MODE.getBoolean() ) {
             // TODO MV: implement
             throw new RuntimeException( "2PC Mode is not implemented" );
@@ -82,7 +75,6 @@ public class HsqldbStore extends AbstractJdbcStore {
             dataSource.setDefaultAutoCommit( false );
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
         }
-
     }
 
 

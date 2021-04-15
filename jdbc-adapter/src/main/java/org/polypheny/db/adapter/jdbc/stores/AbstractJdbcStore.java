@@ -67,39 +67,35 @@ public abstract class AbstractJdbcStore extends DataStore {
 
         if ( deployMode == DeployMode.DOCKER ) {
             dockerInstanceId = Integer.parseInt( settings.get( "instanceId" ) );
-            deployDocker( dockerInstanceId );
+            connectionFactory = deployDocker( dockerInstanceId );
             addInformationPhysicalNames();
             enableInformationPage();
         } else if ( deployMode == DeployMode.EMBEDDED ) {
-            deployEmbedded();
+            connectionFactory = deployEmbedded();
         } else if ( deployMode == DeployMode.REMOTE ) {
-            deployRemote();
+            connectionFactory = deployRemote();
         } else {
             throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
         }
-        connectionFactory = createConnectionFactory( settings, dialect );
 
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerJdbcInformation();
     }
 
 
-    protected void deployDocker( int dockerInstanceId ) {
+    protected ConnectionFactory deployDocker( int dockerInstanceId ) {
         throw new UnsupportedOperationException();
     }
 
 
-    protected void deployEmbedded() {
+    protected ConnectionFactory deployEmbedded() {
         throw new UnsupportedOperationException();
     }
 
 
-    protected void deployRemote() {
+    protected ConnectionFactory deployRemote() {
         throw new UnsupportedOperationException();
     }
-
-
-    protected abstract ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect );
 
 
     protected void registerJdbcInformation() {
