@@ -24,6 +24,7 @@ import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
@@ -32,6 +33,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.config.ConfigDocker;
+import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.SchemaPlus;
@@ -50,26 +53,74 @@ public abstract class AbstractJdbcStore extends DataStore {
 
     protected ConnectionFactory connectionFactory;
 
+    protected int dockerInstanceId;
+
 
     public AbstractJdbcStore(
             int storeId,
             String uniqueName,
             Map<String, String> settings,
-            ConnectionFactory connectionFactory,
             SqlDialect dialect,
             boolean persistent ) {
         super( storeId, uniqueName, settings, persistent );
-        this.connectionFactory = connectionFactory;
         this.dialect = dialect;
+
+        if ( deployMode == DeployMode.DOCKER ) {
+            dockerInstanceId = Integer.parseInt( settings.get( "instanceId" ) );
+            deployDocker( dockerInstanceId );
+            addInformationPhysicalNames();
+            enableInformationPage();
+        } else if ( deployMode == DeployMode.EMBEDDED ) {
+            deployEmbedded();
+        } else if ( deployMode == DeployMode.REMOTE ) {
+            deployRemote();
+        } else {
+            throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
+        }
+        connectionFactory = createConnectionFactory( settings, dialect );
+
         // Register the JDBC Pool Size as information in the information manager and enable it
         registerJdbcInformation();
     }
+
+
+    protected void deployDocker( int dockerInstanceId ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    protected void deployEmbedded() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    protected void deployRemote() {
+        throw new UnsupportedOperationException();
+    }
+
+
+    protected abstract ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect );
 
 
     protected void registerJdbcInformation() {
         JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getUniqueName() );
         addInformationPhysicalNames();
         enableInformationPage();
+    }
+
+
+    @Override
+    public void resetDockerConnection( ConfigDocker c ) {
+        /*if ( c.id != dockerInstanceId || c.getHost().equals( currentUrl ) ) {
+            return;
+        }
+
+        try {
+            connectionFactory.close();
+        } catch ( SQLException e ) {
+            log.debug( "Exception while closing old connection factory", e );
+        }
+        connectionFactory = createConnectionFactory( settings, dialect );*/
     }
 
 
@@ -360,6 +411,18 @@ public abstract class AbstractJdbcStore extends DataStore {
             connectionFactory.getConnectionHandler( xid ).rollback();
         } else {
             log.warn( "There is no connection to rollback (Uniquename: {}, XID: {})!", getUniqueName(), xid );
+        }
+    }
+
+
+    @Override
+    public void shutdown() {
+        try {
+            DockerInstance.getInstance().destroyAll( getAdapterId() );
+            removeInformationPage();
+            connectionFactory.close();
+        } catch ( SQLException e ) {
+            log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
     }
 

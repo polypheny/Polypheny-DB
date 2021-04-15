@@ -68,7 +68,7 @@ import org.polypheny.db.transaction.PolyXid;
 public abstract class Adapter {
 
     private final AdapterProperties properties;
-    private final DeployMode deployMode;
+    protected final DeployMode deployMode;
 
 
     @Target(ElementType.TYPE)
@@ -485,7 +485,7 @@ public abstract class Adapter {
      *
      * @param c the new configuration of the corresponding Docker instance
      */
-    void resetDockerConnection( ConfigDocker c ) {
+    protected void resetDockerConnection( ConfigDocker c ) {
         throw new RuntimeException( getAdapterName() + " uses this Docker instance and does not support to dynamically change it." );
     }
 

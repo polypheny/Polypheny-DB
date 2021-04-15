@@ -57,13 +57,31 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterSettingInteger(name = "port", defaultValue = 50000, description = "JDBC port number on the remote MonetDB instance.", position = 2)
 @AdapterSettingString(name = "database", defaultValue = "polypheny", description = "JDBC port number on the remote MonetDB instance.", position = 3)
 @AdapterSettingString(name = "username", defaultValue = "polypheny", description = "Name of the database to connect to.", position = 4)
-@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance", position = 5)
-@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance")
+@AdapterSettingString(name = "password", defaultValue = "polypheny", description = "Username to be used for authenticating at the remote instance.")
+@AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Password to be used for authenticating at the remote instance.")
 public class MonetdbStore extends AbstractJdbcStore {
 
 
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
-        super( storeId, uniqueName, settings, createConnectionFactory( settings, MonetdbSqlDialect.DEFAULT ), MonetdbSqlDialect.DEFAULT, true );
+        super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
+    }
+
+    /*@Override
+    protected void deployDocker( int dockerInstanceId ) {
+        // Create schema public if it does not exist
+        PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
+        try {
+            ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( randomXid );
+            handler.execute( "CREATE SCHEMA IF NOT EXISTS \"public\";" );
+            handler.commit();
+        } catch ( SQLException | ConnectionHandlerException e ) {
+            throw new RuntimeException( "Exception while creating default schema on monetdb store!", e );
+        }
+    }*/
+
+
+    @Override
+    protected void deployRemote() {
         // Create schema public if it does not exist
         PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
         try {
@@ -76,7 +94,8 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-    public static ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect ) {
+    @Override
+    public ConnectionFactory createConnectionFactory( final Map<String, String> settings, SqlDialect dialect ) {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "nl.cwi.monetdb.jdbc.MonetDriver" );
 
@@ -214,17 +233,6 @@ public class MonetdbStore extends AbstractJdbcStore {
     @Override
     public List<FunctionalIndexInfo> getFunctionalIndexes( CatalogTable catalogTable ) {
         return ImmutableList.of(); // TODO
-    }
-
-
-    @Override
-    public void shutdown() {
-        try {
-            removeInformationPage();
-            connectionFactory.close();
-        } catch ( SQLException e ) {
-            log.warn( "Exception while shutting down {}", getUniqueName(), e );
-        }
     }
 
 
