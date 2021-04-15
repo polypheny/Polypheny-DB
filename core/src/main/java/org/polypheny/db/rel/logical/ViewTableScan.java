@@ -66,15 +66,12 @@ public class ViewTableScan extends TableScan {
 
         Catalog catalog = Catalog.getInstance();
         CatalogTable catalogTable;
-        if ( relOptTable instanceof RelOptTableImpl ) {
-            long idLogical = ((LogicalTable) ((RelOptTableImpl) relOptTable).getTable()).getTableId();
-            catalogTable = catalog.getTable( idLogical );
 
-        } else {
-            long id = ((LogicalTable) table).getTableId();
-            catalogTable = catalog.getTable( id );
-        }
+        long idLogical = ((LogicalTable) ((RelOptTableImpl) relOptTable).getTable()).getTableId();
+        catalogTable = catalog.getTable( idLogical );
+
         return new ViewTableScan( cluster, traitSet, relOptTable, ((CatalogView) catalogTable).prepareView( cluster, traitSet ) );
+
     }
 
 
@@ -85,7 +82,6 @@ public class ViewTableScan extends TableScan {
 
 
     public RelNode expandViewNode() {
-
         RexBuilder rexBuilder = this.getCluster().getRexBuilder();
         final List<RexNode> exprs = new ArrayList<>();
         final RelDataType rowType = this.getRowType();
@@ -93,9 +89,11 @@ public class ViewTableScan extends TableScan {
         for ( int i = 0; i < fieldCount; i++ ) {
             exprs.add( rexBuilder.makeInputRef( this, i ) );
         }
-
-        return LogicalProject.create( relRoot.rel, exprs, this.getRowType().getFieldNames() );
-
+        LogicalProject logicalProject = LogicalProject.create( relRoot.rel, exprs, this.getRowType().getFieldNames() );
+        if ( logicalProject.hasView() ) {
+            tryExpandView( logicalProject );
+        }
+        return logicalProject;
     }
 
 }

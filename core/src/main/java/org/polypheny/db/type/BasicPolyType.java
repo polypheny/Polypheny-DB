@@ -52,7 +52,7 @@ public class BasicPolyType extends AbstractPolyType {
     private final int precision;
     private final int scale;
     private final RelDataTypeSystem typeSystem;
-    private final SqlCollation collation;
+    private final transient SqlCollation collation;
     private final SerializableCharset wrappedCharset;
 
 

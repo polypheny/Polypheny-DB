@@ -2,7 +2,6 @@ import ca.coglinc.gradle.plugins.javacc.CompileJavaccTask
 
 group "org.polypheny"
 
-
 version = versionMajor + '.' + versionMinor + versionQualifier
 
 
@@ -19,20 +18,6 @@ buildscript {
 }
 
 
-apply plugin: 'java-library'
-apply plugin: 'idea'
-apply plugin: "io.freefair.lombok"
-
-
-compileJava.options.encoding = "UTF-8"
-compileTestJava.options.encoding = "UTF-8"
-javadoc.options.encoding = "UTF-8"
-
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-
-
 dependencies {
     // Javacc
     javacc group: 'net.java.dev.javacc', name: 'javacc', version: javacc_version  // BSD 2-clause
@@ -41,7 +26,7 @@ dependencies {
 
 
     // --- Test Compile ---
-    testImplementation project(path: ":core", configuration: "testClasses")
+    testImplementation project(path: ":core", configuration: "tests")
 
     testImplementation group: "junit", name: "junit", version: junit_version
     testImplementation group: "org.hamcrest", name: "hamcrest-core", version: hamcrest_core_version  // BSD 3-clause
@@ -49,7 +34,6 @@ dependencies {
     testImplementation group: 'net.hydromatic', name: 'scott-data-hsqldb', version: scott_data_hsqldb_version  // Apache 2.0
     testImplementation group: 'org.hsqldb', name: 'hsqldb', version: hsqldb_version  // HSQLDB License (BSD-style)
 }
-
 
 
 sourceSets {
@@ -76,7 +60,6 @@ sourceSets {
 }
 
 
-
 /**
  * Compile Pipeline
  */
@@ -91,29 +74,12 @@ compileJava {
 }
 
 
-
-/**
- * JavaDoc
- */
-javadoc {
-    if(JavaVersion.current().isJava9Compatible()) {
-        options.addBooleanOption('html5', true)
-    }
-    // suppress most of the warnings
-    options.addStringOption('Xdoclint:none', '-quiet')
-    // Include private fields in JavaDoc
-    options.memberLevel = JavadocMemberLevel.PRIVATE
-}
-
-
-
 /**
  * Tests
  */
 test {
     include '**/PigletTest.class'
 }
-
 
 
 /**
@@ -129,20 +95,4 @@ jar {
 java {
     withJavadocJar()
     withSourcesJar()
-}
-
-
-
-/**
- * IntelliJ
- */
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-
-        inheritOutputDirs = false
-        outputDir = file("${project.buildDir}/classes")
-        testOutputDir = file("${project.buildDir}/test-classes")
-    }
 }

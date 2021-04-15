@@ -1346,28 +1346,55 @@ public class CatalogImpl extends Catalog {
             List<Long> connectedViews;
             connectedViews = new ArrayList<>( old.connectedViews );
             connectedViews.add( viewId );
+            CatalogTable table = null;
 
-            CatalogTable table = new CatalogTable(
-                    old.id,
-                    old.name,
-                    old.columnIds,
-                    old.schemaId,
-                    old.databaseId,
-                    old.ownerId,
-                    old.ownerName,
-                    old.tableType,
-                    old.definition,
-                    old.primaryKey,
-                    old.placementsByAdapter,
-                    old.modifiable,
-                    old.numPartitions,
-                    old.partitionType,
-                    old.partitionIds,
-                    old.partitionColumnId,
-                    old.isPartitioned,
-                    ImmutableList.copyOf( connectedViews ) );
+            if ( old.tableType == TableType.TABLE || old.tableType == TableType.SOURCE ) {
+                table = new CatalogTable(
+                        old.id,
+                        old.name,
+                        old.columnIds,
+                        old.schemaId,
+                        old.databaseId,
+                        old.ownerId,
+                        old.ownerName,
+                        old.tableType,
+                        old.definition,
+                        old.primaryKey,
+                        old.placementsByAdapter,
+                        old.modifiable,
+                        old.numPartitions,
+                        old.partitionType,
+                        old.partitionIds,
+                        old.partitionColumnId,
+                        old.isPartitioned,
+                        ImmutableList.copyOf( connectedViews ) );
+            } else if ( old.tableType == TableType.VIEW ) {
+                table = new CatalogView(
+                        old.id,
+                        old.name,
+                        old.columnIds,
+                        old.schemaId,
+                        old.databaseId,
+                        old.ownerId,
+                        old.ownerName,
+                        old.tableType,
+                        old.definition,
+                        old.primaryKey,
+                        old.placementsByAdapter,
+                        old.modifiable,
+                        old.numPartitions,
+                        old.partitionType,
+                        old.partitionIds,
+                        old.partitionColumnId,
+                        old.isPartitioned,
+                        ImmutableList.copyOf( connectedViews ),
+                        ((CatalogView) old).getUnderlyingTables(),
+                        ((CatalogView) old).getFieldList() );
+            }
+
             synchronized ( this ) {
                 tables.replace( id, table );
+                assert table != null;
                 tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
             }
             listeners.firePropertyChange( "table", old, table );
