@@ -283,6 +283,7 @@ public class DockerInstance extends DockerManager {
         CreateContainerCmd cmd = client.createContainerCmd( container.image.getFullName() )
                 .withName( Container.getPhysicalUniqueName( container ) )
                 .withCmd( container.initCommands )
+                .withEnv( container.envCommands )
                 .withExposedPorts( container.getExposedPorts() );
 
         Objects.requireNonNull( cmd.getHostConfig() ).withPortBindings( bindings );

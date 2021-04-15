@@ -19,7 +19,6 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +78,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
     public ConnectionFactory deployDocker( int instanceId ) {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:13.2", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
-                .withInitCommands( Arrays.asList( "-e POSTGRES_PASSWORD=" + settings.get( "password" ) ) )
+                .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
                 .build();
         DockerManager.getInstance().initialize( container ).start();
 

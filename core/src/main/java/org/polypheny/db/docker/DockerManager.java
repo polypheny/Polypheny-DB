@@ -165,6 +165,7 @@ public abstract class DockerManager {
 
         // map with timeouts matched to the commands
         public Map<Integer, List<String>> orderAfterCommands = new TreeMap<>();
+        private List<String> envCommands = new ArrayList<>();
 
 
         public ContainerBuilder( Integer adapterId, String image, String uniqueName, int dockerInstanceId ) {
@@ -190,6 +191,33 @@ public abstract class DockerManager {
          */
         public ContainerBuilder withInitCommands( List<String> commands ) {
             this.initCommands = Streams.concat( this.initCommands.stream(), commands.stream() ).collect( Collectors.toList() );
+
+            return this;
+        }
+
+
+        /**
+         * This allows to define environment variables which are initialized for the container
+         *
+         * @param variables a list of all variables, which defines them like [ "VARIABLE=value",...]
+         * @return the builder
+         */
+        public ContainerBuilder withEnvironmentVariables( List<String> variables ) {
+            this.envCommands = Streams.concat( this.envCommands.stream(), variables.stream() ).collect( Collectors.toList() );
+
+            return this;
+        }
+
+
+        /**
+         * This allows to define a single environment variable for the container
+         * it can be changed
+         *
+         * @param variable the environment variable
+         * @return the builder
+         */
+        public ContainerBuilder withEnvironmentVariable( String variable ) {
+            this.envCommands.add( variable );
 
             return this;
         }
@@ -236,7 +264,8 @@ public abstract class DockerManager {
                     internalExternalPortMapping,
                     checkUnique,
                     initCommands,
-                    orderAfterCommands );
+                    orderAfterCommands,
+                    envCommands );
         }
 
 
@@ -253,6 +282,7 @@ public abstract class DockerManager {
         public final String uniqueName;
         public final Map<Integer, Integer> internalExternalPortMapping;
         public final Integer adapterId;
+        public final List<String> envCommands;
         @Setter
         @Getter
         private ContainerStatus status;
@@ -278,7 +308,8 @@ public abstract class DockerManager {
                 Map<Integer, Integer> internalExternalPortMapping,
                 boolean checkUnique,
                 List<String> initCommands,
-                Map<Integer, List<String>> afterCommands
+                Map<Integer, List<String>> afterCommands,
+                List<String> envCommands
         ) {
             this.adapterId = adapterId;
             this.image = image;
@@ -290,6 +321,7 @@ public abstract class DockerManager {
             this.usesInitCommands = !initCommands.isEmpty();
             this.afterCommands = afterCommands;
             this.usesAfterCommands = !afterCommands.isEmpty();
+            this.envCommands = envCommands;
         }
 
 
