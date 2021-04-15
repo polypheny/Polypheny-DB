@@ -60,7 +60,7 @@ import org.polypheny.db.type.PolyTypeFamily;
 @AdapterSettingString(name = "username", defaultValue = "polypheny", position = 4,
         description = "Username to be used for authenticating at the remote instance.", appliesTo = DeploySetting.REMOTE)
 @AdapterSettingString(name = "password", defaultValue = "polypheny", position = 5,
-        description = "Password to be used for authenticating at the remote instance.", appliesTo = DeploySetting.REMOTE)
+        description = "Password to be used for authenticating at the remote instance.")
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25,
         description = "Maximum number of concurrent JDBC connections.")
 public class PostgresqlStore extends AbstractJdbcStore {

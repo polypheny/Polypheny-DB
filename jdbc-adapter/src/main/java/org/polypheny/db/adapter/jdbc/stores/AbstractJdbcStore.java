@@ -69,7 +69,6 @@ public abstract class AbstractJdbcStore extends DataStore {
             dockerInstanceId = Integer.parseInt( settings.get( "instanceId" ) );
             connectionFactory = deployDocker( dockerInstanceId );
             addInformationPhysicalNames();
-            enableInformationPage();
         } else if ( deployMode == DeployMode.EMBEDDED ) {
             connectionFactory = deployEmbedded();
         } else if ( deployMode == DeployMode.REMOTE ) {
