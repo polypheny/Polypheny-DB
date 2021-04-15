@@ -310,7 +310,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         .description( "Test description:"+ parameterizedRoot.kind.sql )
                         .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
                         .recordedTimestamp( System.currentTimeMillis() )
-                        .routed( routedRoot )
+                        .routed( logicalRoot )
                         .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
                         .build() );
 
@@ -410,7 +410,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 .description( "Test description:"+ parameterizedRoot.kind.sql )
                 .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames()))
                 .recordedTimestamp( System.currentTimeMillis() )
-                .routed( routedRoot )
+                .routed( logicalRoot )
                 .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
                 .build() );
 

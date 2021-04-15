@@ -208,13 +208,6 @@ public class MonitoringService {
             //Temporary testing //ToDO outsource to separate method
             MonitorEvent procEvent = eventQueue.get( currentKey );
 
-            System.out.println("\n\n\n\n");
-            System.out.println("\n-----> " + procEvent);
-            System.out.println("\t\t-----> " + procEvent.getRouted());
-            System.out.println("\t\t\t-----> " + procEvent.getRows());
-
-
-
             procEvent = processRelNode( procEvent.getRouted().rel, procEvent );
 
 
@@ -226,6 +219,7 @@ public class MonitoringService {
                 RelOptTableImpl table = (RelOptTableImpl) procEvent.getTable();
 
                  System.out.println(table.getTable());
+
 
                  if ( table.getTable() instanceof LogicalTable ) {
                      LogicalTable t = ((LogicalTable) table.getTable());
