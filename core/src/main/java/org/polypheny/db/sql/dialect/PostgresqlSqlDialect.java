@@ -34,6 +34,7 @@
 package org.polypheny.db.sql.dialect;
 
 
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.TimeUnitRange;
 import org.polypheny.db.rel.type.RelDataType;
 import org.polypheny.db.rel.type.RelDataTypeSystem;
@@ -119,6 +120,19 @@ public class PostgresqlSqlDialect extends SqlDialect {
         }
 
         return new SqlDataTypeSpec( new SqlIdentifier( castSpec, SqlParserPos.ZERO ), -1, -1, null, null, SqlParserPos.ZERO );
+    }
+
+
+    @Override
+    public String getArrayComponentTypeString( SqlType type ) {
+        switch ( type ) {
+            case TINYINT:
+                return "int2"; // Postgres has no tinyint (1 byte), so instead cast to smallint (2 bytes)
+            case DOUBLE:
+                return "float8";
+            default:
+                return super.getArrayComponentTypeString( type );
+        }
     }
 
 

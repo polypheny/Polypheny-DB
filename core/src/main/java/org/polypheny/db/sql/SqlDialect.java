@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.avatica.util.TimeUnit;
 import org.apache.calcite.linq4j.function.Experimental;
@@ -745,6 +746,11 @@ public class SqlDialect {
     @Experimental
     public boolean supportsAliasedValues() {
         return true;
+    }
+
+
+    public String getArrayComponentTypeString( SqlType type ) {
+        return type.name();
     }
 
 
