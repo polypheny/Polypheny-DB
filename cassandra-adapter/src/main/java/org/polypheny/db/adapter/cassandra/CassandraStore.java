@@ -41,6 +41,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -48,6 +49,7 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingInteger;
 import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.cassandra.util.CassandraTypesUtils;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -55,6 +57,9 @@ import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogKey;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.docker.DockerInstance;
+import org.polypheny.db.docker.DockerManager;
+import org.polypheny.db.docker.DockerManager.ContainerBuilder;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.SchemaPlus;
@@ -67,16 +72,15 @@ import org.polypheny.db.type.PolyType;
 @AdapterProperties(
         name = "Cassandra",
         description = "Apache Cassandra is an open-source wide-column store (i.e. a two-dimensional key–value store) designed to handle large amount of data. Cassandra can be deployed in a distributed manner.",
-        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE })
-@AdapterSettingString(name = "host", defaultValue = "localhost", position = 0)
-@AdapterSettingInteger(name = "port", defaultValue = 9042, position = 1)
-@AdapterSettingString(name = "keyspace", defaultValue = "cassandra", position = 2)
-@AdapterSettingString(name = "username", defaultValue = "cassandra", position = 3)
-@AdapterSettingString(name = "password", defaultValue = "", position = 4)
+        usedModes = { DeployMode.EMBEDDED, DeployMode.REMOTE, DeployMode.DOCKER })
+@AdapterSettingString(name = "host", defaultValue = "localhost", position = 0, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingInteger(name = "port", defaultValue = 9042, position = 1, appliesTo = { DeploySetting.REMOTE, DeploySetting.DOCKER })
+@AdapterSettingString(name = "keyspace", defaultValue = "cassandra", position = 2, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "username", defaultValue = "cassandra", position = 3, appliesTo = DeploySetting.REMOTE)
+@AdapterSettingString(name = "password", defaultValue = "cassandra", position = 4, appliesTo = DeploySetting.REMOTE)
 public class CassandraStore extends DataStore {
 
     // Running embedded
-    private final boolean isEmbedded;
     private final Cassandra embeddedCassandra;
 
     // Connection information
@@ -101,14 +105,8 @@ public class CassandraStore extends DataStore {
         super( storeId, uniqueName, settings, true );
 
         // Parse settings
-        this.dbHostname = settings.get( "host" );
-        this.dbPort = Integer.parseInt( settings.get( "port" ) );
-        this.dbKeyspace = settings.get( "keyspace" );
-        this.dbUsername = settings.get( "username" );
-        this.dbPassword = settings.get( "password" );
-        this.isEmbedded = settings.get( "mode" ).equalsIgnoreCase( "embedded" );
 
-        if ( this.isEmbedded ) {
+        if ( deployMode == DeployMode.EMBEDDED ) {
             // Making sure we are on java 8, as cassandra does not support anything newer!
             // This is a cassandra issue. It is also marked as "won't fix"...
             // See: https://issues.apache.org/jira/browse/CASSANDRA-13107
@@ -128,9 +126,40 @@ public class CassandraStore extends DataStore {
             this.dbHostname = this.embeddedCassandra.getAddress().getHostAddress();
             this.dbPort = this.embeddedCassandra.getPort();
 
+            this.dbKeyspace = "keyspace";
+            this.dbUsername = "cassandra";
+            this.dbPassword = "";
             log.warn( "Embedded cassandra address: {}:{}", this.dbHostname, this.dbPort );
-        } else {
+        } else if ( deployMode == DeployMode.DOCKER ) {
+            this.dbUsername = "cassandra";
+            this.dbPassword = "cassandra";
+
+            DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra:3", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
+                    .withMappedPort( 9042, Integer.parseInt( settings.get( "port" ) ) )
+                    //.withEnvironmentVariables( Arrays.asList( "CASSANDRA_USER=" + this.dbUsername, "CASSANDRA_PASSWORD=" + this.dbPassword ) )
+                    .build();
+            DockerManager.getInstance().initialize( container ).start();
+
+            // TODO: Wait until ready
+            try {
+                TimeUnit.SECONDS.sleep( 20 );
+            } catch ( InterruptedException e ) {
+                // ignore
+            }
+
             this.embeddedCassandra = null;
+            this.dbHostname = "localhost"; // TODO
+            this.dbKeyspace = "cassandra";
+            this.dbPort = Integer.parseInt( settings.get( "port" ) );
+        } else if ( deployMode == DeployMode.REMOTE ) {
+            this.embeddedCassandra = null;
+            this.dbHostname = settings.get( "host" );
+            this.dbKeyspace = settings.get( "keyspace" );
+            this.dbUsername = settings.get( "username" );
+            this.dbPassword = settings.get( "password" );
+            this.dbPort = Integer.parseInt( settings.get( "port" ) );
+        } else {
+            throw new RuntimeException( "Unknown deploy mode: " + deployMode.name() );
         }
 
         try {
@@ -458,8 +487,10 @@ public class CassandraStore extends DataStore {
             log.warn( "Exception while shutting down {}", getUniqueName(), e );
         }
 
-        if ( this.isEmbedded ) {
+        if ( deployMode == DeployMode.EMBEDDED ) {
             this.embeddedCassandra.stop();
+        } else if ( deployMode == DeployMode.DOCKER ) {
+            DockerInstance.getInstance().destroyAll( getAdapterId() );
         }
 
         log.info( "Shut down Cassandra store: {}", this.getUniqueName() );
