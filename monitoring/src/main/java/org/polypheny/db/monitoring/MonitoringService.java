@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring;
 
 
+import com.google.common.collect.ImmutableList;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.monitoring.subscriber.Subscriber;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
 import org.polypheny.db.rel.logical.LogicalProject;
@@ -78,6 +80,13 @@ public class MonitoringService {
     private static final AtomicLong queueIdBuilder = new AtomicLong();
     //private static BTreeMap<Long, MonitorEvent> eventQueue;
     private final TreeMap<Long, MonitorEvent> eventQueue = new TreeMap<>();
+
+    //Table_ID with ListOfSubscribers
+    private Map<Long,List<Subscriber>> tableSubscription;
+
+    //Store_ID with ListOfSubscribers
+    private Map<Long,List<Subscriber>> storeSubscription;
+
 
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
@@ -190,7 +199,8 @@ public class MonitoringService {
         return currentEvent;
     }
 
-    //Queue processing FIFO
+
+    //ASYNC Queue processing FIFO
     //ToDO mabye add more intelligent scheduling later on or introduce config to change processing
     //Will be executed every 5seconds due to Background Task Manager and checks the queue and then asyncronously writes them to backend
     public void processEventsInQueue(){
@@ -250,7 +260,7 @@ public class MonitoringService {
             eventQueue.remove( currentKey );
         }
 
-        System.out.println("Executed Background Task at: " + new Timestamp(System.currentTimeMillis()) );
+        log.info("Executed Background Task at: " + new Timestamp(System.currentTimeMillis()) );
     }
 
 
@@ -263,18 +273,79 @@ public class MonitoringService {
      * @return some event or statistic which can be immediately used
      */
     public String getWorkloadItem(String type, String filter){
-        System.out.println("HENNLO: Looking for: '" + type +"' with filter: '" + filter + "'");
 
         backendConnector.readStatisticEvent( " " );
-
         return "EMPTY WORKLOAD EVENT";
     }
 
 
-    private void initializeMonitoringBackend(){
-        backendConnector = backendConnectorFactory.getBackendInstance(MONITORING_BACKEND);
+
+
+
+    /**
+     *
+     * @param objectType    Specific object type to subscribe to, TABLE,STORE,ADAPTER, etc
+     * @param objectId      id of object: unique catalog_id of object
+     */
+    public void subscribeToEvents( Subscriber subscriber, String objectType, long objectId){
+        //dummy call
+
+        //TODO HENNLO Generalize this more
+        if ( validateSubscription(objectType, objectId) ){
+            switch ( objectType ){
+                case "store":
+
+                    List<Subscriber> tempStoreSubscription;
+                    if ( storeSubscription.containsKey( objectId ) ) {
+                        tempStoreSubscription = ImmutableList.copyOf( storeSubscription.get( objectId ) );
+                    }
+                    else{
+                        tempStoreSubscription = new ArrayList<>();
+                        tempStoreSubscription.add( subscriber );
+                    }
+                    storeSubscription.put( objectId, tempStoreSubscription );
+                    break;
+
+                case "table":
+                    List<Subscriber> tempTableSubscription;
+                    if ( tableSubscription.containsKey( objectId ) ) {
+                        tempTableSubscription = ImmutableList.copyOf( tableSubscription.get( objectId ) );
+                    }
+                    else{
+                        tempTableSubscription = new ArrayList<>();
+                        tempTableSubscription.add( subscriber );
+                    }
+                    tableSubscription.put( objectId, tempTableSubscription );
+                    break;
+
+                default:
+                    throw new RuntimeException("Not yet implemented");
+
+            }
+            log.info( "Successfully added Subscription for: "+ subscriber + " to event: "+ objectType + "=" + objectId );
+        }
+
     }
 
+
+
+    /**
+     *
+     * @param objectType    Specific object type to subscribe to, TABLE,STORE,ADAPTER, etc
+     * @param objectId      id of object: unique catalog_id of object
+     * @return if specified input is correct and usable
+     */
+    private boolean validateSubscription(String objectType, long objectId){
+
+        boolean validation = true;
+        //do stuff
+        if ( !validation ){
+            //Todo add custom exception
+            throw new RuntimeException("Unable to validate Subscription" );
+        }
+
+        return true;
+    }
 
 
     /*
@@ -291,6 +362,10 @@ public class MonitoringService {
         log.info( "REFRESHED" );
     }
 
+
+    private void initializeMonitoringBackend(){
+        backendConnector = backendConnectorFactory.getBackendInstance(MONITORING_BACKEND);
+    }
 
     private class BackendConnectorFactory {
 

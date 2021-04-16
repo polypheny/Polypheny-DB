@@ -17,6 +17,7 @@ public class SimpleBackendConnector implements BackendConnector{
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static DB simpleBackendDb;
+    private boolean isPeristent;
 
 
 
