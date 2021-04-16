@@ -3735,9 +3735,23 @@ public class Crud implements InformationObserver {
     }
 
 
+    /**
+     * This method can be used to retrieve the status of a specific Docker instance and if
+     * it is running correctly when using the provided settings
+     *
+     * @return if the Docker instance is correctly configured and can be accessed by Polypheny
+     */
     public boolean testDockerInstance( Request req, Response res ) {
         String dockerId = req.params( "dockerId" );
         return DockerManager.getInstance().testDockerRunning( Integer.parseInt( dockerId ) );
+    }
+
+
+    /**
+     * Retrieve a collection which maps the dockerInstance ids to the corresponding used ports
+     */
+    public Map<Integer, List<Integer>> getUsedDockerPorts( Request req, Response res ) {
+        return DockerManager.getInstance().getUsedPortsSorted();
     }
 
 

@@ -19,6 +19,7 @@ package org.polypheny.db.docker;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.config.Config;
@@ -128,6 +129,12 @@ public class DockerManagerImpl extends DockerManager {
     @Override
     public List<Integer> getUsedPorts() {
         return dockerInstances.values().stream().flatMap( client -> client.getUsedPorts().stream() ).collect( Collectors.toList() );
+    }
+
+
+    @Override
+    public Map<Integer, List<Integer>> getUsedPortsSorted() {
+        return dockerInstances.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getUsedPorts() ) );
     }
 
 

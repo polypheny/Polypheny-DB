@@ -331,6 +331,14 @@ public class DockerInstance extends DockerManager {
 
 
     @Override
+    public Map<Integer, List<Integer>> getUsedPortsSorted() {
+        HashMap<Integer, List<Integer>> map = new HashMap<>();
+        map.put( instanceId, getUsedPorts() );
+        return map;
+    }
+
+
+    @Override
     protected void updateConfigs() {
         ConfigDocker newConfig = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, instanceId );
         if ( !currentConfig.equals( newConfig ) ) {

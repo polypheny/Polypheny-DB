@@ -98,6 +98,8 @@ public abstract class DockerManager {
 
     public abstract List<Integer> getUsedPorts();
 
+    public abstract Map<Integer, List<Integer>> getUsedPortsSorted();
+
     /**
      * Refreshes the settings of the underlying Docker clients e.g. name, alias etc.
      */

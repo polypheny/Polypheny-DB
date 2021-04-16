@@ -42,7 +42,11 @@ public class HttpServer implements Runnable {
     private final Authenticator authenticator;
 
     private final Gson gson = new Gson();
-    private final Gson gsonExpose = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+    private final Gson gsonExpose = new GsonBuilder()
+            .excludeFieldsWithoutExposeAnnotation()
+            .enableComplexMapKeySerialization()
+            .setPrettyPrinting()
+            .create();
 
 
     public HttpServer( final TransactionManager transactionManager, final Authenticator authenticator ) {
@@ -201,6 +205,8 @@ public class HttpServer implements Runnable {
         webuiServer.get( "/getFile/:file", crud::getFile );
 
         webuiServer.get( "/testDockerInstance/:dockerId", crud::testDockerInstance );
+
+        webuiServer.get( "/usedDockerPorts", crud::getUsedDockerPorts, gsonExpose::toJson );
 
     }
 

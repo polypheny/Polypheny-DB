@@ -54,6 +54,7 @@ import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.ConfigObject;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
@@ -326,10 +327,11 @@ public abstract class Adapter {
 
 
     public void shutdownAndRemoveListeners() {
+        shutdown();
         if ( deployMode == DeployMode.DOCKER ) {
             RuntimeConfig.DOCKER_INSTANCES.removeObserver( this.listener );
         }
-        shutdown();
+        DockerManager.getInstance().destroyAll( getAdapterId() );
     }
 
 
