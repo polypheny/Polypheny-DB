@@ -17,34 +17,32 @@
 package org.polypheny.db.monitoring.subscriber;
 
 
-import lombok.Getter;
 import org.polypheny.db.monitoring.MonitorEvent;
 import org.polypheny.db.monitoring.storage.BackendConnector;
 
 
-public class InternalSubscriber extends AbstractSubscriber{
+public class DummySubscriber extends AbstractSubscriber{
 
 
-    private static final String subscriberName = "_SYS_INTERNAL";
+    private static final String subscriberName = "DUMMY";
 
 
-    public InternalSubscriber(){
-        this.isPersistent = true;
+    public DummySubscriber(){
+        this.isPersistent = false;
         this.initializeSubscriber();
     }
 
-    public InternalSubscriber( BackendConnector backendConnector ){
+    //Todo decide whether to create arbitrary backend or use central config one
+    public DummySubscriber( BackendConnector backendConnector ){
         this.isPersistent = true;
         this.backendConnector = backendConnector;
         this.initializeSubscriber();
     }
 
-
     @Override
     protected void initializeSubscriber() {
         setSubscriberName( this.subscriberName );
     }
-
 
     @Override
     public boolean handleEvent( MonitorEvent event ) {

@@ -17,36 +17,35 @@
 package org.polypheny.db.monitoring;
 
 
-import com.google.common.collect.ImmutableList;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.calcite.avatica.MetaImpl;
-import org.apache.calcite.linq4j.Enumerable;
 import org.mapdb.DBException.SerializationError;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.Catalog.PartitionType;
 import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
+import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.monitoring.exceptions.UnknownSubscriptionTopicRuntimeException;
+import org.polypheny.db.monitoring.storage.BackendConnector;
+import org.polypheny.db.monitoring.storage.InfluxBackendConnector;
+import org.polypheny.db.monitoring.storage.SimpleBackendConnector;
 import org.polypheny.db.monitoring.subscriber.Subscriber;
+import org.polypheny.db.monitoring.subscriber.SubscriptionTopic;
 import org.polypheny.db.prepare.RelOptTableImpl;
 import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.rel.logical.LogicalProject;
 import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.schema.ScannableTable;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
-import org.polypheny.db.util.mapping.Mappings;
 
 //ToDo add some kind of configuration which can for one decide on which backend to select, if we might have severall like
 // * InfluxDB
@@ -73,6 +72,10 @@ public class MonitoringService {
     BackendConnectorFactory backendConnectorFactory = new BackendConnectorFactory();
 
 
+    //handles subscriptions and message delivery
+    private EventBroker broker = new EventBroker();
+
+
 
     //private static final String FILE_PATH = "queueMapDB";
     //private static DB queueDb;
@@ -81,16 +84,14 @@ public class MonitoringService {
     //private static BTreeMap<Long, MonitorEvent> eventQueue;
     private final TreeMap<Long, MonitorEvent> eventQueue = new TreeMap<>();
 
-    //Table_ID with ListOfSubscribers
-    private Map<Long,List<Subscriber>> tableSubscription;
-
-    //Store_ID with ListOfSubscribers
-    private Map<Long,List<Subscriber>> storeSubscription;
 
 
     private InformationPage informationPage;
     private InformationGroup informationGroupOverview;
     private InformationTable queueOverviewTable;
+    private InformationGroup informationSubOverview;
+    private InformationTable activeSubscriptionTable;
+
 
     public MonitoringService(){
 
@@ -98,32 +99,42 @@ public class MonitoringService {
 
         initPersistentDBQueue();
 
+        initializeInformationPage();
 
+
+        // Background Task tp
+        String taskId = BackgroundTaskManager.INSTANCE.registerTask(
+                this::processEventsInQueue,
+                "Send monitoring events from queue to backend subscribers",
+                TaskPriority.LOW,
+                TaskSchedulingType.EVERY_TEN_SECONDS
+        );
+    }
+
+
+    private void initializeInformationPage(){
         //Initialize Information Page
-        informationPage = new InformationPage( "Monitoring Queue" );
+        informationPage = new InformationPage( "Workload Monitoring" );
         informationPage.fullWidth();
         informationGroupOverview = new InformationGroup( informationPage, "Queue Overview" );
-        informationGroupOverview.setRefreshFunction( this::updateInformationTable );
+        informationGroupOverview.setRefreshFunction( this::updateQueueInformationTable );
+
+        informationSubOverview = new InformationGroup( informationPage, "Active Subscriptions" );
+
 
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
         im.addGroup( informationGroupOverview );
+        im.addGroup( informationSubOverview );
 
         queueOverviewTable = new InformationTable(
                 informationGroupOverview,
                 Arrays.asList( "Queue ID", "STMT", "Description", " Recorded Timestamp", "Field Names") );
         im.registerInformation( queueOverviewTable );
 
-
-        // Background Task
-        String taskId = BackgroundTaskManager.INSTANCE.registerTask(
-                this::processEventsInQueue,
-                "Add monitoring events from queue to backend",
-                TaskPriority.LOW,
-                TaskSchedulingType.EVERY_TEN_SECONDS
-        );
-
-
+        activeSubscriptionTable = new InformationTable( informationSubOverview,
+                Arrays.asList( "Subscriber", "Type", "Object Id","Description", " Subscription Start", "Persistent") );
+        im.registerInformation( activeSubscriptionTable );
     }
 
     private void initPersistentDBQueue() {
@@ -257,6 +268,9 @@ public class MonitoringService {
                     continue;
                 }
             }
+            //Todo Send Event to Broker once the event has been persisted at central monitoring backend configured in config
+            broker.processEvent( procEvent );
+
             eventQueue.remove( currentKey );
         }
 
@@ -273,11 +287,9 @@ public class MonitoringService {
      * @return some event or statistic which can be immediately used
      */
     public String getWorkloadItem(String type, String filter){
-
         backendConnector.readStatisticEvent( " " );
         return "EMPTY WORKLOAD EVENT";
     }
-
 
 
 
@@ -287,44 +299,29 @@ public class MonitoringService {
      * @param objectType    Specific object type to subscribe to, TABLE,STORE,ADAPTER, etc
      * @param objectId      id of object: unique catalog_id of object
      */
-    public void subscribeToEvents( Subscriber subscriber, String objectType, long objectId){
-        //dummy call
+    public void subscribeToEvents( Subscriber subscriber, SubscriptionTopic objectType, long objectId, String description){
 
-        //TODO HENNLO Generalize this more
         if ( validateSubscription(objectType, objectId) ){
-            switch ( objectType ){
-                case "store":
+            broker.addSubscription( subscriber, objectType, objectId );
+            activeSubscriptionTable.addRow( subscriber.getSubscriptionTitle(), objectType, objectId, description
+                    , new Timestamp( System.currentTimeMillis() )
+                    ,subscriber.isPersistent() ? "✔" : "X" );
 
-                    List<Subscriber> tempStoreSubscription;
-                    if ( storeSubscription.containsKey( objectId ) ) {
-                        tempStoreSubscription = ImmutableList.copyOf( storeSubscription.get( objectId ) );
-                    }
-                    else{
-                        tempStoreSubscription = new ArrayList<>();
-                        tempStoreSubscription.add( subscriber );
-                    }
-                    storeSubscription.put( objectId, tempStoreSubscription );
-                    break;
-
-                case "table":
-                    List<Subscriber> tempTableSubscription;
-                    if ( tableSubscription.containsKey( objectId ) ) {
-                        tempTableSubscription = ImmutableList.copyOf( tableSubscription.get( objectId ) );
-                    }
-                    else{
-                        tempTableSubscription = new ArrayList<>();
-                        tempTableSubscription.add( subscriber );
-                    }
-                    tableSubscription.put( objectId, tempTableSubscription );
-                    break;
-
-                default:
-                    throw new RuntimeException("Not yet implemented");
-
-            }
             log.info( "Successfully added Subscription for: "+ subscriber + " to event: "+ objectType + "=" + objectId );
         }
+    }
 
+    public void unsubscribeFromEvents( Subscriber subscriber, SubscriptionTopic objectType, long objectId){
+
+        //Only execute if subscriber was even subscribed
+        // To save cumbersome traversing of subscription map and save time
+        if ( broker.getAllSubscribers().contains( subscriber ) ) {
+            broker.removeSubscription( subscriber, objectType, objectId );
+        }
+    }
+
+    public void unsubscribeFromAllEvents( Subscriber subscriber){
+        broker.removeAllSubscriptions( subscriber);
     }
 
 
@@ -335,10 +332,14 @@ public class MonitoringService {
      * @param objectId      id of object: unique catalog_id of object
      * @return if specified input is correct and usable
      */
-    private boolean validateSubscription(String objectType, long objectId){
+    private boolean validateSubscription(SubscriptionTopic objectType, long objectId){
 
         boolean validation = true;
-        //do stuff
+
+        //
+        //do validation stuff
+        //
+
         if ( !validation ){
             //Todo add custom exception
             throw new RuntimeException("Unable to validate Subscription" );
@@ -351,21 +352,21 @@ public class MonitoringService {
     /*
     * Updates InformationTable with current elements in event queue
      */
-    private void updateInformationTable(){
+    private void updateQueueInformationTable(){
 
         queueOverviewTable.reset();
         for ( long eventId: eventQueue.keySet() ) {
 
             MonitorEvent queueEvent = eventQueue.get( eventId );
-            queueOverviewTable.addRow( eventId, queueEvent.monitoringType, queueEvent.getDescription(), queueEvent.getRecordedTimestamp(),queueEvent.getFieldNames() );
+            queueOverviewTable.addRow( eventId, queueEvent.monitoringType, queueEvent.getDescription(), new Timestamp( queueEvent.getRecordedTimestamp() ),queueEvent.getFieldNames() );
         }
-        log.info( "REFRESHED" );
+        log.info( "Queue Information Table: REFRESHED" );
+
     }
 
 
-    private void initializeMonitoringBackend(){
-        backendConnector = backendConnectorFactory.getBackendInstance(MONITORING_BACKEND);
-    }
+
+    private void initializeMonitoringBackend(){ backendConnector = backendConnectorFactory.getBackendInstance(MONITORING_BACKEND); }
 
     private class BackendConnectorFactory {
 
@@ -387,6 +388,8 @@ public class MonitoringService {
         }
 
     }
+
+
 
 }
 

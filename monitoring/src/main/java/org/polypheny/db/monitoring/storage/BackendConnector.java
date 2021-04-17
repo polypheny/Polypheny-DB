@@ -14,28 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.subscriber;
+package org.polypheny.db.monitoring.storage;
 
 
 import org.polypheny.db.monitoring.MonitorEvent;
 
 
-/**
- * A Subscriber registers to 1..n monitoring events.
- * The Subscriber receives callbacks whenever an event with the specific characteristics has occured.
- * Use Monitoring Subscriber as a persistence and to preprocess and aggregate items for specific and individual use cases.
- * Although each MonitorEvent is already persisted it might be useful to preaggregate certain information later on.
- */
-public interface Subscriber {
+public interface BackendConnector {
 
-    String getSubscriptionTitle();
+    void initializeConnectorClient();
 
-    boolean isPersistent();
+    void monitorEvent();
 
-    /**
-     *
-     * @param event
-     * @return
-     */
-    boolean handleEvent( MonitorEvent event );
+    boolean writeStatisticEvent(long key, MonitorEvent incomingEvent);
+
+    void readStatisticEvent(String outgoingEvent);
+
 }

@@ -17,25 +17,40 @@
 package org.polypheny.db.monitoring.subscriber;
 
 
+import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.monitoring.MonitorEvent;
 import org.polypheny.db.monitoring.MonitoringService;
+import org.polypheny.db.monitoring.storage.BackendConnector;
 
 
 public abstract class AbstractSubscriber implements Subscriber{
 
+    @Setter
+    protected String subscriberName;
+    protected BackendConnector backendConnector;
 
-    protected void subscribeToEvents(String objectType, long objectId){
-        MonitoringService.INSTANCE.subscribeToEvents(this, objectType, objectId );
+    protected boolean isPersistent;
+
+    public String getSubscriptionTitle(){
+        return subscriberName;
     }
 
-
-    protected void initializePersistence(){
+    protected BackendConnector initializePersistence(){
     //If the subscriber wants to have a persistency for his entries
     // this method will be invoked to retrieve and setup the system defined BackendConnector
+        return null;
     }
 
+
+    protected abstract void initializeSubscriber();
+
     @Override
-    public boolean handleEvent( MonitorEvent event ) {
-        return false;
+    public boolean isPersistent() {
+        return isPersistent;
     }
+
+
+    @Override
+    public abstract boolean handleEvent( MonitorEvent event );
 }
