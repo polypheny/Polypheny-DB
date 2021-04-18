@@ -245,7 +245,10 @@ public class ConfigList extends Config {
                 return false;
             }
         }
+        this.list.forEach( val -> val.removeObserver( listener ) );
+
         this.list = temp;
+
         this.list.forEach( val -> val.addObserver( listener ) );
         notifyConfigListeners();
         return true;

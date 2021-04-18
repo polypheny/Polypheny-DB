@@ -134,7 +134,7 @@ public class DockerManagerImpl extends DockerManager {
 
     @Override
     public Map<Integer, List<Integer>> getUsedPortsSorted() {
-        return dockerInstances.entrySet().stream().collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getUsedPorts() ) );
+        return dockerInstances.entrySet().stream().filter( e -> e.getValue().isDockerRunning() ).collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getUsedPorts() ) );
     }
 
 

@@ -467,6 +467,10 @@ public abstract class Adapter {
         ConfigListener listener = new ConfigListener() {
             @Override
             public void onConfigChange( Config c ) {
+                List<ConfigDocker> configs = RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class );
+                if ( !configs.stream().map( conf -> conf.id ).collect( Collectors.toList() ).contains( dockerInstanceId ) ) {
+                    throw new RuntimeException( "This DockerInstance has adapters on it, while this is the case it can not be deleted." );
+                }
                 resetDockerConnection( RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ) );
             }
 

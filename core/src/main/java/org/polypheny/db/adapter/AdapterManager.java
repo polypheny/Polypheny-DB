@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSetting;
 import org.polypheny.db.adapter.Adapter.AbstractAdapterSettingList;
@@ -176,7 +177,7 @@ public class AdapterManager {
                                     false,
                                     true,
                                     false,
-                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ),
+                                    RuntimeConfig.DOCKER_INSTANCES.getList( ConfigDocker.class ).stream().filter( ConfigDocker::isDockerRunning ).collect( Collectors.toList() ),
                                     ConfigDocker::getAlias,
                                     ConfigDocker.class )
                                     .bind( RuntimeConfig.DOCKER_INSTANCES )
