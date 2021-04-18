@@ -35,7 +35,6 @@ public interface Subscriber {
     /**
      *
      * @param event
-     * @return
      */
-    boolean handleEvent( MonitorEvent event );
+    void handleEvent( MonitorEvent event );
 }

@@ -17,14 +17,18 @@
 package org.polypheny.db.monitoring.subscriber;
 
 
+
+import java.sql.Timestamp;
+import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.MonitorEvent;
 import org.polypheny.db.monitoring.storage.BackendConnector;
 
-
+@Slf4j
 public class DummySubscriber extends AbstractSubscriber{
 
 
     private static final String subscriberName = "DUMMY";
+
 
 
     public DummySubscriber(){
@@ -45,7 +49,7 @@ public class DummySubscriber extends AbstractSubscriber{
     }
 
     @Override
-    public boolean handleEvent( MonitorEvent event ) {
-        return false;
+    public void handleEvent( MonitorEvent event ) {
+        log.info( "Dummy received event which originated at: " + new Timestamp( event.getRecordedTimestamp()) );
     }
 }

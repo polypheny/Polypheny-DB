@@ -17,10 +17,9 @@
 package org.polypheny.db.monitoring.subscriber;
 
 
-import lombok.Getter;
 import lombok.Setter;
+import org.mapdb.DB;
 import org.polypheny.db.monitoring.MonitorEvent;
-import org.polypheny.db.monitoring.MonitoringService;
 import org.polypheny.db.monitoring.storage.BackendConnector;
 
 
@@ -29,6 +28,7 @@ public abstract class AbstractSubscriber implements Subscriber{
     @Setter
     protected String subscriberName;
     protected BackendConnector backendConnector;
+
 
     protected boolean isPersistent;
 
@@ -45,6 +45,8 @@ public abstract class AbstractSubscriber implements Subscriber{
 
     protected abstract void initializeSubscriber();
 
+    protected abstract void initPersistentDB();
+
     @Override
     public boolean isPersistent() {
         return isPersistent;
@@ -52,5 +54,5 @@ public abstract class AbstractSubscriber implements Subscriber{
 
 
     @Override
-    public abstract boolean handleEvent( MonitorEvent event );
+    public abstract void handleEvent( MonitorEvent event );
 }

@@ -17,11 +17,12 @@
 package org.polypheny.db.monitoring;
 
 
-import com.google.common.collect.ImmutableList;
-import java.util.ArrayList;
+
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
@@ -41,17 +42,17 @@ public class EventBroker {
 
     //TODO make subscriber lists persistent
     //Table_ID with ListOfSubscribers
-    private Map<Long, List<Subscriber>> tableSubscription = new HashMap<Long, List<Subscriber>>();
+    private Map<Long, Set<Subscriber>> tableSubscription = new HashMap<Long, Set<Subscriber>>();
 
     //Store_ID with ListOfSubscribers
-    private Map<Long,List<Subscriber>> storeSubscription = new HashMap<Long, List<Subscriber>>();;
+    private Map<Long,Set<Subscriber>> storeSubscription = new HashMap<Long, Set<Subscriber>>();;
 
 
     //Todo remove keys if Stores and tables get deleted.
     // Do this as post step in catalog removal
     // and then end subscription completely
     @Getter
-    private List<Subscriber> allSubscribers = new ArrayList<>();
+    private Set<Subscriber> allSubscribers = new HashSet<>();
 
     /**
      * Adds subscription to specific type and id. To get informed about events on that topic
@@ -63,30 +64,34 @@ public class EventBroker {
     public void addSubscription( Subscriber subscriber, SubscriptionTopic objectType, long objectId ){
         //TODO HENNLO Generalize this more
 
-        if ( allSubscribers.contains( subscriber ) ){
 
-        }
+        //Can be added all the time since we are using a set
+        //Its faster than using  list and an if
+        allSubscribers.add( subscriber );
+
 
         switch ( objectType ){
             case STORE:
-                List<Subscriber> tempStoreSubscription;
+                Set<Subscriber> tempStoreSubscription;
                 if ( storeSubscription.containsKey( objectId ) ) {
-                    tempStoreSubscription = ImmutableList.copyOf( storeSubscription.get( objectId ) );
+                    tempStoreSubscription = storeSubscription.get( objectId );
+                    tempStoreSubscription.add( subscriber );
                 }
                 else{
-                    tempStoreSubscription = new ArrayList<>();
+                    tempStoreSubscription = new HashSet<>();
                     tempStoreSubscription.add( subscriber );
                 }
                 storeSubscription.put( objectId, tempStoreSubscription );
                 break;
 
             case TABLE:
-                List<Subscriber> tempTableSubscription;
+                Set<Subscriber> tempTableSubscription;
                 if ( tableSubscription.containsKey( objectId ) ) {
-                    tempTableSubscription = ImmutableList.copyOf( tableSubscription.get( objectId ) );
+                    tempTableSubscription = tableSubscription.get( objectId );
+                    tempTableSubscription.add( subscriber );
                 }
                 else{
-                    tempTableSubscription = new ArrayList<>();
+                    tempTableSubscription = new HashSet<>();
                     tempTableSubscription.add( subscriber );
                 }
                 tableSubscription.put( objectId, tempTableSubscription );
@@ -110,9 +115,9 @@ public class EventBroker {
         //TODO HENNLO Generalize this more // same as in add Subscription
         switch ( objectType ){
             case STORE:
-                List<Subscriber> tempStoreSubscription;
+                Set<Subscriber> tempStoreSubscription;
                 if ( storeSubscription.containsKey( objectId ) ) {
-                    tempStoreSubscription = ImmutableList.copyOf( storeSubscription.get( objectId ) );
+                    tempStoreSubscription = storeSubscription.get( objectId );
                     tempStoreSubscription.remove( subscriber );
                     storeSubscription.put( objectId, tempStoreSubscription );
                 }
@@ -123,9 +128,9 @@ public class EventBroker {
                 break;
 
             case TABLE:
-                List<Subscriber> tempTableSubscription;
+                Set<Subscriber> tempTableSubscription;
                 if ( tableSubscription.containsKey( objectId ) ) {
-                    tempTableSubscription = ImmutableList.copyOf( tableSubscription.get( objectId ) );
+                    tempTableSubscription = tableSubscription.get( objectId );
                     tempTableSubscription.remove( subscriber );
                     tableSubscription.put( objectId, tempTableSubscription );
                 }
@@ -138,8 +143,8 @@ public class EventBroker {
                 throw  new RuntimeException("Not yet implemented");
         }
 
-        // If this was the last occurence of the Subscriber in any list remove him from list
-        if ( allSubscribers.contains( subscriber ) ){
+        // If this was the last occurence of the Subscriber in any Subscription remove him from ALL list
+        if ( !hasActiveSubscription( subscriber ) ){
             allSubscribers.remove( subscriber );
         }
     }
@@ -162,27 +167,38 @@ public class EventBroker {
 
         //distribution list for specificEvent
         Stream<Subscriber> relevantSubscriberStream = Stream.of();
+        Set<Subscriber> relevants = new HashSet<>();
 
         //todo remove test
         //dummy information retrieved from event extraction from processing
         long tableId = 6;
         long storeId = 1;
 
+        //Get all subscribers to be notified about event
         if ( storeSubscription.containsKey( storeId ) ){
             relevantSubscriberStream = Stream.concat( relevantSubscriberStream, storeSubscription.get( storeId ).stream() );
+            relevants.addAll( storeSubscription.get( storeId ) );
+            System.out.println("STORE SUBS: " + storeSubscription.get( storeId ));
         }
 
         if ( tableSubscription.containsKey( tableId ) ){
             relevantSubscriberStream = Stream.concat( relevantSubscriberStream, tableSubscription.get( tableId ).stream() );
+            relevants.addAll( tableSubscription.get( tableId ) );
+            System.out.println("Table SUBS: " + tableSubscription.get( tableId ));
         }
 
         //process Event
         //and get relevant information
 
+        System.out.println("----->   " + getAllSubscribers());
+        System.out.println("----->   " + relevantSubscriberStream.collect( Collectors.toSet()));
+        System.out.println("----->   " + relevants);
+
 
         //only send DISTINCT relevantSubscribers, therefore make to SET and back to LIST to only deliver events to subscribers once
         //deliverEvent( event, relevantSubscriberStream.collect( Collectors.toSet()).stream().collect( Collectors.toList()) );
-        deliverEvent( event, new ArrayList<>(relevantSubscriberStream.collect( Collectors.toSet())));
+//        deliverEvent( event, relevantSubscriberStream.collect( Collectors.toSet()));
+        deliverEvent( event, relevants);
 
     }
 
@@ -193,7 +209,7 @@ public class EventBroker {
      * @param event                 Events to be delivered
      * @param relevantSubscribers   Subscribers to deliver the event to
      */
-    private void deliverEvent(MonitorEvent event, List<Subscriber> relevantSubscribers){
+    private void deliverEvent(MonitorEvent event, Set<Subscriber> relevantSubscribers){
 
         for ( Subscriber subscriber : relevantSubscribers ) {
             subscriber.handleEvent( event );
@@ -204,8 +220,49 @@ public class EventBroker {
 
     public void removeAllSubscriptions( Subscriber subscriber ) {
 
-        //loop through every existing subscriptions and remove the subscriber
+        Set<Subscriber> tempStoreSubscription;
+        Set<Subscriber> tempTableSubscription;
 
-        throw new RuntimeException("Not yet implemented");
+        //loop through every existing subscriptions and remove the subscriber
+        for ( Entry storeSub : storeSubscription.entrySet() ) {
+            tempStoreSubscription = storeSubscription.get( storeSub.getKey() );
+            if ( tempStoreSubscription.contains( subscriber ) ){
+                tempStoreSubscription.remove( subscriber );
+                storeSubscription.put( (Long) storeSub.getKey(), tempStoreSubscription );
+            }
+        }
+
+        for ( Entry tableSub : tableSubscription.entrySet() ) {
+            tempTableSubscription = tableSubscription.get( tableSub.getKey() );
+            if ( tempTableSubscription.contains( subscriber ) ){
+                tempTableSubscription.remove( subscriber );
+                storeSubscription.put( (Long) tableSub.getKey(), tempTableSubscription );
+            }
+        }
+
+        log.info( "Removed all active Subscription from: " + subscriber.getSubscriptionTitle() );
+    }
+
+
+    /**
+     * Mainly used as a helper to identify if subscriber has active subscriptions left or can be completely removed from Broker
+     * @param subscriber
+     * @return if Subscriber ist still registered to events
+     */
+    private boolean hasActiveSubscription(Subscriber subscriber){
+
+        for ( Entry storeSub : storeSubscription.entrySet() ) {
+            if ( storeSubscription.get( storeSub.getKey() ).contains( subscriber ) ){
+                return true;
+            }
+        }
+
+        for ( Entry tableSub : tableSubscription.entrySet() ) {
+            if ( tableSubscription.get( tableSub.getKey() ).contains( subscriber ) ){
+                return true;
+            }
+        }
+
+        return false;
     }
 }

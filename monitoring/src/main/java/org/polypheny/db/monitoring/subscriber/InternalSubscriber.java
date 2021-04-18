@@ -17,16 +17,24 @@
 package org.polypheny.db.monitoring.subscriber;
 
 
-import lombok.Getter;
+import java.io.File;
+import java.sql.Timestamp;
+import lombok.extern.slf4j.Slf4j;
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.Serializer;
 import org.polypheny.db.monitoring.MonitorEvent;
 import org.polypheny.db.monitoring.storage.BackendConnector;
+import org.polypheny.db.util.FileSystemManager;
 
 
+@Slf4j
 public class InternalSubscriber extends AbstractSubscriber{
 
 
     private static final String subscriberName = "_SYS_INTERNAL";
-
+    private static final String FILE_PATH = "internalSubscriberBackendDb";
+    private static DB internalSubscriberBackendDb;
 
     public InternalSubscriber(){
         this.isPersistent = true;
@@ -47,7 +55,37 @@ public class InternalSubscriber extends AbstractSubscriber{
 
 
     @Override
-    public boolean handleEvent( MonitorEvent event ) {
-        return false;
+    public void handleEvent( MonitorEvent event ) {
+        log.info( "Internal received event which originated at: " + new Timestamp( event.getRecordedTimestamp()) );
+    }
+
+    protected void initPersistentDB() {
+
+
+        if ( internalSubscriberBackendDb != null ) {
+            internalSubscriberBackendDb.close();
+        }
+        synchronized ( this ) {
+
+            File folder = FileSystemManager.getInstance().registerNewFolder( "monitoring" );
+
+            internalSubscriberBackendDb = DBMaker.fileDB( new File( folder, this.FILE_PATH ) )
+                    .closeOnJvmShutdown()
+                    .transactionEnable()
+                    .fileMmapEnableIfSupported()
+                    .fileMmapPreclearDisable()
+                    .make();
+
+            internalSubscriberBackendDb.getStore().fileLoad();
+
+            /* ToDO: Extend to dummy frontend
+            tableEvents = simpleBackendDb.treeMap( "tableEvents", Serializer.STRING, Serializer.STRING ).createOrOpen();
+            tableColumnEvents = simpleBackendDb.treeMap( "tableColumnEvents", Serializer.STRING, Serializer.STRING ).createOrOpen();
+            tableValueEvents = simpleBackendDb.treeMap( "tableValueEvents", Serializer.STRING, Serializer.LONG ).createOrOpen();
+            events = simpleBackendDb.treeMap( "events", Serializer.LONG, Serializer.JAVA ).createOrOpen();
+            */
+
+        }
+
     }
 }
