@@ -1449,7 +1449,7 @@ public abstract class RelOptUtil {
             ArrayType arrayType1 = (ArrayType) type1;
             ArrayType arrayType2 = (ArrayType) type2;
 
-            if ( arrayType1.getComponentType() == arrayType2.getComponentType()
+            if ( arrayType1.getComponentType().equals(arrayType2.getComponentType())
                     && arrayType1.getCardinality() == arrayType2.getCardinality()
                     && arrayType1.getDimension() == arrayType2.getDimension()
             ) {
