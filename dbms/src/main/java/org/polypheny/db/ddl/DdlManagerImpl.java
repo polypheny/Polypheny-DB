@@ -276,6 +276,17 @@ public class DdlManagerImpl extends DdlManager {
             for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( catalogAdapter.id ) ) {
                 tablesToDrop.add( ccp.tableId );
             }
+            // Remove foreign keys
+            for ( Long tableId : tablesToDrop ) {
+                for ( CatalogForeignKey fk : catalog.getForeignKeys( tableId ) ) {
+                    try {
+                        catalog.deleteForeignKey( fk.id );
+                    } catch ( GenericCatalogException e ) {
+                        throw new PolyphenyDbContextException( "Exception while dropping foreign key", e );
+                    }
+                }
+            }
+            // Drop tables
             for ( Long tableId : tablesToDrop ) {
                 CatalogTable table = catalog.getTable( tableId );
 
@@ -298,12 +309,11 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
 
-                // Delete keys and constraints
+                // Remove primary keys
                 try {
-                    // Remove primary key
                     catalog.deletePrimaryKey( table.id );
                 } catch ( GenericCatalogException e ) {
-                    throw new PolyphenyDbContextException( "Exception while dropping primary key.", e );
+                    throw new PolyphenyDbContextException( "Exception while dropping primary key", e );
                 }
 
                 // Delete columns

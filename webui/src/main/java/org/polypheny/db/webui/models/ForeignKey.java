@@ -28,18 +28,17 @@ import lombok.Getter;
 @Builder
 public class ForeignKey {
 
-    private String fkName;
-    private String pkName;
+    private final String fkName;
 
-    private String pkTableSchema;
-    private String pkTableName;
-    private String pkColumnName;
+    private final String targetSchema;
+    private final String targetTable;
+    private final String targetColumn;
 
-    private String fkTableSchema;
-    private String fkTableName;
-    private String fkColumnName;
+    private final String sourceSchema;
+    private final String sourceTable;
+    private final String sourceColumn;
 
-    private String update;
-    private String delete;
+    private final String onUpdate;
+    private final String onDelete;
 
 }
