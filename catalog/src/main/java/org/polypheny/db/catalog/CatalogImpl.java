@@ -1425,7 +1425,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameTable( long tableId, String name ) {
         CatalogTable old = getTable( tableId );
-        CatalogTable table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
+        CatalogTable table = old.getRenamed(name);
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
@@ -1434,40 +1434,6 @@ public class CatalogImpl extends Catalog {
         listeners.firePropertyChange( "table", old, table );
     }
 
-    /**
-     * Renames a view
-     */
-    @Override
-    public void renameView(long viewId, String name){
-        CatalogView old = (CatalogView) getTable( viewId );
-        CatalogView view = new CatalogView(
-                old.id,
-                name,
-                old.columnIds,
-                old.schemaId,
-                old.databaseId,
-                old.ownerId,
-                old.ownerName,
-                old.tableType,
-                old.definition,
-                old.primaryKey,
-                old.placementsByAdapter,
-                old.modifiable,
-                old.numPartitions,
-                old.partitionType,
-                old.partitionIds,
-                old.partitionColumnId,
-                old.isPartitioned,
-                old.connectedViews,
-                old.getUnderlyingTables(),
-                old.getFieldList()  );
-        synchronized ( this ) {
-            tables.replace( viewId, view );
-            tableNames.remove( new Object[]{ view.databaseId, view.schemaId, old.name } );
-            tableNames.put( new Object[]{ view.databaseId, view.schemaId, name }, view );
-        }
-        listeners.firePropertyChange( "table", old, view );
-    }
 
     /**
      * Delete the specified table. Columns, Keys and ColumnPlacements need to be deleted before.

@@ -396,8 +396,6 @@ public abstract class Catalog {
      */
     public abstract void renameTable( long tableId, String name );
 
-    public abstract void renameView(long viewId, String name);
-
     /**
      * Delete the specified table. Columns need to be deleted before.
      *

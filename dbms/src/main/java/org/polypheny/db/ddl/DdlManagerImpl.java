@@ -1358,19 +1358,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    @Override
-    public void renameView( CatalogView catalogView, String newViewName, Statement statement ) throws TableAlreadyExistsException {
-
-        if ( catalog.checkIfExistsTable( catalogView.schemaId, newViewName ) ) {
-            throw new TableAlreadyExistsException();
-        }
-        catalog.renameView( catalogView.id, newViewName );
-
-        // Rest plan cache and implementation cache (not sure if required in this case)
-        statement.getQueryProcessor().resetCaches();
-    }
-
-
     private void prepareView( RelNode viewNode ) {
         if ( viewNode instanceof AbstractRelNode ) {
             ((AbstractRelNode) viewNode).setCluster( null );

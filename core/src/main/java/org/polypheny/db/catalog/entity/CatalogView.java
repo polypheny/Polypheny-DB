@@ -91,6 +91,32 @@ public class CatalogView extends CatalogTable {
     }
 
 
+    @Override
+    public CatalogTable getRenamed( String newName ) {
+        return new CatalogView(
+                id,
+                newName,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                connectedViews,
+                underlyingTables,
+                fieldList );
+    }
+
+
     public RelRoot prepareView( RelOptCluster cluster, RelTraitSet traitSet ) {
         RelRoot viewLogicalRoot = definition;
         prepareView( viewLogicalRoot.rel, cluster, traitSet );

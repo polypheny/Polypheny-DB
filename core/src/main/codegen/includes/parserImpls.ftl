@@ -69,6 +69,7 @@ SqlAlterView SqlAlterView(Span s) :
 {
     final SqlIdentifier view;
     final SqlIdentifier name;
+    final SqlIdentifier column;
 }
 {
     <VIEW>
@@ -78,6 +79,14 @@ SqlAlterView SqlAlterView(Span s) :
         name = SimpleIdentifier()
         {
             return new SqlAlterViewRename(s.end(this), view, name);
+        }
+    |
+        <RENAME> <COLUMN>
+        column = SimpleIdentifier()
+        <TO>
+        name = SimpleIdentifier()
+        {
+            return new SqlAlterViewRenameColumn(s.end(this), view, column, name);
         }
     )
 }

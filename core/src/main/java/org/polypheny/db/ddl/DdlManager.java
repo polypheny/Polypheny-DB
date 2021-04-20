@@ -443,8 +443,6 @@ public abstract class DdlManager {
      */
     public abstract void createView( String viewName, long schemaId, RelRoot relRoot, Statement statement, List<DataStore> stores, PlacementType placementType, List<ColumnInformation> projectedColumns ) throws TableAlreadyExistsException;
 
-    public abstract void renameView( CatalogView oldName, String newName, Statement statement) throws TableAlreadyExistsException;
-
     /**
      * Add new partitions for the column
      *

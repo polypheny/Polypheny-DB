@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.ddl;
+package org.polypheny.db.sql.ddl.alterview;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
@@ -28,6 +28,7 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
+import org.polypheny.db.sql.ddl.SqlAlterView;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
@@ -35,7 +36,7 @@ import org.polypheny.db.util.ImmutableNullableList;
 /**
  * Parse tree for {@code ALTER TABLE name RENAME TO} statement
  */
-public class SqlAlterViewRename extends SqlAlterView{
+public class SqlAlterViewRename extends SqlAlterView {
 
     private final SqlIdentifier oldName;
     private final SqlIdentifier newName;
@@ -76,7 +77,7 @@ public class SqlAlterViewRename extends SqlAlterView{
             throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
         }
         try {
-            DdlManager.getInstance().renameView( view, newName.getSimple(), statement );
+            DdlManager.getInstance().renameTable( view, newName.getSimple(), statement );
         } catch ( TableAlreadyExistsException e ) {
             throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaExists( newName.getSimple() ) );
         }

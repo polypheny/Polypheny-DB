@@ -181,6 +181,25 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
         this.connectedViews = connectedViews;
     }
 
+    public CatalogTable getRenamed(String newName){
+        return new CatalogTable(
+                id,
+                newName,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable );
+    }
+
+    public boolean isView(){
+        return this.tableType == TableType.VIEW;
+    }
 
     @SneakyThrows
     public String getDatabaseName() {

@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.ddl.altertable;
-
+package org.polypheny.db.sql.ddl.alterview;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.exception.ColumnNotExistsException;
@@ -31,41 +29,34 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.ddl.SqlAlterTable;
+import org.polypheny.db.sql.ddl.SqlAlterView;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
+public class SqlAlterViewRenameColumn extends SqlAlterView {
 
-/**
- * Parse tree for {@code ALTER TABLE name RENAME COLUMN name TO name} statement.
- */
-public class SqlAlterTableRenameColumn extends SqlAlterTable {
-
-    private final SqlIdentifier table;
+    private final SqlIdentifier view;
     private final SqlIdentifier columnOldName;
     private final SqlIdentifier columnNewName;
 
-
-    public SqlAlterTableRenameColumn( SqlParserPos pos, SqlIdentifier table, SqlIdentifier columnOldName, SqlIdentifier columnNewName ) {
-        super( pos );
-        this.table = Objects.requireNonNull( table );
+    public SqlAlterViewRenameColumn( SqlParserPos pos, SqlIdentifier view, SqlIdentifier columnOldName, SqlIdentifier columnNewName){
+        super(pos);
+        this.view = Objects.requireNonNull( view );
         this.columnOldName = Objects.requireNonNull( columnOldName );
         this.columnNewName = Objects.requireNonNull( columnNewName );
     }
 
-
     @Override
-    public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( table, columnNewName, columnOldName );
+    public List<SqlNode> getOperandList(){
+        return ImmutableNullableList.of(view, columnNewName, columnOldName);
     }
 
-
     @Override
-    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
+    public void unparse( SqlWriter writer, int leftPrec, int rightPrec ){
         writer.keyword( "ALTER" );
-        writer.keyword( "TABLE" );
-        table.unparse( writer, leftPrec, rightPrec );
+        writer.keyword( "VIEW" );
+        view.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "RENAME" );
         writer.keyword( "COLUMN" );
         columnOldName.unparse( writer, leftPrec, rightPrec );
@@ -73,22 +64,17 @@ public class SqlAlterTableRenameColumn extends SqlAlterTable {
         columnNewName.unparse( writer, leftPrec, rightPrec );
     }
 
-
     @Override
-    public void execute( Context context, Statement statement ) {
-        CatalogTable catalogTable = getCatalogTable( context, table );
+    public void execute( Context context, Statement statement ){
+        CatalogView catalogView = (CatalogView)getCatalogTable( context, view );
 
-
-            try {
-                DdlManager.getInstance().renameColumn( catalogTable, columnOldName.getSimple(), columnNewName.getSimple(), statement );
-            } catch ( ColumnAlreadyExistsException e ) {
-                throw SqlUtil.newContextException( columnNewName.getParserPosition(), RESOURCE.columnExists( columnNewName.getSimple() ) );
-            } catch ( ColumnNotExistsException e ) {
-                throw SqlUtil.newContextException( columnOldName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
-            }
-        
-
+        try {
+            DdlManager.getInstance().renameColumn( catalogView, columnOldName.getSimple(), columnNewName.getSimple(), statement );
+        } catch ( ColumnAlreadyExistsException e ) {
+            throw SqlUtil.newContextException( columnNewName.getParserPosition(), RESOURCE.columnExists( columnNewName.getSimple() ) );
+        } catch ( ColumnNotExistsException e ) {
+            throw SqlUtil.newContextException( columnOldName.getParserPosition(), RESOURCE.columnNotFoundInTable( e.columnName, e.tableName ) );
+        }
     }
 
 }
-
