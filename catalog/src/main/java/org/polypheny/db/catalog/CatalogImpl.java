@@ -1356,6 +1356,23 @@ public class CatalogImpl extends Catalog {
     }
 
 
+    public void deleteViewDependencies( CatalogView catalogView ) {
+        for ( long id : catalogView.getUnderlyingTables() ) {
+            CatalogTable old = getTable( id );
+            List<Long> connectedViews = old.connectedViews.stream().filter( e -> e != catalogView.id ).collect( Collectors.toList() );
+
+            CatalogTable table = old.getConnectedViews( ImmutableList.copyOf( connectedViews ) );
+
+            synchronized ( this ) {
+                tables.replace( id, table );
+                assert table != null;
+                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
+            }
+            listeners.firePropertyChange( "table", old, table );
+        }
+    }
+
+
     /**
      * Checks if there is a table with the specified name in the specified schema.
      *
