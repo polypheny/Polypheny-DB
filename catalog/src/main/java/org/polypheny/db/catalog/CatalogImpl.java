@@ -1345,52 +1345,7 @@ public class CatalogImpl extends Catalog {
             List<Long> connectedViews;
             connectedViews = new ArrayList<>( old.connectedViews );
             connectedViews.add( viewId );
-            CatalogTable table = null;
-
-            if ( old.tableType == TableType.TABLE || old.tableType == TableType.SOURCE ) {
-                table = new CatalogTable(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        old.definition,
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        old.modifiable,
-                        old.numPartitions,
-                        old.partitionType,
-                        old.partitionIds,
-                        old.partitionColumnId,
-                        old.isPartitioned,
-                        ImmutableList.copyOf( connectedViews ) );
-            } else if ( old.tableType == TableType.VIEW ) {
-                table = new CatalogView(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        old.definition,
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        old.modifiable,
-                        old.numPartitions,
-                        old.partitionType,
-                        old.partitionIds,
-                        old.partitionColumnId,
-                        old.isPartitioned,
-                        ImmutableList.copyOf( connectedViews ),
-                        ((CatalogView) old).getUnderlyingTables(),
-                        ((CatalogView) old).getFieldList() );
-            }
-
+            CatalogTable table = old.getConnectedViews( ImmutableList.copyOf( connectedViews ) );
             synchronized ( this ) {
                 tables.replace( id, table );
                 assert table != null;
@@ -1424,7 +1379,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameTable( long tableId, String name ) {
         CatalogTable old = getTable( tableId );
-        CatalogTable table = old.getRenamed(name);
+        CatalogTable table = old.getRenamed( name );
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
@@ -2104,12 +2059,7 @@ public class CatalogImpl extends Catalog {
 
             List<Long> columnIds = new ArrayList<>( table.columnIds );
             columnIds.add( id );
-            CatalogTable updatedTable = null;
-            if ( table.tableType == TableType.VIEW ) {
-                updatedTable = new CatalogView( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable, ((CatalogView) table).getUnderlyingTables(), ((CatalogView) table).getFieldList() );
-            } else {
-                updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
-            }
+            CatalogTable updatedTable = table.getTableWithColumns( ImmutableList.copyOf( columnIds ) );
             tables.replace( tableId, updatedTable );
             tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
 

@@ -92,6 +92,32 @@ public class CatalogView extends CatalogTable {
 
 
     @Override
+    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+        return new CatalogView(
+                id,
+                name,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                newConnectedViews,
+                underlyingTables,
+                fieldList );
+    }
+
+
+    @Override
     public CatalogTable getRenamed( String newName ) {
         return new CatalogView(
                 id,
@@ -125,7 +151,43 @@ public class CatalogView extends CatalogTable {
 
 
     public static CatalogView generateView( CatalogTable table, ImmutableList<Long> underlyingTables, RelDataType fieldList ) {
-        return new CatalogView( table.id, table.name, table.columnIds, table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable, underlyingTables, fieldList );
+
+        return new CatalogView(
+                table.id,
+                table.name,
+                table.columnIds,
+                table.schemaId,
+                table.databaseId,
+                table.ownerId,
+                table.ownerName,
+                table.tableType,
+                table.definition,
+                table.primaryKey,
+                table.placementsByAdapter,
+                table.modifiable,
+                underlyingTables,
+                fieldList );
+    }
+
+
+    @Override
+    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+        return new CatalogView(
+                id,
+                name,
+                newColumnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                underlyingTables,
+                fieldList );
+
     }
 
 
