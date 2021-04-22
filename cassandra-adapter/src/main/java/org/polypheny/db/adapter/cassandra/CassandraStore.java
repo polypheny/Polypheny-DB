@@ -148,7 +148,7 @@ public class CassandraStore extends DataStore {
             }
 
             this.embeddedCassandra = null;
-            this.dbHostname = "localhost"; // TODO
+            this.dbHostname = container.getHost();
             this.dbKeyspace = "cassandra";
             this.dbPort = Integer.parseInt( settings.get( "port" ) );
         } else if ( deployMode == DeployMode.REMOTE ) {
