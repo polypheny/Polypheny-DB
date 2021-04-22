@@ -59,6 +59,7 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
 
     public final ImmutableList<Long> connectedViews;
 
+
     public CatalogTable(
             final long id,
             @NonNull final String name,
@@ -241,6 +242,68 @@ public class CatalogTable implements CatalogEntity, Comparable<CatalogTable> {
             }
         }
         return -1;
+    }
+
+
+    public boolean isView() {
+        return this.tableType == TableType.VIEW;
+    }
+
+
+    public CatalogTable getRenamed( String newName ) {
+        return new CatalogTable(
+                id,
+                newName,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable );
+    }
+
+
+    public CatalogTable getConnectedViews( ImmutableList<Long> newConnectedViews ) {
+        return new CatalogTable(
+                id,
+                name,
+                columnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable,
+                numPartitions,
+                partitionType,
+                partitionIds,
+                partitionColumnId,
+                isPartitioned,
+                newConnectedViews );
+    }
+
+
+    public CatalogTable getTableWithColumns( ImmutableList<Long> newColumnIds ) {
+        return new CatalogTable(
+                id,
+                name,
+                newColumnIds,
+                schemaId,
+                databaseId,
+                ownerId,
+                ownerName,
+                tableType,
+                definition,
+                primaryKey,
+                placementsByAdapter,
+                modifiable );
     }
 
 

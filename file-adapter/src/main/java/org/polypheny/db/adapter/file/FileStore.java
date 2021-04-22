@@ -29,7 +29,6 @@ import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogIndex;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.information.Information;
 import org.polypheny.db.information.InformationGraph;
 import org.polypheny.db.information.InformationGraph.GraphData;
 import org.polypheny.db.information.InformationGraph.GraphType;
@@ -98,19 +97,27 @@ public class FileStore extends DataStore {
     private void setInformationPage() {
         InformationGroup infoGroup = new InformationGroup( informationPage, "Disk usage in GB" );
         informationGroups.add( infoGroup );
-        File root = rootDir.toPath().getRoot().toFile();
-        int base = 1024;
+        final File root = rootDir.toPath().getRoot().toFile();
+        final int base;
         if ( SystemUtils.IS_OS_MAC ) {
             base = 1000;
+        } else {
+            base = 1024;
         }
         Double[] diskUsage = new Double[]{
                 (double) ((root.getTotalSpace() - root.getUsableSpace()) / (long) Math.pow( base, 3 )),
                 (double) (root.getUsableSpace() / (long) Math.pow( base, 3 )) };
-        Information infoElement = new InformationGraph(
+        InformationGraph infoElement = new InformationGraph(
                 infoGroup,
                 GraphType.DOUGHNUT,
                 new String[]{ "used", "free" },
                 new GraphData<>( "disk-usage", diskUsage ) );
+        infoGroup.setRefreshFunction( () -> {
+            Double[] updatedDiskUsage = new Double[]{
+                    (double) ((root.getTotalSpace() - root.getUsableSpace()) / (long) Math.pow( base, 3 )),
+                    (double) (root.getUsableSpace() / (long) Math.pow( base, 3 )) };
+            infoElement.updateGraph( new String[]{ "used", "free" }, new GraphData<>( "disk-usage", updatedDiskUsage ) );
+        } );
         InformationManager im = InformationManager.getInstance();
         im.addPage( informationPage );
         im.addGroup( infoGroup );

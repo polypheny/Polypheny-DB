@@ -72,6 +72,11 @@ public class SqlAlterTableDropForeignKey extends SqlAlterTable {
     @Override
     public void execute( Context context, Statement statement ) {
         CatalogTable catalogTable = getCatalogTable( context, table );
+
+        if ( catalogTable.isView() ) {
+            throw new RuntimeException( "Not possible to use ALTER TABLE with Views" );
+        }
+
         try {
             DdlManager.getInstance().dropForeignKey( catalogTable, foreignKeyName.getSimple() );
         } catch ( DdlOnSourceException e ) {

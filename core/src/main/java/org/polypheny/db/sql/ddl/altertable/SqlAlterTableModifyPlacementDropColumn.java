@@ -86,6 +86,10 @@ public class SqlAlterTableModifyPlacementDropColumn extends SqlAlterTable {
         CatalogTable catalogTable = getCatalogTable( context, table );
         DataStore storeInstance = getDataStoreInstance( storeName );
 
+        if(catalogTable.isView()){
+            throw new RuntimeException("Not possible to use ALTER TABLE with Views");
+        }
+
         try {
             DdlManager.getInstance().dropColumnPlacement(
                     catalogTable,

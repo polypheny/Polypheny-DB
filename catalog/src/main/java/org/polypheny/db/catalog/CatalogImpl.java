@@ -334,55 +334,59 @@ public class CatalogImpl extends Catalog {
 
         for ( CatalogColumn c : columns.values() ) {
             List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
-            if ( placements.size() == 0 ) {
-                // no placements shouldn't happen
-                throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
-            } else if ( placements.size() == 1 ) {
-                Adapter adapter = manager.getAdapter( placements.get( 0 ).adapterId );
-                if ( adapter instanceof DataStore ) {
-                    DataStore store = (DataStore) adapter;
-                    if ( !store.isPersistent() ) {
-                        CatalogTable catalogTable = getTable( c.tableId );
-                        // TODO only full placements atm here
+            CatalogTable catalogTable = getTable( c.tableId );
 
-                        if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                            restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
+            if(!catalogTable.isView()){
+                if ( placements.size() == 0 ) {
+                    // no placements shouldn't happen
+                    throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
+                } else if ( placements.size() == 1 ) {
+                    Adapter adapter = manager.getAdapter( placements.get( 0 ).adapterId );
+                    if ( adapter instanceof DataStore ) {
+                        DataStore store = (DataStore) adapter;
+                        if ( !store.isPersistent() ) {
 
-                        } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                            List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
-                            ids.add( catalogTable.id );
-                            restoredTables.put( store.getAdapterId(), ids );
+                            // TODO only full placements atm here
+
+                            if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                                restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
+
+                            } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                                List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
+                                ids.add( catalogTable.id );
+                                restoredTables.put( store.getAdapterId(), ids );
+                            }
                         }
                     }
-                }
-            } else {
-                Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.adapterId, p -> manager.getStore( p.adapterId ).isPersistent() ) );
+                } else {
+                    Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.adapterId, p -> manager.getStore( p.adapterId ).isPersistent() ) );
 
-                if ( !persistent.containsValue( true ) ) { // no persistent placement for this column
-                    CatalogTable table = getTable( c.tableId );
-                    for ( CatalogColumnPlacement p : placements ) {
-                        DataStore store = manager.getStore( p.adapterId );
+                    if ( !persistent.containsValue( true ) ) { // no persistent placement for this column
+                        CatalogTable table = getTable( c.tableId );
+                        for ( CatalogColumnPlacement p : placements ) {
+                            DataStore store = manager.getStore( p.adapterId );
 
-                        if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), table );
-                            List<Long> ids = new ArrayList<>();
-                            ids.add( table.id );
-                            restoredTables.put( store.getAdapterId(), ids );
+                            if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), table );
+                                List<Long> ids = new ArrayList<>();
+                                ids.add( table.id );
+                                restoredTables.put( store.getAdapterId(), ids );
 
-                        } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( table.id )) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), table );
-                            List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
-                            ids.add( table.id );
-                            restoredTables.put( store.getAdapterId(), ids );
+                            } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( table.id )) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), table );
+                                List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
+                                ids.add( table.id );
+                                restoredTables.put( store.getAdapterId(), ids );
+                            }
                         }
-                    }
-                } else if ( persistent.containsValue( true ) && persistent.containsValue( false ) ) {
-                    // TODO DL change so column gets copied
-                    for ( Entry<Integer, Boolean> p : persistent.entrySet() ) {
-                        if ( !p.getValue() ) {
-                            deleteColumnPlacement( p.getKey(), c.id );
+                    } else if ( persistent.containsValue( true ) && persistent.containsValue( false ) ) {
+                        // TODO DL change so column gets copied
+                        for ( Entry<Integer, Boolean> p : persistent.entrySet() ) {
+                            if ( !p.getValue() ) {
+                                deleteColumnPlacement( p.getKey(), c.id );
+                            }
                         }
                     }
                 }
@@ -622,24 +626,23 @@ public class CatalogImpl extends Catalog {
             csvSettings.put( "directory", "classpath://hr" );
             csvSettings.put( "maxStringLength", "255" );
             addAdapter( "hr", "org.polypheny.db.adapter.csv.CsvSource", AdapterType.SOURCE, csvSettings );
-        }
 
-        //////////////
-        // init schema
-        CatalogAdapter csv = getAdapter( "hr" );
-        if ( !testMode ) {
-            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
-                addTable( "depts", schemaId, systemId, TableType.SOURCE, false, null );
-            }
-            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
-                addTable( "emps", schemaId, systemId, TableType.SOURCE, false, null );
-            }
-            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
-                addTable( "emp", schemaId, systemId, TableType.SOURCE, false, null );
-            }
-            if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
-                addTable( "work", schemaId, systemId, TableType.SOURCE, false, null );
-                addDefaultCsvColumns( csv );
+            // init schema
+            CatalogAdapter csv = getAdapter( "hr" );
+            if ( !testMode ) {
+                if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "depts" } ) ) {
+                    addTable( "depts", schemaId, systemId, TableType.SOURCE, false, null );
+                }
+                if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emps" } ) ) {
+                    addTable( "emps", schemaId, systemId, TableType.SOURCE, false, null );
+                }
+                if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "emp" } ) ) {
+                    addTable( "emp", schemaId, systemId, TableType.SOURCE, false, null );
+                }
+                if ( !tableNames.containsKey( new Object[]{ databaseId, schemaId, "work" } ) ) {
+                    addTable( "work", schemaId, systemId, TableType.SOURCE, false, null );
+                    addDefaultCsvColumns( csv );
+                }
             }
         }
 
@@ -1346,51 +1349,23 @@ public class CatalogImpl extends Catalog {
             List<Long> connectedViews;
             connectedViews = new ArrayList<>( old.connectedViews );
             connectedViews.add( viewId );
-            CatalogTable table = null;
-
-            if ( old.tableType == TableType.TABLE || old.tableType == TableType.SOURCE ) {
-                table = new CatalogTable(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        old.definition,
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        old.modifiable,
-                        old.numPartitions,
-                        old.partitionType,
-                        old.partitionIds,
-                        old.partitionColumnId,
-                        old.isPartitioned,
-                        ImmutableList.copyOf( connectedViews ) );
-            } else if ( old.tableType == TableType.VIEW ) {
-                table = new CatalogView(
-                        old.id,
-                        old.name,
-                        old.columnIds,
-                        old.schemaId,
-                        old.databaseId,
-                        old.ownerId,
-                        old.ownerName,
-                        old.tableType,
-                        old.definition,
-                        old.primaryKey,
-                        old.placementsByAdapter,
-                        old.modifiable,
-                        old.numPartitions,
-                        old.partitionType,
-                        old.partitionIds,
-                        old.partitionColumnId,
-                        old.isPartitioned,
-                        ImmutableList.copyOf( connectedViews ),
-                        ((CatalogView) old).getUnderlyingTables(),
-                        ((CatalogView) old).getFieldList() );
+            CatalogTable table = old.getConnectedViews( ImmutableList.copyOf( connectedViews ) );
+            synchronized ( this ) {
+                tables.replace( id, table );
+                assert table != null;
+                tableNames.replace( new Object[]{ table.databaseId, table.schemaId, old.name }, table );
             }
+            listeners.firePropertyChange( "table", old, table );
+        }
+    }
+
+
+    public void deleteViewDependencies( CatalogView catalogView ) {
+        for ( long id : catalogView.getUnderlyingTables() ) {
+            CatalogTable old = getTable( id );
+            List<Long> connectedViews = old.connectedViews.stream().filter( e -> e != catalogView.id ).collect( Collectors.toList() );
+
+            CatalogTable table = old.getConnectedViews( ImmutableList.copyOf( connectedViews ) );
 
             synchronized ( this ) {
                 tables.replace( id, table );
@@ -1425,7 +1400,7 @@ public class CatalogImpl extends Catalog {
     @Override
     public void renameTable( long tableId, String name ) {
         CatalogTable old = getTable( tableId );
-        CatalogTable table = new CatalogTable( old.id, name, old.columnIds, old.schemaId, old.databaseId, old.ownerId, old.ownerName, old.tableType, old.definition, old.primaryKey, old.placementsByAdapter, old.modifiable );
+        CatalogTable table = old.getRenamed( name );
         synchronized ( this ) {
             tables.replace( tableId, table );
             tableNames.remove( new Object[]{ table.databaseId, table.schemaId, old.name } );
@@ -2105,12 +2080,7 @@ public class CatalogImpl extends Catalog {
 
             List<Long> columnIds = new ArrayList<>( table.columnIds );
             columnIds.add( id );
-            CatalogTable updatedTable = null;
-            if ( table.tableType == TableType.VIEW ) {
-                updatedTable = new CatalogView( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable, ((CatalogView) table).getUnderlyingTables(), ((CatalogView) table).getFieldList() );
-            } else {
-                updatedTable = new CatalogTable( table.id, table.name, ImmutableList.copyOf( columnIds ), table.schemaId, table.databaseId, table.ownerId, table.ownerName, table.tableType, table.definition, table.primaryKey, table.placementsByAdapter, table.modifiable );
-            }
+            CatalogTable updatedTable = table.getTableWithColumns( ImmutableList.copyOf( columnIds ) );
             tables.replace( tableId, updatedTable );
             tableNames.replace( new Object[]{ updatedTable.databaseId, updatedTable.schemaId, updatedTable.name }, updatedTable );
 
@@ -2620,6 +2590,7 @@ public class CatalogImpl extends Catalog {
                     }
                 }
             }
+            throw new GenericCatalogException( "There is no key over the referenced columns." );
         } catch ( NullPointerException e ) {
             throw new GenericCatalogException( e );
         }

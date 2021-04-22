@@ -14,15 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.sql.ddl.altertable;
-
+package org.polypheny.db.sql.ddl.alterview;
 
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
 import java.util.Objects;
-import org.polypheny.db.catalog.Catalog.TableType;
-import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.TableAlreadyExistsException;
 import org.polypheny.db.ddl.DdlManager;
@@ -31,22 +28,25 @@ import org.polypheny.db.sql.SqlIdentifier;
 import org.polypheny.db.sql.SqlNode;
 import org.polypheny.db.sql.SqlUtil;
 import org.polypheny.db.sql.SqlWriter;
-import org.polypheny.db.sql.ddl.SqlAlterTable;
+import org.polypheny.db.sql.ddl.SqlAlterView;
 import org.polypheny.db.sql.parser.SqlParserPos;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.util.ImmutableNullableList;
 
-
 /**
- * Parse tree for {@code ALTER TABLE name RENAME TO} statement.
+ * Parse tree for {@code ALTER TABLE name RENAME TO} statement
  */
-public class SqlAlterTableRename extends SqlAlterTable {
+public class SqlAlterViewRename extends SqlAlterView {
 
     private final SqlIdentifier oldName;
     private final SqlIdentifier newName;
 
-
-    public SqlAlterTableRename( SqlParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
+    /**
+     * Creates a SqlAlterSchema.
+     *
+     * @param pos
+     */
+    public SqlAlterViewRename( SqlParserPos pos, SqlIdentifier oldName, SqlIdentifier newName ) {
         super( pos );
         this.oldName = Objects.requireNonNull( oldName );
         this.newName = Objects.requireNonNull( newName );
@@ -55,35 +55,32 @@ public class SqlAlterTableRename extends SqlAlterTable {
 
     @Override
     public List<SqlNode> getOperandList() {
-        return ImmutableNullableList.of( oldName, newName );
+        return ImmutableNullableList.of(oldName, newName);
     }
 
 
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         writer.keyword( "ALTER" );
-        writer.keyword( "TABLE" );
+        writer.keyword( "VIEW" );
         oldName.unparse( writer, leftPrec, rightPrec );
         writer.keyword( "RENAME" );
         writer.keyword( "TO" );
         newName.unparse( writer, leftPrec, rightPrec );
     }
 
-
     @Override
-    public void execute( Context context, Statement statement ) {
-        CatalogTable table = getCatalogTable( context, oldName );
+    public void execute(Context context, Statement statement){
+        CatalogView view = (CatalogView) getCatalogTable( context, oldName );
 
         if ( newName.names.size() != 1 ) {
             throw new RuntimeException( "No FQDN allowed here: " + newName.toString() );
         }
-
         try {
-            DdlManager.getInstance().renameTable( table, newName.getSimple(), statement );
+            DdlManager.getInstance().renameTable( view, newName.getSimple(), statement );
         } catch ( TableAlreadyExistsException e ) {
-            throw SqlUtil.newContextException( newName.getParserPosition(), RESOURCE.tableExists( newName.getSimple() ) );
+            throw SqlUtil.newContextException( oldName.getParserPosition(), RESOURCE.schemaExists( newName.getSimple() ) );
         }
     }
 
 }
-

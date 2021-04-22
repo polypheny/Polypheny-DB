@@ -34,10 +34,12 @@
 package org.polypheny.db.sql;
 
 
+import java.io.Serializable;
+
 /**
  * A class that describes how many operands an operator can take.
  */
-public interface SqlOperandCountRange {
+public interface SqlOperandCountRange extends Serializable {
 
     /**
      * Returns whether {@code count} is a valid number of operands.

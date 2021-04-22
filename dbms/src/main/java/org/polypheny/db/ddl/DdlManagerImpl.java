@@ -56,6 +56,7 @@ import org.polypheny.db.catalog.entity.CatalogPrimaryKey;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.ColumnAlreadyExistsException;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.SchemaAlreadyExistsException;
@@ -275,6 +276,17 @@ public class DdlManagerImpl extends DdlManager {
             for ( CatalogColumnPlacement ccp : catalog.getColumnPlacementsOnAdapter( catalogAdapter.id ) ) {
                 tablesToDrop.add( ccp.tableId );
             }
+            // Remove foreign keys
+            for ( Long tableId : tablesToDrop ) {
+                for ( CatalogForeignKey fk : catalog.getForeignKeys( tableId ) ) {
+                    try {
+                        catalog.deleteForeignKey( fk.id );
+                    } catch ( GenericCatalogException e ) {
+                        throw new PolyphenyDbContextException( "Exception while dropping foreign key", e );
+                    }
+                }
+            }
+            // Drop tables
             for ( Long tableId : tablesToDrop ) {
                 CatalogTable table = catalog.getTable( tableId );
 
@@ -297,12 +309,11 @@ public class DdlManagerImpl extends DdlManager {
                     }
                 }
 
-                // Delete keys and constraints
+                // Remove primary keys
                 try {
-                    // Remove primary key
                     catalog.deletePrimaryKey( table.id );
                 } catch ( GenericCatalogException e ) {
-                    throw new PolyphenyDbContextException( "Exception while dropping primary key.", e );
+                    throw new PolyphenyDbContextException( "Exception while dropping primary key", e );
                 }
 
                 // Delete columns
@@ -1318,7 +1329,7 @@ public class DdlManagerImpl extends DdlManager {
                                 rel.getValue().getScale(),
                                 -1,
                                 -1,
-                                false ),
+                                rel.getValue().isNullable() ),
                         Collation.getDefaultCollation(),
                         null,
                         position ) );
@@ -1622,20 +1633,22 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void dropView( CatalogTable catalogTable, Statement statement ) throws DdlOnSourceException {
+    public void dropView( CatalogTable catalogView, Statement statement ) throws DdlOnSourceException {
         // Make sure that this is a table of type TABLE (and not SOURCE)
-        checkIfViewType( catalogTable.tableType );
+        checkIfViewType( catalogView.tableType );
 
         //check if views are dependent from this view
-        checkViewDependencies( catalogTable );
+        checkViewDependencies( catalogView );
+
+        catalog.deleteViewDependencies( (CatalogView) catalogView);
 
         // Delete columns
-        for ( Long columnId : catalogTable.columnIds ) {
+        for ( Long columnId : catalogView.columnIds ) {
             catalog.deleteColumn( columnId );
         }
 
         // Delete the table
-        catalog.deleteTable( catalogTable.id );
+        catalog.deleteTable( catalogView.id );
 
         // Rest plan cache and implementation cache
         statement.getQueryProcessor().resetCaches();

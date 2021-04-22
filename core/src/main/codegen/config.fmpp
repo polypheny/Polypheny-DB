@@ -34,6 +34,7 @@ data: {
             "org.polypheny.db.sql.ddl.SqlAlterInterfacesDrop"
             "org.polypheny.db.sql.ddl.SqlAlterSchema"
             "org.polypheny.db.sql.ddl.SqlAlterView"
+            "org.polypheny.db.sql.ddl.alterview.*"
             "org.polypheny.db.sql.ddl.alterschema.*"
             "org.polypheny.db.sql.ddl.SqlAlterTable"
             "org.polypheny.db.sql.ddl.altertable.*"

@@ -40,6 +40,7 @@ import org.polypheny.db.catalog.entity.CatalogQueryInterface;
 import org.polypheny.db.catalog.entity.CatalogSchema;
 import org.polypheny.db.catalog.entity.CatalogTable;
 import org.polypheny.db.catalog.entity.CatalogUser;
+import org.polypheny.db.catalog.entity.CatalogView;
 import org.polypheny.db.catalog.exceptions.GenericCatalogException;
 import org.polypheny.db.catalog.exceptions.NoTablePrimaryKeyException;
 import org.polypheny.db.catalog.exceptions.UnknownAdapterException;
@@ -1161,6 +1162,12 @@ public abstract class Catalog {
     public abstract void close();
 
     public abstract void clear();
+
+    /**
+     * Deletes all the dependencies before deleting a View
+     * @param catalogView view to be deleted
+     */
+    public abstract void deleteViewDependencies( CatalogView catalogView );
 
 
     public enum TableType {
