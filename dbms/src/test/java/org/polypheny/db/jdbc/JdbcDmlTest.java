@@ -76,4 +76,55 @@ public class JdbcDmlTest {
     }
 
 
+    @Test
+    public void simpleTransactionTest() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try {
+                Statement statement = connection.createStatement();
+                statement.executeUpdate( "CREATE TABLE transactiontest( "
+                        + "tprimary INTEGER NOT NULL, "
+                        + "tinteger INTEGER NULL, "
+                        + "tvarchar VARCHAR(20) NULL, "
+                        + "PRIMARY KEY (tprimary) )" );
+                statement.executeUpdate( "INSERT INTO transactiontest VALUES (1,1,'foo')" );
+                connection.commit();
+
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM transactiontest ORDER BY tprimary" ),
+                        ImmutableList.of( new Object[]{ 1, 1, "foo" } ) );
+
+                statement = connection.createStatement();
+                statement.executeUpdate( "INSERT INTO transactiontest VALUES (2,5,'bar')" );
+                statement.executeUpdate( "INSERT INTO transactiontest VALUES (3,7,'foobar')" );
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM transactiontest ORDER BY tprimary" ),
+                        ImmutableList.of(
+                                new Object[]{ 1, 1, "foo" },
+                                new Object[]{ 2, 5, "bar" },
+                                new Object[]{ 3, 7, "foobar" } ) );
+                connection.rollback();
+
+                statement = connection.createStatement();
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM transactiontest ORDER BY tprimary" ),
+                        ImmutableList.of( new Object[]{ 1, 1, "foo" } ) );
+                connection.commit();
+
+                // Same check again to make sure that the previous commit has not committed something which should
+                // have been rolled back
+                statement = connection.createStatement();
+                TestHelper.checkResultSet(
+                        statement.executeQuery( "SELECT * FROM transactiontest ORDER BY tprimary" ),
+                        ImmutableList.of( new Object[]{ 1, 1, "foo" } ) );
+                connection.commit();
+            } finally {
+                Statement statement = connection.createStatement();
+                statement.executeUpdate( "DROP TABLE transactiontest" );
+                connection.commit();
+            }
+        }
+    }
+
+
 }
