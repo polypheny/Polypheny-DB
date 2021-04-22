@@ -334,55 +334,59 @@ public class CatalogImpl extends Catalog {
 
         for ( CatalogColumn c : columns.values() ) {
             List<CatalogColumnPlacement> placements = getColumnPlacements( c.id );
-            if ( placements.size() == 0 ) {
-                // no placements shouldn't happen
-                throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
-            } else if ( placements.size() == 1 ) {
-                Adapter adapter = manager.getAdapter( placements.get( 0 ).adapterId );
-                if ( adapter instanceof DataStore ) {
-                    DataStore store = (DataStore) adapter;
-                    if ( !store.isPersistent() ) {
-                        CatalogTable catalogTable = getTable( c.tableId );
-                        // TODO only full placements atm here
+            CatalogTable catalogTable = getTable( c.tableId );
 
-                        if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                            restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
+            if(!catalogTable.isView()){
+                if ( placements.size() == 0 ) {
+                    // no placements shouldn't happen
+                    throw new RuntimeException( "There seems to be no placement for the column with the id " + c.id );
+                } else if ( placements.size() == 1 ) {
+                    Adapter adapter = manager.getAdapter( placements.get( 0 ).adapterId );
+                    if ( adapter instanceof DataStore ) {
+                        DataStore store = (DataStore) adapter;
+                        if ( !store.isPersistent() ) {
 
-                        } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
-                            List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
-                            ids.add( catalogTable.id );
-                            restoredTables.put( store.getAdapterId(), ids );
+                            // TODO only full placements atm here
+
+                            if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                                restoredTables.put( store.getAdapterId(), Collections.singletonList( catalogTable.id ) );
+
+                            } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( catalogTable.id )) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), catalogTable );
+                                List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
+                                ids.add( catalogTable.id );
+                                restoredTables.put( store.getAdapterId(), ids );
+                            }
                         }
                     }
-                }
-            } else {
-                Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.adapterId, p -> manager.getStore( p.adapterId ).isPersistent() ) );
+                } else {
+                    Map<Integer, Boolean> persistent = placements.stream().collect( Collectors.toMap( p -> p.adapterId, p -> manager.getStore( p.adapterId ).isPersistent() ) );
 
-                if ( !persistent.containsValue( true ) ) { // no persistent placement for this column
-                    CatalogTable table = getTable( c.tableId );
-                    for ( CatalogColumnPlacement p : placements ) {
-                        DataStore store = manager.getStore( p.adapterId );
+                    if ( !persistent.containsValue( true ) ) { // no persistent placement for this column
+                        CatalogTable table = getTable( c.tableId );
+                        for ( CatalogColumnPlacement p : placements ) {
+                            DataStore store = manager.getStore( p.adapterId );
 
-                        if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), table );
-                            List<Long> ids = new ArrayList<>();
-                            ids.add( table.id );
-                            restoredTables.put( store.getAdapterId(), ids );
+                            if ( !restoredTables.containsKey( store.getAdapterId() ) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), table );
+                                List<Long> ids = new ArrayList<>();
+                                ids.add( table.id );
+                                restoredTables.put( store.getAdapterId(), ids );
 
-                        } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( table.id )) ) {
-                            store.createTable( transaction.createStatement().getPrepareContext(), table );
-                            List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
-                            ids.add( table.id );
-                            restoredTables.put( store.getAdapterId(), ids );
+                            } else if ( !(restoredTables.containsKey( store.getAdapterId() ) && restoredTables.get( store.getAdapterId() ).contains( table.id )) ) {
+                                store.createTable( transaction.createStatement().getPrepareContext(), table );
+                                List<Long> ids = new ArrayList<>( restoredTables.get( store.getAdapterId() ) );
+                                ids.add( table.id );
+                                restoredTables.put( store.getAdapterId(), ids );
+                            }
                         }
-                    }
-                } else if ( persistent.containsValue( true ) && persistent.containsValue( false ) ) {
-                    // TODO DL change so column gets copied
-                    for ( Entry<Integer, Boolean> p : persistent.entrySet() ) {
-                        if ( !p.getValue() ) {
-                            deleteColumnPlacement( p.getKey(), c.id );
+                    } else if ( persistent.containsValue( true ) && persistent.containsValue( false ) ) {
+                        // TODO DL change so column gets copied
+                        for ( Entry<Integer, Boolean> p : persistent.entrySet() ) {
+                            if ( !p.getValue() ) {
+                                deleteColumnPlacement( p.getKey(), c.id );
+                            }
                         }
                     }
                 }
