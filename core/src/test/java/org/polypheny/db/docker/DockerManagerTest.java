@@ -20,8 +20,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.DockerManager.Container;
@@ -38,6 +40,15 @@ public class DockerManagerTest {
 
     private static ConfigDocker config;
     private static final String imageName = "mongo";
+
+    static Catalog catalog;
+
+
+    @BeforeClass
+    public static void initClass() {
+        // some functionality needs to use the catalog, so we use a mock
+        catalog = Catalog.setAndGetInstance( new MockCatalog() );
+    }
 
 
     @Before

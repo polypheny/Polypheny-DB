@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.docker.exceptions.NameExistsRuntimeException;
@@ -109,11 +110,46 @@ public class DockerInstance extends DockerManager {
             }
         } );
 
-        client.listContainersCmd().withShowAll( true ).exec().forEach( container -> {
+        Map<String, Boolean> idsToRemove = new HashMap<>();
+        Catalog catalog = Catalog.getInstance();
+
+        outer:
+        for ( com.github.dockerjava.api.model.Container container : client.listContainersCmd().withShowAll( true ).exec() ) {// docker returns the names with a prefixed "/", so we remove it
+            List<String> names = Arrays
+                    .stream( container.getNames() )
+                    .map( cont -> cont.substring( 1 ) )
+                    .collect( Collectors.toList() );
+
+            List<String> normalizedNames = names.stream().map( Container::getFromPhysicalName ).collect( Collectors.toList() );
+
+            // when we have old containers, which belonged to a non-consistent adapter we remove them
+
+            for ( String name : names ) {
+                String[] splits = name.split( "_polypheny_" );
+                if ( splits.length == 2 ) {
+                    int adapterId = Integer.parseInt( splits[1] );
+                    if ( !catalog.checkIfExistsAdapter( adapterId ) || !catalog.getAdapter( adapterId ).uniqueName.equals( splits[0] ) ) {
+                        idsToRemove.put( container.getId(), container.getState().equalsIgnoreCase( "running" ) );
+                        // as we remove this container later we skip the name and port adding
+                        continue outer;
+                    }
+                }
+            }
+
             Arrays.stream( container.getPorts() ).forEach( containerPort -> usedPorts.add( containerPort.getPublicPort() ) );
-            // docker returns the names with a prefixed "/", so we remove it
-            usedNames.addAll( Arrays.stream( container.getNames() ).map( cont -> Container.getFromPhysicalName( cont.substring( 1 ) ) ).collect( Collectors.toList() ) );
+            usedNames.addAll( normalizedNames );
+        }
+
+        // we have to check if we accessed a mocking catalog as we don't want to remove all dockerInstance when running tests
+
+        idsToRemove.forEach( ( id, isRunning ) -> {
+            if ( isRunning ) {
+                client.stopContainerCmd( id ).exec();
+            }
+            client.removeContainerCmd( id ).exec();
         } );
+
+
     }
 
 

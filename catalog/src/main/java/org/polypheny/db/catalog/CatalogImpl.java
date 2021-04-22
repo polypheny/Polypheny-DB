@@ -2878,6 +2878,17 @@ public class CatalogImpl extends Catalog {
 
 
     /**
+     * checks if an adapter exists
+     *
+     * @param adapterId the id of the adapter
+     */
+    @Override
+    public boolean checkIfExistsAdapter( int adapterId ) {
+        return adapters.containsKey( adapterId );
+    }
+
+
+    /**
      * Add an adapter
      *
      * @param uniqueName The unique name of the adapter
