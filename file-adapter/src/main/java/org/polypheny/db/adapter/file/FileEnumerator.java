@@ -305,7 +305,7 @@ public class FileEnumerator implements Enumerator<Object> {
                             if ( !updatedColumns.contains( j ) && source.exists() ) {
                                 Files.copy( source.toPath(), insertFile.toPath() );
                             } else {
-                                //Write updated value. Overrides file if it exists (if you have a double update on the same item)
+                                // Write updated value. Overrides file if it exists (if you have a double update on the same item)
                                 if ( updateObj[j] instanceof FileInputHandle ) {
                                     if ( insertFile.exists() && !insertFile.delete() ) {
                                         throw new RuntimeException( "Could not delete temporary insert file" );

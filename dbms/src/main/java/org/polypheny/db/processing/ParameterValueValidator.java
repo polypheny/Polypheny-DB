@@ -141,19 +141,19 @@ public class ParameterValueValidator extends RelShuttleImpl {
                                 pbis.unread( buffer );
                                 map.put( index, pbis );
                             } catch ( IOException e ) {
-                                throw new InvalidParameterValueException( "Exception while trying to determine File content type", e );
+                                throw new InvalidParameterValueException( "Exception while trying to determine file content type", e );
                             }
                         } else if ( o instanceof File ) {
                             try {
                                 info = util.findMatch( (File) o );
                             } catch ( IOException e ) {
-                                throw new InvalidParameterValueException( "Exception while trying to determine File content type", e );
+                                throw new InvalidParameterValueException( "Exception while trying to determine file content type", e );
                             }
                         } else if ( o instanceof FileInputHandle ) {
                             try {
                                 info = ((FileInputHandle) o).getContentType( util );
                             } catch ( IOException e ) {
-                                throw new InvalidParameterValueException( "Exception while trying to determine File content type", e );
+                                throw new InvalidParameterValueException( "Exception while trying to determine file content type", e );
                             }
                         } else {
                             throw new InvalidParameterValueException( "Multimedia object in unexpected form " + o.getClass().getSimpleName() );

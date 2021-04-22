@@ -111,6 +111,8 @@ public class JdbcDmlTest {
                         ImmutableList.of( new Object[]{ 1, 1, "foo" } ) );
                 connection.commit();
 
+                // Same check again to make sure that the previous commit has not committed something which should
+                // have been rolled back
                 statement = connection.createStatement();
                 TestHelper.checkResultSet(
                         statement.executeQuery( "SELECT * FROM transactiontest ORDER BY tprimary" ),

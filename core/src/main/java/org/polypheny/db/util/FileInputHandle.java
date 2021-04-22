@@ -21,25 +21,30 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 
 
 public class FileInputHandle {
 
-    private final File file;
+    private File file;
+    private byte[] cache;
     private final List<InputStream> inputStreams = new ArrayList<>();
 
     private static final File folder;
@@ -47,7 +52,7 @@ public class FileInputHandle {
 
     private static final HashFunction SHA = Hashing.sha256();
     private static final Charset CHARSET = StandardCharsets.UTF_8;
-    //private byte[] cache;
+
 
 
     static {
@@ -58,57 +63,78 @@ public class FileInputHandle {
     public FileInputHandle( Statement statement, InputStream is ) {
         statement.registerFileInputHandle( this );
         PolyXid xid = statement.getTransaction().getXid();
-        // todo
+        String fileName = SHA.hashString( xid.toString(), CHARSET ).toString() + "-" + counter.incrementAndGet();
+        int cacheSize = RuntimeConfig.FILE_HANDLE_CACHE_SIZE.getInteger();
+
         // Write to byte array as long as cache.length <= MAGIC NUMBER
         // If cache.length > MAGIC NUMBER, create tmp file, write all data in cache to the file and continue
-        // writing stream data to the file and set cache = null.
+        // writing stream data to the file
+        try {
+            if ( cacheSize > 0 ) {
+                byte[] bytes = new byte[cacheSize];
+                int remaining = cacheSize;
+                while ( remaining > 0 ) {
+                    int off = cacheSize - remaining;
+                    int read = is.read( bytes, off, 1 );
+                    if ( read == -1 ) {
+                        // end of stream before reading expectedSize bytes
+                        // just return the bytes read so far
+                        cache = Arrays.copyOf( bytes, off );
+                        break;
+                    }
+                    remaining -= read;
+                }
 
-        /*try {
-            this.cache = ByteStreams.toByteArray( is );
+                // bytes is now full
+                if ( cache == null ) {
+                    this.file = new File( folder, fileName );
+                    try ( InputStream byteCacheStream = new ByteArrayInputStream( bytes );
+                            InputStream chainedInputStream = new SequenceInputStream( byteCacheStream, is ) ) {
+                        Files.copy( chainedInputStream, file.toPath() );
+                    }
+                }
+            } else {
+                this.file = new File( folder, fileName );
+                Files.copy( is, file.toPath() );
+            }
         } catch ( IOException e ) {
-            throw new RuntimeException( "Could not read shared InputStream", e );
+            throw new RuntimeException( "Exception while creating FileInputHandle", e );
         } finally {
             try {
                 is.close();
             } catch ( IOException ignored ) {
-            }
-        }*/
-
-        File f = new File( folder, SHA.hashString( xid.toString(), CHARSET ).toString() + "-" + counter.incrementAndGet() );
-        this.file = f;
-        try {
-            Files.copy( is, f.toPath() );
-        } catch ( IOException e ) {
-            throw new RuntimeException( "Could not write temporal file", e );
-        } finally {
-            try {
-                is.close();
-            } catch ( Exception ignored ) {
             }
         }
     }
 
 
     public InputStream getData() {
-        //return cache;
         try {
-            InputStream is = new FileInputStream( file );
+            InputStream is;
+            if ( file != null ) {
+                is = new FileInputStream( file );
+            } else {
+                is = new ByteArrayInputStream( cache );
+            }
             inputStreams.add( is );
             return is;
         } catch ( FileNotFoundException e ) {
             throw new RuntimeException( "Temporal file does not exist" );
         }
-        //if (file != null ) {
-        // read from file
-        //} else {
-        // read from byte array
-        //}
     }
 
 
     public Path materializeAsFile( Path path ) throws IOException {
-        //todo check if same filesystem
-        return Files.createLink( path, file.toPath() );
+        if ( file != null ) {
+            // TODO: check if same filesystem
+            // Create hardlink
+            return Files.createLink( path, file.toPath() );
+        } else {
+            try ( InputStream cacheStream = new ByteArrayInputStream( cache ) ) {
+                Files.copy( cacheStream, path );
+                return path;
+            }
+        }
     }
 
 
@@ -120,12 +146,19 @@ public class FileInputHandle {
                 // ignore
             }
         }
-        file.delete();
+        if ( file != null ) {
+            file.delete();
+        }
+        cache = null;
     }
 
 
     public ContentInfo getContentType( final ContentInfoUtil util ) throws IOException {
-        return util.findMatch( file );
+        if ( file != null ) {
+            return util.findMatch( file );
+        } else {
+            return util.findMatch( cache );
+        }
     }
 
 }
