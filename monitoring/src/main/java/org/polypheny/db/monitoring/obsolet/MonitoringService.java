@@ -14,8 +14,28 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring;
+package org.polypheny.db.monitoring.obsolet;
 
+
+import lombok.extern.slf4j.Slf4j;
+import org.mapdb.DBException.SerializationError;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.CatalogTable;
+import org.polypheny.db.information.InformationGroup;
+import org.polypheny.db.information.InformationManager;
+import org.polypheny.db.information.InformationPage;
+import org.polypheny.db.information.InformationTable;
+import org.polypheny.db.monitoring.obsolet.storage.BackendConnector;
+import org.polypheny.db.monitoring.obsolet.storage.InfluxBackendConnector;
+import org.polypheny.db.monitoring.obsolet.storage.SimpleBackendConnector;
+import org.polypheny.db.monitoring.obsolet.subscriber.Subscriber;
+import org.polypheny.db.monitoring.obsolet.subscriber.SubscriptionTopic;
+import org.polypheny.db.prepare.RelOptTableImpl;
+import org.polypheny.db.rel.RelNode;
+import org.polypheny.db.schema.LogicalTable;
+import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
+import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
+import org.polypheny.db.util.background.BackgroundTaskManager;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -23,29 +43,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
-import lombok.extern.slf4j.Slf4j;
-import org.mapdb.DBException.SerializationError;
-import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.Catalog.PartitionType;
-import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeException;
-import org.polypheny.db.catalog.exceptions.UnknownPartitionTypeRuntimeException;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
-import org.polypheny.db.information.InformationTable;
-import org.polypheny.db.monitoring.exceptions.UnknownSubscriptionTopicRuntimeException;
-import org.polypheny.db.monitoring.storage.BackendConnector;
-import org.polypheny.db.monitoring.storage.InfluxBackendConnector;
-import org.polypheny.db.monitoring.storage.SimpleBackendConnector;
-import org.polypheny.db.monitoring.subscriber.Subscriber;
-import org.polypheny.db.monitoring.subscriber.SubscriptionTopic;
-import org.polypheny.db.prepare.RelOptTableImpl;
-import org.polypheny.db.rel.RelNode;
-import org.polypheny.db.schema.LogicalTable;
-import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
-import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
-import org.polypheny.db.util.background.BackgroundTaskManager;
 
 //ToDo add some kind of configuration which can for one decide on which backend to select, if we might have severall like
 // * InfluxDB
@@ -59,6 +56,7 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 public class MonitoringService {
 
     public static final MonitoringService INSTANCE = new MonitoringService();
+
     private static final long serialVersionUID = 2312903251112906177L;
 
     // Configurable via central CONFIG
@@ -76,14 +74,13 @@ public class MonitoringService {
     private EventBroker broker = new EventBroker();
 
 
-
-    //private static final String FILE_PATH = "queueMapDB";
-    //private static DB queueDb;
+    // private static final String FILE_PATH = "queueMapDB";
+    // private static DB queueDb;
 
     private static final AtomicLong queueIdBuilder = new AtomicLong();
-    //private static BTreeMap<Long, MonitorEvent> eventQueue;
-    private final TreeMap<Long, MonitorEvent> eventQueue = new TreeMap<>();
 
+    // private static BTreeMap<Long, MonitorEvent> eventQueue;
+    private final TreeMap<Long, MonitorEvent> eventQueue = new TreeMap<>();
 
 
     private InformationPage informationPage;

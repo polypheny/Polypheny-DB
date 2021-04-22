@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.exceptions;
+package org.polypheny.db.monitoring.obsolet.storage;
 
 
-public class UnknownSubscriptionTopicRuntimeException extends RuntimeException{
-    public UnknownSubscriptionTopicRuntimeException( final int id ) {
-        super( "There is no SubscriptionTopic with id: " + id );
-    }
+import org.polypheny.db.monitoring.obsolet.MonitorEvent;
 
-    public UnknownSubscriptionTopicRuntimeException( final String name ) {
-        super( "There is no SubscriptionTopic with name: " + name );
-    }
+
+public interface BackendConnector {
+
+    void initializeConnectorClient();
+
+    void monitorEvent();
+
+    boolean writeStatisticEvent(long key, MonitorEvent incomingEvent);
+
+    void readStatisticEvent(String outgoingEvent);
+
 }

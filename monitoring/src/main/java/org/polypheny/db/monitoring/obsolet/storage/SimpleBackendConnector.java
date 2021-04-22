@@ -14,27 +14,27 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.storage;
+package org.polypheny.db.monitoring.obsolet.storage;
 
 
-import java.io.File;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
-import org.polypheny.db.monitoring.MonitorEvent;
+import org.polypheny.db.monitoring.obsolet.MonitorEvent;
 import org.polypheny.db.util.FileSystemManager;
+
+import java.io.File;
 
 
 @Slf4j
-public class SimpleBackendConnector implements BackendConnector{
+public class SimpleBackendConnector implements BackendConnector {
 
 
     private static final String FILE_PATH = "simpleBackendDb";
     private static DB simpleBackendDb;
     private boolean isPeristent;
-
 
 
     //table name as String mapped to column name of table

@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.subscriber;
+package org.polypheny.db.monitoring.obsolet.subscriber;
 
 
 import lombok.Setter;
-import org.mapdb.DB;
-import org.polypheny.db.monitoring.MonitorEvent;
-import org.polypheny.db.monitoring.storage.BackendConnector;
+import org.polypheny.db.monitoring.obsolet.MonitorEvent;
+import org.polypheny.db.monitoring.obsolet.storage.BackendConnector;
 
 
 public abstract class AbstractSubscriber implements Subscriber{

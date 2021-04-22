@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring;
+package org.polypheny.db.monitoring.obsolet;
 
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.monitoring.obsolet.subscriber.Subscriber;
+import org.polypheny.db.monitoring.obsolet.subscriber.SubscriptionTopic;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,10 +29,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.subscriber.Subscriber;
-import org.polypheny.db.monitoring.subscriber.SubscriptionTopic;
 
 
 /**
@@ -66,9 +66,8 @@ public class EventBroker {
 
 
         //Can be added all the time since we are using a set
-        //Its faster than using  list and an if
+        //Its faster than using list and an if
         allSubscribers.add( subscriber );
-
 
         switch ( objectType ){
             case STORE:

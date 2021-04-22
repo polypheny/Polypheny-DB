@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.subscriber;
+package org.polypheny.db.monitoring.obsolet.subscriber;
 
 
-import java.io.File;
-import java.sql.Timestamp;
 import lombok.extern.slf4j.Slf4j;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
-import org.mapdb.Serializer;
-import org.polypheny.db.monitoring.MonitorEvent;
-import org.polypheny.db.monitoring.storage.BackendConnector;
+import org.polypheny.db.monitoring.obsolet.MonitorEvent;
+import org.polypheny.db.monitoring.obsolet.storage.BackendConnector;
 import org.polypheny.db.util.FileSystemManager;
+
+import java.io.File;
+import java.sql.Timestamp;
 
 
 @Slf4j
-public class InternalSubscriber extends AbstractSubscriber{
+public class InternalSubscriber extends AbstractSubscriber {
 
 
     private static final String subscriberName = "_SYS_INTERNAL";
     private static final String FILE_PATH = "internalSubscriberBackendDb";
     private static DB internalSubscriberBackendDb;
 
-    public InternalSubscriber(){
+    public InternalSubscriber() {
         this.isPersistent = true;
         this.initializeSubscriber();
     }

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.subscriber;
+package org.polypheny.db.monitoring.obsolet.subscriber;
 
 
-import org.polypheny.db.monitoring.exceptions.UnknownSubscriptionTopicRuntimeException;
+import org.polypheny.db.monitoring.obsolet.exceptions.UnknownSubscriptionTopicRuntimeException;
 
 
 public enum SubscriptionTopic {

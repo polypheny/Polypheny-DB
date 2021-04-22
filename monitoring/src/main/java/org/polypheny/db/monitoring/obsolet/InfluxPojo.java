@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring;
+package org.polypheny.db.monitoring.obsolet;
 
 
 import com.influxdb.annotations.Column;

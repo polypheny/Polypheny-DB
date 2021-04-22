@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.subscriber;
-
+package org.polypheny.db.monitoring.obsolet.subscriber;
 
 
 import java.sql.Timestamp;
+
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.MonitorEvent;
-import org.polypheny.db.monitoring.storage.BackendConnector;
+import org.polypheny.db.monitoring.obsolet.MonitorEvent;
+import org.polypheny.db.monitoring.obsolet.storage.BackendConnector;
 
 @Slf4j
 public class DummySubscriber extends AbstractSubscriber{
@@ -45,11 +45,16 @@ public class DummySubscriber extends AbstractSubscriber{
 
     @Override
     protected void initializeSubscriber() {
-        setSubscriberName( this.subscriberName );
+        setSubscriberName(this.subscriberName);
     }
 
     @Override
-    public void handleEvent( MonitorEvent event ) {
-        log.info( "Dummy received event which originated at: " + new Timestamp( event.getRecordedTimestamp()) );
+    protected void initPersistentDB() {
+
+    }
+
+    @Override
+    public void handleEvent(MonitorEvent event) {
+        log.info("Dummy received event which originated at: " + new Timestamp(event.getRecordedTimestamp()));
     }
 }

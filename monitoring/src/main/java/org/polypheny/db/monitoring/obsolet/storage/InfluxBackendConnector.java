@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.storage;
-
+package org.polypheny.db.monitoring.obsolet.storage;
 
 
 import com.influxdb.client.InfluxDBClient;
@@ -24,10 +23,12 @@ import com.influxdb.client.WriteApi;
 import com.influxdb.client.domain.HealthCheck;
 import com.influxdb.client.domain.HealthCheck.StatusEnum;
 import com.influxdb.client.domain.WritePrecision;
+
 import java.util.List;
 import java.util.Random;
-import org.polypheny.db.monitoring.InfluxPojo;
-import org.polypheny.db.monitoring.MonitorEvent;
+
+import org.polypheny.db.monitoring.obsolet.InfluxPojo;
+import org.polypheny.db.monitoring.obsolet.MonitorEvent;
 
 
 //ToDO Cedric just moved this the conenctor backend without much refactoring

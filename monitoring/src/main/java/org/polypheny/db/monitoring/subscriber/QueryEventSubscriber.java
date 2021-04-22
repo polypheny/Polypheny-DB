@@ -16,25 +16,14 @@
 
 package org.polypheny.db.monitoring.subscriber;
 
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.monitoring.dtos.QueryData;
 
-import org.polypheny.db.monitoring.MonitorEvent;
+@Slf4j
+public class QueryEventSubscriber implements MonitoringEventSubscriber<QueryData> {
 
-
-/**
- * A Subscriber registers to 1..n monitoring events.
- * The Subscriber receives callbacks whenever an event with the specific characteristics has occured.
- * Use Monitoring Subscriber as a persistence and to preprocess and aggregate items for specific and individual use cases.
- * Although each MonitorEvent is already persisted it might be useful to preaggregate certain information later on.
- */
-public interface Subscriber {
-
-    String getSubscriptionTitle();
-
-    boolean isPersistent();
-
-    /**
-     *
-     * @param event
-     */
-    void handleEvent( MonitorEvent event );
+    @Override
+    public void update(QueryData eventData) {
+        log.debug("Sample Query event subscriber:" + eventData.getMonitoringType());
+    }
 }

@@ -20,7 +20,8 @@ targetCompatibility = 1.8
 dependencies {
 
     implementation project(":core")
-    implementation group: "org.mapdb", name: "mapdb", version: mapdb_version  // Apache 2.0
+    implementation group: "org.mapdb", name: "mapdb", version: mapdb_version
+    implementation 'org.junit.jupiter:junit-jupiter:5.7.0'// Apache 2.0
 
     compile "com.influxdb:influxdb-client-java:1.8.0"
 
@@ -32,6 +33,7 @@ dependencies {
 
     // --- Test Compile ---
     testImplementation group: "junit", name: "junit", version: junit_version
+    testImplementation group: "org.mockito", name: "mockito-core", version: mockito_core_version
 }
 
 sourceSets {

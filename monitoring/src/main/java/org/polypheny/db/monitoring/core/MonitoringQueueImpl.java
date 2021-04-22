@@ -1,0 +1,171 @@
+/*
+ * Copyright 2019-2021 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.monitoring.core;
+
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.polypheny.db.monitoring.dtos.MonitoringEventData;
+import org.polypheny.db.monitoring.dtos.MonitoringJob;
+import org.polypheny.db.monitoring.persistence.MonitoringPersistentData;
+import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.background.BackgroundTask;
+import org.polypheny.db.util.background.BackgroundTaskManager;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+@Slf4j
+public class MonitoringQueueImpl implements MonitoringQueue {
+
+    /**
+     * monitoring queue which will queue all the incoming jobs.
+     */
+    private final Queue<MonitoringJob> monitoringJobQueue = new ConcurrentLinkedQueue<>();
+
+    private final Lock processingQueueLock = new ReentrantLock();
+
+    /**
+     * The registered job type pairs. The pairs are always of type
+     * ( Class<MonitoringEventData> , Class<MonitoringPersistentData>)
+     */
+    private final LinkedList<Pair<Class, Class>> registeredJobTypes = new LinkedList<>();
+
+    /**
+     * The registered job type pairs. The pairs are always of type
+     * ( Class<MonitoringEventData> , Class<MonitoringPersistentData>)
+     */
+    private final HashMap<Pair<Class, Class>, MonitoringQueueWorker> jobQueueWorkers = new HashMap();
+
+    private String backgroundTaskId;
+
+    public MonitoringQueueImpl() {
+        log.info("write queue service");
+        this.startBackgroundTask();
+    }
+
+    @Override
+    public void queueEvent(MonitoringEventData eventData) {
+        if (eventData == null)
+            throw new IllegalArgumentException("Empty event data");
+
+        val job = this.createMonitorJob(eventData);
+        if (job.isPresent()) {
+            this.monitoringJobQueue.add(job.get());
+        }
+    }
+
+    @Override
+    public <TEvent extends MonitoringEventData, TPersistent extends MonitoringPersistentData>
+    void registerQueueWorker(Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker) {
+        if (classPair == null || worker == null)
+            throw new IllegalArgumentException("Parameter is null");
+
+        if (this.jobQueueWorkers.containsKey(classPair)) {
+            throw new IllegalArgumentException("Consumer already registered");
+        }
+
+        // change somehow
+        val key = new Pair<Class, Class>(classPair.left, classPair.right);
+        this.jobQueueWorkers.put(key, worker);
+        this.registeredJobTypes.add(key);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        if (backgroundTaskId != null) {
+            BackgroundTaskManager.INSTANCE.removeBackgroundTask(backgroundTaskId);
+        }
+    }
+
+    /**
+     * will try to create a MonitoringJob which incoming eventData object
+     * and newly created but empty MonitoringPersistentData object.
+     *
+     * @return Will return an Optional MonitoringJob
+     */
+    private Optional<MonitoringJob> createMonitorJob(MonitoringEventData eventData) {
+        val pair = this.getTypesForEvent(eventData);
+        if (pair.isPresent()) {
+            try {
+                val job = new MonitoringJob(eventData, (MonitoringPersistentData) pair.get().right.newInstance());
+                return Optional.of(job);
+            } catch (InstantiationException e) {
+                log.error("Could not instantiate monitoring job");
+            } catch (IllegalAccessException e) {
+                log.error("Could not instantiate monitoring job");
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<Pair<Class, Class>> getTypesForEvent(MonitoringEventData eventData) {
+        // use the registered worker to find the eventData and return optional key of the entry.
+        return this.jobQueueWorkers.keySet().stream().filter(elem -> elem.left.isInstance(eventData)).findFirst();
+    }
+
+    private void startBackgroundTask() {
+        if (backgroundTaskId == null) {
+            backgroundTaskId = BackgroundTaskManager.INSTANCE.registerTask(
+                    this::processQueue,
+                    "Send monitoring jobs to job consumers",
+                    BackgroundTask.TaskPriority.LOW,
+                    BackgroundTask.TaskSchedulingType.EVERY_TEN_SECONDS
+            );
+        }
+    }
+
+    private void processQueue() {
+        log.debug("Start processing queue");
+        this.processingQueueLock.lock();
+
+        Optional<MonitoringJob> job;
+
+        try {
+            // while there are jobs to consume:
+            while ((job = this.getNextJob()).isPresent()) {
+                log.debug("get new monitoring job" + job.get().Id().toString());
+
+                // get the worker
+                MonitoringJob finalJob = job.get();
+                val workerKey = new Pair(finalJob.getEventData().getClass(), finalJob.getPersistentData().getClass());
+                val worker = jobQueueWorkers.get(workerKey);
+
+                if (worker != null) {
+                    worker.handleJob(finalJob);
+                } else {
+                    log.error("no worker for event registered");
+                }
+            }
+        } finally {
+            this.processingQueueLock.unlock();
+        }
+    }
+
+    private Optional<MonitoringJob> getNextJob() {
+        if (monitoringJobQueue.peek() != null) {
+            return Optional.of(monitoringJobQueue.poll());
+        }
+        return Optional.empty();
+    }
+}

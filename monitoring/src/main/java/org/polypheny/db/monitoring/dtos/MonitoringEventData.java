@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.storage;
+package org.polypheny.db.monitoring.dtos;
 
-
-import org.polypheny.db.monitoring.MonitorEvent;
-
-
-public interface BackendConnector {
-
-    void initializeConnectorClient();
-
-    void monitorEvent();
-
-    boolean writeStatisticEvent(long key, MonitorEvent incomingEvent);
-
-    void readStatisticEvent(String outgoingEvent);
+public interface MonitoringEventData {
 
 }
