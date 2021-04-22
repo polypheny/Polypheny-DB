@@ -298,10 +298,6 @@ public abstract class Adapter {
         return properties.name();
     }
 
-
-    ;
-
-
     public abstract void createNewSchema( SchemaPlus rootSchema, String name );
 
     public abstract Table createTableSchema( CatalogTable combinedTable, List<CatalogColumnPlacement> columnPlacementsOnStore );
@@ -494,9 +490,6 @@ public abstract class Adapter {
     protected void resetDockerConnection( ConfigDocker c ) {
         throw new RuntimeException( getAdapterName() + " uses this Docker instance and does not support to dynamically change it." );
     }
-
-
-    ;
 
 
     @Accessors(chain = true)
