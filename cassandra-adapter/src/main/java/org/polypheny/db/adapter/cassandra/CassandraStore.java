@@ -41,7 +41,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -136,21 +135,18 @@ public class CassandraStore extends DataStore {
 
             DockerManager.Container container = new ContainerBuilder( getAdapterId(), "bitnami/cassandra:3", getUniqueName(), Integer.parseInt( settings.get( "instanceId" ) ) )
                     .withMappedPort( 9042, Integer.parseInt( settings.get( "port" ) ) )
+                    // cassandra can take quite some time to start
+                    .withReadyTest( this::testDockerConnection, 20000 )
                     //.withEnvironmentVariables( Arrays.asList( "CASSANDRA_USER=" + this.dbUsername, "CASSANDRA_PASSWORD=" + this.dbPassword ) )
                     .build();
-            DockerManager.getInstance().initialize( container ).start();
 
-            // TODO: Wait until ready
-            try {
-                TimeUnit.SECONDS.sleep( 20 );
-            } catch ( InterruptedException e ) {
-                // ignore
-            }
-
-            this.embeddedCassandra = null;
             this.dbHostname = container.getHost();
             this.dbKeyspace = "cassandra";
             this.dbPort = Integer.parseInt( settings.get( "port" ) );
+
+            DockerManager.getInstance().initialize( container ).start();
+
+            this.embeddedCassandra = null;
         } else if ( deployMode == DeployMode.REMOTE ) {
             this.embeddedCassandra = null;
             this.dbHostname = settings.get( "host" );
@@ -501,6 +497,45 @@ public class CassandraStore extends DataStore {
     protected void reloadSettings( List<String> updatedSettings ) {
         // TODO JS: Implement
         log.warn( "reloadSettings is not implemented yet." );
+    }
+
+
+    private boolean testDockerConnection() {
+        CqlSession mySession = null;
+        try {
+            CqlSessionBuilder cluster = CqlSession.builder();
+            cluster.withLocalDatacenter( "datacenter1" );
+            List<InetSocketAddress> contactPoints = new ArrayList<>( 1 );
+            contactPoints.add( new InetSocketAddress( this.dbHostname, this.dbPort ) );
+            if ( this.dbUsername != null && this.dbPassword != null ) {
+                cluster.addContactPoints( contactPoints ).withAuthCredentials( this.dbUsername, this.dbPassword );
+            } else {
+                cluster.addContactPoints( contactPoints );
+            }
+            mySession = cluster.build();
+            // SELECT 1 is not valid query in CQL, therefore we check with this // TODO: exchange with better suited query
+            CreateKeyspace createKs = SchemaBuilder.createKeyspace( this.dbKeyspace ).ifNotExists().withSimpleStrategy( 1 );
+            mySession.execute( createKs.build() );
+
+            try {
+                mySession.close();
+            } catch ( RuntimeException e ) {
+                log.warn( "Exception while shutting down {}", getUniqueName(), e );
+            }
+            return true;
+
+        } catch ( Exception e ) {
+            // ignore
+        }
+        if ( mySession != null ) {
+            try {
+                mySession.close();
+            } catch ( RuntimeException e ) {
+                log.warn( "Exception while shutting down {}", getUniqueName(), e );
+            }
+        }
+
+        return false;
     }
 
 }

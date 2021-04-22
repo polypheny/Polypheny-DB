@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ import org.polypheny.db.adapter.Adapter.AdapterSettingString;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
@@ -41,6 +44,9 @@ import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.schema.Schema;
 import org.polypheny.db.schema.Table;
 import org.polypheny.db.sql.dialect.PostgresqlSqlDialect;
+import org.polypheny.db.transaction.PUID;
+import org.polypheny.db.transaction.PUID.Type;
+import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 
@@ -79,12 +85,14 @@ public class PostgresqlStore extends AbstractJdbcStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "postgres:13.2", getUniqueName(), instanceId )
                 .withMappedPort( 5432, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariable( "POSTGRES_PASSWORD=" + settings.get( "password" ) )
+                .withReadyTest( this::testDockerConnection, 15000 )
                 .build();
-        DockerManager.getInstance().initialize( container ).start();
 
         host = container.getHost();
         database = "postgres";
         username = "postgres";
+
+        DockerManager.getInstance().initialize( container ).start();
 
         return createConnectionFactory();
     }
@@ -293,6 +301,35 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
     private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
         return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+    }
+
+
+    private boolean testDockerConnection() {
+        ConnectionHandler handler = null;
+        try {
+            ConnectionFactory connectionFactory = createConnectionFactory();
+
+            PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
+            handler = connectionFactory.getOrCreateConnectionHandler( randomXid );
+            ResultSet resultSet = handler.executeQuery( "SELECT 0" );
+
+            if ( resultSet.isBeforeFirst() ) {
+                handler.commit();
+                return true;
+            }
+
+        } catch ( Exception e ) {
+            // ignore
+        }
+        if ( handler != null ) {
+            try {
+                handler.commit();
+            } catch ( ConnectionHandlerException e ) {
+                // ignore
+            }
+        }
+
+        return false;
     }
 
 }

@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -163,13 +163,14 @@ public abstract class DockerManager {
         public final Integer adapterId;
         public final Image image;
         public final String uniqueName;
+        public Supplier<Boolean> containerReadySupplier = () -> true;
         public Map<Integer, Integer> internalExternalPortMapping = new HashMap<>();
         public boolean checkUnique = false;
         public List<String> initCommands = new ArrayList<>();
         public int dockerInstanceId;
+        public int maxTimeoutMs = 2000;
 
-        // map with timeouts matched to the commands
-        public Map<Integer, List<String>> orderAfterCommands = new TreeMap<>();
+        public List<String> orderCommands = new ArrayList<>();
         private List<String> envCommands = new ArrayList<>();
 
 
@@ -178,6 +179,14 @@ public abstract class DockerManager {
             this.image = new Image( image );
             this.uniqueName = uniqueName;
             this.dockerInstanceId = dockerInstanceId;
+        }
+
+
+        public ContainerBuilder withReadyTest( Supplier<Boolean> containerReadySupplier, int maxTimeoutMs ) {
+            this.containerReadySupplier = containerReadySupplier;
+            this.maxTimeoutMs = maxTimeoutMs;
+
+            return this;
         }
 
 
@@ -242,18 +251,13 @@ public abstract class DockerManager {
 
 
         /**
-         * This allows to specify commands which are executed after a give delay
+         * This allows to specify commands which are executed when the container and the underlying system have started
          *
          * @param commands the collection of commands to execute
-         * @param timeout the absolute timeout after the creation
          * @return the builder
          */
-        public ContainerBuilder withAfterCommands( List<String> commands, int timeout ) {
-            if ( this.orderAfterCommands.containsKey( timeout ) ) {
-                this.orderAfterCommands.get( timeout ).addAll( commands );
-            } else {
-                this.orderAfterCommands.put( timeout, commands );
-            }
+        public ContainerBuilder withAfterCommands( List<String> commands ) {
+            this.orderCommands.addAll( commands );
 
             return this;
         }
@@ -268,8 +272,10 @@ public abstract class DockerManager {
                     dockerInstanceId,
                     internalExternalPortMapping,
                     checkUnique,
+                    containerReadySupplier,
+                    maxTimeoutMs,
                     initCommands,
-                    orderAfterCommands,
+                    orderCommands,
                     envCommands );
         }
 
@@ -306,7 +312,10 @@ public abstract class DockerManager {
 
         public final boolean usesAfterCommands;
 
-        public final Map<Integer, List<String>> afterCommands;
+        public final List<String> afterCommands;
+
+        public final Supplier<Boolean> isReadySupplier;
+        public final int maxTimeoutMs;
 
 
         private Container(
@@ -316,8 +325,10 @@ public abstract class DockerManager {
                 int dockerInstanceId,
                 Map<Integer, Integer> internalExternalPortMapping,
                 boolean checkUnique,
+                Supplier<Boolean> isReadySupplier,
+                int maxTimeoutMs,
                 List<String> initCommands,
-                Map<Integer, List<String>> afterCommands,
+                List<String> afterCommands,
                 List<String> envCommands
         ) {
             this.adapterId = adapterId;
@@ -331,6 +342,8 @@ public abstract class DockerManager {
             this.afterCommands = afterCommands;
             this.usesAfterCommands = !afterCommands.isEmpty();
             this.envCommands = envCommands;
+            this.isReadySupplier = isReadySupplier;
+            this.maxTimeoutMs = maxTimeoutMs;
 
             this.host = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ).getHost();
         }

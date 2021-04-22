@@ -39,11 +39,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang.time.StopWatch;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.config.RuntimeConfig;
@@ -254,6 +255,10 @@ public class DockerInstance extends DockerManager {
             client.startContainerCmd( container.getPhysicalName() ).exec();
         } else if ( Objects.equals( state.getStatus(), "created" ) ) {
             client.startContainerCmd( container.getPhysicalName() ).exec();
+
+            // while the container is started the underlying system is not, so we have to probe it multiple times
+            waitTillStarted( container );
+
             if ( container.afterCommands.size() != 0 ) {
                 execAfterInitCommands( container );
             }
@@ -264,33 +269,54 @@ public class DockerInstance extends DockerManager {
 
 
     /**
+     * The container gets probed until the defined ready supplier returns true or the timout is reached
+     *
+     * @param container the container which is waited for
+     */
+    private void waitTillStarted( Container container ) {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        boolean isStarted = container.isReadySupplier.get();
+        while ( !isStarted && (stopWatch.getTime() < container.maxTimeoutMs) ) {
+            try {
+                TimeUnit.MILLISECONDS.sleep( 500 );
+            } catch ( InterruptedException e ) {
+                // ignore
+            }
+            isStarted = container.isReadySupplier.get();
+        }
+        stopWatch.stop();
+        if ( !isStarted ) {
+            destroy( container );
+            throw new RuntimeException( "The Docker container could not be started correctly." );
+        }
+    }
+
+
+    /**
      * This executes multiple defined commands after a delay in the given container
      *
      * @param container the container with specifies the afterCommands and to which they are applied
      */
     private void execAfterInitCommands( Container container ) {
-        int offset = 0;
-        for ( Entry<Integer, List<String>> entry : container.afterCommands.entrySet() ) {
-            offset = entry.getKey() - offset;
-            try {
-                Thread.sleep( offset );
-                ExecCreateCmdResponse cmd = client
-                        .execCreateCmd( container.getContainerId() )
-                        .withAttachStdout( true )
-                        .withCmd( entry.getValue().toArray( new String[0] ) )
-                        .exec();
 
-                ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<ResultCallback<Frame>, Frame>() {
-                    @Override
-                    public void onNext( Frame event ) {
+        ExecCreateCmdResponse cmd = client
+                .execCreateCmd( container.getContainerId() )
+                .withAttachStdout( true )
+                .withCmd( container.afterCommands.toArray( new String[0] ) )
+                .exec();
 
-                    }
-                };
+        ResultCallbackTemplate<ResultCallback<Frame>, Frame> callback = new ResultCallbackTemplate<ResultCallback<Frame>, Frame>() {
+            @Override
+            public void onNext( Frame event ) {
 
-                client.execStartCmd( cmd.getId() ).exec( callback ).awaitCompletion();
-            } catch ( InterruptedException e ) {
-                throw new RuntimeException( e );
             }
+        };
+
+        try {
+            client.execStartCmd( cmd.getId() ).exec( callback ).awaitCompletion();
+        } catch ( InterruptedException e ) {
+            throw new RuntimeException( "The afterCommands for the container where not executed properly." );
         }
     }
 
@@ -353,6 +379,7 @@ public class DockerInstance extends DockerManager {
         if ( containersOnAdapter.containsKey( adapterId ) ) {
             containersOnAdapter.get( adapterId ).forEach( containerName -> availableContainers.get( containerName ).stop() );
         }
+
     }
 
 
@@ -403,9 +430,9 @@ public class DockerInstance extends DockerManager {
 
     @Override
     public void destroy( Container container ) {
-        if ( container.getStatus() == ContainerStatus.RUNNING ) {
-            stop( container );
-        }
+
+        stop( container );
+
         client.removeContainerCmd( container.getPhysicalName() ).exec();
         container.setStatus( ContainerStatus.DESTROYED );
 

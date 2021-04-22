@@ -18,11 +18,11 @@ package org.polypheny.db.adapter.jdbc.stores;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.Adapter.AdapterProperties;
@@ -80,24 +80,20 @@ public class MonetdbStore extends AbstractJdbcStore {
         DockerManager.Container container = new ContainerBuilder( getAdapterId(), "topaztechnology/monetdb:11.37.11", getUniqueName(), dockerInstanceId )
                 .withMappedPort( 50000, Integer.parseInt( settings.get( "port" ) ) )
                 .withEnvironmentVariables( Arrays.asList( "MONETDB_PASSWORD=" + settings.get( "password" ), "MONET_DATABASE=monetdb" ) )
+                .withReadyTest( this::testDockerConnection, 15000 )
                 .build();
-        DockerManager.getInstance().initialize( container ).start();
 
         host = container.getHost();
         database = "monetdb";
         username = "monetdb";
 
-        // TODO: Wait until ready
-        try {
-            TimeUnit.SECONDS.sleep( 15 );
-        } catch ( InterruptedException e ) {
-            // ignore
-        }
+        DockerManager.getInstance().initialize( container ).start();
 
         ConnectionFactory connectionFactory = createConnectionFactory();
         createDefaultSchema( connectionFactory );
         return connectionFactory;
     }
+
 
 
     @Override
@@ -318,6 +314,35 @@ public class MonetdbStore extends AbstractJdbcStore {
 
     private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
         return String.format( "jdbc:monetdb://%s:%d/%s", dbHostname, dbPort, dbName );
+    }
+
+
+    private boolean testDockerConnection() {
+        ConnectionHandler handler = null;
+        try {
+            ConnectionFactory connectionFactory = createConnectionFactory();
+
+            PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
+            handler = connectionFactory.getOrCreateConnectionHandler( randomXid );
+            ResultSet resultSet = handler.executeQuery( "SELECT 0" );
+
+            if ( resultSet.isBeforeFirst() ) {
+                handler.commit();
+                return true;
+            }
+
+        } catch ( Exception e ) {
+            // ignore
+        }
+        if ( handler != null ) {
+            try {
+                handler.commit();
+            } catch ( ConnectionHandlerException e ) {
+                // ignore
+            }
+        }
+
+        return false;
     }
 
 }
