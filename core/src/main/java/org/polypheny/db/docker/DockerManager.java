@@ -145,6 +145,7 @@ public abstract class DockerManager {
                 this.version = "latest";
             }
         }
+
     }
 
 

@@ -33,7 +33,6 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogColumn;
 import org.polypheny.db.catalog.entity.CatalogColumnPlacement;
 import org.polypheny.db.catalog.entity.CatalogTable;
-import org.polypheny.db.config.ConfigDocker;
 import org.polypheny.db.docker.DockerInstance;
 import org.polypheny.db.jdbc.Context;
 import org.polypheny.db.runtime.PolyphenyDbException;
@@ -101,21 +100,6 @@ public abstract class AbstractJdbcStore extends DataStore {
         JdbcUtils.addInformationPoolSize( informationPage, informationGroups, informationElements, connectionFactory, getUniqueName() );
         addInformationPhysicalNames();
         enableInformationPage();
-    }
-
-
-    @Override
-    public void resetDockerConnection( ConfigDocker c ) {
-        /*if ( c.id != dockerInstanceId || c.getHost().equals( currentUrl ) ) {
-            return;
-        }
-
-        try {
-            connectionFactory.close();
-        } catch ( SQLException e ) {
-            log.debug( "Exception while closing old connection factory", e );
-        }
-        connectionFactory = createConnectionFactory( settings, dialect );*/
     }
 
 

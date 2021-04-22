@@ -220,9 +220,7 @@ public class ConfigList extends Config {
         } else {
             return false;
         }
-
         return setConfigObjectList( values, setter );
-
     }
 
 

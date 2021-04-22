@@ -148,8 +148,6 @@ public class DockerInstance extends DockerManager {
             }
             client.removeContainerCmd( id ).exec();
         } );
-
-
     }
 
 

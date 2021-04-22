@@ -105,7 +105,6 @@ public class ConfigDocker extends ConfigObject {
         Map<String, String> settings = new HashMap<>();
         settings.put( "host", host );
         return settings;
-
     }
 
 
@@ -139,6 +138,5 @@ public class ConfigDocker extends ConfigObject {
                 Objects.equals( username, that.username ) &&
                 Objects.equals( password, that.password );
     }
-
 
 }

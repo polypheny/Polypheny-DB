@@ -122,19 +122,25 @@ public class DockerManagerImpl extends DockerManager {
 
     @Override
     public List<String> getUsedNames() {
-        return dockerInstances.values().stream().flatMap( client -> client.getUsedNames().stream() ).collect( Collectors.toList() );
+        return dockerInstances.values().stream()
+                .flatMap( client -> client.getUsedNames().stream() )
+                .collect( Collectors.toList() );
     }
 
 
     @Override
     public List<Integer> getUsedPorts() {
-        return dockerInstances.values().stream().flatMap( client -> client.getUsedPorts().stream() ).collect( Collectors.toList() );
+        return dockerInstances.values().stream()
+                .flatMap( client -> client.getUsedPorts().stream() )
+                .collect( Collectors.toList() );
     }
 
 
     @Override
     public Map<Integer, List<Integer>> getUsedPortsSorted() {
-        return dockerInstances.entrySet().stream().filter( e -> e.getValue().isDockerRunning() ).collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getUsedPorts() ) );
+        return dockerInstances.entrySet().stream()
+                .filter( e -> e.getValue().isDockerRunning() )
+                .collect( Collectors.toMap( Entry::getKey, e -> e.getValue().getUsedPorts() ) );
     }
 
 

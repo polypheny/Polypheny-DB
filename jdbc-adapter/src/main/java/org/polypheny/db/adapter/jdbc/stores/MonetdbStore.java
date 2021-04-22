@@ -69,6 +69,7 @@ public class MonetdbStore extends AbstractJdbcStore {
     private String database;
     private String username;
 
+
     public MonetdbStore( int storeId, String uniqueName, final Map<String, String> settings ) {
         super( storeId, uniqueName, settings, MonetdbSqlDialect.DEFAULT, true );
     }
