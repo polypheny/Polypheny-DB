@@ -225,8 +225,8 @@ public class HttpRestServer extends QueryInterface {
                 }
             }
 
-        } catch ( IOException | ServletException e ) {
-            throw new RuntimeException( "Could not process multipart request", e );
+        } catch ( Throwable t ) {
+            throw new RuntimeException( "Could not process multipart request", t );
         }
 
         switch ( type ) {
@@ -271,8 +271,12 @@ public class HttpRestServer extends QueryInterface {
                     bodyReturn.put( "error", e.getErrorCode().name );
                     bodyReturn.put( "error_description", e.getErrorCode().description );
                     return gson.toJson( bodyReturn );
+                } catch ( Throwable t ) {
+                    log.error( "Rest multipart error", t );
+                    throw t;
                 } finally {
                     try {
+                        inputStreams.clear();
                         for ( Part part : req.raw().getParts() ) {
                             part.delete();
                         }

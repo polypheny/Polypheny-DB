@@ -50,6 +50,7 @@ dependencies {
     api group: "net.hydromatic", name: "aggdesigner-algorithm", version: aggdesigner_algorithm_version  // Apache 2.0
     implementation group: "org.codehaus.janino", name: "janino", version: janino_version  // BSD
     implementation group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
+    implementation group: 'com.j256.simplemagic', name: 'simplemagic', version: simplemagic_version // ISC
 
     api (group: "org.apache.calcite", name: "calcite-linq4j", version: calcite_linq4j_version) { exclude(module: "guava") } // Apache 2.0
     api (group: "org.apache.calcite.avatica", name: "avatica-core", version: avatica_core_version) { exclude(module: "protobuf-java") } // Apache 2.0

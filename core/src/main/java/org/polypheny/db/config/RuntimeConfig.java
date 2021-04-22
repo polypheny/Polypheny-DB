@@ -297,7 +297,13 @@ public enum RuntimeConfig {
             "Enable query simplification using polystore level indexes.",
             false,
             ConfigType.BOOLEAN,
-            "polystoreIndexGroup" );
+            "polystoreIndexGroup" ),
+
+    FILE_HANDLE_CACHE_SIZE( "runtime/fileHandleCacheSize",
+            "Size (in Bytes) up to which media files are cached in-memory instead of creating a temporary file. Needs to be >= 0 and smaller than Integer.MAX_SIZE. Setting to zero disables caching of media files.",
+            0,
+            ConfigType.INTEGER,
+            "runtimExecutionGroup" );
 
 
     private final String key;
