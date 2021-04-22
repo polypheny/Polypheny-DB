@@ -26,6 +26,8 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
+import org.polypheny.db.config.ConfigDocker;
+import org.polypheny.db.config.RuntimeConfig;
 
 /**
  * This class servers as a organization unit which controls all Docker containers in Polypheny.
@@ -291,6 +293,10 @@ public abstract class DockerManager {
         @Setter
         @Getter
         private String containerId;
+
+        @Getter
+        private final String host;
+
         @Getter
         private final int dockerInstanceId;
 
@@ -324,6 +330,8 @@ public abstract class DockerManager {
             this.afterCommands = afterCommands;
             this.usesAfterCommands = !afterCommands.isEmpty();
             this.envCommands = envCommands;
+
+            this.host = RuntimeConfig.DOCKER_INSTANCES.getWithId( ConfigDocker.class, dockerInstanceId ).getHost();
         }
 
 

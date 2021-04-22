@@ -82,7 +82,7 @@ public class PostgresqlStore extends AbstractJdbcStore {
                 .build();
         DockerManager.getInstance().initialize( container ).start();
 
-        host = "localhost"; // TODO
+        host = container.getHost();
         database = "postgres";
         username = "postgres";
 

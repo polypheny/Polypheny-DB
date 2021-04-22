@@ -36,13 +36,13 @@ public class DockerInstanceTest {
     private static ConfigDocker config;
     private static final String imageName = "mongo";
 
-    static Catalog catalog;
-
 
     @BeforeClass
     public static void initClass() {
-        // some functionality needs to use the catalog, so we use a mock
-        catalog = Catalog.setAndGetInstance( new MockCatalog() );
+        if ( Catalog.INSTANCE == null ) {
+            // some functionality needs to use the catalog, so we use a mock
+            Catalog.setAndGetInstance( new MockCatalog() );
+        }
     }
 
 
@@ -93,7 +93,7 @@ public class DockerInstanceTest {
         DockerInstance managerLastSession = new DockerInstance( config.id );
         Container container = managerLastSession.initialize( new ContainerBuilder( 1, imageName, uniqueName, config.id ).withMappedPort( usedPort, usedPort ).build() );
         managerLastSession.start( container );
-        catalog.addAdapter( "mockedAdapter", "", AdapterType.STORE, new HashMap<>() );
+        Catalog.getInstance().addAdapter( "mockedAdapter", "", AdapterType.STORE, new HashMap<>() );
 
         assert (container.getStatus() == ContainerStatus.RUNNING);
         assert (managerLastSession.getUsedNames().contains( uniqueName ));

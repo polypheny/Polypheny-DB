@@ -82,7 +82,7 @@ public class MonetdbStore extends AbstractJdbcStore {
                 .build();
         DockerManager.getInstance().initialize( container ).start();
 
-        host = "localhost"; // TODO
+        host = container.getHost();
         database = "monetdb";
         username = "monetdb";
 
