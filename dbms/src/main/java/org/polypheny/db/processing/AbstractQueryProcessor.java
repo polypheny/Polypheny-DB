@@ -347,6 +347,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                         .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
                         .isAnalyze( isAnalyze )
                         .isSubQuery( isSubquery )
+                        .durations( statement.getDuration().asJson() )
                         .build();
 
                 monitoringJob.setMonitoringData( eventData );
@@ -448,6 +449,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
                 .isSubQuery( isSubquery )
                 .isAnalyze( isAnalyze )
+                .durations( statement.getDuration().asJson() )
                 .build();
 
         monitoringJob.setMonitoringData( eventData );

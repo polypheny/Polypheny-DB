@@ -80,20 +80,20 @@ public class MonitoringServiceImpl implements MonitoringService {
 
 
     @Override
-    public <T extends MonitoringData> void subscribeEvent( Class<T> eventDataClass, MonitoringEventSubscriber<T> subscriber ) {
-
-    }
-
-
-    @Override
-    public <T extends MonitoringData> void unsubscribeEvent( Class<T> eventDataClass, MonitoringEventSubscriber<T> subscriber ) {
-
-    }
-
-
-    @Override
     public void monitorJob( MonitoringJob job ) {
         this.monitoringQueue.queueJob( job );
+    }
+
+
+    @Override
+    public <TPersistent extends MonitoringPersistentData> void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
+        this.monitoringQueue.subscribeEvent( eventDataClass, subscriber );
+    }
+
+
+    @Override
+    public <TPersistent extends MonitoringPersistentData> void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
+        this.monitoringQueue.unsubscribeEvent( eventDataClass, subscriber );
     }
 
 
@@ -110,12 +110,12 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     @Override
     public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData> void
-    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass, MonitoringQueueWorker<TEvent, TPersistent> consumer ) {
+    registerEventType( Class<TEvent> eventDataClass, Class<TPersistent> eventPersistentDataClass, MonitoringQueueWorker<TEvent, TPersistent> worker ) {
         Pair<Class<TEvent>, Class<TPersistent>> pair = new Pair( eventDataClass, eventPersistentDataClass );
 
         if ( eventDataClass != null && !this.registeredMonitoringPair.contains( pair ) ) {
             this.registerEventType( eventDataClass, eventPersistentDataClass );
-            this.monitoringQueue.registerQueueWorker( pair, consumer );
+            this.monitoringQueue.registerQueueWorker( pair, worker );
             this.monitoringServiceUi.registerPersistentClass( eventPersistentDataClass );
         }
     }

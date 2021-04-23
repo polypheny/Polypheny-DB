@@ -19,6 +19,7 @@ package org.polypheny.db.monitoring.core;
 import org.polypheny.db.monitoring.dtos.MonitoringData;
 import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
+import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
 import org.polypheny.db.util.Pair;
 
 /**
@@ -55,5 +56,11 @@ public interface MonitoringQueue {
      */
     <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
     void registerQueueWorker( Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker );
+
+    <TPersistent extends MonitoringPersistentData>
+    void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
+
+    <TPersistent extends MonitoringPersistentData>
+    void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
 
 }

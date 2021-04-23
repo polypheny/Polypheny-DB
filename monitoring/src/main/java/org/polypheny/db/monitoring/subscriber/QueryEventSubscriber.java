@@ -17,13 +17,13 @@
 package org.polypheny.db.monitoring.subscriber;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.dtos.QueryData;
+import org.polypheny.db.monitoring.persistence.QueryPersistentData;
 
 @Slf4j
-public class QueryEventSubscriber implements MonitoringEventSubscriber<QueryData> {
+public class QueryEventSubscriber implements MonitoringEventSubscriber<QueryPersistentData> {
 
     @Override
-    public void update( QueryData eventData ) {
+    public void update( QueryPersistentData eventData ) {
         log.debug( "Sample Query event subscriber:" + eventData.getMonitoringType() );
     }
 

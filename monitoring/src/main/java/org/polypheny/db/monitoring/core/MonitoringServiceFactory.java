@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.dtos.QueryData;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
 import org.polypheny.db.monitoring.persistence.QueryPersistentData;
+import org.polypheny.db.monitoring.subscriber.QueryEventSubscriber;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;
 
@@ -45,7 +46,9 @@ public class MonitoringServiceFactory {
 
         // configure query monitoring event as system wide monitoring
         MonitoringQueueWorker worker = new QueryWorker( repo );
+
         monitoringService.registerEventType( QueryData.class, QueryPersistentData.class, worker );
+        monitoringService.subscribeEvent( QueryPersistentData.class, new QueryEventSubscriber() );
 
         return monitoringService;
     }

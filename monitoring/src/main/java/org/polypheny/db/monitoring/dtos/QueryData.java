@@ -41,5 +41,6 @@ public class QueryData implements MonitoringData {
     private int rowCount;
     private boolean isAnalyze;
     private boolean isSubQuery;
+    private String durations;
 
 }

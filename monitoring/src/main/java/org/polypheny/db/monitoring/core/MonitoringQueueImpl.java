@@ -16,7 +16,9 @@
 
 package org.polypheny.db.monitoring.core;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -27,6 +29,7 @@ import lombok.val;
 import org.polypheny.db.monitoring.dtos.MonitoringData;
 import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
+import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -52,6 +55,8 @@ public class MonitoringQueueImpl implements MonitoringQueue {
      * ( Class<MonitoringEventData> , Class<MonitoringPersistentData>)
      */
     private final HashMap<Pair<Class, Class>, MonitoringQueueWorker> jobQueueWorkers = new HashMap();
+
+    private final HashMap<Class, List<MonitoringEventSubscriber>> subscribers = new HashMap();
 
     private String backgroundTaskId;
 
@@ -135,6 +140,23 @@ public class MonitoringQueueImpl implements MonitoringQueue {
         this.jobQueueWorkers.put( key, worker );
     }
 
+
+    @Override
+    public <TPersistent extends MonitoringPersistentData>
+    void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
+        if ( this.subscribers.containsKey( eventDataClass ) ) {
+            this.subscribers.get( eventDataClass ).add( subscriber );
+        } else {
+            this.subscribers.putIfAbsent( eventDataClass, Arrays.asList( subscriber ) );
+        }
+    }
+
+
+    @Override
+    public <TPersistent extends MonitoringPersistentData> void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber ) {
+        this.subscribers.get( eventDataClass ).remove( subscriber );
+    }
+
     // endregion
 
     // region private helper methods
@@ -193,14 +215,18 @@ public class MonitoringQueueImpl implements MonitoringQueue {
                 log.debug( "get new monitoring job" + job.get().getId().toString() );
 
                 // get the worker
-                MonitoringJob finalJob = job.get();
-                val workerKey = new Pair( finalJob.getMonitoringData().getClass(), finalJob.getMonitoringPersistentData().getClass() );
+                MonitoringJob monitoringJob = job.get();
+                val workerKey = new Pair( monitoringJob.getMonitoringData().getClass(), monitoringJob.getMonitoringPersistentData().getClass() );
                 val worker = jobQueueWorkers.get( workerKey );
 
                 if ( worker != null ) {
-                    val result = worker.handleJob( finalJob );
-                    // TODO: call subscriber
-                    // First subscriber need to be registered in the queue
+                    val result = worker.handleJob( monitoringJob );
+
+                    val classSubscribers = this.subscribers.get( monitoringJob.getMonitoringPersistentData().getClass() );
+                    if ( classSubscribers != null ) {
+                        classSubscribers.forEach( s -> s.update( result.getMonitoringPersistentData() ) );
+                    }
+
                 } else {
                     log.error( "no worker for event registered" );
                 }

@@ -27,9 +27,9 @@ import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
  */
 public interface MonitoringService {
 
-    <TEvent extends MonitoringData> void subscribeEvent( Class<TEvent> eventDataClass, MonitoringEventSubscriber<TEvent> subscriber );
+    <TPersistent extends MonitoringPersistentData> void subscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
 
-    <TEvent extends MonitoringData> void unsubscribeEvent( Class<TEvent> eventDataClass, MonitoringEventSubscriber<TEvent> subscriber );
+    <TPersistent extends MonitoringPersistentData> void unsubscribeEvent( Class<TPersistent> eventDataClass, MonitoringEventSubscriber<TPersistent> subscriber );
 
     /**
      * monitor event which will be queued immediately and get processed by a registered queue worker.

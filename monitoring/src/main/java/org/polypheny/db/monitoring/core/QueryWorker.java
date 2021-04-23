@@ -16,8 +16,10 @@
 
 package org.polypheny.db.monitoring.core;
 
+import com.google.gson.Gson;
 import java.sql.Timestamp;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.QueryData;
 import org.polypheny.db.monitoring.persistence.QueryPersistentData;
@@ -55,22 +57,27 @@ public class QueryWorker implements MonitoringQueueWorker<QueryData, QueryPersis
                 .build();
 
         job.setMonitoringPersistentData( dbEntity );
-
         RelNode node = queryData.getRouted().rel;
         job = processRelNode( node, job );
 
-        // TODO:
-        // read infos earlier, statement not available anymore
+        // TODO: read even more data
+        // job.getMonitoringPersistentData().getDataElements()
         if ( job.getMonitoringData().isAnalyze() ) {
-            this.getDurationInfo( job, "Index Update" );
-            this.getDurationInfo( job, "Plan Caching" );
-            this.getDurationInfo( job, "Index Lookup Rewrite" );
-            this.getDurationInfo( job, "Constraint Enforcement" );
-            this.getDurationInfo( job, "Implementation Caching" );
-            this.getDurationInfo( job, "Routing" );
-            this.getDurationInfo( job, "Planning & Optimization" );
-            this.getDurationInfo( job, "Implementation" );
-            this.getDurationInfo( job, "Locking" );
+            try {
+                InformationDuration duration = new Gson().fromJson( job.getMonitoringData().getDurations(), InformationDuration.class );
+                this.getDurationInfo( job, "Index Update", duration );
+                this.getDurationInfo( job, "Plan Caching", duration );
+                this.getDurationInfo( job, "Index Lookup Rewrite", duration );
+                this.getDurationInfo( job, "Constraint Enforcement", duration );
+                this.getDurationInfo( job, "Implementation Caching", duration );
+                this.getDurationInfo( job, "Routing", duration );
+                this.getDurationInfo( job, "Planning & Optimization", duration );
+                this.getDurationInfo( job, "Implementation", duration );
+                this.getDurationInfo( job, "Locking", duration );
+            } catch ( Exception e ) {
+                log.debug( "could not deserialize of get duration info" );
+            }
+
         }
 
         this.repository.persistJob( job );
@@ -78,9 +85,9 @@ public class QueryWorker implements MonitoringQueueWorker<QueryData, QueryPersis
     }
 
 
-    private void getDurationInfo( MonitoringJob<QueryData, QueryPersistentData> job, String durationName ) {
+    private void getDurationInfo( MonitoringJob<QueryData, QueryPersistentData> job, String durationName, InformationDuration duration ) {
         try {
-            long time = job.getMonitoringData().statement.getDuration().getSequence( durationName );
+            long time = duration.getDuration( durationName );
             job.getMonitoringPersistentData().getDataElements().put( durationName, time );
         } catch ( Exception e ) {
             log.debug( "could no find duration:" + durationName );
@@ -93,9 +100,9 @@ public class QueryWorker implements MonitoringQueueWorker<QueryData, QueryPersis
         for ( int i = 0; i < node.getInputs().size(); i++ ) {
             processRelNode( node.getInput( i ), currentJob );
         }
-        // System.out.println(node);
+
+        // snd last relnode (mostly)
         if ( node.getTable() != null ) {
-            //System.out.println("FOUND TABLE : " + node.getTable());
             currentJob.getMonitoringPersistentData().getTables().addAll( node.getTable().getQualifiedName() );
         }
 

@@ -63,10 +63,10 @@ public class InformationDuration extends Information {
     }
 
 
-    public long getSequence( final String name ) {
+    public long getDuration( final String name ) {
         Duration child = this.children.get( name );
         if ( child != null ) {
-            return child.sequence;
+            return child.duration;
         }
         return 0;
     }
