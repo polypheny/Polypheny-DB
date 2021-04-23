@@ -17,6 +17,14 @@
 package org.polypheny.db.transaction;
 
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +38,8 @@ import org.polypheny.db.catalog.entity.CatalogUser;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.jdbc.JavaTypeFactoryImpl;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
+import org.polypheny.db.monitoring.dtos.MonitoringData;
 import org.polypheny.db.monitoring.dtos.QueryData;
-import org.polypheny.db.monitoring.persistence.QueryPersistentData;
 import org.polypheny.db.prepare.PolyphenyDbCatalogReader;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
@@ -41,11 +48,6 @@ import org.polypheny.db.processing.SqlProcessorImpl;
 import org.polypheny.db.schema.PolySchemaBuilder;
 import org.polypheny.db.schema.PolyphenyDbSchema;
 import org.polypheny.db.statistic.StatisticsManager;
-
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 
 @Slf4j
@@ -80,8 +82,7 @@ public class TransactionImpl implements Transaction, Comparable {
     @Getter
     private final boolean analyze;
 
-    @Getter
-    private final MonitoringJob<QueryData, QueryPersistentData> monitoringJob = new MonitoringJob();
+    private QueryData queryData = new QueryData();
 
     private final AtomicLong statementCounter = new AtomicLong();
 
@@ -264,8 +265,8 @@ public class TransactionImpl implements Transaction, Comparable {
 
 
     @Override
-    public MonitoringJob getMonitoringJob() {
-        return this.monitoringJob;
+    public MonitoringData getMonitoringData() {
+        return this.queryData;
     }
 
     // For locking

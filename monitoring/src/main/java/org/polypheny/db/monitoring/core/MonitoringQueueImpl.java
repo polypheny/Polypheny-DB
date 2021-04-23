@@ -113,19 +113,6 @@ public class MonitoringQueueImpl implements MonitoringQueue {
 
 
     @Override
-    public void queueJob( MonitoringJob job ) {
-        if ( job.getMonitoringPersistentData() == null ) {
-            val createdJob = this.createMonitorJob( job.getMonitoringData() );
-            if ( createdJob.isPresent() ) {
-                this.monitoringJobQueue.add( createdJob.get() );
-            }
-        } else if ( job.getMonitoringData() != null ) {
-            this.monitoringJobQueue.add( job );
-        }
-    }
-
-
-    @Override
     public <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
     void registerQueueWorker( Pair<Class<TEvent>, Class<TPersistent>> classPair, MonitoringQueueWorker<TEvent, TPersistent> worker ) {
         if ( classPair == null || worker == null ) {

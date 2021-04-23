@@ -17,7 +17,6 @@
 package org.polypheny.db.monitoring.core;
 
 import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
 
@@ -38,9 +37,6 @@ public interface MonitoringService {
      * @param <TEvent> The type parameter for the event, which will implement MonitoringEventData
      */
     <TEvent extends MonitoringData> void monitorEvent( TEvent eventData );
-
-    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
-    void monitorJob( MonitoringJob<TEvent, TPersistent> job );
 
     /**
      * For monitoring events and processing them, they need first to be registered.

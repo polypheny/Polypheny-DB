@@ -17,8 +17,8 @@
 package org.polypheny.db.monitoring.dtos;
 
 import java.util.List;
-import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
 import org.polypheny.db.rel.RelRoot;
@@ -26,7 +26,7 @@ import org.polypheny.db.transaction.Statement;
 
 @Getter
 @Setter
-@Builder
+@NoArgsConstructor
 public class QueryData implements MonitoringData {
 
     public String monitoringType;

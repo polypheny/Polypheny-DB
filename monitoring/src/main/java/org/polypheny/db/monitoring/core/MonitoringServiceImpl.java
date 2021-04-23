@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 import org.polypheny.db.monitoring.persistent.ReadOnlyMonitoringRepository;
 import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
@@ -76,12 +75,6 @@ public class MonitoringServiceImpl implements MonitoringService {
         }
 
         this.monitoringQueue.queueEvent( eventData );
-    }
-
-
-    @Override
-    public void monitorJob( MonitoringJob job ) {
-        this.monitoringQueue.queueJob( job );
     }
 
 

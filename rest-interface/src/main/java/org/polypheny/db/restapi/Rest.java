@@ -552,7 +552,7 @@ public class Rest {
                 signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
             }
 
-            ((QueryData) statement.getTransaction().getMonitoringJob().getMonitoringData()).setExecutionTime( executionTime );
+            ((QueryData) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
             log.error( "Error during execution of REST query", e );
@@ -564,8 +564,8 @@ public class Rest {
             return null;
         }
         Pair<String, Integer> result = restResult.getResult( res );
-        ((QueryData) statement.getTransaction().getMonitoringJob().getMonitoringData()).setRowCount( result.right );
-        MonitoringServiceProvider.MONITORING_SERVICE().monitorJob( statement.getTransaction().getMonitoringJob() );
+        ((QueryData) statement.getTransaction().getMonitoringData()).setRowCount( result.right );
+        MonitoringServiceProvider.MONITORING_SERVICE().monitorEvent( statement.getTransaction().getMonitoringData() );
 
         return result.left;
     }

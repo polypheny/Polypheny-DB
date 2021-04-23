@@ -67,9 +67,7 @@ import org.polypheny.db.information.InformationQueryPlan;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.jdbc.PolyphenyDbSignature;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.QueryData;
-import org.polypheny.db.monitoring.persistence.QueryPersistentData;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.RelOptUtil;
 import org.polypheny.db.plan.RelTraitSet;
@@ -336,21 +334,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
                 Iterator<Object> iterator = enumerable.iterator();
 
                 TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
-                MonitoringJob<QueryData, QueryPersistentData> monitoringJob = transaction.getMonitoringJob();
 
-                QueryData eventData = QueryData.builder()
-                        .monitoringType( signature.statementType.toString() )
-                        .description( "Test description:" + parameterizedRoot.kind.sql )
-                        .recordedTimestamp( System.currentTimeMillis() )
-                        .routed( logicalRoot )
-                        .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) )
-                        .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
-                        .isAnalyze( isAnalyze )
-                        .isSubQuery( isSubquery )
-                        .durations( statement.getDuration().asJson() )
-                        .build();
-
-                monitoringJob.setMonitoringData( eventData );
+                QueryData eventData = (QueryData) transaction.getMonitoringData();
+                eventData.setMonitoringType( signature.statementType.toString() );
+                eventData.setDescription( "Test description:" + parameterizedRoot.kind.sql );
+                eventData.setRecordedTimestamp( System.currentTimeMillis() );
+                eventData.setRouted( logicalRoot );
+                eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
+                eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
+                eventData.setAnalyze( isAnalyze );
+                eventData.setSubQuery( isSubquery );
+                eventData.setDurations( statement.getDuration().asJson() );
 
                 return signature;
             }
@@ -438,21 +432,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor {
         Iterator<Object> iterator = enumerable.iterator();
 
         TransactionImpl transaction = (TransactionImpl) statement.getTransaction();
-        MonitoringJob<QueryData, QueryPersistentData> monitoringJob = transaction.getMonitoringJob();
-
-        QueryData eventData = QueryData.builder()
-                .monitoringType( signature.statementType.toString() )
-                .description( "Test description:" + parameterizedRoot.kind.sql )
-                .recordedTimestamp( System.currentTimeMillis() )
-                .routed( logicalRoot )
-                .fieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) )
-                .rows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) )
-                .isSubQuery( isSubquery )
-                .isAnalyze( isAnalyze )
-                .durations( statement.getDuration().asJson() )
-                .build();
-
-        monitoringJob.setMonitoringData( eventData );
+        QueryData eventData = (QueryData) transaction.getMonitoringData();
+        eventData.setMonitoringType( signature.statementType.toString() );
+        eventData.setDescription( "Test description:" + parameterizedRoot.kind.sql );
+        eventData.setRecordedTimestamp( System.currentTimeMillis() );
+        eventData.setRouted( logicalRoot );
+        eventData.setFieldNames( ImmutableList.copyOf( signature.rowType.getFieldNames() ) );
+        eventData.setRows( MetaImpl.collect( signature.cursorFactory, iterator, new ArrayList<>() ) );
+        eventData.setAnalyze( isAnalyze );
+        eventData.setSubQuery( isSubquery );
+        eventData.setDurations( statement.getDuration().asJson() );
 
         return signature;
     }

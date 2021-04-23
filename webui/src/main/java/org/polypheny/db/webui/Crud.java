@@ -3208,7 +3208,7 @@ public class Crud implements InformationObserver {
 
             long executionTime = stopWatch.getNanoTime();
             signature.getExecutionTimeMonitor().setExecutionTime( executionTime );
-            ((QueryData) statement.getTransaction().getMonitoringJob().getMonitoringData()).setExecutionTime( executionTime );
+            ((QueryData) statement.getTransaction().getMonitoringData()).setExecutionTime( executionTime );
 
         } catch ( Throwable t ) {
             if ( statement.getTransaction().isAnalyze() ) {
@@ -3283,8 +3283,8 @@ public class Crud implements InformationObserver {
 
             ArrayList<String[]> data = computeResultData( rows, header, statement.getTransaction() );
 
-            ((QueryData) statement.getTransaction().getMonitoringJob().getMonitoringData()).setRowCount( data.size() );
-            MonitoringServiceProvider.MONITORING_SERVICE().monitorJob( statement.getTransaction().getMonitoringJob() );
+            ((QueryData) statement.getTransaction().getMonitoringData()).setRowCount( data.size() );
+            MonitoringServiceProvider.MONITORING_SERVICE().monitorEvent( statement.getTransaction().getMonitoringData() );
 
             return new Result( header.toArray( new DbColumn[0] ), data.toArray( new String[0][] ) ).setAffectedRows( data.size() ).setHasMoreRows( hasMoreRows );
         } finally {

@@ -17,7 +17,6 @@
 package org.polypheny.db.monitoring.core;
 
 import org.polypheny.db.monitoring.dtos.MonitoringData;
-import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
 import org.polypheny.db.util.Pair;
@@ -37,16 +36,6 @@ public interface MonitoringQueue {
      */
     void queueEvent( MonitoringData eventData );
 
-
-    /**
-     * Monitoring jobs can be assigned directly and will be queued.
-     *
-     * @param job the job which will be monitored
-     * @param <TEvent> the event data type.
-     * @param <TPersistent> the persistent data type.
-     */
-    <TEvent extends MonitoringData, TPersistent extends MonitoringPersistentData>
-    void queueJob( MonitoringJob<TEvent, TPersistent> job );
 
     /**
      * @param classPair pair for MonitoringEventData and the MonitoringPersistentData
