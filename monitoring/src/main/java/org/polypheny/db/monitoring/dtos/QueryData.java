@@ -29,11 +29,11 @@ import org.polypheny.db.transaction.Statement;
 @NoArgsConstructor
 public class QueryData implements MonitoringData {
 
-    public String monitoringType;
-    public RelRoot routed;
-    public PolyphenyDbSignature signature;
-    public Statement statement;
-    public List<List<Object>> rows;
+    private String monitoringType;
+    private RelRoot routed;
+    private PolyphenyDbSignature signature;
+    private Statement statement;
+    private List<List<Object>> rows;
     private String description;
     private List<String> fieldNames;
     private long recordedTimestamp;

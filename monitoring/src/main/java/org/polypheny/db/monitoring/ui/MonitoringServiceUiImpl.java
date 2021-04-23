@@ -29,7 +29,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.persistent.ReadOnlyMonitoringRepository;
+import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
 
 @Slf4j
 public class MonitoringServiceUiImpl implements MonitoringServiceUi {

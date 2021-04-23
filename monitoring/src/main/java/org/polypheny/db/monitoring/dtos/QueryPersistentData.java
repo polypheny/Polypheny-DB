@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistence;
+package org.polypheny.db.monitoring.dtos;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -28,7 +28,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
 
 @Getter
 @Setter

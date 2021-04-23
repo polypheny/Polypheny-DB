@@ -21,7 +21,7 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.dtos.MonitoringData;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.persistent.ReadOnlyMonitoringRepository;
+import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
 import org.polypheny.db.monitoring.subscriber.MonitoringEventSubscriber;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.util.Pair;

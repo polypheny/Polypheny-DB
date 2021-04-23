@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistent;
+package org.polypheny.db.monitoring.persistence;
 
 import java.sql.Timestamp;
 import java.util.List;

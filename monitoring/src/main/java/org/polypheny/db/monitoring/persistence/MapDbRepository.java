@@ -33,8 +33,6 @@ import org.mapdb.Serializer;
 import org.polypheny.db.monitoring.dtos.MonitoringData;
 import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.MonitoringPersistentData;
-import org.polypheny.db.monitoring.persistent.MonitoringRepository;
-import org.polypheny.db.monitoring.persistent.ReadOnlyMonitoringRepository;
 import org.polypheny.db.util.FileSystemManager;
 
 @Slf4j

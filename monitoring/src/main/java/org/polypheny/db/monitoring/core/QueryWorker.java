@@ -22,8 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.information.InformationDuration;
 import org.polypheny.db.monitoring.dtos.MonitoringJob;
 import org.polypheny.db.monitoring.dtos.QueryData;
-import org.polypheny.db.monitoring.persistence.QueryPersistentData;
-import org.polypheny.db.monitoring.persistent.MonitoringRepository;
+import org.polypheny.db.monitoring.dtos.QueryPersistentData;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.rel.RelNode;
 
 @Slf4j
@@ -47,7 +47,7 @@ public class QueryWorker implements MonitoringQueueWorker<QueryData, QueryPersis
         QueryPersistentData dbEntity = QueryPersistentData
                 .builder()
                 .description( queryData.getDescription() )
-                .monitoringType( queryData.monitoringType )
+                .monitoringType( queryData.getMonitoringType() )
                 .Id( job.getId() )
                 .fieldNames( queryData.getFieldNames() )
                 .executionTime( queryData.getExecutionTime() )

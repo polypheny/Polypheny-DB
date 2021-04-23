@@ -19,7 +19,7 @@ package org.polypheny.db.monitoring.core;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.monitoring.dtos.QueryData;
 import org.polypheny.db.monitoring.persistence.MapDbRepository;
-import org.polypheny.db.monitoring.persistence.QueryPersistentData;
+import org.polypheny.db.monitoring.dtos.QueryPersistentData;
 import org.polypheny.db.monitoring.subscriber.QueryEventSubscriber;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUiImpl;

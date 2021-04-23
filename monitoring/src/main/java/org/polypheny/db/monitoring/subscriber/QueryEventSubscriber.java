@@ -17,7 +17,7 @@
 package org.polypheny.db.monitoring.subscriber;
 
 import lombok.extern.slf4j.Slf4j;
-import org.polypheny.db.monitoring.persistence.QueryPersistentData;
+import org.polypheny.db.monitoring.dtos.QueryPersistentData;
 
 @Slf4j
 public class QueryEventSubscriber implements MonitoringEventSubscriber<QueryPersistentData> {

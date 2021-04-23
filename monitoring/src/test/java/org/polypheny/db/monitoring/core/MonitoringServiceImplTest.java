@@ -19,9 +19,9 @@ package org.polypheny.db.monitoring.core;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.polypheny.db.monitoring.dtos.QueryData;
-import org.polypheny.db.monitoring.persistence.QueryPersistentData;
-import org.polypheny.db.monitoring.persistent.ReadOnlyMonitoringRepository;
-import org.polypheny.db.monitoring.persistent.MonitoringRepository;
+import org.polypheny.db.monitoring.dtos.QueryPersistentData;
+import org.polypheny.db.monitoring.persistence.ReadOnlyMonitoringRepository;
+import org.polypheny.db.monitoring.persistence.MonitoringRepository;
 import org.polypheny.db.monitoring.ui.MonitoringServiceUi;
 
 import static org.junit.Assert.assertNotNull;

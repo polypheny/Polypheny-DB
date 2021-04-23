@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.monitoring.persistent;
+package org.polypheny.db.monitoring.persistence;
 
 import org.polypheny.db.monitoring.dtos.MonitoringData;
 import org.polypheny.db.monitoring.dtos.MonitoringJob;
