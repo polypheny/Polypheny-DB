@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.polypheny.db.docker;
+package org.polypheny.db.test.catalog;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang.NotImplementedException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.CatalogAdapter;
 import org.polypheny.db.catalog.entity.CatalogAdapter.AdapterType;
@@ -52,752 +52,748 @@ import org.polypheny.db.type.PolyType;
 
 
 /**
- * This is a bare-bone catalog which allows to mock register adapters
- * which then can be retrieved while testing
+ * This helper class should serve as a base when implementation-testing different functionalities of
+ * Polypheny, which use the catalog.
+ * By extending and only implementing the minimal function of the catalog it should
+ * provide a clean testing setup
  */
-public class MockCatalog extends Catalog {
-
-    int i = 0;
-    HashMap<Integer, CatalogAdapter> adapters = new HashMap<>();
-
+public abstract class MockCatalog extends Catalog {
 
     @Override
     public void commit() throws NoTablePrimaryKeyException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void rollback() {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void validateColumns() {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void restoreColumnPlacements( Transaction transaction ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public long addDatabase( String name, int ownerId, String ownerName, long defaultSchemaId, String defaultSchemaName ) {
-        return 0;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteDatabase( long databaseId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogDatabase> getDatabases( Pattern pattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogDatabase getDatabase( String databaseName ) throws UnknownDatabaseException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogDatabase getDatabase( long databaseId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogSchema> getSchemas( Pattern databaseNamePattern, Pattern schemaNamePattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogSchema> getSchemas( long databaseId, Pattern schemaNamePattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogSchema getSchema( long schemaId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogSchema getSchema( String databaseName, String schemaName ) throws UnknownSchemaException, UnknownDatabaseException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogSchema getSchema( long databaseId, String schemaName ) throws UnknownSchemaException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public long addSchema( String name, long databaseId, int ownerId, SchemaType schemaType ) {
-        return 0;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean checkIfExistsSchema( long databaseId, String schemaName ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void renameSchema( long schemaId, String name ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setSchemaOwner( long schemaId, long ownerId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteSchema( long schemaId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogTable> getTables( long schemaId, Pattern tableNamePattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogTable> getTables( long databaseId, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogTable getTable( String databaseName, String schemaName, String tableName ) throws UnknownTableException, UnknownDatabaseException, UnknownSchemaException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogTable> getTables( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogTable getTable( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogTable getTable( long schemaId, String tableName ) throws UnknownTableException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogTable getTable( long databaseId, String schemaName, String tableName ) throws UnknownTableException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public long addTable( String name, long schemaId, int ownerId, TableType tableType, boolean modifiable, String definition ) {
-        return 0;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean checkIfExistsTable( long schemaId, String tableName ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void renameTable( long tableId, String name ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteTable( long tableId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setTableOwner( long tableId, int ownerId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setPrimaryKey( long tableId, Long keyId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void addColumnPlacement( int adapterId, long columnId, PlacementType placementType, String physicalSchemaName, String physicalTableName, String physicalColumnName, List<Long> partitionIds ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteColumnPlacement( int adapterId, long columnId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogColumnPlacement getColumnPlacement( int adapterId, long columnId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean checkIfExistsColumnPlacement( int adapterId, long columnId ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacements( long columnId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId, long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterSortedByPhysicalPosition( int storeId, long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapter( int adapterId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByColumn( long columnId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogKey> getKeys() {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogKey> getTableKeys( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsOnAdapterAndSchema( int adapterId, long schemaId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void updateColumnPlacementType( int adapterId, long columnId, PlacementType placementType ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void updateColumnPlacementPhysicalPosition( int adapterId, long columnId, long position ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void updateColumnPlacementPhysicalPosition( int adapterId, long columnId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void updateColumnPlacementPhysicalNames( int adapterId, long columnId, String physicalSchemaName, String physicalTableName, String physicalColumnName, boolean updatePhysicalColumnPosition ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumn> getColumns( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumn> getColumns( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern, Pattern columnNamePattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogColumn getColumn( long columnId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogColumn getColumn( long tableId, String columnName ) throws UnknownColumnException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogColumn getColumn( String databaseName, String schemaName, String tableName, String columnName ) throws UnknownColumnException, UnknownSchemaException, UnknownDatabaseException, UnknownTableException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public long addColumn( String name, long tableId, int position, PolyType type, PolyType collectionsType, Integer length, Integer scale, Integer dimension, Integer cardinality, boolean nullable, Collation collation ) {
-        return 0;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void renameColumn( long columnId, String name ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setColumnPosition( long columnId, int position ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setColumnType( long columnId, PolyType type, PolyType collectionsType, Integer length, Integer precision, Integer dimension, Integer cardinality ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setNullable( long columnId, boolean nullable ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setCollation( long columnId, Collation collation ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean checkIfExistsColumn( long tableId, String columnName ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteColumn( long columnId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setDefaultValue( long columnId, PolyType type, String defaultValue ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteDefaultValue( long columnId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogPrimaryKey getPrimaryKey( long key ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean isPrimaryKey( long keyId ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean isForeignKey( long keyId ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean isIndex( long keyId ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean isConstraint( long keyId ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void addPrimaryKey( long tableId, List<Long> columnIds ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogForeignKey> getForeignKeys( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogForeignKey> getExportedKeys( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogConstraint> getConstraints( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogIndex> getIndexes( CatalogKey key ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogIndex> getForeignKeys( CatalogKey key ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogConstraint> getConstraints( CatalogKey key ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogConstraint getConstraint( long tableId, String constraintName ) throws UnknownConstraintException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogForeignKey getForeignKey( long tableId, String foreignKeyName ) throws UnknownForeignKeyException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void addForeignKey( long tableId, List<Long> columnIds, long referencesTableId, List<Long> referencesIds, String constraintName, ForeignKeyOption onUpdate, ForeignKeyOption onDelete ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void addUniqueConstraint( long tableId, String constraintName, List<Long> columnIds ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogIndex> getIndexes( long tableId, boolean onlyUnique ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogIndex getIndex( long tableId, String indexName ) throws UnknownIndexException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean checkIfExistsIndex( long tableId, String indexName ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogIndex getIndex( long indexId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogIndex> getIndexes() {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public long addIndex( long tableId, List<Long> columnIds, boolean unique, String method, String methodDisplayName, int location, IndexType type, String indexName ) throws GenericCatalogException {
-        return 0;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void setIndexPhysicalName( long indexId, String physicalName ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteIndex( long indexId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deletePrimaryKey( long tableId ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteForeignKey( long foreignKeyId ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteConstraint( long constraintId ) throws GenericCatalogException {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogUser getUser( String userName ) throws UnknownUserException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogUser getUser( int userId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogAdapter> getAdapters() {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogAdapter getAdapter( String uniqueName ) throws UnknownAdapterException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogAdapter getAdapter( int adapterId ) {
-        return adapters.get( adapterId );
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean checkIfExistsAdapter( int adapterId ) {
-        return adapters.containsKey( adapterId );
+        throw new NotImplementedException();
     }
 
 
     @Override
     public int addAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings ) {
-        i++;
-        adapters.put( i, new CatalogAdapter( i, uniqueName, clazz, type, settings ) );
-        return i;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void updateAdapterSettings( int adapterId, Map<String, String> newSettings ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteAdapter( int adapterId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogQueryInterface> getQueryInterfaces() {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogQueryInterface getQueryInterface( String uniqueName ) throws UnknownQueryInterfaceException {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogQueryInterface getQueryInterface( int ifaceId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public int addQueryInterface( String uniqueName, String clazz, Map<String, String> settings ) {
-        return 0;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deleteQueryInterface( int ifaceId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public long addPartition( long tableId, String partitionName, long schemaId, int ownerId, PartitionType partitionType, List<String> effectivePartitionQualifier, boolean isUnbound ) throws GenericCatalogException {
-        return 0;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deletePartition( long tableId, long schemaId, long partitionId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public CatalogPartition getPartition( long partitionId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void partitionTable( long tableId, PartitionType partitionType, long partitionColumnId, int numPartitions, List<Long> partitionIds ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void mergeTable( long tableId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogPartition> getPartitions( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogPartition> getPartitions( Pattern databaseNamePattern, Pattern schemaNamePattern, Pattern tableNamePattern ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<String> getPartitionNames( long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogColumnPlacement> getColumnPlacementsByPartition( long tableId, long partitionId, long columnId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<CatalogAdapter> getAdaptersByPartition( long tableId, long partitionId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void updatePartitionsOnDataPlacement( int adapterId, long tableId, List<Long> partitionIds ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<Long> getPartitionsOnDataPlacement( int adapterId, long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public List<Long> getPartitionsIndexOnDataPlacement( int adapterId, long tableId ) {
-        return null;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void deletePartitionsOnDataPlacement( int storeId, long tableId ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean validatePartitionDistribution( int adapterId, long tableId, long columnId ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void flagTableForDeletion( long tableId, boolean flag ) {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public boolean isTableFlaggedForDeletion( long tableId ) {
-        return false;
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void close() {
-
+        throw new NotImplementedException();
     }
 
 
     @Override
     public void clear() {
-
+        throw new NotImplementedException();
     }
 
 }
