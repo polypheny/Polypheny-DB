@@ -596,7 +596,7 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 
         private final String type = "Integer";
-        private Integer defaultValue;
+        public final Integer defaultValue;
 
 
         public AbstractAdapterSettingInteger( String name, boolean canBeNull, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
@@ -628,7 +628,7 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingString extends AbstractAdapterSetting {
 
         private final String type = "String";
-        private String defaultValue;
+        public final String defaultValue;
 
 
         public AbstractAdapterSettingString( String name, boolean canBeNull, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
@@ -660,7 +660,7 @@ public abstract class Adapter {
     public static class AbstractAdapterSettingBoolean extends AbstractAdapterSetting {
 
         private final String type = "Boolean";
-        private boolean defaultValue;
+        public final boolean defaultValue;
 
 
         public AbstractAdapterSettingBoolean( String name, boolean canBeNull, boolean required, boolean modifiable, boolean defaultValue, List<DeploySetting> modes, int position ) {
