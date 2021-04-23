@@ -513,16 +513,15 @@ public class CassandraStore extends DataStore {
                 cluster.addContactPoints( contactPoints );
             }
             mySession = cluster.build();
-            // SELECT 1 is not valid query in CQL, therefore we check with this // TODO: exchange with better suited query
-            CreateKeyspace createKs = SchemaBuilder.createKeyspace( this.dbKeyspace ).ifNotExists().withSimpleStrategy( 1 );
-            mySession.execute( createKs.build() );
-
-            try {
-                mySession.close();
-            } catch ( RuntimeException e ) {
-                log.warn( "Exception while shutting down {}", getUniqueName(), e );
+            ResultSet resultSet = mySession.execute( "SELECT release_version FROM system.local" );
+            if ( resultSet.one() != null ) {
+                try {
+                    mySession.close();
+                } catch ( RuntimeException e ) {
+                    log.warn( "Exception while shutting test connection down {}", getUniqueName(), e );
+                }
+                return true;
             }
-            return true;
 
         } catch ( Exception e ) {
             // ignore
@@ -531,7 +530,7 @@ public class CassandraStore extends DataStore {
             try {
                 mySession.close();
             } catch ( RuntimeException e ) {
-                log.warn( "Exception while shutting down {}", getUniqueName(), e );
+                log.warn( "Exception while shutting test connection down {}", getUniqueName(), e );
             }
         }
 
